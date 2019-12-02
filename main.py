@@ -3,7 +3,83 @@
 import logging
 import requests
 
+from time import sleep
+
+from elasticsearch.helpers import bulk
+# from elasticsearch.helpers import scan as scanner
+from elasticsearch import client
+
 from datetime import datetime
+
+
+class ELmonocleDB():
+
+    def __init__(self, tenant='default', index='monocle'):
+        self.es = client.Elasticsearch('localhost:9200')
+        self.index = index
+        self.mapping = {
+            self.index: {
+                "properties": {
+                    "id": {"type": "keyword"},
+                    "type": {"type": "keyword"},
+                    "number": {"type": "keyword"},
+                    "title": {"type": "keyword"},
+                    "repository_owner": {"type": "keyword"},
+                    "repository": {"type": "keyword"},
+                    "author": {"type": "keyword"},
+                    "committer": {"type": "keyword"},
+                    "merged_by": {"type": "keyword"},
+                    "created_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "updated_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "merged_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "closed_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "authored_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "committed_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
+                    "state": {"type": "keyword"},
+                    "mergeable": {"type": "keyword"},
+                    "label": {"type": "keyword"},
+                    "assignee": {"type": "keyword"},
+                }
+            }
+        }
+        settings = {
+            'mappings': self.mapping
+        }
+        self.ic = client.IndicesClient(self.es)
+        self.ic.create(index=self.index, ignore=400, body=settings)
+
+    def update(self, source_it):
+        def gen(it):
+            for source in it:
+                d = {}
+                d['_index'] = self.index
+                d['_type'] = self.index
+                d['_op_type'] = 'update'
+                d['_id'] = source['id']
+                d['doc'] = source
+                d['doc_as_upsert'] = True
+                yield d
+        bulk(self.es, gen(source_it))
+        self.es.indices.refresh(index=self.index)
+
 
 class GithubGraphQLQuery(object):
 
@@ -70,6 +146,7 @@ class GithubGraphQLQuery(object):
         if 'errors' in ret:
             raise Exception("Errors in response see: %s" % r.text)
         return ret
+
 
 class PRsFetcher(object):
 
@@ -211,7 +288,8 @@ class PRsFetcher(object):
             hnp = self._getPage(kwargs, prs)
             self.log.info("Fetched PRs: %s" % len(prs))
             if not hnp:
-                if len(prs) < kwargs['total_prs_count'] and len(prs) % 100 == 0:
+                if (len(prs) < kwargs['total_prs_count'] and
+                        len(prs) % 100 == 0):
                     kwargs['created_before'] = prs[-1]['createdAt']
                     kwargs['after'] = ''
                     continue
@@ -250,7 +328,7 @@ class PRsFetcher(object):
                     {
                         'type': 'comment',
                         'id': comment['node']['id'],
-                        'updatedAt': comment['node']['updatedAt'],
+                        'updated_at': comment['node']['updatedAt'],
                         'author': comment['node']['author']['login'],
                     }
                 )
@@ -258,28 +336,31 @@ class PRsFetcher(object):
                 obj = {
                     'type': 'commits',
                     'id': commit['node']['commit']['oid'],
-                    'authoredAt': commit['node']['commit']['authoredDate'],
-                    'commitedAt': commit['node']['commit']['committedDate'],
+                    'authored_at': commit['node']['commit']['authoredDate'],
+                    'committed_at': commit['node']['commit']['committedDate'],
                 }
                 if commit['node']['commit']['author']['user']:
-                    obj['author'] = commit['node']['commit']['author']['user']['login']
+                    obj['author'] = commit['node'][
+                      'commit']['author']['user']['login']
                 else:
-                    obj['author'] = None          
+                    obj['author'] = None
                 if commit['node']['commit']['committer']['user']:
-                    obj['committer'] = commit['node']['commit']['committer']['user']['login']
+                    obj['committer'] = commit['node'][
+                      'commit']['committer']['user']['login']
                 else:
-                    obj['committer'] = None          
+                    obj['committer'] = None
                 objects.append(obj)
 
         return objects
 
+
 if __name__ == "__main__":
-
-
     logging.basicConfig(
         level=getattr(logging, 'INFO'))
     token = "d4c69ae552dda4cc5d197d2040dae65fb79a7bb6"
     gql = GithubGraphQLQuery(token)
     u = PRsFetcher(gql)
-    prs = u.get("kubernetes", "2019-11-29")
-    print(u.extract_objects(prs))
+    prs = u.get("kubernetes", "2019-11-30")
+    objects = u.extract_objects(prs)
+    e = ELmonocleDB()
+    e.update(objects)
