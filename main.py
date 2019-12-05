@@ -33,11 +33,11 @@ class ELmonocleDB():
                         "type": "date",
                         "format": "date_time_no_millis"
                     },
-                    "updated_at": {
+                    "merged_at": {
                         "type": "date",
                         "format": "date_time_no_millis"
                     },
-                    "merged_at": {
+                    "updated_at": {
                         "type": "date",
                         "format": "date_time_no_millis"
                     },
@@ -190,7 +190,7 @@ class PRsFetcher(object):
                     edges {
                       node {
                         id
-                        updatedAt
+                        createdAt
                         author {
                           login
                         }
@@ -218,25 +218,67 @@ class PRsFetcher(object):
                       }
                     }
                   }
-                  reviews (first: 100){
+                  # reviews (first: 100){
+                  #   edges {
+                  #     node {
+                  #       id
+                  #       createdAt
+                  #       author {
+                  #         login
+                  #       }
+                  #      comments (first: 100) {
+                  #        edges {
+                  #          node {
+                  #            id
+                  #            createdAt
+                  #            author {
+                  #              login
+                  #            }
+                  #         }
+                  #       }
+                  #      }
+                  #     }
+                  #   }
+                  # }
+                  timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, CONVERTED_NOTE_TO_ISSUE_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
                     edges {
                       node {
-                        id
-                        updatedAt
-                        author {
-                          login
+                        __typename
+                        ... on ClosedEvent {
+                          id
+                          createdAt
+                          actor {
+                            login
+                          }
                         }
-#                        comments (first: 100) {
-#                          edges {
-#                            node {
-#                              id
-#                              updatedAt
-#                              author {
-#                                login
-#                              }
-#                           }
-#                         }
-#                        }
+                        ... on AssignedEvent {
+                          id
+                          createdAt
+                          actor {
+                            login
+                          }
+                        }
+                        ... on ConvertedNoteToIssueEvent {
+                          id
+                          createdAt
+                          actor {
+                            login
+                          }
+                        }
+                        ... on LabeledEvent {
+                          id
+                          createdAt
+                          actor {
+                            login
+                          }
+                        }
+                        ... on PullRequestReview {
+                          id
+                          createdAt
+                          author {
+                            login
+                          }
+                        }
                       }
                     }
                   }
@@ -328,7 +370,7 @@ class PRsFetcher(object):
                     {
                         'type': 'comment',
                         'id': comment['node']['id'],
-                        'updated_at': comment['node']['updatedAt'],
+                        'created_at': comment['node']['createdAt'],
                         'author': comment['node']['author']['login'],
                     }
                 )
@@ -350,6 +392,18 @@ class PRsFetcher(object):
                 else:
                     obj['committer'] = None
                 objects.append(obj)
+            for timelineitem in pr['timelineItems']['edges']:
+                _timelineitem = timelineitem['node']
+                obj = {
+                    'type': _timelineitem['__typename'],
+                    'id': _timelineitem['id'],
+                    'created_at': _timelineitem['createdAt'],
+                    'author': (
+                        _timelineitem.get('actor', {}).get('login') or
+                        _timelineitem.get('author', {}).get('login')
+                    )
+                }
+                objects.append(obj)
 
         return objects
 
@@ -360,7 +414,7 @@ if __name__ == "__main__":
     token = "d4c69ae552dda4cc5d197d2040dae65fb79a7bb6"
     gql = GithubGraphQLQuery(token)
     u = PRsFetcher(gql)
-    prs = u.get("kubernetes", "2019-11-30")
+    prs = u.get("kubernetes", "2019-12-05")
     objects = u.extract_objects(prs)
     e = ELmonocleDB()
     e.update(objects)
