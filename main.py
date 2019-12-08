@@ -1,12 +1,13 @@
 #!/bin/env/python3
 
+import sys
 import logging
 import requests
+import argparse
 
 from time import sleep
 
 from elasticsearch.helpers import bulk
-# from elasticsearch.helpers import scan as scanner
 from elasticsearch import client
 
 from datetime import datetime
@@ -152,10 +153,11 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql):
+    def __init__(self, gql, bulk_size=25):
         self.gql = gql
+        self.size = bulk_size
         self.qdata = '''{
-          search(query: "org:%(org)s is:pr updated:>=%(updated_since)s created:<%(created_before)s" type: ISSUE first: 100 %(after)s) {
+          search(query: "org:%(org)s is:pr updated:>=%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
             issueCount
             pageInfo {
               hasNextPage endCursor
@@ -306,7 +308,6 @@ class PRsFetcher(object):
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
         for pr in data['data']['search']['edges']:
-            print(pr['node'])
             prs.append(pr['node'])
         pageInfo = data['data']['search']['pageInfo']
         if pageInfo['hasNextPage']:
@@ -322,7 +323,8 @@ class PRsFetcher(object):
             'updated_since': updated_since,
             'after': '',
             'created_before': '2019-12-31',
-            'total_prs_count': 0
+            'total_prs_count': 0,
+            'size': self.size
         }
 
         while True:
@@ -331,7 +333,7 @@ class PRsFetcher(object):
             self.log.info("Fetched PRs: %s" % len(prs))
             if not hnp:
                 if (len(prs) < kwargs['total_prs_count'] and
-                        len(prs) % 100 == 0):
+                        len(prs) % self.size == 0):
                     kwargs['created_before'] = prs[-1]['createdAt']
                     kwargs['after'] = ''
                     continue
@@ -341,15 +343,14 @@ class PRsFetcher(object):
     def extract_objects(self, prs):
         objects = []
         for pr in prs:
-            print(pr)
             change = {}
-            change['type'] = 'change'
+            change['type'] = 'ChangeCreatedEvent'
             change['id'] = pr['id']
             change['number'] = pr['number']
-            change['title'] = pr['title']
             change['repository_owner'] = pr['repository']['owner']['login']
             change['repository'] = pr['repository']['name']
             change['author'] = pr['author']['login']
+            change['title'] = pr['title']
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:
@@ -357,7 +358,7 @@ class PRsFetcher(object):
             change['updated_at'] = pr['updatedAt']
             change['created_at'] = pr['createdAt']
             change['merged_at'] = pr['mergedAt']
-            change['closed_at'] = pr['mergedAt']
+            change['closed_at'] = pr['closedAt']
             change['state'] = pr['state']
             change['mergeable'] = pr['mergeable']
             change['labels'] = tuple(map(
@@ -366,28 +367,36 @@ class PRsFetcher(object):
                 lambda n: n['node']['login'], pr['assignees']['edges']))
             objects.append(change)
             for comment in pr['comments']['edges']:
+                _comment = comment['node']
                 objects.append(
                     {
-                        'type': 'comment',
-                        'id': comment['node']['id'],
-                        'created_at': comment['node']['createdAt'],
-                        'author': comment['node']['author']['login'],
+                        'type': 'CommentedEvent',
+                        'id': _comment['id'],
+                        'created_at': _comment['createdAt'],
+                        'author': _comment['author']['login'],
+                        'repository_owner': pr['repository']['owner']['login'],
+                        'repository': pr['repository']['name'],
+                        'number': pr['number'],
                     }
                 )
             for commit in pr['commits']['edges']:
+                _commit = commit['node']
                 obj = {
-                    'type': 'commits',
-                    'id': commit['node']['commit']['oid'],
-                    'authored_at': commit['node']['commit']['authoredDate'],
-                    'committed_at': commit['node']['commit']['committedDate'],
+                    'type': 'CommitCreatedEvent',
+                    'id': _commit['commit']['oid'],
+                    'authored_at': _commit['commit']['authoredDate'],
+                    'committed_at': _commit['commit']['committedDate'],
+                    'repository_owner': pr['repository']['owner']['login'],
+                    'repository': pr['repository']['name'],
+                    'number': pr['number'],
                 }
-                if commit['node']['commit']['author']['user']:
-                    obj['author'] = commit['node'][
+                if _commit['commit']['author']['user']:
+                    obj['author'] = _commit[
                       'commit']['author']['user']['login']
                 else:
                     obj['author'] = None
-                if commit['node']['commit']['committer']['user']:
-                    obj['committer'] = commit['node'][
+                if _commit['commit']['committer']['user']:
+                    obj['committer'] = _commit[
                       'commit']['committer']['user']['login']
                 else:
                     obj['committer'] = None
@@ -401,20 +410,35 @@ class PRsFetcher(object):
                     'author': (
                         _timelineitem.get('actor', {}).get('login') or
                         _timelineitem.get('author', {}).get('login')
-                    )
+                    ),
+                    'repository_owner': pr['repository']['owner']['login'],
+                    'repository': pr['repository']['name'],
+                    'number': pr['number'],
                 }
                 objects.append(obj)
-
         return objects
 
 
 if __name__ == "__main__":
     logging.basicConfig(
         level=getattr(logging, 'INFO'))
-    token = "d4c69ae552dda4cc5d197d2040dae65fb79a7bb6"
-    gql = GithubGraphQLQuery(token)
+
+    parser = argparse.ArgumentParser(prog='monocle')
+    parser.add_argument(
+        '--token', help='A Github API token')
+    parser.add_argument(
+        '--org', help='The Github organization to fetch PR events')
+    parser.add_argument(
+        '--since', help='Fetch PR updated since')
+    args = parser.parse_args()
+
+    if not all([args.token, args.org, args.since]):
+        parser.print_usage()
+        sys.exit(1)
+
+    gql = GithubGraphQLQuery(args.token)
     u = PRsFetcher(gql)
-    prs = u.get("kubernetes", "2019-12-05")
+    prs = u.get(args.org, args.since)
     objects = u.extract_objects(prs)
     e = ELmonocleDB()
     e.update(objects)
