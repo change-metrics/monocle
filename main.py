@@ -82,6 +82,48 @@ class ELmonocleDB():
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
+    def delete_org(self, org):
+        params = {'index': self.index, 'doc_type': self.index}
+        body = {
+            "query": {
+                "bool": {
+                    "filter": {
+                        "term": {"repository_owner": org}
+                    }
+                }
+            }
+        }
+        params['body'] = body
+        self.es.delete_by_query(**params)
+        self.es.indices.refresh(index=self.index)
+
+    def get_last_updated(self, org):
+        params = {'index': self.index, 'doc_type': self.index}
+        body = {
+            "sort": [{
+                "updated_at": {
+                    "order": "desc"
+                }
+            }],
+            "query": {
+                "bool": {
+                    "filter": [
+                        {"term": {"type": "ChangeCreatedEvent"}},
+                        {"term": {"repository_owner": org}}
+                    ]
+                }
+            }
+        }
+        params['body'] = body
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        ret = [r['_source'] for r in res['hits']['hits']]
+        if not ret:
+            return []
+        return ret[0]
+
 
 class GithubGraphQLQuery(object):
 
@@ -154,11 +196,13 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql, bulk_size=25):
+    def __init__(self, gql, bulk_size=50):
         self.gql = gql
         self.size = bulk_size
+        # Note: usage of the default sort on created field because
+        # sort on the updated field does not return well ordered PRs
         self.qdata = '''{
-          search(query: "org:%(org)s is:pr updated:>=%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
+          search(query: "org:%(org)s is:pr sort:created updated:>%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
             issueCount
             pageInfo {
               hasNextPage endCursor
@@ -221,28 +265,6 @@ class PRsFetcher(object):
                       }
                     }
                   }
-                  # reviews (first: 100){
-                  #   edges {
-                  #     node {
-                  #       id
-                  #       createdAt
-                  #       author {
-                  #         login
-                  #       }
-                  #      comments (first: 100) {
-                  #        edges {
-                  #          node {
-                  #            id
-                  #            createdAt
-                  #            author {
-                  #              login
-                  #            }
-                  #         }
-                  #       }
-                  #      }
-                  #     }
-                  #   }
-                  # }
                   timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, CONVERTED_NOTE_TO_ISSUE_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
                     edges {
                       node {
@@ -308,8 +330,11 @@ class PRsFetcher(object):
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
+        if 'data' not in data:
+            # Force fetching the same page
+            return True
         for pr in data['data']['search']['edges']:
-            logging.debug(pr)
+            # print('updated: %s created: %s' % (pr['node']['updatedAt'], pr['node']['createdAt']))
             prs.append(pr['node'])
         pageInfo = data['data']['search']['pageInfo']
         if pageInfo['hasNextPage']:
@@ -318,21 +343,21 @@ class PRsFetcher(object):
         else:
             return False
 
-    def get(self, org, updated_since):
+    def get(self, org, updated_since, created_before):
         prs = []
         kwargs = {
             'org': org,
             'updated_since': updated_since,
             'after': '',
-            'created_before': '2019-12-31',
+            'created_before': created_before,
             'total_prs_count': 0,
             'size': self.size
         }
 
         while True:
-            self.log.info('Request %s' % kwargs)
+            self.log.info('Running request %s' % kwargs)
             hnp = self._getPage(kwargs, prs)
-            self.log.info("Fetched PRs: %s" % len(prs))
+            self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
                 if (len(prs) < kwargs['total_prs_count'] and
                         len(prs) % self.size == 0):
@@ -349,8 +374,8 @@ class PRsFetcher(object):
             end = datetime.strptime(end, format)
             return int((start - end).total_seconds())
 
-        objects = []
-        for pr in prs:
+        def extract_pr_objects(pr):
+            objects = []
             change = {}
             change['type'] = 'ChangeCreatedEvent'
             change['id'] = pr['id']
@@ -426,32 +451,92 @@ class PRsFetcher(object):
                     'repository': pr['repository']['name'],
                     'number': pr['number'],
                 }
-                objects.append(obj)
+            return objects
+
+        objects = []
+        for pr in prs:
+            try:
+                objects.extend(extract_pr_objects(pr))
+            except Exception:
+                self.log.exception("Unable to extract PR data: %s" % pr)
         return objects
+
+
+class MonocleCrawler():
+
+    log = logging.getLogger("monocle.Crawler")
+
+    def __init__(self, org, updated_since, token, loop_delay):
+        self.org = org
+        self.updated_since = updated_since
+        self.created_before = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.loop_delay = loop_delay
+        self.db = ELmonocleDB()
+        self.prf = PRsFetcher(GithubGraphQLQuery(token))
+
+    def get_last_updated_date(self, org):
+        pr = self.db.get_last_updated(org)
+        if not pr:
+            return (
+                self.updated_since or
+                datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        else:
+            return pr['updated_at']
+
+    def run_step(self):
+        updated_since = self.get_last_updated_date(self.org)
+        prs = self.prf.get(self.org, updated_since, self.created_before)
+        objects = self.prf.extract_objects(prs)
+        self.db.update(objects)
+
+    def run(self):
+        while True:
+            self.run_step()
+            self.log.info("Waiting %s seconds before next fetch ..." % (
+                self.loop_delay))
+            sleep(self.loop_delay)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
-        '--token', help='A Github API token')
-    parser.add_argument(
-        '--org', help='The Github organization to fetch PR events')
-    parser.add_argument(
-        '--since', help='Fetch PR updated since')
-    parser.add_argument(
         '--loglevel', help='logging level', default='INFO')
-    args = parser.parse_args()
+    subparsers = parser.add_subparsers(title='subcommands',
+                                       description='valid subcommands',
+                                       dest="command")
 
-    if not all([args.token, args.org, args.since]):
-        parser.print_usage()
-        sys.exit(1)
+    parser_crawler = subparsers.add_parser(
+        'crawler', help='Crawler to fetch PRs events')
+    parser_crawler.add_argument(
+        '--token', help='A Github API token')
+    parser_crawler.add_argument(
+        '--org', help='The Github organization to fetch PR events')
+    parser_crawler.add_argument(
+        '--updated-since', help='Acts on PRs updated since')
+    parser_crawler.add_argument(
+        '--loop-delay', help='Request PRs events every N secs',
+        default=3600)
+
+    parser_db = subparsers.add_parser(
+        'database', help='Database manager')
+    parser_db.add_argument(
+        '--delete-org', help='Delete PRs event related to an org')
+
+    args = parser.parse_args()
 
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper()))
 
-    gql = GithubGraphQLQuery(args.token)
-    u = PRsFetcher(gql)
-    prs = u.get(args.org, args.since)
-    objects = u.extract_objects(prs)
-    e = ELmonocleDB()
-    e.update(objects)
+    if args.command == "crawler":
+        if not all([args.token, args.org]):
+            parser.print_usage()
+            sys.exit(1)
+        crawler = MonocleCrawler(
+            args.org, args.updated_since,
+            args.token, args.loop_delay)
+        crawler.run()
+
+    if args.command == "database":
+        if args.delete_org:
+            db = ELmonocleDB()
+            db.delete_org(args.delete_org)
