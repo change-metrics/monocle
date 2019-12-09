@@ -55,6 +55,7 @@ class ELmonocleDB():
                         "format": "date_time_no_millis"
                     },
                     "state": {"type": "keyword"},
+                    "duration": {"type": "integer"},
                     "mergeable": {"type": "keyword"},
                     "label": {"type": "keyword"},
                     "assignee": {"type": "keyword"},
@@ -308,6 +309,7 @@ class PRsFetcher(object):
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
         for pr in data['data']['search']['edges']:
+            logging.debug(pr)
             prs.append(pr['node'])
         pageInfo = data['data']['search']['pageInfo']
         if pageInfo['hasNextPage']:
@@ -341,6 +343,12 @@ class PRsFetcher(object):
         return prs
 
     def extract_objects(self, prs):
+        def timedelta(start, end):
+            format = "%Y-%m-%dT%H:%M:%SZ"
+            start = datetime.strptime(start, format)
+            end = datetime.strptime(end, format)
+            return int((start - end).total_seconds())
+
         objects = []
         for pr in prs:
             change = {}
@@ -360,6 +368,9 @@ class PRsFetcher(object):
             change['merged_at'] = pr['mergedAt']
             change['closed_at'] = pr['closedAt']
             change['state'] = pr['state']
+            if pr['state'] == 'CLOSED':
+                change['duration'] = timedelta(
+                  change['closed_at'], change['created_at'])
             change['mergeable'] = pr['mergeable']
             change['labels'] = tuple(map(
                 lambda n: n['node']['name'], pr['labels']['edges']))
@@ -420,9 +431,6 @@ class PRsFetcher(object):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=getattr(logging, 'INFO'))
-
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
         '--token', help='A Github API token')
@@ -430,11 +438,16 @@ if __name__ == "__main__":
         '--org', help='The Github organization to fetch PR events')
     parser.add_argument(
         '--since', help='Fetch PR updated since')
+    parser.add_argument(
+        '--loglevel', help='logging level', default='INFO')
     args = parser.parse_args()
 
     if not all([args.token, args.org, args.since]):
         parser.print_usage()
         sys.exit(1)
+
+    logging.basicConfig(
+        level=getattr(logging, args.loglevel.upper()))
 
     gql = GithubGraphQLQuery(args.token)
     u = PRsFetcher(gql)
