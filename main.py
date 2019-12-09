@@ -196,7 +196,7 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql, bulk_size=50):
+    def __init__(self, gql, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
         # Note: usage of the default sort on created field because
@@ -330,9 +330,6 @@ class PRsFetcher(object):
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
-        if 'data' not in data:
-            # Force fetching the same page
-            return True
         for pr in data['data']['search']['edges']:
             # print('updated: %s created: %s' % (pr['node']['updatedAt'], pr['node']['createdAt']))
             prs.append(pr['node'])
