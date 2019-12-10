@@ -1,6 +1,25 @@
-#!/bin/env/python3
+# MIT License
+# Copyright (c) 2019 Fabien Boucher
 
-import sys
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 import logging
 import requests
 import argparse
@@ -396,7 +415,7 @@ class PRsFetcher(object):
         def extract_pr_objects(pr):
             objects = []
             change = {}
-            change['type'] = 'ChangeCreatedEvent'
+            change['type'] = 'PullRequest'
             change['id'] = pr['id']
             change['number'] = pr['number']
             change['repository_owner'] = pr['repository']['owner']['login']
@@ -412,7 +431,7 @@ class PRsFetcher(object):
             change['merged_at'] = pr['mergedAt']
             change['closed_at'] = pr['closedAt']
             change['state'] = pr['state']
-            if pr['state'] == 'CLOSED':
+            if pr['state'] in ('CLOSED', 'MERGED'):
                 change['duration'] = timedelta(
                   change['closed_at'], change['created_at'])
             change['mergeable'] = pr['mergeable']
@@ -421,11 +440,20 @@ class PRsFetcher(object):
             change['assignees'] = tuple(map(
                 lambda n: n['node']['login'], pr['assignees']['edges']))
             objects.append(change)
+            objects.append({
+                'type': 'PRCreatedEvent',
+                'id': 'CE' + pr['id'],
+                'created_at': pr['createdAt'],
+                'author': pr['author']['login'],
+                'repository_owner': pr['repository']['owner']['login'],
+                'repository': pr['repository']['name'],
+                'number': pr['number'],
+            })
             for comment in pr['comments']['edges']:
                 _comment = comment['node']
                 objects.append(
                     {
-                        'type': 'CommentedEvent',
+                        'type': 'PRCommentedEvent',
                         'id': _comment['id'],
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
@@ -438,7 +466,7 @@ class PRsFetcher(object):
             for commit in pr['commits']['edges']:
                 _commit = commit['node']
                 obj = {
-                    'type': 'CommitCreatedEvent',
+                    'type': 'PRCommitCreatedEvent',
                     'id': _commit['commit']['oid'],
                     'authored_at': _commit['commit']['authoredDate'],
                     'committed_at': _commit['commit']['committedDate'],
@@ -460,7 +488,7 @@ class PRsFetcher(object):
             for timelineitem in pr['timelineItems']['edges']:
                 _timelineitem = timelineitem['node']
                 obj = {
-                    'type': _timelineitem['__typename'],
+                    'type': 'PR' + _timelineitem['__typename'],
                     'id': _timelineitem['id'],
                     'created_at': _timelineitem['createdAt'],
                     'author': (
@@ -519,7 +547,7 @@ class MonocleCrawler():
             sleep(self.loop_delay)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
         '--loglevel', help='logging level', default='INFO')
@@ -530,9 +558,11 @@ if __name__ == "__main__":
     parser_crawler = subparsers.add_parser(
         'crawler', help='Crawler to fetch PRs events')
     parser_crawler.add_argument(
-        '--token', help='A Github API token')
+        '--token', help='A Github API token',
+        required=True)
     parser_crawler.add_argument(
-        '--org', help='The Github organization to fetch PR events')
+        '--org', help='The Github organization to fetch PR events',
+        required=True)
     parser_crawler.add_argument(
         '--updated-since', help='Acts on PRs updated since')
     parser_crawler.add_argument(
@@ -542,7 +572,23 @@ if __name__ == "__main__":
     parser_db = subparsers.add_parser(
         'database', help='Database manager')
     parser_db.add_argument(
-        '--delete-org', help='Delete PRs event related to an org')
+        '--delete-org', help='Delete PRs event related to an org',
+        required=True)
+
+    parser_fetcher = subparsers.add_parser(
+        'fetch', help='Fetch PullRequest from GraphQL')
+    parser_fetcher.add_argument(
+        '--token', help='A Github API token',
+        required=True)
+    parser_fetcher.add_argument(
+        '--org', help='The Github organization to fetch the PR from',
+        required=True)
+    parser_fetcher.add_argument(
+        '--repository', help='The PR repository within the organization',
+        required=True)
+    parser_fetcher.add_argument(
+        '--id', help='The PR id within the repository',
+        required=True)
 
     args = parser.parse_args()
 
@@ -550,9 +596,6 @@ if __name__ == "__main__":
         level=getattr(logging, args.loglevel.upper()))
 
     if args.command == "crawler":
-        if not all([args.token, args.org]):
-            parser.print_usage()
-            sys.exit(1)
         crawler = MonocleCrawler(
             args.org, args.updated_since,
             args.token, args.loop_delay)
@@ -563,6 +606,11 @@ if __name__ == "__main__":
             db = ELmonocleDB()
             db.delete_org(args.delete_org)
 
-    # token = ""
-    # prf = PRsFetcher(GithubGraphQLQuery(token))
-    # print(prf.get_pr("ansible", "awx", "5472"))
+    if args.command == "fetch":
+        prf = PRsFetcher(GithubGraphQLQuery(args.token))
+        pr = prf.get_pr(args.org, args.repository, args.id)
+        print(pr)
+
+
+if __name__ == '__main__':
+    main()
