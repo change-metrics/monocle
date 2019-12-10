@@ -28,6 +28,7 @@ class ELmonocleDB():
                     "repository_owner": {"type": "keyword"},
                     "repository": {"type": "keyword"},
                     "author": {"type": "keyword"},
+                    "on_author": {"type": "keyword"},
                     "committer": {"type": "keyword"},
                     "merged_by": {"type": "keyword"},
                     "created_at": {
@@ -199,9 +200,122 @@ class PRsFetcher(object):
     def __init__(self, gql, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
+        self.pr_query = '''
+          id
+          updatedAt
+          createdAt
+          mergedAt
+          closedAt
+          title
+          state
+          number
+          mergeable
+          labels (first: 100){
+            edges {
+              node {
+                name
+              }
+            }
+          }
+          assignees (first: 100){
+            edges {
+              node {
+                login
+              }
+            }
+          }
+          comments (first: 100){
+            edges {
+              node {
+                id
+                createdAt
+                author {
+                  login
+                }
+              }
+            }
+          }
+          commits (first: 100){
+            edges {
+              node {
+                commit {
+                  oid
+                  authoredDate
+                  committedDate
+                  author {
+                    user {
+                      login
+                    }
+                  }
+                  committer {
+                    user {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          }
+          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, CONVERTED_NOTE_TO_ISSUE_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
+            edges {
+              node {
+                __typename
+                ... on ClosedEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+                ... on AssignedEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+                ... on ConvertedNoteToIssueEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+                ... on LabeledEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+                ... on PullRequestReview {
+                  id
+                  createdAt
+                  author {
+                    login
+                  }
+                }
+              }
+            }
+          }
+          author {
+            login
+          }
+          mergedBy {
+            login
+          }
+          repository {
+            owner {
+              login
+            }
+            name
+          }
+        '''
+
+    def _getPage(self, kwargs, prs):
         # Note: usage of the default sort on created field because
         # sort on the updated field does not return well ordered PRs
-        self.qdata = '''{
+        qdata = '''{
           search(query: "org:%(org)s is:pr sort:created updated:>%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
             issueCount
             pageInfo {
@@ -210,128 +324,17 @@ class PRsFetcher(object):
             edges {
               node {
                 ... on PullRequest {
-                  id
-                  updatedAt
-                  createdAt
-                  mergedAt
-                  closedAt
-                  title
-                  state
-                  number
-                  mergeable
-                  labels (first: 100){
-                    edges {
-                      node {
-                        name
-                      }
-                    }
-                  }
-                  assignees (first: 100){
-                    edges {
-                      node {
-                        login
-                      }
-                    }
-                  }
-                  comments (first: 100){
-                    edges {
-                      node {
-                        id
-                        createdAt
-                        author {
-                          login
-                        }
-                      }
-                    }
-                  }
-                  commits (first: 100){
-                    edges {
-                      node {
-                        commit {
-                          oid
-                          authoredDate
-                          committedDate
-                          author {
-                            user {
-                              login
-                            }
-                          }
-                          committer {
-                            user {
-                              login
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, CONVERTED_NOTE_TO_ISSUE_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
-                    edges {
-                      node {
-                        __typename
-                        ... on ClosedEvent {
-                          id
-                          createdAt
-                          actor {
-                            login
-                          }
-                        }
-                        ... on AssignedEvent {
-                          id
-                          createdAt
-                          actor {
-                            login
-                          }
-                        }
-                        ... on ConvertedNoteToIssueEvent {
-                          id
-                          createdAt
-                          actor {
-                            login
-                          }
-                        }
-                        ... on LabeledEvent {
-                          id
-                          createdAt
-                          actor {
-                            login
-                          }
-                        }
-                        ... on PullRequestReview {
-                          id
-                          createdAt
-                          author {
-                            login
-                          }
-                        }
-                      }
-                    }
-                  }
-                  author {
-                    login
-                  }
-                  mergedBy {
-                    login
-                  }
-                  repository {
-                    owner {
-                      login
-                    }
-                    name
-                  }
+                    %(pr_query)s
                 }
               }
             }
           }
         }'''
-
-    def _getPage(self, kwargs, prs):
-        data = self.gql.query(self.qdata % kwargs)
+        data = self.gql.query(qdata % kwargs)
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
         for pr in data['data']['search']['edges']:
-            # print('updated: %s created: %s' % (pr['node']['updatedAt'], pr['node']['createdAt']))
             prs.append(pr['node'])
         pageInfo = data['data']['search']['pageInfo']
         if pageInfo['hasNextPage']:
@@ -343,6 +346,7 @@ class PRsFetcher(object):
     def get(self, org, updated_since, created_before):
         prs = []
         kwargs = {
+            'pr_query': self.pr_query,
             'org': org,
             'updated_since': updated_since,
             'after': '',
@@ -352,7 +356,8 @@ class PRsFetcher(object):
         }
 
         while True:
-            self.log.info('Running request %s' % kwargs)
+            self.log.info('Running request %s' % dict(
+                [(k, v) for k, v in kwargs.items() if k != 'pr_query']))
             hnp = self._getPage(kwargs, prs)
             self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
@@ -363,6 +368,23 @@ class PRsFetcher(object):
                     continue
                 break
         return prs
+
+    def get_pr(self, org, repository, number):
+        qdata = '''{
+          repository(owner: "%(org)s", name:"%(repository)s") {
+            pullRequest(number: %(number)s) {
+              %(pr_query)s
+            }
+          }
+        }
+        '''
+        kwargs = {
+            'pr_query': self.pr_query,
+            'org': org,
+            'repository': repository,
+            'number': number
+        }
+        return self.gql.query(qdata % kwargs)
 
     def extract_objects(self, prs):
         def timedelta(start, end):
@@ -410,6 +432,7 @@ class PRsFetcher(object):
                         'repository_owner': pr['repository']['owner']['login'],
                         'repository': pr['repository']['name'],
                         'number': pr['number'],
+                        'on_author': pr['author']['login'],
                     }
                 )
             for commit in pr['commits']['edges']:
@@ -447,7 +470,9 @@ class PRsFetcher(object):
                     'repository_owner': pr['repository']['owner']['login'],
                     'repository': pr['repository']['name'],
                     'number': pr['number'],
+                    'on_author': pr['author']['login'],
                 }
+                objects.append(obj)
             return objects
 
         objects = []
@@ -537,3 +562,7 @@ if __name__ == "__main__":
         if args.delete_org:
             db = ELmonocleDB()
             db.delete_org(args.delete_org)
+
+    # token = ""
+    # prf = PRsFetcher(GithubGraphQLQuery(token))
+    # print(prf.get_pr("ansible", "awx", "5472"))
