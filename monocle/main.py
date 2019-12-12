@@ -38,7 +38,6 @@ class MonocleCrawler():
     def __init__(self, org, updated_since, token, loop_delay):
         self.org = org
         self.updated_since = updated_since
-        self.created_before = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         self.loop_delay = loop_delay
         self.db = ELmonocleDB()
         self.prf = PRsFetcher(GithubGraphQLQuery(token))
@@ -54,7 +53,7 @@ class MonocleCrawler():
 
     def run_step(self):
         updated_since = self.get_last_updated_date(self.org)
-        prs = self.prf.get(self.org, updated_since, self.created_before)
+        prs = self.prf.get(self.org, updated_since)
         objects = self.prf.extract_objects(prs)
         self.db.update(objects)
 
@@ -86,7 +85,7 @@ def main():
         '--updated-since', help='Acts on PRs updated since')
     parser_crawler.add_argument(
         '--loop-delay', help='Request PRs events every N secs',
-        default=3600)
+        default=900)
 
     parser_db = subparsers.add_parser(
         'database', help='Database manager')
@@ -117,7 +116,7 @@ def main():
     if args.command == "crawler":
         crawler = MonocleCrawler(
             args.org, args.updated_since,
-            args.token, args.loop_delay)
+            args.token, int(args.loop_delay))
         crawler.run()
 
     if args.command == "database":

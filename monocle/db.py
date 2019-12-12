@@ -120,7 +120,7 @@ class ELmonocleDB():
             "query": {
                 "bool": {
                     "filter": [
-                        {"term": {"type": "ChangeCreatedEvent"}},
+                        {"term": {"type": "PullRequest"}},
                         {"term": {"repository_owner": org}}
                     ]
                 }

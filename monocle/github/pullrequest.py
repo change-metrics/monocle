@@ -21,7 +21,9 @@
 
 
 import logging
+import requests
 from datetime import datetime
+from time import sleep
 
 
 class PRsFetcher(object):
@@ -174,14 +176,14 @@ class PRsFetcher(object):
         else:
             return False
 
-    def get(self, org, updated_since, created_before):
+    def get(self, org, updated_since):
         prs = []
         kwargs = {
             'pr_query': self.pr_query,
             'org': org,
             'updated_since': updated_since,
             'after': '',
-            'created_before': created_before,
+            'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'total_prs_count': 0,
             'size': self.size
         }
@@ -189,7 +191,13 @@ class PRsFetcher(object):
         while True:
             self.log.info('Running request %s' % dict(
                 [(k, v) for k, v in kwargs.items() if k != 'pr_query']))
-            hnp = self._getPage(kwargs, prs)
+            try:
+                hnp = self._getPage(kwargs, prs)
+            except requests.exceptions.ConnectionError:
+                self.log.exception(
+                    "Error connecting to the Github API - retrying in 5s ...")
+                sleep(5)
+                continue
             self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
                 if (len(prs) < kwargs['total_prs_count'] and
