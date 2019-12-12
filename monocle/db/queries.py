@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 
-def generate_filter(organization, gte=None, lte=None, etype=None):
+def generate_filter(organization, gte=None, lte=None, etype=None, state=None):
     created_at_range = {
         "created_at": {
             "format": "epoch_millis"
@@ -36,7 +36,21 @@ def generate_filter(organization, gte=None, lte=None, etype=None):
     ]
     if etype:
         qfilter.append({"term": {"type": etype}})
+    if state:
+        qfilter.append({"term": {"state": state}})
     return qfilter
+
+
+def run_query(es, index, body):
+    params = {'index': index, 'doc_type': index}
+    params['body'] = body
+    try:
+        res = es.search(**params)
+    except Exception:
+        return (0, 0, [])
+    took = res['took']
+    hits = res['hits']['total']
+    return took, hits, res
 
 
 def events_histo(
@@ -52,12 +66,6 @@ def events_histo(
             }
         },
         "size": 0,
-        "docvalue_fields": [
-            {
-                "field": "created_at",
-                "format": "date_time"
-            },
-        ],
         "query": {
             "bool": {
                 "filter": generate_filter(organization, gte, lte, etype),
@@ -66,16 +74,8 @@ def events_histo(
             }
         }
     }
-    params = {'index': index, 'doc_type': index}
-    params['body'] = body
-    try:
-        res = es.search(**params)
-    except Exception:
-        return (0, 0, [])
-    took = res['took']
-    hits = res['hits']['total']
-    data = res['aggregations']['agg1']['buckets']
-    return took, hits, data
+    took, hits, data = run_query(es, index, body)
+    return took, hits, data['aggregations']['agg1']['buckets']
 
 
 def events_top_authors(
@@ -94,12 +94,6 @@ def events_top_authors(
             }
         },
         "size": 0,
-        "docvalue_fields": [
-            {
-                "field": "created_at",
-                "format": "date_time"
-            },
-        ],
         "query": {
             "bool": {
                 "filter": generate_filter(organization, gte, lte, etype),
@@ -108,13 +102,78 @@ def events_top_authors(
             }
         }
     }
-    params = {'index': index, 'doc_type': index}
-    params['body'] = body
-    try:
-        res = es.search(**params)
-    except Exception:
-        return (0, 0, [])
-    took = res['took']
-    hits = res['hits']['total']
-    data = res['aggregations']['agg1']['buckets']
-    return took, hits, data
+    took, hits, data = run_query(es, index, body)
+    return took, hits, data['aggregations']['agg1']['buckets']
+
+
+def pr_merged_count_by_duration(
+        es, index,
+        organization, gte, lte, etype, interval=None, size=None):
+    body = {
+        "aggs": {
+            "agg1": {
+                "range": {
+                    "field": "duration",
+                    "ranges": [
+                        {
+                            "to": 24*3600
+                        },
+                        {
+                            "from": 24*3600+1,
+                            "to": 7*24*3600
+                        },
+                        {
+                            "from": 7*24*3600+1,
+                            "to": 31*24*3600
+                        },
+                        {
+                            "from": 31*24*3600+1
+                        },
+                    ],
+                    "keyed": True
+                }
+            }
+        },
+        "size": 0,
+        "query": {
+            "bool": {
+                "filter": generate_filter(
+                    organization, gte, lte, "PullRequest", "MERGED"),
+                "should": [],
+                "must_not": []
+            }
+        }
+    }
+    took, hits, data = run_query(es, index, body)
+    return took, hits, data['aggregations']['agg1']['buckets']
+
+
+def pr_merged_avg_duration(
+        es, index,
+        organization, gte, lte, etype, interval=None, size=None):
+    body = {
+        "aggs": {
+            "agg1": {
+                "avg": {
+                    "field": "duration"
+                }
+            }
+        },
+        "size": 0,
+        "docvalue_fields": [
+            {
+                "field": "created_at",
+                "format": "date_time"
+            },
+        ],
+        "query": {
+            "bool": {
+                "filter": generate_filter(
+                    organization, gte, lte, "PullRequest", "MERGED"),
+                "should": [],
+                "must_not": []
+            }
+        }
+    }
+    took, hits, data = run_query(es, index, body)
+    return took, hits, data['aggregations']['agg1']
