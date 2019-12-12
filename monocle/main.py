@@ -26,7 +26,7 @@ import argparse
 from time import sleep
 from datetime import datetime
 
-from monocle.db import ELmonocleDB
+from monocle.db.db import ELmonocleDB
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github.pullrequest import PRsFetcher
 
@@ -55,7 +55,10 @@ class MonocleCrawler():
         updated_since = self.get_last_updated_date(self.org)
         prs = self.prf.get(self.org, updated_since)
         objects = self.prf.extract_objects(prs)
-        self.db.update(objects)
+        if objects:
+            self.log.info("%s objects will be updated in the database" % len(
+                objects))
+            self.db.update(objects)
 
     def run(self):
         while True:
