@@ -95,14 +95,14 @@ def main():
         '--loop-delay', help='Request PRs events every N secs',
         default=900)
 
-    parser_db = subparsers.add_parser(
-        'database', help='Database manager')
-    parser_db.add_argument(
+    parser_dbmanage = subparsers.add_parser(
+        'dbmanage', help='Database manager')
+    parser_dbmanage.add_argument(
         '--delete-org', help='Delete PRs event related to an org',
         required=True)
 
     parser_fetcher = subparsers.add_parser(
-        'fetch', help='Fetch PullRequest from GraphQL')
+        'fetch', help='Fetch a PullRequest from GraphQL')
     parser_fetcher.add_argument(
         '--token', help='A Github API token',
         required=True)
@@ -134,6 +134,11 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
 
+    parser_report = subparsers.add_parser(
+        'report', help='Create a report')
+    parser_report.add_argument(
+        '--org', help='Scope to events of an organization')
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -145,7 +150,7 @@ def main():
             args.token, int(args.loop_delay))
         crawler.run()
 
-    if args.command == "database":
+    if args.command == "dbmanage":
         if args.delete_org:
             db = ELmonocleDB()
             db.delete_org(args.delete_org)
@@ -166,6 +171,10 @@ def main():
             args.org, args.gte, args.lte, args.type,
             interval=args.interval)
         print(ret)
+
+    if args.command == "report":
+        db = ELmonocleDB()
+        print("Print a report")
 
 
 if __name__ == '__main__':
