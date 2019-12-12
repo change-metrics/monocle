@@ -68,6 +68,11 @@ class MonocleCrawler():
             sleep(self.loop_delay)
 
 
+def date_to_epoch_ml(datestr):
+    return int(datetime.strptime(
+        datestr, "%Y-%m-%d").timestamp() * 1000)
+
+
 def main():
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
@@ -111,6 +116,19 @@ def main():
         '--id', help='The PR id within the repository',
         required=True)
 
+    parser_dbquery = subparsers.add_parser(
+        'dbquery', help='Run an existsing query on stored events')
+    parser_dbquery.add_argument(
+        '--name', help='The query name',
+        required=True)
+    parser_dbquery.add_argument(
+        '--org', help='Scope to events of an organization',
+        required=True)
+    parser_dbquery.add_argument(
+        '--gte', help='Scope to events created after date')
+    parser_dbquery.add_argument(
+        '--lte', help='Scope to events created before date')
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -131,6 +149,16 @@ def main():
         prf = PRsFetcher(GithubGraphQLQuery(args.token))
         pr = prf.get_pr(args.org, args.repository, args.id)
         print(pr)
+
+    if args.command == "dbquery":
+        db = ELmonocleDB()
+        if args.gte:
+            args.gte = date_to_epoch_ml(args.gte)
+        if args.lte:
+            args.lte = date_to_epoch_ml(args.lte)
+        ret = db.run_named_query(
+            "events_histo", args.org, args.gte, args.lte)
+        print(ret)
 
 
 if __name__ == '__main__':

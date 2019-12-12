@@ -23,6 +23,8 @@
 from elasticsearch.helpers import bulk
 from elasticsearch import client
 
+from monocle.db import queries
+
 
 class ELmonocleDB():
 
@@ -135,3 +137,7 @@ class ELmonocleDB():
         if not ret:
             return []
         return ret[0]
+
+    def run_named_query(self, name, *args, **kwargs):
+        return getattr(queries, name)(
+            self.es, self.index, *args, **kwargs)
