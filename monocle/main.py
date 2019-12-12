@@ -119,6 +119,9 @@ def main():
     parser_dbquery = subparsers.add_parser(
         'dbquery', help='Run an existsing query on stored events')
     parser_dbquery.add_argument(
+        '--interval', help='Histogram interval',
+        default="3h")
+    parser_dbquery.add_argument(
         '--name', help='The query name',
         required=True)
     parser_dbquery.add_argument(
@@ -128,6 +131,8 @@ def main():
         '--gte', help='Scope to events created after date')
     parser_dbquery.add_argument(
         '--lte', help='Scope to events created before date')
+    parser_dbquery.add_argument(
+        '--type', help='Scope to events type')
 
     args = parser.parse_args()
 
@@ -157,7 +162,9 @@ def main():
         if args.lte:
             args.lte = date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
-            "events_histo", args.org, args.gte, args.lte)
+            args.name,
+            args.org, args.gte, args.lte, args.type,
+            interval=args.interval)
         print(ret)
 
 

@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 
-def generate_filter(organization, gte=None, lte=None):
+def generate_filter(organization, gte=None, lte=None, etype=None):
     created_at_range = {
         "created_at": {
             "format": "epoch_millis"
@@ -34,15 +34,17 @@ def generate_filter(organization, gte=None, lte=None):
         {"term": {"repository_owner": organization}},
         {"range": created_at_range}
     ]
+    if etype:
+        qfilter.append({"term": {"type": etype}})
     return qfilter
 
 
 def events_histo(
         es, index,
-        organization, gte, lte, interval="30m"):
+        organization, gte, lte, etype, interval="30m"):
     body = {
         "aggs": {
-            "dt": {
+            "agg1": {
                 "date_histogram": {
                     "field": "created_at",
                     "interval": interval,
@@ -58,7 +60,7 @@ def events_histo(
         ],
         "query": {
             "bool": {
-                "filter": generate_filter(organization, gte, lte),
+                "filter": generate_filter(organization, gte, lte, etype),
                 "should": [],
                 "must_not": []
             }
@@ -72,5 +74,47 @@ def events_histo(
         return (0, 0, [])
     took = res['took']
     hits = res['hits']['total']
-    data = res['aggregations']['dt']['buckets']
+    data = res['aggregations']['agg1']['buckets']
+    return took, hits, data
+
+
+def events_top_authors(
+        es, index,
+        organization, gte, lte, etype, interval=None, size=10):
+    body = {
+        "aggs": {
+            "agg1": {
+                "terms": {
+                    "field": "author",
+                    "size": size,
+                    "order": {
+                        "_count": "desc"
+                    }
+                }
+            }
+        },
+        "size": 0,
+        "docvalue_fields": [
+            {
+                "field": "created_at",
+                "format": "date_time"
+            },
+        ],
+        "query": {
+            "bool": {
+                "filter": generate_filter(organization, gte, lte, etype),
+                "should": [],
+                "must_not": []
+            }
+        }
+    }
+    params = {'index': index, 'doc_type': index}
+    params['body'] = body
+    try:
+        res = es.search(**params)
+    except Exception:
+        return (0, 0, [])
+    took = res['took']
+    hits = res['hits']['total']
+    data = res['aggregations']['agg1']['buckets']
     return took, hits, data
