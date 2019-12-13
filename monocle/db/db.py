@@ -28,7 +28,7 @@ from monocle.db import queries
 
 class ELmonocleDB():
 
-    def __init__(self, tenant='default', index='monocle'):
+    def __init__(self, index='monocle'):
         self.es = client.Elasticsearch('localhost:9200')
         self.index = index
         self.mapping = {

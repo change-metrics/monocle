@@ -26,6 +26,7 @@ import argparse
 from time import sleep
 from datetime import datetime
 
+from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github.pullrequest import PRsFetcher
@@ -66,11 +67,6 @@ class MonocleCrawler():
             self.log.info("Waiting %s seconds before next fetch ..." % (
                 self.loop_delay))
             sleep(self.loop_delay)
-
-
-def date_to_epoch_ml(datestr):
-    return int(datetime.strptime(
-        datestr, "%Y-%m-%d").timestamp() * 1000)
 
 
 def main():
@@ -163,9 +159,9 @@ def main():
     if args.command == "dbquery":
         db = ELmonocleDB()
         if args.gte:
-            args.gte = date_to_epoch_ml(args.gte)
+            args.gte = utils.date_to_epoch_ml(args.gte)
         if args.lte:
-            args.lte = date_to_epoch_ml(args.lte)
+            args.lte = utils.date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
             args.name,
             args.org, args.gte, args.lte, args.type,
