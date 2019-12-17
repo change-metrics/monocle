@@ -13,7 +13,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
 import TopMenu from './components/menu'
-import EventsHisto from './components/status'
+import { AllEventsHisto, CloseEventsHisto } from './components/status'
 
 
 class RootView extends React.Component {
@@ -25,22 +25,22 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <EventsHisto
+              <AllEventsHisto
                 query={this.props.handleQuery}
-                loading={this.props.query_loading}
-                result={this.props.query_result}
-                error={this.props.query_error}
+                all_events_loading={this.props.all_events_loading}
+                all_events_result={this.props.all_events_result}
+                all_events_error={this.props.all_events_error}
               />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <EventsHisto
+              <CloseEventsHisto
                 query={this.props.handleQuery}
-                loading={this.props.query_loading}
-                result={this.props.query_result}
-                error={this.props.query_error}
+                close_events_loading={this.props.close_events_loading}
+                close_events_result={this.props.close_events_result}
+                close_events_error={this.props.close_events_error}
               />
             </Col>
           </Row>
@@ -56,9 +56,12 @@ class App extends React.Component {
         <Route exact path='/'>
           <RootView
             handleQuery={this.props.handleQuery}
-            query_result={this.props.query_result}
-            query_loading={this.props.query_loading}
-            query_error={this.props.query_error}
+            all_events_loading={this.props.all_events_loading}
+            all_events_result={this.props.all_events_result}
+            all_events_error={this.props.all_events_error}
+            close_events_loading={this.props.close_events_loading}
+            close_events_result={this.props.close_events_result}
+            close_events_error={this.props.close_events_error}
           />
         </Route>
       </Switch>
@@ -68,14 +71,18 @@ class App extends React.Component {
 
 const mapStateToProps = state => {
   return {
-    query_result: state.QueryReducer.result,
-    query_error: state.QueryReducer.error_response,
-    query_loading: state.QueryReducer.loading,
+    all_events_loading: state.QueryReducer.all_events_loading,
+    all_events_result: state.QueryReducer.all_events_result,
+    all_events_error: state.QueryReducer.all_events_error,
+    close_events_loading: state.QueryReducer.close_events_loading,
+    close_events_result: state.QueryReducer.close_events_result,
+    close_events_error: state.QueryReducer.close_events_error,
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params))}
+    handleQuery: (params) => dispatch(query(params))
+  }
 }
 export default connect(mapStateToProps, mapDispatchToProps)(App);
