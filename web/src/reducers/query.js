@@ -7,6 +7,12 @@ const initialState = {
   close_events_result: null,
   close_events_loading: true,
   close_events_error: {},
+  comment_events_result: null,
+  comment_events_loading: true,
+  comment_events_error: {},
+  create_events_result: null,
+  create_events_loading: true,
+  create_events_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

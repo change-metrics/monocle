@@ -87,7 +87,41 @@ class CloseEventsHisto extends BaseEventsHisto {
   }
 }
 
+class CommentEventsHisto extends BaseEventsHisto {
+  componentDidMount() {
+    this.props.query({
+      'org': 'kubernetes',
+      'name': 'events_histo',
+      'interval': '15d',
+      'gte': '2019-07-01',
+      'type': 'PRCommentedEvent',
+      'graph_type': 'comment_events',
+    })
+  }
+  render() {
+    return this.render_component('comment_events', 'Pull Request comment events histogram')
+  }
+}
+
+class CreateEventsHisto extends BaseEventsHisto {
+  componentDidMount() {
+    this.props.query({
+      'org': 'kubernetes',
+      'name': 'events_histo',
+      'interval': '15d',
+      'gte': '2019-07-01',
+      'type': 'PRCreatedEvent',
+      'graph_type': 'create_events',
+    })
+  }
+  render() {
+    return this.render_component('create_events', 'Pull Request create events histogram')
+  }
+}
+
 export {
   AllEventsHisto,
-  CloseEventsHisto
+  CreateEventsHisto,
+  CloseEventsHisto,
+  CommentEventsHisto,
 }
