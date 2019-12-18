@@ -13,6 +13,9 @@ const initialState = {
   create_events_result: null,
   create_events_loading: true,
   create_events_error: {},
+  top_reviewers_result: null,
+  top_reviewers_loading: true,
+  top_reviewers_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

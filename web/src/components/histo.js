@@ -25,7 +25,8 @@ class BaseEventsHisto extends React.Component {
         this.props[graph_type + '_result'][2], title)
       return (
         <Row>
-          <Col md={{ span: 8, offset: 2 }}>
+          {/* <Col md={{ span: 8, offset: 2 }}> */}
+          <Col>
             <Card>
               <Card.Body>
                 <Bar
@@ -41,7 +42,7 @@ class BaseEventsHisto extends React.Component {
     } else {
       return (
         <Row>
-          <Col md={{ span: 8, offset: 2 }}>
+          <Col>
             <Card>
               <Card.Body>
                 <h1>

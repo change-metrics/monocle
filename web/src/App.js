@@ -17,7 +17,11 @@ import {
   AllEventsHisto,
   CloseEventsHisto,
   CommentEventsHisto,
-  CreateEventsHisto } from './components/status'
+  CreateEventsHisto,
+} from './components/histo'
+import {
+  TopReviewers,
+} from './components/top'
 
 
 class RootView extends React.Component {
@@ -36,9 +40,6 @@ class RootView extends React.Component {
                 all_events_error={this.props.all_events_error}
               />
             </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
             <Col>
               <CreateEventsHisto
                 query={this.props.handleQuery}
@@ -51,6 +52,14 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
+              <CommentEventsHisto
+                query={this.props.handleQuery}
+                comment_events_loading={this.props.comment_events_loading}
+                comment_events_result={this.props.comment_events_result}
+                comment_events_error={this.props.comment_events_error}
+              />
+            </Col>
+            <Col>
               <CloseEventsHisto
                 query={this.props.handleQuery}
                 close_events_loading={this.props.close_events_loading}
@@ -62,11 +71,11 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CommentEventsHisto
+              <TopReviewers
                 query={this.props.handleQuery}
-                comment_events_loading={this.props.comment_events_loading}
-                comment_events_result={this.props.comment_events_result}
-                comment_events_error={this.props.comment_events_error}
+                top_reviewers_loading={this.props.top_reviewers_loading}
+                top_reviewers_result={this.props.top_reviewers_result}
+                top_reviewers_error={this.props.top_reviewers_error}
               />
             </Col>
           </Row>
@@ -94,6 +103,9 @@ class App extends React.Component {
             create_events_loading={this.props.create_events_loading}
             create_events_result={this.props.create_events_result}
             create_events_error={this.props.create_events_error}
+            top_reviewers_loading={this.props.top_reviewers_loading}
+            top_reviewers_result={this.props.top_reviewers_result}
+            top_reviewers_error={this.props.top_reviewers_error}
           />
         </Route>
       </Switch>
@@ -115,6 +127,9 @@ const mapStateToProps = state => {
     create_events_loading: state.QueryReducer.create_events_loading,
     create_events_result: state.QueryReducer.create_events_result,
     create_events_error: state.QueryReducer.create_events_error,
+    top_reviewers_loading: state.QueryReducer.top_reviewers_loading,
+    top_reviewers_result: state.QueryReducer.top_reviewers_result,
+    top_reviewers_error: state.QueryReducer.top_reviewers_error,
   }
 }
 
