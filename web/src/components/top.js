@@ -56,14 +56,17 @@ class BaseTopEventsAuthor extends React.Component {
 }
 
 class TopReviewers extends BaseTopEventsAuthor {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_top_authors',
-      'gte': '2019-07-01',
-      'type': 'ChangeReviewedEvent',
-      'graph_type': 'top_reviewers',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.top_reviewers_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_top_authors',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'type': 'ChangeReviewedEvent',
+        'graph_type': 'top_reviewers',
+      })
+    }
   }
   render() {
     return this.render_component('top_reviewers', 'Top reviewers')
@@ -71,14 +74,17 @@ class TopReviewers extends BaseTopEventsAuthor {
 }
 
 class TopCreators extends BaseTopEventsAuthor {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_top_authors',
-      'gte': '2019-07-01',
-      'type': 'ChangeCreatedEvent',
-      'graph_type': 'top_creators',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.top_creators_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_top_authors',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'type': 'ChangeCreatedEvent',
+        'graph_type': 'top_creators',
+      })
+    }
   }
   render() {
     return this.render_component('top_creators', 'Top authors')

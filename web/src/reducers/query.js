@@ -23,7 +23,6 @@ const initialState = {
 
 const query_reducer = (state = initialState, action) => {
   const newState = { ...state };
-  console.log(newState)
   if (action.type.endsWith('_QUERY_LOADING')) {
     const graph_type = action.type.replace('_QUERY_LOADING', '')
     newState[graph_type + '_loading'] = true;

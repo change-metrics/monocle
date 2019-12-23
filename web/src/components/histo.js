@@ -58,14 +58,17 @@ class BaseEventsHisto extends React.Component {
 }
 
 class AllEventsHisto extends BaseEventsHisto {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_histo',
-      'interval': '15d',
-      'gte': '2019-07-01',
-      'graph_type': 'all_events',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.all_events_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_histo',
+        'interval': '15d',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'graph_type': 'all_events',
+      })
+    }
   }
   render() {
     return this.render_component('all_events', 'All events histogram')
@@ -73,15 +76,18 @@ class AllEventsHisto extends BaseEventsHisto {
 }
 
 class CloseEventsHisto extends BaseEventsHisto {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_histo',
-      'interval': '15d',
-      'gte': '2019-07-01',
-      'type': 'ChangeClosedEvent',
-      'graph_type': 'close_events',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.close_events_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_histo',
+        'interval': '15d',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'type': 'ChangeClosedEvent',
+        'graph_type': 'close_events',
+      })
+    }
   }
   render() {
     return this.render_component('close_events', 'Change close events histogram')
@@ -89,15 +95,18 @@ class CloseEventsHisto extends BaseEventsHisto {
 }
 
 class CommentEventsHisto extends BaseEventsHisto {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_histo',
-      'interval': '15d',
-      'gte': '2019-07-01',
-      'type': 'ChangeCommentedEvent',
-      'graph_type': 'comment_events',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.comment_events_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_histo',
+        'interval': '15d',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'type': 'ChangeCommentedEvent',
+        'graph_type': 'comment_events',
+      })
+    }
   }
   render() {
     return this.render_component('comment_events', 'Change comment events histogram')
@@ -105,15 +114,18 @@ class CommentEventsHisto extends BaseEventsHisto {
 }
 
 class CreateEventsHisto extends BaseEventsHisto {
-  componentDidMount() {
-    this.props.query({
-      'org': 'kubernetes',
-      'name': 'events_histo',
-      'interval': '15d',
-      'gte': '2019-07-01',
-      'type': 'ChangeCreatedEvent',
-      'graph_type': 'create_events',
-    })
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url && !this.props.create_events_result) {
+      this.props.query({
+        'org': 'kubernetes',
+        'name': 'events_histo',
+        'interval': '15d',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'type': 'ChangeCreatedEvent',
+        'graph_type': 'create_events',
+      })
+    }
   }
   render() {
     return this.render_component('create_events', 'Change create events histogram')

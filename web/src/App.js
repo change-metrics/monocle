@@ -23,6 +23,9 @@ import {
   TopReviewers,
   TopCreators,
 } from './components/top'
+import {
+  FiltersForm,
+} from './components/filtersform'
 
 
 class RootView extends React.Component {
@@ -34,8 +37,23 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
+              <FiltersForm
+                handleFilterGteChange={this.props.handleFilterGteChange}
+                handleFilterLteChange={this.props.handleFilterLteChange}
+                setQueryParamsLoaded={this.props.setQueryParamsLoaded}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+              />
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
               <AllEventsHisto
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 all_events_loading={this.props.all_events_loading}
                 all_events_result={this.props.all_events_result}
                 all_events_error={this.props.all_events_error}
@@ -44,6 +62,9 @@ class RootView extends React.Component {
             <Col>
               <CreateEventsHisto
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 create_events_loading={this.props.create_events_loading}
                 create_events_result={this.props.create_events_result}
                 create_events_error={this.props.create_events_error}
@@ -55,6 +76,9 @@ class RootView extends React.Component {
             <Col>
               <CommentEventsHisto
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 comment_events_loading={this.props.comment_events_loading}
                 comment_events_result={this.props.comment_events_result}
                 comment_events_error={this.props.comment_events_error}
@@ -63,6 +87,9 @@ class RootView extends React.Component {
             <Col>
               <CloseEventsHisto
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 close_events_loading={this.props.close_events_loading}
                 close_events_result={this.props.close_events_result}
                 close_events_error={this.props.close_events_error}
@@ -74,6 +101,9 @@ class RootView extends React.Component {
             <Col>
               <TopReviewers
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 top_reviewers_loading={this.props.top_reviewers_loading}
                 top_reviewers_result={this.props.top_reviewers_result}
                 top_reviewers_error={this.props.top_reviewers_error}
@@ -85,6 +115,9 @@ class RootView extends React.Component {
             <Col>
               <TopCreators
                 query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
                 top_creators_loading={this.props.top_creators_loading}
                 top_creators_result={this.props.top_creators_result}
                 top_creators_error={this.props.top_creators_error}
@@ -103,6 +136,12 @@ class App extends React.Component {
         <Route exact path='/'>
           <RootView
             handleQuery={this.props.handleQuery}
+            handleFilterGteChange={this.props.handleFilterGteChange}
+            handleFilterLteChange={this.props.handleFilterLteChange}
+            setQueryParamsLoaded={this.props.setQueryParamsLoaded}
+            filter_loaded_from_url={this.props.filter_loaded_from_url}
+            filter_gte={this.props.filter_gte}
+            filter_lte={this.props.filter_lte}
             all_events_loading={this.props.all_events_loading}
             all_events_result={this.props.all_events_result}
             all_events_error={this.props.all_events_error}
@@ -130,6 +169,9 @@ class App extends React.Component {
 
 const mapStateToProps = state => {
   return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
     all_events_loading: state.QueryReducer.all_events_loading,
     all_events_result: state.QueryReducer.all_events_result,
     all_events_error: state.QueryReducer.all_events_error,
@@ -153,7 +195,25 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params))
+    handleQuery: (params) => dispatch(query(params)),
+    handleFilterGteChange: (date) => dispatch(
+      {
+        type: 'FILTER_GTE_CHANGE',
+        value: date
+      }
+    ),
+    handleFilterLteChange: (date) => dispatch(
+      {
+        type: 'FILTER_LTE_CHANGE',
+        value: date
+      }
+    ),
+    setQueryParamsLoaded: () => dispatch(
+      {
+        type: 'FILTER_PARAMS_LOADED',
+        value: true
+      }
+    ),
   }
 }
 export default connect(mapStateToProps, mapDispatchToProps)(App);
