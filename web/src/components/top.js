@@ -61,12 +61,12 @@ class TopReviewers extends BaseTopEventsAuthor {
       'org': 'kubernetes',
       'name': 'events_top_authors',
       'gte': '2019-07-01',
-      'type': 'PRPullRequestReview',
+      'type': 'ChangeReviewedEvent',
       'graph_type': 'top_reviewers',
     })
   }
   render() {
-    return this.render_component('top_reviewers', 'Top Reviewers')
+    return this.render_component('top_reviewers', 'Top reviewers')
   }
 }
 
@@ -76,12 +76,12 @@ class TopCreators extends BaseTopEventsAuthor {
       'org': 'kubernetes',
       'name': 'events_top_authors',
       'gte': '2019-07-01',
-      'type': 'PRCreatedEvent',
+      'type': 'ChangeCreatedEvent',
       'graph_type': 'top_creators',
     })
   }
   render() {
-    return this.render_component('top_creators', 'Top Pull-Request authors')
+    return this.render_component('top_creators', 'Top authors')
   }
 }
 

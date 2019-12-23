@@ -33,6 +33,12 @@ class PRsFetcher(object):
     def __init__(self, gql, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
+        self.events_map = {
+            'ClosedEvent': 'ChangeClosedEvent',
+            'AssignedEvent': 'ChangeAssignedEvent',
+            'LabeledEvent': 'ChangeLabeledEvent',
+            'PullRequestReview': 'ChangeReviewedEvent',
+        }
         self.pr_query = '''
           id
           updatedAt
@@ -89,7 +95,7 @@ class PRsFetcher(object):
               }
             }
           }
-          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, CONVERTED_NOTE_TO_ISSUE_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
+          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
             edges {
               node {
                 __typename
@@ -101,13 +107,6 @@ class PRsFetcher(object):
                   }
                 }
                 ... on AssignedEvent {
-                  id
-                  createdAt
-                  actor {
-                    login
-                  }
-                }
-                ... on ConvertedNoteToIssueEvent {
                   id
                   createdAt
                   actor {
@@ -235,7 +234,7 @@ class PRsFetcher(object):
         def extract_pr_objects(pr):
             objects = []
             change = {}
-            change['type'] = 'PullRequest'
+            change['type'] = 'Change'
             change['id'] = pr['id']
             change['number'] = pr['number']
             change['repository_owner'] = pr['repository']['owner']['login']
@@ -253,7 +252,7 @@ class PRsFetcher(object):
             change['state'] = pr['state']
             if pr['state'] in ('CLOSED', 'MERGED'):
                 change['duration'] = timedelta(
-                  change['closed_at'], change['created_at'])
+                    change['closed_at'], change['created_at'])
             change['mergeable'] = pr['mergeable']
             change['labels'] = tuple(map(
                 lambda n: n['node']['name'], pr['labels']['edges']))
@@ -261,8 +260,8 @@ class PRsFetcher(object):
                 lambda n: n['node']['login'], pr['assignees']['edges']))
             objects.append(change)
             objects.append({
-                'type': 'PRCreatedEvent',
-                'id': 'CE' + pr['id'],
+                'type': 'ChangeCreatedEvent',
+                'id': 'CCE' + pr['id'],
                 'created_at': pr['createdAt'],
                 'author': pr['author']['login'],
                 'repository_owner': pr['repository']['owner']['login'],
@@ -273,7 +272,7 @@ class PRsFetcher(object):
                 _comment = comment['node']
                 objects.append(
                     {
-                        'type': 'PRCommentedEvent',
+                        'type': 'ChangeCommentedEvent',
                         'id': _comment['id'],
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
@@ -286,7 +285,7 @@ class PRsFetcher(object):
             for commit in pr['commits']['edges']:
                 _commit = commit['node']
                 obj = {
-                    'type': 'PRCommitCreatedEvent',
+                    'type': 'ChangeCommitCreatedEvent',
                     'id': _commit['commit']['oid'],
                     'authored_at': _commit['commit']['authoredDate'],
                     'committed_at': _commit['commit']['committedDate'],
@@ -296,19 +295,19 @@ class PRsFetcher(object):
                 }
                 if _commit['commit']['author']['user']:
                     obj['author'] = _commit[
-                      'commit']['author']['user']['login']
+                        'commit']['author']['user']['login']
                 else:
                     obj['author'] = None
                 if _commit['commit']['committer']['user']:
                     obj['committer'] = _commit[
-                      'commit']['committer']['user']['login']
+                        'commit']['committer']['user']['login']
                 else:
                     obj['committer'] = None
                 objects.append(obj)
             for timelineitem in pr['timelineItems']['edges']:
                 _timelineitem = timelineitem['node']
                 obj = {
-                    'type': 'PR' + _timelineitem['__typename'],
+                    'type': self.events_map[_timelineitem['__typename']],
                     'id': _timelineitem['id'],
                     'created_at': _timelineitem['createdAt'],
                     'author': (

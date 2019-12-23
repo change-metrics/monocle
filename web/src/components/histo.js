@@ -79,12 +79,12 @@ class CloseEventsHisto extends BaseEventsHisto {
       'name': 'events_histo',
       'interval': '15d',
       'gte': '2019-07-01',
-      'type': 'PRClosedEvent',
+      'type': 'ChangeClosedEvent',
       'graph_type': 'close_events',
     })
   }
   render() {
-    return this.render_component('close_events', 'Pull Request close events histogram')
+    return this.render_component('close_events', 'Change close events histogram')
   }
 }
 
@@ -95,12 +95,12 @@ class CommentEventsHisto extends BaseEventsHisto {
       'name': 'events_histo',
       'interval': '15d',
       'gte': '2019-07-01',
-      'type': 'PRCommentedEvent',
+      'type': 'ChangeCommentedEvent',
       'graph_type': 'comment_events',
     })
   }
   render() {
-    return this.render_component('comment_events', 'Pull Request comment events histogram')
+    return this.render_component('comment_events', 'Change comment events histogram')
   }
 }
 
@@ -111,12 +111,12 @@ class CreateEventsHisto extends BaseEventsHisto {
       'name': 'events_histo',
       'interval': '15d',
       'gte': '2019-07-01',
-      'type': 'PRCreatedEvent',
+      'type': 'ChangeCreatedEvent',
       'graph_type': 'create_events',
     })
   }
   render() {
-    return this.render_component('create_events', 'Pull Request create events histogram')
+    return this.render_component('create_events', 'Change create events histogram')
   }
 }
 

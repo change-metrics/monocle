@@ -106,7 +106,7 @@ def events_top_authors(
     return took, hits, data['aggregations']['agg1']['buckets']
 
 
-def pr_merged_count_by_duration(
+def change_merged_count_by_duration(
         es, index,
         organization, gte, lte, etype, interval=None, size=None):
     body = {
@@ -138,7 +138,7 @@ def pr_merged_count_by_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    organization, gte, lte, "PullRequest", "MERGED"),
+                    organization, gte, lte, "Change", "MERGED"),
                 "should": [],
                 "must_not": []
             }
