@@ -21,6 +21,7 @@ import {
 } from './components/histo'
 import {
   TopReviewers,
+  TopCreators,
 } from './components/top'
 
 
@@ -79,6 +80,17 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <TopCreators
+                query={this.props.handleQuery}
+                top_creators_loading={this.props.top_creators_loading}
+                top_creators_result={this.props.top_creators_result}
+                top_creators_error={this.props.top_creators_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -106,6 +118,9 @@ class App extends React.Component {
             top_reviewers_loading={this.props.top_reviewers_loading}
             top_reviewers_result={this.props.top_reviewers_result}
             top_reviewers_error={this.props.top_reviewers_error}
+            top_creators_loading={this.props.top_creators_loading}
+            top_creators_result={this.props.top_creators_result}
+            top_creators_error={this.props.top_creators_error}
           />
         </Route>
       </Switch>
@@ -130,6 +145,9 @@ const mapStateToProps = state => {
     top_reviewers_loading: state.QueryReducer.top_reviewers_loading,
     top_reviewers_result: state.QueryReducer.top_reviewers_result,
     top_reviewers_error: state.QueryReducer.top_reviewers_error,
+    top_creators_loading: state.QueryReducer.top_creators_loading,
+    top_creators_result: state.QueryReducer.top_creators_result,
+    top_creators_error: state.QueryReducer.top_creators_error,
   }
 }
 

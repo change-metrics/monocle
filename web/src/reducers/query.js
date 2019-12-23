@@ -16,6 +16,9 @@ const initialState = {
   top_reviewers_result: null,
   top_reviewers_loading: true,
   top_reviewers_error: {},
+  top_creators_result: null,
+  top_creators_loading: true,
+  top_creators_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {
