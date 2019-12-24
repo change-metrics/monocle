@@ -22,6 +22,7 @@
 
 import os
 import logging
+import requests
 from datetime import datetime
 import json
 
@@ -42,10 +43,33 @@ class ReviewesFetcher(object):
             'ABANDONED': 'CLOSED'
         }
 
+    def get(self, host, repository_prefix, updated_since):
+        request_params = "?q=after:%s+repositories:%s" % (
+                updated_since, repository_prefix)
+        for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
+            request_params += '&o=%s' % option
+        has_more = True
+        count = 100
+        start_after = 0
+        reviews = []
+        while has_more:
+            urlpath = (
+                host + '/changes/' + request_params +
+                '&n=%s&start=%s' % (
+                    count, start_after))
+            print("query: %s" % urlpath)
+            response = requests.get(urlpath)
+            reviews.extend(json.loads(response.text[4:]))
+            print("read %s reviews from the api" % len(reviews))
+            print("last review read update at %s" % reviews[-1]['updated'])
+            if reviews[-1].get('_more_changes'):
+                start_after = len(reviews)
+            else:
+                break
+        return reviews
+
     def extract_objects(self, reviewes):
         def timedelta(start, end):
-            print(start)
-            print(end)
             format = "%Y-%m-%d %H:%M:%S"
             start = datetime.strptime(start, format)
             end = datetime.strptime(end, format)
@@ -62,7 +86,7 @@ class ReviewesFetcher(object):
                 'repository_shortname': "/".join(
                     review['project'].split('/')[1:]),
                 'author': "%s/%s" % (
-                    review['owner']['name'], review['owner']['email']),
+                    review['owner'].get('name'), review['owner']['email']),
                 'title': review['subject'],
                 'updated_at': review['updated'][:-10],
                 'created_at': review['created'][:-10],
@@ -77,7 +101,7 @@ class ReviewesFetcher(object):
                 'labels': [],
                 # Note(fbo): Only one assignee possible by review on Gerrit
                 'assignees': (["%s/%s" % (
-                    review['assignee']['name'], review['assignee']['email'])]
+                    review['assignee'].get('name'), review['assignee']['email'])]
                     if review.get('assignee') else [])
             }
             if change['state'] == 'CLOSED':
@@ -91,7 +115,7 @@ class ReviewesFetcher(object):
                     change['closed_at'], change['created_at'])
             if change['state'] == 'MERGED':
                 change['merged_by'] = "%s/%s" % (
-                    review['submitter']['name'], review['submitter']['email'])
+                    review['submitter'].get('name'), review['submitter']['email'])
             else:
                 change['merged_by'] = None
             objects.append(change)
@@ -123,7 +147,7 @@ class ReviewesFetcher(object):
                         'id': comment['id'],
                         'created_at': comment['date'][:-10],
                         'author': "%s/%s" % (
-                            comment['author']['name'],
+                            comment['author'].get('name'),
                             comment['author']['email']),
                         'repository_prefix': change['repository_prefix'],
                         'repository_fullname': change['repository_fullname'],
@@ -144,7 +168,7 @@ class ReviewesFetcher(object):
                                 _review['value'], _review['email']),
                             'created_at': _review['date'][:-10],
                             'author': "%s/%s" % (
-                                _review['name'], _review['email']),
+                                _review.get('name'), _review['email']),
                             'repository_prefix': change[
                                 'repository_prefix'],
                             'repository_fullname': change[
@@ -158,7 +182,7 @@ class ReviewesFetcher(object):
                                 ("+%s" % _review['value']
                                  if not str(_review['value']).startswith('-')
                                  else _review['value']))
-                        }
+                            }
                         objects.append(obj)
             return objects
 
@@ -174,4 +198,8 @@ class ReviewesFetcher(object):
 
 if __name__ == "__main__":
     a = ReviewesFetcher()
-    print(a.extract_objects(a.data))
+    reviewes = a.get(
+        'https://gerrit-review.googlesource.com', 'gerrit',
+        '2019-12-01')
+    objs = a.extract_objects(reviewes)
+    print(len(objs))
