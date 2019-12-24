@@ -35,8 +35,6 @@ class PRsFetcher(object):
         self.size = bulk_size
         self.events_map = {
             'ClosedEvent': 'ChangeClosedEvent',
-            'AssignedEvent': 'ChangeAssignedEvent',
-            'LabeledEvent': 'ChangeLabeledEvent',
             'PullRequestReview': 'ChangeReviewedEvent',
         }
         self.pr_query = '''
@@ -74,25 +72,11 @@ class PRsFetcher(object):
               }
             }
           }
-          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
+          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, PULL_REQUEST_REVIEW]) {
             edges {
               node {
                 __typename
                 ... on ClosedEvent {
-                  id
-                  createdAt
-                  actor {
-                    login
-                  }
-                }
-                ... on AssignedEvent {
-                  id
-                  createdAt
-                  actor {
-                    login
-                  }
-                }
-                ... on LabeledEvent {
                   id
                   createdAt
                   actor {
