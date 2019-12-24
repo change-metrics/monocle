@@ -38,8 +38,9 @@ class ELmonocleDB():
                     "type": {"type": "keyword"},
                     "number": {"type": "keyword"},
                     "title": {"type": "keyword"},
-                    "repository_owner": {"type": "keyword"},
-                    "repository": {"type": "keyword"},
+                    "repository_prefix": {"type": "keyword"},
+                    "repository_fullname": {"type": "keyword"},
+                    "repository_shortname": {"type": "keyword"},
                     "author": {"type": "keyword"},
                     "on_author": {"type": "keyword"},
                     "committer": {"type": "keyword"},
@@ -102,7 +103,7 @@ class ELmonocleDB():
             "query": {
                 "bool": {
                     "filter": {
-                        "term": {"repository_owner": org}
+                        "term": {"repository_prefix": org}
                     }
                 }
             }
@@ -123,7 +124,7 @@ class ELmonocleDB():
                 "bool": {
                     "filter": [
                         {"term": {"type": "Change"}},
-                        {"term": {"repository_owner": org}}
+                        {"term": {"repository_prefix": org}}
                     ]
                 }
             }

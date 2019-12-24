@@ -74,27 +74,6 @@ class PRsFetcher(object):
               }
             }
           }
-          commits (first: 100){
-            edges {
-              node {
-                commit {
-                  oid
-                  authoredDate
-                  committedDate
-                  author {
-                    user {
-                      login
-                    }
-                  }
-                  committer {
-                    user {
-                      login
-                    }
-                  }
-                }
-              }
-            }
-          }
           timelineItems (first: 100 itemTypes: [CLOSED_EVENT, ASSIGNED_EVENT, LABELED_EVENT, PULL_REQUEST_REVIEW]) {
             edges {
               node {
@@ -237,8 +216,10 @@ class PRsFetcher(object):
             change['type'] = 'Change'
             change['id'] = pr['id']
             change['number'] = pr['number']
-            change['repository_owner'] = pr['repository']['owner']['login']
-            change['repository'] = pr['repository']['name']
+            change['repository_prefix'] = pr['repository']['owner']['login']
+            change['repository_fullname'] = "%s/%s" % (
+                pr['repository']['owner']['login'], pr['repository']['name'])
+            change['repository_shortname'] = pr['repository']['name']
             change['author'] = pr['author']['login']
             change['title'] = pr['title']
             if pr['mergedBy']:
@@ -264,8 +245,11 @@ class PRsFetcher(object):
                 'id': 'CCE' + pr['id'],
                 'created_at': pr['createdAt'],
                 'author': pr['author']['login'],
-                'repository_owner': pr['repository']['owner']['login'],
-                'repository': pr['repository']['name'],
+                'repository_prefix': pr['repository']['owner']['login'],
+                'repository_fullname': "%s/%s" % (
+                    pr['repository']['owner']['login'],
+                    pr['repository']['name']),
+                'repository_shortname': pr['repository']['name'],
                 'number': pr['number'],
             })
             for comment in pr['comments']['edges']:
@@ -276,34 +260,15 @@ class PRsFetcher(object):
                         'id': _comment['id'],
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
-                        'repository_owner': pr['repository']['owner']['login'],
-                        'repository': pr['repository']['name'],
+                        'repository_prefix': pr['repository']['owner']['login'],
+                        'repository_fullname': "%s/%s" % (
+                            pr['repository']['owner']['login'],
+                            pr['repository']['name']),
+                        'repository_shortname': pr['repository']['name'],
                         'number': pr['number'],
                         'on_author': pr['author']['login'],
                     }
                 )
-            for commit in pr['commits']['edges']:
-                _commit = commit['node']
-                obj = {
-                    'type': 'ChangeCommitCreatedEvent',
-                    'id': _commit['commit']['oid'],
-                    'authored_at': _commit['commit']['authoredDate'],
-                    'committed_at': _commit['commit']['committedDate'],
-                    'repository_owner': pr['repository']['owner']['login'],
-                    'repository': pr['repository']['name'],
-                    'number': pr['number'],
-                }
-                if _commit['commit']['author']['user']:
-                    obj['author'] = _commit[
-                        'commit']['author']['user']['login']
-                else:
-                    obj['author'] = None
-                if _commit['commit']['committer']['user']:
-                    obj['committer'] = _commit[
-                        'commit']['committer']['user']['login']
-                else:
-                    obj['committer'] = None
-                objects.append(obj)
             for timelineitem in pr['timelineItems']['edges']:
                 _timelineitem = timelineitem['node']
                 obj = {
@@ -314,8 +279,11 @@ class PRsFetcher(object):
                         _timelineitem.get('actor', {}).get('login') or
                         _timelineitem.get('author', {}).get('login')
                     ),
-                    'repository_owner': pr['repository']['owner']['login'],
-                    'repository': pr['repository']['name'],
+                    'repository_prefix': pr['repository']['owner']['login'],
+                    'repository_fullname': "%s/%s" % (
+                        pr['repository']['owner']['login'],
+                        pr['repository']['name']),
+                    'repository_shortname': pr['repository']['name'],
                     'number': pr['number'],
                     'on_author': pr['author']['login'],
                 }

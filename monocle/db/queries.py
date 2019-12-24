@@ -31,7 +31,7 @@ def generate_filter(organization, gte=None, lte=None, etype=None, state=None):
     if lte:
         created_at_range['created_at']['lte'] = lte
     qfilter = [
-        {"term": {"repository_owner": organization}},
+        {"term": {"repository_prefix": organization}},
         {"range": created_at_range}
     ]
     if etype:
