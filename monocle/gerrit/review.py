@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 
-import os
 import logging
 import requests
 from datetime import datetime
@@ -39,6 +38,12 @@ class ReviewesFetcher(object):
             'MERGED': 'MERGED',
             'ABANDONED': 'CLOSED'
         }
+
+    def convert_date(self, str_date):
+        cdate = datetime.strptime(
+            str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
+                "%Y-%m-%dT%H:%M:%SZ")
+        return cdate
 
     def get(self, updated_since):
         request_params = "?q=after:%s+repositories:%s" % (
@@ -67,7 +72,7 @@ class ReviewesFetcher(object):
 
     def extract_objects(self, reviewes):
         def timedelta(start, end):
-            format = "%Y-%m-%d %H:%M:%S"
+            format = "%Y-%m-%dT%H:%M:%SZ"
             start = datetime.strptime(start, format)
             end = datetime.strptime(end, format)
             return int((start - end).total_seconds())
@@ -85,10 +90,10 @@ class ReviewesFetcher(object):
                 'author': "%s/%s" % (
                     review['owner'].get('name'), review['owner']['email']),
                 'title': review['subject'],
-                'updated_at': review['updated'][:-10],
-                'created_at': review['created'][:-10],
+                'updated_at': self.convert_date(review['updated']),
+                'created_at': self.convert_date(review['created']),
                 'merged_at': (
-                    review.get('submitted')[:-10] if review.get('submitted')
+                    self.convert_date(review.get('submitted')) if review.get('submitted')
                     else None),
                 # Note(fbo): The mergeable field is sometime absent
                 'mergeable': (True if review.get('mergeable') == 'true'
@@ -142,7 +147,7 @@ class ReviewesFetcher(object):
                     {
                         'type': 'ChangeCommentedEvent',
                         'id': comment['id'],
-                        'created_at': comment['date'][:-10],
+                        'created_at': self.convert_date(comment['date']),
                         'author': "%s/%s" % (
                             comment['author'].get('name'),
                             comment['author']['email']),
@@ -161,9 +166,9 @@ class ReviewesFetcher(object):
                         obj = {
                             'type': 'ChangeReviewedEvent',
                             'id': "%s_%s_%s_%s" % (
-                                _review['date'][:-10].strip(' '), label,
+                                self.convert_date(_review['date']), label,
                                 _review['value'], _review['email']),
-                            'created_at': _review['date'][:-10],
+                            'created_at': self.convert_date(_review['date']),
                             'author': "%s/%s" % (
                                 _review.get('name'), _review['email']),
                             'repository_prefix': change[
