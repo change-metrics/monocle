@@ -30,21 +30,32 @@ from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github.pullrequest import PRsFetcher
+from monocle.gerrit.review import ReviewesFetcher
 
 
 class MonocleCrawler():
 
     log = logging.getLogger("monocle.Crawler")
 
-    def __init__(self, org, updated_since, token, loop_delay):
-        self.org = org
+    def __init__(
+            self, ctype, host, repository_prefix,
+            updated_since, token, loop_delay):
+        self.ctype = ctype
+        self.host = host
+        self.repository_prefix = repository_prefix
         self.updated_since = updated_since
         self.loop_delay = loop_delay
         self.db = ELmonocleDB()
-        self.prf = PRsFetcher(GithubGraphQLQuery(token))
+        if self.ctype == 'github':
+            self.prf = PRsFetcher(
+                GithubGraphQLQuery(token),
+                self.host, self.repository_prefix)
+        elif self.ctype == 'gerrit':
+            self.prf = ReviewesFetcher(
+                self.host, self.repository_prefix)
 
-    def get_last_updated_date(self, org):
-        pr = self.db.get_last_updated(org)
+    def get_last_updated_date(self):
+        pr = self.db.get_last_updated(self.repository_prefix)
         if not pr:
             return (
                 self.updated_since or
@@ -53,8 +64,8 @@ class MonocleCrawler():
             return pr['updated_at']
 
     def run_step(self):
-        updated_since = self.get_last_updated_date(self.org)
-        prs = self.prf.get(self.org, updated_since)
+        updated_since = self.get_last_updated_date()
+        prs = self.prf.get(updated_since)
         objects = self.prf.extract_objects(prs)
         if objects:
             self.log.info("%s objects will be updated in the database" % len(
@@ -90,6 +101,12 @@ def main():
     parser_crawler.add_argument(
         '--loop-delay', help='Request PRs events every N secs',
         default=900)
+    parser_crawler.add_argument(
+        '--type', help='Crawler type (github|gerrit)',
+        required=True)
+    parser_crawler.add_argument(
+        '--host', help='Base url of the review server',
+        required=True)
 
     parser_dbmanage = subparsers.add_parser(
         'dbmanage', help='Database manager')
@@ -142,7 +159,7 @@ def main():
 
     if args.command == "crawler":
         crawler = MonocleCrawler(
-            args.org, args.updated_since,
+            args.type, args.host, args.org, args.updated_since,
             args.token, int(args.loop_delay))
         crawler.run()
 

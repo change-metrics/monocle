@@ -30,9 +30,11 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql, bulk_size=25):
+    def __init__(self, gql, host, org, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
+        self.host = host
+        self.org = org
         self.events_map = {
             'ClosedEvent': 'ChangeClosedEvent',
             'PullRequestReview': 'ChangeReviewedEvent',
@@ -138,11 +140,11 @@ class PRsFetcher(object):
         else:
             return False
 
-    def get(self, org, updated_since):
+    def get(self, updated_since):
         prs = []
         kwargs = {
             'pr_query': self.pr_query,
-            'org': org,
+            'org': self.org,
             'updated_since': updated_since,
             'after': '',
             'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),

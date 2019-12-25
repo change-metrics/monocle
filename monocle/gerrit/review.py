@@ -31,21 +31,18 @@ class ReviewesFetcher(object):
 
     log = logging.getLogger("monocle.ReviewesFetcher")
 
-    def __init__(self):
-        self.path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 'sample.json')
-        with open(self.path) as fd:
-            self.raw_data = fd.read()
-            self.data = json.loads(self.raw_data[4:])
+    def __init__(self, host, repository_prefix):
+        self.host = host
+        self.repository_prefix = repository_prefix
         self.status_map = {
             'NEW': 'OPEN',
             'MERGED': 'MERGED',
             'ABANDONED': 'CLOSED'
         }
 
-    def get(self, host, repository_prefix, updated_since):
+    def get(self, updated_since):
         request_params = "?q=after:%s+repositories:%s" % (
-                updated_since, repository_prefix)
+                updated_since, self.repository_prefix)
         for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
             request_params += '&o=%s' % option
         has_more = True
@@ -54,14 +51,14 @@ class ReviewesFetcher(object):
         reviews = []
         while has_more:
             urlpath = (
-                host + '/changes/' + request_params +
+                self.host + '/changes/' + request_params +
                 '&n=%s&start=%s' % (
                     count, start_after))
-            print("query: %s" % urlpath)
+            self.log.info("query: %s" % urlpath)
             response = requests.get(urlpath)
             reviews.extend(json.loads(response.text[4:]))
-            print("read %s reviews from the api" % len(reviews))
-            print("last review read update at %s" % reviews[-1]['updated'])
+            self.log.info("read %s reviews from the api" % len(reviews))
+            self.log.info("last review read update at %s" % reviews[-1]['updated'])
             if reviews[-1].get('_more_changes'):
                 start_after = len(reviews)
             else:
@@ -202,4 +199,3 @@ if __name__ == "__main__":
         'https://gerrit-review.googlesource.com', 'gerrit',
         '2019-12-01')
     objs = a.extract_objects(reviewes)
-    print(len(objs))
