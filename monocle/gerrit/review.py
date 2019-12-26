@@ -39,33 +39,56 @@ class ReviewesFetcher(object):
             'ABANDONED': 'CLOSED'
         }
 
-    def convert_date(self, str_date):
+    def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(
             str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
                 "%Y-%m-%dT%H:%M:%SZ")
         return cdate
 
+    def convert_date_for_query(self, str_date):
+        # It looks like Gerrit behaves curiously as no
+        # data is returned if there is a TZ marker as well
+        # as if seconds are specified. Let's adapt the date str
+        # for the query.
+        # Even it looks like it does not take in account the %H:%M
+        # part ...
+        str_date = str_date.replace('T', ' ')
+        str_date = str_date.replace('Z', '')
+        # cdate = datetime.strptime(
+        #     str_date, '%Y-%m-%d %H:%M:%S').strftime(
+        #         "%Y-%m-%d %H:%M:00")
+        cdate = datetime.strptime(
+            str_date, '%Y-%m-%d %H:%M:%S').strftime(
+                "%Y-%m-%d")
+        return cdate
+
     def get(self, updated_since):
+        updated_since = self.convert_date_for_query(updated_since)
         request_params = "?q=after:%s+repositories:%s" % (
                 updated_since, self.repository_prefix)
         for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
             request_params += '&o=%s' % option
-        has_more = True
         count = 100
         start_after = 0
         reviews = []
-        while has_more:
+        while True:
             urlpath = (
                 self.host + '/changes/' + request_params +
                 '&n=%s&start=%s' % (
                     count, start_after))
             self.log.info("query: %s" % urlpath)
             response = requests.get(urlpath)
-            reviews.extend(json.loads(response.text[4:]))
-            self.log.info("read %s reviews from the api" % len(reviews))
-            self.log.info("last review read update at %s" % reviews[-1]['updated'])
-            if reviews[-1].get('_more_changes'):
-                start_after = len(reviews)
+            _reviewes = json.loads(response.text[4:])
+            if _reviewes:
+                reviews.extend(_reviewes)
+                self.log.info(
+                    "read %s reviews from the api" % len(reviews))
+                self.log.info(
+                    "last review read update at %s" % reviews[0]['updated'])
+                if reviews[0].get('_more_changes'):
+                    start_after = len(reviews)
+                else:
+                    break
             else:
                 break
         return reviews
@@ -90,10 +113,11 @@ class ReviewesFetcher(object):
                 'author': "%s/%s" % (
                     review['owner'].get('name'), review['owner']['email']),
                 'title': review['subject'],
-                'updated_at': self.convert_date(review['updated']),
-                'created_at': self.convert_date(review['created']),
+                'updated_at': self.convert_date_for_db(review['updated']),
+                'created_at': self.convert_date_for_db(review['created']),
                 'merged_at': (
-                    self.convert_date(review.get('submitted')) if review.get('submitted')
+                    self.convert_date_for_db(review.get('submitted'))
+                    if review.get('submitted')
                     else None),
                 # Note(fbo): The mergeable field is sometime absent
                 'mergeable': (True if review.get('mergeable') == 'true'
@@ -117,7 +141,8 @@ class ReviewesFetcher(object):
                     change['closed_at'], change['created_at'])
             if change['state'] == 'MERGED':
                 change['merged_by'] = "%s/%s" % (
-                    review['submitter'].get('name'), review['submitter']['email'])
+                    review['submitter'].get('name'),
+                    review['submitter']['email'])
             else:
                 change['merged_by'] = None
             objects.append(change)
@@ -147,7 +172,7 @@ class ReviewesFetcher(object):
                     {
                         'type': 'ChangeCommentedEvent',
                         'id': comment['id'],
-                        'created_at': self.convert_date(comment['date']),
+                        'created_at': self.convert_date_for_db(comment['date']),
                         'author': "%s/%s" % (
                             comment['author'].get('name'),
                             comment['author']['email']),
@@ -166,9 +191,10 @@ class ReviewesFetcher(object):
                         obj = {
                             'type': 'ChangeReviewedEvent',
                             'id': "%s_%s_%s_%s" % (
-                                self.convert_date(_review['date']), label,
-                                _review['value'], _review['email']),
-                            'created_at': self.convert_date(_review['date']),
+                                self.convert_date_for_db(_review['date']),
+                                label, _review['value'], _review['email']),
+                            'created_at': self.convert_date_for_db(
+                                _review['date']),
                             'author': "%s/%s" % (
                                 _review.get('name'), _review['email']),
                             'repository_prefix': change[
