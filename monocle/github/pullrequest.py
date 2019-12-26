@@ -88,6 +88,7 @@ class PRsFetcher(object):
                 ... on PullRequestReview {
                   id
                   createdAt
+                  state
                   author {
                     login
                   }
@@ -273,6 +274,8 @@ class PRsFetcher(object):
                     'number': pr['number'],
                     'on_author': pr['author']['login'],
                 }
+                if 'state' in _timelineitem:
+                    obj['review_label'] = _timelineitem['state']
                 objects.append(obj)
             return objects
 
