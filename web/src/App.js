@@ -40,9 +40,11 @@ class RootView extends React.Component {
               <FiltersForm
                 handleFilterGteChange={this.props.handleFilterGteChange}
                 handleFilterLteChange={this.props.handleFilterLteChange}
+                handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
                 setQueryParamsLoaded={this.props.setQueryParamsLoaded}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
               />
             </Col>
           </Row>
@@ -54,6 +56,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 all_events_loading={this.props.all_events_loading}
                 all_events_result={this.props.all_events_result}
                 all_events_error={this.props.all_events_error}
@@ -65,6 +68,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 create_events_loading={this.props.create_events_loading}
                 create_events_result={this.props.create_events_result}
                 create_events_error={this.props.create_events_error}
@@ -79,6 +83,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 comment_events_loading={this.props.comment_events_loading}
                 comment_events_result={this.props.comment_events_result}
                 comment_events_error={this.props.comment_events_error}
@@ -90,6 +95,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 close_events_loading={this.props.close_events_loading}
                 close_events_result={this.props.close_events_result}
                 close_events_error={this.props.close_events_error}
@@ -104,6 +110,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 top_reviewers_loading={this.props.top_reviewers_loading}
                 top_reviewers_result={this.props.top_reviewers_result}
                 top_reviewers_error={this.props.top_reviewers_error}
@@ -118,6 +125,7 @@ class RootView extends React.Component {
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
                 top_creators_loading={this.props.top_creators_loading}
                 top_creators_result={this.props.top_creators_result}
                 top_creators_error={this.props.top_creators_error}
@@ -138,10 +146,12 @@ class App extends React.Component {
             handleQuery={this.props.handleQuery}
             handleFilterGteChange={this.props.handleFilterGteChange}
             handleFilterLteChange={this.props.handleFilterLteChange}
+            handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
             setQueryParamsLoaded={this.props.setQueryParamsLoaded}
             filter_loaded_from_url={this.props.filter_loaded_from_url}
             filter_gte={this.props.filter_gte}
             filter_lte={this.props.filter_lte}
+            filter_repository={this.props.filter_repository}
             all_events_loading={this.props.all_events_loading}
             all_events_result={this.props.all_events_result}
             all_events_error={this.props.all_events_error}
@@ -172,6 +182,7 @@ const mapStateToProps = state => {
     filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
     filter_gte: state.FiltersReducer.filter_gte,
     filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
     all_events_loading: state.QueryReducer.all_events_loading,
     all_events_result: state.QueryReducer.all_events_result,
     all_events_error: state.QueryReducer.all_events_error,
@@ -212,6 +223,12 @@ const mapDispatchToProps = dispatch => {
       {
         type: 'FILTER_PARAMS_LOADED',
         value: true
+      }
+    ),
+    handleFilterRepositoryChange: (value) => dispatch(
+      {
+        type: 'FILTER_REPOSITORY_CHANGE',
+        value: value
       }
     ),
   }

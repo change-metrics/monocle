@@ -25,15 +25,23 @@ class FiltersForm extends React.Component {
     this.props.handleFilterLteChange(date_str)
   }
 
+  onRepositoryChange = (e) => {
+    this.props.handleFilterRepositoryChange(e.target.value)
+  }
+
   fetchQueryParams = () => {
     const params = new URLSearchParams(window.location.search)
     var lte = params.get('lte')
     var gte = params.get('gte')
+    var repository = params.get('repository')
     if (lte) {
       this.props.handleFilterLteChange(lte)
     }
     if (gte) {
       this.props.handleFilterGteChange(gte)
+    }
+    if (repository) {
+      this.props.handleFilterRepositoryChange(repository)
     }
     this.props.setQueryParamsLoaded()
   }
@@ -54,6 +62,7 @@ class FiltersForm extends React.Component {
     this.updateHistoryURL({
       'gte': this.props.filter_gte,
       'lte': this.props.filter_lte,
+      'repository': this.props.filter_repository,
     })
     window.location.reload(true)
     event.preventDefault()
@@ -92,6 +101,14 @@ class FiltersForm extends React.Component {
                 placeholderText="Set a to date boundary"
                 showYearDropdown
               />
+            </Form.Group>
+            <Form.Group controlId="formRepositoryInput">
+              <Form.Label>Repository regexp</Form.Label>
+              <Form.Control
+                type="text"
+                value={this.props.filter_repository}
+                onChange={this.onRepositoryChange}
+                />
             </Form.Group>
             <Button variant="primary" type="submit">
               Apply filters

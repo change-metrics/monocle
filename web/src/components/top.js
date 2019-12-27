@@ -25,7 +25,7 @@ class BaseTopEventsAuthor extends React.Component {
                   </thead>
                   <tbody>
                     {data.map((x, index) =>
-                      <tr>
+                      <tr key={index}>
                         <td>{index}</td>
                         <td>{x.key}</td>
                         <td>{x.doc_count}</td>
@@ -59,7 +59,7 @@ class TopReviewers extends BaseTopEventsAuthor {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.top_reviewers_result) {
       this.props.query({
-        'repository': 'kubernetes/kubernetes',
+        'repository': this.props.filter_repository,
         'name': 'events_top_authors',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
@@ -77,7 +77,7 @@ class TopCreators extends BaseTopEventsAuthor {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.top_creators_result) {
       this.props.query({
-        'repository': 'kubernetes/kubernetes',
+        'repository': this.props.filter_repository,
         'name': 'events_top_authors',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
