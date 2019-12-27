@@ -111,9 +111,11 @@ def main():
     parser_dbmanage = subparsers.add_parser(
         'dbmanage', help='Database manager')
     parser_dbmanage.add_argument(
-        '--delete-org', help='Delete PRs event related to an org',
+        '--delete-repository',
+        help='Delete events related to a repository (regexp)',
         required=True)
 
+    # TODO(implement the get_pr for the gerrit driver)
     parser_fetcher = subparsers.add_parser(
         'fetch', help='Fetch a PullRequest from GraphQL')
     parser_fetcher.add_argument(
@@ -138,7 +140,7 @@ def main():
         '--name', help='The query name',
         required=True)
     parser_dbquery.add_argument(
-        '--org', help='Scope to events of an organization',
+        '--repository', help='Scope to events of a repository (regexp)',
         required=True)
     parser_dbquery.add_argument(
         '--gte', help='Scope to events created after date')
@@ -147,11 +149,6 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
 
-    parser_report = subparsers.add_parser(
-        'report', help='Create a report')
-    parser_report.add_argument(
-        '--org', help='Scope to events of an organization')
-
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -159,18 +156,18 @@ def main():
 
     if args.command == "crawler":
         crawler = MonocleCrawler(
-            args.type, args.host, args.org, args.updated_since,
+            args.type, args.host, args.repository, args.updated_since,
             args.token, int(args.loop_delay))
         crawler.run()
 
     if args.command == "dbmanage":
-        if args.delete_org:
+        if args.delete_repository:
             db = ELmonocleDB()
-            db.delete_org(args.delete_org)
+            db.delete_repository(args.delete_repository)
 
     if args.command == "fetch":
         prf = PRsFetcher(GithubGraphQLQuery(args.token))
-        pr = prf.get_pr(args.org, args.repository, args.id)
+        pr = prf.get_pr(args.repository, args.repository, args.id)
         print(pr)
 
     if args.command == "dbquery":
@@ -181,13 +178,9 @@ def main():
             args.lte = utils.date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
             args.name,
-            args.org, args.gte, args.lte, args.type,
+            args.repository, args.gte, args.lte, args.type,
             interval=args.interval)
         print(ret)
-
-    if args.command == "report":
-        db = ELmonocleDB()
-        print("Print a report")
 
 
 if __name__ == '__main__':

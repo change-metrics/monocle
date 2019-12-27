@@ -247,7 +247,8 @@ class PRsFetcher(object):
                         'id': _comment['id'],
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
-                        'repository_prefix': pr['repository']['owner']['login'],
+                        'repository_prefix': pr['repository']['owner'][
+                          'login'],
                         'repository_fullname': "%s/%s" % (
                             pr['repository']['owner']['login'],
                             pr['repository']['name']),

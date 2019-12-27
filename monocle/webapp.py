@@ -33,8 +33,9 @@ app = Flask(__name__)
 CORS(app)
 
 
-@app.route("/api/0/<org>/query/<name>", methods=['GET'])
-def query(org, name):
+@app.route("/api/0/query/<name>", methods=['GET'])
+def query(name):
+    repository_fullname = request.args.get('repository')
     gte = request.args.get('gte')
     lte = request.args.get('lte')
     etype = request.args.get('type')
@@ -45,7 +46,8 @@ def query(org, name):
     if lte:
         lte = utils.date_to_epoch_ml(lte)
     result = db.run_named_query(
-        name, org, gte, lte, etype, interval=interval)
+        name, repository_fullname, gte, lte,
+        etype, interval=interval)
     return jsonify(result)
 
 

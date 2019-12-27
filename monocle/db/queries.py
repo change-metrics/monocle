@@ -20,7 +20,8 @@
 # SOFTWARE.
 
 
-def generate_filter(organization, gte=None, lte=None, etype=None, state=None):
+def generate_filter(
+        repository_fullname, gte=None, lte=None, etype=None, state=None):
     created_at_range = {
         "created_at": {
             "format": "epoch_millis"
@@ -31,7 +32,9 @@ def generate_filter(organization, gte=None, lte=None, etype=None, state=None):
     if lte:
         created_at_range['created_at']['lte'] = lte
     qfilter = [
-        {"term": {"repository_prefix": organization}},
+        {"regexp": {
+            "repository_fullname": {
+                "value": repository_fullname}}},
         {"range": created_at_range}
     ]
     if etype:
@@ -55,7 +58,7 @@ def run_query(es, index, body):
 
 def events_histo(
         es, index,
-        organization, gte, lte, etype, interval="30m"):
+        repository_fullname, gte, lte, etype, interval="30m"):
     body = {
         "aggs": {
             "agg1": {
@@ -68,7 +71,8 @@ def events_histo(
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(organization, gte, lte, etype),
+                "filter": generate_filter(
+                    repository_fullname, gte, lte, etype),
                 "should": [],
                 "must_not": []
             }
@@ -80,7 +84,7 @@ def events_histo(
 
 def events_top_authors(
         es, index,
-        organization, gte, lte, etype, interval=None, size=10):
+        repository_fullname, gte, lte, etype, interval=None, size=10):
     body = {
         "aggs": {
             "agg1": {
@@ -96,7 +100,8 @@ def events_top_authors(
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(organization, gte, lte, etype),
+                "filter": generate_filter(
+                    repository_fullname, gte, lte, etype),
                 "should": [],
                 "must_not": []
             }
@@ -108,7 +113,7 @@ def events_top_authors(
 
 def change_merged_count_by_duration(
         es, index,
-        organization, gte, lte, etype, interval=None, size=None):
+        repository_fullname, gte, lte, etype, interval=None, size=None):
     body = {
         "aggs": {
             "agg1": {
@@ -138,7 +143,7 @@ def change_merged_count_by_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    organization, gte, lte, "Change", "MERGED"),
+                    repository_fullname, gte, lte, "Change", "MERGED"),
                 "should": [],
                 "must_not": []
             }
@@ -150,7 +155,7 @@ def change_merged_count_by_duration(
 
 def pr_merged_avg_duration(
         es, index,
-        organization, gte, lte, etype, interval=None, size=None):
+        repository_fullname, gte, lte, etype, interval=None, size=None):
     body = {
         "aggs": {
             "agg1": {
@@ -169,7 +174,7 @@ def pr_merged_avg_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    organization, gte, lte, "PullRequest", "MERGED"),
+                    repository_fullname, gte, lte, "PullRequest", "MERGED"),
                 "should": [],
                 "must_not": []
             }

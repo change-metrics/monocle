@@ -23,10 +23,10 @@ function setQueryParams(
 }
 
 function get_query_results(
-  { org, name, gte = undefined,
+  { name, repository, gte = undefined,
     lte = undefined, type = undefined,
     interval = undefined}) {
-  const url = baseurl + '/' + org + '/query/' + name
+  const url = baseurl + '/query/' + name
   var params = setQueryParams(
     {
       'gte': gte,
@@ -35,6 +35,7 @@ function get_query_results(
       'interval': interval
     }
   )
+  params.append('repository', repository)
   return axios.get(
     url, {
     params: params

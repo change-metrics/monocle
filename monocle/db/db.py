@@ -98,13 +98,17 @@ class ELmonocleDB():
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
-    def delete_org(self, org):
+    def delete_repository(self, repository_fullname):
         params = {'index': self.index, 'doc_type': self.index}
         body = {
             "query": {
                 "bool": {
                     "filter": {
-                        "term": {"repository_prefix": org}
+                        "regexp": {
+                            "repository_fullname": {
+                                "value": repository_fullname
+                            }
+                        }
                     }
                 }
             }

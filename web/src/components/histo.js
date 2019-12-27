@@ -61,7 +61,7 @@ class AllEventsHisto extends BaseEventsHisto {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.all_events_result) {
       this.props.query({
-        'org': 'kubernetes',
+        'repository': 'kubernetes/kubernetes',
         'name': 'events_histo',
         'interval': '15d',
         'gte': this.props.filter_gte,
@@ -79,7 +79,7 @@ class CloseEventsHisto extends BaseEventsHisto {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.close_events_result) {
       this.props.query({
-        'org': 'kubernetes',
+        'repository': 'kubernetes/kubernetes',
         'name': 'events_histo',
         'interval': '15d',
         'gte': this.props.filter_gte,
@@ -98,7 +98,7 @@ class CommentEventsHisto extends BaseEventsHisto {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.comment_events_result) {
       this.props.query({
-        'org': 'kubernetes',
+        'repository': 'kubernetes/kubernetes',
         'name': 'events_histo',
         'interval': '15d',
         'gte': this.props.filter_gte,
@@ -117,7 +117,7 @@ class CreateEventsHisto extends BaseEventsHisto {
   componentDidUpdate() {
     if (this.props.filter_loaded_from_url && !this.props.create_events_result) {
       this.props.query({
-        'org': 'kubernetes',
+        'repository': 'kubernetes/kubernetes',
         'name': 'events_histo',
         'interval': '15d',
         'gte': this.props.filter_gte,

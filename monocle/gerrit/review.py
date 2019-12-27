@@ -127,7 +127,8 @@ class ReviewesFetcher(object):
                 'labels': [],
                 # Note(fbo): Only one assignee possible by review on Gerrit
                 'assignees': (["%s/%s" % (
-                    review['assignee'].get('name'), review['assignee']['email'])]
+                    review['assignee'].get('name'),
+                    review['assignee']['email'])]
                     if review.get('assignee') else [])
             }
             if change['state'] == 'CLOSED':
@@ -172,7 +173,8 @@ class ReviewesFetcher(object):
                     {
                         'type': 'ChangeCommentedEvent',
                         'id': comment['id'],
-                        'created_at': self.convert_date_for_db(comment['date']),
+                        'created_at': self.convert_date_for_db(
+                            comment['date']),
                         'author': "%s/%s" % (
                             comment['author'].get('name'),
                             comment['author']['email']),
