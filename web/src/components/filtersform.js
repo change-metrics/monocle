@@ -1,5 +1,6 @@
 import React from 'react';
 
+import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
@@ -76,43 +77,55 @@ class FiltersForm extends React.Component {
         </Card.Header>
         <Card.Body>
           <Form onSubmit={this.handleSubmit}>
-            <Form.Group controlId="formFromDate">
-              <Form.Label><b>From date</b></Form.Label>
-              <br />
-              <DatePicker
-                selected={
-                  this.props.filter_gte ?
-                    moment(this.props.filter_gte).toDate() : ""}
-                onChange={this.onGteChange}
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Set a from date boundary"
-                showYearDropdown
-              />
-            </Form.Group>
-            <Form.Group controlId="formToDate">
-              <Form.Label><b>To date</b></Form.Label>
-              <br />
-              <DatePicker
-                selected={
-                  this.props.filter_lte ?
-                    moment(this.props.filter_lte).toDate() : ""}
-                onChange={this.onLteChange}
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Set a to date boundary"
-                showYearDropdown
-              />
-            </Form.Group>
-            <Form.Group controlId="formRepositoryInput">
-              <Form.Label>Repository regexp</Form.Label>
-              <Form.Control
-                type="text"
-                value={this.props.filter_repository}
-                onChange={this.onRepositoryChange}
-                />
-            </Form.Group>
-            <Button variant="primary" type="submit">
-              Apply filters
-            </Button>
+            <Form.Row>
+              <Col>
+                <Form.Group controlId="formRepositoryInput">
+                  <Form.Label>Repository regexp</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={this.props.filter_repository}
+                    onChange={this.onRepositoryChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId="formFromDate">
+                  <Form.Label>From date</Form.Label>
+                  <br />
+                  <DatePicker
+                    selected={
+                      this.props.filter_gte ?
+                        moment(this.props.filter_gte).toDate() : ""}
+                    onChange={this.onGteChange}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="Set a from date boundary"
+                    showYearDropdown
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId="formToDate">
+                  <Form.Label>To date</Form.Label>
+                  <br />
+                  <DatePicker
+                    selected={
+                      this.props.filter_lte ?
+                        moment(this.props.filter_lte).toDate() : ""}
+                    onChange={this.onLteChange}
+                    dateFormat="yyyy-MM-dd"
+                    placeholderText="Set a to date boundary"
+                    showYearDropdown
+                  />
+                </Form.Group>
+              </Col>
+            </Form.Row>
+            <Form.Row>
+              <Col>
+                <Button variant="primary" type="submit">
+                  Apply filters
+                </Button>
+              </Col>
+            </Form.Row>
           </Form>
         </Card.Body>
       </Card >
