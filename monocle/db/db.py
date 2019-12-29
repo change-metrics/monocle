@@ -74,7 +74,7 @@ class ELmonocleDB():
                     "mergeable": {"type": "keyword"},
                     "label": {"type": "keyword"},
                     "assignee": {"type": "keyword"},
-                    "review_label": {"type": "keyword"},
+                    "approval": {"type": "keyword"},
                 }
             }
         }

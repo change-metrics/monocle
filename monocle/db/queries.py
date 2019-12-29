@@ -82,14 +82,14 @@ def events_histo(
     return took, hits, data['aggregations']['agg1']['buckets']
 
 
-def events_top_authors(
-        es, index,
+def _events_top(
+        es, index, field,
         repository_fullname, gte, lte, etype, interval=None, size=10):
     body = {
         "aggs": {
             "agg1": {
                 "terms": {
-                    "field": "author",
+                    "field": field,
                     "size": size,
                     "order": {
                         "_count": "desc"
@@ -109,6 +109,22 @@ def events_top_authors(
     }
     took, hits, data = run_query(es, index, body)
     return took, hits, data['aggregations']['agg1']['buckets']
+
+
+def events_top_authors(
+        es, index,
+        repository_fullname, gte, lte, etype, interval=None, size=10):
+    return _events_top(
+        es, index, "author", repository_fullname,
+        gte, lte, etype, interval, size)
+
+
+def events_top_approval(
+        es, index,
+        repository_fullname, gte, lte, etype, interval=None, size=10):
+    return _events_top(
+        es, index, "approval", repository_fullname,
+        gte, lte, etype, interval, size)
 
 
 def change_merged_count_by_duration(

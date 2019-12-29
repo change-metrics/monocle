@@ -83,9 +83,7 @@ class ReviewesFetcher(object):
                 reviews.extend(_reviewes)
                 self.log.info(
                     "read %s reviews from the api" % len(reviews))
-                self.log.info(
-                    "last review read update at %s" % reviews[0]['updated'])
-                if reviews[0].get('_more_changes'):
+                if reviews[-1].get('_more_changes'):
                     start_after = len(reviews)
                 else:
                     break
@@ -207,7 +205,7 @@ class ReviewesFetcher(object):
                                 'repository_shortname'],
                             'number': change['number'],
                             'on_author': change['author'],
-                            'review_note': "%s%s" % (
+                            'approval': "%s%s" % (
                                 label,
                                 ("+%s" % _review['value']
                                  if not str(_review['value']).startswith('-')

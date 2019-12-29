@@ -276,7 +276,7 @@ class PRsFetcher(object):
                     'on_author': pr['author']['login'],
                 }
                 if 'state' in _timelineitem:
-                    obj['review_label'] = _timelineitem['state']
+                    obj['approval'] = _timelineitem['state']
                 objects.append(obj)
             return objects
 

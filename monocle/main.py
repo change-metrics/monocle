@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 
+import sys
 import logging
 import argparse
 
@@ -38,10 +39,11 @@ class MonocleCrawler():
     log = logging.getLogger("monocle.Crawler")
 
     def __init__(
-            self, ctype, host, repository_prefix,
+            self, ctype, host, org, repository_prefix,
             updated_since, token, loop_delay):
         self.ctype = ctype
         self.host = host
+        self.org = org
         self.repository_prefix = repository_prefix
         self.updated_since = updated_since
         self.loop_delay = loop_delay
@@ -49,7 +51,7 @@ class MonocleCrawler():
         if self.ctype == 'github':
             self.prf = PRsFetcher(
                 GithubGraphQLQuery(token),
-                self.host, self.repository_prefix)
+                self.host, self.org)
         elif self.ctype == 'gerrit':
             self.prf = ReviewesFetcher(
                 self.host, self.repository_prefix)
@@ -94,8 +96,9 @@ def main():
         '--token', help='A Github API token',
         required=True)
     parser_crawler.add_argument(
-        '--org', help='The Github organization to fetch PR events',
-        required=True)
+        '--org', help='The Github organization to fetch PR events')
+    parser_crawler.add_argument(
+        '--repository', help='The PR repository within the organization')
     parser_crawler.add_argument(
         '--updated-since', help='Acts on PRs updated since')
     parser_crawler.add_argument(
@@ -155,8 +158,13 @@ def main():
         level=getattr(logging, args.loglevel.upper()))
 
     if args.command == "crawler":
+        if not args.org and not args.repository:
+            print("Please provide --org for a Github crawler")
+            print("Please provide --repository for a Gerrit crawler")
+            sys.exit(1)
         crawler = MonocleCrawler(
-            args.type, args.host, args.repository, args.updated_since,
+            args.type, args.host, args.org,
+            args.repository, args.updated_since,
             args.token, int(args.loop_delay))
         crawler.run()
 
