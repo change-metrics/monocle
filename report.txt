@@ -1,0 +1,34 @@
+Repositories report
+-------------------
+
+Infos
+.....
+
+Changes opened count by authors count
+Changes reviewed count by authors count
+Changes commented count by authors count
+Changes merged count by authors count
+Changes closed count by authors count
+Ratio of change with activities vs with no activities
+
+Graphs
+......
+
+Line chart with three datasets Changes Opened/Merged/Closed
+Line chart with two datasets Changes Commented/Reviewed
+
+Idea: ^ Line chart in a box + Text info like ratio Opened/Merged
+
+Pie chart with approval type
+
+Top Reviewer
+Top Commenter
+Top Change author
+
+...
+
+Developer report
+----------------
+
+
+
