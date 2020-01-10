@@ -25,6 +25,16 @@ import requests
 from datetime import datetime
 import json
 
+name = 'gerrit_crawler'
+help = 'Gerrit Crawler to fetch Reviews events'
+
+
+def init_crawler_args_parser(parser):
+    parser.add_argument(
+        '--repository', help='The regexp matching repositories name')
+    parser.add_argument(
+        '--updated-since', help='Acts on Reviews updated since')
+
 
 class ReviewesFetcher(object):
 
@@ -54,9 +64,6 @@ class ReviewesFetcher(object):
         # part ...
         str_date = str_date.replace('T', ' ')
         str_date = str_date.replace('Z', '')
-        # cdate = datetime.strptime(
-        #     str_date, '%Y-%m-%d %H:%M:%S').strftime(
-        #         "%Y-%m-%d %H:%M:00")
         cdate = datetime.strptime(
             str_date, '%Y-%m-%d %H:%M:%S').strftime(
                 "%Y-%m-%d")
@@ -65,7 +72,7 @@ class ReviewesFetcher(object):
     def get(self, updated_since):
         updated_since = self.convert_date_for_query(updated_since)
         request_params = "?q=after:%s+repositories:%s" % (
-                updated_since, self.repository_prefix)
+            updated_since, self.repository_prefix)
         for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
             request_params += '&o=%s' % option
         count = 100
@@ -210,7 +217,7 @@ class ReviewesFetcher(object):
                                 ("+%s" % _review['value']
                                  if not str(_review['value']).startswith('-')
                                  else _review['value']))
-                            }
+                        }
                         objects.append(obj)
             return objects
 

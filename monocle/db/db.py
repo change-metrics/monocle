@@ -117,7 +117,7 @@ class ELmonocleDB():
         self.es.delete_by_query(**params)
         self.es.indices.refresh(index=self.index)
 
-    def get_last_updated(self, org):
+    def get_last_updated(self, repository_fullname):
         params = {'index': self.index, 'doc_type': self.index}
         body = {
             "sort": [{
@@ -129,7 +129,11 @@ class ELmonocleDB():
                 "bool": {
                     "filter": [
                         {"term": {"type": "Change"}},
-                        {"term": {"repository_prefix": org}}
+                        {"regexp": {
+                            "repository_fullname": {
+                                "value": repository_fullname
+                            }
+                        }}
                     ]
                 }
             }

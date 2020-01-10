@@ -26,6 +26,26 @@ from datetime import datetime
 from time import sleep
 
 
+name = 'github_crawler'
+help = 'Github Crawler to fetch PRs events'
+
+
+def init_crawler_args_parser(parser):
+    parser.add_argument(
+        '--token', help='A Github API token',
+        required=True)
+    parser.add_argument(
+        '--org', help='The Github organization to fetch PR events',
+        required=True)
+    parser.add_argument(
+        '--updated-since', help='Acts on PRs updated since')
+    parser.add_argument(
+        '--id', help='Get one PR (for debug purpose)')
+    parser.add_argument(
+        '--repository',
+        help='Only used with --id (for debug purpose)')
+
+
 class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
@@ -173,7 +193,7 @@ class PRsFetcher(object):
                 break
         return prs
 
-    def get_pr(self, org, repository, number):
+    def get_one(self, org, repository, number):
         qdata = '''{
           repository(owner: "%(org)s", name:"%(repository)s") {
             pullRequest(number: %(number)s) {
@@ -248,7 +268,7 @@ class PRsFetcher(object):
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
                         'repository_prefix': pr['repository']['owner'][
-                          'login'],
+                            'login'],
                         'repository_fullname': "%s/%s" % (
                             pr['repository']['owner']['login'],
                             pr['repository']['name']),

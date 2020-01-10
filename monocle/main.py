@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 
-import sys
 import logging
 import argparse
 
@@ -30,34 +29,33 @@ from datetime import datetime
 from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.github.graphql import GithubGraphQLQuery
-from monocle.github.pullrequest import PRsFetcher
-from monocle.gerrit.review import ReviewesFetcher
+from monocle.github import pullrequest
+from monocle.gerrit import review
 
 
 class MonocleCrawler():
 
     log = logging.getLogger("monocle.Crawler")
 
-    def __init__(
-            self, ctype, host, org, repository_prefix,
-            updated_since, token, loop_delay):
-        self.ctype = ctype
-        self.host = host
-        self.org = org
-        self.repository_prefix = repository_prefix
-        self.updated_since = updated_since
-        self.loop_delay = loop_delay
+    def __init__(self, args):
+        self.updated_since = args.updated_since
+        self.loop_delay = int(args.loop_delay)
+        self.get_one = getattr(args, 'id', None)
         self.db = ELmonocleDB()
-        if self.ctype == 'github':
-            self.prf = PRsFetcher(
-                GithubGraphQLQuery(token),
-                self.host, self.org)
-        elif self.ctype == 'gerrit':
-            self.prf = ReviewesFetcher(
-                self.host, self.repository_prefix)
+        if args.command == 'github_crawler':
+            self.get_one_rep = getattr(args, 'repository', None)
+            self.org = args.org
+            self.repository_re = args.org + '.*'
+            self.prf = pullrequest.PRsFetcher(
+                GithubGraphQLQuery(args.token),
+                args.host, args.org)
+        elif args.command == 'gerrit_crawler':
+            self.repository_re = args.repository
+            self.prf = review.ReviewesFetcher(
+                args.host, args.repository)
 
     def get_last_updated_date(self):
-        pr = self.db.get_last_updated(self.repository_prefix)
+        pr = self.db.get_last_updated(self.repository_re)
         if not pr:
             return (
                 self.updated_since or
@@ -75,63 +73,45 @@ class MonocleCrawler():
             self.db.update(objects)
 
     def run(self):
-        while True:
-            self.run_step()
-            self.log.info("Waiting %s seconds before next fetch ..." % (
-                self.loop_delay))
-            sleep(self.loop_delay)
+        if self.get_one:
+            if not self.get_one_rep:
+                print("The --repository argument must be given")
+            else:
+                print(self.prf.get_one(
+                    self.org, self.get_one_rep,
+                    self.get_one))
+        else:
+            while True:
+                self.run_step()
+                self.log.info("Waiting %s seconds before next fetch ..." % (
+                    self.loop_delay))
+                sleep(self.loop_delay)
 
 
 def main():
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
         '--loglevel', help='logging level', default='INFO')
-    subparsers = parser.add_subparsers(title='subcommands',
+    subparsers = parser.add_subparsers(title='Subcommands',
                                        description='valid subcommands',
                                        dest="command")
 
-    parser_crawler = subparsers.add_parser(
-        'crawler', help='Crawler to fetch PRs events')
-    parser_crawler.add_argument(
-        '--token', help='A Github API token',
-        required=True)
-    parser_crawler.add_argument(
-        '--org', help='The Github organization to fetch PR events')
-    parser_crawler.add_argument(
-        '--repository', help='The PR repository within the organization')
-    parser_crawler.add_argument(
-        '--updated-since', help='Acts on PRs updated since')
-    parser_crawler.add_argument(
-        '--loop-delay', help='Request PRs events every N secs',
-        default=900)
-    parser_crawler.add_argument(
-        '--type', help='Crawler type (github|gerrit)',
-        required=True)
-    parser_crawler.add_argument(
-        '--host', help='Base url of the review server',
-        required=True)
+    for crawler_driver in (pullrequest, review):
+        parser_crawler = subparsers.add_parser(
+            crawler_driver.name, help=crawler_driver.help)
+        parser_crawler.add_argument(
+            '--loop-delay', help='Request last updated events every N secs',
+            default=900)
+        parser_crawler.add_argument(
+            '--host', help='Base url of the code review server',
+            required=True)
+        crawler_driver.init_crawler_args_parser(parser_crawler)
 
     parser_dbmanage = subparsers.add_parser(
         'dbmanage', help='Database manager')
     parser_dbmanage.add_argument(
         '--delete-repository',
         help='Delete events related to a repository (regexp)',
-        required=True)
-
-    # TODO(implement the get_pr for the gerrit driver)
-    parser_fetcher = subparsers.add_parser(
-        'fetch', help='Fetch a PullRequest from GraphQL')
-    parser_fetcher.add_argument(
-        '--token', help='A Github API token',
-        required=True)
-    parser_fetcher.add_argument(
-        '--org', help='The Github organization to fetch the PR from',
-        required=True)
-    parser_fetcher.add_argument(
-        '--repository', help='The PR repository within the organization',
-        required=True)
-    parser_fetcher.add_argument(
-        '--id', help='The PR id within the repository',
         required=True)
 
     parser_dbquery = subparsers.add_parser(
@@ -157,26 +137,14 @@ def main():
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper()))
 
-    if args.command == "crawler":
-        if not args.org and not args.repository:
-            print("Please provide --org for a Github crawler")
-            print("Please provide --repository for a Gerrit crawler")
-            sys.exit(1)
-        crawler = MonocleCrawler(
-            args.type, args.host, args.org,
-            args.repository, args.updated_since,
-            args.token, int(args.loop_delay))
+    if args.command.endswith("_crawler"):
+        crawler = MonocleCrawler(args)
         crawler.run()
 
     if args.command == "dbmanage":
         if args.delete_repository:
             db = ELmonocleDB()
             db.delete_repository(args.delete_repository)
-
-    if args.command == "fetch":
-        prf = PRsFetcher(GithubGraphQLQuery(args.token))
-        pr = prf.get_pr(args.repository, args.repository, args.id)
-        print(pr)
 
     if args.command == "dbquery":
         db = ELmonocleDB()
