@@ -1,6 +1,15 @@
 Repositories report
 -------------------
 
+Filters/options
+...............
+
+Repository regexp
+Date boundary (on create date)
+Bar chart histo definition: set definition Day/Week/Month
+Set review approval type (affect Top reviewer)
+Author exclude list
+
 Infos
 .....
 
@@ -9,26 +18,31 @@ Changes reviewed count by authors count
 Changes commented count by authors count
 Changes merged count by authors count
 Changes closed count by authors count
-Ratio of change with activities vs with no activities
 
 Graphs
 ......
 
-Line chart with three datasets Changes Opened/Merged/Closed
-Line chart with two datasets Changes Commented/Reviewed
+Box with header Text info like:
+- ratio Merged/Opened and Closed/Merged (eg. 2% abandonned)
+- Average changes opened/merged/closed by definition (Day/Week/Month)
+Bar chart with three datasets Changes Opened/Merged/Closed
 
-Idea: ^ Line chart in a box + Text info like ratio Opened/Merged
+Box with header Text info like:
+- ratio Reviewed/total changes and Commented/total changes (total changes are changes created during the period boundary)
+- average delay before first comment on change created during the period
+- average delay before first review on change created during the period
+Bar chart with two datasets Changes Commented/Reviewed
 
-Pie chart with approval type
+Pie chart with review approval ratio
 
-Top Reviewer
-Top Commenter
-Top Change author
+Most active Reviewer
+Most active Commenter
+Most active Change author
 
-...
+Most reviewed author
+Most commented author
 
-Developer report
-----------------
+Top strenght peer partners list (author -> top on_author X on_author -> top author)
 
-
-
+List of most active Changes (activity = review and comment events) orderer by activity
+List of open changes w/o review and comment ordered by last updated
