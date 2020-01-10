@@ -62,9 +62,7 @@ def count_events(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype),
-                "should": [],
-                "must_not": []
+                    repository_fullname, gte, lte, etype)
             }
         }
     }
@@ -75,6 +73,30 @@ def count_events(
     except Exception:
         return {}
     return res['count']
+
+
+def count_authors(
+        es, index,
+        repository_fullname, gte, lte, etype, interval=None):
+    body = {
+        "aggs": {
+            "agg1": {
+                "cardinality": {
+                    "field": "author",
+                    "precision_threshold": 3000,
+                }
+            }
+        },
+        "size": 0,
+        "query": {
+            "bool": {
+                "filter": generate_filter(
+                    repository_fullname, gte, lte, etype)
+            }
+        }
+    }
+    took, hits, data = run_query(es, index, body)
+    return took, hits, data['aggregations']['agg1']['value']
 
 
 def events_histo(
@@ -93,9 +115,7 @@ def events_histo(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype),
-                "should": [],
-                "must_not": []
+                    repository_fullname, gte, lte, etype)
             }
         }
     }
@@ -122,9 +142,7 @@ def _events_top(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype),
-                "should": [],
-                "must_not": []
+                    repository_fullname, gte, lte, etype)
             }
         }
     }
@@ -180,9 +198,7 @@ def change_merged_count_by_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, "Change", "MERGED"),
-                "should": [],
-                "must_not": []
+                    repository_fullname, gte, lte, "Change", "MERGED")
             }
         }
     }
@@ -211,9 +227,7 @@ def pr_merged_avg_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, "PullRequest", "MERGED"),
-                "should": [],
-                "must_not": []
+                    repository_fullname, gte, lte, "PullRequest", "MERGED")
             }
         }
     }
