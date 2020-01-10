@@ -56,6 +56,27 @@ def run_query(es, index, body):
     return took, hits, res
 
 
+def count_events(
+        es, index, repository_fullname, gte, lte, etype, interval=None):
+    body = {
+        "query": {
+            "bool": {
+                "filter": generate_filter(
+                    repository_fullname, gte, lte, etype),
+                "should": [],
+                "must_not": []
+            }
+        }
+    }
+    params = {'index': index, 'doc_type': index}
+    params['body'] = body
+    try:
+        res = es.count(**params)
+    except Exception:
+        return {}
+    return res['count']
+
+
 def events_histo(
         es, index,
         repository_fullname, gte, lte, etype, interval="30m"):
