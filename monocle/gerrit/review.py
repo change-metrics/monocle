@@ -161,6 +161,10 @@ class ReviewesFetcher(object):
                 'repository_fullname': change['repository_fullname'],
                 'repository_shortname': change['repository_shortname'],
                 'number': change['number'],
+                'repository_fullname_and_number': "%s#%s" % (
+                    change['repository_fullname'],
+                    change['number'],
+                )
             })
             if change['state'] in ('MERGED', 'CLOSED'):
                 objects.append({
@@ -172,6 +176,10 @@ class ReviewesFetcher(object):
                     'repository_fullname': change['repository_fullname'],
                     'repository_shortname': change['repository_shortname'],
                     'number': change['number'],
+                    'repository_fullname_and_number': "%s#%s" % (
+                        change['repository_fullname'],
+                        change['number'],
+                    )
                 })
             for comment in review['messages']:
                 objects.append(
@@ -188,6 +196,10 @@ class ReviewesFetcher(object):
                         'repository_shortname': change['repository_shortname'],
                         'number': change['number'],
                         'on_author': change['author'],
+                        'repository_fullname_and_number': "%s#%s" % (
+                            change['repository_fullname'],
+                            change['number'],
+                        )
                     }
                 )
             for label in review['labels']:
@@ -211,6 +223,10 @@ class ReviewesFetcher(object):
                             'repository_shortname': change[
                                 'repository_shortname'],
                             'number': change['number'],
+                            'repository_fullname_and_number': "%s#%s" % (
+                                 change['repository_fullname'],
+                                 change['number'],
+                            ),
                             'on_author': change['author'],
                             'approval': "%s%s" % (
                                 label,

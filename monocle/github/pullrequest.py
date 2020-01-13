@@ -258,6 +258,10 @@ class PRsFetcher(object):
                     pr['repository']['name']),
                 'repository_shortname': pr['repository']['name'],
                 'number': pr['number'],
+                'repository_fullname_and_number': "%s/%s#%s" % (
+                    pr['repository']['owner']['login'],
+                    pr['repository']['name'],
+                    pr['number']),
             })
             for comment in pr['comments']['edges']:
                 _comment = comment['node']
@@ -274,6 +278,10 @@ class PRsFetcher(object):
                             pr['repository']['name']),
                         'repository_shortname': pr['repository']['name'],
                         'number': pr['number'],
+                        'repository_fullname_and_number': "%s/%s#%s" % (
+                            pr['repository']['owner']['login'],
+                            pr['repository']['name'],
+                            pr['number']),
                         'on_author': pr['author']['login'],
                     }
                 )
@@ -294,6 +302,10 @@ class PRsFetcher(object):
                     'repository_shortname': pr['repository']['name'],
                     'number': pr['number'],
                     'on_author': pr['author']['login'],
+                    'repository_fullname_and_number': "%s/%s#%s" % (
+                        pr['repository']['owner']['login'],
+                        pr['repository']['name'],
+                        pr['number']),
                 }
                 if 'state' in _timelineitem:
                     obj['approval'] = _timelineitem['state']

@@ -37,6 +37,7 @@ class ELmonocleDB():
                     "id": {"type": "keyword"},
                     "type": {"type": "keyword"},
                     "number": {"type": "keyword"},
+                    "repository_fullname_and_number": {"type": "keyword"},
                     "title": {"type": "keyword"},
                     "repository_prefix": {"type": "keyword"},
                     "repository_fullname": {"type": "keyword"},

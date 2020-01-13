@@ -173,6 +173,22 @@ def events_top_approval(
         gte, lte, etype, interval, size)
 
 
+def changes_top_commented(
+        es, index,
+        repository_fullname, gte, lte, etype=None, interval=None):
+    return _events_top(
+        es, index, "repository_fullname_and_number", repository_fullname,
+        gte, lte, "ChangeCommentedEvent", interval, 10**6)
+
+
+def changes_top_reviewed(
+        es, index,
+        repository_fullname, gte, lte, etype=None, interval=None):
+    return _events_top(
+        es, index, "repository_fullname_and_number", repository_fullname,
+        gte, lte, "ChangeReviewedEvent", interval, 10**6)
+
+
 def change_merged_count_by_duration(
         es, index,
         repository_fullname, gte, lte, etype, interval=None, size=None):
