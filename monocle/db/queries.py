@@ -50,10 +50,10 @@ def run_query(es, index, body):
     try:
         res = es.search(**params)
     except Exception:
-        return (0, 0, [])
-    took = res['took']
-    hits = res['hits']['total']
-    return took, hits, res
+        return []
+    # took = res['took']
+    # hits = res['hits']['total']
+    return res
 
 
 def count_events(
@@ -95,8 +95,8 @@ def count_authors(
             }
         }
     }
-    took, hits, data = run_query(es, index, body)
-    return took, hits, data['aggregations']['agg1']['value']
+    data = run_query(es, index, body)
+    return data['aggregations']['agg1']['value']
 
 
 def events_histo(
@@ -109,6 +109,11 @@ def events_histo(
                     "field": "created_at",
                     "interval": interval,
                 }
+            },
+            "avg_count": {
+                "avg_bucket": {
+                    "buckets_path": "agg1>_count"
+                }
             }
         },
         "size": 0,
@@ -119,8 +124,10 @@ def events_histo(
             }
         }
     }
-    took, hits, data = run_query(es, index, body)
-    return took, hits, data['aggregations']['agg1']['buckets']
+    data = run_query(es, index, body)
+    return (
+        data['aggregations']['agg1']['buckets'],
+        data['aggregations']['avg_count']['value'])
 
 
 def _events_top(
@@ -146,8 +153,8 @@ def _events_top(
             }
         }
     }
-    took, hits, data = run_query(es, index, body)
-    return took, hits, data['aggregations']['agg1']['buckets']
+    data = run_query(es, index, body)
+    return data['aggregations']['agg1']['buckets']
 
 
 def events_top_authors(
@@ -202,8 +209,8 @@ def change_merged_count_by_duration(
             }
         }
     }
-    took, hits, data = run_query(es, index, body)
-    return took, hits, data['aggregations']['agg1']['buckets']
+    data = run_query(es, index, body)
+    return data['aggregations']['agg1']['buckets']
 
 
 def pr_merged_avg_duration(
@@ -231,5 +238,5 @@ def pr_merged_avg_duration(
             }
         }
     }
-    took, hits, data = run_query(es, index, body)
-    return took, hits, data['aggregations']['agg1']
+    data = run_query(es, index, body)
+    return data['aggregations']['agg1']

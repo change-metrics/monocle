@@ -1,6 +1,8 @@
 Repositories report
 -------------------
 
+X: primitive query exists
+
 Filters/options
 ...............
 
@@ -13,19 +15,19 @@ Author exclude list
 Infos
 .....
 
-Changes opened count by authors count
-Changes reviewed count by authors count
-Changes commented count by authors count
-Changes merged count by authors count
-Changes closed count by authors count
+Changes opened count by authors count X (count_events and count_authors)
+Changes reviewed count by authors count X
+Changes commented count by authors count X
+Changes merged count by authors count X
+Changes closed count by authors count X
 
 Graphs
 ......
 
 Box with header Text info like:
-- ratio Merged/Opened and Closed/Merged (eg. 2% abandonned)
-- Average changes opened/merged/closed by definition (Day/Week/Month)
-Bar chart with three datasets Changes Opened/Merged/Closed
+- ratio Merged/Opened and Closed/Merged (eg. 2% abandonned) X (count_events)
+- Average changes opened/merged/closed by definition (Day/Week/Month) X (count_events)
+Bar chart with three datasets Changes Opened/Merged/Closed X (events_histo)
 
 Box with header Text info like:
 - ratio Reviewed/total changes and Commented/total changes (total changes are changes created during the period boundary)
