@@ -30,8 +30,8 @@ Box with header Text info like:
 Bar chart with three datasets Changes Opened/Merged/Closed X (events_histo)
 
 Box with header Text info like:
-- ratio Reviewed/total changes and Commented/total changes (total changes are changes created during the period boundary)
-  (get list of created change id, get list of commented/reviewed change id (changes_top_commented/reviewed) => compute the intersection)
+- ratio Reviewed/total changes and Commented/total changes (total changes are changes created during the period boundary) X
+  (get list of created change id (scan_event), get list of commented/reviewed change id (changes_top_commented/reviewed) => compute the intersection)
 - average delay before first comment on change created during the period
 - average delay before first review on change created during the period
 Bar chart with two datasets Changes Commented/Reviewed X (events_histo)

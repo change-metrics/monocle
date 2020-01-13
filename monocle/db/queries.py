@@ -20,6 +20,9 @@
 # SOFTWARE.
 
 
+from elasticsearch.helpers import scan as scanner
+
+
 def generate_filter(
         repository_fullname, gte=None, lte=None, etype=None, state=None):
     created_at_range = {
@@ -51,9 +54,26 @@ def run_query(es, index, body):
         res = es.search(**params)
     except Exception:
         return []
-    # took = res['took']
-    # hits = res['hits']['total']
     return res
+
+
+def _scan_events(
+        es, index,
+        repository_fullname, gte, lte, etype, field=False, interval=None):
+    params = {'index': index, 'doc_type': index}
+    body = {
+        # "_source": "repository_fullname_and_number",
+        "_source": field,
+        "query": {
+            "bool": {
+                "filter": generate_filter(
+                    repository_fullname, gte, lte, etype)
+            }
+        }
+    }
+    params['query'] = body
+    data = scanner(es, **params)
+    return [d for d in data]
 
 
 def count_events(
