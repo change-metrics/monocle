@@ -116,7 +116,7 @@ class ReviewesFetcher(object):
                 'repository_shortname': "/".join(
                     review['project'].split('/')[1:]),
                 'author': "%s/%s" % (
-                    review['owner'].get('name'), review['owner']['email']),
+                    review['owner'].get('name'), review['owner']['_account_id']),
                 'title': review['subject'],
                 'updated_at': self.convert_date_for_db(review['updated']),
                 'created_at': self.convert_date_for_db(review['created']),
@@ -133,7 +133,7 @@ class ReviewesFetcher(object):
                 # Note(fbo): Only one assignee possible by review on Gerrit
                 'assignees': (["%s/%s" % (
                     review['assignee'].get('name'),
-                    review['assignee']['email'])]
+                    review['assignee']['_account_id'])]
                     if review.get('assignee') else [])
             }
             if change['state'] == 'CLOSED':
@@ -146,9 +146,11 @@ class ReviewesFetcher(object):
                 change['duration'] = timedelta(
                     change['closed_at'], change['created_at'])
             if change['state'] == 'MERGED':
-                change['merged_by'] = "%s/%s" % (
-                    review['submitter'].get('name'),
-                    review['submitter']['email'])
+                if "submitter" in review:
+                    # Gerrit 2.x seems to not have that submitter attribute
+                    change['merged_by'] = "%s/%s" % (
+                        review['submitter'].get('name'),
+                        review['submitter']['_account_id'])
             else:
                 change['merged_by'] = None
             objects.append(change)
@@ -190,7 +192,7 @@ class ReviewesFetcher(object):
                             comment['date']),
                         'author': "%s/%s" % (
                             comment['author'].get('name'),
-                            comment['author']['email']),
+                            comment['author']['_account_id']),
                         'repository_prefix': change['repository_prefix'],
                         'repository_fullname': change['repository_fullname'],
                         'repository_shortname': change['repository_shortname'],
@@ -206,16 +208,17 @@ class ReviewesFetcher(object):
                 for _review in review['labels'][label].get('all', []):
                     # If the date field exists then it means a review label
                     # has been set by someone
-                    if 'date' in _review:
+                    if 'date' in _review and 'value' in _review:
                         obj = {
                             'type': 'ChangeReviewedEvent',
                             'id': "%s_%s_%s_%s" % (
-                                self.convert_date_for_db(_review['date']),
-                                label, _review['value'], _review['email']),
+                                    self.convert_date_for_db(_review['date']),
+                                    label, _review['value'],
+                                    _review['_account_id']),
                             'created_at': self.convert_date_for_db(
                                 _review['date']),
                             'author': "%s/%s" % (
-                                _review.get('name'), _review['email']),
+                                _review.get('name'), _review['_account_id']),
                             'repository_prefix': change[
                                 'repository_prefix'],
                             'repository_fullname': change[
@@ -224,8 +227,8 @@ class ReviewesFetcher(object):
                                 'repository_shortname'],
                             'number': change['number'],
                             'repository_fullname_and_number': "%s#%s" % (
-                                 change['repository_fullname'],
-                                 change['number'],
+                                change['repository_fullname'],
+                                change['number'],
                             ),
                             'on_author': change['author'],
                             'approval': "%s%s" % (
