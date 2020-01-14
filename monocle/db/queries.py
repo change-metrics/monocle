@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
+import statistics
 from elasticsearch.helpers import scan as scanner
 
 
@@ -174,7 +174,14 @@ def _events_top(
         }
     }
     data = run_query(es, index, body)
-    return data['aggregations']['agg1']['buckets']
+    count_series = [
+        b['doc_count'] for b in
+        data['aggregations']['agg1']['buckets']]
+    count_avg = statistics.mean(count_series)
+    count_median = statistics.median(sorted(count_series))
+    return {
+        'buckets': data['aggregations']['agg1']['buckets'],
+        'count_avg': count_avg, 'count_median': count_median}
 
 
 def events_top_authors(

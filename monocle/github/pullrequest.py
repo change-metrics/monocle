@@ -241,6 +241,7 @@ class PRsFetcher(object):
             change['created_at'] = pr['createdAt']
             change['merged_at'] = pr['mergedAt']
             change['closed_at'] = pr['closedAt']
+            # A closed PR is an unmerged closed PR
             change['state'] = pr['state']
             if pr['state'] in ('CLOSED', 'MERGED'):
                 change['duration'] = timedelta(
