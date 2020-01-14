@@ -71,7 +71,7 @@ class ReviewesFetcher(object):
 
     def get(self, updated_since):
         updated_since = self.convert_date_for_query(updated_since)
-        request_params = "?q=after:%s+repositories:%s" % (
+        request_params = "?q=after:%s+project:%s" % (
             updated_since, self.repository_prefix)
         for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
             request_params += '&o=%s' % option
