@@ -187,10 +187,10 @@ def events_top_authors(
 
 def events_top_approval(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=10):
+        repository_fullname, gte, lte, etype=None, interval=None, size=10):
     return _events_top(
         es, index, "approval", repository_fullname,
-        gte, lte, etype, interval, size)
+        gte, lte, "ChangeReviewedEvent", interval, size)
 
 
 def changes_top_commented(
@@ -207,6 +207,22 @@ def changes_top_reviewed(
     return _events_top(
         es, index, "repository_fullname_and_number", repository_fullname,
         gte, lte, "ChangeReviewedEvent", interval, 10**6)
+
+
+def authors_top_reviewed(
+        es, index,
+        repository_fullname, gte, lte, etype=None, interval=None):
+    return _events_top(
+        es, index, "on_author", repository_fullname,
+        gte, lte, "ChangeReviewedEvent", interval, 10**6)
+
+
+def authors_top_commented(
+        es, index,
+        repository_fullname, gte, lte, etype=None, interval=None):
+    return _events_top(
+        es, index, "on_author", repository_fullname,
+        gte, lte, "ChangeCommentedEvent", interval, 10**6)
 
 
 def change_merged_count_by_duration(
@@ -270,7 +286,7 @@ def pr_merged_avg_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, "PullRequest", "MERGED")
+                    repository_fullname, gte, lte, "Change", "MERGED")
             }
         }
     }

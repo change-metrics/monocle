@@ -227,6 +227,10 @@ class PRsFetcher(object):
             change['repository_fullname'] = "%s/%s" % (
                 pr['repository']['owner']['login'], pr['repository']['name'])
             change['repository_shortname'] = pr['repository']['name']
+            change['repository_fullname_and_number'] = "%s#%s" % (
+                change['repository_fullname'],
+                change['number'],
+            )
             change['author'] = pr['author']['login']
             change['title'] = pr['title']
             if pr['mergedBy']:

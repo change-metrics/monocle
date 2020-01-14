@@ -136,6 +136,10 @@ class ReviewesFetcher(object):
                     review['assignee']['_account_id'])]
                     if review.get('assignee') else [])
             }
+            change['repository_fullname_and_number'] = "%s#%s" % (
+                change['repository_fullname'],
+                change['number'],
+            )
             if change['state'] == 'CLOSED':
                 # CLOSED means abandoned in that context
                 # use updated_at date as closed_at
