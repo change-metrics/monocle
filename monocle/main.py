@@ -131,6 +131,9 @@ def main():
         '--lte', help='Scope to events created before date')
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
+    parser_dbquery.add_argument(
+        '--exclude-authors', help='Authors exclude list (comma separated)',
+        default='')
 
     args = parser.parse_args()
 
@@ -155,7 +158,8 @@ def main():
         ret = db.run_named_query(
             args.name,
             args.repository, args.gte, args.lte, args.type,
-            interval=args.interval)
+            interval=args.interval,
+            exclude_authors=args.exclude_authors.split(','))
         print(ret)
 
 

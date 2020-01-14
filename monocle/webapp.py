@@ -40,6 +40,7 @@ def query(name):
     lte = request.args.get('lte')
     etype = request.args.get('type')
     interval = request.args.get('interval', '3h')
+    exclude_authors = request.args.get('exclude-authors', []).split(',')
     db = ELmonocleDB()
     if gte:
         gte = utils.date_to_epoch_ml(gte)
@@ -47,7 +48,7 @@ def query(name):
         lte = utils.date_to_epoch_ml(lte)
     result = db.run_named_query(
         name, repository_fullname, gte, lte,
-        etype, interval=interval)
+        etype, interval=interval, exlude_authors=exclude_authors)
     return jsonify(result)
 
 

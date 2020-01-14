@@ -24,7 +24,8 @@ from elasticsearch.helpers import scan as scanner
 
 
 def generate_filter(
-        repository_fullname, gte=None, lte=None, etype=None, state=None):
+        repository_fullname, gte=None, lte=None,
+        etype=None, state=None):
     created_at_range = {
         "created_at": {
             "format": "epoch_millis"
@@ -59,7 +60,8 @@ def run_query(es, index, body):
 
 def _scan_events(
         es, index,
-        repository_fullname, gte, lte, etype, field=False, interval=None):
+        repository_fullname, gte, lte, etype, field=False, interval=None,
+        exclude_authors=[]):
     params = {'index': index, 'doc_type': index}
     body = {
         # "_source": "repository_fullname_and_number",
@@ -67,7 +69,12 @@ def _scan_events(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype)
+                    repository_fullname, gte, lte, etype),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -77,12 +84,18 @@ def _scan_events(
 
 
 def count_events(
-        es, index, repository_fullname, gte, lte, etype, interval=None):
+        es, index, repository_fullname, gte, lte, etype, interval=None,
+        exclude_authors=[]):
     body = {
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype)
+                    repository_fullname, gte, lte, etype),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -97,7 +110,8 @@ def count_events(
 
 def count_authors(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None):
+        repository_fullname, gte, lte, etype, interval=None,
+        exclude_authors=[]):
     body = {
         "aggs": {
             "agg1": {
@@ -111,7 +125,12 @@ def count_authors(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype)
+                    repository_fullname, gte, lte, etype),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -121,7 +140,8 @@ def count_authors(
 
 def events_histo(
         es, index,
-        repository_fullname, gte, lte, etype, interval="30m"):
+        repository_fullname, gte, lte, etype, interval="30m",
+        exclude_authors=[]):
     body = {
         "aggs": {
             "agg1": {
@@ -140,7 +160,12 @@ def events_histo(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype)
+                    repository_fullname, gte, lte, etype),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -152,7 +177,8 @@ def events_histo(
 
 def _events_top(
         es, index, field,
-        repository_fullname, gte, lte, etype, interval=None, size=10):
+        repository_fullname, gte, lte, etype, interval=None, size=10,
+        exclude_authors=[]):
     body = {
         "aggs": {
             "agg1": {
@@ -169,7 +195,12 @@ def _events_top(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, etype)
+                    repository_fullname, gte, lte, etype),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -186,55 +217,68 @@ def _events_top(
 
 def events_top_authors(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=10):
+        repository_fullname, gte, lte, etype, interval=None, size=10,
+        exclude_authors=[]):
     return _events_top(
         es, index, "author", repository_fullname,
-        gte, lte, etype, interval, size)
+        gte, lte, etype, interval, size,
+        exclude_authors)
 
 
 def events_top_approval(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None, size=10):
+        repository_fullname, gte, lte, etype=None, interval=None, size=10,
+        exclude_authors=[]):
     return _events_top(
         es, index, "approval", repository_fullname,
-        gte, lte, "ChangeReviewedEvent", interval, size)
+        gte, lte, "ChangeReviewedEvent", interval, size,
+        exclude_authors)
 
 
 def changes_top_commented(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None):
+        repository_fullname, gte, lte, etype=None, interval=None,
+        exclude_authors=[]):
     return _events_top(
         es, index, "repository_fullname_and_number", repository_fullname,
-        gte, lte, "ChangeCommentedEvent", interval, 10**6)
+        gte, lte, "ChangeCommentedEvent", interval, 10**6,
+        exclude_authors)
 
 
 def changes_top_reviewed(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None):
+        repository_fullname, gte, lte, etype=None, interval=None,
+        exclude_authors=[]):
     return _events_top(
         es, index, "repository_fullname_and_number", repository_fullname,
-        gte, lte, "ChangeReviewedEvent", interval, 10**6)
+        gte, lte, "ChangeReviewedEvent", interval, 10**6,
+        exclude_authors)
 
 
 def authors_top_reviewed(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None):
+        repository_fullname, gte, lte, etype=None, interval=None,
+        exclude_authors=[]):
     return _events_top(
         es, index, "on_author", repository_fullname,
-        gte, lte, "ChangeReviewedEvent", interval, 10**6)
+        gte, lte, "ChangeReviewedEvent", interval, 10**6,
+        exclude_authors)
 
 
 def authors_top_commented(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None):
+        repository_fullname, gte, lte, etype=None, interval=None,
+        exclude_authors=[]):
     return _events_top(
         es, index, "on_author", repository_fullname,
-        gte, lte, "ChangeCommentedEvent", interval, 10**6)
+        gte, lte, "ChangeCommentedEvent", interval, 10**6,
+        exclude_authors)
 
 
 def change_merged_count_by_duration(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=None):
+        repository_fullname, gte, lte, etype, interval=None, size=None,
+        exclude_authors=[]):
     body = {
         "aggs": {
             "agg1": {
@@ -264,7 +308,12 @@ def change_merged_count_by_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, "Change", "MERGED")
+                    repository_fullname, gte, lte, "Change", "MERGED"),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
@@ -274,7 +323,8 @@ def change_merged_count_by_duration(
 
 def pr_merged_avg_duration(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=None):
+        repository_fullname, gte, lte, etype, interval=None, size=None,
+        exclude_authors=[]):
     body = {
         "aggs": {
             "agg1": {
@@ -293,7 +343,12 @@ def pr_merged_avg_duration(
         "query": {
             "bool": {
                 "filter": generate_filter(
-                    repository_fullname, gte, lte, "Change", "MERGED")
+                    repository_fullname, gte, lte, "Change", "MERGED"),
+                "must_not": {
+                    "terms": {
+                        "author": exclude_authors
+                    }
+                }
             }
         }
     }
