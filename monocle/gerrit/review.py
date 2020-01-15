@@ -116,7 +116,8 @@ class ReviewesFetcher(object):
                 'repository_shortname': "/".join(
                     review['project'].split('/')[1:]),
                 'author': "%s/%s" % (
-                    review['owner'].get('name'), review['owner']['_account_id']),
+                    review['owner'].get('name'),
+                    review['owner']['_account_id']),
                 'title': review['subject'],
                 'updated_at': self.convert_date_for_db(review['updated']),
                 'created_at': self.convert_date_for_db(review['created']),

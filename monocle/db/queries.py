@@ -48,6 +48,14 @@ def generate_filter(
     return qfilter
 
 
+def get_kw_args(kwargs):
+    etype = kwargs.get('etype')
+    interval = kwargs.get('interval', '30m')
+    size = kwargs.get('size', 10)
+    exclude_authors = kwargs.get('exclude_authors', [])
+    return etype, interval, size, exclude_authors
+
+
 def run_query(es, index, body):
     params = {'index': index, 'doc_type': index}
     params['body'] = body
@@ -60,8 +68,8 @@ def run_query(es, index, body):
 
 def _scan_events(
         es, index,
-        repository_fullname, gte, lte, etype, field=False, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, etype, field=False, **kwargs):
+    etype, interval, _, exclude_authors = get_kw_args(kwargs)
     params = {'index': index, 'doc_type': index}
     body = {
         # "_source": "repository_fullname_and_number",
@@ -84,8 +92,8 @@ def _scan_events(
 
 
 def count_events(
-        es, index, repository_fullname, gte, lte, etype, interval=None,
-        exclude_authors=[]):
+        es, index, repository_fullname, gte, lte, **kwargs):
+    etype, interval, _, exclude_authors = get_kw_args(kwargs)
     body = {
         "query": {
             "bool": {
@@ -110,8 +118,8 @@ def count_events(
 
 def count_authors(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    etype, interval, _, exclude_authors = get_kw_args(kwargs)
     body = {
         "aggs": {
             "agg1": {
@@ -140,8 +148,8 @@ def count_authors(
 
 def events_histo(
         es, index,
-        repository_fullname, gte, lte, etype, interval="30m",
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    etype, interval, _, exclude_authors = get_kw_args(kwargs)
     body = {
         "aggs": {
             "agg1": {
@@ -177,8 +185,8 @@ def events_histo(
 
 def _events_top(
         es, index, field,
-        repository_fullname, gte, lte, etype, interval=None, size=10,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    etype, interval, size, exclude_authors = get_kw_args(kwargs)
     body = {
         "aggs": {
             "agg1": {
@@ -217,8 +225,8 @@ def _events_top(
 
 def events_top_authors(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=10,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    etype, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "author", repository_fullname,
         gte, lte, etype, interval, size,
@@ -227,8 +235,8 @@ def events_top_authors(
 
 def events_top_approval(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None, size=10,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "approval", repository_fullname,
         gte, lte, "ChangeReviewedEvent", interval, size,
@@ -237,38 +245,38 @@ def events_top_approval(
 
 def changes_top_commented(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "repository_fullname_and_number", repository_fullname,
-        gte, lte, "ChangeCommentedEvent", interval, 10**6,
+        gte, lte, "ChangeCommentedEvent", interval, size,
         exclude_authors)
 
 
 def changes_top_reviewed(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "repository_fullname_and_number", repository_fullname,
-        gte, lte, "ChangeReviewedEvent", interval, 10**6,
+        gte, lte, "ChangeReviewedEvent", interval, size,
         exclude_authors)
 
 
 def authors_top_reviewed(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "on_author", repository_fullname,
-        gte, lte, "ChangeReviewedEvent", interval, 10**6,
+        gte, lte, "ChangeReviewedEvent", interval, size,
         exclude_authors)
 
 
 def authors_top_commented(
         es, index,
-        repository_fullname, gte, lte, etype=None, interval=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, size, exclude_authors = get_kw_args(kwargs)
     return _events_top(
         es, index, "on_author", repository_fullname,
         gte, lte, "ChangeCommentedEvent", interval, 10**6,
@@ -277,8 +285,8 @@ def authors_top_commented(
 
 def change_merged_count_by_duration(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, _, exclude_authors = get_kw_args(kwargs)
     body = {
         "aggs": {
             "agg1": {
@@ -323,8 +331,8 @@ def change_merged_count_by_duration(
 
 def pr_merged_avg_duration(
         es, index,
-        repository_fullname, gte, lte, etype, interval=None, size=None,
-        exclude_authors=[]):
+        repository_fullname, gte, lte, **kwargs):
+    _, interval, _, exclude_authors = get_kw_args(kwargs)
     body = {
         "aggs": {
             "agg1": {

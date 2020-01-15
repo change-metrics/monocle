@@ -132,6 +132,9 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
     parser_dbquery.add_argument(
+        '--size', help='Return maximum of size results',
+        default=10)
+    parser_dbquery.add_argument(
         '--exclude-authors', help='Authors exclude list (comma separated)',
         default='')
 
@@ -157,8 +160,10 @@ def main():
             args.lte = utils.date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
             args.name,
-            args.repository, args.gte, args.lte, args.type,
+            args.repository, args.gte, args.lte,
+            etype=args.type,
             interval=args.interval,
+            size=args.size,
             exclude_authors=args.exclude_authors.split(','))
         print(ret)
 

@@ -6,11 +6,11 @@ X: primitive query exists
 Filters/options
 ...............
 
-Repository regexp
-Date boundary (on create date)
-Bar chart histo definition: set definition Day/Week/Month
+Repository regexp X
+Date boundary (on create date) X
+Bar chart histo definition: set definition Day/Week/Month X
 Set review approval type (affect Top reviewer)
-Author exclude list
+Author exclude list X
 
 Infos
 .....
