@@ -48,7 +48,9 @@ def query(name):
     if lte:
         lte = utils.date_to_epoch_ml(lte)
     result = db.run_named_query(
-        name, repository_fullname, gte, lte,
+        name, repository_fullname,
+        gte=gte,
+        lte=lte,
         etype=etype,
         interval=interval,
         exlude_authors=exclude_authors,

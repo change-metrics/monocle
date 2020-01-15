@@ -9,7 +9,7 @@ Filters/options
 Repository regexp X
 Date boundary (on create date) X
 Bar chart histo definition: set definition Day/Week/Month X
-Set review approval type (affect Top reviewer)
+Set review approval type (affect Top reviewer) X
 Author exclude list X
 
 Infos
@@ -39,7 +39,7 @@ Box with header Text info like:
 - average delay before first review on change created during the period
 Bar chart with two datasets Changes Commented/Reviewed X (events_histo)
 
-Pie chart with review approval ratio X (events_top_approval)
+Pie chart with review approval ratio X (changes_top_approval)
 
 Most active Reviewer X (events_top_authors) ChangeReviewedEvent
 Most active Commenter X (events_top_authors) ChangeCommentedEvent

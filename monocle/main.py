@@ -132,6 +132,8 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
     parser_dbquery.add_argument(
+        '--approval', help='Scope to events with approval')
+    parser_dbquery.add_argument(
         '--size', help='Return maximum of size results',
         default=10)
     parser_dbquery.add_argument(
@@ -160,9 +162,12 @@ def main():
             args.lte = utils.date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
             args.name,
-            args.repository, args.gte, args.lte,
+            args.repository,
+            gte=args.gte,
+            lte=args.lte,
             etype=args.type,
             interval=args.interval,
+            approval=args.approval,
             size=args.size,
             exclude_authors=args.exclude_authors.split(','))
         print(ret)
