@@ -45,24 +45,25 @@ class MonocleCrawler():
         if args.command == 'github_crawler':
             self.get_one_rep = getattr(args, 'repository', None)
             self.org = args.org
-            self.repository_re = args.org + '.*'
+            self.repository_el_re = args.org.lstrip('^')
             self.prf = pullrequest.PRsFetcher(
                 GithubGraphQLQuery(args.token),
                 args.host, args.org)
         elif args.command == 'gerrit_crawler':
-            self.repository_re = args.repository
+            self.repository_el_re = args.repository.lstrip('^')
             self.prf = review.ReviewesFetcher(
                 args.host, args.repository)
 
     def get_last_updated_date(self):
-        change = self.db.get_last_updated(self.repository_re)
+        change = self.db.get_last_updated(self.repository_el_re)
         if not change:
             return (
                 self.updated_since or
                 datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
         else:
-            logging.info("Most recent change in the database for %s" % (
-                self.repository_re))
+            logging.info(
+                "Most recent change date in the database for %s is %s" % (
+                    self.repository_el_re, change['updated_at']))
             return change['updated_at']
 
     def run_step(self):
@@ -164,7 +165,7 @@ def main():
             args.lte = utils.date_to_epoch_ml(args.lte)
         ret = db.run_named_query(
             args.name,
-            args.repository,
+            args.repository.lstrip('^'),
             gte=args.gte,
             lte=args.lte,
             etype=args.type,
