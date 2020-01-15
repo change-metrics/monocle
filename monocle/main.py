@@ -55,13 +55,15 @@ class MonocleCrawler():
                 args.host, args.repository)
 
     def get_last_updated_date(self):
-        pr = self.db.get_last_updated(self.repository_re)
-        if not pr:
+        change = self.db.get_last_updated(self.repository_re)
+        if not change:
             return (
                 self.updated_since or
                 datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
         else:
-            return pr['updated_at']
+            logging.info("Most recent change in the database for %s" % (
+                self.repository_re))
+            return change['updated_at']
 
     def run_step(self):
         updated_since = self.get_last_updated_date()
