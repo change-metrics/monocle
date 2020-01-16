@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 import statistics
 from elasticsearch.helpers import scan as scanner
 
@@ -30,6 +31,9 @@ def generate_filter(repository_fullname, **kwargs):
     author = kwargs.get('author')
     approval = kwargs.get('approval')
     state = kwargs.get('state')
+
+    if isinstance(etype, str):
+        etype = list(etype)
 
     created_at_range = {
         "created_at": {
@@ -47,7 +51,7 @@ def generate_filter(repository_fullname, **kwargs):
         {"range": created_at_range}
     ]
     if etype:
-        qfilter.append({"term": {"type": etype}})
+        qfilter.append({"terms": {"type": etype}})
     if author:
         qfilter.append({"term": {"author": author}})
     if state:
@@ -55,6 +59,17 @@ def generate_filter(repository_fullname, **kwargs):
     if approval:
         qfilter.append({'term': {"approval": approval}})
     return qfilter
+
+
+def add_exclude_author_clause(kwargs, body):
+    if kwargs['exclude_authors']:
+        body["query"]["bool"]["must_not"].append(
+            {
+                "terms": {
+                    "author": kwargs['exclude_authors']
+                }
+            }
+        )
 
 
 def set_kwargs_defaults(kwargs):
@@ -89,33 +104,29 @@ def _scan_events(es, index, repository_fullname, **kwargs):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     params['query'] = body
     data = scanner(es, **params)
     return [d for d in data]
 
 
+# TODO (Change type is not an event an must be discarded)
 def count_events(es, index, repository_fullname, **kwargs):
     kwargs = set_kwargs_defaults(kwargs)
     body = {
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
+    print(body)
     params = {'index': index, 'doc_type': index}
     params['body'] = body
     try:
@@ -140,14 +151,11 @@ def count_authors(es, index, repository_fullname, **kwargs):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['value']
 
@@ -172,14 +180,11 @@ def events_histo(es, index, repository_fullname, **kwargs):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return (
         data['aggregations']['agg1']['buckets'],
@@ -204,14 +209,11 @@ def _events_top(
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     count_series = [
         b['doc_count'] for b in
@@ -242,7 +244,7 @@ def changes_top_commented(es, index, repository_fullname, **kwargs):
     kwargs = set_kwargs_defaults(kwargs)
     kwargs['etype'] = "ChangeCommentedEvent"
     return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number", 
+        es, index, repository_fullname, "repository_fullname_and_number",
         **kwargs)
 
 
@@ -301,14 +303,11 @@ def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['buckets']
 
@@ -335,13 +334,10 @@ def pr_merged_avg_duration(es, index, repository_fullname, **kwargs):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": {
-                    "terms": {
-                        "author": kwargs['exclude_authors']
-                    }
-                }
+                "must_not": []
             }
         }
     }
+    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']

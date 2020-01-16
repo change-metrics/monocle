@@ -42,7 +42,11 @@ def query(name):
     author = request.args.get('author')
     size = request.args.get('size')
     interval = request.args.get('interval', '3h')
-    exclude_authors = request.args.get('exclude-authors', []).split(',')
+    exclude_authors = request.args.get('exclude-authors')
+    if exclude_authors:
+        exclude_authors = exclude_authors.strip().split(',')
+    if etype:
+        etype = etype.strip().split(',')
     db = ELmonocleDB()
     if gte:
         gte = utils.date_to_epoch_ml(gte)

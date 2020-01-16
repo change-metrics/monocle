@@ -133,7 +133,7 @@ def main():
     parser_dbquery.add_argument(
         '--lte', help='Scope to events created before date')
     parser_dbquery.add_argument(
-        '--type', help='Scope to events type')
+        '--type', help='Scope to events types list (comma separated)')
     parser_dbquery.add_argument(
         '--author', help='Scope to events author')
     parser_dbquery.add_argument(
@@ -142,8 +142,7 @@ def main():
         '--size', help='Return maximum of size results',
         default=10)
     parser_dbquery.add_argument(
-        '--exclude-authors', help='Authors exclude list (comma separated)',
-        default='')
+        '--exclude-authors', help='Authors exclude list (comma separated)')
 
     args = parser.parse_args()
 
@@ -159,12 +158,17 @@ def main():
             db = ELmonocleDB()
             db.delete_repository(args.delete_repository)
 
+    print(args)
     if args.command == "dbquery":
         db = ELmonocleDB()
         if args.gte:
             args.gte = utils.date_to_epoch_ml(args.gte)
         if args.lte:
             args.lte = utils.date_to_epoch_ml(args.lte)
+        if args.exclude_authors:
+            args.exclude_authors = args.exclude_authors.strip().split(',')
+        if args.type:
+            args.type = args.type.strip().split(',')
         ret = db.run_named_query(
             args.name,
             args.repository.lstrip('^'),
@@ -175,7 +179,7 @@ def main():
             interval=args.interval,
             approval=args.approval,
             size=args.size,
-            exclude_authors=args.exclude_authors.split(','))
+            exclude_authors=args.exclude_authors)
         print(ret)
 
 
