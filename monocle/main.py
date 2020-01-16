@@ -135,6 +135,8 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events type')
     parser_dbquery.add_argument(
+        '--author', help='Scope to events author')
+    parser_dbquery.add_argument(
         '--approval', help='Scope to events with approval')
     parser_dbquery.add_argument(
         '--size', help='Return maximum of size results',
@@ -169,6 +171,7 @@ def main():
             gte=args.gte,
             lte=args.lte,
             etype=args.type,
+            author=args.author,
             interval=args.interval,
             approval=args.approval,
             size=args.size,

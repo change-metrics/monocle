@@ -39,6 +39,7 @@ def query(name):
     gte = request.args.get('gte')
     lte = request.args.get('lte')
     etype = request.args.get('type')
+    author = request.args.get('author')
     size = request.args.get('size')
     interval = request.args.get('interval', '3h')
     exclude_authors = request.args.get('exclude-authors', []).split(',')
@@ -52,6 +53,7 @@ def query(name):
         gte=gte,
         lte=lte,
         etype=etype,
+        author=author,
         interval=interval,
         exlude_authors=exclude_authors,
         size=size)

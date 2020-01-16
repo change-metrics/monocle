@@ -27,6 +27,7 @@ def generate_filter(repository_fullname, **kwargs):
     gte = kwargs.get('gte')
     lte = kwargs.get('lte')
     etype = kwargs.get('etype')
+    author = kwargs.get('author')
     approval = kwargs.get('approval')
     state = kwargs.get('state')
 
@@ -47,6 +48,8 @@ def generate_filter(repository_fullname, **kwargs):
     ]
     if etype:
         qfilter.append({"term": {"type": etype}})
+    if author:
+        qfilter.append({"term": {"author": author}})
     if state:
         qfilter.append({"term": {"state": state}})
     if approval:
@@ -60,6 +63,7 @@ def set_kwargs_defaults(kwargs):
         'gte': kwargs.get('gte'),
         'lte': kwargs.get('lte'),
         'etype': kwargs.get('etype'),
+        'author': kwargs.get('author'),
         'interval': kwargs.get('interval', '3h'),
         'size': kwargs.get('size', 10),
         'exclude_authors': kwargs.get('exclude_authors', []),
