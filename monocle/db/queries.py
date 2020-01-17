@@ -126,7 +126,6 @@ def count_events(es, index, repository_fullname, **kwargs):
         }
     }
     add_exclude_author_clause(kwargs, body)
-    print(body)
     params = {'index': index, 'doc_type': index}
     params['body'] = body
     try:
@@ -268,6 +267,28 @@ def authors_top_commented(es, index, repository_fullname, **kwargs):
     kwargs['etype'] = "ChangeCommentedEvent"
     return _events_top(
         es, index, repository_fullname, "on_author", **kwargs)
+
+
+def peers_exchange_strength(es, index, repository_fullname, **kwargs):
+    kwargs = set_kwargs_defaults(kwargs)
+    kwargs['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
+    authors = [bucket['key'] for bucket in _events_top(
+        es, index, repository_fullname, "author", **kwargs)['buckets']]
+    peers_strength = {}
+    for author in authors:
+        kwargs['author'] = author
+        for bucket in _events_top(
+                es, index, repository_fullname, "on_author",
+                **kwargs)['buckets']:
+            if bucket['key'] == author:
+                continue
+            peers_id = "<->".join(sorted((author, bucket['key'])))
+            peers_strength.setdefault(peers_id, 0)
+            peers_strength[peers_id] += bucket['doc_count']
+    peers_strength = sorted(
+        [(peers_id, strength) for peers_id, strength in peers_strength.items()],
+        key=lambda x: x[1], reverse=True)
+    return(peers_strength)
 
 
 def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
