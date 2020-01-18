@@ -24,7 +24,7 @@ import statistics
 from elasticsearch.helpers import scan as scanner
 
 
-def generate_filter(repository_fullname, **kwargs):
+def generate_filter(repository_fullname, kwargs):
     gte = kwargs.get('gte')
     lte = kwargs.get('lte')
     etype = kwargs.get('etype')
@@ -61,15 +61,17 @@ def generate_filter(repository_fullname, **kwargs):
     return qfilter
 
 
-def add_exclude_author_clause(kwargs, body):
+def generate_must_not(kwargs):
+    must_not = []
     if kwargs['exclude_authors']:
-        body["query"]["bool"]["must_not"].append(
+        must_not.append(
             {
                 "terms": {
                     "author": kwargs['exclude_authors']
                 }
             }
         )
+    return must_not
 
 
 def set_kwargs_defaults(kwargs):
@@ -103,12 +105,11 @@ def _scan_events(es, index, repository_fullname, **kwargs):
         "_source": kwargs['field'],
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     params['query'] = body
     data = scanner(es, **params)
     return [d for d in data]
@@ -120,12 +121,11 @@ def count_events(es, index, repository_fullname, **kwargs):
     body = {
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     params = {'index': index, 'doc_type': index}
     params['body'] = body
     try:
@@ -149,12 +149,11 @@ def count_authors(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['value']
 
@@ -178,12 +177,11 @@ def events_histo(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return (
         data['aggregations']['agg1']['buckets'],
@@ -207,12 +205,11 @@ def _events_top(
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     count_series = [
         b['doc_count'] for b in
@@ -324,12 +321,11 @@ def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['buckets']
 
@@ -355,11 +351,10 @@ def pr_merged_avg_duration(es, index, repository_fullname, **kwargs):
         ],
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, **kwargs),
-                "must_not": []
+                "filter": generate_filter(repository_fullname, kwargs),
+                "must_not": generate_must_not(kwargs)
             }
         }
     }
-    add_exclude_author_clause(kwargs, body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']
