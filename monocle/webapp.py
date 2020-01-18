@@ -52,15 +52,18 @@ def query(name):
         gte = utils.date_to_epoch_ml(gte)
     if lte:
         lte = utils.date_to_epoch_ml(lte)
+    params = {
+        'gte': gte,
+        'lte': lte,
+        'etype': etype,
+        'author': author,
+        'interval': interval,
+        'exlude_authors': exclude_authors,
+        'size': size
+    }
     result = db.run_named_query(
         name, repository_fullname,
-        gte=gte,
-        lte=lte,
-        etype=etype,
-        author=author,
-        interval=interval,
-        exlude_authors=exclude_authors,
-        size=size)
+        params)
     return jsonify(result)
 
 

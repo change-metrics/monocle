@@ -24,13 +24,13 @@ import statistics
 from elasticsearch.helpers import scan as scanner
 
 
-def generate_filter(repository_fullname, kwargs):
-    gte = kwargs.get('gte')
-    lte = kwargs.get('lte')
-    etype = kwargs.get('etype')
-    author = kwargs.get('author')
-    approval = kwargs.get('approval')
-    state = kwargs.get('state')
+def generate_filter(repository_fullname, params):
+    gte = params.get('gte')
+    lte = params.get('lte')
+    etype = params.get('etype')
+    author = params.get('author')
+    approval = params.get('approval')
+    state = params.get('state')
 
     if isinstance(etype, str):
         etype = list(etype)
@@ -61,68 +61,68 @@ def generate_filter(repository_fullname, kwargs):
     return qfilter
 
 
-def generate_must_not(kwargs):
+def generate_must_not(params):
     must_not = []
-    if kwargs['exclude_authors']:
+    if params['exclude_authors']:
         must_not.append(
             {
                 "terms": {
-                    "author": kwargs['exclude_authors']
+                    "author": params['exclude_authors']
                 }
             }
         )
     return must_not
 
 
-def set_kwargs_defaults(kwargs):
-    " Apply default values to kwargs"
+def set_params_defaults(params):
+    " Apply default values to params"
     return {
-        'gte': kwargs.get('gte'),
-        'lte': kwargs.get('lte'),
-        'etype': kwargs.get('etype'),
-        'author': kwargs.get('author'),
-        'interval': kwargs.get('interval', '3h'),
-        'size': kwargs.get('size', 10),
-        'exclude_authors': kwargs.get('exclude_authors', []),
-        'approval': kwargs.get('approval'),
+        'gte': params.get('gte'),
+        'lte': params.get('lte'),
+        'etype': params.get('etype'),
+        'author': params.get('author'),
+        'interval': params.get('interval', '3h'),
+        'size': params.get('size', 10),
+        'exclude_authors': params.get('exclude_authors', []),
+        'approval': params.get('approval'),
     }
 
 
 def run_query(es, index, body):
-    params = {'index': index, 'doc_type': index}
-    params['body'] = body
+    search_params = {
+        'index': index, 'doc_type': index, 'body': body}
     try:
-        res = es.search(**params)
+        res = es.search(**search_params)
     except Exception:
         return []
     return res
 
 
-def _scan_events(es, index, repository_fullname, **kwargs):
-    params = {'index': index, 'doc_type': index}
+def _scan_events(es, index, repository_fullname, params):
     body = {
         # "_source": "repository_fullname_and_number",
-        "_source": kwargs['field'],
+        "_source": params['field'],
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
-    params['query'] = body
-    data = scanner(es, **params)
+    scanner_params = {
+        'index': index, 'doc_type': index, 'query': body}
+    data = scanner(es, **scanner_params)
     return [d for d in data]
 
 
 # TODO (Change type is not an event an must be discarded)
-def count_events(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
+def count_events(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
     body = {
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
@@ -135,8 +135,8 @@ def count_events(es, index, repository_fullname, **kwargs):
     return res['count']
 
 
-def count_authors(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
+def count_authors(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
     body = {
         "aggs": {
             "agg1": {
@@ -149,8 +149,8 @@ def count_authors(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
@@ -158,14 +158,14 @@ def count_authors(es, index, repository_fullname, **kwargs):
     return data['aggregations']['agg1']['value']
 
 
-def events_histo(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
+def events_histo(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
     body = {
         "aggs": {
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
-                    "interval": kwargs['interval'],
+                    "interval": params['interval'],
                 }
             },
             "avg_count": {
@@ -177,8 +177,8 @@ def events_histo(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
@@ -189,13 +189,13 @@ def events_histo(es, index, repository_fullname, **kwargs):
 
 
 def _events_top(
-        es, index, repository_fullname, field, **kwargs):
+        es, index, repository_fullname, field, params):
     body = {
         "aggs": {
             "agg1": {
                 "terms": {
                     "field": field,
-                    "size": kwargs['size'],
+                    "size": params['size'],
                     "order": {
                         "_count": "desc"
                     }
@@ -205,8 +205,8 @@ def _events_top(
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
@@ -223,60 +223,60 @@ def _events_top(
         'count_avg': count_avg, 'count_median': count_median}
 
 
-def events_top_authors(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
+def events_top_authors(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
     return _events_top(
-        es, index, repository_fullname, "author", **kwargs)
+        es, index, repository_fullname, "author", params)
 
 
-def changes_top_approval(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "ChangeReviewedEvent"
+def changes_top_approval(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "ChangeReviewedEvent"
     return _events_top(
-        es, index, repository_fullname, "approval", **kwargs)
+        es, index, repository_fullname, "approval", params)
 
 
-def changes_top_commented(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "ChangeCommentedEvent"
-    return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number",
-        **kwargs)
-
-
-def changes_top_reviewed(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "ChangeReviewedEvent"
+def changes_top_commented(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "ChangeCommentedEvent"
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number",
-        **kwargs)
+        params)
 
 
-def authors_top_reviewed(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "ChangeReviewedEvent"
+def changes_top_reviewed(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "ChangeReviewedEvent"
     return _events_top(
-        es, index, repository_fullname, "on_author", **kwargs)
+        es, index, repository_fullname, "repository_fullname_and_number",
+        params)
 
 
-def authors_top_commented(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "ChangeCommentedEvent"
+def authors_top_reviewed(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "ChangeReviewedEvent"
     return _events_top(
-        es, index, repository_fullname, "on_author", **kwargs)
+        es, index, repository_fullname, "on_author", params)
 
 
-def peers_exchange_strength(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
+def authors_top_commented(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "ChangeCommentedEvent"
+    return _events_top(
+        es, index, repository_fullname, "on_author", params)
+
+
+def peers_exchange_strength(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
     authors = [bucket['key'] for bucket in _events_top(
-        es, index, repository_fullname, "author", **kwargs)['buckets']]
+        es, index, repository_fullname, "author", params)['buckets']]
     peers_strength = {}
     for author in authors:
-        kwargs['author'] = author
+        params['author'] = author
         for bucket in _events_top(
                 es, index, repository_fullname, "on_author",
-                **kwargs)['buckets']:
+                params)['buckets']:
             if bucket['key'] == author:
                 continue
             peers_id = tuple(sorted((author, bucket['key'])))
@@ -289,10 +289,10 @@ def peers_exchange_strength(es, index, repository_fullname, **kwargs):
     return(peers_strength)
 
 
-def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "Change"
-    kwargs['state'] = "MERGED"
+def change_merged_count_by_duration(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "Change"
+    params['state'] = "MERGED"
     body = {
         "aggs": {
             "agg1": {
@@ -321,8 +321,8 @@ def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
         "size": 0,
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
@@ -330,10 +330,10 @@ def change_merged_count_by_duration(es, index, repository_fullname, **kwargs):
     return data['aggregations']['agg1']['buckets']
 
 
-def pr_merged_avg_duration(es, index, repository_fullname, **kwargs):
-    kwargs = set_kwargs_defaults(kwargs)
-    kwargs['etype'] = "Change"
-    kwargs['state'] = "MERGED"
+def pr_merged_avg_duration(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = "Change"
+    params['state'] = "MERGED"
     body = {
         "aggs": {
             "agg1": {
@@ -351,8 +351,8 @@ def pr_merged_avg_duration(es, index, repository_fullname, **kwargs):
         ],
         "query": {
             "bool": {
-                "filter": generate_filter(repository_fullname, kwargs),
-                "must_not": generate_must_not(kwargs)
+                "filter": generate_filter(repository_fullname, params),
+                "must_not": generate_must_not(params)
             }
         }
     }
