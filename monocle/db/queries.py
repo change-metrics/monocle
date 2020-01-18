@@ -282,7 +282,7 @@ def peers_exchange_strength(es, index, repository_fullname, **kwargs):
                 **kwargs)['buckets']:
             if bucket['key'] == author:
                 continue
-            peers_id = "<->".join(sorted((author, bucket['key'])))
+            peers_id = tuple(sorted((author, bucket['key'])))
             peers_strength.setdefault(peers_id, 0)
             peers_strength[peers_id] += bucket['doc_count']
     peers_strength = sorted(
