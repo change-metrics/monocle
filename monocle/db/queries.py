@@ -61,13 +61,21 @@ def generate_filter(repository_fullname, params):
     return qfilter
 
 
-def generate_must_not(params):
+def generate_must_not(params, exclude_change=True):
     must_not = []
     if params['exclude_authors']:
         must_not.append(
             {
                 "terms": {
                     "author": params['exclude_authors']
+                }
+            }
+        )
+    if exclude_change:
+        must_not.append(
+            {
+                "term": {
+                    "type": "Change"
                 }
             }
         )
@@ -115,7 +123,6 @@ def _scan_events(es, index, repository_fullname, params):
     return [d for d in data]
 
 
-# TODO (Change type is not an event an must be discarded)
 def count_events(es, index, repository_fullname, params):
     params = set_params_defaults(params)
     body = {
@@ -291,7 +298,7 @@ def peers_exchange_strength(es, index, repository_fullname, params):
 
 def change_merged_count_by_duration(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "Change"
+    params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
         "aggs": {
@@ -322,7 +329,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
+                "must_not": generate_must_not(params, exclude_change=False)
             }
         }
     }
@@ -332,7 +339,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
 
 def pr_merged_avg_duration(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "Change"
+    params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
         "aggs": {
@@ -352,9 +359,10 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
+                "must_not": generate_must_not(params, exclude_change=False)
             }
         }
     }
+    print(body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']
