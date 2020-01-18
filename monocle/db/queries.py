@@ -286,7 +286,8 @@ def peers_exchange_strength(es, index, repository_fullname, **kwargs):
             peers_strength.setdefault(peers_id, 0)
             peers_strength[peers_id] += bucket['doc_count']
     peers_strength = sorted(
-        [(peers_id, strength) for peers_id, strength in peers_strength.items()],
+        [(peers_id, strength) for peers_id, strength in
+         peers_strength.items()],
         key=lambda x: x[1], reverse=True)
     return(peers_strength)
 
