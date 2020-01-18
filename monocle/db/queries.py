@@ -363,6 +363,20 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
             }
         }
     }
-    print(body)
     data = run_query(es, index, body)
     return data['aggregations']['agg1']
+
+
+def changes_events_counters(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    ret = {}
+    for etype in (
+            "ChangeCreatedEvent", "ChangeReviewedEvent",
+            "ChangeCommentedEvent", "ChangeClosedEvent"):
+        params['etype'] = (etype,)
+        events_count = count_events(es, index, repository_fullname, params)
+        authors_count = count_authors(es, index, repository_fullname, params)
+        ret[etype] = {
+            'events_count': events_count,
+            'authors_count': authors_count}
+    return ret
