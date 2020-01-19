@@ -45,7 +45,7 @@ class MonocleCrawler():
         if args.command == 'github_crawler':
             self.get_one_rep = getattr(args, 'repository', None)
             self.org = args.org
-            self.repository_el_re = args.org.lstrip('^')
+            self.repository_el_re = args.org.lstrip('^') + '.*'
             self.prf = pullrequest.PRsFetcher(
                 GithubGraphQLQuery(args.token),
                 args.host, args.org)

@@ -175,10 +175,14 @@ class ReviewesFetcher(object):
             })
             if change['state'] in ('MERGED', 'CLOSED'):
                 objects.append({
-                    'type': 'ChangeClosedEvent',
+                    'type': 'ChangeMergedEvent' if change['state'] == 'MERGED'
+                    else 'ChangeClosedEvent',
                     'id': 'CCLE' + change['id'],
                     'created_at': change['closed_at'],
-                    'author': change['author'],
+                    # Gerrit does not tell about closed_by so here
+                    # let's set None except if merged_by
+                    # is set (Gerrit 3.x tells about the author of a merge)
+                    'author': change.get('merged_by'),
                     'repository_prefix': change['repository_prefix'],
                     'repository_fullname': change['repository_fullname'],
                     'repository_shortname': change['repository_shortname'],

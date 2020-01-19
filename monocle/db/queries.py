@@ -372,7 +372,8 @@ def changes_events_counters(es, index, repository_fullname, params):
     ret = {}
     for etype in (
             "ChangeCreatedEvent", "ChangeReviewedEvent",
-            "ChangeCommentedEvent", "ChangeClosedEvent"):
+            "ChangeCommentedEvent", "ChangeClosedEvent",
+            "ChangeMergedEvent"):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)

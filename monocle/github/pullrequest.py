@@ -254,19 +254,15 @@ class PRsFetcher(object):
             objects.append(change)
             objects.append({
                 'type': 'ChangeCreatedEvent',
-                'id': 'CCE' + pr['id'],
-                'created_at': pr['createdAt'],
-                'author': pr['author']['login'],
-                'repository_prefix': pr['repository']['owner']['login'],
-                'repository_fullname': "%s/%s" % (
-                    pr['repository']['owner']['login'],
-                    pr['repository']['name']),
-                'repository_shortname': pr['repository']['name'],
-                'number': pr['number'],
-                'repository_fullname_and_number': "%s/%s#%s" % (
-                    pr['repository']['owner']['login'],
-                    pr['repository']['name'],
-                    pr['number']),
+                'id': 'CCE' + change['id'],
+                'created_at': change['created_at'],
+                'author': change['author'],
+                'repository_prefix': change['repository_prefix'],
+                'repository_fullname': change['repository_fullname'],
+                'repository_shortname': change['repository_shortname'],
+                'number': change['number'],
+                'repository_fullname_and_number': change[
+                    'repository_fullname_and_number']
             })
             for comment in pr['comments']['edges']:
                 _comment = comment['node']
@@ -276,18 +272,13 @@ class PRsFetcher(object):
                         'id': _comment['id'],
                         'created_at': _comment['createdAt'],
                         'author': _comment['author']['login'],
-                        'repository_prefix': pr['repository']['owner'][
-                            'login'],
-                        'repository_fullname': "%s/%s" % (
-                            pr['repository']['owner']['login'],
-                            pr['repository']['name']),
-                        'repository_shortname': pr['repository']['name'],
-                        'number': pr['number'],
-                        'repository_fullname_and_number': "%s/%s#%s" % (
-                            pr['repository']['owner']['login'],
-                            pr['repository']['name'],
-                            pr['number']),
-                        'on_author': pr['author']['login'],
+                        'repository_prefix': change['repository_prefix'],
+                        'repository_fullname': change['repository_fullname'],
+                        'repository_shortname': change['repository_shortname'],
+                        'number': change['number'],
+                        'repository_fullname_and_number': change[
+                            'repository_fullname_and_number'],
+                        'on_author': change['author'],
                     }
                 )
             for timelineitem in pr['timelineItems']['edges']:
@@ -300,20 +291,20 @@ class PRsFetcher(object):
                         _timelineitem.get('actor', {}).get('login') or
                         _timelineitem.get('author', {}).get('login')
                     ),
-                    'repository_prefix': pr['repository']['owner']['login'],
-                    'repository_fullname': "%s/%s" % (
-                        pr['repository']['owner']['login'],
-                        pr['repository']['name']),
-                    'repository_shortname': pr['repository']['name'],
-                    'number': pr['number'],
-                    'on_author': pr['author']['login'],
-                    'repository_fullname_and_number': "%s/%s#%s" % (
-                        pr['repository']['owner']['login'],
-                        pr['repository']['name'],
-                        pr['number']),
+                    'repository_prefix': change['repository_prefix'],
+                    'repository_fullname': change['repository_fullname'],
+                    'repository_shortname': change['repository_shortname'],
+                    'number': change['number'],
+                    'repository_fullname_and_number': change[
+                        'repository_fullname_and_number'],
+                    'on_author': change['author'],
                 }
                 if 'state' in _timelineitem:
                     obj['approval'] = _timelineitem['state']
+                if obj['type'] == 'ChangeClosedEvent':
+                    if change['state'] == 'MERGED':
+                        obj['type'] = 'ChangeMergedEvent'
+                        obj['author'] = change['merged_by']
                 objects.append(obj)
             return objects
 
