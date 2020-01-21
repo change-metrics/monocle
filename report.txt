@@ -18,7 +18,6 @@ Infos
 Changes opened count by authors count X (count_events and count_authors)
 Changes reviewed count by authors count X
 Changes commented count by authors count X
-# TODO: Add in crawlers the event ChangeMergedEvent. ChangeClosedEvent must not include merged event.
 Changes merged count by authors count X
 Changes closed count by authors count X
 
@@ -27,7 +26,7 @@ Graphs
 
 Box with header Text info like:
 - ratio Merged/Opened and Closed/Merged (eg. 2% abandonned) X (count_events)
-- Average changes opened/merged/closed by definition (Day/Week/Month) X (count_events)
+- Average changes opened/merged/closed by definition (Day/Week/Month) X (events_histo)
 Bar chart with three datasets Changes Opened/Merged/Closed X (events_histo)
 
 Box with header Text info like:
