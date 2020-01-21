@@ -393,10 +393,8 @@ def changes_closed_ratios(es, index, repository_fullname, params):
         ret[etype] = count_events(es, index, repository_fullname, params)
     ret['merged/created_ratio'] = round(
         ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
-    ret['abandoned/closed_ratio'] = round(
-        ret['ChangeAbandonedEvent']
-        / (ret['ChangeAbandonedEvent'] + ret['ChangeMergedEvent'])
-        * 100, 1)
+    ret['abandoned/created_ratio'] = round(
+        ret['ChangeAbandonedEvent'] / ret['ChangeMergedEvent'] * 100, 1)
     for etype in etypes:
         del ret[etype]
     return ret
