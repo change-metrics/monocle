@@ -176,7 +176,7 @@ class ReviewesFetcher(object):
             if change['state'] in ('MERGED', 'CLOSED'):
                 objects.append({
                     'type': 'ChangeMergedEvent' if change['state'] == 'MERGED'
-                    else 'ChangeClosedEvent',
+                    else 'ChangeAbandonedEvent',
                     'id': 'CCLE' + change['id'],
                     'created_at': change['closed_at'],
                     # Gerrit does not tell about closed_by so here

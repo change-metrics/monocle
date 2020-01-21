@@ -56,7 +56,7 @@ class PRsFetcher(object):
         self.host = host
         self.org = org
         self.events_map = {
-            'ClosedEvent': 'ChangeClosedEvent',
+            'ClosedEvent': 'ChangeAbandonedEvent',
             'PullRequestReview': 'ChangeReviewedEvent',
         }
         self.pr_query = '''
@@ -301,7 +301,7 @@ class PRsFetcher(object):
                 }
                 if 'state' in _timelineitem:
                     obj['approval'] = _timelineitem['state']
-                if obj['type'] == 'ChangeClosedEvent':
+                if obj['type'] == 'ChangeAbandonedEvent':
                     if change['state'] == 'MERGED':
                         obj['type'] = 'ChangeMergedEvent'
                         obj['author'] = change['merged_by']

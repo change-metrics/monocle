@@ -372,7 +372,7 @@ def changes_events_counters(es, index, repository_fullname, params):
     ret = {}
     for etype in (
             "ChangeCreatedEvent", "ChangeReviewedEvent",
-            "ChangeCommentedEvent", "ChangeClosedEvent",
+            "ChangeCommentedEvent", "ChangeAbandonedEvent",
             "ChangeMergedEvent"):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
@@ -383,9 +383,10 @@ def changes_events_counters(es, index, repository_fullname, params):
     return ret
 
 
-def changes_close_ratios(es, index, repository_fullname, params):
+def changes_closed_ratios(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeClosedEvent")
+    etypes = (
+        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
     for etype in etypes:
         params['etype'] = (etype,)
@@ -393,8 +394,8 @@ def changes_close_ratios(es, index, repository_fullname, params):
     ret['merged/created_ratio'] = round(
         ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
     ret['abandoned/closed_ratio'] = round(
-        ret['ChangeClosedEvent']
-        / (ret['ChangeClosedEvent'] + ret['ChangeMergedEvent'])
+        ret['ChangeAbandonedEvent']
+        / (ret['ChangeAbandonedEvent'] + ret['ChangeMergedEvent'])
         * 100, 1)
     for etype in etypes:
         del ret[etype]
