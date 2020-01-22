@@ -50,6 +50,10 @@ class ELmonocleDB():
                         "type": "date",
                         "format": "date_time_no_millis"
                     },
+                    "on_created_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis"
+                    },
                     "merged_at": {
                         "type": "date",
                         "format": "date_time_no_millis"

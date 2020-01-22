@@ -226,6 +226,7 @@ class PRsFetcher(object):
                 'repository_fullname_and_number': change[
                     'repository_fullname_and_number'],
                 'on_author': change['author'],
+                'on_created_at': change['created_at'],
             })
 
         def extract_pr_objects(pr):

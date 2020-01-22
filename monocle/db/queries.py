@@ -109,7 +109,7 @@ def run_query(es, index, body):
 def _scan_events(es, index, repository_fullname, params):
     body = {
         # "_source": "repository_fullname_and_number",
-        "_source": params['field'],
+        "_source": params.get('field', []),
         "query": {
             "bool": {
                 "filter": generate_filter(repository_fullname, params),

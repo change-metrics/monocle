@@ -112,7 +112,9 @@ class ReviewesFetcher(object):
                 'repository_shortname': change['repository_shortname'],
                 'number': change['number'],
                 'repository_fullname_and_number':
-                    change['repository_fullname_and_number']
+                    change['repository_fullname_and_number'],
+                'on_author': change['author'],
+                'on_created_at': change['created_at'],
             })
 
         def extract_pr_objects(review):
