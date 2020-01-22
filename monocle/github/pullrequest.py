@@ -217,6 +217,17 @@ class PRsFetcher(object):
             end = datetime.strptime(end, format)
             return int((start - end).total_seconds())
 
+        def insert_change_attributes(obj, change):
+            obj.update({
+                'repository_prefix': change['repository_prefix'],
+                'repository_fullname': change['repository_fullname'],
+                'repository_shortname': change['repository_shortname'],
+                'number': change['number'],
+                'repository_fullname_and_number': change[
+                    'repository_fullname_and_number'],
+                'on_author': change['author'],
+            })
+
         def extract_pr_objects(pr):
             objects = []
             change = {}
@@ -252,35 +263,24 @@ class PRsFetcher(object):
             change['assignees'] = tuple(map(
                 lambda n: n['node']['login'], pr['assignees']['edges']))
             objects.append(change)
-            objects.append({
+            obj = {
                 'type': 'ChangeCreatedEvent',
                 'id': 'CCE' + change['id'],
                 'created_at': change['created_at'],
                 'author': change['author'],
-                'repository_prefix': change['repository_prefix'],
-                'repository_fullname': change['repository_fullname'],
-                'repository_shortname': change['repository_shortname'],
-                'number': change['number'],
-                'repository_fullname_and_number': change[
-                    'repository_fullname_and_number']
-            })
+            }
+            insert_change_attributes(obj, change)
+            objects.append(obj)
             for comment in pr['comments']['edges']:
                 _comment = comment['node']
-                objects.append(
-                    {
-                        'type': 'ChangeCommentedEvent',
-                        'id': _comment['id'],
-                        'created_at': _comment['createdAt'],
-                        'author': _comment['author']['login'],
-                        'repository_prefix': change['repository_prefix'],
-                        'repository_fullname': change['repository_fullname'],
-                        'repository_shortname': change['repository_shortname'],
-                        'number': change['number'],
-                        'repository_fullname_and_number': change[
-                            'repository_fullname_and_number'],
-                        'on_author': change['author'],
-                    }
-                )
+                obj = {
+                    'type': 'ChangeCommentedEvent',
+                    'id': _comment['id'],
+                    'created_at': _comment['createdAt'],
+                    'author': _comment['author']['login'],
+                }
+                insert_change_attributes(obj, change)
+                objects.append(obj)
             for timelineitem in pr['timelineItems']['edges']:
                 _timelineitem = timelineitem['node']
                 obj = {
@@ -290,15 +290,9 @@ class PRsFetcher(object):
                     'author': (
                         _timelineitem.get('actor', {}).get('login') or
                         _timelineitem.get('author', {}).get('login')
-                    ),
-                    'repository_prefix': change['repository_prefix'],
-                    'repository_fullname': change['repository_fullname'],
-                    'repository_shortname': change['repository_shortname'],
-                    'number': change['number'],
-                    'repository_fullname_and_number': change[
-                        'repository_fullname_and_number'],
-                    'on_author': change['author'],
+                    )
                 }
+                insert_change_attributes(obj, change)
                 if 'state' in _timelineitem:
                     obj['approval'] = _timelineitem['state']
                 if obj['type'] == 'ChangeAbandonedEvent':

@@ -105,6 +105,16 @@ class ReviewesFetcher(object):
             end = datetime.strptime(end, format)
             return int((start - end).total_seconds())
 
+        def insert_change_attributes(obj, change):
+            obj.update({
+                'repository_prefix': change['repository_prefix'],
+                'repository_fullname': change['repository_fullname'],
+                'repository_shortname': change['repository_shortname'],
+                'number': change['number'],
+                'repository_fullname_and_number':
+                    change['repository_fullname_and_number']
+            })
+
         def extract_pr_objects(review):
             objects = []
             change = {
@@ -159,22 +169,16 @@ class ReviewesFetcher(object):
             else:
                 change['merged_by'] = None
             objects.append(change)
-            objects.append({
+            obj = {
                 'type': 'ChangeCreatedEvent',
                 'id': 'CCE' + change['id'],
                 'created_at': change['created_at'],
                 'author': change['author'],
-                'repository_prefix': change['repository_prefix'],
-                'repository_fullname': change['repository_fullname'],
-                'repository_shortname': change['repository_shortname'],
-                'number': change['number'],
-                'repository_fullname_and_number': "%s#%s" % (
-                    change['repository_fullname'],
-                    change['number'],
-                )
-            })
+            }
+            insert_change_attributes(obj, change)
+            objects.append(obj)
             if change['state'] in ('MERGED', 'CLOSED'):
-                objects.append({
+                obj = {
                     'type': 'ChangeMergedEvent' if change['state'] == 'MERGED'
                     else 'ChangeAbandonedEvent',
                     'id': 'CCLE' + change['id'],
@@ -183,36 +187,21 @@ class ReviewesFetcher(object):
                     # let's set None except if merged_by
                     # is set (Gerrit 3.x tells about the author of a merge)
                     'author': change.get('merged_by'),
-                    'repository_prefix': change['repository_prefix'],
-                    'repository_fullname': change['repository_fullname'],
-                    'repository_shortname': change['repository_shortname'],
-                    'number': change['number'],
-                    'repository_fullname_and_number': "%s#%s" % (
-                        change['repository_fullname'],
-                        change['number'],
-                    )
-                })
+                }
+                insert_change_attributes(obj, change)
+                objects.append(change)
             for comment in review['messages']:
-                objects.append(
-                    {
-                        'type': 'ChangeCommentedEvent',
-                        'id': comment['id'],
-                        'created_at': self.convert_date_for_db(
+                obj = {
+                    'type': 'ChangeCommentedEvent',
+                    'id': comment['id'],
+                    'created_at': self.convert_date_for_db(
                             comment['date']),
-                        'author': "%s/%s" % (
-                            comment['author'].get('name'),
-                            comment['author']['_account_id']),
-                        'repository_prefix': change['repository_prefix'],
-                        'repository_fullname': change['repository_fullname'],
-                        'repository_shortname': change['repository_shortname'],
-                        'number': change['number'],
-                        'on_author': change['author'],
-                        'repository_fullname_and_number': "%s#%s" % (
-                            change['repository_fullname'],
-                            change['number'],
-                        )
-                    }
-                )
+                    'author': "%s/%s" % (
+                        comment['author'].get('name'),
+                        comment['author']['_account_id']),
+                }
+                insert_change_attributes(obj, change)
+                objects.append(change)
             for label in review['labels']:
                 for _review in review['labels'][label].get('all', []):
                     # If the date field exists then it means a review label
@@ -228,24 +217,13 @@ class ReviewesFetcher(object):
                                 _review['date']),
                             'author': "%s/%s" % (
                                 _review.get('name'), _review['_account_id']),
-                            'repository_prefix': change[
-                                'repository_prefix'],
-                            'repository_fullname': change[
-                                'repository_fullname'],
-                            'repository_shortname': change[
-                                'repository_shortname'],
-                            'number': change['number'],
-                            'repository_fullname_and_number': "%s#%s" % (
-                                change['repository_fullname'],
-                                change['number'],
-                            ),
-                            'on_author': change['author'],
                             'approval': "%s%s" % (
                                 label,
                                 ("+%s" % _review['value']
                                  if not str(_review['value']).startswith('-')
                                  else _review['value']))
                         }
+                        insert_change_attributes(obj, change)
                         objects.append(obj)
             return objects
 
