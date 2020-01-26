@@ -133,6 +133,17 @@ def main():
     parser_dbquery.add_argument(
         '--lte', help='Scope to events created before date')
     parser_dbquery.add_argument(
+        '--on_cc_gte',
+        help='Scope to events related to changes created after date')
+    parser_dbquery.add_argument(
+        '--on_cc_lte',
+        help='Scope to events related to changes created before date')
+    parser_dbquery.add_argument(
+        '--ec-same-date',
+        help='Scope to events related to changes created during the '
+        'same date bondaries defined by gte/lte arguments',
+        action='store_true')
+    parser_dbquery.add_argument(
         '--type', help='Scope to events types list (comma separated)')
     parser_dbquery.add_argument(
         '--author', help='Scope to events author')
@@ -165,6 +176,10 @@ def main():
             args.gte = utils.date_to_epoch_ml(args.gte)
         if args.lte:
             args.lte = utils.date_to_epoch_ml(args.lte)
+        if args.on_cc_gte:
+            args.on_cc_gte = utils.date_to_epoch_ml(args.on_cc_gte)
+        if args.on_cc_lte:
+            args.on_cc_lte = utils.date_to_epoch_ml(args.on_cc_lte)
         if args.exclude_authors:
             args.exclude_authors = args.exclude_authors.strip().split(',')
         if args.type:
@@ -172,6 +187,9 @@ def main():
         params = {
             'gte': args.gte,
             'lte': args.lte,
+            'on_cc_gte': args.on_cc_gte,
+            'on_cc_lte': args.on_cc_lte,
+            'ec_same_date': args.ec_same_date,
             'etype': args.type,
             'author': args.author,
             'interval': args.interval,

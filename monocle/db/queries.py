@@ -27,10 +27,13 @@ from elasticsearch.helpers import scan as scanner
 def generate_filter(repository_fullname, params):
     gte = params.get('gte')
     lte = params.get('lte')
+    on_cc_gte = params.get('on_cc_gte')
+    on_cc_lte = params.get('on_cc_lte')
     etype = params.get('etype')
     author = params.get('author')
     approval = params.get('approval')
     state = params.get('state')
+    ec_same_date = params.get('ec_same_date')
 
     if isinstance(etype, str):
         etype = list(etype)
@@ -40,15 +43,29 @@ def generate_filter(repository_fullname, params):
             "format": "epoch_millis"
         }
     }
+    on_created_at_range = {
+        "on_created_at": {
+            "format": "epoch_millis"
+        }
+    }
     if gte:
         created_at_range['created_at']['gte'] = gte
     if lte:
         created_at_range['created_at']['lte'] = lte
+    print(ec_same_date)
+    if ec_same_date:
+        on_cc_gte = gte
+        on_cc_lte = lte
+    if on_cc_gte or ec_same_date:
+        on_created_at_range['on_created_at']['gte'] = on_cc_gte
+    if on_cc_lte or ec_same_date:
+        on_created_at_range['on_created_at']['lte'] = on_cc_lte
     qfilter = [
         {"regexp": {
             "repository_fullname": {
                 "value": repository_fullname}}},
-        {"range": created_at_range}
+        {"range": created_at_range},
+        {"range": on_created_at_range},
     ]
     if etype:
         qfilter.append({"terms": {"type": etype}})
@@ -58,6 +75,7 @@ def generate_filter(repository_fullname, params):
         qfilter.append({"term": {"state": state}})
     if approval:
         qfilter.append({'term': {"approval": approval}})
+    print(qfilter)
     return qfilter
 
 
@@ -87,6 +105,9 @@ def set_params_defaults(params):
     return {
         'gte': params.get('gte'),
         'lte': params.get('lte'),
+        'on_cc_gte': params.get('on_cc_gte'),
+        'on_cc_lte': params.get('on_cc_lte'),
+        'ec_same_date': params.get('ec_same_date'),
         'etype': params.get('etype'),
         'author': params.get('author'),
         'interval': params.get('interval', '3h'),
