@@ -22,6 +22,8 @@
 
 import statistics
 from elasticsearch.helpers import scan as scanner
+from itertools import groupby
+from datetime import datetime
 
 
 def generate_filter(repository_fullname, params):
@@ -52,7 +54,6 @@ def generate_filter(repository_fullname, params):
         created_at_range['created_at']['gte'] = gte
     if lte:
         created_at_range['created_at']['lte'] = lte
-    print(ec_same_date)
     if ec_same_date:
         on_cc_gte = gte
         on_cc_lte = lte
@@ -75,7 +76,6 @@ def generate_filter(repository_fullname, params):
         qfilter.append({"term": {"state": state}})
     if approval:
         qfilter.append({'term': {"approval": approval}})
-    print(qfilter)
     return qfilter
 
 
@@ -141,7 +141,7 @@ def _scan_events(es, index, repository_fullname, params):
     scanner_params = {
         'index': index, 'doc_type': index, 'query': body}
     data = scanner(es, **scanner_params)
-    return [d for d in data]
+    return [d['_source'] for d in data]
 
 
 def count_events(es, index, repository_fullname, params):
@@ -419,3 +419,57 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     for etype in etypes:
         del ret[etype]
     return ret
+
+
+def _first_event_on_changes(es, index, repository_fullname, params):
+    def keyfunc(x):
+        return x['repository_fullname_and_number']
+    groups = {}
+    params = set_params_defaults(params)
+    _events = _scan_events(es, index, repository_fullname, params)
+    _events = sorted(
+        _events, key=lambda k: k['repository_fullname_and_number'])
+    # Keep by PR the created date + first event date
+    for pr, events in groupby(_events, keyfunc):
+        groups[pr] = {
+            'change_created_at': None,
+            'first_event_created_at': datetime.now(),
+            'first_event_author': None,
+            'delta': None}
+        for event in events:
+            if not groups[pr]['change_created_at']:
+                groups[pr]['change_created_at'] = datetime.strptime(
+                    event['on_created_at'], "%Y-%m-%dT%H:%M:%SZ")
+            event_created_at = datetime.strptime(
+                event['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+            if event_created_at < groups[pr]['first_event_created_at']:
+                groups[pr]['first_event_created_at'] = event_created_at
+                groups[pr]['delta'] = (
+                    groups[pr]['first_event_created_at'] -
+                    groups[pr]['change_created_at'])
+                groups[pr]['first_event_author'] = event['author']
+    ret = {
+        'first_event_delay_avg': 0,
+        'top_authors': {}}
+    for pr_data in groups.values():
+        ret['first_event_delay_avg'] += pr_data['delta'].seconds
+        ret['top_authors'].setdefault(pr_data['first_event_author'], 0)
+        ret['top_authors'][pr_data['first_event_author']] += 1
+    ret['first_event_delay_avg'] = int(
+        ret['first_event_delay_avg'] / len(groups))
+    ret['top_authors'] = sorted(
+        [(k, v) for k, v in ret['top_authors'].items()],
+        key=lambda x: x[1], reverse=True)[:10]
+    return ret
+
+
+def first_comment_on_changes(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = ('ChangeCommentedEvent',)
+    return _first_event_on_changes(es, index, repository_fullname, params)
+
+
+def first_review_on_changes(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = ('ChangeReviewedEvent',)
+    return _first_event_on_changes(es, index, repository_fullname, params)
