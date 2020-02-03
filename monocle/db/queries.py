@@ -66,8 +66,11 @@ def generate_filter(repository_fullname, params):
             "repository_fullname": {
                 "value": repository_fullname}}},
         {"range": created_at_range},
-        {"range": on_created_at_range},
     ]
+    if 'Change' not in etype:
+        qfilter.append(
+            {"range": on_created_at_range},
+        )
     if etype:
         qfilter.append({"terms": {"type": etype}})
     if author:
@@ -79,7 +82,7 @@ def generate_filter(repository_fullname, params):
     return qfilter
 
 
-def generate_must_not(params, exclude_change=True):
+def generate_must_not(params):
     must_not = []
     if params['exclude_authors']:
         must_not.append(
@@ -89,7 +92,7 @@ def generate_must_not(params, exclude_change=True):
                 }
             }
         )
-    if exclude_change:
+    if 'Change' not in params['etype']:
         must_not.append(
             {
                 "term": {
@@ -108,7 +111,7 @@ def set_params_defaults(params):
         'on_cc_gte': params.get('on_cc_gte'),
         'on_cc_lte': params.get('on_cc_lte'),
         'ec_same_date': params.get('ec_same_date'),
-        'etype': params.get('etype'),
+        'etype': params.get('etype', []) or [],
         'author': params.get('author'),
         'interval': params.get('interval', '3h'),
         'size': params.get('size', 10),
@@ -127,7 +130,7 @@ def run_query(es, index, body):
     return res
 
 
-def _scan_events(es, index, repository_fullname, params):
+def _scan(es, index, repository_fullname, params):
     body = {
         # "_source": "repository_fullname_and_number",
         "_source": params.get('field', []),
@@ -259,14 +262,14 @@ def events_top_authors(es, index, repository_fullname, params):
 
 def changes_top_approval(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "ChangeReviewedEvent"
+    params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "approval", params)
 
 
 def changes_top_commented(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "ChangeCommentedEvent"
+    params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number",
         params)
@@ -426,10 +429,10 @@ def _first_event_on_changes(es, index, repository_fullname, params):
         return x['repository_fullname_and_number']
     groups = {}
     params = set_params_defaults(params)
-    _events = _scan_events(es, index, repository_fullname, params)
+    _events = _scan(es, index, repository_fullname, params)
     _events = sorted(
         _events, key=lambda k: k['repository_fullname_and_number'])
-    # Keep by PR the created date + first event date
+    # Keep by Change the created date + first event date
     for pr, events in groupby(_events, keyfunc):
         groups[pr] = {
             'change_created_at': None,
@@ -473,3 +476,22 @@ def first_review_on_changes(es, index, repository_fullname, params):
     params = set_params_defaults(params)
     params['etype'] = ('ChangeReviewedEvent',)
     return _first_event_on_changes(es, index, repository_fullname, params)
+
+
+def test(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    params['etype'] = ('Change',)
+    # TODO: Need to filter on OPEN changes: maybe need to split generate_filters
+    changes = _scan(es, index, repository_fullname, params)
+    return len(changes)
+    _changes_ids = set(
+        [change['repository_fullname_and_number'] for change in changes])
+    params['etype'] = ('ChangeCommentedEvent', 'ChangeReviewedEvent')
+    events = _scan(es, index, repository_fullname, params)
+    _events_ids = set(
+        [event['repository_fullname_and_number'] for event in events])
+    changes_ids_wo_rc = _changes_ids.difference(_events_ids)
+    changes_wo_rc = [
+        change for change in changes if
+        change['repository_fullname_and_number'] in changes_ids_wo_rc]
+    return len(changes_wo_rc)
