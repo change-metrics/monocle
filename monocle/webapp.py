@@ -69,7 +69,7 @@ def query(name):
         'author': author,
         'interval': interval,
         'exlude_authors': exclude_authors,
-        'size': size
+        'size': int(size)
     }
     result = db.run_named_query(
         name, repository_fullname,

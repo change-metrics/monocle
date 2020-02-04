@@ -26,3 +26,8 @@ from datetime import datetime
 def date_to_epoch_ml(datestr):
     return int(datetime.strptime(
         datestr, "%Y-%m-%d").timestamp() * 1000)
+
+
+def dbdate_to_datetime(datestr):
+    return datetime.strptime(
+        datestr, "%Y-%m-%dT%H:%M:%SZ")

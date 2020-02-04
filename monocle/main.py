@@ -184,6 +184,12 @@ def main():
             args.exclude_authors = args.exclude_authors.strip().split(',')
         if args.type:
             args.type = args.type.strip().split(',')
+        else:
+            args.type = (
+                'ChangeCreatedEvent', 'ChangeAbandonEvent',
+                'ChangeMergedEvent', 'ChangeCommentedEvent',
+                'ChangeReviewedEvent')
+
         params = {
             'gte': args.gte,
             'lte': args.lte,
@@ -194,7 +200,7 @@ def main():
             'author': args.author,
             'interval': args.interval,
             'approval': args.approval,
-            'size': args.size,
+            'size': int(args.size),
             'exclude_authors': args.exclude_authors
         }
         ret = db.run_named_query(

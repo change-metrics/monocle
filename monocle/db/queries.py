@@ -21,39 +21,26 @@
 
 
 import statistics
-from elasticsearch.helpers import scan as scanner
-from itertools import groupby
 from datetime import datetime
+from itertools import groupby
+from monocle.utils import dbdate_to_datetime
+
+from elasticsearch.helpers import scan as scanner
 
 
-def generate_filter(repository_fullname, params):
+def generate_events_filter(params, qfilter):
     gte = params.get('gte')
     lte = params.get('lte')
     on_cc_gte = params.get('on_cc_gte')
     on_cc_lte = params.get('on_cc_lte')
-    etype = params.get('etype')
-    author = params.get('author')
     approval = params.get('approval')
-    state = params.get('state')
     ec_same_date = params.get('ec_same_date')
 
-    if isinstance(etype, str):
-        etype = list(etype)
-
-    created_at_range = {
-        "created_at": {
-            "format": "epoch_millis"
-        }
-    }
     on_created_at_range = {
         "on_created_at": {
             "format": "epoch_millis"
         }
     }
-    if gte:
-        created_at_range['created_at']['gte'] = gte
-    if lte:
-        created_at_range['created_at']['lte'] = lte
     if ec_same_date:
         on_cc_gte = gte
         on_cc_lte = lte
@@ -61,46 +48,72 @@ def generate_filter(repository_fullname, params):
         on_created_at_range['on_created_at']['gte'] = on_cc_gte
     if on_cc_lte or ec_same_date:
         on_created_at_range['on_created_at']['lte'] = on_cc_lte
+    qfilter.append(
+        {"range": on_created_at_range},
+    )
+    if approval:
+        qfilter.append({'term': {"approval": approval}})
+
+
+def generate_changes_filter(params, qfilter):
+    state = params.get('state')
+    repository_fullname_and_number = params.get(
+        'repository_fullname_and_number')
+    if state:
+        qfilter.append({"term": {"state": state}})
+    if repository_fullname_and_number:
+        qfilter.append(
+            {'terms': {
+                "repository_fullname_and_number":
+                repository_fullname_and_number}})
+
+
+def generate_filter(repository_fullname, params):
+    gte = params.get('gte')
+    lte = params.get('lte')
+    etype = params.get('etype')
+    author = params.get('author')
+    exclude_authors = params.get('exclude_authors')
+
+    created_at_range = {
+        "created_at": {
+            "format": "epoch_millis"
+        }
+    }
+    if gte:
+        created_at_range['created_at']['gte'] = gte
+    if lte:
+        created_at_range['created_at']['lte'] = lte
     qfilter = [
         {"regexp": {
             "repository_fullname": {
                 "value": repository_fullname}}},
         {"range": created_at_range},
     ]
-    if 'Change' not in etype:
-        qfilter.append(
-            {"range": on_created_at_range},
-        )
-    if etype:
-        qfilter.append({"terms": {"type": etype}})
+    qfilter.append({"terms": {"type": etype}})
     if author:
         qfilter.append({"term": {"author": author}})
-    if state:
-        qfilter.append({"term": {"state": state}})
-    if approval:
-        qfilter.append({'term': {"approval": approval}})
-    return qfilter
+    if 'Change' in params['etype']:
+        generate_changes_filter(params, qfilter)
+    else:
+        generate_events_filter(params, qfilter)
 
-
-def generate_must_not(params):
     must_not = []
-    if params['exclude_authors']:
+    if exclude_authors:
         must_not.append(
             {
                 "terms": {
-                    "author": params['exclude_authors']
+                    "author": exclude_authors
                 }
             }
         )
-    if 'Change' not in params['etype']:
-        must_not.append(
-            {
-                "term": {
-                    "type": "Change"
-                }
-            }
-        )
-    return must_not
+
+    ret = {"bool": {
+        "filter": qfilter,
+        "must_not": must_not
+    }}
+    print(ret)
+    return ret
 
 
 def set_params_defaults(params):
@@ -134,12 +147,7 @@ def _scan(es, index, repository_fullname, params):
     body = {
         # "_source": "repository_fullname_and_number",
         "_source": params.get('field', []),
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     scanner_params = {
         'index': index, 'doc_type': index, 'query': body}
@@ -150,12 +158,7 @@ def _scan(es, index, repository_fullname, params):
 def count_events(es, index, repository_fullname, params):
     params = set_params_defaults(params)
     body = {
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     params = {'index': index, 'doc_type': index}
     params['body'] = body
@@ -178,12 +181,7 @@ def count_authors(es, index, repository_fullname, params):
             }
         },
         "size": 0,
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['value']
@@ -206,12 +204,7 @@ def events_histo(es, index, repository_fullname, params):
             }
         },
         "size": 0,
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     return (
@@ -234,12 +227,7 @@ def _events_top(
             }
         },
         "size": 0,
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     count_series = [
@@ -277,7 +265,7 @@ def changes_top_commented(es, index, repository_fullname, params):
 
 def changes_top_reviewed(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "ChangeReviewedEvent"
+    params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number",
         params)
@@ -285,14 +273,14 @@ def changes_top_reviewed(es, index, repository_fullname, params):
 
 def authors_top_reviewed(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "ChangeReviewedEvent"
+    params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "on_author", params)
 
 
 def authors_top_commented(es, index, repository_fullname, params):
     params = set_params_defaults(params)
-    params['etype'] = "ChangeCommentedEvent"
+    params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
         es, index, repository_fullname, "on_author", params)
 
@@ -350,12 +338,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
             }
         },
         "size": 0,
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params, exclude_change=False)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['buckets']
@@ -380,12 +363,7 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
                 "format": "date_time"
             },
         ],
-        "query": {
-            "bool": {
-                "filter": generate_filter(repository_fullname, params),
-                "must_not": generate_must_not(params, exclude_change=False)
-            }
-        }
+        "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']
@@ -441,10 +419,9 @@ def _first_event_on_changes(es, index, repository_fullname, params):
             'delta': None}
         for event in events:
             if not groups[pr]['change_created_at']:
-                groups[pr]['change_created_at'] = datetime.strptime(
-                    event['on_created_at'], "%Y-%m-%dT%H:%M:%SZ")
-            event_created_at = datetime.strptime(
-                event['created_at'], "%Y-%m-%dT%H:%M:%SZ")
+                groups[pr]['change_created_at'] = dbdate_to_datetime(
+                    event['on_created_at'])
+            event_created_at = dbdate_to_datetime(event['created_at'])
             if event_created_at < groups[pr]['first_event_created_at']:
                 groups[pr]['first_event_created_at'] = event_created_at
                 groups[pr]['delta'] = (
@@ -478,15 +455,15 @@ def first_review_on_changes(es, index, repository_fullname, params):
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
-def test(es, index, repository_fullname, params):
+def cold_changes(es, index, repository_fullname, params):
     params = set_params_defaults(params)
     params['etype'] = ('Change',)
-    # TODO: Need to filter on OPEN changes: maybe need to split generate_filters
+    params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
-    return len(changes)
     _changes_ids = set(
         [change['repository_fullname_and_number'] for change in changes])
     params['etype'] = ('ChangeCommentedEvent', 'ChangeReviewedEvent')
+    del params['state']
     events = _scan(es, index, repository_fullname, params)
     _events_ids = set(
         [event['repository_fullname_and_number'] for event in events])
@@ -494,4 +471,27 @@ def test(es, index, repository_fullname, params):
     changes_wo_rc = [
         change for change in changes if
         change['repository_fullname_and_number'] in changes_ids_wo_rc]
-    return len(changes_wo_rc)
+    return sorted(
+        changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
+
+
+def hot_changes(es, index, repository_fullname, params):
+    params = set_params_defaults(params)
+    # Set a significant depth to get an 'accurate' median value
+    params['size'] = 500
+    top_commented_changes = changes_top_commented(
+        es, index, repository_fullname, params)
+    # Keep changes with comment events > median
+    top_commented_changes = [
+        change for change in top_commented_changes['buckets'] if
+        change['doc_count'] > top_commented_changes['count_median']]
+    change_ids = [_id['key'] for _id in top_commented_changes]
+    if not change_ids:
+        return []
+    _params = set_params_defaults({})
+    _params = {
+        'etype': ('Change',),
+        'state': 'OPEN',
+        'repository_fullname_and_number': change_ids}
+    changes = _scan(es, index, repository_fullname, _params)
+    return changes
