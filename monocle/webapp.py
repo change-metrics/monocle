@@ -36,41 +36,8 @@ CORS(app)
 @app.route("/api/0/query/<name>", methods=['GET'])
 def query(name):
     repository_fullname = request.args.get('repository')
-    gte = request.args.get('gte')
-    lte = request.args.get('lte')
-    on_cc_gte = request.args.get('on_cc_gte')
-    on_cc_lte = request.args.get('on_cc_lte')
-    ec_same_date = request.args.get('ec_same_date')
-    etype = request.args.get('type')
-    author = request.args.get('author')
-    size = request.args.get('size')
-    interval = request.args.get('interval', '3h')
-    exclude_authors = request.args.get('exclude-authors')
-    if exclude_authors:
-        exclude_authors = exclude_authors.strip().split(',')
-    if etype:
-        etype = etype.strip().split(',')
+    params = utils.set_params(request.args)
     db = ELmonocleDB()
-    if gte:
-        gte = utils.date_to_epoch_ml(gte)
-    if lte:
-        lte = utils.date_to_epoch_ml(lte)
-    if on_cc_gte:
-        gte = utils.date_to_epoch_ml(on_cc_gte)
-    if on_cc_lte:
-        lte = utils.date_to_epoch_ml(on_cc_lte)
-    params = {
-        'gte': gte,
-        'lte': lte,
-        'on_cc_gte': on_cc_gte,
-        'on_cc_lte': on_cc_lte,
-        'ec_same_date': ec_same_date,
-        'etype': etype,
-        'author': author,
-        'interval': interval,
-        'exlude_authors': exclude_authors,
-        'size': int(size)
-    }
     result = db.run_named_query(
         name, repository_fullname,
         params)

@@ -112,25 +112,7 @@ def generate_filter(repository_fullname, params):
         "filter": qfilter,
         "must_not": must_not
     }}
-    print(ret)
     return ret
-
-
-def set_params_defaults(params):
-    " Apply default values to params"
-    return {
-        'gte': params.get('gte'),
-        'lte': params.get('lte'),
-        'on_cc_gte': params.get('on_cc_gte'),
-        'on_cc_lte': params.get('on_cc_lte'),
-        'ec_same_date': params.get('ec_same_date'),
-        'etype': params.get('etype', []) or [],
-        'author': params.get('author'),
-        'interval': params.get('interval', '3h'),
-        'size': params.get('size', 10),
-        'exclude_authors': params.get('exclude_authors', []),
-        'approval': params.get('approval'),
-    }
 
 
 def run_query(es, index, body):
@@ -156,7 +138,6 @@ def _scan(es, index, repository_fullname, params):
 
 
 def count_events(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     body = {
         "query": generate_filter(repository_fullname, params),
     }
@@ -170,7 +151,6 @@ def count_events(es, index, repository_fullname, params):
 
 
 def count_authors(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     body = {
         "aggs": {
             "agg1": {
@@ -188,7 +168,6 @@ def count_authors(es, index, repository_fullname, params):
 
 
 def events_histo(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     body = {
         "aggs": {
             "agg1": {
@@ -243,20 +222,17 @@ def _events_top(
 
 
 def events_top_authors(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     return _events_top(
         es, index, repository_fullname, "author", params)
 
 
 def changes_top_approval(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "approval", params)
 
 
 def changes_top_commented(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number",
@@ -264,7 +240,6 @@ def changes_top_commented(es, index, repository_fullname, params):
 
 
 def changes_top_reviewed(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number",
@@ -272,21 +247,18 @@ def changes_top_reviewed(es, index, repository_fullname, params):
 
 
 def authors_top_reviewed(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "on_author", params)
 
 
 def authors_top_commented(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
         es, index, repository_fullname, "on_author", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
     authors = [bucket['key'] for bucket in _events_top(
         es, index, repository_fullname, "author", params)['buckets']]
@@ -309,7 +281,6 @@ def peers_exchange_strength(es, index, repository_fullname, params):
 
 
 def change_merged_count_by_duration(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
@@ -345,7 +316,6 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
 
 
 def pr_merged_avg_duration(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
@@ -370,7 +340,6 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 
 
 def changes_events_counters(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     ret = {}
     for etype in (
             "ChangeCreatedEvent", "ChangeReviewedEvent",
@@ -386,7 +355,6 @@ def changes_events_counters(es, index, repository_fullname, params):
 
 
 def changes_closed_ratios(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     etypes = (
         'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
@@ -406,7 +374,6 @@ def _first_event_on_changes(es, index, repository_fullname, params):
     def keyfunc(x):
         return x['repository_fullname_and_number']
     groups = {}
-    params = set_params_defaults(params)
     _events = _scan(es, index, repository_fullname, params)
     _events = sorted(
         _events, key=lambda k: k['repository_fullname_and_number'])
@@ -444,19 +411,16 @@ def _first_event_on_changes(es, index, repository_fullname, params):
 
 
 def first_comment_on_changes(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ('ChangeCommentedEvent',)
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
 def first_review_on_changes(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ('ChangeReviewedEvent',)
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
 def cold_changes(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
@@ -476,7 +440,6 @@ def cold_changes(es, index, repository_fullname, params):
 
 
 def hot_changes(es, index, repository_fullname, params):
-    params = set_params_defaults(params)
     # Set a significant depth to get an 'accurate' median value
     params['size'] = 500
     top_commented_changes = changes_top_commented(
@@ -488,7 +451,6 @@ def hot_changes(es, index, repository_fullname, params):
     change_ids = [_id['key'] for _id in top_commented_changes]
     if not change_ids:
         return []
-    _params = set_params_defaults({})
     _params = {
         'etype': ('Change',),
         'state': 'OPEN',

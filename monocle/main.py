@@ -169,40 +169,9 @@ def main():
             db = ELmonocleDB()
             db.delete_repository(args.delete_repository)
 
-    print(args)
     if args.command == "dbquery":
         db = ELmonocleDB()
-        if args.gte:
-            args.gte = utils.date_to_epoch_ml(args.gte)
-        if args.lte:
-            args.lte = utils.date_to_epoch_ml(args.lte)
-        if args.on_cc_gte:
-            args.on_cc_gte = utils.date_to_epoch_ml(args.on_cc_gte)
-        if args.on_cc_lte:
-            args.on_cc_lte = utils.date_to_epoch_ml(args.on_cc_lte)
-        if args.exclude_authors:
-            args.exclude_authors = args.exclude_authors.strip().split(',')
-        if args.type:
-            args.type = args.type.strip().split(',')
-        else:
-            args.type = (
-                'ChangeCreatedEvent', 'ChangeAbandonEvent',
-                'ChangeMergedEvent', 'ChangeCommentedEvent',
-                'ChangeReviewedEvent')
-
-        params = {
-            'gte': args.gte,
-            'lte': args.lte,
-            'on_cc_gte': args.on_cc_gte,
-            'on_cc_lte': args.on_cc_lte,
-            'ec_same_date': args.ec_same_date,
-            'etype': args.type,
-            'author': args.author,
-            'interval': args.interval,
-            'approval': args.approval,
-            'size': int(args.size),
-            'exclude_authors': args.exclude_authors
-        }
+        params = utils.set_params(args)
         ret = db.run_named_query(
             args.name,
             args.repository.lstrip('^'),

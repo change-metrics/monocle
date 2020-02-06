@@ -22,8 +22,15 @@
 
 from datetime import datetime
 
+events_list = [
+    'ChangeCreatedEvent', 'ChangeAbandonEvent',
+    'ChangeMergedEvent', 'ChangeCommentedEvent',
+    'ChangeReviewedEvent']
+
 
 def date_to_epoch_ml(datestr):
+    if not datestr:
+        return None
     return int(datetime.strptime(
         datestr, "%Y-%m-%d").timestamp() * 1000)
 
@@ -31,3 +38,26 @@ def date_to_epoch_ml(datestr):
 def dbdate_to_datetime(datestr):
     return datetime.strptime(
         datestr, "%Y-%m-%dT%H:%M:%SZ")
+
+
+def set_params(input):
+    def getter(attr, default):
+        if isinstance(input, dict):
+            return input.get(attr, default)
+        else:
+            return getattr(input, attr, default) or default
+    params = {}
+    params['gte'] = date_to_epoch_ml(getter('gte', None))
+    params['lte'] = date_to_epoch_ml(getter('lte', None))
+    params['on_cc_gte'] = date_to_epoch_ml(getter('on_cc_gte', None))
+    params['on_cc_lte'] = date_to_epoch_ml(getter('on_cc_gte', None))
+    params['ec_same_date'] = getter('ec_same_date', False)
+    params['etype'] = getter('type', ','.join(events_list)).split(',')
+    params['exclude_authors'] = getter('exclude_authors', None)
+    params['author'] = getter('author', None)
+    params['interval'] = getter('interval', '3h')
+    params['approval'] = getter('approval', None)
+    params['size'] = int(getter('size', 10))
+    if params['exclude_authors']:
+        params['exclude_authors'] = params['exclude_authors'].split(',')
+    return params
