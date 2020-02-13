@@ -19,6 +19,9 @@ const initialState = {
   top_creators_result: null,
   top_creators_loading: true,
   top_creators_error: {},
+  changes_events_counters_result: null,
+  changes_events_counters_loading: true,
+  changes_events_counters_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {
