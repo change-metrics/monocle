@@ -457,3 +457,13 @@ def hot_changes(es, index, repository_fullname, params):
         'repository_fullname_and_number': change_ids}
     changes = _scan(es, index, repository_fullname, _params)
     return changes
+
+
+def changes_lifecycle_histo(es, index, repository_fullname, params):
+    ret = {}
+    etypes = (
+        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    for etype in etypes:
+        params['etype'] = (etype,)
+        ret[etype] = events_histo(es, index, repository_fullname, params)
+    return ret
