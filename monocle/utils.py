@@ -40,6 +40,10 @@ def dbdate_to_datetime(datestr):
         datestr, "%Y-%m-%dT%H:%M:%SZ")
 
 
+def float_trunc(f, n=2):
+    return float(int(f*10**n))/10**n
+
+
 def set_params(input):
     def getter(attr, default):
         if isinstance(input, dict):

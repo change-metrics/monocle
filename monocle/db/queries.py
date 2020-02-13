@@ -24,6 +24,7 @@ import statistics
 from datetime import datetime
 from itertools import groupby
 from monocle.utils import dbdate_to_datetime
+from monocle.utils import float_trunc
 
 from elasticsearch.helpers import scan as scanner
 
@@ -361,9 +362,9 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = count_events(es, index, repository_fullname, params)
-    ret['merged/created_ratio'] = round(
+    ret['merged/created'] = round(
         ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
-    ret['abandoned/created_ratio'] = round(
+    ret['abandoned/created'] = round(
         ret['ChangeAbandonedEvent'] / ret['ChangeMergedEvent'] * 100, 1)
     for etype in etypes:
         del ret[etype]
@@ -459,11 +460,25 @@ def hot_changes(es, index, repository_fullname, params):
     return changes
 
 
-def changes_lifecycle_histo(es, index, repository_fullname, params):
+def changes_lifecycle_histos(es, index, repository_fullname, params):
     ret = {}
     etypes = (
         'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = events_histo(es, index, repository_fullname, params)
+    return ret
+
+
+def changes_lifecycle_stats(es, index, repository_fullname, params):
+    ret = {}
+    ret['ratios'] = changes_closed_ratios(
+        es, index, repository_fullname, params)
+    ret['histos'] = changes_lifecycle_histos(
+        es, index, repository_fullname, params)
+    etypes = (
+        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    ret['avgs'] = {}
+    for etype in etypes:
+        ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
     return ret
