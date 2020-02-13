@@ -32,7 +32,9 @@ function get_query_results(
       'gte': gte,
       'lte': lte,
       'type': type,
-      'interval': interval
+      'interval': interval,
+      'ec-same-date': true,
+      'interval': '7d',
     }
   )
   params.append('repository', repository)

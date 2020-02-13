@@ -4,6 +4,9 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
+import {
+  EventsHisto,
+} from './histo'
 
 class InfoEvents extends React.Component {
   componentDidUpdate() {
@@ -67,6 +70,55 @@ class InfoEvents extends React.Component {
   }
 }
 
+class ChangesLifeCycleStats extends React.Component {
+  componentDidUpdate() {
+    console.log(this.props)
+    if (this.props.filter_loaded_from_url &&
+      !this.props.changes_lifecycle_stats_result) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'changes_lifecycle_stats',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'graph_type': 'changes_lifecycle_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.changes_lifecycle_stats_loading) {
+      const data = this.props.changes_lifecycle_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <EventsHisto
+                  data={data.histos}
+                />
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
 export {
   InfoEvents,
+  ChangesLifeCycleStats,
 }

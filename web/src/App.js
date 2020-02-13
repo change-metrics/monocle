@@ -14,17 +14,8 @@ import Col from 'react-bootstrap/Col'
 
 import TopMenu from './components/menu'
 import {
-  AllEventsHisto,
-  CloseEventsHisto,
-  CommentEventsHisto,
-  CreateEventsHisto,
-} from './components/histo'
-import {
-  TopReviewers,
-  TopCreators,
-} from './components/top'
-import {
   InfoEvents,
+  ChangesLifeCycleStats,
 } from './components/info'
 import {
   FiltersForm,
@@ -66,6 +57,21 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <ChangesLifeCycleStats
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
+                changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
+                changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -89,6 +95,9 @@ class App extends React.Component {
             changes_events_counters_loading={this.props.changes_events_counters_loading}
             changes_events_counters_result={this.props.changes_events_counters_result}
             changes_events_counters_error={this.props.changes_events_counters_error}
+            changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
+            changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
+            changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
           />
         </Route>
       </Switch>
@@ -105,6 +114,9 @@ const mapStateToProps = state => {
     changes_events_counters_loading: state.QueryReducer.changes_events_counters_loading,
     changes_events_counters_result: state.QueryReducer.changes_events_counters_result,
     changes_events_counters_error: state.QueryReducer.changes_events_counters_error,
+    changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
+    changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
+    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error,
   }
 }
 

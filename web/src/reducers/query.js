@@ -1,27 +1,12 @@
 import { get_query_results } from '../api'
 
 const initialState = {
-  all_events_result: null,
-  all_events_loading: true,
-  all_events_error: {},
-  close_events_result: null,
-  close_events_loading: true,
-  close_events_error: {},
-  comment_events_result: null,
-  comment_events_loading: true,
-  comment_events_error: {},
-  create_events_result: null,
-  create_events_loading: true,
-  create_events_error: {},
-  top_reviewers_result: null,
-  top_reviewers_loading: true,
-  top_reviewers_error: {},
-  top_creators_result: null,
-  top_creators_loading: true,
-  top_creators_error: {},
   changes_events_counters_result: null,
   changes_events_counters_loading: true,
   changes_events_counters_error: {},
+  changes_lifecycle_stats_result: null,
+  changes_lifecycle_stats_loading: true,
+  changes_lifecycle_stats_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {
