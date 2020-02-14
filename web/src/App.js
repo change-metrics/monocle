@@ -35,10 +35,12 @@ class RootView extends React.Component {
                 handleFilterGteChange={this.props.handleFilterGteChange}
                 handleFilterLteChange={this.props.handleFilterLteChange}
                 handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
+                handleFilterIntervalChange={this.props.handleFilterIntervalChange}
                 setQueryParamsLoaded={this.props.setQueryParamsLoaded}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
               />
             </Col>
           </Row>
@@ -51,6 +53,7 @@ class RootView extends React.Component {
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
                 changes_events_counters_loading={this.props.changes_events_counters_loading}
                 changes_events_counters_result={this.props.changes_events_counters_result}
                 changes_events_counters_error={this.props.changes_events_counters_error}
@@ -66,6 +69,7 @@ class RootView extends React.Component {
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
                 changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
                 changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
                 changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
@@ -87,11 +91,13 @@ class App extends React.Component {
             handleFilterGteChange={this.props.handleFilterGteChange}
             handleFilterLteChange={this.props.handleFilterLteChange}
             handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
+            handleFilterIntervalChange={this.props.handleFilterIntervalChange}
             setQueryParamsLoaded={this.props.setQueryParamsLoaded}
             filter_loaded_from_url={this.props.filter_loaded_from_url}
             filter_gte={this.props.filter_gte}
             filter_lte={this.props.filter_lte}
             filter_repository={this.props.filter_repository}
+            filter_interval={this.props.filter_interval}
             changes_events_counters_loading={this.props.changes_events_counters_loading}
             changes_events_counters_result={this.props.changes_events_counters_result}
             changes_events_counters_error={this.props.changes_events_counters_error}
@@ -111,6 +117,7 @@ const mapStateToProps = state => {
     filter_gte: state.FiltersReducer.filter_gte,
     filter_lte: state.FiltersReducer.filter_lte,
     filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
     changes_events_counters_loading: state.QueryReducer.changes_events_counters_loading,
     changes_events_counters_result: state.QueryReducer.changes_events_counters_result,
     changes_events_counters_error: state.QueryReducer.changes_events_counters_error,
@@ -144,6 +151,12 @@ const mapDispatchToProps = dispatch => {
     handleFilterRepositoryChange: (value) => dispatch(
       {
         type: 'FILTER_REPOSITORY_CHANGE',
+        value: value
+      }
+    ),
+    handleFilterIntervalChange: (value) => dispatch(
+      {
+        type: 'FILTER_INTERVAL_CHANGE',
         value: value
       }
     ),

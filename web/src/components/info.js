@@ -10,7 +10,6 @@ import {
 
 class InfoEvents extends React.Component {
   componentDidUpdate() {
-    console.log(this.props)
     if (this.props.filter_loaded_from_url &&
       !this.props.changes_events_counters_result) {
       this.props.query({
@@ -18,7 +17,7 @@ class InfoEvents extends React.Component {
         'name': 'changes_events_counters',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
-        'interval': '3d',
+        'interval': this.props.filter_interval,
         'graph_type': 'changes_events_counters',
       })
     }
@@ -76,7 +75,6 @@ class InfoEvents extends React.Component {
 
 class ChangesLifeCycleStats extends React.Component {
   componentDidUpdate() {
-    console.log(this.props)
     if (this.props.filter_loaded_from_url &&
       !this.props.changes_lifecycle_stats_result) {
       this.props.query({
@@ -84,7 +82,7 @@ class ChangesLifeCycleStats extends React.Component {
         'name': 'changes_lifecycle_stats',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
-        'interval': '3d',
+        'interval': this.props.filter_interval,
         'graph_type': 'changes_lifecycle_stats',
       })
     }
@@ -92,6 +90,7 @@ class ChangesLifeCycleStats extends React.Component {
   render() {
     if (!this.props.changes_lifecycle_stats_loading) {
       const data = this.props.changes_lifecycle_stats_result
+      const int = this.props.filter_interval
       return (
         <Row>
           <Col>
@@ -110,13 +109,13 @@ class ChangesLifeCycleStats extends React.Component {
                         Changes merged: {data.ratios['merged/created']}%
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change abandoned by INT: {data.avgs['ChangeAbandonedEvent']}
+                        Change abandoned every {int}: {data.avgs['ChangeAbandonedEvent']}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change created by INT: {data.avgs['ChangeCreatedEvent']}
+                        Change created every {int}: {data.avgs['ChangeCreatedEvent']}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change merged by INT: {data.avgs['ChangeMergedEvent']}
+                        Change merged every {int}: {data.avgs['ChangeMergedEvent']}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>

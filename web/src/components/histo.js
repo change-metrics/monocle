@@ -49,7 +49,6 @@ class EventsHisto extends React.Component {
         }
       )
     });
-    console.log(data)
     return data
   }
   render() {

@@ -2,7 +2,8 @@ const initialState = {
   filter_gte: null,
   filter_lte: null,
   filter_loaded_from_url: false,
-  filter_repository: ".*"
+  filter_repository: ".*",
+  filter_interval: "7d"
 };
 
 const reducer = (state = initialState, action) => {
@@ -18,6 +19,9 @@ const reducer = (state = initialState, action) => {
   }
   if (action.type === 'FILTER_REPOSITORY_CHANGE') {
     newState.filter_repository = action.value;
+  }
+  if (action.type === 'FILTER_INTERVAL_CHANGE') {
+    newState.filter_interval = action.value;
   }
   return newState;
 }

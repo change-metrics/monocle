@@ -30,11 +30,16 @@ class FiltersForm extends React.Component {
     this.props.handleFilterRepositoryChange(e.target.value)
   }
 
+  onIntervalChange = (e) => {
+    this.props.handleFilterIntervalChange(e.target.value)
+  }
+
   fetchQueryParams = () => {
     const params = new URLSearchParams(window.location.search)
     var lte = params.get('lte')
     var gte = params.get('gte')
     var repository = params.get('repository')
+    var interval = params.get('interval')
     if (lte) {
       this.props.handleFilterLteChange(lte)
     }
@@ -43,6 +48,9 @@ class FiltersForm extends React.Component {
     }
     if (repository) {
       this.props.handleFilterRepositoryChange(repository)
+    }
+    if (interval) {
+      this.props.handleFilterIntervalChange(interval)
     }
     this.props.setQueryParamsLoaded()
   }
@@ -64,6 +72,7 @@ class FiltersForm extends React.Component {
       'gte': this.props.filter_gte,
       'lte': this.props.filter_lte,
       'repository': this.props.filter_repository,
+      'interval': this.props.filter_interval,
     })
     window.location.reload(true)
     event.preventDefault()
@@ -115,6 +124,16 @@ class FiltersForm extends React.Component {
                     dateFormat="yyyy-MM-dd"
                     placeholderText="Set a to date boundary"
                     showYearDropdown
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId="formIntervalInput">
+                  <Form.Label>Interval</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={this.props.filter_interval}
+                    onChange={this.onIntervalChange}
                   />
                 </Form.Group>
               </Col>
