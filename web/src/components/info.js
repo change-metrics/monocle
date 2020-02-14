@@ -18,6 +18,7 @@ class InfoEvents extends React.Component {
         'name': 'changes_events_counters',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
+        'interval': '3d',
         'graph_type': 'changes_events_counters',
       })
     }
@@ -29,6 +30,9 @@ class InfoEvents extends React.Component {
         <Row>
           <Col>
             <Card>
+              <Card.Header>
+                <Card.Title>Global events overview</Card.Title>
+              </Card.Header>
               <Card.Body>
                 <ListGroup>
                   <ListGroup.Item>
@@ -80,6 +84,7 @@ class ChangesLifeCycleStats extends React.Component {
         'name': 'changes_lifecycle_stats',
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
+        'interval': '3d',
         'graph_type': 'changes_lifecycle_stats',
       })
     }
@@ -91,10 +96,36 @@ class ChangesLifeCycleStats extends React.Component {
         <Row>
           <Col>
             <Card>
+              <Card.Header>
+                <Card.Title>Changes lifecycle stats</Card.Title>
+              </Card.Header>
               <Card.Body>
-                <EventsHisto
-                  data={data.histos}
-                />
+                <Row>
+                  <Col md={4}>
+                    <ListGroup>
+                      <ListGroup.Item>
+                        Changes abandoned: {data.ratios['abandoned/created']}%
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Changes merged: {data.ratios['merged/created']}%
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change abandoned by INT: {data.avgs['ChangeAbandonedEvent']}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change created by INT: {data.avgs['ChangeCreatedEvent']}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change merged by INT: {data.avgs['ChangeMergedEvent']}
+                      </ListGroup.Item>
+                    </ListGroup>
+                  </Col>
+                  <Col md={8}>
+                    <EventsHisto
+                      data={data.histos}
+                    />
+                  </Col>
+                </Row>
               </Card.Body>
             </Card>
           </Col>

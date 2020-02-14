@@ -34,7 +34,6 @@ function get_query_results(
       'type': type,
       'interval': interval,
       'ec-same-date': true,
-      'interval': '7d',
     }
   )
   params.append('repository', repository)
