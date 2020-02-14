@@ -191,7 +191,7 @@ class ReviewesFetcher(object):
                     'author': change.get('merged_by'),
                 }
                 insert_change_attributes(obj, change)
-                objects.append(change)
+                objects.append(obj)
             for comment in review['messages']:
                 obj = {
                     'type': 'ChangeCommentedEvent',
@@ -203,7 +203,7 @@ class ReviewesFetcher(object):
                         comment['author']['_account_id']),
                 }
                 insert_change_attributes(obj, change)
-                objects.append(change)
+                objects.append(obj)
             for label in review['labels']:
                 for _review in review['labels'][label].get('all', []):
                     # If the date field exists then it means a review label

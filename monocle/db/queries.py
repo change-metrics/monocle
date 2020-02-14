@@ -189,7 +189,7 @@ def events_histo(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     return (
         data['aggregations']['agg1']['buckets'],
-        data['aggregations']['avg_count']['value'])
+        data['aggregations']['avg_count']['value'] or 0)
 
 
 def _events_top(
@@ -362,10 +362,16 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = count_events(es, index, repository_fullname, params)
-    ret['merged/created'] = round(
-        ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
-    ret['abandoned/created'] = round(
-        ret['ChangeAbandonedEvent'] / ret['ChangeMergedEvent'] * 100, 1)
+    try:
+        ret['merged/created'] = round(
+            ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
+    except ZeroDivisionError:
+        ret['merged/created'] = 0
+    try:
+        ret['abandoned/created'] = round(
+            ret['ChangeAbandonedEvent'] / ret['ChangeMergedEvent'] * 100, 1)
+    except ZeroDivisionError:
+        ret['abandoned/created'] = 0
     for etype in etypes:
         del ret[etype]
     return ret

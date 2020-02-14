@@ -33,10 +33,10 @@ function get_query_results(
       'lte': lte,
       'type': type,
       'interval': interval,
-      'ec-same-date': true,
     }
   )
   params.append('repository', repository)
+  params.append('ec_same_date', true)
   return axios.get(
     url, {
     params: params
