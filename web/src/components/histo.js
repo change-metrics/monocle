@@ -33,7 +33,7 @@ class EventsHisto extends React.Component {
     }
     const _histos = Object.entries(histos)
     let data = {
-      labels: _histos[0][1][0].map(x => x.key_as_string),
+      labels: histos['ChangeCreatedEvent'][0].map(x => x.key_as_string),
       datasets: []
     }
     _histos.forEach(histo => {

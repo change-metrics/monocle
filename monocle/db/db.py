@@ -24,6 +24,9 @@ from elasticsearch.helpers import bulk
 from elasticsearch import client
 
 from monocle.db import queries
+from monocle import utils
+
+from datetime import datetime
 
 
 class ELmonocleDB():
@@ -154,5 +157,13 @@ class ELmonocleDB():
         return ret[0]
 
     def run_named_query(self, name, *args, **kwargs):
+        # Here we set gte and gte if not provided by user
+        # especially to be able to set the histogram extended_bounds
+        if not args[1].get('gte'):
+            args[1]['gte'] = int(utils.dbdate_to_datetime(
+                queries._first_created_event(
+                    self.es, self.index, *args, **kwargs)).timestamp() * 1000)
+        if not args[1].get('lte'):
+            args[1]['lte'] = int(datetime.now().timestamp() * 1000)
         return getattr(queries, name)(
             self.es, self.index, *args, **kwargs)

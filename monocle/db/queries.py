@@ -138,6 +138,20 @@ def _scan(es, index, repository_fullname, params):
     return [d['_source'] for d in data]
 
 
+def _first_created_event(es, index, repository_fullname, params):
+    body = {
+        "sort": [{
+            "created_at": {
+                "order": "asc"
+            }
+        }],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    data = [r['_source'] for r in data['hits']['hits']]
+    return data[0]['created_at']
+
+
 def count_events(es, index, repository_fullname, params):
     body = {
         "query": generate_filter(repository_fullname, params),
@@ -175,6 +189,11 @@ def events_histo(es, index, repository_fullname, params):
                 "date_histogram": {
                     "field": "created_at",
                     "interval": params['interval'],
+                    "min_doc_count": 0,
+                    "extended_bounds": {
+                        "min": params['gte'],
+                        "max": params['lte'],
+                    }
                 }
             },
             "avg_count": {
