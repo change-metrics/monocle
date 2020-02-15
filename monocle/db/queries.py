@@ -396,6 +396,11 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     return ret
 
 
+def changes_reviewed_ratios(es, index, repository_fullname, params):
+    ret = {}
+    return ret
+
+
 def _first_event_on_changes(es, index, repository_fullname, params):
     def keyfunc(x):
         return x['repository_fullname_and_number']
@@ -506,4 +511,25 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['avgs'] = {}
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
+    return ret
+
+
+def changes_review_histos(es, index, repository_fullname, params):
+    ret = {}
+    etypes = ('ChangeCommentedEvent', "ChangeReviewedEvent")
+    for etype in etypes:
+        params['etype'] = (etype,)
+        ret[etype] = events_histo(es, index, repository_fullname, params)
+    return ret
+
+
+def changes_review_stats(es, index, repository_fullname, params):
+    ret = {}
+    ret['first_event_delay'] = {}
+    ret['first_event_delay']['comment'] = first_comment_on_changes(
+        es, index, repository_fullname, params)
+    ret['first_event_delay']['review'] = first_review_on_changes(
+        es, index, repository_fullname, params)
+    ret['histos'] = changes_review_histos(
+        es, index, repository_fullname, params)
     return ret
