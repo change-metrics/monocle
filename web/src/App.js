@@ -16,6 +16,7 @@ import TopMenu from './components/menu'
 import {
   InfoEvents,
   ChangesLifeCycleStats,
+  ChangesReviewStats,
 } from './components/info'
 import {
   FiltersForm,
@@ -76,6 +77,22 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <ChangesReviewStats
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                changes_review_stats_loading={this.props.changes_review_stats_loading}
+                changes_review_stats_result={this.props.changes_review_stats_result}
+                changes_review_stats_error={this.props.changes_review_stats_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -104,6 +121,9 @@ class App extends React.Component {
             changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
             changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
             changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
+            changes_review_stats_loading={this.props.changes_review_stats_loading}
+            changes_review_stats_result={this.props.changes_review_stats_result}
+            changes_review_stats_error={this.props.changes_review_stats_error}
           />
         </Route>
       </Switch>
@@ -124,6 +144,9 @@ const mapStateToProps = state => {
     changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
     changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
     changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error,
+    changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
+    changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
+    changes_review_stats_error: state.QueryReducer.changes_review_stats_error,
   }
 }
 

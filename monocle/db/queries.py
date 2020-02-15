@@ -433,8 +433,11 @@ def _first_event_on_changes(es, index, repository_fullname, params):
         ret['first_event_delay_avg'] += pr_data['delta'].seconds
         ret['top_authors'].setdefault(pr_data['first_event_author'], 0)
         ret['top_authors'][pr_data['first_event_author']] += 1
-    ret['first_event_delay_avg'] = int(
-        ret['first_event_delay_avg'] / len(groups))
+    try:
+        ret['first_event_delay_avg'] = int(
+            ret['first_event_delay_avg'] / len(groups))
+    except ZeroDivisionError:
+        ret['first_event_delay_avg'] = 0
     ret['top_authors'] = sorted(
         [(k, v) for k, v in ret['top_authors'].items()],
         key=lambda x: x[1], reverse=True)[:10]

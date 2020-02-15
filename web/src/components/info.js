@@ -5,7 +5,8 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import {
-  EventsHisto,
+  ChangeLifeCycleEventsHisto,
+  ChangeReviewEventsHisto,
 } from './histo'
 
 class InfoEvents extends React.Component {
@@ -120,7 +121,7 @@ class ChangesLifeCycleStats extends React.Component {
                     </ListGroup>
                   </Col>
                   <Col md={8}>
-                    <EventsHisto
+                    <ChangeLifeCycleEventsHisto
                       data={data.histos}
                     />
                   </Col>
@@ -148,7 +149,74 @@ class ChangesLifeCycleStats extends React.Component {
   }
 }
 
+class ChangesReviewStats extends React.Component {
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url &&
+      !this.props.changes_review_stats_result) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'changes_review_stats',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'changes_review_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.changes_review_stats_loading) {
+      const data = this.props.changes_review_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Changes review stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={4}>
+                    <ListGroup>
+                      <ListGroup.Item>
+                        Average delay for the first comment:{' '}
+                        { data.first_event_delay.comment.first_event_delay_avg} secs
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Average delay for the first review:{' '}
+                        { data.first_event_delay.review.first_event_delay_avg} secs
+                      </ListGroup.Item>
+                    </ListGroup>
+                  </Col>
+                  <Col md={8}>
+                    <ChangeReviewEventsHisto
+                      data={data.histos}
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
 export {
   InfoEvents,
   ChangesLifeCycleStats,
+  ChangesReviewStats,
 }

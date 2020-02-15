@@ -7,6 +7,9 @@ const initialState = {
   changes_lifecycle_stats_result: null,
   changes_lifecycle_stats_loading: true,
   changes_lifecycle_stats_error: {},
+  changes_review_stats_result: null,
+  changes_review_stats_loading: true,
+  changes_review_stats_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {
