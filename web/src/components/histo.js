@@ -78,17 +78,17 @@ class ChangeReviewEventsHisto extends React.Component {
     const event_name_mapping = {
       ChangeCommentedEvent: {
         label: 'Changes commented',
-        pointBorderColor: 'rgba(92,92,92,1)',
+        pointBorderColor: 'rgba(247,242,141,1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(92,92,92,0.4)',
-        borderColor: 'rgba(92,92,92,1)',
+        backgroundColor: 'rgba(247,242,141,0.4)',
+        borderColor: 'rgba(247,242,141,1)',
       },
       ChangeReviewedEvent: {
         label: 'Changes reviewed',
-        pointBorderColor: 'rgba(135,255,149,1)',
+        pointBorderColor: 'rgba(247,141,141,1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(135,255,149,0.4)',
-        borderColor: 'rgba(135,255,149,1)',
+        backgroundColor: 'rgba(247,141,141,0.4)',
+        borderColor: 'rgba(247,141,141,1)',
       },
     }
     const _histos = Object.entries(histos)
