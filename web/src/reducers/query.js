@@ -10,6 +10,9 @@ const initialState = {
   changes_review_stats_result: null,
   changes_review_stats_loading: true,
   changes_review_stats_error: {},
+  most_active_authors_stats_result: null,
+  most_active_authors_stats_loading: true,
+  most_active_authors_stats_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

@@ -3,6 +3,7 @@ import React from 'react';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import Table from 'react-bootstrap/Table'
 import ListGroup from 'react-bootstrap/ListGroup'
 import {
   ChangeLifeCycleEventsHisto,
@@ -179,11 +180,11 @@ class ChangesReviewStats extends React.Component {
                     <ListGroup>
                       <ListGroup.Item>
                         Average delay for the first comment:{' '}
-                        { data.first_event_delay.comment.first_event_delay_avg} secs
+                        {data.first_event_delay.comment.first_event_delay_avg} secs
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Average delay for the first review:{' '}
-                        { data.first_event_delay.review.first_event_delay_avg} secs
+                        {data.first_event_delay.review.first_event_delay_avg} secs
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
@@ -215,8 +216,115 @@ class ChangesReviewStats extends React.Component {
     }
   }
 }
+
+
+class TopEventsTable extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Header>
+              <Card.Title>{this.props.title}</Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <Table striped responsive bordered hover>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {this.props.data.map((x, index) =>
+                    <tr key={index}>
+                      <td>{index}</td>
+                      <td>{x.key}</td>
+                      <td>{x.doc_count}</td>
+                    </tr>)}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
+
+class MostActiveAuthorsStats extends React.Component {
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url &&
+      !this.props.most_active_authors_stats_result) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'most_active_authors_stats',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'most_active_authors_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.most_active_authors_stats_loading) {
+      const data = this.props.most_active_authors_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Most active authors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeCreatedEvent.tops}
+                      title="Changes"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeCommentedEvent.tops}
+                      title="Comments"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeReviewedEvent.tops}
+                      title="Reviews"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
+
 export {
   InfoEvents,
   ChangesLifeCycleStats,
   ChangesReviewStats,
+  MostActiveAuthorsStats,
 }

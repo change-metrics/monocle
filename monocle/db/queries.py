@@ -237,7 +237,7 @@ def _events_top(
     count_median = (statistics.median(sorted(count_series))
                     if count_series else 0)
     return {
-        'buckets': data['aggregations']['agg1']['buckets'],
+        'tops': data['aggregations']['agg1']['buckets'],
         'count_avg': count_avg, 'count_median': count_median}
 
 
@@ -535,4 +535,15 @@ def changes_review_stats(es, index, repository_fullname, params):
         es, index, repository_fullname, params)
     ret['histos'] = changes_review_histos(
         es, index, repository_fullname, params)
+    return ret
+
+
+def most_active_authors_stats(es, index, repository_fullname, params):
+    ret = {}
+    for etype in (
+            "ChangeCreatedEvent", "ChangeReviewedEvent",
+            "ChangeCommentedEvent"):
+        params['etype'] = (etype,)
+        ret[etype] = events_top_authors(
+            es, index, repository_fullname, params)
     return ret

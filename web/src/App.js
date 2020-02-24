@@ -17,6 +17,7 @@ import {
   InfoEvents,
   ChangesLifeCycleStats,
   ChangesReviewStats,
+  MostActiveAuthorsStats,
 } from './components/info'
 import {
   FiltersForm,
@@ -93,6 +94,22 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <MostActiveAuthorsStats
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                most_active_authors_stats_loading={this.props.most_active_authors_stats_loading}
+                most_active_authors_stats_result={this.props.most_active_authors_stats_result}
+                most_active_authors_stats_error={this.props.most_active_authors_stats_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -124,6 +141,9 @@ class App extends React.Component {
             changes_review_stats_loading={this.props.changes_review_stats_loading}
             changes_review_stats_result={this.props.changes_review_stats_result}
             changes_review_stats_error={this.props.changes_review_stats_error}
+            most_active_authors_stats_loading={this.props.most_active_authors_stats_loading}
+            most_active_authors_stats_result={this.props.most_active_authors_stats_result}
+            most_active_authors_stats_error={this.props.most_active_authors_stats_error}
           />
         </Route>
       </Switch>
@@ -147,6 +167,9 @@ const mapStateToProps = state => {
     changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
     changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
     changes_review_stats_error: state.QueryReducer.changes_review_stats_error,
+    most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
+    most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
+    most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,
   }
 }
 
