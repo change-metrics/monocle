@@ -115,36 +115,13 @@ class RootView extends React.Component {
   }
 }
 
+
 class App extends React.Component {
   render() {
     return (
       <Switch>
         <Route exact path='/'>
-          <RootView
-            handleQuery={this.props.handleQuery}
-            handleFilterGteChange={this.props.handleFilterGteChange}
-            handleFilterLteChange={this.props.handleFilterLteChange}
-            handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
-            handleFilterIntervalChange={this.props.handleFilterIntervalChange}
-            setQueryParamsLoaded={this.props.setQueryParamsLoaded}
-            filter_loaded_from_url={this.props.filter_loaded_from_url}
-            filter_gte={this.props.filter_gte}
-            filter_lte={this.props.filter_lte}
-            filter_repository={this.props.filter_repository}
-            filter_interval={this.props.filter_interval}
-            changes_events_counters_loading={this.props.changes_events_counters_loading}
-            changes_events_counters_result={this.props.changes_events_counters_result}
-            changes_events_counters_error={this.props.changes_events_counters_error}
-            changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
-            changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
-            changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
-            changes_review_stats_loading={this.props.changes_review_stats_loading}
-            changes_review_stats_result={this.props.changes_review_stats_result}
-            changes_review_stats_error={this.props.changes_review_stats_error}
-            most_active_authors_stats_loading={this.props.most_active_authors_stats_loading}
-            most_active_authors_stats_result={this.props.most_active_authors_stats_result}
-            most_active_authors_stats_error={this.props.most_active_authors_stats_error}
-          />
+          <CRootView />
         </Route>
       </Switch>
     )
@@ -208,4 +185,5 @@ const mapDispatchToProps = dispatch => {
     ),
   }
 }
-export default connect(mapStateToProps, mapDispatchToProps)(App);
+const CRootView = connect(mapStateToProps, mapDispatchToProps)(RootView);
+export default App;
