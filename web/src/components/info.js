@@ -11,6 +11,9 @@ import {
 import {
   TopEventsTable
 } from './top'
+import {
+  ChangeApprovals,
+} from './approval'
 
 class InfoEvents extends React.Component {
   componentDidUpdate() {
@@ -288,10 +291,66 @@ class MostActiveAuthorsStats extends React.Component {
   }
 }
 
+class ApprovalStats extends React.Component {
+  componentDidUpdate() {
+    if (this.props.filter_loaded_from_url &&
+      !this.props.approval_stats_result) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'changes_top_approval',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'approval_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.approval_stats_loading) {
+      console.log(this.props)
+      const data = this.props.approval_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Approvals dispersion stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <ChangeApprovals
+                      data={data}
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
 
 export {
   InfoEvents,
   ChangesLifeCycleStats,
   ChangesReviewStats,
   MostActiveAuthorsStats,
+  ApprovalStats,
 }
