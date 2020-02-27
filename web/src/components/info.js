@@ -291,6 +291,67 @@ class MostActiveAuthorsStats extends React.Component {
   }
 }
 
+class MostReviewedAuthorsStats extends React.Component {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'most_reviewed_authors_stats',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'most_reviewed_authors_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.most_reviewed_authors_stats_loading) {
+      const data = this.props.most_reviewed_authors_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Most reviewed authors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.reviewed.tops}
+                      title="Reviews"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.commented.tops}
+                      title="Comments"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
 class ApprovalStats extends React.Component {
   componentDidUpdate(prevProps) {
     if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
@@ -351,4 +412,5 @@ export {
   ChangesReviewStats,
   MostActiveAuthorsStats,
   ApprovalStats,
+  MostReviewedAuthorsStats,
 }

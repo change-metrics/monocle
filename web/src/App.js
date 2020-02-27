@@ -19,6 +19,7 @@ import {
   ChangesReviewStats,
   MostActiveAuthorsStats,
   ApprovalStats,
+  MostReviewedAuthorsStats,
 } from './components/info'
 import {
   FiltersForm,
@@ -114,7 +115,7 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <ApprovalStats 
+              <ApprovalStats
                 query={this.props.handleQuery}
                 filter_loaded_from_url={this.props.filter_loaded_from_url}
                 filter_gte={this.props.filter_gte}
@@ -124,7 +125,23 @@ class RootView extends React.Component {
                 approval_stats_loading={this.props.approval_stats_loading}
                 approval_stats_result={this.props.approval_stats_result}
                 approval_stats_error={this.props.approval_stats_error}
-                />
+              />
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <MostReviewedAuthorsStats
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                most_reviewed_authors_stats_loading={this.props.most_reviewed_authors_stats_loading}
+                most_reviewed_authors_stats_result={this.props.most_reviewed_authors_stats_result}
+                most_reviewed_authors_stats_error={this.props.most_reviewed_authors_stats_error}
+              />
             </Col>
           </Row>
         </Container>
@@ -167,6 +184,9 @@ const mapStateToProps = state => {
     approval_stats_loading: state.QueryReducer.approval_stats_loading,
     approval_stats_result: state.QueryReducer.approval_stats_result,
     approval_stats_error: state.QueryReducer.approval_stats_error,
+    most_reviewed_authors_stats_loading: state.QueryReducer.most_reviewed_authors_stats_loading,
+    most_reviewed_authors_stats_result: state.QueryReducer.most_reviewed_authors_stats_result,
+    most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
   }
 }
 

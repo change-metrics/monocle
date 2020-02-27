@@ -16,6 +16,9 @@ const initialState = {
   approval_stats_result: null,
   approval_stats_loading: true,
   approval_stats_error: {},
+  most_reviewed_authors_stats_result: null,
+  most_reviewed_authors_stats_loading: true,
+  most_reviewed_authors_stats_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {
