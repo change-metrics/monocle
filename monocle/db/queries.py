@@ -547,3 +547,12 @@ def most_active_authors_stats(es, index, repository_fullname, params):
         ret[etype] = events_top_authors(
             es, index, repository_fullname, params)
     return ret
+
+
+def most_reviewed_authors_stats(es, index, repository_fullname, params):
+    return {
+        "top_reviewed": authors_top_reviewed(
+            es, index, repository_fullname, params),
+        "top_commnented": authors_top_commented(
+            es, index, repository_fullname, params)
+    }
