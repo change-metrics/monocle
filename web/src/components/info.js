@@ -16,9 +16,8 @@ import {
 } from './approval'
 
 class InfoEvents extends React.Component {
-  componentDidUpdate() {
-    if (this.props.filter_loaded_from_url &&
-      !this.props.changes_events_counters_result) {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
         'name': 'changes_events_counters',
@@ -81,9 +80,12 @@ class InfoEvents extends React.Component {
 }
 
 class ChangesLifeCycleStats extends React.Component {
-  componentDidUpdate() {
-    if (this.props.filter_loaded_from_url &&
-      !this.props.changes_lifecycle_stats_result) {
+  componentDidUpdate(prevProps) {
+    // Usefull snippet
+    // Object.entries(this.props).forEach(([key, val]) =>
+    //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+    // );
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
         'name': 'changes_lifecycle_stats',
@@ -156,9 +158,8 @@ class ChangesLifeCycleStats extends React.Component {
 }
 
 class ChangesReviewStats extends React.Component {
-  componentDidUpdate() {
-    if (this.props.filter_loaded_from_url &&
-      !this.props.changes_review_stats_result) {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
         'name': 'changes_review_stats',
@@ -224,9 +225,8 @@ class ChangesReviewStats extends React.Component {
 
 
 class MostActiveAuthorsStats extends React.Component {
-  componentDidUpdate() {
-    if (this.props.filter_loaded_from_url &&
-      !this.props.most_active_authors_stats_result) {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
         'name': 'most_active_authors_stats',
@@ -292,9 +292,8 @@ class MostActiveAuthorsStats extends React.Component {
 }
 
 class ApprovalStats extends React.Component {
-  componentDidUpdate() {
-    if (this.props.filter_loaded_from_url &&
-      !this.props.approval_stats_result) {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
         'name': 'changes_top_approval',
@@ -307,7 +306,6 @@ class ApprovalStats extends React.Component {
   }
   render() {
     if (!this.props.approval_stats_loading) {
-      console.log(this.props)
       const data = this.props.approval_stats_result
       return (
         <Row>

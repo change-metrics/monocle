@@ -49,7 +49,6 @@ class ChangeLifeCycleEventsHisto extends React.Component {
         }
       )
     });
-    console.log(data.datasets)
     return data
   }
   render() {
@@ -109,7 +108,6 @@ class ChangeReviewEventsHisto extends React.Component {
         }
       )
     });
-    console.log(data.datasets)
     return data
   }
   render() {
