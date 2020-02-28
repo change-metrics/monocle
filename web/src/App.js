@@ -20,6 +20,7 @@ import {
   MostActiveAuthorsStats,
   ApprovalStats,
   MostReviewedAuthorsStats,
+  AuthorsPeersStats,
 } from './components/info'
 import {
   FiltersForm,
@@ -144,6 +145,21 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row>
+            <Col>
+              <AuthorsPeersStats
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                authors_peers_stats_loading={this.props.authors_peers_stats_loading}
+                authors_peers_stats_result={this.props.authors_peers_stats_result}
+                authors_peers_stats_error={this.props.authors_peers_stats_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -187,6 +203,9 @@ const mapStateToProps = state => {
     most_reviewed_authors_stats_loading: state.QueryReducer.most_reviewed_authors_stats_loading,
     most_reviewed_authors_stats_result: state.QueryReducer.most_reviewed_authors_stats_result,
     most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
+    authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
+    authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
+    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error,
   }
 }
 

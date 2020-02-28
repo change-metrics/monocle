@@ -41,6 +41,42 @@ class TopEventsTable extends React.Component {
   }
 }
 
+class TopStrengthsTable extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Header>
+              <Card.Title>{this.props.title}</Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <Table striped responsive bordered hover>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Peers</th>
+                    <th>Strength</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {this.props.data.map((x, index) =>
+                    <tr key={index}>
+                      <td>{index}</td>
+                      <td>{x[0][0]} and {x[0][1]}</td>
+                      <td>{x[1]}</td>
+                    </tr>)}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
+
 export {
   TopEventsTable,
+  TopStrengthsTable,
 }

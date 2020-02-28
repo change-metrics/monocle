@@ -9,7 +9,8 @@ import {
   ChangeReviewEventsHisto,
 } from './histo'
 import {
-  TopEventsTable
+  TopEventsTable,
+  TopStrengthsTable
 } from './top'
 import {
   ChangeApprovals,
@@ -406,6 +407,61 @@ class ApprovalStats extends React.Component {
   }
 }
 
+class AuthorsPeersStats extends React.Component {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'peers_exchange_strength',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'authors_peers_stats',
+      })
+    }
+  }
+  render() {
+    if (!this.props.authors_peers_stats_loading) {
+      const data = this.props.authors_peers_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Most reviewed authors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopStrengthsTable
+                      data={data.slice(0, 10)}
+                      title="Peers strength"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
 export {
   InfoEvents,
   ChangesLifeCycleStats,
@@ -413,4 +469,5 @@ export {
   MostActiveAuthorsStats,
   ApprovalStats,
   MostReviewedAuthorsStats,
+  AuthorsPeersStats,
 }

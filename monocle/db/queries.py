@@ -281,13 +281,13 @@ def authors_top_commented(es, index, repository_fullname, params):
 def peers_exchange_strength(es, index, repository_fullname, params):
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
     authors = [bucket['key'] for bucket in _events_top(
-        es, index, repository_fullname, "author", params)['buckets']]
+        es, index, repository_fullname, "author", params)['tops']]
     peers_strength = {}
     for author in authors:
         params['author'] = author
         for bucket in _events_top(
                 es, index, repository_fullname, "on_author",
-                params)['buckets']:
+                params)['tops']:
             if bucket['key'] == author:
                 continue
             peers_id = tuple(sorted((author, bucket['key'])))
