@@ -50,7 +50,7 @@ Most commented author X (authors_top_commented)
 Top strenght peer partners list (author -> top on_author X on_author -> top author) X
 (top events (review/comment) authors X top events (review/comment) on_authors)
 
-List of most active Changes (activity = comment events) orderer by activity X (changes_top_commented)
+List of most active Changes (activity = comment events) orderer by activity X (hot_changes)
 List of open changes w/o review and comment ordered by oldest created X
 (get list of created change id (scan_event) and get list of review and comment events) -> keep
 review w/o review or commented events -> get the related Change sorted by created date

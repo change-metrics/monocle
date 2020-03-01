@@ -480,8 +480,12 @@ def hot_changes(es, index, repository_fullname, params):
         es, index, repository_fullname, params)
     # Keep changes with comment events > median
     top_commented_changes = [
-        change for change in top_commented_changes['buckets'] if
+        change for change in top_commented_changes['tops'] if
         change['doc_count'] > top_commented_changes['count_median']]
+    mapping = {}
+    for top_commented_change in top_commented_changes:
+        mapping[top_commented_change['key']] = \
+            top_commented_change['doc_count']
     change_ids = [_id['key'] for _id in top_commented_changes]
     if not change_ids:
         return []
@@ -490,7 +494,10 @@ def hot_changes(es, index, repository_fullname, params):
         'state': 'OPEN',
         'repository_fullname_and_number': change_ids}
     changes = _scan(es, index, repository_fullname, _params)
-    return changes
+    for change in changes:
+        change['hot_score'] = mapping[
+            change['repository_fullname_and_number']]
+    return sorted(changes, key=lambda x: x['hot_score'], reverse=True)
 
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
