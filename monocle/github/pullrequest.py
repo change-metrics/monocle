@@ -50,7 +50,7 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql, host, org, bulk_size=25):
+    def __init__(self, gql, host, org, bulk_size=50):
         self.gql = gql
         self.size = bulk_size
         self.host = host
