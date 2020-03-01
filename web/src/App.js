@@ -21,6 +21,7 @@ import {
   ApprovalStats,
   MostReviewedAuthorsStats,
   AuthorsPeersStats,
+  HotChanges,
 } from './components/info'
 import {
   FiltersForm,
@@ -145,6 +146,7 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
               <AuthorsPeersStats
@@ -157,6 +159,22 @@ class RootView extends React.Component {
                 authors_peers_stats_loading={this.props.authors_peers_stats_loading}
                 authors_peers_stats_result={this.props.authors_peers_stats_result}
                 authors_peers_stats_error={this.props.authors_peers_stats_error}
+              />
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <HotChanges
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                hot_changes_loading={this.props.hot_changes_loading}
+                hot_changes_result={this.props.hot_changes_result}
+                hot_changes_error={this.props.hot_changes_error}
               />
             </Col>
           </Row>
@@ -206,6 +224,9 @@ const mapStateToProps = state => {
     authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
     authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
     authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error,
+    hot_changes_loading: state.QueryReducer.hot_changes_loading,
+    hot_changes_result: state.QueryReducer.hot_changes_result,
+    hot_changes_error: state.QueryReducer.hot_changes_error,
   }
 }
 

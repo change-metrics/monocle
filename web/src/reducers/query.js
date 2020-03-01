@@ -22,6 +22,9 @@ const initialState = {
   authors_peers_stats_result: null,
   authors_peers_stats_loading: true,
   authors_peers_stats_error: {},
+  hot_changes_result: null,
+  hot_changes_loading: true,
+  hot_changes_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

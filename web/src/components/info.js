@@ -10,7 +10,8 @@ import {
 } from './histo'
 import {
   TopEventsTable,
-  TopStrengthsTable
+  TopStrengthsTable,
+  HotChangesTable,
 } from './top'
 import {
   ChangeApprovals,
@@ -462,6 +463,61 @@ class AuthorsPeersStats extends React.Component {
   }
 }
 
+class HotChanges extends React.Component {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'hot_changes',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'hot_changes',
+      })
+    }
+  }
+  render() {
+    if (!this.props.hot_changes_loading) {
+      const data = this.props.hot_changes_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Changes</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <HotChangesTable
+                      data={data}
+                      title="Open hot Changes"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
 export {
   InfoEvents,
   ChangesLifeCycleStats,
@@ -470,4 +526,5 @@ export {
   ApprovalStats,
   MostReviewedAuthorsStats,
   AuthorsPeersStats,
+  HotChanges,
 }
