@@ -25,6 +25,9 @@ const initialState = {
   hot_changes_result: null,
   hot_changes_loading: true,
   hot_changes_error: {},
+  cold_changes_result: null,
+  cold_changes_loading: true,
+  cold_changes_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

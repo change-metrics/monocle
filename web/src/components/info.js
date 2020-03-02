@@ -12,6 +12,7 @@ import {
   TopEventsTable,
   TopStrengthsTable,
   HotChangesTable,
+  ColdChangesTable,
 } from './top'
 import {
   ChangeApprovals,
@@ -425,25 +426,10 @@ class AuthorsPeersStats extends React.Component {
     if (!this.props.authors_peers_stats_loading) {
       const data = this.props.authors_peers_stats_result
       return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Most reviewed authors stats</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col>
-                    <TopStrengthsTable
-                      data={data.slice(0, 10)}
-                      title="Peers strength"
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        <TopStrengthsTable
+          data={data.slice(0, 10)}
+          title="Peers strength"
+        />
       )
     } else {
       return (
@@ -480,25 +466,50 @@ class HotChanges extends React.Component {
     if (!this.props.hot_changes_loading) {
       const data = this.props.hot_changes_result
       return (
+        <HotChangesTable
+          data={data.slice(0, 10)}
+          title="Hot changes"
+        />
+      )
+    } else {
+      return (
         <Row>
           <Col>
             <Card>
-              <Card.Header>
-                <Card.Title>Changes</Card.Title>
-              </Card.Header>
               <Card.Body>
-                <Row>
-                  <Col>
-                    <HotChangesTable
-                      data={data}
-                      title="Open hot Changes"
-                    />
-                  </Col>
-                </Row>
+                <h1>
+                  loading
+                </h1>
               </Card.Body>
             </Card>
           </Col>
         </Row>
+      )
+    }
+  }
+}
+
+class ColdChanges extends React.Component {
+  componentDidUpdate(prevProps) {
+    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
+      this.props.query({
+        'repository': this.props.filter_repository,
+        'name': 'cold_changes',
+        'gte': this.props.filter_gte,
+        'lte': this.props.filter_lte,
+        'interval': this.props.filter_interval,
+        'graph_type': 'cold_changes',
+      })
+    }
+  }
+  render() {
+    if (!this.props.cold_changes_loading) {
+      const data = this.props.cold_changes_result
+      return (
+        <ColdChangesTable
+          data={data.slice(0, 10)}
+          title="Cold changes"
+        />
       )
     } else {
       return (
@@ -527,4 +538,5 @@ export {
   MostReviewedAuthorsStats,
   AuthorsPeersStats,
   HotChanges,
+  ColdChanges,
 }

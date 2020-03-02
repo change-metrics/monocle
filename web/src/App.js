@@ -22,6 +22,7 @@ import {
   MostReviewedAuthorsStats,
   AuthorsPeersStats,
   HotChanges,
+  ColdChanges,
 } from './components/info'
 import {
   FiltersForm,
@@ -178,6 +179,22 @@ class RootView extends React.Component {
               />
             </Col>
           </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <ColdChanges
+                query={this.props.handleQuery}
+                filter_loaded_from_url={this.props.filter_loaded_from_url}
+                filter_gte={this.props.filter_gte}
+                filter_lte={this.props.filter_lte}
+                filter_repository={this.props.filter_repository}
+                filter_interval={this.props.filter_interval}
+                cold_changes_loading={this.props.cold_changes_loading}
+                cold_changes_result={this.props.cold_changes_result}
+                cold_changes_error={this.props.cold_changes_error}
+              />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
@@ -227,6 +244,9 @@ const mapStateToProps = state => {
     hot_changes_loading: state.QueryReducer.hot_changes_loading,
     hot_changes_result: state.QueryReducer.hot_changes_result,
     hot_changes_error: state.QueryReducer.hot_changes_error,
+    cold_changes_loading: state.QueryReducer.cold_changes_loading,
+    cold_changes_result: state.QueryReducer.cold_changes_result,
+    cold_changes_error: state.QueryReducer.cold_changes_error,
   }
 }
 
