@@ -43,11 +43,13 @@ class RootView extends React.Component {
                 handleFilterLteChange={this.props.handleFilterLteChange}
                 handleFilterRepositoryChange={this.props.handleFilterRepositoryChange}
                 handleFilterIntervalChange={this.props.handleFilterIntervalChange}
+                handleFilterExcludeAuthorsChange={this.props.handleFilterExcludeAuthorsChange}
                 setQueryParamsLoaded={this.props.setQueryParamsLoaded}
                 filter_gte={this.props.filter_gte}
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
               />
             </Col>
           </Row>
@@ -61,6 +63,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 changes_events_counters_loading={this.props.changes_events_counters_loading}
                 changes_events_counters_result={this.props.changes_events_counters_result}
                 changes_events_counters_error={this.props.changes_events_counters_error}
@@ -77,6 +80,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
                 changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
                 changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
@@ -93,6 +97,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 changes_review_stats_loading={this.props.changes_review_stats_loading}
                 changes_review_stats_result={this.props.changes_review_stats_result}
                 changes_review_stats_error={this.props.changes_review_stats_error}
@@ -109,6 +114,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 most_active_authors_stats_loading={this.props.most_active_authors_stats_loading}
                 most_active_authors_stats_result={this.props.most_active_authors_stats_result}
                 most_active_authors_stats_error={this.props.most_active_authors_stats_error}
@@ -125,6 +131,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 approval_stats_loading={this.props.approval_stats_loading}
                 approval_stats_result={this.props.approval_stats_result}
                 approval_stats_error={this.props.approval_stats_error}
@@ -141,6 +148,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 most_reviewed_authors_stats_loading={this.props.most_reviewed_authors_stats_loading}
                 most_reviewed_authors_stats_result={this.props.most_reviewed_authors_stats_result}
                 most_reviewed_authors_stats_error={this.props.most_reviewed_authors_stats_error}
@@ -157,6 +165,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 authors_peers_stats_loading={this.props.authors_peers_stats_loading}
                 authors_peers_stats_result={this.props.authors_peers_stats_result}
                 authors_peers_stats_error={this.props.authors_peers_stats_error}
@@ -173,6 +182,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 hot_changes_loading={this.props.hot_changes_loading}
                 hot_changes_result={this.props.hot_changes_result}
                 hot_changes_error={this.props.hot_changes_error}
@@ -189,6 +199,7 @@ class RootView extends React.Component {
                 filter_lte={this.props.filter_lte}
                 filter_repository={this.props.filter_repository}
                 filter_interval={this.props.filter_interval}
+                filter_exclude_authors={this.props.filter_exclude_authors}
                 cold_changes_loading={this.props.cold_changes_loading}
                 cold_changes_result={this.props.cold_changes_result}
                 cold_changes_error={this.props.cold_changes_error}
@@ -220,6 +231,7 @@ const mapStateToProps = state => {
     filter_lte: state.FiltersReducer.filter_lte,
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
     changes_events_counters_loading: state.QueryReducer.changes_events_counters_loading,
     changes_events_counters_result: state.QueryReducer.changes_events_counters_result,
     changes_events_counters_error: state.QueryReducer.changes_events_counters_error,
@@ -280,6 +292,12 @@ const mapDispatchToProps = dispatch => {
     handleFilterIntervalChange: (value) => dispatch(
       {
         type: 'FILTER_INTERVAL_CHANGE',
+        value: value
+      }
+    ),
+    handleFilterExcludeAuthorsChange: (value) => dispatch(
+      {
+        type: 'FILTER_EXCLUDE_AUTHORS_CHANGE',
         value: value
       }
     ),

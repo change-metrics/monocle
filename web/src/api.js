@@ -5,7 +5,9 @@ var baseurl = server + '/api/0'
 
 function setQueryParams(
   { gte = undefined, lte = undefined,
-    type = undefined, interval = undefined }) {
+    type = undefined, interval = undefined,
+    exclude_authors = undefined,
+  }) {
   var params = new URLSearchParams()
   if (gte) {
     params.append('gte', gte)
@@ -19,13 +21,16 @@ function setQueryParams(
   if (interval) {
     params.append('interval', interval)
   }
+  if (exclude_authors) {
+    params.append('exclude_authors', exclude_authors)
+  }
   return params
 }
 
 function get_query_results(
   { name, repository, gte = undefined,
     lte = undefined, type = undefined,
-    interval = undefined}) {
+    interval = undefined, exclude_authors = undefined}) {
   const url = baseurl + '/query/' + name
   var params = setQueryParams(
     {
@@ -33,6 +38,7 @@ function get_query_results(
       'lte': lte,
       'type': type,
       'interval': interval,
+      'exclude_authors': exclude_authors,
     }
   )
   params.append('repository', repository)

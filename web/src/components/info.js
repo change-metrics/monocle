@@ -18,18 +18,33 @@ import {
   ChangeApprovals,
 } from './approval'
 
-class InfoEvents extends React.Component {
-  componentDidUpdate(prevProps) {
+
+class BaseQueryComponent extends React.Component {
+  queryBackend(prevProps, name, graph_type) {
+    // Usefull snippet
+    // Object.entries(this.props).forEach(([key, val]) =>
+    //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+    // );
     if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       this.props.query({
         'repository': this.props.filter_repository,
-        'name': 'changes_events_counters',
+        'name': name,
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
         'interval': this.props.filter_interval,
-        'graph_type': 'changes_events_counters',
+        'exclude_authors': this.props.filter_exclude_authors,
+        'graph_type': graph_type,
       })
     }
+  }
+}
+
+class InfoEvents extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'changes_events_counters',
+      'changes_events_counters')
   }
   render() {
     if (!this.props.changes_events_counters_loading) {
@@ -82,22 +97,12 @@ class InfoEvents extends React.Component {
   }
 }
 
-class ChangesLifeCycleStats extends React.Component {
+class ChangesLifeCycleStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    // Usefull snippet
-    // Object.entries(this.props).forEach(([key, val]) =>
-    //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
-    // );
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'changes_lifecycle_stats',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'changes_lifecycle_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'changes_lifecycle_stats',
+      'changes_lifecycle_stats')
   }
   render() {
     if (!this.props.changes_lifecycle_stats_loading) {
@@ -160,18 +165,12 @@ class ChangesLifeCycleStats extends React.Component {
   }
 }
 
-class ChangesReviewStats extends React.Component {
+class ChangesReviewStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'changes_review_stats',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'changes_review_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'changes_review_stats',
+      'changes_review_stats')
   }
   render() {
     if (!this.props.changes_review_stats_loading) {
@@ -227,18 +226,12 @@ class ChangesReviewStats extends React.Component {
 }
 
 
-class MostActiveAuthorsStats extends React.Component {
+class MostActiveAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'most_active_authors_stats',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'most_active_authors_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'most_active_authors_stats',
+      'most_active_authors_stats')
   }
   render() {
     if (!this.props.most_active_authors_stats_loading) {
@@ -294,18 +287,12 @@ class MostActiveAuthorsStats extends React.Component {
   }
 }
 
-class MostReviewedAuthorsStats extends React.Component {
+class MostReviewedAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'most_reviewed_authors_stats',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'most_reviewed_authors_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'most_reviewed_authors_stats',
+      'most_reviewed_authors_stats')
   }
   render() {
     if (!this.props.most_reviewed_authors_stats_loading) {
@@ -355,18 +342,12 @@ class MostReviewedAuthorsStats extends React.Component {
   }
 }
 
-class ApprovalStats extends React.Component {
+class ApprovalStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'changes_top_approval',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'approval_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'changes_top_approval',
+      'approval_stats')
   }
   render() {
     if (!this.props.approval_stats_loading) {
@@ -409,18 +390,12 @@ class ApprovalStats extends React.Component {
   }
 }
 
-class AuthorsPeersStats extends React.Component {
+class AuthorsPeersStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'peers_exchange_strength',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'authors_peers_stats',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'peers_exchange_strength',
+      'authors_peers_stats')
   }
   render() {
     if (!this.props.authors_peers_stats_loading) {
@@ -449,18 +424,12 @@ class AuthorsPeersStats extends React.Component {
   }
 }
 
-class HotChanges extends React.Component {
+class HotChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'hot_changes',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'hot_changes',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'hot_changes',
+      'hot_changes')
   }
   render() {
     if (!this.props.hot_changes_loading) {
@@ -489,18 +458,12 @@ class HotChanges extends React.Component {
   }
 }
 
-class ColdChanges extends React.Component {
+class ColdChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.props.query({
-        'repository': this.props.filter_repository,
-        'name': 'cold_changes',
-        'gte': this.props.filter_gte,
-        'lte': this.props.filter_lte,
-        'interval': this.props.filter_interval,
-        'graph_type': 'cold_changes',
-      })
-    }
+    this.queryBackend(
+      prevProps,
+      'cold_changes',
+      'cold_changes')
   }
   render() {
     if (!this.props.cold_changes_loading) {

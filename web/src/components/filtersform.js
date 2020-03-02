@@ -34,12 +34,17 @@ class FiltersForm extends React.Component {
     this.props.handleFilterIntervalChange(e.target.value)
   }
 
+  onExcludeAuthorsChange = (e) => {
+    this.props.handleFilterExcludeAuthorsChange(e.target.value)
+  }
+
   fetchQueryParams = () => {
     const params = new URLSearchParams(window.location.search)
     var lte = params.get('lte')
     var gte = params.get('gte')
     var repository = params.get('repository')
     var interval = params.get('interval')
+    var exclude_authors = params.get('exclude_authors')
     if (lte) {
       this.props.handleFilterLteChange(lte)
     }
@@ -51,6 +56,9 @@ class FiltersForm extends React.Component {
     }
     if (interval) {
       this.props.handleFilterIntervalChange(interval)
+    }
+    if (exclude_authors) {
+      this.props.handleFilterExcludeAuthorsChange(exclude_authors)
     }
     this.props.setQueryParamsLoaded()
   }
@@ -73,6 +81,7 @@ class FiltersForm extends React.Component {
       'lte': this.props.filter_lte,
       'repository': this.props.filter_repository,
       'interval': this.props.filter_interval,
+      'exclude_authors': this.props.filter_exclude_authors,
     })
     window.location.reload(true)
     event.preventDefault()
@@ -134,6 +143,16 @@ class FiltersForm extends React.Component {
                     type="text"
                     value={this.props.filter_interval}
                     onChange={this.onIntervalChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId="formExcludeAuthorsInput">
+                  <Form.Label>Exclude Authors</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={this.props.filter_exclude_authors}
+                    onChange={this.onExcludeAuthorsChange}
                   />
                 </Form.Group>
               </Col>

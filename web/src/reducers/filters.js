@@ -3,7 +3,8 @@ const initialState = {
   filter_lte: null,
   filter_loaded_from_url: false,
   filter_repository: ".*",
-  filter_interval: "7d"
+  filter_interval: "7d",
+  filter_exclude_authors: null,
 };
 
 const reducer = (state = initialState, action) => {
@@ -22,6 +23,9 @@ const reducer = (state = initialState, action) => {
   }
   if (action.type === 'FILTER_INTERVAL_CHANGE') {
     newState.filter_interval = action.value;
+  }
+  if (action.type === 'FILTER_EXCLUDE_AUTHORS_CHANGE') {
+    newState.filter_exclude_authors = action.value;
   }
   return newState;
 }
