@@ -28,6 +28,9 @@ const initialState = {
   cold_changes_result: null,
   cold_changes_loading: true,
   cold_changes_error: {},
+  last_changes_result: null,
+  last_changes_loading: true,
+  last_changes_error: {},
 };
 
 const query_reducer = (state = initialState, action) => {

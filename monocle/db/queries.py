@@ -584,7 +584,6 @@ def last_merged_changes(es, index, repository_fullname, params):
 
 def last_opened_changes(es, index, repository_fullname, params):
     params['etype'] = ("Change",)
-    params['state'] = "OPEN"
     body = {
         "sort": [{
             "created_at": {

@@ -13,6 +13,7 @@ import {
   TopStrengthsTable,
   HotChangesTable,
   ColdChangesTable,
+  LastChangesTable,
 } from './top'
 import {
   ChangeApprovals,
@@ -492,6 +493,64 @@ class ColdChanges extends BaseQueryComponent {
   }
 }
 
+class LastChanges extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'last_state_changed_changes',
+      'last_changes')
+  }
+  render() {
+    if (!this.props.last_changes_loading) {
+      const data = this.props.last_changes_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Recently Merged/Opened changes</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <LastChangesTable
+                      data={data.merged_changes.slice(0, 10)}
+                      title="Recently merged changes"
+                    />
+                  </Col>
+                </Row>
+                <Row><Col><p></p></Col></Row>
+                <Row>
+                  <Col>
+                    <LastChangesTable
+                      data={data.opened_changes.slice(0, 10)}
+                      title="Recently opened changes"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Body>
+                <h1>
+                  loading
+                </h1>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    }
+  }
+}
+
 export {
   InfoEvents,
   ChangesLifeCycleStats,
@@ -502,4 +561,5 @@ export {
   AuthorsPeersStats,
   HotChanges,
   ColdChanges,
+  LastChanges,
 }

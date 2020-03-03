@@ -162,9 +162,54 @@ class ColdChangesTable extends React.Component {
   }
 }
 
+class LastChangesTable extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Header>
+              <Card.Title>{this.props.title}</Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <Table striped responsive bordered hover>
+                <thead>
+                  <tr>
+                    <th>created/updated</th>
+                    <th>id</th>
+                    <th>author</th>
+                    <th>title</th>
+                    <th>mergeable</th>
+                    <th>state</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {this.props.data.map((x, index) =>
+                    <tr key={index}>
+                      <td>
+                        <div>{x.created_at}</div>
+                        <div>{x.updated_at}</div>
+                      </td>
+                      <td>{x.repository_fullname_and_number}</td>
+                      <td>{x.author}</td>
+                      <td>{x.title}</td>
+                      <td>{x.mergeable}</td>
+                      <td>{x.state}</td>
+                    </tr>)}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
+
 export {
   TopEventsTable,
   TopStrengthsTable,
   HotChangesTable,
   ColdChangesTable,
+  LastChangesTable,
 }
