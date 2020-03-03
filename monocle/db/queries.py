@@ -563,3 +563,63 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
         "commented": authors_top_commented(
             es, index, repository_fullname, params)
     }
+
+
+def last_merged_changes(es, index, repository_fullname, params):
+    params['etype'] = ("Change",)
+    params['state'] = "MERGED"
+    body = {
+        "sort": [{
+            "closed_at": {
+                "order": "desc"
+            }
+        }],
+        "size": params['size'],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    return changes
+
+
+def last_opened_changes(es, index, repository_fullname, params):
+    params['etype'] = ("Change",)
+    params['state'] = "OPEN"
+    body = {
+        "sort": [{
+            "created_at": {
+                "order": "desc"
+            }
+        }],
+        "size": params['size'],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    return changes
+
+
+def last_state_changed_changes(es, index, repository_fullname, params):
+    return {
+        "merged_changes": last_merged_changes(
+            es, index, repository_fullname, params),
+        "opened_changes": last_opened_changes(
+            es, index, repository_fullname, params)
+    }
+
+
+def oldest_open_changes(es, index, repository_fullname, params):
+    params['etype'] = ("Change",)
+    params['state'] = "OPEN"
+    body = {
+        "sort": [{
+            "created_at": {
+                "order": "asc"
+            }
+        }],
+        "size": params['size'],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    return changes
