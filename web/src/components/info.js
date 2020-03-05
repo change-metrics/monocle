@@ -19,6 +19,23 @@ import {
   ChangeApprovals,
 } from './approval'
 
+class LoadingBox extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Body>
+              <h1>
+                loading
+                </h1>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
 
 class BaseQueryComponent extends React.Component {
   queryBackend(prevProps, name, graph_type) {
@@ -81,19 +98,7 @@ class InfoEvents extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -149,19 +154,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -209,19 +202,7 @@ class ChangesReviewStats extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -271,19 +252,7 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -326,19 +295,7 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -374,19 +331,7 @@ class ApprovalStats extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -408,19 +353,7 @@ class AuthorsPeersStats extends BaseQueryComponent {
         />
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -442,22 +375,11 @@ class HotChanges extends BaseQueryComponent {
         />
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
+
 
 class ColdChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
@@ -476,19 +398,7 @@ class ColdChanges extends BaseQueryComponent {
         />
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
@@ -534,19 +444,7 @@ class LastChanges extends BaseQueryComponent {
         </Row>
       )
     } else {
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Body>
-                <h1>
-                  loading
-                </h1>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
+      return <LoadingBox />
     }
   }
 }
