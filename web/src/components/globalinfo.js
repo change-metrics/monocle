@@ -1,21 +1,26 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 
 import {
-    BaseQueryComponent,
-    LoadingBox,
+  BaseQueryComponentNG,
+  LoadingBox,
 } from './common'
 
-class GlobalInfo extends BaseQueryComponent {
+
+class GlobalInfo extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'changes_events_counters',
-      'changes_events_counters')
+      'changes_events_counters',
+       this.props.handleQuery)
   }
   render() {
     if (!this.props.changes_events_counters_loading) {
@@ -56,6 +61,28 @@ class GlobalInfo extends BaseQueryComponent {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    changes_events_counters_loading: state.QueryReducer.changes_events_counters_loading,
+    changes_events_counters_result: state.QueryReducer.changes_events_counters_result,
+    changes_events_counters_error: state.QueryReducer.changes_events_counters_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CGlobalInfo = connect(mapStateToProps, mapDispatchToProps)(GlobalInfo);
+
 export {
-  GlobalInfo,
+  CGlobalInfo,
 }

@@ -15,7 +15,7 @@ import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
 
 import TopMenu from './components/menu'
-import { GlobalInfo } from './components/globalinfo'
+import { CGlobalInfo } from './components/globalinfo'
 import { ChangesLifeCycleStats } from './components/changes_lifecycle'
 import { ChangesReviewStats } from './components/changes_review'
 import {
@@ -66,18 +66,7 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <GlobalInfo
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    changes_events_counters_loading={this.props.changes_events_counters_loading}
-                    changes_events_counters_result={this.props.changes_events_counters_result}
-                    changes_events_counters_error={this.props.changes_events_counters_error}
-                  />
+                  <CGlobalInfo />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
@@ -337,5 +326,6 @@ const mapDispatchToProps = dispatch => {
     ),
   }
 }
+
 const CRootView = connect(mapStateToProps, mapDispatchToProps)(RootView);
 export default App;
