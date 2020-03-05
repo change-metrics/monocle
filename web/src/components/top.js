@@ -5,6 +5,10 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
+import {
+    BaseQueryComponent,
+    LoadingBox,
+} from './common'
 
 class TopEventsTable extends React.Component {
   render() {
@@ -38,6 +42,98 @@ class TopEventsTable extends React.Component {
         </Col>
       </Row>
     )
+  }
+}
+
+class MostActiveAuthorsStats extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'most_active_authors_stats',
+      'most_active_authors_stats')
+  }
+  render() {
+    if (!this.props.most_active_authors_stats_loading) {
+      const data = this.props.most_active_authors_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Most active authors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeCreatedEvent.tops}
+                      title="Changes"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeCommentedEvent.tops}
+                      title="Comments"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeReviewedEvent.tops}
+                      title="Reviews"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
+}
+
+class MostReviewedAuthorsStats extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'most_reviewed_authors_stats',
+      'most_reviewed_authors_stats')
+  }
+  render() {
+    if (!this.props.most_reviewed_authors_stats_loading) {
+      const data = this.props.most_reviewed_authors_stats_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Most reviewed authors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.reviewed.tops}
+                      title="Reviews"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.commented.tops}
+                      title="Comments"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return <LoadingBox />
+    }
   }
 }
 
@@ -76,140 +172,31 @@ class TopStrengthsTable extends React.Component {
   }
 }
 
-class HotChangesTable extends React.Component {
-  render() {
-    return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>hot score</th>
-                    <th>id</th>
-                    <th>author</th>
-                    <th>created/updated</th>
-                    <th>title</th>
-                    <th>mergeable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.map((x, index) =>
-                    <tr key={index}>
-                      <td>{x.hot_score}</td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
-                      <td>
-                        <div>{x.created_at}</div>
-                        <div>{x.updated_at}</div>
-                      </td>
-                      <td>{x.title}</td>
-                      <td>{x.mergeable}</td>
-                    </tr>)}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
-  }
-}
 
-class ColdChangesTable extends React.Component {
-  render() {
-    return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>created/updated</th>
-                    <th>id</th>
-                    <th>author</th>
-                    <th>title</th>
-                    <th>mergeable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.map((x, index) =>
-                    <tr key={index}>
-                      <td>
-                        <div>{x.created_at}</div>
-                        <div>{x.updated_at}</div>
-                      </td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
-                      <td>{x.title}</td>
-                      <td>{x.mergeable}</td>
-                    </tr>)}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
+class AuthorsPeersStats extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'peers_exchange_strength',
+      'authors_peers_stats')
   }
-}
-
-class LastChangesTable extends React.Component {
   render() {
-    return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>created/updated</th>
-                    <th>id</th>
-                    <th>author</th>
-                    <th>title</th>
-                    <th>mergeable</th>
-                    <th>state</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.map((x, index) =>
-                    <tr key={index}>
-                      <td>
-                        <div>{x.created_at}</div>
-                        <div>{x.updated_at}</div>
-                      </td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
-                      <td>{x.title}</td>
-                      <td>{x.mergeable}</td>
-                      <td>{x.state}</td>
-                    </tr>)}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
+    if (!this.props.authors_peers_stats_loading) {
+      const data = this.props.authors_peers_stats_result
+      return (
+        <TopStrengthsTable
+          data={data.slice(0, 10)}
+          title="Peers strength"
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
   }
 }
 
 export {
-  TopEventsTable,
-  TopStrengthsTable,
-  HotChangesTable,
-  ColdChangesTable,
-  LastChangesTable,
+  MostActiveAuthorsStats,
+  MostReviewedAuthorsStats,
+  AuthorsPeersStats,
 }

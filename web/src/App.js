@@ -15,18 +15,22 @@ import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
 
 import TopMenu from './components/menu'
+import { GlobalInfo } from './components/globalinfo'
+import { ChangesLifeCycleStats } from './components/changes_lifecycle'
+import { ChangesReviewStats } from './components/changes_review'
 import {
-  InfoEvents,
-  ChangesLifeCycleStats,
-  ChangesReviewStats,
   MostActiveAuthorsStats,
-  ApprovalStats,
   MostReviewedAuthorsStats,
   AuthorsPeersStats,
+} from './components/top'
+import {
   HotChanges,
   ColdChanges,
   LastChanges,
-} from './components/info'
+} from './components/changes'
+import {
+  ApprovalStats,
+} from './components/approvals'
 import {
   FiltersForm,
 } from './components/filtersform'
@@ -62,7 +66,7 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <InfoEvents
+                  <GlobalInfo
                     query={this.props.handleQuery}
                     filter_loaded_from_url={this.props.filter_loaded_from_url}
                     filter_gte={this.props.filter_gte}

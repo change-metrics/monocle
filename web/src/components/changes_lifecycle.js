@@ -3,8 +3,14 @@ import React from 'react';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import ListGroup from 'react-bootstrap/ListGroup'
 
 import { Line } from 'react-chartjs-2';
+
+import {
+    BaseQueryComponent,
+    LoadingBox,
+} from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
   prepare_data_set(histos) {
@@ -72,66 +78,62 @@ class ChangeLifeCycleEventsHisto extends React.Component {
   }
 }
 
-class ChangeReviewEventsHisto extends React.Component {
-  prepare_data_set(histos) {
-    const event_name_mapping = {
-      ChangeCommentedEvent: {
-        label: 'Changes commented',
-        pointBorderColor: 'rgba(247,242,141,1)',
-        pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(247,242,141,0.4)',
-        borderColor: 'rgba(247,242,141,1)',
-      },
-      ChangeReviewedEvent: {
-        label: 'Changes reviewed',
-        pointBorderColor: 'rgba(247,141,141,1)',
-        pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(247,141,141,0.4)',
-        borderColor: 'rgba(247,141,141,1)',
-      },
-    }
-    const _histos = Object.entries(histos)
-    let data = {
-      labels: histos['ChangeCommentedEvent'][0].map(x => x.key_as_string),
-      datasets: []
-    }
-    _histos.forEach(histo => {
-      data.datasets.push(
-        {
-          label: event_name_mapping[histo[0]].label,
-          data: histo[1][0].map(x => x.doc_count),
-          lineTension: 0.5,
-          pointBorderColor: event_name_mapping[histo[0]].pointBorderColor,
-          pointBackgroundColor: event_name_mapping[histo[0]].pointBackgroundColor,
-          backgroundColor: event_name_mapping[histo[0]].backgroundColor,
-          borderColor: event_name_mapping[histo[0]].borderColor,
-        }
-      )
-    });
-    return data
+class ChangesLifeCycleStats extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'changes_lifecycle_stats',
+      'changes_lifecycle_stats')
   }
   render() {
-    const data = this.prepare_data_set(this.props.data)
-    return (
-      <Row>
-        {/* <Col md={{ span: 8, offset: 2 }}> */}
-        <Col>
-          <Card>
-            <Card.Body>
-              <Line
-                data={data}
-                width={100}
-                height={50}
-              />
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
+    if (!this.props.changes_lifecycle_stats_loading) {
+      const data = this.props.changes_lifecycle_stats_result
+      const int = this.props.filter_interval
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>Changes lifecycle stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={4}>
+                    <ListGroup>
+                      <ListGroup.Item>
+                        Changes abandoned: {data.ratios['abandoned/created']}%
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Changes merged: {data.ratios['merged/created']}%
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change abandoned every {int}: {data.avgs['ChangeAbandonedEvent']}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change created every {int}: {data.avgs['ChangeCreatedEvent']}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Change merged every {int}: {data.avgs['ChangeMergedEvent']}
+                      </ListGroup.Item>
+                    </ListGroup>
+                  </Col>
+                  <Col md={8}>
+                    <ChangeLifeCycleEventsHisto
+                      data={data.histos}
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return <LoadingBox />
+    }
   }
 }
 
 export {
-  ChangeLifeCycleEventsHisto,
-  ChangeReviewEventsHisto,
+    ChangesLifeCycleStats,
 }
