@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
@@ -8,8 +11,8 @@ import ListGroup from 'react-bootstrap/ListGroup'
 import { Line } from 'react-chartjs-2';
 
 import {
-    BaseQueryComponent,
-    LoadingBox,
+  BaseQueryComponentNG,
+  LoadingBox,
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
@@ -78,12 +81,13 @@ class ChangeLifeCycleEventsHisto extends React.Component {
   }
 }
 
-class ChangesLifeCycleStats extends BaseQueryComponent {
+class ChangesLifeCycleStats extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'changes_lifecycle_stats',
-      'changes_lifecycle_stats')
+      'changes_lifecycle_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.changes_lifecycle_stats_loading) {
@@ -134,6 +138,28 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
+    changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
+    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CChangesLifeCycleStats = connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats);
+
 export {
-    ChangesLifeCycleStats,
+  CChangesLifeCycleStats,
 }

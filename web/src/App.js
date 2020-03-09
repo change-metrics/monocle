@@ -16,7 +16,7 @@ import Tabs from 'react-bootstrap/Tabs'
 
 import TopMenu from './components/menu'
 import { CGlobalInfo } from './components/globalinfo'
-import { ChangesLifeCycleStats } from './components/changes_lifecycle'
+import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { ChangesReviewStats } from './components/changes_review'
 import {
   MostActiveAuthorsStats,
@@ -72,18 +72,7 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <ChangesLifeCycleStats
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    changes_lifecycle_stats_loading={this.props.changes_lifecycle_stats_loading}
-                    changes_lifecycle_stats_result={this.props.changes_lifecycle_stats_result}
-                    changes_lifecycle_stats_error={this.props.changes_lifecycle_stats_error}
-                  />
+                  <CChangesLifeCycleStats />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
@@ -252,12 +241,6 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    changes_events_counters_loading: state.QueryReducer.changes_events_counters_loading,
-    changes_events_counters_result: state.QueryReducer.changes_events_counters_result,
-    changes_events_counters_error: state.QueryReducer.changes_events_counters_error,
-    changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
-    changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
-    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error,
     changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
     changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
     changes_review_stats_error: state.QueryReducer.changes_review_stats_error,
