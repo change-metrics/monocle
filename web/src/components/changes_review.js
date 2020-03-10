@@ -1,12 +1,15 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 
 import {
-    BaseQueryComponent,
+    BaseQueryComponentNG,
     LoadingBox,
 } from './common'
 
@@ -72,12 +75,13 @@ class ChangeReviewEventsHisto extends React.Component {
   }
 }
 
-class ChangesReviewStats extends BaseQueryComponent {
+class ChangesReviewStats extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'changes_review_stats',
-      'changes_review_stats')
+      'changes_review_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.changes_review_stats_loading) {
@@ -120,6 +124,28 @@ class ChangesReviewStats extends BaseQueryComponent {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
+    changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
+    changes_review_stats_error: state.QueryReducer.changes_review_stats_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CChangesReviewStats = connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats);
+
 export {
-    ChangesReviewStats
+  CChangesReviewStats,
 }
