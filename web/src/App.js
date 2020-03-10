@@ -19,9 +19,9 @@ import { CGlobalInfo } from './components/globalinfo'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import {
-  MostActiveAuthorsStats,
-  MostReviewedAuthorsStats,
-  AuthorsPeersStats,
+  CMostActiveAuthorsStats,
+  CMostReviewedAuthorsStats,
+  CAuthorsPeersStats,
 } from './components/top'
 import {
   HotChanges,
@@ -29,7 +29,7 @@ import {
   LastChanges,
 } from './components/changes'
 import {
-  ApprovalStats,
+  CApprovalStats,
 } from './components/approvals'
 import {
   FiltersForm,
@@ -84,69 +84,25 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <MostActiveAuthorsStats
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    most_active_authors_stats_loading={this.props.most_active_authors_stats_loading}
-                    most_active_authors_stats_result={this.props.most_active_authors_stats_result}
-                    most_active_authors_stats_error={this.props.most_active_authors_stats_error}
-                  />
+                  <CMostActiveAuthorsStats />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <ApprovalStats
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    approval_stats_loading={this.props.approval_stats_loading}
-                    approval_stats_result={this.props.approval_stats_result}
-                    approval_stats_error={this.props.approval_stats_error}
-                  />
+                  <CApprovalStats />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <MostReviewedAuthorsStats
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    most_reviewed_authors_stats_loading={this.props.most_reviewed_authors_stats_loading}
-                    most_reviewed_authors_stats_result={this.props.most_reviewed_authors_stats_result}
-                    most_reviewed_authors_stats_error={this.props.most_reviewed_authors_stats_error}
-                  />
+                  <CMostReviewedAuthorsStats />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <AuthorsPeersStats
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    authors_peers_stats_loading={this.props.authors_peers_stats_loading}
-                    authors_peers_stats_result={this.props.authors_peers_stats_result}
-                    authors_peers_stats_error={this.props.authors_peers_stats_error}
-                  />
+                  <CAuthorsPeersStats />
                 </Col>
               </Row>
             </Tab>
@@ -230,18 +186,6 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
-    most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
-    most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,
-    approval_stats_loading: state.QueryReducer.approval_stats_loading,
-    approval_stats_result: state.QueryReducer.approval_stats_result,
-    approval_stats_error: state.QueryReducer.approval_stats_error,
-    most_reviewed_authors_stats_loading: state.QueryReducer.most_reviewed_authors_stats_loading,
-    most_reviewed_authors_stats_result: state.QueryReducer.most_reviewed_authors_stats_result,
-    most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
-    authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
-    authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
-    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error,
     hot_changes_loading: state.QueryReducer.hot_changes_loading,
     hot_changes_result: state.QueryReducer.hot_changes_result,
     hot_changes_error: state.QueryReducer.hot_changes_error,

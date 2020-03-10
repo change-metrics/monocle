@@ -1,12 +1,15 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
 import {
-    BaseQueryComponent,
+    BaseQueryComponentNG,
     LoadingBox,
 } from './common'
 
@@ -45,12 +48,13 @@ class TopEventsTable extends React.Component {
   }
 }
 
-class MostActiveAuthorsStats extends BaseQueryComponent {
+class MostActiveAuthorsStats extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'most_active_authors_stats',
-      'most_active_authors_stats')
+      'most_active_authors_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.most_active_authors_stats_loading) {
@@ -94,12 +98,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
   }
 }
 
-class MostReviewedAuthorsStats extends BaseQueryComponent {
+class MostReviewedAuthorsStats extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'most_reviewed_authors_stats',
-      'most_reviewed_authors_stats')
+      'most_reviewed_authors_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.most_reviewed_authors_stats_loading) {
@@ -173,12 +178,13 @@ class TopStrengthsTable extends React.Component {
 }
 
 
-class AuthorsPeersStats extends BaseQueryComponent {
+class AuthorsPeersStats extends BaseQueryComponentNG{
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'peers_exchange_strength',
-      'authors_peers_stats')
+      'authors_peers_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.authors_peers_stats_loading) {
@@ -195,8 +201,38 @@ class AuthorsPeersStats extends BaseQueryComponent {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
+    most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
+    most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,
+    most_reviewed_authors_stats_loading: state.QueryReducer.most_reviewed_authors_stats_loading,
+    most_reviewed_authors_stats_result: state.QueryReducer.most_reviewed_authors_stats_result,
+    most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
+    authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
+    authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
+    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CMostActiveAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats);
+const CMostReviewedAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats);
+const CAuthorsPeersStats = connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats);
+
 export {
-  MostActiveAuthorsStats,
-  MostReviewedAuthorsStats,
-  AuthorsPeersStats,
+  CMostActiveAuthorsStats,
+  CMostReviewedAuthorsStats,
+  CAuthorsPeersStats,
 }

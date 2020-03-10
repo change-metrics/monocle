@@ -1,11 +1,14 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import {
   LoadingBox, 
-  BaseQueryComponent
+  BaseQueryComponentNG
 } from './common'
 
 import { Pie } from 'react-chartjs-2';
@@ -45,12 +48,13 @@ class ChangeApprovals extends React.Component {
   }
 }
 
-class ApprovalStats extends BaseQueryComponent {
+class ApprovalStats extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'changes_top_approval',
-      'approval_stats')
+      'approval_stats',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.approval_stats_loading) {
@@ -81,7 +85,29 @@ class ApprovalStats extends BaseQueryComponent {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    approval_stats_loading: state.QueryReducer.approval_stats_loading,
+    approval_stats_result: state.QueryReducer.approval_stats_result,
+    approval_stats_error: state.QueryReducer.approval_stats_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CApprovalStats = connect(mapStateToProps, mapDispatchToProps)(ApprovalStats);
+
 
 export {
-  ApprovalStats,
+  CApprovalStats,
 }
