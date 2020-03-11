@@ -24,9 +24,9 @@ import {
   CAuthorsPeersStats,
 } from './components/top'
 import {
-  HotChanges,
-  ColdChanges,
-  LastChanges,
+  CHotChanges,
+  CColdChanges,
+  CLastChanges,
 } from './components/changes'
 import {
   CApprovalStats,
@@ -110,52 +110,19 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <LastChanges
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    last_changes_loading={this.props.last_changes_loading}
-                    last_changes_result={this.props.last_changes_result}
-                    last_changes_error={this.props.last_changes_error}
-                  />
+                  <CLastChanges />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <HotChanges
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    hot_changes_loading={this.props.hot_changes_loading}
-                    hot_changes_result={this.props.hot_changes_result}
-                    hot_changes_error={this.props.hot_changes_error}
-                  />
+                  <CHotChanges />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <ColdChanges
-                    query={this.props.handleQuery}
-                    filter_loaded_from_url={this.props.filter_loaded_from_url}
-                    filter_gte={this.props.filter_gte}
-                    filter_lte={this.props.filter_lte}
-                    filter_repository={this.props.filter_repository}
-                    filter_interval={this.props.filter_interval}
-                    filter_exclude_authors={this.props.filter_exclude_authors}
-                    cold_changes_loading={this.props.cold_changes_loading}
-                    cold_changes_result={this.props.cold_changes_result}
-                    cold_changes_error={this.props.cold_changes_error}
-                  />
+                  <CColdChanges />
                 </Col>
               </Row>
             </Tab>
@@ -186,15 +153,6 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    hot_changes_loading: state.QueryReducer.hot_changes_loading,
-    hot_changes_result: state.QueryReducer.hot_changes_result,
-    hot_changes_error: state.QueryReducer.hot_changes_error,
-    cold_changes_loading: state.QueryReducer.cold_changes_loading,
-    cold_changes_result: state.QueryReducer.cold_changes_result,
-    cold_changes_error: state.QueryReducer.cold_changes_error,
-    last_changes_loading: state.QueryReducer.last_changes_loading,
-    last_changes_result: state.QueryReducer.last_changes_result,
-    last_changes_error: state.QueryReducer.last_changes_error,
   }
 }
 

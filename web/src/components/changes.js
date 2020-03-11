@@ -1,12 +1,15 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
 import {
-    BaseQueryComponent,
+    BaseQueryComponentNG,
     LoadingBox,
 } from './common'
 
@@ -140,12 +143,13 @@ class LastChangesTable extends React.Component {
   }
 }
 
-class HotChanges extends BaseQueryComponent {
+class HotChanges extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'hot_changes',
-      'hot_changes')
+      'hot_changes',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.hot_changes_loading) {
@@ -163,12 +167,13 @@ class HotChanges extends BaseQueryComponent {
 }
 
 
-class ColdChanges extends BaseQueryComponent {
+class ColdChanges extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'cold_changes',
-      'cold_changes')
+      'cold_changes',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.cold_changes_loading) {
@@ -185,12 +190,13 @@ class ColdChanges extends BaseQueryComponent {
   }
 }
 
-class LastChanges extends BaseQueryComponent {
+class LastChanges extends BaseQueryComponentNG {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
       'last_state_changed_changes',
-      'last_changes')
+      'last_changes',
+      this.props.handleQuery)
   }
   render() {
     if (!this.props.last_changes_loading) {
@@ -235,4 +241,40 @@ export {
     HotChanges,
     ColdChanges,
     LastChanges,
+}
+
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    hot_changes_loading: state.QueryReducer.hot_changes_loading,
+    hot_changes_result: state.QueryReducer.hot_changes_result,
+    hot_changes_error: state.QueryReducer.hot_changes_error,
+    cold_changes_loading: state.QueryReducer.cold_changes_loading,
+    cold_changes_result: state.QueryReducer.cold_changes_result,
+    cold_changes_error: state.QueryReducer.cold_changes_error,
+    last_changes_loading: state.QueryReducer.last_changes_loading,
+    last_changes_result: state.QueryReducer.last_changes_result,
+    last_changes_error: state.QueryReducer.last_changes_error,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+  }
+}
+
+const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges);
+const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges);
+const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges);
+
+export {
+    CHotChanges,
+    CColdChanges,
+    CLastChanges,
 }
