@@ -9,7 +9,7 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
 import {
-    BaseQueryComponentNG,
+    BaseQueryComponent,
     LoadingBox,
 } from './common'
 
@@ -48,7 +48,7 @@ class TopEventsTable extends React.Component {
   }
 }
 
-class MostActiveAuthorsStats extends BaseQueryComponentNG {
+class MostActiveAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
@@ -98,7 +98,7 @@ class MostActiveAuthorsStats extends BaseQueryComponentNG {
   }
 }
 
-class MostReviewedAuthorsStats extends BaseQueryComponentNG {
+class MostReviewedAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
@@ -178,7 +178,7 @@ class TopStrengthsTable extends React.Component {
 }
 
 
-class AuthorsPeersStats extends BaseQueryComponentNG{
+class AuthorsPeersStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,

@@ -11,7 +11,7 @@ import ListGroup from 'react-bootstrap/ListGroup'
 import { Line } from 'react-chartjs-2';
 
 import {
-  BaseQueryComponentNG,
+  BaseQueryComponent,
   LoadingBox,
 } from './common'
 
@@ -81,7 +81,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
   }
 }
 
-class ChangesLifeCycleStats extends BaseQueryComponentNG {
+class ChangesLifeCycleStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,

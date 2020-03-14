@@ -9,7 +9,7 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
 import {
-    BaseQueryComponentNG,
+    BaseQueryComponent,
     LoadingBox,
 } from './common'
 
@@ -143,7 +143,7 @@ class LastChangesTable extends React.Component {
   }
 }
 
-class HotChanges extends BaseQueryComponentNG {
+class HotChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
@@ -167,7 +167,7 @@ class HotChanges extends BaseQueryComponentNG {
 }
 
 
-class ColdChanges extends BaseQueryComponentNG {
+class ColdChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
@@ -190,7 +190,7 @@ class ColdChanges extends BaseQueryComponentNG {
   }
 }
 
-class LastChanges extends BaseQueryComponentNG {
+class LastChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,

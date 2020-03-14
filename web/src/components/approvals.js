@@ -8,7 +8,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import {
   LoadingBox, 
-  BaseQueryComponentNG
+  BaseQueryComponent
 } from './common'
 
 import { Pie } from 'react-chartjs-2';
@@ -48,7 +48,7 @@ class ChangeApprovals extends React.Component {
   }
 }
 
-class ApprovalStats extends BaseQueryComponentNG {
+class ApprovalStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,

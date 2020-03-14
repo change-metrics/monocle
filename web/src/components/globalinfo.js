@@ -9,12 +9,12 @@ import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 
 import {
-  BaseQueryComponentNG,
+  BaseQueryComponent,
   LoadingBox,
 } from './common'
 
 
-class GlobalInfo extends BaseQueryComponentNG {
+class GlobalInfo extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
