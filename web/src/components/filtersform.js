@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { connect } from 'react-redux';
+import { query } from '../reducers/query'
+
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
@@ -171,6 +174,61 @@ class FiltersForm extends React.Component {
   }
 }
 
+const mapStateToProps = state => {
+  return {
+    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
+    filter_gte: state.FiltersReducer.filter_gte,
+    filter_lte: state.FiltersReducer.filter_lte,
+    filter_repository: state.FiltersReducer.filter_repository,
+    filter_interval: state.FiltersReducer.filter_interval,
+    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+  }
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params)),
+    handleFilterGteChange: (date) => dispatch(
+      {
+        type: 'FILTER_GTE_CHANGE',
+        value: date
+      }
+    ),
+    handleFilterLteChange: (date) => dispatch(
+      {
+        type: 'FILTER_LTE_CHANGE',
+        value: date
+      }
+    ),
+    setQueryParamsLoaded: () => dispatch(
+      {
+        type: 'FILTER_PARAMS_LOADED',
+        value: true
+      }
+    ),
+    handleFilterRepositoryChange: (value) => dispatch(
+      {
+        type: 'FILTER_REPOSITORY_CHANGE',
+        value: value
+      }
+    ),
+    handleFilterIntervalChange: (value) => dispatch(
+      {
+        type: 'FILTER_INTERVAL_CHANGE',
+        value: value
+      }
+    ),
+    handleFilterExcludeAuthorsChange: (value) => dispatch(
+      {
+        type: 'FILTER_EXCLUDE_AUTHORS_CHANGE',
+        value: value
+      }
+    ),
+  }
+}
+
+const CFiltersForm = connect(mapStateToProps, mapDispatchToProps)(FiltersForm);
+
 export {
-  FiltersForm
+  CFiltersForm,
 }
