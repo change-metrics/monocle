@@ -65,6 +65,9 @@ class PRsFetcher(object):
           createdAt
           mergedAt
           closedAt
+          additions
+          deletions
+          changedFiles
           title
           state
           number
@@ -90,6 +93,15 @@ class PRsFetcher(object):
                 createdAt
                 author {
                   login
+                }
+              }
+            }
+          }
+          commits (first: 100){
+            edges {
+              node {
+                commit {
+                  oid
                 }
               }
             }
@@ -208,7 +220,9 @@ class PRsFetcher(object):
             'repository': repository,
             'number': number
         }
-        return self.gql.query(qdata % kwargs)
+        raw = self.gql.query(qdata % kwargs)[
+          'data']['repository']['pullRequest']
+        return (raw, self.extract_objects([raw]))
 
     def extract_objects(self, prs):
         def timedelta(start, end):
@@ -245,6 +259,11 @@ class PRsFetcher(object):
             )
             change['author'] = pr['author']['login']
             change['title'] = pr['title']
+            change['additions'] = pr['additions']
+            change['deletions'] = pr['deletions']
+            change['changed_files'] = pr['changedFiles']
+            change['commits'] = [
+              c['node']['commit']['oid'] for c in pr['commits']['edges']]
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:

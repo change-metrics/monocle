@@ -73,7 +73,10 @@ class ReviewesFetcher(object):
         updated_since = self.convert_date_for_query(updated_since)
         request_params = "?q=after:%s+project:%s" % (
             updated_since, self.repository_prefix)
-        for option in ['MESSAGES', 'DETAILED_ACCOUNTS', 'DETAILED_LABELS']:
+        for option in [
+                'MESSAGES', 'DETAILED_ACCOUNTS',
+                'DETAILED_LABELS', 'CURRENT_REVISION',
+                'CURRENT_FILES']:
             request_params += '&o=%s' % option
         count = 100
         start_after = 0
@@ -147,7 +150,13 @@ class ReviewesFetcher(object):
                 'assignees': (["%s/%s" % (
                     review['assignee'].get('name'),
                     review['assignee']['_account_id'])]
-                    if review.get('assignee') else [])
+                    if review.get('assignee') else []),
+                'additions': review['insertions'],
+                'deletions': review['deletions'],
+                # Gerrit review is one commit by review
+                'commits': list(review['revisions'].keys())[:1],
+                'changed_files': len(
+                    list(review['revisions'].values())[0]['files'].keys())
             }
             change['repository_fullname_and_number'] = "%s#%s" % (
                 change['repository_fullname'],
@@ -245,8 +254,12 @@ class ReviewesFetcher(object):
 
 
 if __name__ == "__main__":
-    a = ReviewesFetcher()
-    reviewes = a.get(
-        'https://gerrit-review.googlesource.com', 'gerrit',
-        '2019-12-01')
-    objs = a.extract_objects(reviewes)
+    from pprint import pprint
+    rf = ReviewesFetcher(
+        'https://gerrit-review.googlesource.com',
+        'gerrit')
+    reviewes = rf.get('2020-03-13 00:00:00')
+    reviewes = reviewes[:2]
+    pprint(reviewes)
+    objs = rf.extract_objects(reviewes)
+    pprint(objs)

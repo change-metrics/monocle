@@ -25,6 +25,7 @@ import argparse
 
 from time import sleep
 from datetime import datetime
+from pprint import pprint
 
 from monocle import utils
 from monocle.db.db import ELmonocleDB
@@ -80,7 +81,7 @@ class MonocleCrawler():
             if not self.get_one_rep:
                 print("The --repository argument must be given")
             else:
-                print(self.prf.get_one(
+                pprint(self.prf.get_one(
                     self.org, self.get_one_rep,
                     self.get_one))
         else:
