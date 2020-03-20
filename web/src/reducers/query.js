@@ -1,9 +1,6 @@
 import { get_query_results } from '../api'
 
 const initialState = {
-  changes_events_counters_result: null,
-  changes_events_counters_loading: true,
-  changes_events_counters_error: {},
   changes_lifecycle_stats_result: null,
   changes_lifecycle_stats_loading: true,
   changes_lifecycle_stats_error: {},

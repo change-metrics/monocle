@@ -9,8 +9,8 @@ import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 
 import {
-    BaseQueryComponent,
-    LoadingBox,
+  BaseQueryComponent,
+  LoadingBox,
 } from './common'
 
 import { Line } from 'react-chartjs-2';
@@ -97,6 +97,12 @@ class ChangesReviewStats extends BaseQueryComponent {
                 <Row>
                   <Col md={4}>
                     <ListGroup>
+                      <ListGroup.Item>
+                        {data.ChangeCommentedEvent.events_count} changes commented by {data.ChangeCommentedEvent.authors_count} authors
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        {data.ChangeReviewedEvent.events_count} changes reviewed by {data.ChangeReviewedEvent.authors_count} authors
+                      </ListGroup.Item>
                       <ListGroup.Item>
                         Average delay for the first comment:{' '}
                         {data.first_event_delay.comment.first_event_delay_avg} secs

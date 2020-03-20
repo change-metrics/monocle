@@ -12,7 +12,6 @@ import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
 
 import TopMenu from './components/menu'
-import { CGlobalInfo } from './components/globalinfo'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import {
@@ -48,12 +47,6 @@ class RootView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Tabs defaultActiveKey="events stats" id="uncontrolled-tab-example">
             <Tab eventKey="events stats" title="Events stats">
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CGlobalInfo />
-                </Col>
-              </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>

@@ -105,6 +105,15 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                   <Col md={4}>
                     <ListGroup>
                       <ListGroup.Item>
+                        {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        {data.ChangeMergedEvent.events_count} changes merged by {data.ChangeMergedEvent.authors_count} authors
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        {data.ChangeAbandonedEvent.events_count} changes abandoned by {data.ChangeAbandonedEvent.authors_count} authors
+                      </ListGroup.Item>
+                      <ListGroup.Item>
                         Changes abandoned: {data.ratios['abandoned/created']}%
                       </ListGroup.Item>
                       <ListGroup.Item>
