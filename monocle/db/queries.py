@@ -108,6 +108,13 @@ def generate_filter(repository_fullname, params):
                 }
             }
         )
+        must_not.append(
+            {
+                "terms": {
+                    "on_author": exclude_authors
+                }
+            }
+        )
 
     ret = {"bool": {
         "filter": qfilter,
