@@ -359,21 +359,6 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
     return data['aggregations']['agg1']
 
 
-def changes_events_counters(es, index, repository_fullname, params):
-    ret = {}
-    for etype in (
-            "ChangeCreatedEvent", "ChangeReviewedEvent",
-            "ChangeCommentedEvent", "ChangeAbandonedEvent",
-            "ChangeMergedEvent"):
-        params['etype'] = (etype,)
-        events_count = count_events(es, index, repository_fullname, params)
-        authors_count = count_authors(es, index, repository_fullname, params)
-        ret[etype] = {
-            'events_count': events_count,
-            'authors_count': authors_count}
-    return ret
-
-
 def changes_closed_ratios(es, index, repository_fullname, params):
     etypes = (
         'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
@@ -521,6 +506,15 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['avgs'] = {}
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
+    for etype in (
+            "ChangeCreatedEvent", "ChangeAbandonedEvent",
+            "ChangeMergedEvent"):
+        params['etype'] = (etype,)
+        events_count = count_events(es, index, repository_fullname, params)
+        authors_count = count_authors(es, index, repository_fullname, params)
+        ret[etype] = {
+            'events_count': events_count,
+            'authors_count': authors_count}
     return ret
 
 
@@ -542,6 +536,14 @@ def changes_review_stats(es, index, repository_fullname, params):
         es, index, repository_fullname, params)
     ret['histos'] = changes_review_histos(
         es, index, repository_fullname, params)
+    for etype in (
+            "ChangeReviewedEvent", "ChangeCommentedEvent"):
+        params['etype'] = (etype,)
+        events_count = count_events(es, index, repository_fullname, params)
+        authors_count = count_authors(es, index, repository_fullname, params)
+        ret[etype] = {
+            'events_count': events_count,
+            'authors_count': authors_count}
     return ret
 
 
