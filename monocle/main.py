@@ -177,7 +177,7 @@ def main():
             args.name,
             args.repository.lstrip('^'),
             params)
-        print(ret)
+        pprint(ret)
 
 
 if __name__ == '__main__':

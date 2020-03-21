@@ -380,7 +380,7 @@ def changes_closed_ratios(es, index, repository_fullname, params):
         ret['merged/created'] = 0
     try:
         ret['abandoned/created'] = round(
-            ret['ChangeAbandonedEvent'] / ret['ChangeMergedEvent'] * 100, 1)
+            ret['ChangeAbandonedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
     except ZeroDivisionError:
         ret['abandoned/created'] = 0
     for etype in etypes:
@@ -521,7 +521,8 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
         authors_count = count_authors(es, index, repository_fullname, params)
         ret[etype] = {
             'events_count': events_count,
-            'authors_count': authors_count}
+            'authors_count': authors_count,
+        }
     return ret
 
 
