@@ -147,7 +147,7 @@ def main():
     parser_dbquery.add_argument(
         '--type', help='Scope to events types list (comma separated)')
     parser_dbquery.add_argument(
-        '--author', help='Scope to events author')
+        '--authors', help='Scope to authors (comma separated)')
     parser_dbquery.add_argument(
         '--approval', help='Scope to events with approval')
     parser_dbquery.add_argument(

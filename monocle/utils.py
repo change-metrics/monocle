@@ -58,10 +58,12 @@ def set_params(input):
     params['ec_same_date'] = getter('ec_same_date', False)
     params['etype'] = getter('type', ','.join(events_list)).split(',')
     params['exclude_authors'] = getter('exclude_authors', None)
-    params['author'] = getter('author', None)
+    params['authors'] = getter('authors', None)
     params['interval'] = getter('interval', '3h')
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     if params['exclude_authors']:
         params['exclude_authors'] = params['exclude_authors'].split(',')
+    if params['authors']:
+        params['authors'] = params['authors'].split(',')
     return params

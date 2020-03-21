@@ -73,7 +73,7 @@ def generate_filter(repository_fullname, params):
     gte = params.get('gte')
     lte = params.get('lte')
     etype = params.get('etype')
-    author = params.get('author')
+    authors = params.get('authors')
     exclude_authors = params.get('exclude_authors')
 
     created_at_range = {
@@ -92,8 +92,8 @@ def generate_filter(repository_fullname, params):
         {"range": created_at_range},
     ]
     qfilter.append({"terms": {"type": etype}})
-    if author:
-        qfilter.append({"term": {"author": author}})
+    if authors:
+        qfilter.append({"terms": {"author": authors}})
     if 'Change' in params['etype']:
         generate_changes_filter(params, qfilter)
     else:
