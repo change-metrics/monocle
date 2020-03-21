@@ -209,6 +209,7 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    filter_authors: state.FiltersReducer.filter_authors,
     most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
     most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
     most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,

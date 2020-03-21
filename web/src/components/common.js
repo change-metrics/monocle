@@ -37,6 +37,7 @@ class BaseQueryComponent extends React.Component {
         'lte': this.props.filter_lte,
         'interval': this.props.filter_interval,
         'exclude_authors': this.props.filter_exclude_authors,
+        'authors': this.props.filter_authors,
         'graph_type': graph_type,
       })
     }

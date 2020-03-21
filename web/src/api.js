@@ -7,6 +7,7 @@ function setQueryParams(
   { gte = undefined, lte = undefined,
     type = undefined, interval = undefined,
     exclude_authors = undefined,
+    authors = undefined,
   }) {
   var params = new URLSearchParams()
   if (gte) {
@@ -24,13 +25,17 @@ function setQueryParams(
   if (exclude_authors) {
     params.append('exclude_authors', exclude_authors)
   }
+  if (authors) {
+    params.append('authors', authors)
+  }
   return params
 }
 
 function get_query_results(
   { name, repository, gte = undefined,
     lte = undefined, type = undefined,
-    interval = undefined, exclude_authors = undefined}) {
+    interval = undefined, exclude_authors = undefined,
+    authors = undefined}) {
   const url = baseurl + '/query/' + name
   var params = setQueryParams(
     {
@@ -39,6 +44,7 @@ function get_query_results(
       'type': type,
       'interval': interval,
       'exclude_authors': exclude_authors,
+      'authors': authors,
     }
   )
   params.append('repository', repository)

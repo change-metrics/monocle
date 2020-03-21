@@ -93,6 +93,7 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    filter_authors: state.FiltersReducer.filter_authors,
     approval_stats_loading: state.QueryReducer.approval_stats_loading,
     approval_stats_result: state.QueryReducer.approval_stats_result,
     approval_stats_error: state.QueryReducer.approval_stats_error,

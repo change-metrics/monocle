@@ -138,6 +138,7 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    filter_authors: state.FiltersReducer.filter_authors,
     changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
     changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
     changes_review_stats_error: state.QueryReducer.changes_review_stats_error,

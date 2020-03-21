@@ -41,6 +41,10 @@ class FiltersForm extends React.Component {
     this.props.handleFilterExcludeAuthorsChange(e.target.value)
   }
 
+  onAuthorsChange = (e) => {
+    this.props.handleFilterAuthorsChange(e.target.value)
+  }
+
   fetchQueryParams = () => {
     const params = new URLSearchParams(window.location.search)
     var lte = params.get('lte')
@@ -48,6 +52,7 @@ class FiltersForm extends React.Component {
     var repository = params.get('repository')
     var interval = params.get('interval')
     var exclude_authors = params.get('exclude_authors')
+    var authors = params.get('authors')
     if (lte) {
       this.props.handleFilterLteChange(lte)
     }
@@ -62,6 +67,9 @@ class FiltersForm extends React.Component {
     }
     if (exclude_authors) {
       this.props.handleFilterExcludeAuthorsChange(exclude_authors)
+    }
+    if (authors) {
+      this.props.handleFilterAuthorsChange(authors)
     }
     this.props.setQueryParamsLoaded()
   }
@@ -85,6 +93,7 @@ class FiltersForm extends React.Component {
       'repository': this.props.filter_repository,
       'interval': this.props.filter_interval,
       'exclude_authors': this.props.filter_exclude_authors,
+      'authors': this.props.filter_authors,
     })
     window.location.reload(true)
     event.preventDefault()
@@ -159,6 +168,16 @@ class FiltersForm extends React.Component {
                   />
                 </Form.Group>
               </Col>
+              <Col>
+                <Form.Group controlId="formAuthorsInput">
+                  <Form.Label>Authors</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={this.props.filter_authors}
+                    onChange={this.onAuthorsChange}
+                  />
+                </Form.Group>
+              </Col>
             </Form.Row>
             <Form.Row>
               <Col>
@@ -182,6 +201,7 @@ const mapStateToProps = state => {
     filter_repository: state.FiltersReducer.filter_repository,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
+    filter_authors: state.FiltersReducer.filter_authors,
   }
 }
 
@@ -221,6 +241,12 @@ const mapDispatchToProps = dispatch => {
     handleFilterExcludeAuthorsChange: (value) => dispatch(
       {
         type: 'FILTER_EXCLUDE_AUTHORS_CHANGE',
+        value: value
+      }
+    ),
+    handleFilterAuthorsChange: (value) => dispatch(
+      {
+        type: 'FILTER_AUTHORS_CHANGE',
         value: value
       }
     ),

@@ -5,6 +5,7 @@ const initialState = {
   filter_repository: ".*",
   filter_interval: "7d",
   filter_exclude_authors: null,
+  filter_authors: null,
 };
 
 const reducer = (state = initialState, action) => {
@@ -26,6 +27,9 @@ const reducer = (state = initialState, action) => {
   }
   if (action.type === 'FILTER_EXCLUDE_AUTHORS_CHANGE') {
     newState.filter_exclude_authors = action.value;
+  }
+  if (action.type === 'FILTER_AUTHORS_CHANGE') {
+    newState.filter_authors = action.value;
   }
   return newState;
 }
