@@ -1,0 +1,4 @@
+requests
+elasticsearch
+flask
+flask_cors

@@ -161,6 +161,10 @@ def main():
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper()))
 
+    if not args.command:
+        parser.print_usage()
+        return 1
+
     if args.command.endswith("_crawler"):
         crawler = MonocleCrawler(args)
         crawler.run()
