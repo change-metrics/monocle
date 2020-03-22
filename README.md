@@ -19,14 +19,18 @@ mkdir data
 #### For Docker >= 17.06
 
 ```Shell
-docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" --mount type=bind,source=$PWD/data/,destination=/usr/share/elasticsearch/data docker.elastic.co/elasticsearch/elasticsearch:6.8.7
+docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" \
+--mount type=bind,source=$PWD/data/,destination=/usr/share/elasticsearch/data \
+docker.elastic.co/elasticsearch/elasticsearch:6.8.7
 ```
 
 #### For Docker < 17.06
 
 ```Shell
 chmod o+w data
-docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -v $PWD/data/:/usr/share/elasticsearch/data:Z docker.elastic.co/elasticsearch/elasticsearch:6.8.7
+docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" \
+-v $PWD/data/:/usr/share/elasticsearch/data:Z \
+docker.elastic.co/elasticsearch/elasticsearch:6.8.7
 ```
 
 ### Install Monocle
