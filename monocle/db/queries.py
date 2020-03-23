@@ -156,7 +156,8 @@ def _first_created_event(es, index, repository_fullname, params):
     }
     data = run_query(es, index, body)
     data = [r['_source'] for r in data['hits']['hits']]
-    return data[0]['created_at']
+    if data:
+        return data[0]['created_at']
 
 
 def count_events(es, index, repository_fullname, params):
