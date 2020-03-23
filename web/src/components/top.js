@@ -34,7 +34,7 @@ class TopEventsTable extends React.Component {
                 <tbody>
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
-                      <td>{index}</td>
+                      <td>{index + 1}</td>
                       <td>{x.key}</td>
                       <td>{x.doc_count}</td>
                     </tr>)}
@@ -163,7 +163,7 @@ class TopStrengthsTable extends React.Component {
                 <tbody>
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
-                      <td>{index}</td>
+                      <td>{index + 1}</td>
                       <td>{x[0][0]} and {x[0][1]}</td>
                       <td>{x[1]}</td>
                     </tr>)}
