@@ -3,3 +3,4 @@ dist
 *.py[oc]
 monocle.egg-info
 data
+.venv
