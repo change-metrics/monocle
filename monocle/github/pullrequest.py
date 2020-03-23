@@ -50,10 +50,10 @@ class PRsFetcher(object):
 
     log = logging.getLogger("monocle.PRsFetcher")
 
-    def __init__(self, gql, host, org, bulk_size=25):
+    def __init__(self, gql, base_url, org, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
-        self.host = host
+        self.base_url = base_url
         self.org = org
         self.events_map = {
             'ClosedEvent': 'ChangeAbandonedEvent',
@@ -241,6 +241,7 @@ class PRsFetcher(object):
                 'number': change['number'],
                 'repository_fullname_and_number': change[
                     'repository_fullname_and_number'],
+                'url': change['url'],
                 'on_author': change['author'],
                 'on_created_at': change['created_at'],
             })
@@ -259,6 +260,10 @@ class PRsFetcher(object):
                 change['repository_fullname'],
                 change['number'],
             )
+            change['url'] = ('%s/%s/pull/%s'
+                             % (self.base_url,
+                                change['repository_fullname'],
+                                change['number']))
             change['author'] = pr['author']['login']
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']

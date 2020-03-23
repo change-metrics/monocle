@@ -48,7 +48,7 @@ python setup.py develop
 ORG=<your org>
 # Generate a personal access token on Github (w/o any specific rights)
 TOKEN=<your token>
-monocle github_crawler --host github.com --token $TOKEN --org $ORG --updated-since 2020-03-01
+monocle github_crawler --base-url https://github.com --token $TOKEN --org $ORG --updated-since 2020-03-01
 ```
 
 ### Validate the crawler indexed data

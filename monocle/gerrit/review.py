@@ -40,8 +40,8 @@ class ReviewesFetcher(object):
 
     log = logging.getLogger("monocle.ReviewesFetcher")
 
-    def __init__(self, host, repository_prefix):
-        self.host = host
+    def __init__(self, base_url, repository_prefix):
+        self.base_url = base_url
         self.repository_prefix = repository_prefix
         self.status_map = {
             'NEW': 'OPEN',
@@ -83,7 +83,7 @@ class ReviewesFetcher(object):
         reviews = []
         while True:
             urlpath = (
-                self.host + '/changes/' + request_params +
+                self.base_url + '/changes/' + request_params +
                 '&n=%s&start=%s' % (
                     count, start_after))
             self.log.info("query: %s" % urlpath)
@@ -132,6 +132,7 @@ class ReviewesFetcher(object):
                 'repository_fullname': review['project'],
                 'repository_shortname': "/".join(
                     review['project'].split('/')[1:]),
+                'url': '%s/%s' % (self.base_url, review['_number']),
                 'author': "%s/%s" % (
                     review['owner'].get('name'),
                     review['owner']['_account_id']),
