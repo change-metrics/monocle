@@ -161,12 +161,17 @@ class ELmonocleDB():
         return ret[0]
 
     def run_named_query(self, name, *args, **kwargs):
-        # Here we set gte and gte if not provided by user
+        # Here we set gte and lte if not provided by user
         # especially to be able to set the histogram extended_bounds
         if not args[1].get('gte'):
-            args[1]['gte'] = int(utils.dbdate_to_datetime(
-                queries._first_created_event(
-                    self.es, self.index, *args, **kwargs)).timestamp() * 1000)
+            first_created_event = queries._first_created_event(
+                    self.es, self.index, *args, **kwargs)
+            if first_created_event:
+                args[1]['gte'] = int(utils.dbdate_to_datetime(
+                    first_created_event).timestamp() * 1000)
+            else:
+                # There is probably nothing the db that match the query
+                args[1]['gte'] = None
         if not args[1].get('lte'):
             args[1]['lte'] = int(datetime.now().timestamp() * 1000)
         return getattr(queries, name)(
