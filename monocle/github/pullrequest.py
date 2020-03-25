@@ -71,6 +71,7 @@ class PRsFetcher(object):
           title
           headRefName
           baseRefName
+          bodyText
           state
           number
           mergeable
@@ -263,6 +264,7 @@ class PRsFetcher(object):
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
             change['title'] = pr['title']
+            change['text'] = pr['bodyText']
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
             change['changed_files'] = pr['changedFiles']
