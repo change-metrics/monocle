@@ -41,7 +41,7 @@ class HotChangesTable extends React.Component {
                     <tr key={index}>
                       <td>{x.hot_score}</td>
                       <td>{change_url(x)}</td>
-                      <td>{author_url(x)}</td>
+                      <td>{x.author}</td>
                       <td>
                         <div>{x.created_at}</div>
                         <div>{x.updated_at}</div>
@@ -87,7 +87,7 @@ class ColdChangesTable extends React.Component {
                         <div>{x.updated_at}</div>
                       </td>
                       <td>{change_url(x)}</td>
-                      <td>{author_url(x)}</td>
+                      <td>{x.author}</td>
                       <td>{change_url(x, x.title)}</td>
                       <td>{x.mergeable}</td>
                     </tr>)}
@@ -130,7 +130,7 @@ class LastChangesTable extends React.Component {
                         <div>{x.updated_at}</div>
                       </td>
                       <td>{change_url(x)}</td>
-                      <td>{author_url(x)}</td>
+                      <td>{x.author}</td>
                       <td>{change_url(x, x.title)}</td>
                       <td>{x.mergeable}</td>
                       <td>{x.state}</td>
