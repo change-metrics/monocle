@@ -126,6 +126,8 @@ class ReviewesFetcher(object):
                 'type': 'Change',
                 'id': review['id'],
                 'number': review['_number'],
+                'target_branch': review['branch'],
+                'branch': review['branch'],
                 'repository_prefix': review['project'].split('/')[0],
                 'repository_fullname': review['project'],
                 'repository_shortname': "/".join(
