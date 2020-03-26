@@ -69,6 +69,8 @@ class PRsFetcher(object):
           deletions
           changedFiles
           title
+          headRefName
+          baseRefName
           state
           number
           mergeable
@@ -258,6 +260,8 @@ class PRsFetcher(object):
                 change['number'],
             )
             change['author'] = pr['author']['login']
+            change['branch'] = pr['headRefName']
+            change['target_branch'] = pr['baseRefName']
             change['title'] = pr['title']
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
