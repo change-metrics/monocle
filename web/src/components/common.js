@@ -5,6 +5,25 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 
 
+function change_url(x, name=null) {
+  if (!name) {
+    name = x.repository_fullname_and_number;
+  }
+  if (x.repository_fullname_and_number.includes("#")) {
+    const url = "https://github.com/" + x.repository_fullname_and_number.replace("#", "/pull/");
+    
+    return <a href={url} target="_blank" rel="noopener noreferrer">{name}</a>;
+  }
+  return ;
+}
+
+function author_url(x) {
+  if (x.url) {
+    return <a href={x.url} target="_blank" rel="noopener noreferrer">{x.author}</a>;
+  }
+  return x.author;
+}
+
 class LoadingBox extends React.Component {
   render() {
     return (
@@ -47,4 +66,6 @@ class BaseQueryComponent extends React.Component {
 export {
   LoadingBox,
   BaseQueryComponent,
+  change_url,
+  author_url,
 }

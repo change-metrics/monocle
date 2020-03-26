@@ -49,11 +49,11 @@ class MonocleCrawler():
             self.repository_el_re = args.org.lstrip('^') + '.*'
             self.prf = pullrequest.PRsFetcher(
                 GithubGraphQLQuery(args.token),
-                args.host, args.org)
+                args.base_url, args.org)
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
             self.prf = review.ReviewesFetcher(
-                args.host, args.repository)
+                args.base_url, args.repository)
 
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)
@@ -107,7 +107,7 @@ def main():
             '--loop-delay', help='Request last updated events every N secs',
             default=900)
         parser_crawler.add_argument(
-            '--host', help='Base url of the code review server',
+            '--base-url', help='Base url of the code review server',
             required=True)
         crawler_driver.init_crawler_args_parser(parser_crawler)
 

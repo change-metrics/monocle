@@ -9,9 +9,11 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 
 import {
-    BaseQueryComponent,
-    LoadingBox,
-} from './common'
+  BaseQueryComponent,
+  LoadingBox,
+  change_url,
+  author_url,
+} from './common';
 
 class HotChangesTable extends React.Component {
   render() {
@@ -38,13 +40,13 @@ class HotChangesTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{x.hot_score}</td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
+                      <td>{change_url(x)}</td>
+                      <td>{author_url(x)}</td>
                       <td>
                         <div>{x.created_at}</div>
                         <div>{x.updated_at}</div>
                       </td>
-                      <td>{x.title}</td>
+                      <td>{change_url(x, x.title)}</td>
                       <td>{x.mergeable}</td>
                     </tr>)}
                 </tbody>
@@ -84,9 +86,9 @@ class ColdChangesTable extends React.Component {
                         <div>{x.created_at}</div>
                         <div>{x.updated_at}</div>
                       </td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
-                      <td>{x.title}</td>
+                      <td>{change_url(x)}</td>
+                      <td>{author_url(x)}</td>
+                      <td>{change_url(x, x.title)}</td>
                       <td>{x.mergeable}</td>
                     </tr>)}
                 </tbody>
@@ -127,9 +129,9 @@ class LastChangesTable extends React.Component {
                         <div>{x.created_at}</div>
                         <div>{x.updated_at}</div>
                       </td>
-                      <td>{x.repository_fullname_and_number}</td>
-                      <td>{x.author}</td>
-                      <td>{x.title}</td>
+                      <td>{change_url(x)}</td>
+                      <td>{author_url(x)}</td>
+                      <td>{change_url(x, x.title)}</td>
                       <td>{x.mergeable}</td>
                       <td>{x.state}</td>
                     </tr>)}
