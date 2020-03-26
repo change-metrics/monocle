@@ -54,6 +54,8 @@ class ELmonocleDB():
                     "on_author": {"type": "keyword"},
                     "committer": {"type": "keyword"},
                     "merged_by": {"type": "keyword"},
+                    "branch": {"type": "keyword"},
+                    "target_branch": {"type": "keyword"},
                     "created_at": {
                         "type": "date",
                         "format": "date_time_no_millis"
