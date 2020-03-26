@@ -76,7 +76,7 @@ class ReviewesFetcher(object):
         for option in [
                 'MESSAGES', 'DETAILED_ACCOUNTS',
                 'DETAILED_LABELS', 'CURRENT_REVISION',
-                'CURRENT_FILES']:
+                'CURRENT_FILES', 'CURRENT_COMMIT']:
             request_params += '&o=%s' % option
         count = 100
         start_after = 0
@@ -158,7 +158,9 @@ class ReviewesFetcher(object):
                 # Gerrit review is one commit by review
                 'commits': list(review['revisions'].keys())[:1],
                 'changed_files': len(
-                    list(review['revisions'].values())[0]['files'].keys())
+                    list(review['revisions'].values())[0]['files'].keys()),
+                'text':
+                    list(review['revisions'].values())[0]['commit']['message'],
             }
             change['repository_fullname_and_number'] = "%s#%s" % (
                 change['repository_fullname'],
