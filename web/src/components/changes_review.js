@@ -15,6 +15,14 @@ import {
 
 import { Line } from 'react-chartjs-2';
 
+var moment = require('moment');
+
+function secondsToDhms(seconds) {
+  const d = moment.duration();
+  d.add(seconds, 'second');
+  
+  return d.humanize();
+}
 
 class ChangeReviewEventsHisto extends React.Component {
   prepare_data_set(histos) {
@@ -105,11 +113,11 @@ class ChangesReviewStats extends BaseQueryComponent {
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Average delay for the first comment:{' '}
-                        {data.first_event_delay.comment.first_event_delay_avg} secs
+                        {secondsToDhms(data.first_event_delay.comment.first_event_delay_avg)}
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Average delay for the first review:{' '}
-                        {data.first_event_delay.review.first_event_delay_avg} secs
+                        {secondsToDhms(data.first_event_delay.review.first_event_delay_avg)}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
