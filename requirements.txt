@@ -2,3 +2,5 @@ requests
 elasticsearch
 flask
 flask_cors
+jsonschema
+pyyaml
