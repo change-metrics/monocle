@@ -22,6 +22,7 @@
 
 import logging
 import argparse
+import sys
 
 from time import sleep
 from datetime import datetime
@@ -166,6 +167,11 @@ def main():
         return 1
 
     if args.command.endswith("_crawler"):
+        if (not args.base_url.startswith('http://')
+           and not args.base_url.startswith('https://')):
+            print('%s does not start with http:// or https://' % args.base_url,
+                  file=sys.stderr)
+            return 1
         crawler = MonocleCrawler(args)
         crawler.run()
 
