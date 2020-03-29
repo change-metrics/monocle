@@ -3,9 +3,11 @@ services:
   api:
     build: .
     ports:
-      - "9876"
+      - "9876:9876"
     environment:
       ELASTIC_CONN: elastic:9200
+      ALLOW_ORIGIN: http://localhost:3000
+      #FLASK_ENV: development
     command: webapi
   elastic:
     image: "docker.elastic.co/elasticsearch/elasticsearch:6.8.7"
@@ -17,3 +19,9 @@ services:
     build: .
     env_file: github-env
     command: monocle github_crawler --base-url https://github.com --elastic-conn elastic:9200
+  web:
+    build: web
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:9876

@@ -31,7 +31,8 @@ from monocle.db.db import ELmonocleDB
 
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/0/query/*":
+                     {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
 
 
 @app.route("/api/0/query/<name>", methods=['GET'])

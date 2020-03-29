@@ -45,11 +45,12 @@ For example, you could need to increase this system parameter:
 sudo sysctl -w vm.max_map_count=262144
 ```
 
-### Run the web UI
+or make the data directory writable for other:
 
 ```Shell
-cd web
-npm i && npm start
+chmod o+w data
 ```
+
+### Accessing the web UI
 
 You should be able to access the web UI at http://localhost:3000/.
