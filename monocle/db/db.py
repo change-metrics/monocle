@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
+import time
+
+from datetime import datetime
 
 from elasticsearch.helpers import bulk
 from elasticsearch import client
@@ -26,13 +30,23 @@ from elasticsearch import client
 from monocle.db import queries
 from monocle import utils
 
-from datetime import datetime
-
 
 class ELmonocleDB():
 
-    def __init__(self, index='monocle'):
-        self.es = client.Elasticsearch('localhost:9200')
+    log = logging.getLogger("monocle.ELmonocleDB")
+
+    def __init__(self, elastic_conn='localhost:9200', index='monocle'):
+        while True:
+            try:
+                self.log.info('Connecting to ES server at %s' % elastic_conn)
+                self.es = client.Elasticsearch(elastic_conn)
+                self.log.info(self.es.info())
+                break
+            except Exception:
+                self.log.exception('Unable to connect to %s. Sleeping.'
+                                   % elastic_conn)
+                time.sleep(10)
+
         self.index = index
         self.mapping = {
             self.index: {
