@@ -23,6 +23,8 @@
 import logging
 import argparse
 import sys
+import os
+import yaml
 
 from time import sleep
 from datetime import datetime
@@ -36,6 +38,28 @@ from monocle.gerrit import review
 from monocle.envdefault import EnvDefault
 
 from threading import Thread
+from dataclasses import dataclass
+from monocle import projects
+from jsonschema import validate
+
+
+@dataclass
+class GithubCrawlerArgs(object):
+    updated_since: str
+    loop_delay: int
+    command: str
+    org: str
+    base_url: str
+    token: str
+
+
+@dataclass
+class GerritCrawlerArgs(object):
+    updated_since: str
+    loop_delay: int
+    command: str
+    base_url: str
+    repository: str
 
 
 class MonocleCrawler(Thread):
@@ -123,6 +147,13 @@ def main():
             default='localhost:9200')
         crawler_driver.init_crawler_args_parser(parser_crawler)
 
+    parser_crawler = subparsers.add_parser(
+        'crawler', help='Threaded crawlers pool')
+    parser_crawler.add_argument(
+        '--config',
+        help='Configuration file of the crawlers pool',
+        required=True)
+
     parser_dbmanage = subparsers.add_parser(
         'dbmanage', help='Database manager')
     parser_dbmanage.add_argument(
@@ -185,6 +216,38 @@ def main():
             return 1
         crawler = MonocleCrawler(args)
         crawler.start()
+
+    if args.command == "crawler":
+        realpath = os.path.expanduser(args.config)
+        if not os.path.isfile(realpath):
+            print('Unable to access config: %s' % realpath)
+        config = yaml.safe_load(open(realpath).read())
+        validate(
+            instance=config,
+            schema=projects.schema)
+        tpool = []
+        for project in config['projects']:
+            for crawler_item in project['crawler'].get(
+                    'github_orgs', []):
+                args = GithubCrawlerArgs(
+                    command='github_crawler',
+                    org=crawler_item['name'],
+                    updated_since=crawler_item['updated_since'],
+                    loop_delay=project['crawler']['loop_delay'],
+                    token=crawler_item['token'],
+                    base_url=crawler_item['base_url'])
+                tpool.append(MonocleCrawler(args))
+            for crawler_item in project['crawler'].get(
+                    'gerrit_repositories', []):
+                args = GerritCrawlerArgs(
+                    command='gerrit_crawler',
+                    repository=crawler_item['name'],
+                    updated_since=crawler_item['updated_since'],
+                    loop_delay=project['crawler']['loop_delay'],
+                    base_url=crawler_item['base_url'])
+                tpool.append(MonocleCrawler(args))
+        for cthread in tpool:
+            cthread.start()
 
     if args.command == "dbmanage":
         if args.delete_repository:
