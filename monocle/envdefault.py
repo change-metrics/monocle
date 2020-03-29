@@ -19,35 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+import argparse
+import logging
 import os
 
-from flask import Flask
-from flask import request
-from flask import jsonify
-from flask_cors import CORS
-
-from monocle import utils
-from monocle.db.db import ELmonocleDB
+log = logging.getLogger("monocle.envdefault")
 
 
-app = Flask(__name__)
-CORS(app)
+class EnvDefault(argparse.Action):
+    def __init__(self, envvar, required=False, default=None, **kwargs):
+        if envvar in os.environ:
+            default = os.environ[envvar]
+            log.debug('%s=%s' % (envvar, default))
+        if required and default:
+            required = False
+        super(EnvDefault, self).__init__(default=default, required=required,
+                                         **kwargs)
 
-
-@app.route("/api/0/query/<name>", methods=['GET'])
-def query(name):
-    repository_fullname = request.args.get('repository')
-    params = utils.set_params(request.args)
-    db = ELmonocleDB(os.getenv('ELASTIC_CONN', 'localhost:9200'))
-    result = db.run_named_query(
-        name, repository_fullname,
-        params)
-    return jsonify(result)
-
-
-def main():
-    app.run(host='0.0.0.0', port=9876)
-
-
-if __name__ == "__main__":
-    main()
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
