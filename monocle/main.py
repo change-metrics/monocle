@@ -35,13 +35,15 @@ from monocle.github import pullrequest
 from monocle.gerrit import review
 from monocle.envdefault import EnvDefault
 
+from threading import Thread
 
-class MonocleCrawler():
+
+class MonocleCrawler(Thread):
 
     log = logging.getLogger("monocle.Crawler")
 
     def __init__(self, args):
-        self.log.debug('args=%s' % args)
+        super().__init__()
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
         self.get_one = getattr(args, 'id', None)
@@ -182,7 +184,7 @@ def main():
                   file=sys.stderr)
             return 1
         crawler = MonocleCrawler(args)
-        crawler.run()
+        crawler.start()
 
     if args.command == "dbmanage":
         if args.delete_repository:
