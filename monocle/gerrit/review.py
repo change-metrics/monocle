@@ -25,15 +25,20 @@ import requests
 from datetime import datetime
 import json
 
+from monocle.envdefault import EnvDefault
+
 name = 'gerrit_crawler'
 help = 'Gerrit Crawler to fetch Reviews events'
 
 
 def init_crawler_args_parser(parser):
     parser.add_argument(
-        '--repository', help='The regexp matching repositories name')
+        '--repository', help='The regexp matching repositories name',
+        action=EnvDefault, envvar='GERRIT_REPOSITORY')
+
     parser.add_argument(
-        '--updated-since', help='Acts on Reviews updated since')
+        '--updated-since', help='Acts on Reviews updated since',
+        action=EnvDefault, envvar='GERRIT_UPDATED_SINCE')
 
 
 class ReviewesFetcher(object):

@@ -1,7 +1,9 @@
 import axios from 'axios'
 
-var server = 'http://localhost:9876'
+var server = process.env.REACT_APP_API_URL || 'http://localhost:9876'
 var baseurl = server + '/api/0'
+
+console.log('BaseURL=' + baseurl)
 
 function setQueryParams(
   { gte = undefined, lte = undefined,

@@ -33,6 +33,7 @@ from monocle.db.db import ELmonocleDB
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github import pullrequest
 from monocle.gerrit import review
+from monocle.envdefault import EnvDefault
 
 
 class MonocleCrawler():
@@ -40,10 +41,11 @@ class MonocleCrawler():
     log = logging.getLogger("monocle.Crawler")
 
     def __init__(self, args):
+        self.log.debug('args=%s' % args)
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
         self.get_one = getattr(args, 'id', None)
-        self.db = ELmonocleDB()
+        self.db = ELmonocleDB(args.elastic_conn)
         if args.command == 'github_crawler':
             self.get_one_rep = getattr(args, 'repository', None)
             self.org = args.org
@@ -96,7 +98,8 @@ class MonocleCrawler():
 def main():
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
-        '--loglevel', help='logging level', default='INFO')
+        '--loglevel', help='logging level', default='INFO',
+        action=EnvDefault, envvar='LOG_LEVEL')
     subparsers = parser.add_subparsers(title='Subcommands',
                                        description='valid subcommands',
                                        dest="command")
@@ -106,10 +109,16 @@ def main():
             crawler_driver.name, help=crawler_driver.help)
         parser_crawler.add_argument(
             '--loop-delay', help='Request last updated events every N secs',
+            action=EnvDefault, envvar='LOOP_DELAY',
             default=900)
         parser_crawler.add_argument(
             '--base-url', help='Base url of the code review server',
+            action=EnvDefault, envvar='BASE_URL',
             required=True)
+        parser_crawler.add_argument(
+            '--elastic-conn', help='Elasticsearch connection info',
+            action=EnvDefault, envvar='ELASTIC_CONN',
+            default='localhost:9200')
         crawler_driver.init_crawler_args_parser(parser_crawler)
 
     parser_dbmanage = subparsers.add_parser(
