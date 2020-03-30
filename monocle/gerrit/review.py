@@ -24,11 +24,21 @@ import logging
 import requests
 from datetime import datetime
 import json
+from dataclasses import dataclass
 
 from monocle.envdefault import EnvDefault
 
 name = 'gerrit_crawler'
 help = 'Gerrit Crawler to fetch Reviews events'
+
+
+@dataclass
+class GerritCrawlerArgs(object):
+    updated_since: str
+    loop_delay: int
+    command: str
+    base_url: str
+    repository: str
 
 
 def init_crawler_args_parser(parser):

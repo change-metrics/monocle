@@ -24,12 +24,23 @@ import logging
 import requests
 from datetime import datetime
 from time import sleep
+from dataclasses import dataclass
 
 from monocle.envdefault import EnvDefault
 
 
 name = 'github_crawler'
 help = 'Github Crawler to fetch PRs events'
+
+
+@dataclass
+class GithubCrawlerArgs(object):
+    updated_since: str
+    loop_delay: int
+    command: str
+    org: str
+    base_url: str
+    token: str
 
 
 def init_crawler_args_parser(parser):
