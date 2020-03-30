@@ -32,7 +32,6 @@ from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.github import pullrequest
 from monocle.gerrit import review
-from monocle.envdefault import EnvDefault
 from monocle.crawler import Crawler
 
 from monocle import projects
@@ -42,8 +41,11 @@ from jsonschema import validate
 def main():
     parser = argparse.ArgumentParser(prog='monocle')
     parser.add_argument(
-        '--loglevel', help='logging level', default='INFO',
-        action=EnvDefault, envvar='LOG_LEVEL')
+        '--loglevel', help='logging level',
+        default='INFO')
+    parser.add_argument(
+        '--elastic-conn', help='Elasticsearch connection info',
+        default='localhost:9200')
     subparsers = parser.add_subparsers(title='Subcommands',
                                        description='valid subcommands',
                                        dest="command")
@@ -53,16 +55,10 @@ def main():
             crawler_driver.name, help=crawler_driver.help)
         parser_crawler.add_argument(
             '--loop-delay', help='Request last updated events every N secs',
-            action=EnvDefault, envvar='LOOP_DELAY',
             default=900)
         parser_crawler.add_argument(
             '--base-url', help='Base url of the code review server',
-            action=EnvDefault, envvar='BASE_URL',
             required=True)
-        parser_crawler.add_argument(
-            '--elastic-conn', help='Elasticsearch connection info',
-            action=EnvDefault, envvar='ELASTIC_CONN',
-            default='localhost:9200')
         crawler_driver.init_crawler_args_parser(parser_crawler)
 
     parser_crawler = subparsers.add_parser(
@@ -149,23 +145,23 @@ def main():
         for project in config['projects']:
             for crawler_item in project['crawler'].get(
                     'github_orgs', []):
-                args = pullrequest.GithubCrawlerArgs(
+                c_args = pullrequest.GithubCrawlerArgs(
                     command='github_crawler',
                     org=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
                     token=crawler_item['token'],
                     base_url=crawler_item['base_url'])
-                tpool.append(Crawler(args))
+                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn))
             for crawler_item in project['crawler'].get(
                     'gerrit_repositories', []):
-                args = review.GerritCrawlerArgs(
+                c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
                     repository=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'])
-                tpool.append(Crawler(args))
+                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn))
         for cthread in tpool:
             cthread.start()
 

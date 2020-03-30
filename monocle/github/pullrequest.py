@@ -26,8 +26,6 @@ from datetime import datetime
 from time import sleep
 from dataclasses import dataclass
 
-from monocle.envdefault import EnvDefault
-
 
 name = 'github_crawler'
 help = 'Github Crawler to fetch PRs events'
@@ -46,22 +44,17 @@ class GithubCrawlerArgs(object):
 def init_crawler_args_parser(parser):
     parser.add_argument(
         '--token', help='A Github API token',
-        action=EnvDefault, envvar='GITHUB_TOKEN',
         required=True)
     parser.add_argument(
         '--org', help='The Github organization to fetch PR events',
-        action=EnvDefault, envvar='GITHUB_ORG',
         required=True)
     parser.add_argument(
-        '--updated-since', help='Acts on PRs updated since',
-        action=EnvDefault, envvar='GITHUB_UPDATED_SINCE')
+        '--updated-since', help='Acts on PRs updated since')
     parser.add_argument(
-        '--id', help='Get one PR (for debug purpose)',
-        action=EnvDefault, envvar='GITHUB_ID')
+        '--id', help='Get one PR (for debug purpose)')
     parser.add_argument(
         '--repository',
-        help='Only used with --id (for debug purpose)',
-        action=EnvDefault, envvar='GITHUB_REPOSITORY')
+        help='Only used with --id (for debug purpose)')
 
 
 class PRsFetcher(object):

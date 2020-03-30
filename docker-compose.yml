@@ -15,10 +15,11 @@ services:
       - "9200"
     volumes:
       - $PWD/data:/usr/share/elasticsearch/data:Z
-  github_crawler:
+  crawler:
     build: .
-    env_file: github-env
-    command: monocle github_crawler --base-url https://github.com --elastic-conn elastic:9200
+    command: monocle --elastic-conn elastic:9200 crawler --config /etc/projects.yaml
+    volumes:
+      - $PWD/etc:/etc:Z
   web:
     build: web
     ports:
