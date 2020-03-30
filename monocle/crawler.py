@@ -33,7 +33,7 @@ from monocle.gerrit import review
 
 class Crawler(Thread):
 
-    log = logging.getLogger("monocle.Crawler")
+    log = logging.getLogger(__name__)
 
     def __init__(self, args):
         super().__init__()
@@ -52,6 +52,7 @@ class Crawler(Thread):
             self.repository_el_re = args.repository.lstrip('^')
             self.prf = review.ReviewesFetcher(
                 args.base_url, args.repository)
+        self.setName(self.repository_el_re)
 
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)

@@ -29,7 +29,7 @@ from datetime import datetime
 
 class GithubGraphQLQuery(object):
 
-    log = logging.getLogger("monocle.GithubGraphQLQuery")
+    log = logging.getLogger(__name__)
 
     def __init__(self, token):
         self.url = 'https://api.github.com/graphql'

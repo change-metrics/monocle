@@ -53,7 +53,7 @@ def init_crawler_args_parser(parser):
 
 class ReviewesFetcher(object):
 
-    log = logging.getLogger("monocle.ReviewesFetcher")
+    log = logging.getLogger(__name__)
 
     def __init__(self, base_url, repository_prefix):
         self.base_url = base_url

@@ -66,7 +66,7 @@ def init_crawler_args_parser(parser):
 
 class PRsFetcher(object):
 
-    log = logging.getLogger("monocle.PRsFetcher")
+    log = logging.getLogger(__name__)
 
     def __init__(self, gql, base_url, org, bulk_size=25):
         self.gql = gql

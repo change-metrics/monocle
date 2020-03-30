@@ -120,7 +120,9 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(
-        level=getattr(logging, args.loglevel.upper()))
+        level=getattr(logging, args.loglevel.upper()),
+        format="%(asctime)s - %(name)s - %(threadName)s - " +
+               "%(levelname)s - %(message)s")
 
     if not args.command:
         parser.print_usage()
