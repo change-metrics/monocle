@@ -1,6 +1,8 @@
 # Monocle
 
-Monocle purpose is to provide Pull Requests and Reviews metrics through a web API and a web UI. Monocle supports Github and Gerrit. Monocle provides a set of crawlers designed to fetch Pull Requests and Reviews data from the Github or Gerrit APIs and to store changes and changes related events into Elasticsearch. Furthermore Monocle implements ready to use queries and a React based web UI.
+Monocle purpose is to provide metrics about Changes through a web API and a web UI. Monocle supports Github Pull Requests and Gerrit Reviews. Monocle provides a set of crawlers designed to fetch Pull Requests and Reviews data from the Github or Gerrit APIs and to store changes and changes related events into Elasticsearch. Furthermore Monocle implements ready to use queries and a React based web UI.
+
+![Screenshot](https://user-images.githubusercontent.com/529708/78028243-fc958980-735e-11ea-8fd4-f5ecfb6af02a.png)
 
 ## Deploy the master version
 
