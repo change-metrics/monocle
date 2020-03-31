@@ -12,8 +12,41 @@ import {
   BaseQueryComponent,
   LoadingBox,
   change_url,
-  author_url,
+  add_url_field,
 } from './common';
+
+class RepoChangesTable extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Header>
+              <Card.Title>{this.props.title}</Card.Title>
+            </Card.Header>
+            <Card.Body>
+              <Table striped responsive bordered hover>
+                <thead>
+                  <tr>
+                    <th>Repository</th>
+                    <th>Number of changes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {this.props.data.map((item, index) =>
+                    <tr key={index}>
+                      <td><a href={add_url_field('repository', item.key)}>{item.key}</a></td>
+                      <td>{item.doc_count}</td>
+                    </tr>)}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
 
 class HotChangesTable extends React.Component {
   render() {
@@ -145,6 +178,30 @@ class LastChangesTable extends React.Component {
   }
 }
 
+class RepoChanges extends BaseQueryComponent {
+  componentDidUpdate(prevProps) {
+    this.queryBackend(
+      prevProps,
+      'repos_top_merged',
+      'repos_top_merged',
+      this.props.handleQuery)
+  }
+  render() {
+    if (!this.props.repos_top_merged_loading) {
+      const data = this.props.repos_top_merged_result
+      return (
+        <RepoChangesTable
+          data={data.tops}
+          title="Changes by repository"
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
+}
+
+
 class HotChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
@@ -240,6 +297,7 @@ class LastChanges extends BaseQueryComponent {
 }
 
 export {
+    RepoChanges,
     HotChanges,
     ColdChanges,
     LastChanges,
@@ -254,6 +312,9 @@ const mapStateToProps = state => {
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
     filter_authors: state.FiltersReducer.filter_authors,
+    repos_top_merged_loading: state.QueryReducer.repos_top_merged_loading,
+    repos_top_merged_result: state.QueryReducer.repos_top_merged_result,
+    repos_top_merged_error: state.QueryReducer.repos_top_merged_error,
     hot_changes_loading: state.QueryReducer.hot_changes_loading,
     hot_changes_result: state.QueryReducer.hot_changes_result,
     hot_changes_error: state.QueryReducer.hot_changes_error,
@@ -272,11 +333,13 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
+const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges);
 const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges);
 const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges);
 const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges);
 
 export {
+    CRepoChanges,
     CHotChanges,
     CColdChanges,
     CLastChanges,

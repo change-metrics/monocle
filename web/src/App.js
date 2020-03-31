@@ -20,6 +20,7 @@ import {
   CAuthorsPeersStats,
 } from './components/top'
 import {
+  CRepoChanges,
   CHotChanges,
   CColdChanges,
   CLastChanges,
@@ -89,6 +90,12 @@ class RootView extends React.Component {
               <Row>
                 <Col>
                   <CLastChanges />
+                </Col>
+              </Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CRepoChanges />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>

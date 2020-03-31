@@ -249,6 +249,12 @@ def _events_top(
         'count_avg': count_avg, 'count_median': count_median}
 
 
+def repos_top_merged(es, index, repository_fullname, params):
+    params['etype'] = ("ChangeMergedEvent",)
+    return _events_top(
+        es, index, repository_fullname, "repository_fullname", params)
+
+
 def events_top_authors(es, index, repository_fullname, params):
     return _events_top(
         es, index, repository_fullname, "author", params)
