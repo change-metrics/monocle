@@ -50,17 +50,6 @@ def main():
                                        description='valid subcommands',
                                        dest="command")
 
-    for crawler_driver in (pullrequest, review):
-        parser_crawler = subparsers.add_parser(
-            crawler_driver.name, help=crawler_driver.help)
-        parser_crawler.add_argument(
-            '--loop-delay', help='Request last updated events every N secs',
-            default=900)
-        parser_crawler.add_argument(
-            '--base-url', help='Base url of the code review server',
-            required=True)
-        crawler_driver.init_crawler_args_parser(parser_crawler)
-
     parser_crawler = subparsers.add_parser(
         'crawler', help='Threaded crawlers pool')
     parser_crawler.add_argument(
@@ -123,15 +112,6 @@ def main():
     if not args.command:
         parser.print_usage()
         return 1
-
-    if args.command.endswith("_crawler"):
-        if (not args.base_url.startswith('http://')
-           and not args.base_url.startswith('https://')):
-            print('%s does not start with http:// or https://' % args.base_url,
-                  file=sys.stderr)
-            return 1
-        crawler = Crawler(args)
-        crawler.start()
 
     if args.command == "crawler":
         realpath = os.path.expanduser(args.config)
