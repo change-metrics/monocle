@@ -24,38 +24,42 @@ import logging
 import requests
 from datetime import datetime
 from time import sleep
-
-from monocle.envdefault import EnvDefault
+from dataclasses import dataclass
 
 
 name = 'github_crawler'
 help = 'Github Crawler to fetch PRs events'
 
 
+@dataclass
+class GithubCrawlerArgs(object):
+    updated_since: str
+    loop_delay: int
+    command: str
+    org: str
+    base_url: str
+    token: str
+
+
 def init_crawler_args_parser(parser):
     parser.add_argument(
         '--token', help='A Github API token',
-        action=EnvDefault, envvar='GITHUB_TOKEN',
         required=True)
     parser.add_argument(
         '--org', help='The Github organization to fetch PR events',
-        action=EnvDefault, envvar='GITHUB_ORG',
         required=True)
     parser.add_argument(
-        '--updated-since', help='Acts on PRs updated since',
-        action=EnvDefault, envvar='GITHUB_UPDATED_SINCE')
+        '--updated-since', help='Acts on PRs updated since')
     parser.add_argument(
-        '--id', help='Get one PR (for debug purpose)',
-        action=EnvDefault, envvar='GITHUB_ID')
+        '--id', help='Get one PR (for debug purpose)')
     parser.add_argument(
         '--repository',
-        help='Only used with --id (for debug purpose)',
-        action=EnvDefault, envvar='GITHUB_REPOSITORY')
+        help='Only used with --id (for debug purpose)')
 
 
 class PRsFetcher(object):
 
-    log = logging.getLogger("monocle.PRsFetcher")
+    log = logging.getLogger(__name__)
 
     def __init__(self, gql, base_url, org, bulk_size=25):
         self.gql = gql

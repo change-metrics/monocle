@@ -11,19 +11,26 @@ Monocle is an early phase of developement. The process below will help you to in
 ```Shell
 git clone https://github.com/morucci/monocle.git
 cd monocle
-mkdir data
+mkdir data etc
 ```
 
 ### Create the github-env file
 
 Generate a personal access token on Github (w/o any specific rights).
 
-Then create the config file `github-env`:
+Then create the config file `etc/projects.yaml`:
 
-```Shell
-GITHUB_TOKEN=<your token>
-GITHUB_ORG=<the github org>
-GITHUB_UPDATED_SINCE=<start date YYYY-MM-DD>
+```YAML
+---
+projects:
+  - name: Tektoncd
+    crawler:
+      loop_delay: 10
+      github_orgs:
+        - name: tektoncd
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
 ```
 
 ### Start docker-compose
@@ -49,6 +56,12 @@ or make the data directory writable for other:
 
 ```Shell
 chmod o+w data
+```
+
+You might need to check the crawler logs:
+
+```Shell
+docker-compose logs crawler
 ```
 
 ### Accessing the web UI
