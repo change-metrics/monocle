@@ -22,7 +22,6 @@
 
 import logging
 import argparse
-import sys
 import os
 import yaml
 

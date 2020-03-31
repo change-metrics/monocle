@@ -41,22 +41,6 @@ class GithubCrawlerArgs(object):
     token: str
 
 
-def init_crawler_args_parser(parser):
-    parser.add_argument(
-        '--token', help='A Github API token',
-        required=True)
-    parser.add_argument(
-        '--org', help='The Github organization to fetch PR events',
-        required=True)
-    parser.add_argument(
-        '--updated-since', help='Acts on PRs updated since')
-    parser.add_argument(
-        '--id', help='Get one PR (for debug purpose)')
-    parser.add_argument(
-        '--repository',
-        help='Only used with --id (for debug purpose)')
-
-
 class PRsFetcher(object):
 
     log = logging.getLogger(__name__)
@@ -235,7 +219,7 @@ class PRsFetcher(object):
             'number': number
         }
         raw = self.gql.query(qdata % kwargs)[
-          'data']['repository']['pullRequest']
+            'data']['repository']['pullRequest']
         return (raw, self.extract_objects([raw]))
 
     def extract_objects(self, prs):
@@ -285,7 +269,7 @@ class PRsFetcher(object):
             change['deletions'] = pr['deletions']
             change['changed_files'] = pr['changedFiles']
             change['commits'] = [
-              c['node']['commit']['oid'] for c in pr['commits']['edges']]
+                c['node']['commit']['oid'] for c in pr['commits']['edges']]
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:
@@ -351,3 +335,17 @@ class PRsFetcher(object):
             except Exception:
                 self.log.exception("Unable to extract PR data: %s" % pr)
         return objects
+
+
+if __name__ == '__main__':
+    import sys
+    from pprint import pprint
+    from monocle.github import graphql
+    token = sys.argv[1]
+    org = 'tektoncd'
+    repository = 'triggers'
+    id = '510'
+    prf = PRsFetcher(
+        graphql.GithubGraphQLQuery(token),
+        None, org)
+    pprint(prf.get_one(org, repository, id))
