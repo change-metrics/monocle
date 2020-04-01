@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 import logging
+import socket
 import time
 
 from datetime import datetime
@@ -35,17 +36,27 @@ class ELmonocleDB():
 
     log = logging.getLogger("monocle.ELmonocleDB")
 
-    def __init__(self, elastic_conn='localhost:9200', index='monocle'):
+    def __init__(self, elastic_conn='localhost:9200', index='monocle',
+                 timeout=10):
+        host, port = elastic_conn.split(':')
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ip = socket.gethostbyname(host)
+        self.log.info('ES IP is %s' % ip)
+
         while True:
             try:
-                self.log.info('Connecting to ES server at %s' % elastic_conn)
-                self.es = client.Elasticsearch(elastic_conn)
-                self.log.info(self.es.info())
+                s.connect((ip, int(port)))
+                s.shutdown(2)
+                s.close()
                 break
-            except Exception:
-                self.log.exception('Unable to connect to %s. Sleeping.'
-                                   % elastic_conn)
-                time.sleep(10)
+            except Exception as excpt:
+                self.log.info('Unable to connect to %s: %s. Sleeping for %ds.'
+                              % (elastic_conn, excpt, timeout))
+                time.sleep(timeout)
+
+        self.log.info('Connecting to ES server at %s' % elastic_conn)
+        self.es = client.Elasticsearch(elastic_conn)
+        self.log.info(self.es.info())
 
         self.index = index
         self.mapping = {

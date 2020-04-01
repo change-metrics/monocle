@@ -2,6 +2,8 @@ version: '3'
 services:
   api:
     build: .
+    depends_on:
+      - elastic
     ports:
       - "9876:9876"
     environment:
@@ -17,11 +19,15 @@ services:
       - $PWD/data:/usr/share/elasticsearch/data:Z
   crawler:
     build: .
+    depends_on:
+      - elastic
     command: monocle --elastic-conn elastic:9200 crawler --config /etc/projects.yaml
     volumes:
       - $PWD/etc:/etc:Z
   web:
     build: web
+    depends_on:
+      - api
     ports:
       - "3000:3000"
     environment:
