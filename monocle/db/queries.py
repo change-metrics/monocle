@@ -37,11 +37,7 @@ def generate_events_filter(params, qfilter):
     approval = params.get('approval')
     ec_same_date = params.get('ec_same_date')
 
-    on_created_at_range = {
-        "on_created_at": {
-            "format": "epoch_millis"
-        }
-    }
+    on_created_at_range = {"on_created_at": {"format": "epoch_millis"}}
     if ec_same_date:
         on_cc_gte = gte
         on_cc_lte = lte
@@ -49,24 +45,24 @@ def generate_events_filter(params, qfilter):
         on_created_at_range['on_created_at']['gte'] = on_cc_gte
     if on_cc_lte or ec_same_date:
         on_created_at_range['on_created_at']['lte'] = on_cc_lte
-    qfilter.append(
-        {"range": on_created_at_range},
-    )
+    qfilter.append({"range": on_created_at_range},)
     if approval:
         qfilter.append({'term': {"approval": approval}})
 
 
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
-    repository_fullname_and_number = params.get(
-        'repository_fullname_and_number')
+    repository_fullname_and_number = params.get('repository_fullname_and_number')
     if state:
         qfilter.append({"term": {"state": state}})
     if repository_fullname_and_number:
         qfilter.append(
-            {'terms': {
-                "repository_fullname_and_number":
-                repository_fullname_and_number}})
+            {
+                'terms': {
+                    "repository_fullname_and_number": repository_fullname_and_number
+                }
+            }
+        )
 
 
 def generate_filter(repository_fullname, params):
@@ -76,19 +72,13 @@ def generate_filter(repository_fullname, params):
     authors = params.get('authors')
     exclude_authors = params.get('exclude_authors')
 
-    created_at_range = {
-        "created_at": {
-            "format": "epoch_millis"
-        }
-    }
+    created_at_range = {"created_at": {"format": "epoch_millis"}}
     if gte:
         created_at_range['created_at']['gte'] = gte
     if lte:
         created_at_range['created_at']['lte'] = lte
     qfilter = [
-        {"regexp": {
-            "repository_fullname": {
-                "value": repository_fullname}}},
+        {"regexp": {"repository_fullname": {"value": repository_fullname}}},
         {"range": created_at_range},
     ]
     qfilter.append({"terms": {"type": etype}})
@@ -101,31 +91,15 @@ def generate_filter(repository_fullname, params):
 
     must_not = []
     if exclude_authors:
-        must_not.append(
-            {
-                "terms": {
-                    "author": exclude_authors
-                }
-            }
-        )
-        must_not.append(
-            {
-                "terms": {
-                    "on_author": exclude_authors
-                }
-            }
-        )
+        must_not.append({"terms": {"author": exclude_authors}})
+        must_not.append({"terms": {"on_author": exclude_authors}})
 
-    ret = {"bool": {
-        "filter": qfilter,
-        "must_not": must_not
-    }}
+    ret = {"bool": {"filter": qfilter, "must_not": must_not}}
     return ret
 
 
 def run_query(es, index, body):
-    search_params = {
-        'index': index, 'doc_type': index, 'body': body}
+    search_params = {'index': index, 'doc_type': index, 'body': body}
     try:
         res = es.search(**search_params)
     except Exception:
@@ -139,19 +113,14 @@ def _scan(es, index, repository_fullname, params):
         "_source": params.get('field', []),
         "query": generate_filter(repository_fullname, params),
     }
-    scanner_params = {
-        'index': index, 'doc_type': index, 'query': body}
+    scanner_params = {'index': index, 'doc_type': index, 'query': body}
     data = scanner(es, **scanner_params)
     return [d['_source'] for d in data]
 
 
 def _first_created_event(es, index, repository_fullname, params):
     body = {
-        "sort": [{
-            "created_at": {
-                "order": "asc"
-            }
-        }],
+        "sort": [{"created_at": {"order": "asc"}}],
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
@@ -176,12 +145,7 @@ def count_events(es, index, repository_fullname, params):
 def count_authors(es, index, repository_fullname, params):
     body = {
         "aggs": {
-            "agg1": {
-                "cardinality": {
-                    "field": "author",
-                    "precision_threshold": 3000,
-                }
-            }
+            "agg1": {"cardinality": {"field": "author", "precision_threshold": 3000}}
         },
         "size": 0,
         "query": generate_filter(repository_fullname, params),
@@ -198,17 +162,10 @@ def events_histo(es, index, repository_fullname, params):
                     "field": "created_at",
                     "interval": params['interval'],
                     "min_doc_count": 0,
-                    "extended_bounds": {
-                        "min": params['gte'],
-                        "max": params['lte'],
-                    }
+                    "extended_bounds": {"min": params['gte'], "max": params['lte']},
                 }
             },
-            "avg_count": {
-                "avg_bucket": {
-                    "buckets_path": "agg1>_count"
-                }
-            }
+            "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
         },
         "size": 0,
         "query": generate_filter(repository_fullname, params),
@@ -216,20 +173,18 @@ def events_histo(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     return (
         data['aggregations']['agg1']['buckets'],
-        data['aggregations']['avg_count']['value'] or 0)
+        data['aggregations']['avg_count']['value'] or 0,
+    )
 
 
-def _events_top(
-        es, index, repository_fullname, field, params):
+def _events_top(es, index, repository_fullname, field, params):
     body = {
         "aggs": {
             "agg1": {
                 "terms": {
                     "field": field,
                     "size": params['size'],
-                    "order": {
-                        "_count": "desc"
-                    }
+                    "order": {"_count": "desc"},
                 }
             }
         },
@@ -237,81 +192,79 @@ def _events_top(
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
-    count_series = [
-        b['doc_count'] for b in
-        data['aggregations']['agg1']['buckets']]
-    count_avg = (statistics.mean(count_series)
-                 if count_series else 0)
-    count_median = (statistics.median(sorted(count_series))
-                    if count_series else 0)
+    count_series = [b['doc_count'] for b in data['aggregations']['agg1']['buckets']]
+    count_avg = statistics.mean(count_series) if count_series else 0
+    count_median = statistics.median(sorted(count_series)) if count_series else 0
     return {
         'tops': data['aggregations']['agg1']['buckets'],
-        'count_avg': count_avg, 'count_median': count_median}
+        'count_avg': count_avg,
+        'count_median': count_median,
+    }
 
 
 def repos_top_merged(es, index, repository_fullname, params):
     params['etype'] = ("ChangeMergedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "repository_fullname", params)
+    return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
 def events_top_authors(es, index, repository_fullname, params):
-    return _events_top(
-        es, index, repository_fullname, "author", params)
+    return _events_top(es, index, repository_fullname, "author", params)
 
 
 def changes_top_approval(es, index, repository_fullname, params):
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "approval", params)
+    return _events_top(es, index, repository_fullname, "approval", params)
 
 
 def changes_top_commented(es, index, repository_fullname, params):
     params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number",
-        params)
+        es, index, repository_fullname, "repository_fullname_and_number", params
+    )
 
 
 def changes_top_reviewed(es, index, repository_fullname, params):
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number",
-        params)
+        es, index, repository_fullname, "repository_fullname_and_number", params
+    )
 
 
 def authors_top_reviewed(es, index, repository_fullname, params):
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repository_fullname, "on_author", params)
 
 
 def authors_top_commented(es, index, repository_fullname, params):
     params['etype'] = ("ChangeCommentedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repository_fullname, "on_author", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
-    authors = [bucket['key'] for bucket in _events_top(
-        es, index, repository_fullname, "author", params)['tops']]
+    authors = [
+        bucket['key']
+        for bucket in _events_top(es, index, repository_fullname, "author", params)[
+            'tops'
+        ]
+    ]
     peers_strength = {}
     for author in authors:
         params['author'] = author
-        for bucket in _events_top(
-                es, index, repository_fullname, "on_author",
-                params)['tops']:
+        for bucket in _events_top(es, index, repository_fullname, "on_author", params)[
+            'tops'
+        ]:
             if bucket['key'] == author:
                 continue
             peers_id = tuple(sorted((author, bucket['key'])))
             peers_strength.setdefault(peers_id, 0)
             peers_strength[peers_id] += bucket['doc_count']
     peers_strength = sorted(
-        [(peers_id, strength) for peers_id, strength in
-         peers_strength.items()],
-        key=lambda x: x[1], reverse=True)
-    return(peers_strength)
+        [(peers_id, strength) for peers_id, strength in peers_strength.items()],
+        key=lambda x: x[1],
+        reverse=True,
+    )
+    return peers_strength
 
 
 def change_merged_count_by_duration(es, index, repository_fullname, params):
@@ -323,22 +276,12 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
                 "range": {
                     "field": "duration",
                     "ranges": [
-                        {
-                            "to": 24*3600
-                        },
-                        {
-                            "from": 24*3600+1,
-                            "to": 7*24*3600
-                        },
-                        {
-                            "from": 7*24*3600+1,
-                            "to": 31*24*3600
-                        },
-                        {
-                            "from": 31*24*3600+1
-                        },
+                        {"to": 24 * 3600},
+                        {"from": 24 * 3600 + 1, "to": 7 * 24 * 3600},
+                        {"from": 7 * 24 * 3600 + 1, "to": 31 * 24 * 3600},
+                        {"from": 31 * 24 * 3600 + 1},
                     ],
-                    "keyed": True
+                    "keyed": True,
                 }
             }
         },
@@ -353,20 +296,9 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
-        "aggs": {
-            "agg1": {
-                "avg": {
-                    "field": "duration"
-                }
-            }
-        },
+        "aggs": {"agg1": {"avg": {"field": "duration"}}},
         "size": 0,
-        "docvalue_fields": [
-            {
-                "field": "created_at",
-                "format": "date_time"
-            },
-        ],
+        "docvalue_fields": [{"field": "created_at", "format": "date_time"}],
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
@@ -374,20 +306,21 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 
 
 def changes_closed_ratios(es, index, repository_fullname, params):
-    etypes = (
-        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = count_events(es, index, repository_fullname, params)
     try:
         ret['merged/created'] = round(
-            ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
+            ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1
+        )
     except ZeroDivisionError:
         ret['merged/created'] = 0
     try:
         ret['abandoned/created'] = round(
-            ret['ChangeAbandonedEvent'] / ret['ChangeCreatedEvent'] * 100, 1)
+            ret['ChangeAbandonedEvent'] / ret['ChangeCreatedEvent'] * 100, 1
+        )
     except ZeroDivisionError:
         ret['abandoned/created'] = 0
     for etype in etypes:
@@ -403,43 +336,45 @@ def changes_reviewed_ratios(es, index, repository_fullname, params):
 def _first_event_on_changes(es, index, repository_fullname, params):
     def keyfunc(x):
         return x['repository_fullname_and_number']
+
     groups = {}
     _events = _scan(es, index, repository_fullname, params)
-    _events = sorted(
-        _events, key=lambda k: k['repository_fullname_and_number'])
+    _events = sorted(_events, key=lambda k: k['repository_fullname_and_number'])
     # Keep by Change the created date + first event date
     for pr, events in groupby(_events, keyfunc):
         groups[pr] = {
             'change_created_at': None,
             'first_event_created_at': datetime.now(),
             'first_event_author': None,
-            'delta': None}
+            'delta': None,
+        }
         for event in events:
             if not groups[pr]['change_created_at']:
                 groups[pr]['change_created_at'] = dbdate_to_datetime(
-                    event['on_created_at'])
+                    event['on_created_at']
+                )
             event_created_at = dbdate_to_datetime(event['created_at'])
             if event_created_at < groups[pr]['first_event_created_at']:
                 groups[pr]['first_event_created_at'] = event_created_at
                 groups[pr]['delta'] = (
-                    groups[pr]['first_event_created_at'] -
-                    groups[pr]['change_created_at'])
+                    groups[pr]['first_event_created_at']
+                    - groups[pr]['change_created_at']
+                )
                 groups[pr]['first_event_author'] = event['author']
-    ret = {
-        'first_event_delay_avg': 0,
-        'top_authors': {}}
+    ret = {'first_event_delay_avg': 0, 'top_authors': {}}
     for pr_data in groups.values():
         ret['first_event_delay_avg'] += pr_data['delta'].seconds
         ret['top_authors'].setdefault(pr_data['first_event_author'], 0)
         ret['top_authors'][pr_data['first_event_author']] += 1
     try:
-        ret['first_event_delay_avg'] = int(
-            ret['first_event_delay_avg'] / len(groups))
+        ret['first_event_delay_avg'] = int(ret['first_event_delay_avg'] / len(groups))
     except ZeroDivisionError:
         ret['first_event_delay_avg'] = 0
     ret['top_authors'] = sorted(
         [(k, v) for k, v in ret['top_authors'].items()],
-        key=lambda x: x[1], reverse=True)[:10]
+        key=lambda x: x[1],
+        reverse=True,
+    )[:10]
     return ret
 
 
@@ -457,52 +392,52 @@ def cold_changes(es, index, repository_fullname, params):
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
-    _changes_ids = set(
-        [change['repository_fullname_and_number'] for change in changes])
+    _changes_ids = set([change['repository_fullname_and_number'] for change in changes])
     params['etype'] = ('ChangeCommentedEvent', 'ChangeReviewedEvent')
     del params['state']
     events = _scan(es, index, repository_fullname, params)
-    _events_ids = set(
-        [event['repository_fullname_and_number'] for event in events])
+    _events_ids = set([event['repository_fullname_and_number'] for event in events])
     changes_ids_wo_rc = _changes_ids.difference(_events_ids)
     changes_wo_rc = [
-        change for change in changes if
-        change['repository_fullname_and_number'] in changes_ids_wo_rc]
-    return sorted(
-        changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
+        change
+        for change in changes
+        if change['repository_fullname_and_number'] in changes_ids_wo_rc
+    ]
+    return sorted(changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
 
 
 def hot_changes(es, index, repository_fullname, params):
     # Set a significant depth to get an 'accurate' median value
     params['size'] = 500
     top_commented_changes = changes_top_commented(
-        es, index, repository_fullname, params)
+        es, index, repository_fullname, params
+    )
     # Keep changes with comment events > median
     top_commented_changes = [
-        change for change in top_commented_changes['tops'] if
-        change['doc_count'] > top_commented_changes['count_median']]
+        change
+        for change in top_commented_changes['tops']
+        if change['doc_count'] > top_commented_changes['count_median']
+    ]
     mapping = {}
     for top_commented_change in top_commented_changes:
-        mapping[top_commented_change['key']] = \
-            top_commented_change['doc_count']
+        mapping[top_commented_change['key']] = top_commented_change['doc_count']
     change_ids = [_id['key'] for _id in top_commented_changes]
     if not change_ids:
         return []
     _params = {
         'etype': ('Change',),
         'state': 'OPEN',
-        'repository_fullname_and_number': change_ids}
+        'repository_fullname_and_number': change_ids,
+    }
     changes = _scan(es, index, repository_fullname, _params)
     for change in changes:
-        change['hot_score'] = mapping[
-            change['repository_fullname_and_number']]
+        change['hot_score'] = mapping[change['repository_fullname_and_number']]
     return sorted(changes, key=lambda x: x['hot_score'], reverse=True)
 
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
     ret = {}
-    etypes = (
-        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = events_histo(es, index, repository_fullname, params)
@@ -511,18 +446,13 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
 
 def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret = {}
-    ret['ratios'] = changes_closed_ratios(
-        es, index, repository_fullname, params)
-    ret['histos'] = changes_lifecycle_histos(
-        es, index, repository_fullname, params)
-    etypes = (
-        'ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
+    ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
+    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret['avgs'] = {}
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
-    for etype in (
-            "ChangeCreatedEvent", "ChangeAbandonedEvent",
-            "ChangeMergedEvent"):
+    for etype in ("ChangeCreatedEvent", "ChangeAbandonedEvent", "ChangeMergedEvent"):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
@@ -546,39 +476,32 @@ def changes_review_stats(es, index, repository_fullname, params):
     ret = {}
     ret['first_event_delay'] = {}
     ret['first_event_delay']['comment'] = first_comment_on_changes(
-        es, index, repository_fullname, params)
+        es, index, repository_fullname, params
+    )
     ret['first_event_delay']['review'] = first_review_on_changes(
-        es, index, repository_fullname, params)
-    ret['histos'] = changes_review_histos(
-        es, index, repository_fullname, params)
-    for etype in (
-            "ChangeReviewedEvent", "ChangeCommentedEvent"):
+        es, index, repository_fullname, params
+    )
+    ret['histos'] = changes_review_histos(es, index, repository_fullname, params)
+    for etype in ("ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
-        ret[etype] = {
-            'events_count': events_count,
-            'authors_count': authors_count}
+        ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
     return ret
 
 
 def most_active_authors_stats(es, index, repository_fullname, params):
     ret = {}
-    for etype in (
-            "ChangeCreatedEvent", "ChangeReviewedEvent",
-            "ChangeCommentedEvent"):
+    for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
-        ret[etype] = events_top_authors(
-            es, index, repository_fullname, params)
+        ret[etype] = events_top_authors(es, index, repository_fullname, params)
     return ret
 
 
 def most_reviewed_authors_stats(es, index, repository_fullname, params):
     return {
-        "reviewed": authors_top_reviewed(
-            es, index, repository_fullname, params),
-        "commented": authors_top_commented(
-            es, index, repository_fullname, params)
+        "reviewed": authors_top_reviewed(es, index, repository_fullname, params),
+        "commented": authors_top_commented(es, index, repository_fullname, params),
     }
 
 
@@ -586,11 +509,7 @@ def last_merged_changes(es, index, repository_fullname, params):
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
-        "sort": [{
-            "closed_at": {
-                "order": "desc"
-            }
-        }],
+        "sort": [{"closed_at": {"order": "desc"}}],
         "size": params['size'],
         "query": generate_filter(repository_fullname, params),
     }
@@ -602,11 +521,7 @@ def last_merged_changes(es, index, repository_fullname, params):
 def last_opened_changes(es, index, repository_fullname, params):
     params['etype'] = ("Change",)
     body = {
-        "sort": [{
-            "created_at": {
-                "order": "desc"
-            }
-        }],
+        "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
         "query": generate_filter(repository_fullname, params),
     }
@@ -617,10 +532,8 @@ def last_opened_changes(es, index, repository_fullname, params):
 
 def last_state_changed_changes(es, index, repository_fullname, params):
     return {
-        "merged_changes": last_merged_changes(
-            es, index, repository_fullname, params),
-        "opened_changes": last_opened_changes(
-            es, index, repository_fullname, params)
+        "merged_changes": last_merged_changes(es, index, repository_fullname, params),
+        "opened_changes": last_opened_changes(es, index, repository_fullname, params),
     }
 
 
@@ -628,11 +541,7 @@ def oldest_open_changes(es, index, repository_fullname, params):
     params['etype'] = ("Change",)
     params['state'] = "OPEN"
     body = {
-        "sort": [{
-            "created_at": {
-                "order": "asc"
-            }
-        }],
+        "sort": [{"created_at": {"order": "asc"}}],
         "size": params['size'],
         "query": generate_filter(repository_fullname, params),
     }

@@ -34,8 +34,7 @@ class Crawler(Thread):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, args, elastic_conn='localhost:9200',
-                 elastic_timeout=10):
+    def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
         super().__init__()
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
@@ -43,28 +42,28 @@ class Crawler(Thread):
         if args.command == 'github_crawler':
             if args.repository:
                 self.repository_el_re = "%s/%s" % (
-                    args.org.lstrip('^'), args.repository.lstrip('^'))
+                    args.org.lstrip('^'),
+                    args.repository.lstrip('^'),
+                )
             else:
                 self.repository_el_re = args.org.lstrip('^') + '/.*'
             self.prf = pullrequest.PRsFetcher(
-                GithubGraphQLQuery(args.token),
-                args.base_url, args.org, args.repository)
+                GithubGraphQLQuery(args.token), args.base_url, args.org, args.repository
+            )
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
-            self.prf = review.ReviewesFetcher(
-                args.base_url, args.repository)
+            self.prf = review.ReviewesFetcher(args.base_url, args.repository)
         self.setName(self.repository_el_re)
 
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)
         if not change:
-            return (
-                self.updated_since or
-                datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+            return self.updated_since or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
             logging.info(
-                "Most recent change date in the database for %s is %s" % (
-                    self.repository_el_re, change['updated_at']))
+                "Most recent change date in the database for %s is %s"
+                % (self.repository_el_re, change['updated_at'])
+            )
             return change['updated_at']
 
     def run_step(self):
@@ -72,13 +71,13 @@ class Crawler(Thread):
         prs = self.prf.get(updated_since)
         objects = self.prf.extract_objects(prs)
         if objects:
-            self.log.info("%s objects will be updated in the database" % len(
-                objects))
+            self.log.info("%s objects will be updated in the database" % len(objects))
             self.db.update(objects)
 
     def run(self):
         while True:
             self.run_step()
-            self.log.info("Waiting %s seconds before next fetch ..." % (
-                self.loop_delay))
+            self.log.info(
+                "Waiting %s seconds before next fetch ..." % (self.loop_delay)
+            )
             sleep(self.loop_delay)

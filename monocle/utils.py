@@ -23,25 +23,26 @@
 from datetime import datetime
 
 events_list = [
-    'ChangeCreatedEvent', 'ChangeAbandonEvent',
-    'ChangeMergedEvent', 'ChangeCommentedEvent',
-    'ChangeReviewedEvent']
+    'ChangeCreatedEvent',
+    'ChangeAbandonEvent',
+    'ChangeMergedEvent',
+    'ChangeCommentedEvent',
+    'ChangeReviewedEvent',
+]
 
 
 def date_to_epoch_ml(datestr):
     if not datestr:
         return None
-    return int(datetime.strptime(
-        datestr, "%Y-%m-%d").timestamp() * 1000)
+    return int(datetime.strptime(datestr, "%Y-%m-%d").timestamp() * 1000)
 
 
 def dbdate_to_datetime(datestr):
-    return datetime.strptime(
-        datestr, "%Y-%m-%dT%H:%M:%SZ")
+    return datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%SZ")
 
 
 def float_trunc(f, n=2):
-    return float(int(f*10**n))/10**n
+    return float(int(f * 10 ** n)) / 10 ** n
 
 
 def set_params(input):
@@ -50,6 +51,7 @@ def set_params(input):
             return input.get(attr, default)
         else:
             return getattr(input, attr, default) or default
+
     params = {}
     params['gte'] = date_to_epoch_ml(getter('gte', None))
     params['lte'] = date_to_epoch_ml(getter('lte', None))

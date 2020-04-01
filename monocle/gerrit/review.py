@@ -47,16 +47,12 @@ class ReviewesFetcher(object):
     def __init__(self, base_url, repository_prefix):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
-        self.status_map = {
-            'NEW': 'OPEN',
-            'MERGED': 'MERGED',
-            'ABANDONED': 'CLOSED'
-        }
+        self.status_map = {'NEW': 'OPEN', 'MERGED': 'MERGED', 'ABANDONED': 'CLOSED'}
 
     def convert_date_for_db(self, str_date):
-        cdate = datetime.strptime(
-            str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
-                "%Y-%m-%dT%H:%M:%SZ")
+        cdate = datetime.strptime(str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
         return cdate
 
     def convert_date_for_query(self, str_date):
@@ -68,35 +64,40 @@ class ReviewesFetcher(object):
         # part ...
         str_date = str_date.replace('T', ' ')
         str_date = str_date.replace('Z', '')
-        cdate = datetime.strptime(
-            str_date, '%Y-%m-%d %H:%M:%S').strftime(
-                "%Y-%m-%d")
+        cdate = datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S').strftime("%Y-%m-%d")
         return cdate
 
     def get(self, updated_since):
         updated_since = self.convert_date_for_query(updated_since)
         request_params = "?q=after:%s+project:%s" % (
-            updated_since, self.repository_prefix)
+            updated_since,
+            self.repository_prefix,
+        )
         for option in [
-                'MESSAGES', 'DETAILED_ACCOUNTS',
-                'DETAILED_LABELS', 'CURRENT_REVISION',
-                'CURRENT_FILES', 'CURRENT_COMMIT']:
+            'MESSAGES',
+            'DETAILED_ACCOUNTS',
+            'DETAILED_LABELS',
+            'CURRENT_REVISION',
+            'CURRENT_FILES',
+            'CURRENT_COMMIT',
+        ]:
             request_params += '&o=%s' % option
         count = 100
         start_after = 0
         reviews = []
         while True:
             urlpath = (
-                self.base_url + '/changes/' + request_params +
-                '&n=%s&start=%s' % (
-                    count, start_after))
+                self.base_url
+                + '/changes/'
+                + request_params
+                + '&n=%s&start=%s' % (count, start_after)
+            )
             self.log.info("query: %s" % urlpath)
             response = requests.get(urlpath)
             _reviewes = json.loads(response.text[4:])
             if _reviewes:
                 reviews.extend(_reviewes)
-                self.log.info(
-                    "read %s reviews from the api" % len(reviews))
+                self.log.info("read %s reviews from the api" % len(reviews))
                 if reviews[-1].get('_more_changes'):
                     start_after = len(reviews)
                 else:
@@ -113,16 +114,19 @@ class ReviewesFetcher(object):
             return int((start - end).total_seconds())
 
         def insert_change_attributes(obj, change):
-            obj.update({
-                'repository_prefix': change['repository_prefix'],
-                'repository_fullname': change['repository_fullname'],
-                'repository_shortname': change['repository_shortname'],
-                'number': change['number'],
-                'repository_fullname_and_number':
-                    change['repository_fullname_and_number'],
-                'on_author': change['author'],
-                'on_created_at': change['created_at'],
-            })
+            obj.update(
+                {
+                    'repository_prefix': change['repository_prefix'],
+                    'repository_fullname': change['repository_fullname'],
+                    'repository_shortname': change['repository_shortname'],
+                    'number': change['number'],
+                    'repository_fullname_and_number': change[
+                        'repository_fullname_and_number'
+                    ],
+                    'on_author': change['author'],
+                    'on_created_at': change['created_at'],
+                }
+            )
 
         def extract_pr_objects(review):
             objects = []
@@ -134,38 +138,43 @@ class ReviewesFetcher(object):
                 'branch': review['branch'],
                 'repository_prefix': review['project'].split('/')[0],
                 'repository_fullname': review['project'],
-                'repository_shortname': "/".join(
-                    review['project'].split('/')[1:]),
+                'repository_shortname': "/".join(review['project'].split('/')[1:]),
                 'url': '%s/%s' % (self.base_url, review['_number']),
-                'author': "%s/%s" % (
-                    review['owner'].get('name'),
-                    review['owner']['_account_id']),
+                'author': "%s/%s"
+                % (review['owner'].get('name'), review['owner']['_account_id']),
                 'title': review['subject'],
                 'updated_at': self.convert_date_for_db(review['updated']),
                 'created_at': self.convert_date_for_db(review['created']),
                 'merged_at': (
                     self.convert_date_for_db(review.get('submitted'))
                     if review.get('submitted')
-                    else None),
+                    else None
+                ),
                 # Note(fbo): The mergeable field is sometime absent
-                'mergeable': (True if review.get('mergeable') == 'true'
-                              else False),
+                'mergeable': (True if review.get('mergeable') == 'true' else False),
                 'state': self.status_map[review['status']],
                 # Note(fbo): Gerrit labels must be handled as Review
                 'labels': [],
                 # Note(fbo): Only one assignee possible by review on Gerrit
-                'assignees': (["%s/%s" % (
-                    review['assignee'].get('name'),
-                    review['assignee']['_account_id'])]
-                    if review.get('assignee') else []),
+                'assignees': (
+                    [
+                        "%s/%s"
+                        % (
+                            review['assignee'].get('name'),
+                            review['assignee']['_account_id'],
+                        )
+                    ]
+                    if review.get('assignee')
+                    else []
+                ),
                 'additions': review['insertions'],
                 'deletions': review['deletions'],
                 # Gerrit review is one commit by review
                 'commits': list(review['revisions'].keys())[:1],
                 'changed_files': len(
-                    list(review['revisions'].values())[0]['files'].keys()),
-                'text':
-                    list(review['revisions'].values())[0]['commit']['message'],
+                    list(review['revisions'].values())[0]['files'].keys()
+                ),
+                'text': list(review['revisions'].values())[0]['commit']['message'],
             }
             change['repository_fullname_and_number'] = "%s#%s" % (
                 change['repository_fullname'],
@@ -179,13 +188,15 @@ class ReviewesFetcher(object):
                 change['closed_at'] = change['merged_at']
             if change['state'] in ('CLOSED', 'MERGED'):
                 change['duration'] = timedelta(
-                    change['closed_at'], change['created_at'])
+                    change['closed_at'], change['created_at']
+                )
             if change['state'] == 'MERGED':
                 if "submitter" in review:
                     # Gerrit 2.x seems to not have that submitter attribute
                     change['merged_by'] = "%s/%s" % (
                         review['submitter'].get('name'),
-                        review['submitter']['_account_id'])
+                        review['submitter']['_account_id'],
+                    )
             else:
                 change['merged_by'] = None
             objects.append(change)
@@ -199,7 +210,8 @@ class ReviewesFetcher(object):
             objects.append(obj)
             if change['state'] in ('MERGED', 'CLOSED'):
                 obj = {
-                    'type': 'ChangeMergedEvent' if change['state'] == 'MERGED'
+                    'type': 'ChangeMergedEvent'
+                    if change['state'] == 'MERGED'
                     else 'ChangeAbandonedEvent',
                     'id': 'CCLE' + change['id'],
                     'created_at': change['closed_at'],
@@ -220,11 +232,9 @@ class ReviewesFetcher(object):
                 obj = {
                     'type': 'ChangeCommentedEvent',
                     'id': comment['id'],
-                    'created_at': self.convert_date_for_db(
-                            comment['date']),
-                    'author': "%s/%s" % (
-                        comment['author'].get('name'),
-                        comment['author']['_account_id']),
+                    'created_at': self.convert_date_for_db(comment['date']),
+                    'author': "%s/%s"
+                    % (comment['author'].get('name'), comment['author']['_account_id']),
                 }
                 insert_change_attributes(obj, change)
                 objects.append(obj)
@@ -235,19 +245,25 @@ class ReviewesFetcher(object):
                     if 'date' in _review and 'value' in _review:
                         obj = {
                             'type': 'ChangeReviewedEvent',
-                            'id': "%s_%s_%s_%s" % (
-                                    self.convert_date_for_db(_review['date']),
-                                    label, _review['value'],
-                                    _review['_account_id']),
-                            'created_at': self.convert_date_for_db(
-                                _review['date']),
-                            'author': "%s/%s" % (
-                                _review.get('name'), _review['_account_id']),
-                            'approval': "%s%s" % (
+                            'id': "%s_%s_%s_%s"
+                            % (
+                                self.convert_date_for_db(_review['date']),
                                 label,
-                                ("+%s" % _review['value']
-                                 if not str(_review['value']).startswith('-')
-                                 else _review['value']))
+                                _review['value'],
+                                _review['_account_id'],
+                            ),
+                            'created_at': self.convert_date_for_db(_review['date']),
+                            'author': "%s/%s"
+                            % (_review.get('name'), _review['_account_id']),
+                            'approval': "%s%s"
+                            % (
+                                label,
+                                (
+                                    "+%s" % _review['value']
+                                    if not str(_review['value']).startswith('-')
+                                    else _review['value']
+                                ),
+                            ),
                         }
                         insert_change_attributes(obj, change)
                         objects.append(obj)
@@ -258,16 +274,14 @@ class ReviewesFetcher(object):
             try:
                 objects.extend(extract_pr_objects(review))
             except Exception:
-                self.log.exception(
-                    "Unable to extract Review data: %s" % review)
+                self.log.exception("Unable to extract Review data: %s" % review)
         return objects
 
 
 if __name__ == "__main__":
     from pprint import pprint
-    rf = ReviewesFetcher(
-        'https://gerrit-review.googlesource.com',
-        'gerrit')
+
+    rf = ReviewesFetcher('https://gerrit-review.googlesource.com', 'gerrit')
     reviewes = rf.get('2020-03-13 00:00:00')
     reviewes = reviewes[:2]
     pprint(reviewes)
