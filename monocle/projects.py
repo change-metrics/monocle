@@ -43,6 +43,11 @@ schema = {
                     "description": "The organization name",
                     "type": "string",
                 },
+                "repository": {
+                    "description":
+                        "The repository name within the organization",
+                    "type": "string",
+                },
                 "updated_since": {
                     "description":
                         "The change updated since date (YYYY-mm-dd)",

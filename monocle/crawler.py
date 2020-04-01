@@ -23,7 +23,6 @@ import logging
 from time import sleep
 from datetime import datetime
 from threading import Thread
-from pprint import pprint
 
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.db.db import ELmonocleDB
@@ -40,15 +39,16 @@ class Crawler(Thread):
         super().__init__()
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
-        self.get_one = getattr(args, 'id', None)
         self.db = ELmonocleDB(elastic_conn, timeout=elastic_timeout)
         if args.command == 'github_crawler':
-            self.get_one_rep = getattr(args, 'repository', None)
-            self.org = args.org
-            self.repository_el_re = args.org.lstrip('^') + '.*'
+            if args.repository:
+                self.repository_el_re = "%s/%s" % (
+                    args.org.lstrip('^'), args.repository.lstrip('^'))
+            else:
+                self.repository_el_re = args.org.lstrip('^') + '/.*'
             self.prf = pullrequest.PRsFetcher(
                 GithubGraphQLQuery(args.token),
-                args.base_url, args.org)
+                args.base_url, args.org, args.repository)
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
             self.prf = review.ReviewesFetcher(
@@ -77,16 +77,8 @@ class Crawler(Thread):
             self.db.update(objects)
 
     def run(self):
-        if self.get_one:
-            if not self.get_one_rep:
-                print("The --repository argument must be given")
-            else:
-                pprint(self.prf.get_one(
-                    self.org, self.get_one_rep,
-                    self.get_one))
-        else:
-            while True:
-                self.run_step()
-                self.log.info("Waiting %s seconds before next fetch ..." % (
-                    self.loop_delay))
-                sleep(self.loop_delay)
+        while True:
+            self.run_step()
+            self.log.info("Waiting %s seconds before next fetch ..." % (
+                self.loop_delay))
+            sleep(self.loop_delay)

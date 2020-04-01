@@ -133,6 +133,7 @@ def main():
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
                     token=crawler_item['token'],
+                    repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'])
                 tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn,
                                      elastic_timeout=args.elastic_timeout))
