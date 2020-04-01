@@ -138,7 +138,7 @@ class PRsFetcher(object):
             }
             name
           }
-        '''
+        '''  # noqa: E501
 
     def _getPage(self, kwargs, prs):
         # Note: usage of the default sort on created field because
@@ -157,7 +157,7 @@ class PRsFetcher(object):
               }
             }
           }
-        }'''
+        }'''  # noqa: E501
         data = self.gql.query(qdata % kwargs)
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['search']['issueCount']

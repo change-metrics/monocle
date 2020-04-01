@@ -5,3 +5,4 @@ monocle.egg-info
 data
 etc
 .venv
+.tox
