@@ -40,14 +40,6 @@ class GerritCrawlerArgs(object):
     repository: str
 
 
-def init_crawler_args_parser(parser):
-    parser.add_argument(
-        '--repository', help='The regexp matching repositories name')
-
-    parser.add_argument(
-        '--updated-since', help='Acts on Reviews updated since')
-
-
 class ReviewesFetcher(object):
 
     log = logging.getLogger(__name__)
