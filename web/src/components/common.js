@@ -12,6 +12,14 @@ function change_url(x, name=null) {
   return <a href={x.url} target="_blank" rel="noopener noreferrer">{name}</a>;
 }
 
+function add_url_field(field, value) {
+  var url = new URL(window.location.href);
+
+  url.searchParams.set(field, value);
+
+  return url.href;
+}
+
 class LoadingBox extends React.Component {
   render() {
     return (
@@ -55,4 +63,5 @@ export {
   LoadingBox,
   BaseQueryComponent,
   change_url,
+  add_url_field,
 }
