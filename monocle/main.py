@@ -43,6 +43,9 @@ def main():
         '--loglevel', help='logging level',
         default='INFO')
     parser.add_argument(
+        '--elastic-timeout', help='Elasticsearch connection retry timeout',
+        default=10, type=int)
+    parser.add_argument(
         '--elastic-conn', help='Elasticsearch connection info',
         default='localhost:9200')
     subparsers = parser.add_subparsers(title='Subcommands',
@@ -131,7 +134,8 @@ def main():
                     loop_delay=project['crawler']['loop_delay'],
                     token=crawler_item['token'],
                     base_url=crawler_item['base_url'])
-                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn))
+                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn,
+                                     elastic_timeout=args.elastic_timeout))
             for crawler_item in project['crawler'].get(
                     'gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
@@ -140,7 +144,8 @@ def main():
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'])
-                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn))
+                tpool.append(Crawler(c_args, elastic_conn=args.elastic_conn,
+                                     elastic_timeout=args.elastic_timeout))
         for cthread in tpool:
             cthread.start()
 

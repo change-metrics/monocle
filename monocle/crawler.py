@@ -35,12 +35,13 @@ class Crawler(Thread):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, args, elastic_conn='localhost:9200'):
+    def __init__(self, args, elastic_conn='localhost:9200',
+                 elastic_timeout=10):
         super().__init__()
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
         self.get_one = getattr(args, 'id', None)
-        self.db = ELmonocleDB(elastic_conn)
+        self.db = ELmonocleDB(elastic_conn, timeout=elastic_timeout)
         if args.command == 'github_crawler':
             self.get_one_rep = getattr(args, 'repository', None)
             self.org = args.org
