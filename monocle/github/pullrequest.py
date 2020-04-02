@@ -187,23 +187,25 @@ class PRsFetcher(object):
             'after': '',
             'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'total_prs_count': 0,
-            'size': self.size
+            'size': self.size,
         }
 
         while True:
-            self.log.info('Running request %s' % dict(
-                [(k, v) for k, v in kwargs.items() if k != 'pr_query']))
+            self.log.info(
+                'Running request %s'
+                % dict([(k, v) for k, v in kwargs.items() if k != 'pr_query'])
+            )
             try:
                 hnp = self._getPage(kwargs, prs)
             except requests.exceptions.ConnectionError:
                 self.log.exception(
-                    "Error connecting to the Github API - retrying in 5s ...")
+                    "Error connecting to the Github API - retrying in 5s ..."
+                )
                 sleep(5)
                 continue
             self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
-                if (len(prs) < kwargs['total_prs_count'] and
-                        len(prs) % self.size == 0):
+                if len(prs) < kwargs['total_prs_count'] and len(prs) % self.size == 0:
                     kwargs['created_before'] = prs[-1]['createdAt']
                     kwargs['after'] = ''
                     continue
@@ -223,10 +225,9 @@ class PRsFetcher(object):
             'pr_query': self.pr_query,
             'org': org,
             'repository': repository,
-            'number': number
+            'number': number,
         }
-        raw = self.gql.query(qdata % kwargs)[
-            'data']['repository']['pullRequest']
+        raw = self.gql.query(qdata % kwargs)['data']['repository']['pullRequest']
         return (raw, self.extract_objects([raw]))
 
     def extract_objects(self, prs):
@@ -237,17 +238,20 @@ class PRsFetcher(object):
             return int((start - end).total_seconds())
 
         def insert_change_attributes(obj, change):
-            obj.update({
-                'repository_prefix': change['repository_prefix'],
-                'repository_fullname': change['repository_fullname'],
-                'repository_shortname': change['repository_shortname'],
-                'number': change['number'],
-                'repository_fullname_and_number': change[
-                    'repository_fullname_and_number'],
-                'url': change['url'],
-                'on_author': change['author'],
-                'on_created_at': change['created_at'],
-            })
+            obj.update(
+                {
+                    'repository_prefix': change['repository_prefix'],
+                    'repository_fullname': change['repository_fullname'],
+                    'repository_shortname': change['repository_shortname'],
+                    'number': change['number'],
+                    'repository_fullname_and_number': change[
+                        'repository_fullname_and_number'
+                    ],
+                    'url': change['url'],
+                    'on_author': change['author'],
+                    'on_created_at': change['created_at'],
+                }
+            )
 
         def extract_pr_objects(pr):
             objects = []
@@ -257,16 +261,19 @@ class PRsFetcher(object):
             change['number'] = pr['number']
             change['repository_prefix'] = pr['repository']['owner']['login']
             change['repository_fullname'] = "%s/%s" % (
-                pr['repository']['owner']['login'], pr['repository']['name'])
+                pr['repository']['owner']['login'],
+                pr['repository']['name'],
+            )
             change['repository_shortname'] = pr['repository']['name']
             change['repository_fullname_and_number'] = "%s#%s" % (
                 change['repository_fullname'],
                 change['number'],
             )
-            change['url'] = ('%s/%s/pull/%s'
-                             % (self.base_url,
-                                change['repository_fullname'],
-                                change['number']))
+            change['url'] = '%s/%s/pull/%s' % (
+                self.base_url,
+                change['repository_fullname'],
+                change['number'],
+            )
             change['author'] = pr['author']['login']
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
@@ -276,7 +283,8 @@ class PRsFetcher(object):
             change['deletions'] = pr['deletions']
             change['changed_files'] = pr['changedFiles']
             change['commits'] = [
-                c['node']['commit']['oid'] for c in pr['commits']['edges']]
+                c['node']['commit']['oid'] for c in pr['commits']['edges']
+            ]
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:
@@ -289,12 +297,15 @@ class PRsFetcher(object):
             change['state'] = pr['state']
             if pr['state'] in ('CLOSED', 'MERGED'):
                 change['duration'] = timedelta(
-                    change['closed_at'], change['created_at'])
+                    change['closed_at'], change['created_at']
+                )
             change['mergeable'] = pr['mergeable']
-            change['labels'] = tuple(map(
-                lambda n: n['node']['name'], pr['labels']['edges']))
-            change['assignees'] = tuple(map(
-                lambda n: n['node']['login'], pr['assignees']['edges']))
+            change['labels'] = tuple(
+                map(lambda n: n['node']['name'], pr['labels']['edges'])
+            )
+            change['assignees'] = tuple(
+                map(lambda n: n['node']['login'], pr['assignees']['edges'])
+            )
             objects.append(change)
             obj = {
                 'type': 'ChangeCreatedEvent',
@@ -321,9 +332,9 @@ class PRsFetcher(object):
                     'id': _timelineitem['id'],
                     'created_at': _timelineitem['createdAt'],
                     'author': (
-                        _timelineitem.get('actor', {}).get('login') or
-                        _timelineitem.get('author', {}).get('login')
-                    )
+                        _timelineitem.get('actor', {}).get('login')
+                        or _timelineitem.get('author', {}).get('login')
+                    ),
                 }
                 insert_change_attributes(obj, change)
                 if 'state' in _timelineitem:
@@ -348,13 +359,12 @@ if __name__ == '__main__':
     import sys
     from pprint import pprint
     from monocle.github import graphql
+
     token = sys.argv[1]
     org = 'tektoncd'
     repository = 'triggers'
     id = '510'
-    prf = PRsFetcher(
-        graphql.GithubGraphQLQuery(token),
-        None, org, repository)
+    prf = PRsFetcher(graphql.GithubGraphQLQuery(token), None, org, repository)
     # pprint(prf.get_one(org, repository, id))
     ret = prf.get("2020-03-30")
     extracted = prf.extract_objects(ret)

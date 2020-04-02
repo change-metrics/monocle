@@ -49,18 +49,19 @@ class GithubGraphQLQuery(object):
             sleep(5)
             ratelimit = self.getRateLimit()
         self.quota_remain = ratelimit['remaining']
-        self.resetat = datetime.strptime(
-            ratelimit['resetAt'], '%Y-%m-%dT%H:%M:%SZ')
-        self.log.info("Got rate limit data: remain %s resetat %s" % (
-            self.quota_remain, self.resetat))
+        self.resetat = datetime.strptime(ratelimit['resetAt'], '%Y-%m-%dT%H:%M:%SZ')
+        self.log.info(
+            "Got rate limit data: remain %s resetat %s"
+            % (self.quota_remain, self.resetat)
+        )
 
     def wait_for_call(self):
         if self.quota_remain <= 150:
             until_reset = self.resetat - datetime.utcnow()
             self.log.info(
                 "Quota remain: %s/calls delay until "
-                "reset: %s/secs waiting ..." % (
-                    self.quota_remain, until_reset.seconds))
+                "reset: %s/secs waiting ..." % (self.quota_remain, until_reset.seconds)
+            )
             sleep(until_reset.seconds + 60)
             self.get_rate_limit()
 
@@ -83,8 +84,8 @@ class GithubGraphQLQuery(object):
             self.wait_for_call()
         data = {'query': qdata}
         r = self.session.post(
-            url=self.url, json=data, headers=self.headers,
-            timeout=30.3)
+            url=self.url, json=data, headers=self.headers, timeout=30.3
+        )
         self.query_count += 1
         if not r.status_code != "200":
             raise Exception("No ok response code see: %s" % r.text)

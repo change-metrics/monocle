@@ -32,12 +32,11 @@ from monocle.db import queries
 from monocle import utils
 
 
-class ELmonocleDB():
+class ELmonocleDB:
 
     log = logging.getLogger("monocle.ELmonocleDB")
 
-    def __init__(self, elastic_conn='localhost:9200', index='monocle',
-                 timeout=10):
+    def __init__(self, elastic_conn='localhost:9200', index='monocle', timeout=10):
         host, port = elastic_conn.split(':')
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
@@ -50,8 +49,10 @@ class ELmonocleDB():
                 s.close()
                 break
             except Exception as excpt:
-                self.log.info('Unable to connect to %s: %s. Sleeping for %ds.'
-                              % (elastic_conn, excpt, timeout))
+                self.log.info(
+                    'Unable to connect to %s: %s. Sleeping for %ds.'
+                    % (elastic_conn, excpt, timeout)
+                )
                 time.sleep(timeout)
 
         self.log.info('Connecting to ES server at %s' % elastic_conn)
@@ -82,34 +83,13 @@ class ELmonocleDB():
                     "merged_by": {"type": "keyword"},
                     "branch": {"type": "keyword"},
                     "target_branch": {"type": "keyword"},
-                    "created_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "on_created_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "merged_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "updated_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "closed_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "authored_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
-                    "committed_at": {
-                        "type": "date",
-                        "format": "date_time_no_millis"
-                    },
+                    "created_at": {"type": "date", "format": "date_time_no_millis"},
+                    "on_created_at": {"type": "date", "format": "date_time_no_millis"},
+                    "merged_at": {"type": "date", "format": "date_time_no_millis"},
+                    "updated_at": {"type": "date", "format": "date_time_no_millis"},
+                    "closed_at": {"type": "date", "format": "date_time_no_millis"},
+                    "authored_at": {"type": "date", "format": "date_time_no_millis"},
+                    "committed_at": {"type": "date", "format": "date_time_no_millis"},
                     "state": {"type": "keyword"},
                     "duration": {"type": "integer"},
                     "mergeable": {"type": "keyword"},
@@ -119,9 +99,7 @@ class ELmonocleDB():
                 }
             }
         }
-        settings = {
-            'mappings': self.mapping
-        }
+        settings = {'mappings': self.mapping}
         self.ic = client.IndicesClient(self.es)
         self.ic.create(index=self.index, ignore=400, body=settings)
 
@@ -136,6 +114,7 @@ class ELmonocleDB():
                 d['doc'] = source
                 d['doc_as_upsert'] = True
                 yield d
+
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
@@ -146,9 +125,7 @@ class ELmonocleDB():
                 "bool": {
                     "filter": {
                         "regexp": {
-                            "repository_fullname": {
-                                "value": repository_fullname
-                            }
+                            "repository_fullname": {"value": repository_fullname}
                         }
                     }
                 }
@@ -161,23 +138,19 @@ class ELmonocleDB():
     def get_last_updated(self, repository_fullname):
         params = {'index': self.index, 'doc_type': self.index}
         body = {
-            "sort": [{
-                "updated_at": {
-                    "order": "desc"
-                }
-            }],
+            "sort": [{"updated_at": {"order": "desc"}}],
             "query": {
                 "bool": {
                     "filter": [
                         {"term": {"type": "Change"}},
-                        {"regexp": {
-                            "repository_fullname": {
-                                "value": repository_fullname
+                        {
+                            "regexp": {
+                                "repository_fullname": {"value": repository_fullname}
                             }
-                        }}
+                        },
                     ]
                 }
-            }
+            },
         }
         params['body'] = body
         try:
@@ -194,14 +167,15 @@ class ELmonocleDB():
         # especially to be able to set the histogram extended_bounds
         if not args[1].get('gte'):
             first_created_event = queries._first_created_event(
-                    self.es, self.index, *args, **kwargs)
+                self.es, self.index, *args, **kwargs
+            )
             if first_created_event:
-                args[1]['gte'] = int(utils.dbdate_to_datetime(
-                    first_created_event).timestamp() * 1000)
+                args[1]['gte'] = int(
+                    utils.dbdate_to_datetime(first_created_event).timestamp() * 1000
+                )
             else:
                 # There is probably nothing the db that match the query
                 args[1]['gte'] = None
         if not args[1].get('lte'):
             args[1]['lte'] = int(datetime.now().timestamp() * 1000)
-        return getattr(queries, name)(
-            self.es, self.index, *args, **kwargs)
+        return getattr(queries, name)(self.es, self.index, *args, **kwargs)

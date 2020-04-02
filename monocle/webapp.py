@@ -31,8 +31,7 @@ from monocle.db.db import ELmonocleDB
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/0/query/*":
-                     {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
+CORS(app, resources={r"/api/0/query/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
 
 
 @app.route("/api/0/query/<name>", methods=['GET'])
@@ -40,9 +39,7 @@ def query(name):
     repository_fullname = request.args.get('repository')
     params = utils.set_params(request.args)
     db = ELmonocleDB(os.getenv('ELASTIC_CONN', 'localhost:9200'))
-    result = db.run_named_query(
-        name, repository_fullname,
-        params)
+    result = db.run_named_query(name, repository_fullname, params)
     return jsonify(result)
 
 
