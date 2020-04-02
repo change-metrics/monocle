@@ -1,0 +1,12 @@
+version: '3'
+services:
+  kibana:
+    image: "docker.elastic.co/kibana/kibana:6.8.8"
+    depends_on:
+      - elastic
+    environment:
+      SERVER_NAME: localhost
+      ELASTICSEARCH_URL: http://elastic:9200
+    ports:
+      - "5601:5601"
+ 
