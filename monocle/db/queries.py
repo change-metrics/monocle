@@ -74,8 +74,8 @@ def generate_filter(repository_fullname, params):
     lte = params.get('lte')
     etype = params.get('etype')
     authors = params.get('authors')
+    on_authors = params.get('on_authors')
     exclude_authors = params.get('exclude_authors')
-
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     if gte:
         created_at_range['created_at']['gte'] = gte
@@ -88,6 +88,8 @@ def generate_filter(repository_fullname, params):
     qfilter.append({"terms": {"type": etype}})
     if authors:
         qfilter.append({"terms": {"author": authors}})
+    if on_authors:
+        qfilter.append({"terms": {"on_author": on_authors}})
     if 'Change' in params['etype']:
         generate_changes_filter(params, qfilter)
     else:
@@ -322,6 +324,9 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
+    if params.get('authors'):
+        params['on_authors'] = params.get('authors')
+        del params['authors']
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
     for etype in etypes:
@@ -454,6 +459,9 @@ def hot_changes(es, index, repository_fullname, params):
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
     params = deepcopy(params)
+    if params.get('authors'):
+        params['on_authors'] = params.get('authors')
+        del params['authors']
     ret = {}
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     for etype in etypes:
@@ -464,6 +472,9 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
 
 def changes_lifecycle_stats(es, index, repository_fullname, params):
     params = deepcopy(params)
+    if params.get('authors'):
+        params['on_authors'] = params.get('authors')
+        del params['authors']
     ret = {}
     ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
