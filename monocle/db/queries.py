@@ -22,6 +22,7 @@
 import logging
 
 import statistics
+from copy import deepcopy
 from datetime import datetime
 from itertools import groupby
 from monocle.utils import dbdate_to_datetime
@@ -138,10 +139,10 @@ def count_events(es, index, repository_fullname, params):
     body = {
         "query": generate_filter(repository_fullname, params),
     }
-    params = {'index': index, 'doc_type': index}
-    params['body'] = body
+    count_params = {'index': index, 'doc_type': index}
+    count_params['body'] = body
     try:
-        res = es.count(**params)
+        res = es.count(**count_params)
     except Exception:
         return {}
     return res['count']
@@ -208,6 +209,7 @@ def _events_top(es, index, repository_fullname, field, params):
 
 
 def repos_top_merged(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeMergedEvent",)
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
@@ -217,11 +219,13 @@ def events_top_authors(es, index, repository_fullname, params):
 
 
 def changes_top_approval(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(es, index, repository_fullname, "approval", params)
 
 
 def changes_top_commented(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number", params
@@ -229,6 +233,7 @@ def changes_top_commented(es, index, repository_fullname, params):
 
 
 def changes_top_reviewed(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(
         es, index, repository_fullname, "repository_fullname_and_number", params
@@ -236,16 +241,19 @@ def changes_top_reviewed(es, index, repository_fullname, params):
 
 
 def authors_top_reviewed(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
     return _events_top(es, index, repository_fullname, "on_author", params)
 
 
 def authors_top_commented(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
     return _events_top(es, index, repository_fullname, "on_author", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
     authors = [
         bucket['key']
@@ -273,6 +281,7 @@ def peers_exchange_strength(es, index, repository_fullname, params):
 
 
 def change_merged_count_by_duration(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
@@ -298,6 +307,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
 
 
 def pr_merged_avg_duration(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
@@ -311,6 +321,7 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 
 
 def changes_closed_ratios(es, index, repository_fullname, params):
+    params = deepcopy(params)
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
     for etype in etypes:
@@ -333,12 +344,9 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     return ret
 
 
-def changes_reviewed_ratios(es, index, repository_fullname, params):
-    ret = {}
-    return ret
-
-
 def _first_event_on_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+
     def keyfunc(x):
         return x['repository_fullname_and_number']
 
@@ -384,16 +392,19 @@ def _first_event_on_changes(es, index, repository_fullname, params):
 
 
 def first_comment_on_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ('ChangeCommentedEvent',)
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
 def first_review_on_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ('ChangeReviewedEvent',)
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
 def cold_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
@@ -412,6 +423,7 @@ def cold_changes(es, index, repository_fullname, params):
 
 
 def hot_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     # Set a significant depth to get an 'accurate' median value
     params['size'] = 500
     top_commented_changes = changes_top_commented(
@@ -441,6 +453,7 @@ def hot_changes(es, index, repository_fullname, params):
 
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
+    params = deepcopy(params)
     ret = {}
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     for etype in etypes:
@@ -450,6 +463,7 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
 
 
 def changes_lifecycle_stats(es, index, repository_fullname, params):
+    params = deepcopy(params)
     ret = {}
     ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
@@ -457,7 +471,6 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['avgs'] = {}
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
-    for etype in ("ChangeCreatedEvent", "ChangeAbandonedEvent", "ChangeMergedEvent"):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
@@ -469,6 +482,7 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
 
 
 def changes_review_histos(es, index, repository_fullname, params):
+    params = deepcopy(params)
     ret = {}
     etypes = ('ChangeCommentedEvent', "ChangeReviewedEvent")
     for etype in etypes:
@@ -478,6 +492,7 @@ def changes_review_histos(es, index, repository_fullname, params):
 
 
 def changes_review_stats(es, index, repository_fullname, params):
+    params = deepcopy(params)
     ret = {}
     ret['first_event_delay'] = {}
     ret['first_event_delay']['comment'] = first_comment_on_changes(
@@ -496,6 +511,7 @@ def changes_review_stats(es, index, repository_fullname, params):
 
 
 def most_active_authors_stats(es, index, repository_fullname, params):
+    params = deepcopy(params)
     ret = {}
     for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
@@ -511,6 +527,7 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
 
 
 def last_merged_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
     body = {
@@ -524,6 +541,7 @@ def last_merged_changes(es, index, repository_fullname, params):
 
 
 def last_opened_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("Change",)
     body = {
         "sort": [{"created_at": {"order": "desc"}}],
@@ -543,6 +561,7 @@ def last_state_changed_changes(es, index, repository_fullname, params):
 
 
 def oldest_open_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "OPEN"
     body = {
