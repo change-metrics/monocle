@@ -6,7 +6,9 @@ Monocle purpose is to provide metrics about Changes through a web API and a web 
 
 ## Deploy the master version
 
-Monocle is an early phase of developement. The process below will help you to index Pull Requests events of a Github organization and to start the web UI to browse metrics using `docker-compose`.
+Monocle is in an early phase of developement. Feedback is highly welcome.
+
+The process below describes how to index changes from a Github repository, a full Github organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
 
 ### Clone and prepare data directory
 
@@ -30,9 +32,18 @@ projects:
       loop_delay: 10
       github_orgs:
         - name: tektoncd
+          repository: pipeline
           updated_since: "2020-03-15"
           token: <github_token>
           base_url: https://github.com
+        - name: spinnaker
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
+      gerrit_repositories:
+        - name: ^zuul/.*
+          updated_since: "2020-03-15 00:00:00"
+          base_url: https://review.opendev.org
 ```
 
 ### Start docker-compose

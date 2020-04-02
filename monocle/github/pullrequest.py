@@ -37,6 +37,7 @@ class GithubCrawlerArgs(object):
     loop_delay: int
     command: str
     org: str
+    repository: str
     base_url: str
     token: str
 
@@ -45,11 +46,12 @@ class PRsFetcher(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, gql, base_url, org, bulk_size=25):
+    def __init__(self, gql, base_url, org, repository, bulk_size=25):
         self.gql = gql
         self.size = bulk_size
         self.base_url = base_url
         self.org = org
+        self.repository = repository
         self.events_map = {
             'ClosedEvent': 'ChangeAbandonedEvent',
             'PullRequestReview': 'ChangeReviewedEvent',
@@ -143,8 +145,12 @@ class PRsFetcher(object):
     def _getPage(self, kwargs, prs):
         # Note: usage of the default sort on created field because
         # sort on the updated field does not return well ordered PRs
+        scope = "org:%(org)s" % kwargs
+        if kwargs.get('repository'):
+            scope = "repo:%(org)s/%(repository)s" % kwargs
+        kwargs['scope'] = scope
         qdata = '''{
-          search(query: "org:%(org)s is:pr sort:created updated:>%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
+          search(query: "%(scope)s is:pr sort:created updated:>%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
             issueCount
             pageInfo {
               hasNextPage endCursor
@@ -176,6 +182,7 @@ class PRsFetcher(object):
         kwargs = {
             'pr_query': self.pr_query,
             'org': self.org,
+            'repository': self.repository,
             'updated_since': updated_since,
             'after': '',
             'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -347,5 +354,8 @@ if __name__ == '__main__':
     id = '510'
     prf = PRsFetcher(
         graphql.GithubGraphQLQuery(token),
-        None, org)
-    pprint(prf.get_one(org, repository, id))
+        None, org, repository)
+    # pprint(prf.get_one(org, repository, id))
+    ret = prf.get("2020-03-30")
+    extracted = prf.extract_objects(ret)
+    pprint(len(extracted))
