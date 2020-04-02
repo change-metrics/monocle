@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import logging
 
 import statistics
 from datetime import datetime
@@ -27,6 +28,8 @@ from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
 
 from elasticsearch.helpers import scan as scanner
+
+log = logging.getLogger(__name__)
 
 
 def generate_events_filter(params, qfilter):
@@ -101,8 +104,10 @@ def generate_filter(repository_fullname, params):
 def run_query(es, index, body):
     search_params = {'index': index, 'doc_type': index, 'body': body}
     try:
+        log.debug('run_query "%s"' % search_params)
         res = es.search(**search_params)
     except Exception:
+        log.exception('Unable to run query: "%s"' % search_params)
         return []
     return res
 
