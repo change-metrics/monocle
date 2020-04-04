@@ -37,12 +37,12 @@ class RootView extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <TopMenu />
+        <TopMenu  index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm />
+              <CFiltersForm index={this.props.match.params.index}/>
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -122,9 +122,7 @@ class App extends React.Component {
   render() {
     return (
       <Switch>
-        <Route exact path='/'>
-          <RootView />
-        </Route>
+        <Route exact path='/:index' component={RootView} />
       </Switch>
     )
   }

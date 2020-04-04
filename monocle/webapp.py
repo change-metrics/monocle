@@ -22,8 +22,10 @@
 import os
 
 from flask import Flask
-from flask import request
+from flask import abort
 from flask import jsonify
+from flask import make_response
+from flask import request
 from flask_cors import CORS
 
 from monocle import utils
@@ -36,6 +38,8 @@ CORS(app, resources={r"/api/0/query/*": {"origins": os.getenv('ALLOW_ORIGIN', '*
 
 @app.route("/api/0/query/<name>", methods=['GET'])
 def query(name):
+    if not request.args.get('index'):
+        abort(make_response(jsonify(errors=['No index provided',]), 404))
     repository_fullname = request.args.get('repository')
     params = utils.set_params(request.args)
     db = ELmonocleDB(os.getenv('ELASTIC_CONN', 'localhost:9200'))

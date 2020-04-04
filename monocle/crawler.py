@@ -38,7 +38,7 @@ class Crawler(Thread):
         super().__init__()
         self.updated_since = args.updated_since
         self.loop_delay = int(args.loop_delay)
-        self.db = ELmonocleDB(elastic_conn, timeout=elastic_timeout)
+        self.db = ELmonocleDB(elastic_conn, index=args.index, timeout=elastic_timeout)
         if args.command == 'github_crawler':
             if args.repository:
                 self.repository_el_re = "%s/%s" % (

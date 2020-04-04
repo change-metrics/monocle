@@ -47,6 +47,7 @@ class BaseQueryComponent extends React.Component {
     if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       query({
         'repository': this.props.filter_repository,
+        'index': this.props.filter_index,
         'name': name,
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,

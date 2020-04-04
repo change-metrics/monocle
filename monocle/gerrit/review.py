@@ -36,6 +36,7 @@ class GerritCrawlerArgs(object):
     updated_since: str
     loop_delay: int
     command: str
+    index: str
     base_url: str
     repository: str
 

@@ -34,7 +34,7 @@ function setQueryParams(
 }
 
 function get_query_results(
-  { name, repository, gte = undefined,
+  { name, repository, index, gte = undefined,
     lte = undefined, type = undefined,
     interval = undefined, exclude_authors = undefined,
     authors = undefined}) {
@@ -50,6 +50,7 @@ function get_query_results(
     }
   )
   params.append('repository', repository)
+  params.append('index', index)
   params.append('ec_same_date', true)
   return axios.get(
     url, {

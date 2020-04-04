@@ -64,10 +64,12 @@ def main():
         help='Delete events related to a repository (regexp)',
         required=True,
     )
+    parser_dbmanage.add_argument('--index', help='The Elastisearch index name', required=True)
 
     parser_dbquery = subparsers.add_parser(
         'dbquery', help='Run an existsing query on stored events'
     )
+    parser_dbquery.add_argument('--index', help='The Elastisearch index name', required=True)
     parser_dbquery.add_argument('--interval', help='Histogram interval', default="3h")
     parser_dbquery.add_argument('--name', help='The query name', required=True)
     parser_dbquery.add_argument(
@@ -122,6 +124,7 @@ def main():
             for crawler_item in project['crawler'].get('github_orgs', []):
                 c_args = pullrequest.GithubCrawlerArgs(
                     command='github_crawler',
+                    index=project['index'],
                     org=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
@@ -139,6 +142,7 @@ def main():
             for crawler_item in project['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
+                    index=project['index'],
                     repository=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=project['crawler']['loop_delay'],
@@ -156,11 +160,11 @@ def main():
 
     if args.command == "dbmanage":
         if args.delete_repository:
-            db = ELmonocleDB()
+            db = ELmonocleDB(index=args.index)
             db.delete_repository(args.delete_repository)
 
     if args.command == "dbquery":
-        db = ELmonocleDB()
+        db = ELmonocleDB(index=args.index)
         params = utils.set_params(args)
         ret = db.run_named_query(args.name, args.repository.lstrip('^'), params)
         pprint(ret)

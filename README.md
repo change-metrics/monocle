@@ -27,7 +27,7 @@ Then create the config file `etc/projects.yaml`:
 ```YAML
 ---
 projects:
-  - name: Tektoncd
+  - index: monocle
     crawler:
       loop_delay: 10
       github_orgs:
@@ -79,4 +79,4 @@ docker-compose logs crawler
 
 ### Accessing the web UI
 
-You should be able to access the web UI at <http://localhost:3000/>.
+You should be able to access the web UI at <http://localhost:3000/monocle>.

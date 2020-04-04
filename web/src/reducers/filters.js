@@ -3,6 +3,7 @@ const initialState = {
   filter_lte: null,
   filter_loaded_from_url: false,
   filter_repository: ".*",
+  filter_index: "monocle",
   filter_interval: "7d",
   filter_exclude_authors: null,
   filter_authors: null,
@@ -21,6 +22,9 @@ const reducer = (state = initialState, action) => {
   }
   if (action.type === 'FILTER_REPOSITORY_CHANGE') {
     newState.filter_repository = action.value;
+  }
+  if (action.type === 'FILTER_INDEX_CHANGE') {
+    newState.filter_index = action.value;
   }
   if (action.type === 'FILTER_INTERVAL_CHANGE') {
     newState.filter_interval = action.value;
