@@ -11,6 +11,7 @@ import Table from 'react-bootstrap/Table'
 import {
     BaseQueryComponent,
     LoadingBox,
+    ErrorBox,
 } from './common'
 
 class TopEventsTable extends React.Component {
@@ -59,6 +60,11 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.most_active_authors_stats_loading) {
+      if (this.props.most_active_authors_stats_error) {
+        return <ErrorBox
+          error={this.props.most_active_authors_stats_error}
+        />
+      }
       const data = this.props.most_active_authors_stats_result
       return (
         <Row>
@@ -110,6 +116,11 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.most_reviewed_authors_stats_loading) {
+      if (this.props.most_reviewed_authors_stats_error) {
+        return <ErrorBox
+          error={this.props.most_reviewed_authors_stats_error}
+        />
+      }
       const data = this.props.most_reviewed_authors_stats_result
       return (
         <Row>
@@ -191,6 +202,11 @@ class AuthorsPeersStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.authors_peers_stats_loading) {
+      if (this.props.authors_peers_stats_error) {
+        return <ErrorBox
+          error={this.props.authors_peers_stats_error}
+        />
+      }
       const data = this.props.authors_peers_stats_result
       return (
         <TopStrengthsTable

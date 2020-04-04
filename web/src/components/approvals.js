@@ -7,7 +7,8 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import {
-  LoadingBox, 
+  LoadingBox,
+  ErrorBox,
   BaseQueryComponent
 } from './common'
 
@@ -59,6 +60,11 @@ class ApprovalStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.approval_stats_loading) {
+      if (this.props.approval_stats_error) {
+        return <ErrorBox
+          error={this.props.approval_stats_error}
+        />
+      }
       const data = this.props.approval_stats_result
       return (
         <Row>

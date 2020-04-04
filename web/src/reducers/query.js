@@ -3,34 +3,34 @@ import { get_query_results } from '../api'
 const initialState = {
   changes_lifecycle_stats_result: null,
   changes_lifecycle_stats_loading: true,
-  changes_lifecycle_stats_error: {},
+  changes_lifecycle_stats_error: null,
   changes_review_stats_result: null,
   changes_review_stats_loading: true,
-  changes_review_stats_error: {},
+  changes_review_stats_error: null,
   most_active_authors_stats_result: null,
   most_active_authors_stats_loading: true,
-  most_active_authors_stats_error: {},
+  most_active_authors_stats_error: null,
   approval_stats_result: null,
   approval_stats_loading: true,
-  approval_stats_error: {},
+  approval_stats_error: null,
   most_reviewed_authors_stats_result: null,
   most_reviewed_authors_stats_loading: true,
-  most_reviewed_authors_stats_error: {},
+  most_reviewed_authors_stats_error: null,
   authors_peers_stats_result: null,
   authors_peers_stats_loading: true,
-  authors_peers_stats_error: {},
+  authors_peers_stats_error: null,
   repos_top_merged_result: null,
   repos_top_merged_loading: true,
-  repos_top_merged_error: {},
+  repos_top_merged_error: null,
   hot_changes_result: null,
   hot_changes_loading: true,
-  hot_changes_error: {},
+  hot_changes_error: null,
   cold_changes_result: null,
   cold_changes_loading: true,
-  cold_changes_error: {},
+  cold_changes_error: null,
   last_changes_result: null,
   last_changes_loading: true,
-  last_changes_error: {},
+  last_changes_error: null,
 };
 
 const query_reducer = (state = initialState, action) => {
@@ -42,7 +42,7 @@ const query_reducer = (state = initialState, action) => {
   if (action.type.endsWith('_QUERY_SUCCESS')) {
     const graph_type = action.type.replace('_QUERY_SUCCESS', '')
     newState[graph_type + '_loading'] = false;
-    newState[graph_type + '_error'] = {};
+    newState[graph_type + '_error'] = null;
     newState[graph_type + '_result'] = action.value;
   }
   if (action.type.endsWith('_QUERY_ERROR')) {

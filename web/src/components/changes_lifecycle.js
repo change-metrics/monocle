@@ -13,6 +13,7 @@ import { Line } from 'react-chartjs-2';
 import {
   BaseQueryComponent,
   LoadingBox,
+  ErrorBox,
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
@@ -92,6 +93,11 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.changes_lifecycle_stats_loading) {
+      if (this.props.changes_lifecycle_stats_error) {
+        return <ErrorBox
+          error={this.props.changes_lifecycle_stats_error}
+        />
+      }
       const data = this.props.changes_lifecycle_stats_result
       const int = this.props.filter_interval
       return (
