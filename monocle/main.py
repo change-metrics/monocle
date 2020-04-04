@@ -23,18 +23,19 @@
 import logging
 import argparse
 import os
+import sys
 import yaml
 
 from pprint import pprint
+
+from jsonschema import validate
 
 from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.github import pullrequest
 from monocle.gerrit import review
 from monocle.crawler import Crawler
-
 from monocle import projects
-from jsonschema import validate
 
 
 def main():
@@ -165,7 +166,11 @@ def main():
 
     if args.command == "dbquery":
         db = ELmonocleDB(index=args.index)
-        params = utils.set_params(args)
+        try:
+            params = utils.set_params(args)
+        except utils.ExlusiveParametersException as err:
+            print("Unable to process query: %s" % err)
+            sys.exit(1)
         ret = db.run_named_query(args.name, args.repository.lstrip('^'), params)
         pprint(ret)
 

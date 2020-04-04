@@ -41,7 +41,10 @@ def query(name):
     if not request.args.get('index'):
         abort(make_response(jsonify(errors=['No index provided', ]), 404))
     repository_fullname = request.args.get('repository')
-    params = utils.set_params(request.args)
+    try:
+        params = utils.set_params(request.args)
+    except utils.ExlusiveParametersException as err:
+        return "Unable to process query: %s" % err, 400
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
         index=request.args.get('index'))
