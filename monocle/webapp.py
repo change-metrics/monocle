@@ -39,10 +39,12 @@ CORS(app, resources={r"/api/0/query/*": {"origins": os.getenv('ALLOW_ORIGIN', '*
 @app.route("/api/0/query/<name>", methods=['GET'])
 def query(name):
     if not request.args.get('index'):
-        abort(make_response(jsonify(errors=['No index provided',]), 404))
+        abort(make_response(jsonify(errors=['No index provided', ]), 404))
     repository_fullname = request.args.get('repository')
     params = utils.set_params(request.args)
-    db = ELmonocleDB(os.getenv('ELASTIC_CONN', 'localhost:9200'))
+    db = ELmonocleDB(
+        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
+        index=request.args.get('index'))
     result = db.run_named_query(name, repository_fullname, params)
     return jsonify(result)
 

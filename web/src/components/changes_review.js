@@ -87,6 +87,7 @@ class ChangesReviewStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'changes_review_stats',
       'changes_review_stats',
       this.props.handleQuery)

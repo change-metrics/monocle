@@ -52,6 +52,7 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'most_active_authors_stats',
       'most_active_authors_stats',
       this.props.handleQuery)
@@ -102,6 +103,7 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'most_reviewed_authors_stats',
       'most_reviewed_authors_stats',
       this.props.handleQuery)
@@ -182,6 +184,7 @@ class AuthorsPeersStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'peers_exchange_strength',
       'authors_peers_stats',
       this.props.handleQuery)

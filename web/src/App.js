@@ -37,12 +37,12 @@ class RootView extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <TopMenu  index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
+              <CFiltersForm />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -51,37 +51,43 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CChangesLifeCycleStats />
+                  <CChangesLifeCycleStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CChangesReviewStats />
+                  <CChangesReviewStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CMostActiveAuthorsStats />
+                  <CMostActiveAuthorsStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CApprovalStats />
+                  <CApprovalStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CMostReviewedAuthorsStats />
+                  <CMostReviewedAuthorsStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CAuthorsPeersStats />
+                  <CAuthorsPeersStats
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
             </Tab>
@@ -89,25 +95,29 @@ class RootView extends React.Component {
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CLastChanges />
+                  <CLastChanges
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CRepoChanges />
+                  <CRepoChanges
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CHotChanges />
+                  <CHotChanges
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
               <Row>
                 <Col>
-                  <CColdChanges />
+                  <CColdChanges
+                    index={this.props.match.params.index} />
                 </Col>
               </Row>
             </Tab>

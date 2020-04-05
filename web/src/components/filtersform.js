@@ -54,7 +54,6 @@ class FiltersForm extends React.Component {
     var lte = params.get('lte')
     var gte = params.get('gte')
     var repository = params.get('repository')
-    var index = this.props.index
     var interval = params.get('interval')
     var exclude_authors = params.get('exclude_authors')
     var authors = params.get('authors')
@@ -66,9 +65,6 @@ class FiltersForm extends React.Component {
     }
     if (repository) {
       this.props.handleFilterRepositoryChange(repository)
-    }
-    if (index) {
-      this.props.handleFilterIndexChange(index)
     }
     if (interval) {
       this.props.handleFilterIntervalChange(interval)
@@ -86,7 +82,7 @@ class FiltersForm extends React.Component {
     const baseurl = window.location.origin + window.location.pathname
     var urlparams = new URLSearchParams(window.location.search)
     Object.keys(params).forEach(element => {
-      if (params[element] && element !== "index") {
+      if (params[element]) {
         urlparams.set(element, params[element])
       }
     });
@@ -99,7 +95,6 @@ class FiltersForm extends React.Component {
       'gte': this.props.filter_gte,
       'lte': this.props.filter_lte,
       'repository': this.props.filter_repository,
-      'index': this.props.filter_index,
       'interval': this.props.filter_interval,
       'exclude_authors': this.props.filter_exclude_authors,
       'authors': this.props.filter_authors,
@@ -208,7 +203,6 @@ const mapStateToProps = state => {
     filter_gte: state.FiltersReducer.filter_gte,
     filter_lte: state.FiltersReducer.filter_lte,
     filter_repository: state.FiltersReducer.filter_repository,
-    filter_index: state.FiltersReducer.filter_index,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
     filter_authors: state.FiltersReducer.filter_authors,
@@ -239,12 +233,6 @@ const mapDispatchToProps = dispatch => {
     handleFilterRepositoryChange: (value) => dispatch(
       {
         type: 'FILTER_REPOSITORY_CHANGE',
-        value: value
-      }
-    ),
-    handleFilterIndexChange: (value) => dispatch(
-      {
-        type: 'FILTER_INDEX_CHANGE',
         value: value
       }
     ),

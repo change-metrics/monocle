@@ -39,15 +39,16 @@ class LoadingBox extends React.Component {
 }
 
 class BaseQueryComponent extends React.Component {
-  queryBackend(prevProps, name, graph_type, query) {
+  queryBackend(prevProps, index, name, graph_type, query) {
     // Usefull snippet
     // Object.entries(this.props).forEach(([key, val]) =>
     //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
     // );
+    console.log("Query with index: " + index)
     if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
       query({
         'repository': this.props.filter_repository,
-        'index': this.props.filter_index,
+        'index': index,
         'name': name,
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,

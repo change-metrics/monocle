@@ -182,6 +182,7 @@ class RepoChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'repos_top_merged',
       'repos_top_merged',
       this.props.handleQuery)
@@ -206,6 +207,7 @@ class HotChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'hot_changes',
       'hot_changes',
       this.props.handleQuery)
@@ -230,6 +232,7 @@ class ColdChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'cold_changes',
       'cold_changes',
       this.props.handleQuery)
@@ -253,6 +256,7 @@ class LastChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'last_state_changed_changes',
       'last_changes',
       this.props.handleQuery)

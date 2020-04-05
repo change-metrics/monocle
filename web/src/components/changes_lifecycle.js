@@ -85,6 +85,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'changes_lifecycle_stats',
       'changes_lifecycle_stats',
       this.props.handleQuery)

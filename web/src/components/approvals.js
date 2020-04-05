@@ -52,6 +52,7 @@ class ApprovalStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'changes_top_approval',
       'approval_stats',
       this.props.handleQuery)
