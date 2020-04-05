@@ -24,6 +24,8 @@ import {
   CHotChanges,
   CColdChanges,
   CLastChanges,
+  CLastMergedChanges,
+  CLastOpenedChanges,
 } from './components/changes'
 import {
   CApprovalStats,
@@ -127,12 +129,61 @@ class RootView extends React.Component {
   }
 }
 
+class MergedChangesView extends React.Component {
+  render() {
+    return (
+      <React.Fragment>
+        <TopMenu  index={this.props.match.params.index}/>
+        <Container>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CFiltersForm index={this.props.match.params.index}/>
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CLastMergedChanges index={this.props.match.params.index} />
+                </Col>
+              </Row>
+        </Container>
+      </React.Fragment>)
+  }
+}
+
+class OpenChangesView extends React.Component {
+  render() {
+    return (
+      <React.Fragment>
+        <TopMenu  index={this.props.match.params.index}/>
+        <Container>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CFiltersForm index={this.props.match.params.index}/>
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CLastOpenedChanges index={this.props.match.params.index} />
+                </Col>
+              </Row>
+        </Container>
+      </React.Fragment>)
+  }
+}
 
 class App extends React.Component {
   render() {
     return (
       <Switch>
         <Route exact path='/:index' component={RootView} />
+        <Route path='/:index/merged-changes' component={MergedChangesView} />
+        <Route path='/:index/opened-changes' component={OpenChangesView} />
       </Switch>
     )
   }

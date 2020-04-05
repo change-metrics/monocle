@@ -83,14 +83,12 @@ class ChangeLifeCycleEventsHisto extends React.Component {
 }
 
 class ChangesLifeCycleStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'changes_lifecycle_stats',
-      'changes_lifecycle_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'changes_lifecycle_stats';
+    this.state.graph_type = 'changes_lifecycle_stats';
   }
+
   render() {
     if (!this.props.changes_lifecycle_stats_loading) {
       if (this.props.changes_lifecycle_stats_error) {

@@ -204,15 +204,19 @@ def _events_top(es, index, repository_fullname, field, params):
     count_avg = statistics.mean(count_series) if count_series else 0
     count_median = statistics.median(sorted(count_series)) if count_series else 0
     return {
-        'tops': data['aggregations']['agg1']['buckets'],
+        'items': data['aggregations']['agg1']['buckets'],
         'count_avg': count_avg,
         'count_median': count_median,
+        'total': data['hits']['total'],
     }
 
 
 def repos_top_merged(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeMergedEvent",)
+    if params['authors']:
+        params['on_authors'] = params['authors']
+        del params['authors']
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
@@ -260,14 +264,14 @@ def peers_exchange_strength(es, index, repository_fullname, params):
     authors = [
         bucket['key']
         for bucket in _events_top(es, index, repository_fullname, "author", params)[
-            'tops'
+            'items'
         ]
     ]
     peers_strength = {}
     for author in authors:
         params['author'] = author
         for bucket in _events_top(es, index, repository_fullname, "on_author", params)[
-            'tops'
+            'items'
         ]:
             if bucket['key'] == author:
                 continue
@@ -424,7 +428,11 @@ def cold_changes(es, index, repository_fullname, params):
         for change in changes
         if change['repository_fullname_and_number'] in changes_ids_wo_rc
     ]
-    return sorted(changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
+    return {
+        'items': sorted(
+            changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at'])
+        )
+    }
 
 
 def hot_changes(es, index, repository_fullname, params):
@@ -437,7 +445,7 @@ def hot_changes(es, index, repository_fullname, params):
     # Keep changes with comment events > median
     top_commented_changes = [
         change
-        for change in top_commented_changes['tops']
+        for change in top_commented_changes['items']
         if change['doc_count'] > top_commented_changes['count_median']
     ]
     mapping = {}
@@ -454,7 +462,7 @@ def hot_changes(es, index, repository_fullname, params):
     changes = _scan(es, index, repository_fullname, _params)
     for change in changes:
         change['hot_score'] = mapping[change['repository_fullname_and_number']]
-    return sorted(changes, key=lambda x: x['hot_score'], reverse=True)
+    return {'items': sorted(changes, key=lambda x: x['hot_score'], reverse=True)}
 
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
@@ -544,24 +552,27 @@ def last_merged_changes(es, index, repository_fullname, params):
     body = {
         "sort": [{"closed_at": {"order": "desc"}}],
         "size": params['size'],
+        "from": params['from'],
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
-    return changes
+    return {'items': changes, 'total': data['hits']['total']}
 
 
 def last_opened_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
+    params['state'] = "OPEN"
     body = {
         "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
+        "from": params['from'],
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
-    return changes
+    return {'items': changes, 'total': data['hits']['total']}
 
 
 def last_state_changed_changes(es, index, repository_fullname, params):
@@ -578,8 +589,9 @@ def oldest_open_changes(es, index, repository_fullname, params):
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params['size'],
+        "from": params['from'],
         "query": generate_filter(repository_fullname, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
-    return changes
+    return {'items': changes, 'total': data['hits']['total']}

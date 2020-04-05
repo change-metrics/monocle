@@ -37,9 +37,7 @@ class ExlusiveParametersException(Exception):
         self.param2 = param2
 
     def __str__(self):
-        return "%s and %s are mutually exclusive" % (
-            self.param1, self.param2
-        )
+        return "%s and %s are mutually exclusive" % (self.param1, self.param2)
 
 
 def date_to_epoch_ml(datestr):
@@ -76,8 +74,8 @@ def set_params(input):
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     if params['exclude_authors'] and params['authors']:
-        raise ExlusiveParametersException(
-            "excluse_authors", "authors")
+        raise ExlusiveParametersException("excluse_authors", "authors")
+    params['from'] = int(getter('from', 0))
     if params['exclude_authors']:
         params['exclude_authors'] = params['exclude_authors'].split(',')
     if params['authors']:

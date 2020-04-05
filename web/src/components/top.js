@@ -12,6 +12,7 @@ import {
     BaseQueryComponent,
     LoadingBox,
     ErrorBox,
+    add_url_field,
 } from './common'
 
 class TopEventsTable extends React.Component {
@@ -36,7 +37,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>{x.key}</td>
+                      <td><a href={add_url_field('authors', x.key)}>{x.key}</a></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -50,14 +51,12 @@ class TopEventsTable extends React.Component {
 }
 
 class MostActiveAuthorsStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'most_active_authors_stats',
-      'most_active_authors_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'most_active_authors_stats';
+    this.state.graph_type = 'most_active_authors_stats';
   }
+
   render() {
     if (!this.props.most_active_authors_stats_loading) {
       if (this.props.most_active_authors_stats_error) {
@@ -77,19 +76,19 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeCreatedEvent.tops}
+                      data={data.ChangeCreatedEvent.items}
                       title="Changes"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeCommentedEvent.tops}
+                      data={data.ChangeCommentedEvent.items}
                       title="Comments"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeReviewedEvent.tops}
+                      data={data.ChangeReviewedEvent.items}
                       title="Reviews"
                     />
                   </Col>
@@ -106,14 +105,12 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
 }
 
 class MostReviewedAuthorsStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'most_reviewed_authors_stats',
-      'most_reviewed_authors_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'most_reviewed_authors_stats';
+    this.state.graph_type = 'most_reviewed_authors_stats';
   }
+
   render() {
     if (!this.props.most_reviewed_authors_stats_loading) {
       if (this.props.most_reviewed_authors_stats_error) {
@@ -133,13 +130,13 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <TopEventsTable
-                      data={data.reviewed.tops}
+                      data={data.reviewed.items}
                       title="Reviews"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.commented.tops}
+                      data={data.commented.items}
                       title="Comments"
                     />
                   </Col>
@@ -177,7 +174,7 @@ class TopStrengthsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td>{x[0][0]} and {x[0][1]}</td>
+                      <td><a href={add_url_field('authors', x[0][0] + "," + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
                       <td>{x[1]}</td>
                     </tr>)}
                 </tbody>
@@ -192,14 +189,12 @@ class TopStrengthsTable extends React.Component {
 
 
 class AuthorsPeersStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'peers_exchange_strength',
-      'authors_peers_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'peers_exchange_strength';
+    this.state.graph_type = 'authors_peers_stats';
   }
+
   render() {
     if (!this.props.authors_peers_stats_loading) {
       if (this.props.authors_peers_stats_error) {

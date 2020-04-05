@@ -65,12 +65,16 @@ def main():
         help='Delete events related to a repository (regexp)',
         required=True,
     )
-    parser_dbmanage.add_argument('--index', help='The Elastisearch index name', required=True)
+    parser_dbmanage.add_argument(
+        '--index', help='The Elastisearch index name', required=True
+    )
 
     parser_dbquery = subparsers.add_parser(
         'dbquery', help='Run an existsing query on stored events'
     )
-    parser_dbquery.add_argument('--index', help='The Elastisearch index name', required=True)
+    parser_dbquery.add_argument(
+        '--index', help='The Elastisearch index name', required=True
+    )
     parser_dbquery.add_argument('--interval', help='Histogram interval', default="3h")
     parser_dbquery.add_argument('--name', help='The query name', required=True)
     parser_dbquery.add_argument(
@@ -97,6 +101,9 @@ def main():
     parser_dbquery.add_argument('--approval', help='Scope to events with approval')
     parser_dbquery.add_argument(
         '--size', help='Return maximum of size results', default=10
+    )
+    parser_dbquery.add_argument(
+        '--from', help='Starting index of the elements to retrieve', default=0
     )
     parser_dbquery.add_argument(
         '--exclude-authors', help='Authors exclude list (comma separated)'
