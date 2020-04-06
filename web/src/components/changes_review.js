@@ -87,6 +87,7 @@ class ChangesReviewStats extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'changes_review_stats',
       'changes_review_stats',
       this.props.handleQuery)
@@ -144,6 +145,7 @@ const mapStateToProps = state => {
     filter_gte: state.FiltersReducer.filter_gte,
     filter_lte: state.FiltersReducer.filter_lte,
     filter_repository: state.FiltersReducer.filter_repository,
+    filter_index: state.FiltersReducer.filter_index,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
     filter_authors: state.FiltersReducer.filter_authors,

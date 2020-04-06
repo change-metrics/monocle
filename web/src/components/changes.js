@@ -182,6 +182,7 @@ class RepoChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'repos_top_merged',
       'repos_top_merged',
       this.props.handleQuery)
@@ -206,6 +207,7 @@ class HotChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'hot_changes',
       'hot_changes',
       this.props.handleQuery)
@@ -230,6 +232,7 @@ class ColdChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'cold_changes',
       'cold_changes',
       this.props.handleQuery)
@@ -253,6 +256,7 @@ class LastChanges extends BaseQueryComponent {
   componentDidUpdate(prevProps) {
     this.queryBackend(
       prevProps,
+      this.props.index,
       'last_state_changed_changes',
       'last_changes',
       this.props.handleQuery)
@@ -309,6 +313,7 @@ const mapStateToProps = state => {
     filter_gte: state.FiltersReducer.filter_gte,
     filter_lte: state.FiltersReducer.filter_lte,
     filter_repository: state.FiltersReducer.filter_repository,
+    filter_index: state.FiltersReducer.filter_index,
     filter_interval: state.FiltersReducer.filter_interval,
     filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
     filter_authors: state.FiltersReducer.filter_authors,

@@ -81,9 +81,9 @@ schema = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["name", "crawler"],
+                "required": ["index", "crawler"],
                 "properties": {
-                    "name": {"type": "string"},
+                    "index": {"type": "string", "description": "Elasticsearch index name"},
                     "crawler": {
                         "type": "object",
                         "properties": {

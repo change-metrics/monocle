@@ -36,6 +36,7 @@ class GithubCrawlerArgs(object):
     updated_since: str
     loop_delay: int
     command: str
+    index: str
     org: str
     repository: str
     base_url: str

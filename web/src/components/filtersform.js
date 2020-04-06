@@ -33,6 +33,10 @@ class FiltersForm extends React.Component {
     this.props.handleFilterRepositoryChange(e.target.value)
   }
 
+  onIndexChange = (e) => {
+    this.props.handleFilterIndexChange(e.target.value)
+  }
+
   onIntervalChange = (e) => {
     this.props.handleFilterIntervalChange(e.target.value)
   }
