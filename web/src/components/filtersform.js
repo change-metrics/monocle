@@ -84,6 +84,8 @@ class FiltersForm extends React.Component {
     Object.keys(params).forEach(element => {
       if (params[element]) {
         urlparams.set(element, params[element])
+      } else {
+        urlparams.delete(element)
       }
     });
     const newurl = baseurl + '?' + urlparams.toString()
@@ -166,6 +168,7 @@ class FiltersForm extends React.Component {
                 <Form.Group controlId="formExcludeAuthorsInput">
                   <Form.Label>Exclude Authors</Form.Label>
                   <Form.Control
+                    disabled={this.props.filter_authors ? true : false}
                     type="text"
                     value={this.props.filter_exclude_authors}
                     onChange={this.onExcludeAuthorsChange}

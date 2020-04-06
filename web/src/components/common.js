@@ -5,7 +5,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 
 
-function change_url(x, name=null) {
+function change_url(x, name = null) {
   if (!name) {
     name = x.repository_fullname_and_number;
   }
@@ -38,6 +38,25 @@ class LoadingBox extends React.Component {
   }
 }
 
+class ErrorBox extends React.Component {
+  render() {
+    return (
+      <Row>
+        <Col>
+          <Card>
+            <Card.Body>
+              <h1>
+                Error: code: {this.props.error.status},
+                message: {this.props.error.data}
+              </h1>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    )
+  }
+}
+
 class BaseQueryComponent extends React.Component {
   queryBackend(prevProps, index, name, graph_type, query) {
     // Usefull snippet
@@ -53,7 +72,8 @@ class BaseQueryComponent extends React.Component {
         'gte': this.props.filter_gte,
         'lte': this.props.filter_lte,
         'interval': this.props.filter_interval,
-        'exclude_authors': this.props.filter_exclude_authors,
+        'exclude_authors':
+          this.props.filter_authors ? null : this.props.filter_exclude_authors,
         'authors': this.props.filter_authors,
         'graph_type': graph_type,
       })
@@ -63,6 +83,7 @@ class BaseQueryComponent extends React.Component {
 
 export {
   LoadingBox,
+  ErrorBox,
   BaseQueryComponent,
   change_url,
   add_url_field,

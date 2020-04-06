@@ -11,6 +11,7 @@ import ListGroup from 'react-bootstrap/ListGroup'
 import {
   BaseQueryComponent,
   LoadingBox,
+  ErrorBox,
 } from './common'
 
 import { Line } from 'react-chartjs-2';
@@ -20,7 +21,6 @@ var moment = require('moment');
 function secondsToDhms(seconds) {
   const d = moment.duration();
   d.add(seconds, 'second');
-  
   return d.humanize();
 }
 
@@ -94,6 +94,11 @@ class ChangesReviewStats extends BaseQueryComponent {
   }
   render() {
     if (!this.props.changes_review_stats_loading) {
+      if (this.props.changes_review_stats_error) {
+        return <ErrorBox
+          error={this.props.changes_review_stats_error}
+        />
+      }
       const data = this.props.changes_review_stats_result
       return (
         <Row>

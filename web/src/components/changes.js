@@ -11,6 +11,7 @@ import Table from 'react-bootstrap/Table'
 import {
   BaseQueryComponent,
   LoadingBox,
+  ErrorBox,
   change_url,
   add_url_field,
 } from './common';
@@ -189,6 +190,11 @@ class RepoChanges extends BaseQueryComponent {
   }
   render() {
     if (!this.props.repos_top_merged_loading) {
+      if (this.props.repos_top_merged_error) {
+        return <ErrorBox
+          error={this.props.repos_top_merged_error}
+        />
+      }
       const data = this.props.repos_top_merged_result
       return (
         <RepoChangesTable
@@ -214,6 +220,11 @@ class HotChanges extends BaseQueryComponent {
   }
   render() {
     if (!this.props.hot_changes_loading) {
+      if (this.props.hot_changes_error) {
+        return <ErrorBox
+          error={this.props.hot_changes_error}
+        />
+      }
       const data = this.props.hot_changes_result
       return (
         <HotChangesTable
@@ -239,6 +250,11 @@ class ColdChanges extends BaseQueryComponent {
   }
   render() {
     if (!this.props.cold_changes_loading) {
+      if (this.props.cold_changes_error) {
+        return <ErrorBox
+          error={this.props.cold_changes_error}
+        />
+      }
       const data = this.props.cold_changes_result
       return (
         <ColdChangesTable
@@ -263,6 +279,11 @@ class LastChanges extends BaseQueryComponent {
   }
   render() {
     if (!this.props.last_changes_loading) {
+      if (this.props.last_changes_error) {
+        return <ErrorBox
+          error={this.props.last_changes_error}
+        />
+      }
       const data = this.props.last_changes_result
       return (
         <Row>
@@ -301,10 +322,10 @@ class LastChanges extends BaseQueryComponent {
 }
 
 export {
-    RepoChanges,
-    HotChanges,
-    ColdChanges,
-    LastChanges,
+  RepoChanges,
+  HotChanges,
+  ColdChanges,
+  LastChanges,
 }
 
 const mapStateToProps = state => {
@@ -344,8 +365,8 @@ const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges);
 const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges);
 
 export {
-    CRepoChanges,
-    CHotChanges,
-    CColdChanges,
-    CLastChanges,
+  CRepoChanges,
+  CHotChanges,
+  CColdChanges,
+  CLastChanges,
 }

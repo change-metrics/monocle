@@ -31,6 +31,17 @@ events_list = [
 ]
 
 
+class ExlusiveParametersException(Exception):
+    def __init__(self, param1, param2):
+        self.param1 = param1
+        self.param2 = param2
+
+    def __str__(self):
+        return "%s and %s are mutually exclusive" % (
+            self.param1, self.param2
+        )
+
+
 def date_to_epoch_ml(datestr):
     if not datestr:
         return None
@@ -64,6 +75,9 @@ def set_params(input):
     params['interval'] = getter('interval', '3h')
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
+    if params['exclude_authors'] and params['authors']:
+        raise ExlusiveParametersException(
+            "excluse_authors", "authors")
     if params['exclude_authors']:
         params['exclude_authors'] = params['exclude_authors'].split(',')
     if params['authors']:
