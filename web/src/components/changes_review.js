@@ -84,14 +84,12 @@ class ChangeReviewEventsHisto extends React.Component {
 }
 
 class ChangesReviewStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'changes_review_stats',
-      'changes_review_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'changes_review_stats';
+    this.state.graph_type = 'changes_review_stats';
   }
+
   render() {
     if (!this.props.changes_review_stats_loading) {
       if (this.props.changes_review_stats_error) {

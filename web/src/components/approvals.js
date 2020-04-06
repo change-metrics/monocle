@@ -32,7 +32,7 @@ class ChangeApprovals extends React.Component {
       'APPROVED': '#00ff9f',
       'DISMISSED': '#AB0000',
     }
-    const tops = _data.tops.filter(x => !ignored_approval.includes(x.key))
+    const tops = _data.items.filter(x => !ignored_approval.includes(x.key))
     let data = {
       labels: tops.map(x => x.key),
       datasets: [{
@@ -50,14 +50,12 @@ class ChangeApprovals extends React.Component {
 }
 
 class ApprovalStats extends BaseQueryComponent {
-  componentDidUpdate(prevProps) {
-    this.queryBackend(
-      prevProps,
-      this.props.index,
-      'changes_top_approval',
-      'approval_stats',
-      this.props.handleQuery)
+  constructor(props) {
+    super(props);
+    this.state.name = 'changes_top_approval';
+    this.state.graph_type = 'approval_stats';
   }
+
   render() {
     if (!this.props.approval_stats_loading) {
       if (this.props.approval_stats_error) {

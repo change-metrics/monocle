@@ -170,7 +170,7 @@ class FiltersForm extends React.Component {
                   <Form.Control
                     disabled={this.props.filter_authors ? true : false}
                     type="text"
-                    value={this.props.filter_exclude_authors}
+                    value={this.props.filter_exclude_authors ? this.props.filter_exclude_authors : ""}
                     onChange={this.onExcludeAuthorsChange}
                   />
                 </Form.Group>
@@ -180,7 +180,7 @@ class FiltersForm extends React.Component {
                   <Form.Label>Authors</Form.Label>
                   <Form.Control
                     type="text"
-                    value={this.props.filter_authors}
+                    value={this.props.filter_authors ? this.props.filter_authors : ""}
                     onChange={this.onAuthorsChange}
                   />
                 </Form.Group>
