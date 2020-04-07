@@ -3,6 +3,7 @@ import React from 'react'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import PropTypes from 'prop-types'
 
 function change_url (x, name = null) {
   if (!name) {
@@ -64,6 +65,13 @@ class ErrorBox extends React.Component {
   }
 }
 
+ErrorBox.propTypes = {
+  error: PropTypes.shape({
+    status: PropTypes.number.isRequired,
+    data: PropTypes.string.isRequired
+  })
+}
+
 class BaseQueryComponent extends React.Component {
   constructor (props) {
     super(props)
@@ -84,7 +92,6 @@ class BaseQueryComponent extends React.Component {
   }
 
   handlePageChange (obj, pageData) {
-    console.log(`handlePageChange page ${pageData.selected}`)
     obj.setState({ selectedPage: pageData.selected })
     obj.queryBackend(pageData.selected)
   }
@@ -94,7 +101,6 @@ class BaseQueryComponent extends React.Component {
     // Object.entries(this.props).forEach(([key, val]) =>
     //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
     // );
-    console.log('Query with index: ' + this.props.index)
     this.props.handleQuery({
       repository: this.props.filter_repository,
       index: this.props.index,
@@ -109,6 +115,18 @@ class BaseQueryComponent extends React.Component {
       size: this.state.pageSize
     })
   }
+}
+
+BaseQueryComponent.propTypes = {
+  index: PropTypes.string.isRequired,
+  filter_repository: PropTypes.string,
+  filter_gte: PropTypes.string,
+  filter_lte: PropTypes.string,
+  filter_interval: PropTypes.string,
+  filter_authors: PropTypes.string,
+  filter_exclude_authors: PropTypes.string,
+  filter_loaded_from_url: PropTypes.bool,
+  handleQuery: PropTypes.func.isRequired
 }
 
 export {

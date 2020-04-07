@@ -7,6 +7,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
+import PropTypes from 'prop-types'
 
 import { Line } from 'react-chartjs-2'
 
@@ -81,6 +82,14 @@ class ChangeLifeCycleEventsHisto extends React.Component {
       </Row>
     )
   }
+}
+
+ChangeLifeCycleEventsHisto.propTypes = {
+  data: PropTypes.shape({
+    ChangeAbandonedEvent: PropTypes.array,
+    ChangeCreatedEvent: PropTypes.array,
+    ChangeMergedEvent: PropTypes.array
+  })
 }
 
 class ChangesLifeCycleStats extends BaseQueryComponent {

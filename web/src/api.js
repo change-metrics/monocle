@@ -56,7 +56,7 @@ function get_query_results (
       lte: lte,
       type: type,
       interval: interval,
-      exclude_authors: exclude_authors,
+      excludeAuthors: exclude_authors,
       authors: authors,
       from: from,
       size: size

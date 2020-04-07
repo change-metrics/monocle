@@ -8,6 +8,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 import ReactPaginate from 'react-paginate'
+import PropTypes from 'prop-types'
 
 import {
   BaseQueryComponent,
@@ -51,6 +52,13 @@ class RepoChangesTable extends React.Component {
       </Row>
     )
   }
+}
+
+RepoChangesTable.propTypes = {
+  title: PropTypes.string.isRequired,
+  data: PropTypes.shape({
+    items: PropTypes.array
+  })
 }
 
 class RepoChanges extends BaseQueryComponent {
@@ -139,6 +147,24 @@ class ChangesTable extends React.Component {
       </Row>
     )
   }
+}
+
+ChangesTable.propTypes = {
+  title: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.element
+  ]).isRequired,
+  data: PropTypes.shape({
+    items: PropTypes.array
+  }),
+  pageCount: PropTypes.number,
+  selectedPage: PropTypes.number,
+  pageChangeCallback: PropTypes.func,
+  pageChangeTarget: PropTypes.object,
+  created: PropTypes.bool,
+  updated: PropTypes.bool,
+  merged: PropTypes.bool,
+  mergeable: PropTypes.bool
 }
 
 class HotChanges extends BaseQueryComponent {

@@ -56,13 +56,9 @@ const query_reducer = (state = initialState, action) => {
 
 function query (params) {
   return (dispatch) => {
-    console.log('query')
-    console.log(params)
     dispatch({ type: params.graph_type + '_QUERY_LOADING' })
     return get_query_results(params)
       .then(response => {
-        console.log('response')
-        console.log(response)
         dispatch(
           {
             type: params.graph_type + '_QUERY_SUCCESS',
@@ -71,8 +67,6 @@ function query (params) {
         )
       })
       .catch(error => {
-        console.log('error')
-        console.log(error)
         dispatch(
           {
             type: params.graph_type + '_QUERY_ERROR',

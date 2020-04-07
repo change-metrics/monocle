@@ -6,6 +6,8 @@ import { query } from '../reducers/query'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import PropTypes from 'prop-types'
+
 import {
   LoadingBox,
   ErrorBox,
@@ -48,6 +50,12 @@ class ChangeApprovals extends React.Component {
     const data = this.prepare_data_set(this.props.data)
     return <Pie data={data} />
   }
+}
+
+ChangeApprovals.propTypes = {
+  data: PropTypes.shape({
+    items: PropTypes.array
+  })
 }
 
 class ApprovalStats extends BaseQueryComponent {

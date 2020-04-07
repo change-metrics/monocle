@@ -7,6 +7,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
+import PropTypes from 'prop-types'
 
 import {
   BaseQueryComponent,
@@ -82,6 +83,13 @@ class ChangeReviewEventsHisto extends React.Component {
       </Row>
     )
   }
+}
+
+ChangeReviewEventsHisto.propTypes = {
+  data: PropTypes.shape({
+    ChangeCommentedEvent: PropTypes.array,
+    ChangeReviewedEvent: PropTypes.array
+  })
 }
 
 class ChangesReviewStats extends BaseQueryComponent {

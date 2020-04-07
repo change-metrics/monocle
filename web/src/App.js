@@ -10,6 +10,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
+import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
@@ -128,6 +129,14 @@ class RootView extends React.Component {
   }
 }
 
+RootView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
 class MergedChangesView extends React.Component {
   render () {
     return (
@@ -152,6 +161,14 @@ class MergedChangesView extends React.Component {
   }
 }
 
+MergedChangesView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.array
+    })
+  })
+}
+
 class OpenChangesView extends React.Component {
   render () {
     return (
@@ -174,6 +191,14 @@ class OpenChangesView extends React.Component {
         </Container>
       </React.Fragment>)
   }
+}
+
+OpenChangesView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.array
+    })
+  })
 }
 
 class App extends React.Component {
