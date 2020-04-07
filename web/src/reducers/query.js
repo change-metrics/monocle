@@ -30,49 +30,49 @@ const initialState = {
   cold_changes_error: null,
   last_changes_result: null,
   last_changes_loading: true,
-  last_changes_error: null,
-};
+  last_changes_error: null
+}
 
 const query_reducer = (state = initialState, action) => {
-  const newState = { ...state };
+  const newState = { ...state }
   if (action.type.endsWith('_QUERY_LOADING')) {
     const graph_type = action.type.replace('_QUERY_LOADING', '')
-    newState[graph_type + '_loading'] = true;
+    newState[graph_type + '_loading'] = true
   }
   if (action.type.endsWith('_QUERY_SUCCESS')) {
     const graph_type = action.type.replace('_QUERY_SUCCESS', '')
-    newState[graph_type + '_loading'] = false;
-    newState[graph_type + '_error'] = null;
-    newState[graph_type + '_result'] = action.value;
+    newState[graph_type + '_loading'] = false
+    newState[graph_type + '_error'] = null
+    newState[graph_type + '_result'] = action.value
   }
   if (action.type.endsWith('_QUERY_ERROR')) {
     const graph_type = action.type.replace('_QUERY_ERROR', '')
-    newState[graph_type + '_loading'] = false;
-    newState[graph_type + '_error'] = action.value;
-    newState[graph_type + '_result'] = null;
+    newState[graph_type + '_loading'] = false
+    newState[graph_type + '_error'] = action.value
+    newState[graph_type + '_result'] = null
   }
-  return newState;
+  return newState
 }
 
-function query(params) {
+function query (params) {
   return (dispatch) => {
-    console.log("query");
-    console.log(params);
-    dispatch({ type: params.graph_type + '_QUERY_LOADING' });
+    console.log('query')
+    console.log(params)
+    dispatch({ type: params.graph_type + '_QUERY_LOADING' })
     return get_query_results(params)
       .then(response => {
-        console.log("response");
-        console.log(response);
+        console.log('response')
+        console.log(response)
         dispatch(
           {
             type: params.graph_type + '_QUERY_SUCCESS',
-            value: response.data,
+            value: response.data
           }
         )
       })
       .catch(error => {
-        console.log("error");
-        console.log(error);
+        console.log('error')
+        console.log(error)
         dispatch(
           {
             type: params.graph_type + '_QUERY_ERROR',

@@ -1,13 +1,12 @@
-import { createStore, applyMiddleware, combineReducers } from 'redux';
-import thunk from 'redux-thunk';
-import QueryReducer from './reducers/query';
-import FiltersReducer from './reducers/filters';
+import { createStore, applyMiddleware, combineReducers } from 'redux'
+import thunk from 'redux-thunk'
+import QueryReducer from './reducers/query'
+import FiltersReducer from './reducers/filters'
 
-function createMyStore() {
-
+function createMyStore () {
   const rootReducer = combineReducers({
     QueryReducer: QueryReducer,
-    FiltersReducer: FiltersReducer,
+    FiltersReducer: FiltersReducer
   })
 
   return createStore(

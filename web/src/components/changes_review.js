@@ -1,6 +1,6 @@
-import React from 'react';
+import React from 'react'
 
-import { connect } from 'react-redux';
+import { connect } from 'react-redux'
 import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
@@ -11,40 +11,40 @@ import ListGroup from 'react-bootstrap/ListGroup'
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox,
+  ErrorBox
 } from './common'
 
-import { Line } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2'
 
-var moment = require('moment');
+var moment = require('moment')
 
-function secondsToDhms(seconds) {
-  const d = moment.duration();
-  d.add(seconds, 'second');
-  return d.humanize();
+function secondsToDhms (seconds) {
+  const d = moment.duration()
+  d.add(seconds, 'second')
+  return d.humanize()
 }
 
 class ChangeReviewEventsHisto extends React.Component {
-  prepare_data_set(histos) {
+  prepare_data_set (histos) {
     const event_name_mapping = {
       ChangeCommentedEvent: {
         label: 'Changes commented',
         pointBorderColor: 'rgba(247,242,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,242,141,0.4)',
-        borderColor: 'rgba(247,242,141,1)',
+        borderColor: 'rgba(247,242,141,1)'
       },
       ChangeReviewedEvent: {
         label: 'Changes reviewed',
         pointBorderColor: 'rgba(247,141,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,141,141,0.4)',
-        borderColor: 'rgba(247,141,141,1)',
-      },
+        borderColor: 'rgba(247,141,141,1)'
+      }
     }
     const _histos = Object.entries(histos)
-    let data = {
-      labels: histos['ChangeCommentedEvent'][0].map(x => x.key_as_string),
+    const data = {
+      labels: histos.ChangeCommentedEvent[0].map(x => x.key_as_string),
       datasets: []
     }
     _histos.forEach(histo => {
@@ -56,13 +56,14 @@ class ChangeReviewEventsHisto extends React.Component {
           pointBorderColor: event_name_mapping[histo[0]].pointBorderColor,
           pointBackgroundColor: event_name_mapping[histo[0]].pointBackgroundColor,
           backgroundColor: event_name_mapping[histo[0]].backgroundColor,
-          borderColor: event_name_mapping[histo[0]].borderColor,
+          borderColor: event_name_mapping[histo[0]].borderColor
         }
       )
-    });
+    })
     return data
   }
-  render() {
+
+  render () {
     const data = this.prepare_data_set(this.props.data)
     return (
       <Row>
@@ -84,13 +85,13 @@ class ChangeReviewEventsHisto extends React.Component {
 }
 
 class ChangesReviewStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'changes_review_stats';
-    this.state.graph_type = 'changes_review_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'changes_review_stats'
+    this.state.graph_type = 'changes_review_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.changes_review_stats_loading) {
       if (this.props.changes_review_stats_error) {
         return <ErrorBox
@@ -154,18 +155,18 @@ const mapStateToProps = state => {
     filter_authors: state.FiltersReducer.filter_authors,
     changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
     changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
-    changes_review_stats_error: state.QueryReducer.changes_review_stats_error,
+    changes_review_stats_error: state.QueryReducer.changes_review_stats_error
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params)),
+    handleQuery: (params) => dispatch(query(params))
   }
 }
 
-const CChangesReviewStats = connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats);
+const CChangesReviewStats = connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats)
 
 export {
-  CChangesReviewStats,
+  CChangesReviewStats
 }

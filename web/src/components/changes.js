@@ -1,6 +1,6 @@
-import React from 'react';
+import React from 'react'
 
-import { connect } from 'react-redux';
+import { connect } from 'react-redux'
 import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
@@ -15,13 +15,13 @@ import {
   ErrorBox,
   change_url,
   add_url_field,
-  new_relative_url,
-} from './common';
+  new_relative_url
+} from './common'
 
-var moment = require('moment');
+var moment = require('moment')
 
 class RepoChangesTable extends React.Component {
-  render() {
+  render () {
     return (
       <Row>
         <Col>
@@ -54,13 +54,13 @@ class RepoChangesTable extends React.Component {
 }
 
 class RepoChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'repos_top_merged';
-    this.state.graph_type = 'repos_top_merged';
+  constructor (props) {
+    super(props)
+    this.state.name = 'repos_top_merged'
+    this.state.graph_type = 'repos_top_merged'
   }
 
-  render() {
+  render () {
     if (!this.props.repos_top_merged_loading) {
       const data = this.props.repos_top_merged_result
       return (
@@ -76,27 +76,27 @@ class RepoChanges extends BaseQueryComponent {
 }
 
 class ChangesTable extends React.Component {
-  render() {
-    let paginationElement;
-    
+  render () {
+    let paginationElement
+
     if (this.props.pageChangeCallback && this.props.pageCount > 1) {
       paginationElement = <ReactPaginate
-                            forcePage={this.props.selectedPage}
-                            pageCount={this.props.pageCount}
-                            pageRangeDisplayed={5}
-                            marginPagesDisplayed={4}
-                            onPageChange={data => this.props.pageChangeCallback(this.props.pageChangeTarget, data)}
-                            breakClassName={'page-item'}
-                            breakLinkClassName={'page-link'}
-                            containerClassName={'pagination'}
-                            pageClassName={'page-item'}
-                            pageLinkClassName={'page-link'}
-                            previousClassName={'page-item'}
-                            previousLinkClassName={'page-link'}
-                            nextClassName={'page-item'}
-                            nextLinkClassName={'page-link'}
-                            activeClassName={'active'}
-                          />;
+        forcePage={this.props.selectedPage}
+        pageCount={this.props.pageCount}
+        pageRangeDisplayed={5}
+        marginPagesDisplayed={4}
+        onPageChange={data => this.props.pageChangeCallback(this.props.pageChangeTarget, data)}
+        breakClassName={'page-item'}
+        breakLinkClassName={'page-link'}
+        containerClassName={'pagination'}
+        pageClassName={'page-item'}
+        pageLinkClassName={'page-link'}
+        previousClassName={'page-item'}
+        previousLinkClassName={'page-link'}
+        nextClassName={'page-item'}
+        nextLinkClassName={'page-link'}
+        activeClassName={'active'}
+      />
     }
     return (
       <Row>
@@ -142,13 +142,13 @@ class ChangesTable extends React.Component {
 }
 
 class HotChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'hot_changes';
-    this.state.graph_type = 'hot_changes';
+  constructor (props) {
+    super(props)
+    this.state.name = 'hot_changes'
+    this.state.graph_type = 'hot_changes'
   }
 
-  render() {
+  render () {
     if (!this.props.hot_changes_loading) {
       if (this.props.hot_changes_error) {
         return <ErrorBox
@@ -172,13 +172,13 @@ class HotChanges extends BaseQueryComponent {
 }
 
 class ColdChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'cold_changes';
-    this.state.graph_type = 'cold_changes';
+  constructor (props) {
+    super(props)
+    this.state.name = 'cold_changes'
+    this.state.graph_type = 'cold_changes'
   }
 
-  render() {
+  render () {
     if (!this.props.cold_changes_loading) {
       if (this.props.cold_changes_error) {
         return <ErrorBox
@@ -202,13 +202,13 @@ class ColdChanges extends BaseQueryComponent {
 }
 
 class LastChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'last_state_changed_changes';
-    this.state.graph_type = 'last_changes';
+  constructor (props) {
+    super(props)
+    this.state.name = 'last_state_changed_changes'
+    this.state.graph_type = 'last_changes'
   }
 
-  render() {
+  render () {
     if (!this.props.last_changes_loading) {
       if (this.props.last_changes_error) {
         return <ErrorBox
@@ -256,15 +256,15 @@ class LastChanges extends BaseQueryComponent {
 }
 
 class LastMergedChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'last_state_changed_changes';
-    this.state.graph_type = 'last_changes';
+  constructor (props) {
+    super(props)
+    this.state.name = 'last_state_changed_changes'
+    this.state.graph_type = 'last_changes'
   }
 
-  render() {
+  render () {
     if (!this.props.last_changes_loading) {
-      const data = this.props.last_changes_result;
+      const data = this.props.last_changes_result
       return (
         <Row>
           <Col>
@@ -287,13 +287,13 @@ class LastMergedChanges extends BaseQueryComponent {
 }
 
 class LastOpenedChanges extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'last_state_changed_changes';
-    this.state.graph_type = 'last_changes';
+  constructor (props) {
+    super(props)
+    this.state.name = 'last_state_changed_changes'
+    this.state.graph_type = 'last_changes'
   }
 
-  render() {
+  render () {
     if (!this.props.last_changes_loading) {
       const data = this.props.last_changes_result
       return (
@@ -323,7 +323,7 @@ export {
   HotChanges,
   ColdChanges,
   LastChanges,
-  LastOpenedChanges,
+  LastOpenedChanges
 }
 
 const mapStateToProps = state => {
@@ -347,22 +347,22 @@ const mapStateToProps = state => {
     cold_changes_error: state.QueryReducer.cold_changes_error,
     last_changes_loading: state.QueryReducer.last_changes_loading,
     last_changes_result: state.QueryReducer.last_changes_result,
-    last_changes_error: state.QueryReducer.last_changes_error,
+    last_changes_error: state.QueryReducer.last_changes_error
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params)),
+    handleQuery: (params) => dispatch(query(params))
   }
 }
 
-const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges);
-const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges);
-const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges);
-const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges);
-const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges);
-const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges);
+const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges)
+const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges)
+const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges)
+const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges)
+const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges)
+const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges)
 
 export {
   CRepoChanges,
@@ -370,5 +370,5 @@ export {
   CColdChanges,
   CLastChanges,
   CLastMergedChanges,
-  CLastOpenedChanges,
+  CLastOpenedChanges
 }

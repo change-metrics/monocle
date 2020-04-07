@@ -1,7 +1,7 @@
-import React from 'react';
+import React from 'react'
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css'
+import './App.css'
 
 import { Switch, Route } from 'react-router-dom'
 
@@ -17,7 +17,7 @@ import { CChangesReviewStats } from './components/changes_review'
 import {
   CMostActiveAuthorsStats,
   CMostReviewedAuthorsStats,
-  CAuthorsPeersStats,
+  CAuthorsPeersStats
 } from './components/top'
 import {
   CRepoChanges,
@@ -25,18 +25,17 @@ import {
   CColdChanges,
   CLastChanges,
   CLastMergedChanges,
-  CLastOpenedChanges,
+  CLastOpenedChanges
 } from './components/changes'
 import {
-  CApprovalStats,
+  CApprovalStats
 } from './components/approvals'
 import {
-  CFiltersForm,
+  CFiltersForm
 } from './components/filtersform'
 
-
 class RootView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
         <TopMenu index={this.props.match.params.index} />
@@ -130,10 +129,10 @@ class RootView extends React.Component {
 }
 
 class MergedChangesView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
-        <TopMenu  index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
@@ -142,22 +141,22 @@ class MergedChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CLastMergedChanges index={this.props.match.params.index} />
-                </Col>
-              </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CLastMergedChanges index={this.props.match.params.index} />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
 }
 
 class OpenChangesView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
-        <TopMenu  index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
@@ -166,19 +165,19 @@ class OpenChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CLastOpenedChanges index={this.props.match.params.index} />
-                </Col>
-              </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CLastOpenedChanges index={this.props.match.params.index} />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
 }
 
 class App extends React.Component {
-  render() {
+  render () {
     return (
       <Switch>
         <Route exact path='/:index' component={RootView} />
@@ -189,4 +188,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default App
