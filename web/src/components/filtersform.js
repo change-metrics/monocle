@@ -21,12 +21,19 @@ class FiltersForm extends React.Component {
 
   onGteChange = (date) => {
     var date_str = moment(date).format("YYYY-MM-DD")
-    this.props.handleFilterGteChange(date_str)
-
+    if (date_str !== "Invalid date") {
+      this.props.handleFilterGteChange(date_str)
+    } else {
+      this.props.handleFilterGteChange(null)
+    }
   }
   onLteChange = (date) => {
     var date_str = moment(date).format("YYYY-MM-DD")
-    this.props.handleFilterLteChange(date_str)
+    if (date_str !== "Invalid date") {
+      this.props.handleFilterLteChange(date_str)
+    } else {
+      this.props.handleFilterLteChange(null)
+    }
   }
 
   onRepositoryChange = (e) => {
