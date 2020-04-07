@@ -17,8 +17,8 @@ import {
 import { Pie } from 'react-chartjs-2'
 
 class ChangeApprovals extends React.Component {
-  prepare_data_set (_data) {
-    const ignored_approval = [
+  prepareDataSet (_data) {
+    const ignoredApproval = [
       'Code-Review+0',
       'Verified+0',
       'Workflow+0',
@@ -34,7 +34,7 @@ class ChangeApprovals extends React.Component {
       APPROVED: '#00ff9f',
       DISMISSED: '#AB0000'
     }
-    const tops = _data.items.filter(x => !ignored_approval.includes(x.key))
+    const tops = _data.items.filter(x => !ignoredApproval.includes(x.key))
     const data = {
       labels: tops.map(x => x.key),
       datasets: [{
@@ -47,7 +47,7 @@ class ChangeApprovals extends React.Component {
   }
 
   render () {
-    const data = this.prepare_data_set(this.props.data)
+    const data = this.prepareDataSet(this.props.data)
     return <Pie data={data} />
   }
 }

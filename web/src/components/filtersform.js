@@ -20,18 +20,18 @@ class FiltersForm extends React.Component {
   }
 
   onGteChange = (date) => {
-    var date_str = moment(date).format('YYYY-MM-DD')
-    if (date_str !== 'Invalid date') {
-      this.props.handleFilterGteChange(date_str)
+    var dateStr = moment(date).format('YYYY-MM-DD')
+    if (dateStr !== 'Invalid date') {
+      this.props.handleFilterGteChange(dateStr)
     } else {
       this.props.handleFilterGteChange(null)
     }
   }
 
   onLteChange = (date) => {
-    var date_str = moment(date).format('YYYY-MM-DD')
-    if (date_str !== 'Invalid date') {
-      this.props.handleFilterLteChange(date_str)
+    var dateStr = moment(date).format('YYYY-MM-DD')
+    if (dateStr !== 'Invalid date') {
+      this.props.handleFilterLteChange(dateStr)
     } else {
       this.props.handleFilterLteChange(null)
     }
@@ -63,7 +63,7 @@ class FiltersForm extends React.Component {
     var gte = params.get('gte')
     var repository = params.get('repository')
     var interval = params.get('interval')
-    var exclude_authors = params.get('exclude_authors')
+    var excludeAuthors = params.get('exclude_authors')
     var authors = params.get('authors')
     if (lte) {
       this.props.handleFilterLteChange(lte)
@@ -77,8 +77,8 @@ class FiltersForm extends React.Component {
     if (interval) {
       this.props.handleFilterIntervalChange(interval)
     }
-    if (exclude_authors) {
-      this.props.handleFilterExcludeAuthorsChange(exclude_authors)
+    if (excludeAuthors) {
+      this.props.handleFilterExcludeAuthorsChange(excludeAuthors)
     }
     if (authors) {
       this.props.handleFilterAuthorsChange(authors)

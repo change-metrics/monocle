@@ -18,8 +18,8 @@ import {
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
-  prepare_data_set (histos) {
-    const event_name_mapping = {
+  prepareDataSet (histos) {
+    const eventNameMapping = {
       ChangeAbandonedEvent: {
         label: 'Changes abandoned',
         pointBorderColor: 'rgba(92,92,92,1)',
@@ -50,13 +50,13 @@ class ChangeLifeCycleEventsHisto extends React.Component {
     _histos.forEach(histo => {
       data.datasets.push(
         {
-          label: event_name_mapping[histo[0]].label,
+          label: eventNameMapping[histo[0]].label,
           data: histo[1][0].map(x => x.doc_count),
           lineTension: 0.5,
-          pointBorderColor: event_name_mapping[histo[0]].pointBorderColor,
-          pointBackgroundColor: event_name_mapping[histo[0]].pointBackgroundColor,
-          backgroundColor: event_name_mapping[histo[0]].backgroundColor,
-          borderColor: event_name_mapping[histo[0]].borderColor
+          pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
+          pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
+          backgroundColor: eventNameMapping[histo[0]].backgroundColor,
+          borderColor: eventNameMapping[histo[0]].borderColor
         }
       )
     })
@@ -64,7 +64,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
   }
 
   render () {
-    const data = this.prepare_data_set(this.props.data)
+    const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
         {/* <Col md={{ span: 8, offset: 2 }}> */}

@@ -9,7 +9,7 @@ function setQueryParams (
   {
     gte = undefined, lte = undefined,
     type = undefined, interval = undefined,
-    exclude_authors = undefined,
+    excludeAuthors = undefined,
     authors = undefined,
     from = undefined,
     size = undefined
@@ -27,8 +27,8 @@ function setQueryParams (
   if (interval) {
     params.append('interval', interval)
   }
-  if (exclude_authors) {
-    params.append('exclude_authors', exclude_authors)
+  if (excludeAuthors) {
+    params.append('exclude_authors', excludeAuthors)
   }
   if (authors) {
     params.append('authors', authors)
@@ -42,11 +42,11 @@ function setQueryParams (
   return params
 }
 
-function get_query_results (
+function getQueryResults (
   {
     name, repository, index, gte = undefined,
     lte = undefined, type = undefined,
-    interval = undefined, exclude_authors = undefined,
+    interval = undefined, excludeAuthors = undefined,
     authors = undefined, from = undefined, size = undefined
   }) {
   const url = baseurl + '/query/' + name
@@ -56,7 +56,7 @@ function get_query_results (
       lte: lte,
       type: type,
       interval: interval,
-      excludeAuthors: exclude_authors,
+      excludeAuthors: excludeAuthors,
       authors: authors,
       from: from,
       size: size
@@ -72,5 +72,5 @@ function get_query_results (
 }
 
 export {
-  get_query_results
+  getQueryResults
 }

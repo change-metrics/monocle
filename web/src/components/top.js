@@ -13,7 +13,7 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  add_url_field
+  addUrlField
 } from './common'
 
 class TopEventsTable extends React.Component {
@@ -38,7 +38,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td><a href={add_url_field('authors', x.key)}>{x.key}</a></td>
+                      <td><a href={addUrlField('authors', x.key)}>{x.key}</a></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -180,7 +180,7 @@ class TopStrengthsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td><a href={add_url_field('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
+                      <td><a href={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
                       <td>{x[1]}</td>
                     </tr>)}
                 </tbody>

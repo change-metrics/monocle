@@ -14,9 +14,9 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  change_url,
-  add_url_field,
-  new_relative_url
+  changeUrl,
+  addUrlField,
+  newRelativeUrl
 } from './common'
 
 var moment = require('moment')
@@ -41,7 +41,7 @@ class RepoChangesTable extends React.Component {
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td><a href={add_url_field('repository', item.key)}>{item.key}</a></td>
+                      <td><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
                       <td>{item.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -133,9 +133,9 @@ class ChangesTable extends React.Component {
                       {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
                       {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
-                      <td><a href={add_url_field('repository', x.repository_fullname)}>{x.repository_fullname_and_number}</a></td>
-                      <td><a href={add_url_field('authors', x.author)}>{x.author}</a></td>
-                      <td>{change_url(x, x.title)}</td>
+                      <td><a href={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname_and_number}</a></td>
+                      <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
+                      <td>{changeUrl(x, x.title)}</td>
                       {this.props.mergeable ? <td>{x.mergeable}</td> : null}
                     </tr>)}
                 </tbody>
@@ -254,7 +254,7 @@ class LastChanges extends BaseQueryComponent {
                   <Col>
                     <ChangesTable
                       data={data.merged_changes}
-                      title={<a href={new_relative_url('/merged-changes')}>Recently merged changes</a>}
+                      title={<a href={newRelativeUrl('/merged-changes')}>Recently merged changes</a>}
                       merged={true}
                     />
                   </Col>
@@ -264,7 +264,7 @@ class LastChanges extends BaseQueryComponent {
                   <Col>
                     <ChangesTable
                       data={data.opened_changes}
-                      title={<a href={new_relative_url('/opened-changes')}>Recently opened changes</a>}
+                      title={<a href={newRelativeUrl('/opened-changes')}>Recently opened changes</a>}
                       created={true}
                       mergeable={true}
                     />

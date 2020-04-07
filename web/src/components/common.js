@@ -5,14 +5,14 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import PropTypes from 'prop-types'
 
-function change_url (x, name = null) {
+function changeUrl (x, name = null) {
   if (!name) {
     name = x.repository_fullname_and_number
   }
   return <a href={x.url} target="_blank" rel="noopener noreferrer">{name}</a>
 }
 
-function add_url_field (field, value) {
+function addUrlField (field, value) {
   var url = new URL(window.location.href)
 
   url.searchParams.set(field, value)
@@ -20,7 +20,7 @@ function add_url_field (field, value) {
   return url.href
 }
 
-function new_relative_url (dest) {
+function newRelativeUrl (dest) {
   var url = new URL(window.location.href)
 
   url.pathname += dest
@@ -133,7 +133,7 @@ export {
   LoadingBox,
   ErrorBox,
   BaseQueryComponent,
-  change_url,
-  add_url_field,
-  new_relative_url
+  changeUrl,
+  addUrlField,
+  newRelativeUrl
 }
