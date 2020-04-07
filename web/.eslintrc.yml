@@ -1,0 +1,38 @@
+env:
+  browser: true
+  es6: true
+extends:
+  - 'plugin:react/recommended'
+  - standard
+globals:
+  Atomics: readonly
+  SharedArrayBuffer: readonly
+parserOptions:
+  ecmaFeatures:
+    jsx: true
+  ecmaVersion: 2018
+  sourceType: module
+plugins:
+  - react
+rules: {}
+settings:
+  react:
+    # Regex for Component Factory to use,
+    # default to "createReactClass"
+    createClass: createReactClass
+    # Pragma to use, default to "React"
+    pragma: React
+    version: detect
+  # The names of any function used to wrap propTypes,
+  # e.g. `forbidExtraProps`. If this isn't set, any propTypes wrapped
+  # in a function will be skipped.
+  propWrapperFunctions:
+    - forbidExtraProps
+    - property: freeze
+      object: Object
+    - property: myFavoriteWrapper
+  # Components used as alternatives to <a> for linking, eg. <Link to={ url } />
+  linkComponents:
+    - Hyperlink
+    - name: Link
+      linkAttribute: to
