@@ -1,7 +1,7 @@
-import React from 'react';
+import React from 'react'
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css'
+import './App.css'
 
 import { Switch, Route } from 'react-router-dom'
 
@@ -10,6 +10,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
+import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
@@ -17,7 +18,7 @@ import { CChangesReviewStats } from './components/changes_review'
 import {
   CMostActiveAuthorsStats,
   CMostReviewedAuthorsStats,
-  CAuthorsPeersStats,
+  CAuthorsPeersStats
 } from './components/top'
 import {
   CRepoChanges,
@@ -25,18 +26,17 @@ import {
   CColdChanges,
   CLastChanges,
   CLastMergedChanges,
-  CLastOpenedChanges,
+  CLastOpenedChanges
 } from './components/changes'
 import {
-  CApprovalStats,
+  CApprovalStats
 } from './components/approvals'
 import {
-  CFiltersForm,
+  CFiltersForm
 } from './components/filtersform'
 
-
 class RootView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
         <TopMenu index={this.props.match.params.index} />
@@ -129,11 +129,19 @@ class RootView extends React.Component {
   }
 }
 
+RootView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
 class MergedChangesView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
-        <TopMenu  index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
@@ -142,22 +150,30 @@ class MergedChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CLastMergedChanges index={this.props.match.params.index} />
-                </Col>
-              </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CLastMergedChanges index={this.props.match.params.index} />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
+}
+
+MergedChangesView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.array
+    })
+  })
 }
 
 class OpenChangesView extends React.Component {
-  render() {
+  render () {
     return (
       <React.Fragment>
-        <TopMenu  index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
@@ -166,19 +182,27 @@ class OpenChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CLastOpenedChanges index={this.props.match.params.index} />
-                </Col>
-              </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CLastOpenedChanges index={this.props.match.params.index} />
+            </Col>
+          </Row>
         </Container>
       </React.Fragment>)
   }
 }
 
+OpenChangesView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.array
+    })
+  })
+}
+
 class App extends React.Component {
-  render() {
+  render () {
     return (
       <Switch>
         <Route exact path='/:index' component={RootView} />
@@ -189,4 +213,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default App

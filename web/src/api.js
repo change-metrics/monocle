@@ -5,13 +5,14 @@ var baseurl = server + '/api/0'
 
 console.log('BaseURL=' + baseurl)
 
-function setQueryParams(
-  { gte = undefined, lte = undefined,
+function setQueryParams (
+  {
+    gte = undefined, lte = undefined,
     type = undefined, interval = undefined,
-    exclude_authors = undefined,
+    excludeAuthors = undefined,
     authors = undefined,
     from = undefined,
-    size = undefined,
+    size = undefined
   }) {
   var params = new URLSearchParams()
   if (gte) {
@@ -26,8 +27,8 @@ function setQueryParams(
   if (interval) {
     params.append('interval', interval)
   }
-  if (exclude_authors) {
-    params.append('exclude_authors', exclude_authors)
+  if (excludeAuthors) {
+    params.append('exclude_authors', excludeAuthors)
   }
   if (authors) {
     params.append('authors', authors)
@@ -41,22 +42,24 @@ function setQueryParams(
   return params
 }
 
-function get_query_results(
-  { name, repository, index, gte = undefined,
+function getQueryResults (
+  {
+    name, repository, index, gte = undefined,
     lte = undefined, type = undefined,
-    interval = undefined, exclude_authors = undefined,
-    authors = undefined, from = undefined, size = undefined}) {
+    interval = undefined, excludeAuthors = undefined,
+    authors = undefined, from = undefined, size = undefined
+  }) {
   const url = baseurl + '/query/' + name
   var params = setQueryParams(
     {
-      'gte': gte,
-      'lte': lte,
-      'type': type,
-      'interval': interval,
-      'exclude_authors': exclude_authors,
-      'authors': authors,
-      'from': from,
-      'size': size,
+      gte: gte,
+      lte: lte,
+      type: type,
+      interval: interval,
+      excludeAuthors: excludeAuthors,
+      authors: authors,
+      from: from,
+      size: size
     }
   )
   params.append('repository', repository)
@@ -64,10 +67,10 @@ function get_query_results(
   params.append('ec_same_date', true)
   return axios.get(
     url, {
-    params: params
-  })
+      params: params
+    })
 }
 
 export {
-  get_query_results,
+  getQueryResults
 }

@@ -1,26 +1,28 @@
-import React from 'react';
+import React from 'react'
 
-import { connect } from 'react-redux';
+import { connect } from 'react-redux'
 import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import PropTypes from 'prop-types'
+
 import {
   LoadingBox,
   ErrorBox,
   BaseQueryComponent
 } from './common'
 
-import { Pie } from 'react-chartjs-2';
+import { Pie } from 'react-chartjs-2'
 
 class ChangeApprovals extends React.Component {
-  prepare_data_set(_data) {
-    const ignored_approval = [
+  prepareDataSet (_data) {
+    const ignoredApproval = [
       'Code-Review+0',
       'Verified+0',
       'Workflow+0',
-      'COMMENTED',
+      'COMMENTED'
     ]
     const palette = {
       'Code-Review+2': '#00ff9f',
@@ -29,11 +31,11 @@ class ChangeApprovals extends React.Component {
       'Code-Review-2': '#AB0000',
       'Workflow+1': '#00ff9f',
       'Workflow-1': '#AB0000',
-      'APPROVED': '#00ff9f',
-      'DISMISSED': '#AB0000',
+      APPROVED: '#00ff9f',
+      DISMISSED: '#AB0000'
     }
-    const tops = _data.items.filter(x => !ignored_approval.includes(x.key))
-    let data = {
+    const tops = _data.items.filter(x => !ignoredApproval.includes(x.key))
+    const data = {
       labels: tops.map(x => x.key),
       datasets: [{
         label: 'Approvals',
@@ -43,20 +45,27 @@ class ChangeApprovals extends React.Component {
     }
     return data
   }
-  render() {
-    const data = this.prepare_data_set(this.props.data)
+
+  render () {
+    const data = this.prepareDataSet(this.props.data)
     return <Pie data={data} />
   }
 }
 
+ChangeApprovals.propTypes = {
+  data: PropTypes.shape({
+    items: PropTypes.array
+  })
+}
+
 class ApprovalStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'changes_top_approval';
-    this.state.graph_type = 'approval_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'changes_top_approval'
+    this.state.graph_type = 'approval_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.approval_stats_loading) {
       if (this.props.approval_stats_error) {
         return <ErrorBox
@@ -102,19 +111,18 @@ const mapStateToProps = state => {
     filter_authors: state.FiltersReducer.filter_authors,
     approval_stats_loading: state.QueryReducer.approval_stats_loading,
     approval_stats_result: state.QueryReducer.approval_stats_result,
-    approval_stats_error: state.QueryReducer.approval_stats_error,
+    approval_stats_error: state.QueryReducer.approval_stats_error
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params)),
+    handleQuery: (params) => dispatch(query(params))
   }
 }
 
-const CApprovalStats = connect(mapStateToProps, mapDispatchToProps)(ApprovalStats);
-
+const CApprovalStats = connect(mapStateToProps, mapDispatchToProps)(ApprovalStats)
 
 export {
-  CApprovalStats,
+  CApprovalStats
 }

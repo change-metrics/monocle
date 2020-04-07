@@ -1,22 +1,23 @@
-import React from 'react';
+import React from 'react'
 
-import { connect } from 'react-redux';
+import { connect } from 'react-redux'
 import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
+import PropTypes from 'prop-types'
 
 import {
-    BaseQueryComponent,
-    LoadingBox,
-    ErrorBox,
-    add_url_field,
+  BaseQueryComponent,
+  LoadingBox,
+  ErrorBox,
+  addUrlField
 } from './common'
 
 class TopEventsTable extends React.Component {
-  render() {
+  render () {
     return (
       <Row>
         <Col>
@@ -37,7 +38,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td><a href={add_url_field('authors', x.key)}>{x.key}</a></td>
+                      <td><a href={addUrlField('authors', x.key)}>{x.key}</a></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -50,14 +51,19 @@ class TopEventsTable extends React.Component {
   }
 }
 
+TopEventsTable.propTypes = {
+  title: PropTypes.string.isRequired,
+  data: PropTypes.array.isRequired
+}
+
 class MostActiveAuthorsStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'most_active_authors_stats';
-    this.state.graph_type = 'most_active_authors_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'most_active_authors_stats'
+    this.state.graph_type = 'most_active_authors_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.most_active_authors_stats_loading) {
       if (this.props.most_active_authors_stats_error) {
         return <ErrorBox
@@ -105,13 +111,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
 }
 
 class MostReviewedAuthorsStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'most_reviewed_authors_stats';
-    this.state.graph_type = 'most_reviewed_authors_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'most_reviewed_authors_stats'
+    this.state.graph_type = 'most_reviewed_authors_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.most_reviewed_authors_stats_loading) {
       if (this.props.most_reviewed_authors_stats_error) {
         return <ErrorBox
@@ -153,7 +159,7 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
 }
 
 class TopStrengthsTable extends React.Component {
-  render() {
+  render () {
     return (
       <Row>
         <Col>
@@ -174,7 +180,7 @@ class TopStrengthsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td><a href={add_url_field('authors', x[0][0] + "," + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
+                      <td><a href={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
                       <td>{x[1]}</td>
                     </tr>)}
                 </tbody>
@@ -187,15 +193,19 @@ class TopStrengthsTable extends React.Component {
   }
 }
 
+TopStrengthsTable.propTypes = {
+  title: PropTypes.string.isRequired,
+  data: PropTypes.array.isRequired
+}
 
 class AuthorsPeersStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'peers_exchange_strength';
-    this.state.graph_type = 'authors_peers_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'peers_exchange_strength'
+    this.state.graph_type = 'authors_peers_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.authors_peers_stats_loading) {
       if (this.props.authors_peers_stats_error) {
         return <ErrorBox
@@ -233,22 +243,22 @@ const mapStateToProps = state => {
     most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
     authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
     authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
-    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error,
+    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params)),
+    handleQuery: (params) => dispatch(query(params))
   }
 }
 
-const CMostActiveAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats);
-const CMostReviewedAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats);
-const CAuthorsPeersStats = connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats);
+const CMostActiveAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats)
+const CMostReviewedAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats)
+const CAuthorsPeersStats = connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
 
 export {
   CMostActiveAuthorsStats,
   CMostReviewedAuthorsStats,
-  CAuthorsPeersStats,
+  CAuthorsPeersStats
 }

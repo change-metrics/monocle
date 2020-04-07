@@ -1,68 +1,70 @@
-import React from 'react';
+import React from 'react'
 
-import { connect } from 'react-redux';
+import { connect } from 'react-redux'
 import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
+import PropTypes from 'prop-types'
 
-import { Line } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2'
 
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox,
+  ErrorBox
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
-  prepare_data_set(histos) {
-    const event_name_mapping = {
+  prepareDataSet (histos) {
+    const eventNameMapping = {
       ChangeAbandonedEvent: {
         label: 'Changes abandoned',
         pointBorderColor: 'rgba(92,92,92,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(92,92,92,0.4)',
-        borderColor: 'rgba(92,92,92,1)',
+        borderColor: 'rgba(92,92,92,1)'
       },
       ChangeCreatedEvent: {
         label: 'Changes created',
         pointBorderColor: 'rgba(135,255,149,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(135,255,149,0.4)',
-        borderColor: 'rgba(135,255,149,1)',
+        borderColor: 'rgba(135,255,149,1)'
       },
       ChangeMergedEvent: {
         label: 'Changes merged',
         pointBorderColor: 'rgba(169,135,255,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(169,135,255,0.4)',
-        borderColor: 'rgba(169,135,255,1)',
-      },
+        borderColor: 'rgba(169,135,255,1)'
+      }
     }
     const _histos = Object.entries(histos)
-    let data = {
-      labels: histos['ChangeCreatedEvent'][0].map(x => x.key_as_string),
+    const data = {
+      labels: histos.ChangeCreatedEvent[0].map(x => x.key_as_string),
       datasets: []
     }
     _histos.forEach(histo => {
       data.datasets.push(
         {
-          label: event_name_mapping[histo[0]].label,
+          label: eventNameMapping[histo[0]].label,
           data: histo[1][0].map(x => x.doc_count),
           lineTension: 0.5,
-          pointBorderColor: event_name_mapping[histo[0]].pointBorderColor,
-          pointBackgroundColor: event_name_mapping[histo[0]].pointBackgroundColor,
-          backgroundColor: event_name_mapping[histo[0]].backgroundColor,
-          borderColor: event_name_mapping[histo[0]].borderColor,
+          pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
+          pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
+          backgroundColor: eventNameMapping[histo[0]].backgroundColor,
+          borderColor: eventNameMapping[histo[0]].borderColor
         }
       )
-    });
+    })
     return data
   }
-  render() {
-    const data = this.prepare_data_set(this.props.data)
+
+  render () {
+    const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
         {/* <Col md={{ span: 8, offset: 2 }}> */}
@@ -82,14 +84,22 @@ class ChangeLifeCycleEventsHisto extends React.Component {
   }
 }
 
+ChangeLifeCycleEventsHisto.propTypes = {
+  data: PropTypes.shape({
+    ChangeAbandonedEvent: PropTypes.array,
+    ChangeCreatedEvent: PropTypes.array,
+    ChangeMergedEvent: PropTypes.array
+  })
+}
+
 class ChangesLifeCycleStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props);
-    this.state.name = 'changes_lifecycle_stats';
-    this.state.graph_type = 'changes_lifecycle_stats';
+  constructor (props) {
+    super(props)
+    this.state.name = 'changes_lifecycle_stats'
+    this.state.graph_type = 'changes_lifecycle_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.changes_lifecycle_stats_loading) {
       if (this.props.changes_lifecycle_stats_error) {
         return <ErrorBox
@@ -125,13 +135,13 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         Changes merged: {data.ratios['merged/created']}%
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change abandoned every {int}: {data.avgs['ChangeAbandonedEvent']}
+                        Change abandoned every {int}: {data.avgs.ChangeAbandonedEvent}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change created every {int}: {data.avgs['ChangeCreatedEvent']}
+                        Change created every {int}: {data.avgs.ChangeCreatedEvent}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change merged every {int}: {data.avgs['ChangeMergedEvent']}
+                        Change merged every {int}: {data.avgs.ChangeMergedEvent}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
@@ -164,18 +174,18 @@ const mapStateToProps = state => {
     filter_authors: state.FiltersReducer.filter_authors,
     changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
     changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
-    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error,
+    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error
   }
 }
 
 const mapDispatchToProps = dispatch => {
   return {
-    handleQuery: (params) => dispatch(query(params)),
+    handleQuery: (params) => dispatch(query(params))
   }
 }
 
-const CChangesLifeCycleStats = connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats);
+const CChangesLifeCycleStats = connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats)
 
 export {
-  CChangesLifeCycleStats,
+  CChangesLifeCycleStats
 }

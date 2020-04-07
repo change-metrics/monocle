@@ -1,4 +1,4 @@
-import { get_query_results } from '../api'
+import { getQueryResults } from '../api'
 
 const initialState = {
   changes_lifecycle_stats_result: null,
@@ -30,49 +30,43 @@ const initialState = {
   cold_changes_error: null,
   last_changes_result: null,
   last_changes_loading: true,
-  last_changes_error: null,
-};
-
-const query_reducer = (state = initialState, action) => {
-  const newState = { ...state };
-  if (action.type.endsWith('_QUERY_LOADING')) {
-    const graph_type = action.type.replace('_QUERY_LOADING', '')
-    newState[graph_type + '_loading'] = true;
-  }
-  if (action.type.endsWith('_QUERY_SUCCESS')) {
-    const graph_type = action.type.replace('_QUERY_SUCCESS', '')
-    newState[graph_type + '_loading'] = false;
-    newState[graph_type + '_error'] = null;
-    newState[graph_type + '_result'] = action.value;
-  }
-  if (action.type.endsWith('_QUERY_ERROR')) {
-    const graph_type = action.type.replace('_QUERY_ERROR', '')
-    newState[graph_type + '_loading'] = false;
-    newState[graph_type + '_error'] = action.value;
-    newState[graph_type + '_result'] = null;
-  }
-  return newState;
+  last_changes_error: null
 }
 
-function query(params) {
+const queryReducer = (state = initialState, action) => {
+  const newState = { ...state }
+  if (action.type.endsWith('_QUERY_LOADING')) {
+    const graphType = action.type.replace('_QUERY_LOADING', '')
+    newState[graphType + '_loading'] = true
+  }
+  if (action.type.endsWith('_QUERY_SUCCESS')) {
+    const graphType = action.type.replace('_QUERY_SUCCESS', '')
+    newState[graphType + '_loading'] = false
+    newState[graphType + '_error'] = null
+    newState[graphType + '_result'] = action.value
+  }
+  if (action.type.endsWith('_QUERY_ERROR')) {
+    const graphType = action.type.replace('_QUERY_ERROR', '')
+    newState[graphType + '_loading'] = false
+    newState[graphType + '_error'] = action.value
+    newState[graphType + '_result'] = null
+  }
+  return newState
+}
+
+function query (params) {
   return (dispatch) => {
-    console.log("query");
-    console.log(params);
-    dispatch({ type: params.graph_type + '_QUERY_LOADING' });
-    return get_query_results(params)
+    dispatch({ type: params.graph_type + '_QUERY_LOADING' })
+    return getQueryResults(params)
       .then(response => {
-        console.log("response");
-        console.log(response);
         dispatch(
           {
             type: params.graph_type + '_QUERY_SUCCESS',
-            value: response.data,
+            value: response.data
           }
         )
       })
       .catch(error => {
-        console.log("error");
-        console.log(error);
         dispatch(
           {
             type: params.graph_type + '_QUERY_ERROR',
@@ -83,7 +77,7 @@ function query(params) {
   }
 }
 
-export default query_reducer
+export default queryReducer
 export {
   query
 }
