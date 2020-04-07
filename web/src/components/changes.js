@@ -18,6 +18,8 @@ import {
   new_relative_url,
 } from './common';
 
+var moment = require('moment');
+
 class RepoChangesTable extends React.Component {
   render() {
     return (
@@ -108,7 +110,9 @@ class ChangesTable extends React.Component {
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    <th>created/updated</th>
+                    {this.props.created ? <th>created</th> : null}
+                    {this.props.updated ? <th>updated</th> : null}
+                    {this.props.merged ? <th>merged</th> : null}
                     <th>id</th>
                     <th>author</th>
                     <th>title</th>
@@ -118,10 +122,9 @@ class ChangesTable extends React.Component {
                 <tbody>
                   {this.props.data.items && this.props.data.items.map((x, index) =>
                     <tr key={index}>
-                      <td>
-                        <div>{x.created_at}</div>
-                        <div>{x.updated_at}</div>
-                      </td>
+                      {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
+                      {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
+                      {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
                       <td><a href={add_url_field('repository', x.repository_fullname)}>{x.repository_fullname_and_number}</a></td>
                       <td><a href={add_url_field('authors', x.author)}>{x.author}</a></td>
                       <td>{change_url(x, x.title)}</td>
@@ -157,6 +160,8 @@ class HotChanges extends BaseQueryComponent {
         <ChangesTable
           data={data}
           title="Hot changes"
+          created={true}
+          updated={true}
           mergeable={true}
         />
       )
@@ -185,6 +190,8 @@ class ColdChanges extends BaseQueryComponent {
         <ChangesTable
           data={data}
           title="Cold changes"
+          created={true}
+          updated={true}
           mergeable={true}
         />
       )
@@ -222,6 +229,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       data={data.merged_changes}
                       title={<a href={new_relative_url('/merged-changes')}>Recently merged changes</a>}
+                      merged={true}
                     />
                   </Col>
                 </Row>
@@ -231,6 +239,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       data={data.opened_changes}
                       title={<a href={new_relative_url('/opened-changes')}>Recently opened changes</a>}
+                      created={true}
                       mergeable={true}
                     />
                   </Col>
@@ -266,6 +275,7 @@ class LastMergedChanges extends BaseQueryComponent {
               pageCount={Math.ceil(data.merged_changes.total / this.state.pageSize)}
               pageChangeCallback={this.handlePageChange}
               pageChangeTarget={this}
+              merged={true}
             />
           </Col>
         </Row>
@@ -297,6 +307,7 @@ class LastOpenedChanges extends BaseQueryComponent {
               pageCount={Math.ceil(data.opened_changes.total / this.state.pageSize)}
               pageChangeCallback={this.handlePageChange}
               pageChangeTarget={this}
+              created={true}
             />
           </Col>
         </Row>
