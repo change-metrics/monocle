@@ -40,90 +40,93 @@ class RootView extends React.Component {
     return (
       <React.Fragment>
         <TopMenu index={this.props.match.params.index} />
-        <Container>
+        <Container fluid>
           <Row><Col><p></p></Col></Row>
           <Row>
-            <Col>
-              <CFiltersForm />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Tabs defaultActiveKey="events stats" id="uncontrolled-tab-example">
-            <Tab eventKey="events stats" title="Events stats">
-              <Row><Col><p></p></Col></Row>
+            <Col lg={{ span: 10, offset: 1 }}>
               <Row>
                 <Col>
-                  <CChangesLifeCycleStats
-                    index={this.props.match.params.index} />
+                  <CFiltersForm />
                 </Col>
               </Row>
               <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CChangesReviewStats
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CMostActiveAuthorsStats
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CApprovalStats
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CMostReviewedAuthorsStats
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CAuthorsPeersStats
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-            </Tab>
-            <Tab eventKey="changes" title="Changes status">
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CLastChanges
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CRepoChanges
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CHotChanges
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-              <Row><Col><p></p></Col></Row>
-              <Row>
-                <Col>
-                  <CColdChanges
-                    index={this.props.match.params.index} />
-                </Col>
-              </Row>
-            </Tab>
-          </Tabs>
+              <Tabs defaultActiveKey="events stats" id="uncontrolled-tab-example">
+                <Tab eventKey="events stats" title="Events stats">
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CChangesLifeCycleStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CChangesReviewStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CMostActiveAuthorsStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CApprovalStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CMostReviewedAuthorsStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CAuthorsPeersStats
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                </Tab>
+                <Tab eventKey="changes" title="Changes status">
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CLastChanges
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CRepoChanges
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CHotChanges
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                  <Row><Col><p></p></Col></Row>
+                  <Row>
+                    <Col>
+                      <CColdChanges
+                        index={this.props.match.params.index} />
+                    </Col>
+                  </Row>
+                </Tab>
+              </Tabs>
+            </Col></Row>
         </Container>
       </React.Fragment>)
   }
@@ -141,19 +144,22 @@ class MergedChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
-        <Container>
+        <TopMenu index={this.props.match.params.index} />
+        <Container fluid>
           <Row><Col><p></p></Col></Row>
           <Row>
-            <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CLastMergedChanges index={this.props.match.params.index} />
+            <Col lg={{ span: 10, offset: 1 }}>
+              <Row>
+                <Col>
+                  <CFiltersForm index={this.props.match.params.index} />
+                </Col>
+              </Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CLastMergedChanges index={this.props.match.params.index} />
+                </Col>
+              </Row>
             </Col>
           </Row>
         </Container>
@@ -173,19 +179,22 @@ class OpenChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
-        <Container>
-          <Row><Col><p></p></Col></Row>
+        <TopMenu index={this.props.match.params.index} />
+        <Container fluid>
+          <Row><Col></Col></Row>
           <Row>
-            <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CLastOpenedChanges index={this.props.match.params.index} />
+            <Col lg={{ span: 10, offset: 1 }}>
+              <Row>
+                <Col>
+                  <CFiltersForm index={this.props.match.params.index} />
+                </Col>
+              </Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CLastOpenedChanges index={this.props.match.params.index} />
+                </Col>
+              </Row>
             </Col>
           </Row>
         </Container>
