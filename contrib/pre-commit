@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# pre commit git hook for the monocle project
+
+set -ex
+
+if [ ! -x .tox/linters/bin/black ]; then
+    tox -elinters --notest
+fi
+
+.tox/linters/bin/black --skip-string-normalization .
+
+# pre-commit ends here
