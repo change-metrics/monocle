@@ -23,7 +23,6 @@
 import logging
 import argparse
 import os
-import sys
 import yaml
 
 from pprint import pprint
@@ -173,11 +172,7 @@ def main():
 
     if args.command == "dbquery":
         db = ELmonocleDB(index=args.index)
-        try:
-            params = utils.set_params(args)
-        except utils.ExlusiveParametersException as err:
-            print("Unable to process query: %s" % err)
-            sys.exit(1)
+        params = utils.set_params(args)
         ret = db.run_named_query(args.name, args.repository.lstrip('^'), params)
         pprint(ret)
 

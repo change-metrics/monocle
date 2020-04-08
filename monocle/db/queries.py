@@ -104,6 +104,16 @@ def generate_filter(repository_fullname, params):
     return ret
 
 
+def switch_to_on_authors(params):
+    if params.get('authors'):
+        # We want the events happening on changes authored by the selected authors
+        params['on_authors'] = params.get('authors')
+        del params['authors']
+        if 'exclude_authors' in params:
+            # We don't want to exclude any events authors in that context
+            del params['exclude_authors']
+
+
 def run_query(es, index, body):
     search_params = {'index': index, 'doc_type': index, 'body': body}
     try:
@@ -213,10 +223,8 @@ def _events_top(es, index, repository_fullname, field, params):
 
 def repos_top_merged(es, index, repository_fullname, params):
     params = deepcopy(params)
+    switch_to_on_authors(params)
     params['etype'] = ("ChangeMergedEvent",)
-    if params['authors']:
-        params['on_authors'] = params['authors']
-        del params['authors']
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
@@ -328,9 +336,7 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
-    if params.get('authors'):
-        params['on_authors'] = params.get('authors')
-        del params['authors']
+    switch_to_on_authors(params)
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     ret = {}
     for etype in etypes:
@@ -467,9 +473,7 @@ def hot_changes(es, index, repository_fullname, params):
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
     params = deepcopy(params)
-    if params.get('authors'):
-        params['on_authors'] = params.get('authors')
-        del params['authors']
+    switch_to_on_authors(params)
     ret = {}
     etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
     for etype in etypes:
@@ -480,9 +484,7 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
 
 def changes_lifecycle_stats(es, index, repository_fullname, params):
     params = deepcopy(params)
-    if params.get('authors'):
-        params['on_authors'] = params.get('authors')
-        del params['authors']
+    switch_to_on_authors(params)
     ret = {}
     ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
