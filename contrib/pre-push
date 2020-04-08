@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# pre push git hook for the monocle project
+
+set -ex
+
+tox
+
+cd web
+
+npm install
+npm run lint
+CI=1 npm test
+
+# pre-push ends here

@@ -92,3 +92,33 @@ rebuild and re-spawn the changed containers:
 ```Shell
 docker-compose up -d --build
 ```
+
+### Git hooks
+
+### pre-push
+
+To be sure to push correct branches, you have to configure the
+`pre-push` git hook by creating `.git/hooks/pre-push` with the
+following content:
+
+```Shell
+#!/bin/bash
+
+exec ./contrib/pre-push "$@"
+```
+
+and making it executable.
+
+### pre-commit
+
+Optionnaly, you can enable the `pre-commit` git hook to reformat your
+python code by creating `.git/hooks/pre-commit` with the following
+content:
+
+```Shell
+#!/bin/bash
+
+exec ./contrib/pre-commit "$@"
+```
+
+and making it executable.
