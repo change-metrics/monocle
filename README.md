@@ -107,7 +107,7 @@ following content:
 exec ./contrib/pre-push "$@"
 ```
 
-and making it executable.
+and making it executable with "chmod +x .git/hooks/pre-push".
 
 ### pre-commit
 
@@ -121,4 +121,4 @@ content:
 exec ./contrib/pre-commit "$@"
 ```
 
-and making it executable.
+and making it executable with "chmod +x .git/hooks/pre-commit".
