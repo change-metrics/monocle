@@ -108,7 +108,7 @@ class BaseQueryComponent extends React.Component {
       gte: this.props.filter_gte,
       lte: this.props.filter_lte,
       interval: this.props.filter_interval,
-      exclude_authors: this.props.filter_authors ? null : this.props.filter_exclude_authors,
+      excludeAuthors: this.props.filter_authors ? null : this.props.filter_exclude_authors,
       authors: this.props.filter_authors,
       graph_type: this.state.graph_type,
       from: start * this.state.pageSize,
