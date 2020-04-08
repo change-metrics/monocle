@@ -84,7 +84,7 @@ You should be able to access the web UI at <http://localhost:3000/monocle>.
 ## Hacking
 
 This section explains how you can hack the Monocle code. The idea is to use
-the docker deployement to avoid complex development methods.
+the docker deployment to avoid complex development methods.
 
 After changes, simply run the following command. docker-compose will
 rebuild and re-spawn the changed containers:
