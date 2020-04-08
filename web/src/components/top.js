@@ -17,6 +17,12 @@ import {
 } from './common'
 
 class TopEventsTable extends React.Component {
+  rowStyleFormat (median, value) {
+    if (value >= median) {
+      return { color: 'green' }
+    }
+  }
+
   render () {
     return (
       <Row>
@@ -35,9 +41,9 @@ class TopEventsTable extends React.Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {this.props.data.map((x, index) =>
+                  {this.props.data.items.map((x, index) =>
                     <tr key={index}>
-                      <td>{index + 1}</td>
+                      <td style={this.rowStyleFormat(this.props.data.count_median, x.doc_count)}>{index + 1}</td>
                       <td><a href={addUrlField('authors', x.key)}>{x.key}</a></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
@@ -82,19 +88,19 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeCreatedEvent.items}
+                      data={data.ChangeCreatedEvent}
                       title="Changes"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeCommentedEvent.items}
+                      data={data.ChangeCommentedEvent}
                       title="Comments"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.ChangeReviewedEvent.items}
+                      data={data.ChangeReviewedEvent}
                       title="Reviews"
                     />
                   </Col>
@@ -136,13 +142,13 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <TopEventsTable
-                      data={data.reviewed.items}
+                      data={data.reviewed}
                       title="Reviews"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
-                      data={data.commented.items}
+                      data={data.commented}
                       title="Comments"
                     />
                   </Col>
