@@ -49,7 +49,7 @@ def generate_events_filter(params, qfilter):
         on_created_at_range['on_created_at']['gte'] = on_cc_gte
     if on_cc_lte or ec_same_date:
         on_created_at_range['on_created_at']['lte'] = on_cc_lte
-    qfilter.append({"range": on_created_at_range},)
+    qfilter.append({"range": on_created_at_range})
     if approval:
         qfilter.append({'term': {"approval": approval}})
 
@@ -138,9 +138,7 @@ def _first_created_event(es, index, repository_fullname, params):
 
 
 def count_events(es, index, repository_fullname, params):
-    body = {
-        "query": generate_filter(repository_fullname, params),
-    }
+    body = {"query": generate_filter(repository_fullname, params)}
     count_params = {'index': index, 'doc_type': index}
     count_params['body'] = body
     try:
@@ -493,10 +491,7 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
-        ret[etype] = {
-            'events_count': events_count,
-            'authors_count': authors_count,
-        }
+        ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
     return ret
 
 
