@@ -105,7 +105,7 @@ class PRsFetcher(object):
                 commit {
                   oid
                   pushedDate
-                  committer {
+                  author {
                     user {
                       login
                     }
@@ -300,9 +300,7 @@ class PRsFetcher(object):
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
             change['changed_files'] = pr['changedFiles']
-            change['commits'] = [
-                c['node']['commit']['oid'] for c in pr['commits']['edges']
-            ]
+            change['commit_count'] = len(pr['commits']['edges'])
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:
@@ -371,8 +369,9 @@ class PRsFetcher(object):
                     # So make sense to set the same createdçat date then the
                     # change
                     'created_at': _commit.get('pushedDate', change['created_at']),
-                    'author': _commit['committer']['user']['login'],
                 }
+                if _commit['author'].get('user'):
+                    obj['author'] = _commit['author']['user'].get('login')
                 insert_change_attributes(obj, change)
                 objects.append(obj)
             return objects
@@ -392,9 +391,9 @@ if __name__ == '__main__':
     from monocle.github import graphql
 
     token = sys.argv[1]
-    org = 'morucci'
-    repository = 'repopo1'
-    id = '34'
+    org = 'wazo-platform'
+    repository = 'wazo-platform.org'
+    id = '142'
     prf = PRsFetcher(graphql.GithubGraphQLQuery(token), None, org, repository)
     pprint(prf.get_one(org, repository, id))
     # ret = prf.get("2020-03-30")
