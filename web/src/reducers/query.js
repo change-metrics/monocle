@@ -33,24 +33,46 @@ const initialState = {
   last_changes_error: null
 }
 
+const computeComplexity = (x) => {
+  x.complexity = x.changed_files_count + x.additions + x.deletions
+}
+
 const queryReducer = (state = initialState, action) => {
   const newState = { ...state }
+
   if (action.type.endsWith('_QUERY_LOADING')) {
     const graphType = action.type.replace('_QUERY_LOADING', '')
     newState[graphType + '_loading'] = true
   }
+
   if (action.type.endsWith('_QUERY_SUCCESS')) {
     const graphType = action.type.replace('_QUERY_SUCCESS', '')
+
+    // Compute and inject complexity
+    switch (graphType) {
+      case 'hot_changes':
+      case 'cold_changes':
+        action.value.items.forEach(computeComplexity)
+        break
+      case 'last_changes':
+        action.value.merged_changes.items.forEach(computeComplexity)
+        action.value.opened_changes.items.forEach(computeComplexity)
+        break
+      default:
+        break
+    }
     newState[graphType + '_loading'] = false
     newState[graphType + '_error'] = null
     newState[graphType + '_result'] = action.value
   }
+
   if (action.type.endsWith('_QUERY_ERROR')) {
     const graphType = action.type.replace('_QUERY_ERROR', '')
     newState[graphType + '_loading'] = false
     newState[graphType + '_error'] = action.value
     newState[graphType + '_result'] = null
   }
+
   return newState
 }
 

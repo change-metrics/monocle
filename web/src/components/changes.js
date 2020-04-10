@@ -10,6 +10,8 @@ import Table from 'react-bootstrap/Table'
 import ReactPaginate from 'react-paginate'
 import PropTypes from 'prop-types'
 
+import moment from 'moment'
+
 import {
   BaseQueryComponent,
   LoadingBox,
@@ -19,7 +21,7 @@ import {
   newRelativeUrl
 } from './common'
 
-var moment = require('moment')
+import ComplexityGraph from './complexity_graph'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -86,6 +88,11 @@ class RepoChanges extends BaseQueryComponent {
 class ChangesTable extends React.Component {
   render () {
     let paginationElement
+    let graphElement
+
+    if (this.props.graph) {
+      graphElement = <React.Fragment>{this.props.graph}<br/></React.Fragment>
+    }
 
     if (this.props.pageChangeCallback && this.props.pageCount > 1) {
       paginationElement = <ReactPaginate
@@ -114,17 +121,19 @@ class ChangesTable extends React.Component {
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
+              {graphElement}
               {paginationElement}
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    {this.props.created ? <th>created</th> : null}
-                    {this.props.updated ? <th>updated</th> : null}
-                    {this.props.merged ? <th>merged</th> : null}
-                    <th>id</th>
-                    <th>author</th>
-                    <th>title</th>
-                    {this.props.mergeable ? <th>mergeable</th> : null}
+                    {this.props.created ? <th>Created</th> : null}
+                    {this.props.updated ? <th>Updated</th> : null}
+                    {this.props.merged ? <th>Merged</th> : null}
+                    <th>Id</th>
+                    <th>Author</th>
+                    <th>Title</th>
+                    {this.props.mergeable ? <th>Mergeable</th> : null}
+                    <th>Complexity</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,6 +146,7 @@ class ChangesTable extends React.Component {
                       <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
                       <td>{changeUrl(x, x.title)}</td>
                       {this.props.mergeable ? <td>{x.mergeable}</td> : null}
+                      <td align="center">{ x.complexity }</td>
                     </tr>)}
                 </tbody>
               </Table>
@@ -164,7 +174,8 @@ ChangesTable.propTypes = {
   created: PropTypes.bool,
   updated: PropTypes.bool,
   merged: PropTypes.bool,
-  mergeable: PropTypes.bool
+  mergeable: PropTypes.bool,
+  graph: PropTypes.element
 }
 
 class HotChanges extends BaseQueryComponent {
@@ -281,30 +292,39 @@ class LastChanges extends BaseQueryComponent {
   }
 }
 
-class LastMergedChanges extends BaseQueryComponent {
+class AbstractLastChanges extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'last_state_changed_changes'
     this.state.graph_type = 'last_changes'
+    this.state.name = 'last_state_changed_changes'
+    this.state.pageSize = 100
+    this.state.created = false
+    this.state.updated = false
+    this.state.merged = false
   }
 
   render () {
     if (!this.props.last_changes_loading) {
-      const data = this.props.last_changes_result
+      const data = this.extractData(this.props.last_changes_result)
       return (
-        <Row>
-          <Col>
-            <ChangesTable
-              data={data.merged_changes}
-              title="Recently Merged Changes"
-              selectedPage={this.state.selectedPage}
-              pageCount={Math.ceil(data.merged_changes.total / this.state.pageSize)}
-              pageChangeCallback={this.handlePageChange}
-              pageChangeTarget={this}
-              merged={true}
-            />
-          </Col>
-        </Row>
+        <React.Fragment>
+          <Row>
+            <Col>
+              <ChangesTable
+                graph={<ComplexityGraph data={data} timeFunc={this.extractTime}/>}
+                data={data}
+                title={this.state.title}
+                selectedPage={this.state.selectedPage}
+                pageCount={Math.ceil(data.total / this.state.pageSize)}
+                pageChangeCallback={this.handlePageChange}
+                pageChangeTarget={this}
+                created={this.state.created}
+                updated={this.state.updated}
+                merged={this.state.merged}
+              />
+            </Col>
+          </Row>
+        </React.Fragment>
       )
     } else {
       return <LoadingBox />
@@ -312,36 +332,39 @@ class LastMergedChanges extends BaseQueryComponent {
   }
 }
 
-class LastOpenedChanges extends BaseQueryComponent {
+AbstractLastChanges.propTypes = {
+  last_changes_loading: PropTypes.bool,
+  last_changes_result: PropTypes.shape({
+    merged_changes: ({
+      items: PropTypes.array
+    }),
+    opened_changes: ({
+      items: PropTypes.array
+    })
+  })
+}
+
+class LastMergedChanges extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.name = 'last_state_changed_changes'
-    this.state.graph_type = 'last_changes'
+    this.state.title = 'Recently Merged Changes'
+    this.state.merged = true
   }
 
-  render () {
-    if (!this.props.last_changes_loading) {
-      const data = this.props.last_changes_result
-      return (
-        <Row>
-          <Col>
-            <ChangesTable
-              data={data.opened_changes}
-              title="Recently Opened Changes"
-              mergeable={true}
-              selectedPage={this.state.selectedPage}
-              pageCount={Math.ceil(data.opened_changes.total / this.state.pageSize)}
-              pageChangeCallback={this.handlePageChange}
-              pageChangeTarget={this}
-              created={true}
-            />
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
+  extractTime = x => x.merged_at
+  extractData = x => x.merged_changes
+}
+
+class LastOpenedChanges extends AbstractLastChanges {
+  constructor (props) {
+    super(props)
+    this.state.title = 'Recently Opened Changes'
+    this.state.created = true
+    this.state.updated = true
   }
+
+  extractTime = x => x.created_at
+  extractData = x => x.opened_changes
 }
 
 export {
