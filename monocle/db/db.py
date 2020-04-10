@@ -70,7 +70,7 @@ class ELmonocleDB:
                     "title": {"type": "keyword"},
                     "text": {"type": "text"},
                     "url": {"type": "keyword"},
-                    "commits": {"type": "keyword"},
+                    "commit_count": {"type": "integer"},
                     "additions": {"type": "integer"},
                     "deletions": {"type": "integer"},
                     "changed_files": {"type": "integer"},

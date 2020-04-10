@@ -56,6 +56,7 @@ class PRsFetcher(object):
         self.events_map = {
             'ClosedEvent': 'ChangeAbandonedEvent',
             'PullRequestReview': 'ChangeReviewedEvent',
+            'HeadRefForcePushedEvent': 'ChangeCommitForcePushedEvent',
         }
         self.pr_query = '''
           id
@@ -103,11 +104,20 @@ class PRsFetcher(object):
               node {
                 commit {
                   oid
+                  pushedDate
+                  author {
+                    user {
+                      login
+                    }
+                  }
                 }
               }
             }
           }
-          timelineItems (first: 100 itemTypes: [CLOSED_EVENT, PULL_REQUEST_REVIEW]) {
+          timelineItems (first: 100 itemTypes: [
+                CLOSED_EVENT,
+                PULL_REQUEST_REVIEW,
+                HEAD_REF_FORCE_PUSHED_EVENT]) {
             edges {
               node {
                 __typename
@@ -123,6 +133,13 @@ class PRsFetcher(object):
                   createdAt
                   state
                   author {
+                    login
+                  }
+                }
+                ... on HeadRefForcePushedEvent {
+                  id
+                  createdAt
+                  actor {
                     login
                   }
                 }
@@ -283,9 +300,7 @@ class PRsFetcher(object):
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
             change['changed_files'] = pr['changedFiles']
-            change['commits'] = [
-                c['node']['commit']['oid'] for c in pr['commits']['edges']
-            ]
+            change['commit_count'] = len(pr['commits']['edges'])
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
             else:
@@ -345,6 +360,20 @@ class PRsFetcher(object):
                         obj['type'] = 'ChangeMergedEvent'
                         obj['author'] = change['merged_by']
                 objects.append(obj)
+            for commit in pr['commits']['edges']:
+                _commit = commit['node']['commit']
+                obj = {
+                    'type': 'ChangeCommitPushedEvent',
+                    'id': _commit['oid'],
+                    # Seems the first PR's commit get a date with Node value
+                    # So make sense to set the same createdçat date then the
+                    # change
+                    'created_at': _commit.get('pushedDate', change['created_at']),
+                }
+                if _commit['author'].get('user'):
+                    obj['author'] = _commit['author']['user'].get('login')
+                insert_change_attributes(obj, change)
+                objects.append(obj)
             return objects
 
         objects = []
@@ -362,11 +391,11 @@ if __name__ == '__main__':
     from monocle.github import graphql
 
     token = sys.argv[1]
-    org = 'tektoncd'
-    repository = 'triggers'
-    id = '510'
+    org = 'wazo-platform'
+    repository = 'wazo-platform.org'
+    id = '142'
     prf = PRsFetcher(graphql.GithubGraphQLQuery(token), None, org, repository)
-    # pprint(prf.get_one(org, repository, id))
-    ret = prf.get("2020-03-30")
-    extracted = prf.extract_objects(ret)
-    pprint(len(extracted))
+    pprint(prf.get_one(org, repository, id))
+    # ret = prf.get("2020-03-30")
+    # extracted = prf.extract_objects(ret)
+    # pprint(len(extracted))
