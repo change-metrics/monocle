@@ -335,7 +335,13 @@ def pr_merged_avg_duration(es, index, repository_fullname, params):
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
-    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    etypes = (
+        'ChangeCreatedEvent',
+        "ChangeMergedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeCommitForcePushedEvent",
+    )
     ret = {}
     for etype in etypes:
         params['etype'] = (etype,)
@@ -352,6 +358,15 @@ def changes_closed_ratios(es, index, repository_fullname, params):
         )
     except ZeroDivisionError:
         ret['abandoned/created'] = 0
+    try:
+        ret['iterations/created'] = round(
+            (ret['ChangeCommitPushedEvent'] + ret['ChangeCommitForcePushedEvent'])
+            / ret['ChangeCreatedEvent']
+            + 1,
+            1,
+        )
+    except ZeroDivisionError:
+        ret['iterations/created'] = 1
     for etype in etypes:
         del ret[etype]
     return ret
@@ -473,7 +488,13 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     ret = {}
-    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    etypes = (
+        'ChangeCreatedEvent',
+        "ChangeMergedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeCommitForcePushedEvent",
+    )
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = events_histo(es, index, repository_fullname, params)
@@ -486,7 +507,13 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret = {}
     ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
-    etypes = ('ChangeCreatedEvent', "ChangeMergedEvent", "ChangeAbandonedEvent")
+    etypes = (
+        'ChangeCreatedEvent',
+        "ChangeMergedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeCommitForcePushedEvent",
+    )
     ret['avgs'] = {}
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])

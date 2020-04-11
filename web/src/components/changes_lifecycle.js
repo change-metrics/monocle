@@ -19,47 +19,70 @@ import {
 
 class ChangeLifeCycleEventsHisto extends React.Component {
   prepareDataSet (histos) {
+    const createdColor = '135,255,149'
+    const updatedColor = '153,102,102'
+    const mergedColor = '169,135,255'
+    const abandonedColor = '92,92,92'
     const eventNameMapping = {
-      ChangeAbandonedEvent: {
-        label: 'Changes abandoned',
-        pointBorderColor: 'rgba(92,92,92,1)',
-        pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(92,92,92,0.4)',
-        borderColor: 'rgba(92,92,92,1)'
-      },
       ChangeCreatedEvent: {
-        label: 'Changes created',
-        pointBorderColor: 'rgba(135,255,149,1)',
+        label: 'Created Changes',
+        pointBorderColor: `rgba(${createdColor},1)`,
         pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(135,255,149,0.4)',
-        borderColor: 'rgba(135,255,149,1)'
+        backgroundColor: `rgba(${createdColor},0.4)`,
+        borderColor: `rgba(${createdColor},1)`
       },
       ChangeMergedEvent: {
-        label: 'Changes merged',
-        pointBorderColor: 'rgba(169,135,255,1)',
+        label: 'Merged Changes',
+        pointBorderColor: `rgba(${mergedColor},1)`,
         pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(169,135,255,0.4)',
-        borderColor: 'rgba(169,135,255,1)'
+        backgroundColor: `rgba(${mergedColor},0.4)`,
+        borderColor: `rgba(${mergedColor},1)`
+      },
+      ChangeAbandonedEvent: {
+        label: 'Abandoned Changes',
+        pointBorderColor: `rgba(${abandonedColor},1)`,
+        pointBackgroundColor: '#fff',
+        backgroundColor: `rgba(${abandonedColor},0.4)`,
+        borderColor: `rgba(${abandonedColor},1)`
       }
     }
-    const _histos = Object.entries(histos)
+
+    const metaData = Object.entries(eventNameMapping)
     const data = {
       labels: histos.ChangeCreatedEvent[0].map(x => x.key_as_string),
       datasets: []
     }
-    _histos.forEach(histo => {
+    metaData.forEach(desc => {
       data.datasets.push(
         {
-          label: eventNameMapping[histo[0]].label,
-          data: histo[1][0].map(x => x.doc_count),
+          label: desc[1].label,
+          data: histos[desc[0]][0].map(x => x.doc_count),
           lineTension: 0.5,
-          pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
-          pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
-          backgroundColor: eventNameMapping[histo[0]].backgroundColor,
-          borderColor: eventNameMapping[histo[0]].borderColor
+          pointBorderColor: desc[1].pointBorderColor,
+          pointBackgroundColor: desc[1].pointBackgroundColor,
+          backgroundColor: desc[1].backgroundColor,
+          borderColor: desc[1].borderColor
         }
       )
     })
+    // merge ChangeCommitForcePushedEvent and ChangeCommitPushedEvent together
+    const merged = []
+    for (var idx = 0; idx < histos.ChangeCommitForcePushedEvent[0].length; idx++) {
+      const d1 = histos.ChangeCommitForcePushedEvent[0][idx]
+      const d2 = histos.ChangeCommitPushedEvent[0][idx]
+      merged.push(d1.doc_count + d2.doc_count)
+    }
+    data.datasets.push(
+      {
+        label: 'Updated Changes',
+        data: merged,
+        lineTension: 0.5,
+        pointBorderColor: `rgba(${updatedColor},1)`,
+        pointBackgroundColor: '#fff',
+        backgroundColor: `rgba(${updatedColor},0.4)`,
+        borderColor: `rgba(${updatedColor},1)`
+      }
+    )
     return data
   }
 
@@ -74,7 +97,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
               <Line
                 data={data}
                 width={100}
-                height={50}
+                height={68}
               />
             </Card.Body>
           </Card>
@@ -88,7 +111,8 @@ ChangeLifeCycleEventsHisto.propTypes = {
   data: PropTypes.shape({
     ChangeAbandonedEvent: PropTypes.array,
     ChangeCreatedEvent: PropTypes.array,
-    ChangeMergedEvent: PropTypes.array
+    ChangeMergedEvent: PropTypes.array,
+    ChangeCommitForcePushedEvent: PropTypes.array
   })
 }
 
@@ -123,6 +147,9 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
+                        {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
+                      </ListGroup.Item>
+                      <ListGroup.Item>
                         {data.ChangeMergedEvent.events_count} changes merged by {data.ChangeMergedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
@@ -135,13 +162,16 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         Changes merged: {data.ratios['merged/created']}%
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change abandoned every {int}: {data.avgs.ChangeAbandonedEvent}
+                        {data.ratios['iterations/created']} iterations per change
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change created every {int}: {data.avgs.ChangeCreatedEvent}
+                        Changes abandoned every {int}: {data.avgs.ChangeAbandonedEvent}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Change merged every {int}: {data.avgs.ChangeMergedEvent}
+                        Changes created every {int}: {data.avgs.ChangeCreatedEvent}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Changes merged every {int}: {data.avgs.ChangeMergedEvent}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>

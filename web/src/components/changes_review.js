@@ -29,14 +29,14 @@ class ChangeReviewEventsHisto extends React.Component {
   prepareDataSet (histos) {
     const eventNameMapping = {
       ChangeCommentedEvent: {
-        label: 'Changes commented',
+        label: 'Commented Changes',
         pointBorderColor: 'rgba(247,242,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,242,141,0.4)',
         borderColor: 'rgba(247,242,141,1)'
       },
       ChangeReviewedEvent: {
-        label: 'Changes reviewed',
+        label: 'Reviewed Changes',
         pointBorderColor: 'rgba(247,141,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,141,141,0.4)',
