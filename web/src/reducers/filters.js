@@ -1,11 +1,11 @@
 const initialState = {
-  filter_gte: null,
-  filter_lte: null,
+  filter_gte: '',
+  filter_lte: '',
   filter_loaded_from_url: false,
   filter_repository: '.*',
   filter_interval: '7d',
-  filter_exclude_authors: null,
-  filter_authors: null
+  filter_exclude_authors: '',
+  filter_authors: ''
 }
 
 const reducer = (state = initialState, action) => {
