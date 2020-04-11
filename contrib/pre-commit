@@ -2,12 +2,44 @@
 
 # pre commit git hook for the monocle project
 
-set -ex
+set -e
 
-if [ ! -x .tox/linters/bin/black ]; then
-    tox -elinters --notest
+files="$(git diff --name-only --staged)"
+py_files=
+js_files=
+
+for f in $files; do
+    case $f in
+        *.py)
+            py_files="$py_files $f"
+            ;;
+        web/*.js)
+            js=${f#web/}
+            js_files="$js_files $js"
+            ;;
+    esac
+done
+
+if [ -n "$py_files" ]; then
+
+    if [ ! -x .tox/linters/bin/black ]; then
+        "Installing black..."
+        tox -elinters --notest
+    fi
+    echo "Checking Python files: $py_files"
+    ./.tox/linters/bin/black --skip-string-normalization $py_files
+    git add $py_files
 fi
 
-.tox/linters/bin/black --skip-string-normalization .
+if [ -n "$js_files" ]; then
+    cd web
+    if [ ! -x ./node_modules/.bin/eslint ]; then
+        echo "Installing eslint..."
+        eslint_version=$(node -p -e "require('./package.json').devDependencies.eslint")
+        npm install eslint@$eslint_version
+    fi
+    echo "Checking Javascript files in ./web/: $js_files"
+    ./node_modules/.bin/eslint $js_files
+fi
 
 # pre-commit ends here
