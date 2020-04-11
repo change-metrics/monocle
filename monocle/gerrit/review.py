@@ -177,6 +177,16 @@ class ReviewesFetcher(object):
                 'changed_files': len(
                     list(review['revisions'].values())[0]['files'].keys()
                 ),
+                'changes_files_details': [
+                    {
+                        'additions': details.get('lines_inserted', 0),
+                        'deletions': details.get('lines_deleted', 0),
+                        'path': path,
+                    }
+                    for path, details in list(review['revisions'].values())[0][
+                        'files'
+                    ].items()
+                ],
                 'text': list(review['revisions'].values())[0]['commit']['message'],
             }
             change['repository_fullname_and_number'] = "%s#%s" % (
@@ -305,15 +315,15 @@ if __name__ == "__main__":
     # reviewes = rf.get('2020-04-08 00:00:00')
     # reviewes = reviewes[:10]
 
-    rf = ReviewesFetcher('https://review.opendev.org', 'zuul/zuul')
-    reviewes = rf.get('2020-04-08 00:00:00')
-    reviewes = reviewes[:10]
-
-    # rf = ReviewesFetcher(
-    #     'https://softwarefactory-project.io/r', 'software-factory/sf-config'
-    # )
+    # rf = ReviewesFetcher('https://review.opendev.org', 'zuul/zuul')
     # reviewes = rf.get('2020-04-08 00:00:00')
     # reviewes = reviewes[:10]
+
+    rf = ReviewesFetcher(
+        'https://softwarefactory-project.io/r', 'software-factory/sf-config'
+    )
+    reviewes = rf.get('2020-04-08 00:00:00')
+    reviewes = reviewes[:10]
 
     pprint(reviewes)
     objs = rf.extract_objects(reviewes)
