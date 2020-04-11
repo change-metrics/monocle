@@ -59,7 +59,10 @@ class TopEventsTable extends React.Component {
 
 TopEventsTable.propTypes = {
   title: PropTypes.string.isRequired,
-  data: PropTypes.array.isRequired
+  data: PropTypes.shape({
+    items: PropTypes.array,
+    count_median: PropTypes.number
+  })
 }
 
 class MostActiveAuthorsStats extends BaseQueryComponent {

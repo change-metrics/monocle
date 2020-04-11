@@ -164,7 +164,7 @@ class MergedChangesView extends React.Component {
 MergedChangesView.propTypes = {
   match: PropTypes.shape({
     params: PropTypes.shape({
-      index: PropTypes.array
+      index: PropTypes.string
     })
   })
 }
@@ -196,7 +196,7 @@ class OpenChangesView extends React.Component {
 OpenChangesView.propTypes = {
   match: PropTypes.shape({
     params: PropTypes.shape({
-      index: PropTypes.array
+      index: PropTypes.string
     })
   })
 }
