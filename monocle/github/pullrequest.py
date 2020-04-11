@@ -308,8 +308,8 @@ class PRsFetcher(object):
             change['text'] = pr['bodyText']
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
-            change['changed_files'] = pr['changedFiles']
-            change["changes_files_details"] = [
+            change['changed_files_count'] = pr['changedFiles']
+            change["changed_files"] = [
                 {
                     "additions": fd['node']["additions"],
                     "deletions": fd['node']["deletions"],

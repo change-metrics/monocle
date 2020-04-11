@@ -73,8 +73,8 @@ class ELmonocleDB:
                     "commit_count": {"type": "integer"},
                     "additions": {"type": "integer"},
                     "deletions": {"type": "integer"},
-                    "changed_files": {"type": "integer"},
-                    "changes_files_details": {
+                    "changed_files_count": {"type": "integer"},
+                    "changed_files": {
                         "properties": {
                             "additions": {"type": "integer"},
                             "deletions": {"type": "integer"},

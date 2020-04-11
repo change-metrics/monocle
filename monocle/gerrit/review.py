@@ -174,10 +174,10 @@ class ReviewesFetcher(object):
                 'deletions': review['deletions'],
                 # Gerrit review is one commit by review
                 'commit_count': 1,
-                'changed_files': len(
+                'changed_files_count': len(
                     list(review['revisions'].values())[0]['files'].keys()
                 ),
-                'changes_files_details': [
+                'changed_files': [
                     {
                         'additions': details.get('lines_inserted', 0),
                         'deletions': details.get('lines_deleted', 0),
