@@ -9,7 +9,7 @@ class ComplexityGraph extends React.Component {
   }
 
   handleClick (item) {
-    window.open(item.url, '_blank')
+    window.location.href = '/' + this.props.index + '/change/' + item.change_id
   }
 
   render () {
@@ -82,7 +82,8 @@ ComplexityGraph.propTypes = {
   data: PropTypes.shape({
     items: PropTypes.array
   }).isRequired,
-  timeFunc: PropTypes.func.isRequired
+  timeFunc: PropTypes.func.isRequired,
+  index: PropTypes.string.isRequired
 }
 
 export default ComplexityGraph

@@ -30,15 +30,24 @@ const initialState = {
   cold_changes_error: null,
   last_changes_result: null,
   last_changes_loading: true,
-  last_changes_error: null
+  last_changes_error: null,
+  changes_and_events_result: null,
+  changes_and_events_loading: true,
+  changes_and_events_error: null
 }
 
-const computeComplexity = (x) => {
-  x.complexity = x.changed_files_count + x.additions + x.deletions
+const enhanceData = (x) => {
+  if (x.type === 'Change') {
+    x.complexity = x.changed_files_count + x.additions + x.deletions
+    x.hasTests = (x.changed_files.filter(x => x.path.match(/.*[/].*test/i)).length !== 0)
+    x.hasLinks = x.text && x.text.match(/https?:\/\/.*\/.*/i)
+  }
 }
 
 const queryReducer = (state = initialState, action) => {
   const newState = { ...state }
+
+  // console.log(action)
 
   if (action.type.endsWith('_QUERY_LOADING')) {
     const graphType = action.type.replace('_QUERY_LOADING', '')
@@ -52,11 +61,12 @@ const queryReducer = (state = initialState, action) => {
     switch (graphType) {
       case 'hot_changes':
       case 'cold_changes':
-        action.value.items.forEach(computeComplexity)
+      case 'changes_and_events':
+        action.value.items.forEach(enhanceData)
         break
       case 'last_changes':
-        action.value.merged_changes.items.forEach(computeComplexity)
-        action.value.opened_changes.items.forEach(computeComplexity)
+        action.value.merged_changes.items.forEach(enhanceData)
+        action.value.opened_changes.items.forEach(enhanceData)
         break
       default:
         break

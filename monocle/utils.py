@@ -65,6 +65,9 @@ def set_params(input):
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))
+    params['change_ids'] = getter('change_ids', None)
+    if params['change_ids']:
+        params['change_ids'] = params['change_ids'].split(',')
     if params['exclude_authors']:
         params['exclude_authors'] = params['exclude_authors'].split(',')
     if params['authors']:

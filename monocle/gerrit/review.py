@@ -123,9 +123,7 @@ class ReviewesFetcher(object):
                     'repository_fullname': change['repository_fullname'],
                     'repository_shortname': change['repository_shortname'],
                     'number': change['number'],
-                    'repository_fullname_and_number': change[
-                        'repository_fullname_and_number'
-                    ],
+                    'change_id': change['change_id'],
                     'on_author': change['author'],
                     'on_created_at': change['created_at'],
                 }
@@ -189,8 +187,8 @@ class ReviewesFetcher(object):
                 ],
                 'text': list(review['revisions'].values())[0]['commit']['message'],
             }
-            change['repository_fullname_and_number'] = "%s#%s" % (
-                change['repository_fullname'],
+            change['change_id'] = "%s@%s" % (
+                change['repository_fullname'].replace('/', '@'),
                 change['number'],
             )
             if change['state'] == 'CLOSED':
