@@ -197,7 +197,7 @@ def _events_top(es, index, repository_fullname, field, params):
     body = {
         "aggs": {
             "agg1": {
-                "terms": {"field": field, "size": 1000, "order": {"_count": "desc"},}
+                "terms": {"field": field, "size": 1000, "order": {"_count": "desc"}}
             }
         },
         "size": 0,
@@ -261,6 +261,12 @@ def authors_top_reviewed(es, index, repository_fullname, params):
 def authors_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
+    return _events_top(es, index, repository_fullname, "on_author", params)
+
+
+def authors_top_merged(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("ChangeMergedEvent",)
     return _events_top(es, index, repository_fullname, "on_author", params)
 
 
@@ -559,6 +565,10 @@ def most_active_authors_stats(es, index, repository_fullname, params):
     for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
         ret[etype] = events_top_authors(es, index, repository_fullname, params)
+    switch_to_on_authors(params)
+    ret["ChangeMergedEvent"] = authors_top_merged(
+        es, index, repository_fullname, params
+    )
     return ret
 
 
