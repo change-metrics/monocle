@@ -17,8 +17,8 @@ import {
 } from './common'
 
 class TopEventsTable extends React.Component {
-  rowStyleFormat (median, value) {
-    if (value >= median) {
+  rowStyleFormat (average, value) {
+    if (value >= average) {
       return { color: 'green' }
     }
   }
@@ -43,7 +43,7 @@ class TopEventsTable extends React.Component {
                 <tbody>
                   {this.props.data.items.map((x, index) =>
                     <tr key={index}>
-                      <td style={this.rowStyleFormat(this.props.data.count_median, x.doc_count)}>{index + 1}</td>
+                      <td style={this.rowStyleFormat(this.props.data.count_avg, x.doc_count)}>{index + 1}</td>
                       <td><a href={addUrlField('authors', x.key)}>{x.key}</a></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
@@ -61,7 +61,7 @@ TopEventsTable.propTypes = {
   title: PropTypes.string.isRequired,
   data: PropTypes.shape({
     items: PropTypes.array,
-    count_median: PropTypes.number
+    count_avg: PropTypes.number
   })
 }
 
@@ -92,19 +92,28 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                   <Col>
                     <TopEventsTable
                       data={data.ChangeCreatedEvent}
-                      title="Changes"
+                      title="By Created Changes"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeMergedEvent}
+                      title="By Merged Changes"
+                    />
+                  </Col>
+                </Row>
+                <Row><Col><p></p></Col></Row>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeReviewedEvent}
+                      title="By Reviewed Changes"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
                       data={data.ChangeCommentedEvent}
-                      title="Comments"
-                    />
-                  </Col>
-                  <Col>
-                    <TopEventsTable
-                      data={data.ChangeReviewedEvent}
-                      title="Reviews"
+                      title="By Commented Changes"
                     />
                   </Col>
                 </Row>

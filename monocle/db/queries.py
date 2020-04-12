@@ -197,11 +197,7 @@ def _events_top(es, index, repository_fullname, field, params):
     body = {
         "aggs": {
             "agg1": {
-                "terms": {
-                    "field": field,
-                    "size": params['size'],
-                    "order": {"_count": "desc"},
-                }
+                "terms": {"field": field, "size": 1000, "order": {"_count": "desc"}}
             }
         },
         "size": 0,
@@ -211,11 +207,15 @@ def _events_top(es, index, repository_fullname, field, params):
     count_series = [b['doc_count'] for b in data['aggregations']['agg1']['buckets']]
     count_avg = statistics.mean(count_series) if count_series else 0
     count_median = statistics.median(sorted(count_series)) if count_series else 0
+    _from = params['from']
+    _to = params['from'] + params['size']
+    buckets = data['aggregations']['agg1']['buckets']
     return {
-        'items': data['aggregations']['agg1']['buckets'],
+        'items': buckets[_from:_to],
         'count_avg': count_avg,
         'count_median': count_median,
-        'total': data['hits']['total'],
+        'total': len(buckets),
+        'total_hits': data['hits']['total'],
     }
 
 
@@ -261,6 +261,12 @@ def authors_top_reviewed(es, index, repository_fullname, params):
 def authors_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
+    return _events_top(es, index, repository_fullname, "on_author", params)
+
+
+def authors_top_merged(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("ChangeMergedEvent",)
     return _events_top(es, index, repository_fullname, "on_author", params)
 
 
@@ -559,6 +565,10 @@ def most_active_authors_stats(es, index, repository_fullname, params):
     for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
         ret[etype] = events_top_authors(es, index, repository_fullname, params)
+    switch_to_on_authors(params)
+    ret["ChangeMergedEvent"] = authors_top_merged(
+        es, index, repository_fullname, params
+    )
     return ret
 
 
