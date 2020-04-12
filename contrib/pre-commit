@@ -39,7 +39,8 @@ if [ -n "$js_files" ]; then
         npm install eslint@$eslint_version
     fi
     echo "Checking Javascript files in ./web/: $js_files"
-    ./node_modules/.bin/eslint $js_files
+    ./node_modules/.bin/eslint --fix $js_files
+    git add $js_files
 fi
 
 # pre-commit ends here
