@@ -92,19 +92,28 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                   <Col>
                     <TopEventsTable
                       data={data.ChangeCreatedEvent}
-                      title="Changes"
+                      title="By changes created"
+                    />
+                  </Col>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeMergedEvent}
+                      title="By changes merged"
+                    />
+                  </Col>
+                </Row>
+                <Row><Col><p></p></Col></Row>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data.ChangeReviewedEvent}
+                      title="By changes reviewed"
                     />
                   </Col>
                   <Col>
                     <TopEventsTable
                       data={data.ChangeCommentedEvent}
-                      title="Comments"
-                    />
-                  </Col>
-                  <Col>
-                    <TopEventsTable
-                      data={data.ChangeReviewedEvent}
-                      title="Reviews"
+                      title="By changes commented"
                     />
                   </Col>
                 </Row>
