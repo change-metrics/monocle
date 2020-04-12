@@ -114,6 +114,15 @@ class PRsFetcher(object):
               }
             }
           }
+          files (first: 100){
+            edges {
+              node {
+                additions
+                deletions
+                path
+              }
+            }
+          }
           timelineItems (first: 100 itemTypes: [
                 CLOSED_EVENT,
                 PULL_REQUEST_REVIEW,
@@ -299,7 +308,15 @@ class PRsFetcher(object):
             change['text'] = pr['bodyText']
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
-            change['changed_files'] = pr['changedFiles']
+            change['changed_files_count'] = pr['changedFiles']
+            change["changed_files"] = [
+                {
+                    "additions": fd['node']["additions"],
+                    "deletions": fd['node']["deletions"],
+                    "path": fd['node']["path"],
+                }
+                for fd in pr["files"]["edges"]
+            ]
             change['commit_count'] = len(pr['commits']['edges'])
             if pr['mergedBy']:
                 change['merged_by'] = pr['mergedBy']['login']
@@ -391,9 +408,9 @@ if __name__ == '__main__':
     from monocle.github import graphql
 
     token = sys.argv[1]
-    org = 'wazo-platform'
-    repository = 'wazo-platform.org'
-    id = '142'
+    org = sys.argv[2]
+    repository = sys.argv[3]
+    id = sys.argv[4]
     prf = PRsFetcher(graphql.GithubGraphQLQuery(token), None, org, repository)
     pprint(prf.get_one(org, repository, id))
     # ret = prf.get("2020-03-30")

@@ -73,7 +73,14 @@ class ELmonocleDB:
                     "commit_count": {"type": "integer"},
                     "additions": {"type": "integer"},
                     "deletions": {"type": "integer"},
-                    "changed_files": {"type": "integer"},
+                    "changed_files_count": {"type": "integer"},
+                    "changed_files": {
+                        "properties": {
+                            "additions": {"type": "integer"},
+                            "deletions": {"type": "integer"},
+                            "path": {"type": "keyword"},
+                        }
+                    },
                     "repository_prefix": {"type": "keyword"},
                     "repository_fullname": {"type": "keyword"},
                     "repository_shortname": {"type": "keyword"},

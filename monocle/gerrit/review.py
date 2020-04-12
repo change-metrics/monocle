@@ -174,9 +174,19 @@ class ReviewesFetcher(object):
                 'deletions': review['deletions'],
                 # Gerrit review is one commit by review
                 'commit_count': 1,
-                'changed_files': len(
+                'changed_files_count': len(
                     list(review['revisions'].values())[0]['files'].keys()
                 ),
+                'changed_files': [
+                    {
+                        'additions': details.get('lines_inserted', 0),
+                        'deletions': details.get('lines_deleted', 0),
+                        'path': path,
+                    }
+                    for path, details in list(review['revisions'].values())[0][
+                        'files'
+                    ].items()
+                ],
                 'text': list(review['revisions'].values())[0]['commit']['message'],
             }
             change['repository_fullname_and_number'] = "%s#%s" % (
@@ -305,15 +315,15 @@ if __name__ == "__main__":
     # reviewes = rf.get('2020-04-08 00:00:00')
     # reviewes = reviewes[:10]
 
-    rf = ReviewesFetcher('https://review.opendev.org', 'zuul/zuul')
-    reviewes = rf.get('2020-04-08 00:00:00')
-    reviewes = reviewes[:10]
-
-    # rf = ReviewesFetcher(
-    #     'https://softwarefactory-project.io/r', 'software-factory/sf-config'
-    # )
+    # rf = ReviewesFetcher('https://review.opendev.org', 'zuul/zuul')
     # reviewes = rf.get('2020-04-08 00:00:00')
     # reviewes = reviewes[:10]
+
+    rf = ReviewesFetcher(
+        'https://softwarefactory-project.io/r', 'software-factory/sf-config'
+    )
+    reviewes = rf.get('2020-04-08 00:00:00')
+    reviewes = reviewes[:10]
 
     pprint(reviewes)
     objs = rf.extract_objects(reviewes)
