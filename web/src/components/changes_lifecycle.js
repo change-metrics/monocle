@@ -14,7 +14,8 @@ import { Line } from 'react-chartjs-2'
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox
+  ErrorBox,
+  prepareLabels
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
@@ -49,7 +50,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
 
     const metaData = Object.entries(eventNameMapping)
     const data = {
-      labels: histos.ChangeCreatedEvent[0].map(x => x.key_as_string),
+      labels: prepareLabels(histos.ChangeCreatedEvent[0]),
       datasets: []
     }
     metaData.forEach(desc => {

@@ -36,6 +36,17 @@ function addS (count, s = 's') {
   }
 }
 
+function prepareLabels (histo) {
+  // check that the time part is the same on the first, second and
+  // last elements and remove it from the labels if this is the case
+  if (histo[0].key_as_string.split('T')[1] === histo[histo.length - 1].key_as_string.split('T')[1] &&
+      histo[0].key_as_string.split('T')[1] === histo[1].key_as_string.split('T')[1]) {
+    const len = histo[0].key_as_string.split('T')[0].length
+    return histo.map(x => x.key_as_string.slice(0, len))
+  }
+  return histo.map(x => x.key_as_string)
+}
+
 class LoadingBox extends React.Component {
   render () {
     return (
@@ -146,5 +157,6 @@ export {
   changeUrl,
   addUrlField,
   newRelativeUrl,
-  addS
+  addS,
+  prepareLabels
 }
