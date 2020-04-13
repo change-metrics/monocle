@@ -430,6 +430,7 @@ def first_review_on_changes(es, index, repository_fullname, params):
 
 def cold_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
+    size = params.get('size')
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
@@ -442,15 +443,15 @@ def cold_changes(es, index, repository_fullname, params):
     changes_wo_rc = [
         change for change in changes if change['change_id'] in changes_ids_wo_rc
     ]
-    return {
-        'items': sorted(
-            changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at'])
-        )
-    }
+    items = sorted(changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
+    if size:
+        items = items[:size]
+    return {'items': items}
 
 
 def hot_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
+    size = params.get('size')
     # Set a significant depth to get an 'accurate' median value
     params['size'] = 500
     top_commented_changes = changes_top_commented(
@@ -476,7 +477,10 @@ def hot_changes(es, index, repository_fullname, params):
     changes = _scan(es, index, repository_fullname, _params)
     for change in changes:
         change['hot_score'] = mapping[change['change_id']]
-    return {'items': sorted(changes, key=lambda x: x['hot_score'], reverse=True)}
+    items = sorted(changes, key=lambda x: x['hot_score'], reverse=True)
+    if size:
+        items = items[:size]
+    return {'items': items}
 
 
 def changes_lifecycle_histos(es, index, repository_fullname, params):
@@ -634,6 +638,21 @@ def changes_and_events(es, index, repository_fullname, params):
     )
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
+        "size": params['size'],
+        "from": params['from'],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    return {'items': changes, 'total': data['hits']['total']}
+
+
+def abandoned_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = "CLOSED"
+    body = {
+        "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
         "query": generate_filter(repository_fullname, params),
