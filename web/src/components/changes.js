@@ -276,7 +276,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.merged_changes}
-                      title={<a href={newRelativeUrl('/merged-changes')}>Recently merged changes</a>}
+                      title={<a href={newRelativeUrl('/merged-changes')}>Recently Merged Changes</a>}
                       merged={true}
                       duration={true}
                     />
@@ -288,7 +288,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.opened_changes}
-                      title={<a href={newRelativeUrl('/opened-changes')}>Recently opened changes</a>}
+                      title={<a href={newRelativeUrl('/opened-changes')}>Recently Opened Changes</a>}
                       created={true}
                       mergeable={true}
                     />
@@ -420,9 +420,51 @@ class AbandonedChanges extends BaseQueryComponent {
         <ChangesTable
           index={this.props.index}
           data={data}
-          title="Abandoned changes"
+          title={<a href={newRelativeUrl('/abandoned-changes')}>Last Abandoned Changes</a>}
           created={true}
           duration={true}
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
+}
+
+class AbandonedChangesFull extends BaseQueryComponent {
+  constructor (props) {
+    super(props)
+    this.state.name = 'abandoned_changes'
+    this.state.graph_type = 'abandoned_changes'
+    this.state.pageSize = 100
+  }
+
+  extractTime = x => x.created_at
+
+  render () {
+    if (!this.props.abandoned_changes_loading) {
+      if (this.props.abandoned_changes_error) {
+        return <ErrorBox
+          error={this.props.abandoned_changes_error}
+        />
+      }
+      const data = this.props.abandoned_changes_result
+      return (
+        <ChangesTable
+          index={this.props.index}
+          data={data}
+          title={data.total + ' Abandoned Changes'}
+          created={true}
+          duration={true}
+          graph={<DurationComplexityGraph
+            data={data}
+            timeFunc={this.extractTime}
+            index={this.props.index}
+          />}
+          selectedPage={this.state.selectedPage}
+          pageCount={Math.ceil(data.total / this.state.pageSize)}
+          pageChangeCallback={this.handlePageChange}
+          pageChangeTarget={this}
         />
       )
     } else {
@@ -469,6 +511,7 @@ const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges)
 const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges)
 const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges)
 const CAbandonedChanges = connect(mapStateToProps, mapDispatchToProps)(AbandonedChanges)
+const CAbandonedChangesFull = connect(mapStateToProps, mapDispatchToProps)(AbandonedChangesFull)
 const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges)
 const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges)
 const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges)
@@ -478,6 +521,7 @@ export {
   CHotChanges,
   CColdChanges,
   CAbandonedChanges,
+  CAbandonedChangesFull,
   CLastChanges,
   CLastMergedChanges,
   CLastOpenedChanges

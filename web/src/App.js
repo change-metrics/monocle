@@ -25,6 +25,7 @@ import {
   CHotChanges,
   CColdChanges,
   CAbandonedChanges,
+  CAbandonedChangesFull,
   CLastChanges,
   CLastMergedChanges,
   CLastOpenedChanges
@@ -206,6 +207,38 @@ OpenChangesView.propTypes = {
   })
 }
 
+class AbandonedChangesView extends React.Component {
+  render () {
+    return (
+      <React.Fragment>
+        <TopMenu index={this.props.match.params.index}/>
+        <Container>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CFiltersForm index={this.props.match.params.index}/>
+            </Col>
+          </Row>
+          <Row><Col><p></p></Col></Row>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CAbandonedChangesFull index={this.props.match.params.index} />
+            </Col>
+          </Row>
+        </Container>
+      </React.Fragment>)
+  }
+}
+
+AbandonedChangesView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
 class ChangeView extends React.Component {
   render () {
     return (
@@ -251,6 +284,7 @@ class App extends React.Component {
         <Route exact path='/:index' component={RootView} />
         <Route path='/:index/merged-changes' component={MergedChangesView} />
         <Route path='/:index/opened-changes' component={OpenChangesView} />
+        <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
         <Route path='/:index/change/:change' component={ChangeView} />
       </Switch>
     )
