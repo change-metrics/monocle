@@ -67,7 +67,6 @@ class ChangeTable extends React.Component {
     if (!this.props.data || this.props.data.items.length === 0) {
       return <ErrorBox error={{ status: 0, data: 'Invalid change' }}/>
     }
-    console.log(this.props.data)
     const changes = this.props.data.items.filter(x => x.type === 'Change')
     if (changes.length === 0) {
       return <ErrorBox error={{ status: 1, data: 'No change found' }}/>

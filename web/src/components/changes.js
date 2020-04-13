@@ -21,7 +21,7 @@ import {
   newRelativeUrl
 } from './common'
 
-import ComplexityGraph from './complexity_graph'
+import { ComplexityGraph, DurationComplexityGraph } from './complexity_graph'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -90,6 +90,10 @@ class ChangesTable extends React.Component {
     let paginationElement
     let graphElement
 
+    if (!this.props.data || !this.props.data.items) {
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+    }
+
     if (this.props.graph) {
       graphElement = <React.Fragment>{this.props.graph}<br/></React.Fragment>
     }
@@ -129,6 +133,7 @@ class ChangesTable extends React.Component {
                     {this.props.created ? <th>Created</th> : null}
                     {this.props.updated ? <th>Updated</th> : null}
                     {this.props.merged ? <th>Merged</th> : null}
+                    {this.props.duration ? <th>Duration</th> : null}
                     <th>Id</th>
                     <th>Author</th>
                     <th>Title</th>
@@ -142,6 +147,7 @@ class ChangesTable extends React.Component {
                       {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
                       {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
+                      {this.props.duration ? <td>{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
                       <td><a href={addUrlField('repository', x.change_id)}>{x.change_id}</a></td>
                       <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
@@ -175,6 +181,7 @@ ChangesTable.propTypes = {
   updated: PropTypes.bool,
   merged: PropTypes.bool,
   mergeable: PropTypes.bool,
+  duration: PropTypes.bool,
   graph: PropTypes.element,
   index: PropTypes.string.isRequired
 }
@@ -271,6 +278,7 @@ class LastChanges extends BaseQueryComponent {
                       data={data.merged_changes}
                       title={<a href={newRelativeUrl('/merged-changes')}>Recently merged changes</a>}
                       merged={true}
+                      duration={true}
                     />
                   </Col>
                 </Row>
@@ -306,24 +314,38 @@ class AbstractLastChanges extends BaseQueryComponent {
     this.state.created = false
     this.state.updated = false
     this.state.merged = false
+    this.state.duration = false
   }
 
   render () {
     if (!this.props.last_changes_loading) {
+      if (!this.props.last_changes_result) {
+        return <ErrorBox error={{ status: 0, data: 'No data' }}/>
+      }
       const data = this.extractData(this.props.last_changes_result)
+      if (!data || data.items.length === 0) {
+        return <ErrorBox error={{ status: 1, data: 'Invalid data' }}/>
+      }
       return (
         <React.Fragment>
           <Row>
             <Col>
               <ChangesTable
                 index={this.props.index}
-                graph={<ComplexityGraph
-                  data={data}
-                  timeFunc={this.extractTime}
-                  index={this.props.index}
-                />}
+                graph={this.state.duration
+                  ? <DurationComplexityGraph
+                    data={data}
+                    timeFunc={this.extractTime}
+                    index={this.props.index}
+                  />
+                  : <ComplexityGraph
+                    data={data}
+                    timeFunc={this.extractTime}
+                    index={this.props.index}
+                  />
+                }
                 data={data}
-                title={this.state.title}
+                title={data.total + ' ' + this.state.title}
                 selectedPage={this.state.selectedPage}
                 pageCount={Math.ceil(data.total / this.state.pageSize)}
                 pageChangeCallback={this.handlePageChange}
@@ -331,6 +353,7 @@ class AbstractLastChanges extends BaseQueryComponent {
                 created={this.state.created}
                 updated={this.state.updated}
                 merged={this.state.merged}
+                duration={this.state.duration}
               />
             </Col>
           </Row>
@@ -357,8 +380,9 @@ AbstractLastChanges.propTypes = {
 class LastMergedChanges extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.title = 'Recently Merged Changes'
+    this.state.title = 'Merged Changes'
     this.state.merged = true
+    this.state.duration = true
   }
 
   extractTime = x => x.merged_at
@@ -368,7 +392,7 @@ class LastMergedChanges extends AbstractLastChanges {
 class LastOpenedChanges extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.title = 'Recently Opened Changes'
+    this.state.title = 'Opened Changes'
     this.state.created = true
     this.state.updated = true
   }
