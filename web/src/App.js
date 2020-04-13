@@ -24,6 +24,7 @@ import {
   CRepoChanges,
   CHotChanges,
   CColdChanges,
+  CAbandonedChanges,
   CLastChanges,
   CLastMergedChanges,
   CLastOpenedChanges
@@ -116,6 +117,13 @@ class RootView extends React.Component {
               <Row>
                 <Col>
                   <CColdChanges
+                    index={this.props.match.params.index} />
+                </Col>
+              </Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CAbandonedChanges
                     index={this.props.match.params.index} />
                 </Col>
               </Row>

@@ -401,12 +401,34 @@ class LastOpenedChanges extends AbstractLastChanges {
   extractData = x => x.opened_changes
 }
 
-export {
-  RepoChanges,
-  HotChanges,
-  ColdChanges,
-  LastChanges,
-  LastOpenedChanges
+class AbandonedChanges extends BaseQueryComponent {
+  constructor (props) {
+    super(props)
+    this.state.name = 'abandoned_changes'
+    this.state.graph_type = 'abandoned_changes'
+  }
+
+  render () {
+    if (!this.props.abandoned_changes_loading) {
+      if (this.props.abandoned_changes_error) {
+        return <ErrorBox
+          error={this.props.abandoned_changes_error}
+        />
+      }
+      const data = this.props.abandoned_changes_result
+      return (
+        <ChangesTable
+          index={this.props.index}
+          data={data}
+          title="Abandoned changes"
+          created={true}
+          duration={true}
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
 }
 
 const mapStateToProps = state => {
@@ -428,6 +450,9 @@ const mapStateToProps = state => {
     cold_changes_loading: state.QueryReducer.cold_changes_loading,
     cold_changes_result: state.QueryReducer.cold_changes_result,
     cold_changes_error: state.QueryReducer.cold_changes_error,
+    abandoned_changes_loading: state.QueryReducer.abandoned_changes_loading,
+    abandoned_changes_result: state.QueryReducer.abandoned_changes_result,
+    abandoned_changes_error: state.QueryReducer.abandoned_changes_error,
     last_changes_loading: state.QueryReducer.last_changes_loading,
     last_changes_result: state.QueryReducer.last_changes_result,
     last_changes_error: state.QueryReducer.last_changes_error
@@ -443,6 +468,7 @@ const mapDispatchToProps = dispatch => {
 const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges)
 const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges)
 const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges)
+const CAbandonedChanges = connect(mapStateToProps, mapDispatchToProps)(AbandonedChanges)
 const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges)
 const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges)
 const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges)
@@ -451,6 +477,7 @@ export {
   CRepoChanges,
   CHotChanges,
   CColdChanges,
+  CAbandonedChanges,
   CLastChanges,
   CLastMergedChanges,
   CLastOpenedChanges
