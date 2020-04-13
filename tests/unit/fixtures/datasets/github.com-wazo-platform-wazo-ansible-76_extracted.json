@@ -1,0 +1,426 @@
+[
+  {
+    "type": "Change",
+    "id": "MDExOlB1bGxSZXF1ZXN0NDAwOTUxODE3",
+    "number": 76,
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "author": "mwolff44",
+    "branch": "c4-aio",
+    "target_branch": "master",
+    "title": "C4 aio",
+    "text": "",
+    "additions": 263,
+    "deletions": 45,
+    "changed_files_count": 19,
+    "changed_files": [
+      {
+        "additions": 36,
+        "deletions": 0,
+        "path": "c4-aio.yml"
+      },
+      {
+        "additions": 28,
+        "deletions": 0,
+        "path": "inventories/c4-aio"
+      },
+      {
+        "additions": 4,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "additions": 12,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "additions": 4,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "additions": 11,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "additions": 25,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "additions": 31,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "additions": 4,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "additions": 31,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "additions": 4,
+        "deletions": 0,
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "additions": 1,
+        "deletions": 1,
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "additions": 1,
+        "deletions": 1,
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "additions": 28,
+        "deletions": 3,
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "additions": 4,
+        "deletions": 4,
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "additions": 26,
+        "deletions": 0,
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "additions": 0,
+        "deletions": 0,
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "additions": 0,
+        "deletions": 34,
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "additions": 13,
+        "deletions": 2,
+        "path": "zuul.yaml"
+      }
+    ],
+    "commit_count": 10,
+    "merged_by": "wazo-zuul",
+    "updated_at": "2020-04-10T09:15:23Z",
+    "created_at": "2020-04-08T16:25:30Z",
+    "merged_at": "2020-04-10T09:15:22Z",
+    "closed_at": "2020-04-10T09:15:22Z",
+    "state": "MERGED",
+    "duration": 146992,
+    "mergeable": "UNKNOWN",
+    "labels": [
+      "mergeit"
+    ],
+    "assignees": []
+  },
+  {
+    "type": "ChangeCreatedEvent",
+    "id": "CCEMDExOlB1bGxSZXF1ZXN0NDAwOTUxODE3",
+    "created_at": "2020-04-08T16:25:30Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMTA2NzQxMg==",
+    "created_at": "2020-04-08T16:45:11Z",
+    "author": "wazo-zuul",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMTQ1NzE5NQ==",
+    "created_at": "2020-04-09T10:34:36Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMTkxMzc2NQ==",
+    "created_at": "2020-04-10T07:20:11Z",
+    "author": "wazo-zuul",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMTkzMTcxNg==",
+    "created_at": "2020-04-10T08:15:14Z",
+    "author": "wazo-zuul",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMTk1Mjk1Mg==",
+    "created_at": "2020-04-10T09:15:20Z",
+    "author": "wazo-zuul",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeReviewedEvent",
+    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3MzkwNjU4ODcz",
+    "created_at": "2020-04-09T10:04:49Z",
+    "author": "fredericlepied",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "approval": "CHANGES_REQUESTED"
+  },
+  {
+    "type": "ChangeCommitForcePushedEvent",
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMTA5MjU3OQ==",
+    "created_at": "2020-04-10T07:51:31Z",
+    "author": "fredericlepied",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitForcePushedEvent",
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMTA5Njg0Nw==",
+    "created_at": "2020-04-10T07:53:26Z",
+    "author": "fredericlepied",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeReviewedEvent",
+    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3MzkxMzQxMjEz",
+    "created_at": "2020-04-10T08:55:24Z",
+    "author": "fredericlepied",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "approval": "APPROVED"
+  },
+  {
+    "type": "ChangeMergedEvent",
+    "id": "MDExOkNsb3NlZEV2ZW50MzIyMTI5OTYxMQ==",
+    "created_at": "2020-04-10T09:15:22Z",
+    "author": "wazo-zuul",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "8bbc5b8de7c9b360ff93e4323492f48d93cdbcd0",
+    "created_at": null,
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "9df4d88fe33041eee1ff1841fa6609e7148c48cd",
+    "created_at": null,
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "9674f6d4c7a1f3cf3b650b6d6fb034f723e2f7cc",
+    "created_at": null,
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "2180c178f4f5b3ac9db466d182b2060f1389f3b4",
+    "created_at": "2020-04-08T15:59:02Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "3786981fd4c5d4129d8176ea64dee4ebdb2089ed",
+    "created_at": "2020-04-08T15:59:42Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "7f264f3f6a7cdcae01d53cbe39c7b58ec76f5cf4",
+    "created_at": null,
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "50042a326b1dfa7f9d26f0675f81122c7db30f89",
+    "created_at": "2020-04-08T16:06:16Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "c2b7237b81df06d4657d0c6ac11f82d9d6a8c6e9",
+    "created_at": "2020-04-08T16:23:15Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "b1d012addf818981cc8bb34fe1d585bbd19b4256",
+    "created_at": "2020-04-10T06:59:55Z",
+    "author": "mwolff44",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  },
+  {
+    "type": "ChangeCommitPushedEvent",
+    "id": "183cac87b1ce3fb800fd9ab235a8782395471e81",
+    "created_at": "2020-04-10T07:53:26Z",
+    "author": "fredericlepied",
+    "repository_prefix": "wazo-platform",
+    "repository_fullname": "wazo-platform/wazo-ansible",
+    "repository_shortname": "wazo-ansible",
+    "number": 76,
+    "change_id": "wazo-platform@wazo-ansible@76",
+    "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
+    "on_author": "mwolff44",
+    "on_created_at": "2020-04-08T16:25:30Z"
+  }
+]
