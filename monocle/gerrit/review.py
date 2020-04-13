@@ -70,12 +70,15 @@ class ReviewesFetcher(object):
         cdate = datetime.strptime(str_date, '%Y-%m-%d %H:%M:%S').strftime("%Y-%m-%d")
         return cdate
 
-    def get(self, updated_since):
+    def get(self, updated_since, change=None):
         updated_since = self.convert_date_for_query(updated_since)
-        request_params = "?q=after:%s+project:%s" % (
-            updated_since,
-            self.repository_prefix,
-        )
+        if not change:
+            request_params = "?q=after:%s+project:%s" % (
+                updated_since,
+                self.repository_prefix,
+            )
+        else:
+            request_params = "?q=change:%s" % change
         for option in [
             'MESSAGES',
             'DETAILED_ACCOUNTS',
@@ -307,22 +310,38 @@ class ReviewesFetcher(object):
 
 
 if __name__ == "__main__":
+    import os
+    import argparse
     from pprint import pprint
 
-    # rf = ReviewesFetcher('https://gerrit-review.googlesource.com', 'gerrit')
-    # reviewes = rf.get('2020-04-08 00:00:00')
-    # reviewes = reviewes[:10]
+    parser = argparse.ArgumentParser(prog='review')
 
-    # rf = ReviewesFetcher('https://review.opendev.org', 'zuul/zuul')
-    # reviewes = rf.get('2020-04-08 00:00:00')
-    # reviewes = reviewes[:10]
-
-    rf = ReviewesFetcher(
-        'https://softwarefactory-project.io/r', 'software-factory/sf-config'
+    parser.add_argument('--loglevel', help='logging level', default='INFO')
+    parser.add_argument('--base-url', help='A Gerrit server', required=True)
+    parser.add_argument('--repository', help='The repository name', required=True)
+    parser.add_argument('--id', help='The review change id', required=True)
+    parser.add_argument(
+        '--output-dir', help='Store the dump in this directory',
     )
-    reviewes = rf.get('2020-04-08 00:00:00')
-    reviewes = reviewes[:10]
 
-    pprint(reviewes)
-    objs = rf.extract_objects(reviewes)
-    pprint(objs)
+    args = parser.parse_args()
+
+    # Hosts list
+    # https://gerrit-review.googlesource.com gerrit
+    # https://review.opendev.org zuul/zuul
+    # https://softwarefactory-project.io/r software-factory/sf-config
+
+    rf = ReviewesFetcher(args.base_url, args.repository)
+    review = rf.get("2020-01-01 00:00:00", args.id)
+    objs = rf.extract_objects(review)
+    if not args.output_dir:
+        pprint([review[0], objs])
+    else:
+        basename = "%s-%s-%s" % (
+            args.base_url.replace('/', ('_')),
+            args.repository,
+            args.id,
+        )
+        basepath = os.path.join(args.output_dir, basename)
+        json.dump(review[0], open(basepath + '_raw.json', 'w'), indent=2)
+        json.dump(objs, open(basepath + '_extracted.json', 'w'), indent=2)

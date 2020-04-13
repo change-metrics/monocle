@@ -23,31 +23,28 @@
 import unittest
 from deepdiff import DeepDiff
 
-from monocle.github import pullrequest
+from monocle.gerrit import review
 
 from .common import load_change
 from .common import DiffException
 
 
-class TestGithubCrawler(unittest.TestCase):
-    def extract_and_compare(self, name):
-        input_pr, xtrd_ref = load_change(name)
+class TestGerritCrawler(unittest.TestCase):
+    def extract_and_compare(self, base_url, name):
+        input_review, xtrd_ref = load_change(name)
 
-        pr_fetcher = pullrequest.PRsFetcher(None, 'https://github.com', None, None)
-        xtrd = pr_fetcher.extract_objects([input_pr])
+        rf = review.ReviewesFetcher(base_url, None)
+        xtrd = rf.extract_objects([input_review])
 
         ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
         if ddiff:
             raise DiffException(ddiff)
 
-    def test_extract_and_compare_pr1(self):
+    def test_extract_and_compare_review1(self):
         """
-        Github crawler extracts github.com-morucci-monocle-70
+        Gerrit crawler extracts https:__gerrit-review.googlesource.com-gerrit-246332
         """
-        self.extract_and_compare('github.com-morucci-monocle-70')
-
-    def test_extract_and_compare_pr2(self):
-        """
-        Github crawler extracts github.com-wazo-platform-wazo-ansible-76
-        """
-        self.extract_and_compare('github.com-wazo-platform-wazo-ansible-76')
+        self.extract_and_compare(
+            'https://gerrit-review.googlesource.com',
+            'https:__gerrit-review.googlesource.com-gerrit-246332',
+        )
