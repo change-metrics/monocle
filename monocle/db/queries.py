@@ -56,17 +56,8 @@ def generate_events_filter(params, qfilter):
 
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
-    repository_fullname_and_number = params.get('repository_fullname_and_number')
     if state:
         qfilter.append({"term": {"state": state}})
-    if repository_fullname_and_number:
-        qfilter.append(
-            {
-                'terms': {
-                    "repository_fullname_and_number": repository_fullname_and_number
-                }
-            }
-        )
 
 
 def generate_filter(repository_fullname, params):
@@ -77,6 +68,7 @@ def generate_filter(repository_fullname, params):
     on_authors = params.get('on_authors')
     exclude_authors = params.get('exclude_authors')
     created_at_range = {"created_at": {"format": "epoch_millis"}}
+    change_ids = params.get('change_ids')
     if gte:
         created_at_range['created_at']['gte'] = gte
     if lte:
@@ -90,6 +82,8 @@ def generate_filter(repository_fullname, params):
         qfilter.append({"terms": {"author": authors}})
     if on_authors:
         qfilter.append({"terms": {"on_author": on_authors}})
+    if change_ids:
+        qfilter.append({"terms": {"change_id": change_ids}})
     if 'Change' in params['etype']:
         generate_changes_filter(params, qfilter)
     else:
@@ -100,6 +94,7 @@ def generate_filter(repository_fullname, params):
         must_not.append({"terms": {"author": exclude_authors}})
         must_not.append({"terms": {"on_author": exclude_authors}})
 
+    print(qfilter)
     ret = {"bool": {"filter": qfilter, "must_not": must_not}}
     return ret
 
@@ -127,7 +122,7 @@ def run_query(es, index, body):
 
 def _scan(es, index, repository_fullname, params):
     body = {
-        # "_source": "repository_fullname_and_number",
+        # "_source": "change_id",
         "_source": params.get('field', []),
         "query": generate_filter(repository_fullname, params),
     }
@@ -239,17 +234,13 @@ def changes_top_approval(es, index, repository_fullname, params):
 def changes_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number", params
-    )
+    return _events_top(es, index, repository_fullname, "change_id", params)
 
 
 def changes_top_reviewed(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(
-        es, index, repository_fullname, "repository_fullname_and_number", params
-    )
+    return _events_top(es, index, repository_fullname, "change_id", params)
 
 
 def authors_top_reviewed(es, index, repository_fullname, params):
@@ -382,11 +373,11 @@ def _first_event_on_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
 
     def keyfunc(x):
-        return x['repository_fullname_and_number']
+        return x['change_id']
 
     groups = {}
     _events = _scan(es, index, repository_fullname, params)
-    _events = sorted(_events, key=lambda k: k['repository_fullname_and_number'])
+    _events = sorted(_events, key=lambda k: k['change_id'])
     # Keep by Change the created date + first event date
     for pr, events in groupby(_events, keyfunc):
         groups[pr] = {
@@ -442,16 +433,14 @@ def cold_changes(es, index, repository_fullname, params):
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
     changes = _scan(es, index, repository_fullname, params)
-    _changes_ids = set([change['repository_fullname_and_number'] for change in changes])
+    _changes_ids = set([change['change_id'] for change in changes])
     params['etype'] = ('ChangeCommentedEvent', 'ChangeReviewedEvent')
     del params['state']
     events = _scan(es, index, repository_fullname, params)
-    _events_ids = set([event['repository_fullname_and_number'] for event in events])
+    _events_ids = set([event['change_id'] for event in events])
     changes_ids_wo_rc = _changes_ids.difference(_events_ids)
     changes_wo_rc = [
-        change
-        for change in changes
-        if change['repository_fullname_and_number'] in changes_ids_wo_rc
+        change for change in changes if change['change_id'] in changes_ids_wo_rc
     ]
     return {
         'items': sorted(
@@ -482,11 +471,11 @@ def hot_changes(es, index, repository_fullname, params):
     _params = {
         'etype': ('Change',),
         'state': 'OPEN',
-        'repository_fullname_and_number': change_ids,
+        'change_ids': change_ids,
     }
     changes = _scan(es, index, repository_fullname, _params)
     for change in changes:
-        change['hot_score'] = mapping[change['repository_fullname_and_number']]
+        change['hot_score'] = mapping[change['change_id']]
     return {'items': sorted(changes, key=lambda x: x['hot_score'], reverse=True)}
 
 
@@ -620,6 +609,29 @@ def oldest_open_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "OPEN"
+    body = {
+        "sort": [{"created_at": {"order": "asc"}}],
+        "size": params['size'],
+        "from": params['from'],
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    return {'items': changes, 'total': data['hits']['total']}
+
+
+def changes_and_events(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = (
+        "Change",
+        'ChangeCreatedEvent',
+        "ChangeMergedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeCommitForcePushedEvent",
+        "ChangeReviewedEvent",
+        "ChangeCommentedEvent",
+    )
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params['size'],

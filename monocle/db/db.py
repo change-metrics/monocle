@@ -66,7 +66,7 @@ class ELmonocleDB:
                     "id": {"type": "keyword"},
                     "type": {"type": "keyword"},
                     "number": {"type": "keyword"},
-                    "repository_fullname_and_number": {"type": "keyword"},
+                    "change_id": {"type": "keyword"},
                     "title": {"type": "keyword"},
                     "text": {"type": "text"},
                     "url": {"type": "keyword"},

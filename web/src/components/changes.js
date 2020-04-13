@@ -142,9 +142,9 @@ class ChangesTable extends React.Component {
                       {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
                       {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
-                      <td><a href={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname_and_number}</a></td>
+                      <td><a href={addUrlField('repository', x.change_id)}>{x.change_id}</a></td>
                       <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
-                      <td>{changeUrl(x, x.title)}</td>
+                      <td>{changeUrl(this.props.index, x, x.title)}</td>
                       {this.props.mergeable ? <td>{x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
                     </tr>)}
@@ -175,7 +175,8 @@ ChangesTable.propTypes = {
   updated: PropTypes.bool,
   merged: PropTypes.bool,
   mergeable: PropTypes.bool,
-  graph: PropTypes.element
+  graph: PropTypes.element,
+  index: PropTypes.string.isRequired
 }
 
 class HotChanges extends BaseQueryComponent {
@@ -195,6 +196,7 @@ class HotChanges extends BaseQueryComponent {
       const data = this.props.hot_changes_result
       return (
         <ChangesTable
+          index={this.props.index}
           data={data}
           title="Hot changes"
           created={true}
@@ -225,6 +227,7 @@ class ColdChanges extends BaseQueryComponent {
       const data = this.props.cold_changes_result
       return (
         <ChangesTable
+          index={this.props.index}
           data={data}
           title="Cold changes"
           created={true}
@@ -264,6 +267,7 @@ class LastChanges extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <ChangesTable
+                      index={this.props.index}
                       data={data.merged_changes}
                       title={<a href={newRelativeUrl('/merged-changes')}>Recently merged changes</a>}
                       merged={true}
@@ -274,6 +278,7 @@ class LastChanges extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <ChangesTable
+                      index={this.props.index}
                       data={data.opened_changes}
                       title={<a href={newRelativeUrl('/opened-changes')}>Recently opened changes</a>}
                       created={true}
@@ -311,7 +316,12 @@ class AbstractLastChanges extends BaseQueryComponent {
           <Row>
             <Col>
               <ChangesTable
-                graph={<ComplexityGraph data={data} timeFunc={this.extractTime}/>}
+                index={this.props.index}
+                graph={<ComplexityGraph
+                  data={data}
+                  timeFunc={this.extractTime}
+                  index={this.props.index}
+                />}
                 data={data}
                 title={this.state.title}
                 selectedPage={this.state.selectedPage}

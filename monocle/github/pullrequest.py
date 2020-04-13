@@ -271,9 +271,7 @@ class PRsFetcher(object):
                     'repository_fullname': change['repository_fullname'],
                     'repository_shortname': change['repository_shortname'],
                     'number': change['number'],
-                    'repository_fullname_and_number': change[
-                        'repository_fullname_and_number'
-                    ],
+                    'change_id': change['change_id'],
                     'url': change['url'],
                     'on_author': change['author'],
                     'on_created_at': change['created_at'],
@@ -292,8 +290,8 @@ class PRsFetcher(object):
                 pr['repository']['name'],
             )
             change['repository_shortname'] = pr['repository']['name']
-            change['repository_fullname_and_number'] = "%s#%s" % (
-                change['repository_fullname'],
+            change['change_id'] = "%s@%s" % (
+                change['repository_fullname'].replace('/', '@'),
                 change['number'],
             )
             change['url'] = '%s/%s/pull/%s' % (

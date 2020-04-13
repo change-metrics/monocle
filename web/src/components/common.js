@@ -5,11 +5,11 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import PropTypes from 'prop-types'
 
-function changeUrl (x, name = null) {
+function changeUrl (index, x, name = null) {
   if (!name) {
-    name = x.repository_fullname_and_number
+    name = x.change_id
   }
-  return <a href={x.url} target="_blank" rel="noopener noreferrer">{name}</a>
+  return <a href={'/' + index + '/change/' + x.change_id}>{name}</a>
 }
 
 function addUrlField (field, value) {
@@ -26,6 +26,14 @@ function newRelativeUrl (dest) {
   url.pathname += dest
 
   return url.href
+}
+
+function addS (count, s = 's') {
+  if (count > 1) {
+    return s
+  } else {
+    return ''
+  }
 }
 
 class LoadingBox extends React.Component {
@@ -112,7 +120,8 @@ class BaseQueryComponent extends React.Component {
       authors: this.props.filter_authors,
       graph_type: this.state.graph_type,
       from: start * this.state.pageSize,
-      size: this.state.pageSize
+      size: this.state.pageSize,
+      changeIds: this.props.changeIds
     })
   }
 }
@@ -126,7 +135,8 @@ BaseQueryComponent.propTypes = {
   filter_authors: PropTypes.string,
   filter_exclude_authors: PropTypes.string,
   filter_loaded_from_url: PropTypes.bool,
-  handleQuery: PropTypes.func.isRequired
+  handleQuery: PropTypes.func.isRequired,
+  changeIds: PropTypes.array
 }
 
 export {
@@ -135,5 +145,6 @@ export {
   BaseQueryComponent,
   changeUrl,
   addUrlField,
-  newRelativeUrl
+  newRelativeUrl,
+  addS
 }

@@ -28,12 +28,9 @@ import {
   CLastMergedChanges,
   CLastOpenedChanges
 } from './components/changes'
-import {
-  CApprovalStats
-} from './components/approvals'
-import {
-  CFiltersForm
-} from './components/filtersform'
+import { CApprovalStats } from './components/approvals'
+import { CFiltersForm } from './components/filtersform'
+import { CChange } from './components/change'
 
 class RootView extends React.Component {
   render () {
@@ -201,6 +198,44 @@ OpenChangesView.propTypes = {
   })
 }
 
+class ChangeView extends React.Component {
+  render () {
+    return (
+      <React.Fragment>
+        <TopMenu index={this.props.match.params.index}/>
+        <Container>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CChange
+                index={this.props.match.params.index}
+                changeIds={[this.props.match.params.change]}
+                // force the filters to avoid side effects to have all
+                // the events
+                filter_loaded_from_url={true}
+                filter_gte=""
+                filter_lte=""
+                filter_repository=".*"
+                authors=""
+                excludeAuthors=""
+                filter_interval=""
+              />
+            </Col>
+          </Row>
+        </Container>
+      </React.Fragment>)
+  }
+}
+
+ChangeView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string,
+      change: PropTypes.string
+    })
+  })
+}
+
 class App extends React.Component {
   render () {
     return (
@@ -208,6 +243,7 @@ class App extends React.Component {
         <Route exact path='/:index' component={RootView} />
         <Route path='/:index/merged-changes' component={MergedChangesView} />
         <Route path='/:index/opened-changes' component={OpenChangesView} />
+        <Route path='/:index/change/:change' component={ChangeView} />
       </Switch>
     )
   }
