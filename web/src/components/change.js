@@ -19,9 +19,10 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  addUrlField,
   addS
 } from './common'
+
+import { TimelineGraph } from './timeline'
 
 class ChangeStatus extends React.Component {
   render () {
@@ -120,23 +121,7 @@ class ChangeTable extends React.Component {
             </Card.Header>
             <Card.Body>
               <Card.Text>{this.processText(this.props.index, change)}</Card.Text>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Author</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((x, index) =>
-                    <tr key={index}>
-                      <td>{moment(x.created_at).fromNow()}</td>
-                      <td>{x.type}</td>
-                      <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
-                    </tr>)}
-                </tbody>
-              </Table>
+              <TimelineGraph data={events} index={this.props.index} />
             </Card.Body>
           </Card>
         </Col>
