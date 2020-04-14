@@ -1,0 +1,155 @@
+{
+  "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+  "updatedAt": "2020-04-12T06:20:26Z",
+  "createdAt": "2020-04-11T07:06:29Z",
+  "mergedAt": "2020-04-11T21:46:18Z",
+  "closedAt": "2020-04-11T21:46:19Z",
+  "additions": 90,
+  "deletions": 33,
+  "changedFiles": 3,
+  "title": "expose ChangeCommitForcePushedEvent and ChangeCommitPushedEvent",
+  "headRefName": "changed",
+  "baseRefName": "master",
+  "bodyText": "exposed in the changes_lifecycle_stats API query\nexposed in the web \"Changes lifecycle stats\" graph + iteration/change",
+  "state": "MERGED",
+  "number": 70,
+  "mergeable": "UNKNOWN",
+  "labels": {
+    "edges": []
+  },
+  "assignees": {
+    "edges": []
+  },
+  "comments": {
+    "edges": [
+      {
+        "node": {
+          "id": "MDEyOklzc3VlQ29tbWVudDYxMjUxOTgxMw==",
+          "createdAt": "2020-04-11T21:46:13Z",
+          "author": {
+            "login": "morucci"
+          }
+        }
+      }
+    ]
+  },
+  "commits": {
+    "edges": [
+      {
+        "node": {
+          "commit": {
+            "oid": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+            "pushedDate": "2020-04-11T10:22:06Z",
+            "author": {
+              "user": {
+                "login": "flepied"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "files": {
+    "edges": [
+      {
+        "node": {
+          "additions": 30,
+          "deletions": 3,
+          "path": "monocle/db/queries.py"
+        }
+      },
+      {
+        "node": {
+          "additions": 58,
+          "deletions": 28,
+          "path": "web/src/components/changes_lifecycle.js"
+        }
+      },
+      {
+        "node": {
+          "additions": 2,
+          "deletions": 2,
+          "path": "web/src/components/changes_review.js"
+        }
+      }
+    ]
+  },
+  "timelineItems": {
+    "edges": [
+      {
+        "node": {
+          "__typename": "HeadRefForcePushedEvent",
+          "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc2NzgyMg==",
+          "createdAt": "2020-04-11T07:19:12Z",
+          "actor": {
+            "login": "flepied"
+          }
+        }
+      },
+      {
+        "node": {
+          "__typename": "HeadRefForcePushedEvent",
+          "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc4NDA5NA==",
+          "createdAt": "2020-04-11T07:39:23Z",
+          "actor": {
+            "login": "flepied"
+          }
+        }
+      },
+      {
+        "node": {
+          "__typename": "HeadRefForcePushedEvent",
+          "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzg1MDU1Nw==",
+          "createdAt": "2020-04-11T09:03:45Z",
+          "actor": {
+            "login": "flepied"
+          }
+        }
+      },
+      {
+        "node": {
+          "__typename": "HeadRefForcePushedEvent",
+          "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzkxMjA2Ng==",
+          "createdAt": "2020-04-11T10:22:06Z",
+          "actor": {
+            "login": "flepied"
+          }
+        }
+      },
+      {
+        "node": {
+          "__typename": "PullRequestReview",
+          "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3MzkxODAyODIy",
+          "createdAt": "2020-04-11T21:46:04Z",
+          "state": "APPROVED",
+          "author": {
+            "login": "morucci"
+          }
+        }
+      },
+      {
+        "node": {
+          "__typename": "ClosedEvent",
+          "id": "MDExOkNsb3NlZEV2ZW50MzIyNDUyNDQwNQ==",
+          "createdAt": "2020-04-11T21:46:19Z",
+          "actor": {
+            "login": "morucci"
+          }
+        }
+      }
+    ]
+  },
+  "author": {
+    "login": "flepied"
+  },
+  "mergedBy": {
+    "login": "morucci"
+  },
+  "repository": {
+    "owner": {
+      "login": "morucci"
+    },
+    "name": "monocle"
+  }
+}

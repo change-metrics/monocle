@@ -331,10 +331,10 @@ class PRsFetcher(object):
                     change['closed_at'], change['created_at']
                 )
             change['mergeable'] = pr['mergeable']
-            change['labels'] = tuple(
+            change['labels'] = list(
                 map(lambda n: n['node']['name'], pr['labels']['edges'])
             )
-            change['assignees'] = tuple(
+            change['assignees'] = list(
                 map(lambda n: n['node']['login'], pr['assignees']['edges'])
             )
             objects.append(change)
@@ -401,16 +401,39 @@ class PRsFetcher(object):
 
 
 if __name__ == '__main__':
-    import sys
+    import os
+    import argparse
+    import json
     from pprint import pprint
     from monocle.github import graphql
 
-    token = sys.argv[1]
-    org = sys.argv[2]
-    repository = sys.argv[3]
-    id = sys.argv[4]
-    prf = PRsFetcher(graphql.GithubGraphQLQuery(token), None, org, repository)
-    pprint(prf.get_one(org, repository, id))
-    # ret = prf.get("2020-03-30")
-    # extracted = prf.extract_objects(ret)
-    # pprint(len(extracted))
+    parser = argparse.ArgumentParser(prog='pullrequest')
+
+    parser.add_argument('--loglevel', help='logging level', default='INFO')
+    parser.add_argument('--token', help='A Github personal token', required=True)
+    parser.add_argument('--org', help='A Github organization', required=True)
+    parser.add_argument(
+        '--repository', help='The repository within the organization', required=True
+    )
+    parser.add_argument('--id', help='The pull request id', required=True)
+    parser.add_argument(
+        '--output-dir', help='Store the dump in this directory',
+    )
+
+    args = parser.parse_args()
+
+    logging.basicConfig(level=getattr(logging, args.loglevel.upper()),)
+    prf = PRsFetcher(
+        graphql.GithubGraphQLQuery(args.token),
+        'https://github.com',
+        args.org,
+        args.repository,
+    )
+    data = prf.get_one(args.org, args.repository, args.id)
+    if not args.output_dir:
+        pprint(data)
+    else:
+        basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
+        basepath = os.path.join(args.output_dir, basename)
+        json.dump(data[0], open(basepath + '_raw.json', 'w'), indent=2)
+        json.dump(data[1], open(basepath + '_extracted.json', 'w'), indent=2)
