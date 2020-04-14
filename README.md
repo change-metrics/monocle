@@ -13,12 +13,12 @@ The process below describes how to index changes from a Github repository, a ful
 ### Clone and prepare data directory
 
 ```Shell
-git clone https://github.com/morucci/monocle.git
-cd monocle
-mkdir data etc
+$ git clone https://github.com/morucci/monocle.git
+$ cd monocle
+$ mkdir data etc
 ```
 
-### Create the github-env file
+### Create the projects.yaml file
 
 Generate a personal access token on Github (w/o any specific rights).
 
@@ -48,33 +48,33 @@ projects:
 
 ### Start docker-compose
 
-```Shell
-docker-compose up -d
+```ShellSession
+$ docker-compose up -d
 ```
 
 ElasticSearch could need some capabilities to run in container
 mode. Take a look at the logs to see if it started correctly:
 
-```Shell
-docker-compose logs elastic
+```ShellSession
+$ docker-compose logs elastic
 ```
 
 For example, you could need to increase this system parameter:
 
-```Shell
-sudo sysctl -w vm.max_map_count=262144
+```ShellSession
+$ sudo sysctl -w vm.max_map_count=262144
 ```
 
 or make the data directory writable for other:
 
-```Shell
-chmod o+w data
+```ShellSession
+$ chmod o+w data
 ```
 
 You might need to check the crawler logs:
 
-```Shell
-docker-compose logs crawler
+```ShellSession
+$ docker-compose logs crawler
 ```
 
 ### Accessing the web UI
@@ -89,8 +89,8 @@ the docker deployment to avoid complex development methods.
 After changes, simply run the following command. docker-compose will
 rebuild and re-spawn the changed containers:
 
-```Shell
-docker-compose up -d --build
+```ShellSession
+$ docker-compose up -d --build
 ```
 
 ### Git hooks
@@ -107,12 +107,12 @@ following content:
 exec ./contrib/pre-push "$@"
 ```
 
-and making it executable with "chmod +x .git/hooks/pre-push".
+and making it executable with `chmod +x .git/hooks/pre-push`.
 
 ### pre-commit
 
 Optionnaly, you can enable the `pre-commit` git hook to reformat your
-python code by creating `.git/hooks/pre-commit` with the following
+code by creating `.git/hooks/pre-commit` with the following
 content:
 
 ```Shell
@@ -121,4 +121,4 @@ content:
 exec ./contrib/pre-commit "$@"
 ```
 
-and making it executable with "chmod +x .git/hooks/pre-commit".
+and making it executable with `chmod +x .git/hooks/pre-commit`.
