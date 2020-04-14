@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -47,7 +48,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.items.map((x, index) =>
                     <tr key={index}>
                       <td style={this.rowStyleFormat(this.props.data.count_avg, x.doc_count)}>{index + 1}</td>
-                      <td><a href={addUrlField('authors', x.key)}>{x.key}</a></td>
+                      <td><Link to={addUrlField('authors', x.key)}>{x.key}</Link></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -201,7 +202,7 @@ class TopStrengthsTable extends React.Component {
                   {this.props.data.map((x, index) =>
                     <tr key={index}>
                       <td>{index + 1}</td>
-                      <td><a href={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</a></td>
+                      <td><Link to={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</Link></td>
                       <td>{x[1]}</td>
                     </tr>)}
                 </tbody>
@@ -248,14 +249,6 @@ class AuthorsPeersStats extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
-    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
-    filter_gte: state.FiltersReducer.filter_gte,
-    filter_lte: state.FiltersReducer.filter_lte,
-    filter_repository: state.FiltersReducer.filter_repository,
-    filter_index: state.FiltersReducer.filter_index,
-    filter_interval: state.FiltersReducer.filter_interval,
-    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    filter_authors: state.FiltersReducer.filter_authors,
     most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
     most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
     most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,

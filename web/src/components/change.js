@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -54,9 +55,9 @@ class ChangeTable extends React.Component {
       const processWord = (w) => {
         if (w.match(githubRegexp)) {
           loop++
-          return <a key={loop} href={w.replace(githubRegexp, `/${index}/change/$2@$3@$4`)}>{w.replace(githubRegexp, '$1 ')}</a>
+          return <Link key={loop} to={w.replace(githubRegexp, `/${index}/change/$2@$3@$4`)}>{w.replace(githubRegexp, '$1 ')}</Link>
         } else if (change.url.startsWith('https://github.com/') && w.match(githubIssueRegexp)) {
-          return <a key={loop} href={w.replace(githubIssueRegexp, `https://github.com/${change.repository_fullname}/issues/$1`)} target="_blank" rel="noopener noreferrer">{w.replace(githubIssueRegexp, '#$1')}</a>
+          return <Link key={loop} to={w.replace(githubIssueRegexp, `https://github.com/${change.repository_fullname}/issues/$1`)} target="_blank" rel="noopener noreferrer">{w.replace(githubIssueRegexp, '#$1')}</Link>
         }
         if (w.match(urlRegexp)) {
           loop++
@@ -176,8 +177,6 @@ Change.propTypes = {
 
 const mapStateToProps = state => {
   return {
-    // we do not use filters
-    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
     changes_and_events_loading: state.QueryReducer.changes_and_events_loading,
     changes_and_events_result: state.QueryReducer.changes_and_events_result,
     changes_and_events_error: state.QueryReducer.changes_and_events_error

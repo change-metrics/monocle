@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -21,7 +22,8 @@ import {
   newRelativeUrl
 } from './common'
 
-import { ComplexityGraph, DurationComplexityGraph } from './complexity_graph'
+import ComplexityGraph from './complexity_graph'
+import DurationComplexityGraph from './duration_complexity_graph'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -43,7 +45,7 @@ class RepoChangesTable extends React.Component {
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td align="center"><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
+                      <td align="center"><Link to={addUrlField('repository', item.key)}>{item.key}</Link></td>
                       <td align="center">{item.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -148,8 +150,8 @@ class ChangesTable extends React.Component {
                       {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
                       {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
-                      <td align="center"><a href={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</a></td>
-                      <td align="center"><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
+                      <td align="center"><Link to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</Link></td>
+                      <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
                       {this.props.mergeable ? <td align="center">{x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
@@ -276,7 +278,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.merged_changes}
-                      title={<a href={newRelativeUrl('/merged-changes')}>Recently Merged Changes</a>}
+                      title={<Link to={newRelativeUrl('/merged-changes')}>Recently Merged Changes</Link>}
                       merged={true}
                       duration={true}
                     />
@@ -288,7 +290,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.opened_changes}
-                      title={<a href={newRelativeUrl('/opened-changes')}>Recently Opened Changes</a>}
+                      title={<Link to={newRelativeUrl('/opened-changes')}>Recently Opened Changes</Link>}
                       created={true}
                       mergeable={true}
                     />
@@ -334,11 +336,13 @@ class AbstractLastChanges extends BaseQueryComponent {
                 index={this.props.index}
                 graph={this.state.duration
                   ? <DurationComplexityGraph
+                    history={this.props.history}
                     data={data}
                     timeFunc={this.extractTime}
                     index={this.props.index}
                   />
                   : <ComplexityGraph
+                    history={this.props.history}
                     data={data}
                     timeFunc={this.extractTime}
                     index={this.props.index}
@@ -420,7 +424,7 @@ class AbandonedChanges extends BaseQueryComponent {
         <ChangesTable
           index={this.props.index}
           data={data}
-          title={<a href={newRelativeUrl('/abandoned-changes')}>Last Abandoned Changes</a>}
+          title={<Link to={newRelativeUrl('/abandoned-changes')}>Last Abandoned Changes</Link>}
           created={true}
           duration={true}
         />
@@ -475,14 +479,6 @@ class AbandonedChangesFull extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
-    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
-    filter_gte: state.FiltersReducer.filter_gte,
-    filter_lte: state.FiltersReducer.filter_lte,
-    filter_repository: state.FiltersReducer.filter_repository,
-    filter_index: state.FiltersReducer.filter_index,
-    filter_interval: state.FiltersReducer.filter_interval,
-    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    filter_authors: state.FiltersReducer.filter_authors,
     repos_top_merged_loading: state.QueryReducer.repos_top_merged_loading,
     repos_top_merged_result: state.QueryReducer.repos_top_merged_result,
     repos_top_merged_error: state.QueryReducer.repos_top_merged_error,

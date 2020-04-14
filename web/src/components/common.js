@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -9,7 +10,7 @@ function changeUrl (index, x, name = null) {
   if (!name) {
     name = x.change_id
   }
-  return <a href={'/' + index + '/change/' + x.change_id}>{name}</a>
+  return <Link to={'/' + index + '/change/' + x.change_id}>{name}</Link>
 }
 
 function addUrlField (field, value) {
@@ -17,15 +18,14 @@ function addUrlField (field, value) {
 
   url.searchParams.set(field, value)
 
-  return url.href
+  return '/r' + url.pathname + url.search
 }
 
 function newRelativeUrl (dest) {
   var url = new URL(window.location.href)
 
   url.pathname += dest
-
-  return url.href
+  return url.search ? url.pathname + url.search : url.pathname
 }
 
 function addS (count, s = 's') {
@@ -93,10 +93,8 @@ class BaseQueryComponent extends React.Component {
     this.queryBackend.bind(this)
   }
 
-  componentDidUpdate (prevProps) {
-    if (this.props.filter_loaded_from_url !== prevProps.filter_loaded_from_url) {
-      this.queryBackend()
-    }
+  componentDidMount () {
+    this.queryBackend(this.state.selectedPage)
   }
 
   handlePageChange (obj, pageData) {
@@ -105,19 +103,16 @@ class BaseQueryComponent extends React.Component {
   }
 
   queryBackend (start = 0) {
-    // Usefull snippet
-    // Object.entries(this.props).forEach(([key, val]) =>
-    //   prevProps[key] !== val && console.log(`Prop '${key}' changed`)
-    // );
+    const params = (new URL(window.location.href)).searchParams
     this.props.handleQuery({
-      repository: this.props.filter_repository,
       index: this.props.index,
       name: this.state.name,
-      gte: this.props.filter_gte,
-      lte: this.props.filter_lte,
-      interval: this.props.filter_interval,
-      excludeAuthors: this.props.filter_exclude_authors,
-      authors: this.props.filter_authors,
+      repository: params.get('repository') || '.*',
+      gte: params.get('gte'),
+      lte: params.get('lte'),
+      interval: params.get('interval') || '1M',
+      excludeAuthors: params.get('exclude_authors'),
+      authors: params.get('authors'),
       graph_type: this.state.graph_type,
       from: start * this.state.pageSize,
       size: this.state.pageSize,
