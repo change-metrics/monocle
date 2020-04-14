@@ -21,7 +21,7 @@ import {
   newRelativeUrl
 } from './common'
 
-import ComplexityGraph from './complexity_graph'
+import { ComplexityGraph, DurationComplexityGraph } from './complexity_graph'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -36,15 +36,15 @@ class RepoChangesTable extends React.Component {
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    <th>Repository</th>
-                    <th>Number of changes</th>
+                    <th className="text-center">Repository</th>
+                    <th className="text-center">Number of changes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
-                      <td>{item.doc_count}</td>
+                      <td align="center"><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
+                      <td align="center">{item.doc_count}</td>
                     </tr>)}
                 </tbody>
               </Table>
@@ -90,6 +90,10 @@ class ChangesTable extends React.Component {
     let paginationElement
     let graphElement
 
+    if (!this.props.data || !this.props.data.items) {
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+    }
+
     if (this.props.graph) {
       graphElement = <React.Fragment>{this.props.graph}<br/></React.Fragment>
     }
@@ -126,26 +130,28 @@ class ChangesTable extends React.Component {
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    {this.props.created ? <th>Created</th> : null}
-                    {this.props.updated ? <th>Updated</th> : null}
-                    {this.props.merged ? <th>Merged</th> : null}
-                    <th>Id</th>
-                    <th>Author</th>
-                    <th>Title</th>
-                    {this.props.mergeable ? <th>Mergeable</th> : null}
-                    <th>Complexity</th>
+                    {this.props.created ? <th className="text-center">Created</th> : null}
+                    {this.props.updated ? <th className="text-center">Updated</th> : null}
+                    {this.props.merged ? <th className="text-center">Merged</th> : null}
+                    {this.props.duration ? <th className="text-center">Duration</th> : null}
+                    <th className="text-center">Repository</th>
+                    <th className="text-center">Author</th>
+                    <th className="text-center">Title</th>
+                    {this.props.mergeable ? <th className="text-center">Mergeable</th> : null}
+                    <th className="text-center">Complexity</th>
                   </tr>
                 </thead>
                 <tbody>
                   {this.props.data.items && this.props.data.items.map((x, index) =>
                     <tr key={index}>
-                      {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
-                      {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
-                      {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
-                      <td><a href={addUrlField('repository', x.change_id)}>{x.change_id}</a></td>
-                      <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
+                      {this.props.created ? <td align="center">{moment(x.created_at).fromNow()}</td> : null}
+                      {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
+                      {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
+                      {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
+                      <td align="center"><a href={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</a></td>
+                      <td align="center"><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
-                      {this.props.mergeable ? <td>{x.mergeable}</td> : null}
+                      {this.props.mergeable ? <td align="center">{x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
                     </tr>)}
                 </tbody>
@@ -175,6 +181,7 @@ ChangesTable.propTypes = {
   updated: PropTypes.bool,
   merged: PropTypes.bool,
   mergeable: PropTypes.bool,
+  duration: PropTypes.bool,
   graph: PropTypes.element,
   index: PropTypes.string.isRequired
 }
@@ -269,8 +276,9 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.merged_changes}
-                      title={<a href={newRelativeUrl('/merged-changes')}>Recently merged changes</a>}
+                      title={<a href={newRelativeUrl('/merged-changes')}>Recently Merged Changes</a>}
                       merged={true}
+                      duration={true}
                     />
                   </Col>
                 </Row>
@@ -280,7 +288,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.opened_changes}
-                      title={<a href={newRelativeUrl('/opened-changes')}>Recently opened changes</a>}
+                      title={<a href={newRelativeUrl('/opened-changes')}>Recently Opened Changes</a>}
                       created={true}
                       mergeable={true}
                     />
@@ -306,24 +314,38 @@ class AbstractLastChanges extends BaseQueryComponent {
     this.state.created = false
     this.state.updated = false
     this.state.merged = false
+    this.state.duration = false
   }
 
   render () {
     if (!this.props.last_changes_loading) {
+      if (!this.props.last_changes_result) {
+        return <ErrorBox error={{ status: 0, data: 'No data' }}/>
+      }
       const data = this.extractData(this.props.last_changes_result)
+      if (!data || data.items.length === 0) {
+        return <ErrorBox error={{ status: 1, data: 'Invalid data' }}/>
+      }
       return (
         <React.Fragment>
           <Row>
             <Col>
               <ChangesTable
                 index={this.props.index}
-                graph={<ComplexityGraph
-                  data={data}
-                  timeFunc={this.extractTime}
-                  index={this.props.index}
-                />}
+                graph={this.state.duration
+                  ? <DurationComplexityGraph
+                    data={data}
+                    timeFunc={this.extractTime}
+                    index={this.props.index}
+                  />
+                  : <ComplexityGraph
+                    data={data}
+                    timeFunc={this.extractTime}
+                    index={this.props.index}
+                  />
+                }
                 data={data}
-                title={this.state.title}
+                title={data.total + ' ' + this.state.title}
                 selectedPage={this.state.selectedPage}
                 pageCount={Math.ceil(data.total / this.state.pageSize)}
                 pageChangeCallback={this.handlePageChange}
@@ -331,6 +353,7 @@ class AbstractLastChanges extends BaseQueryComponent {
                 created={this.state.created}
                 updated={this.state.updated}
                 merged={this.state.merged}
+                duration={this.state.duration}
               />
             </Col>
           </Row>
@@ -345,10 +368,10 @@ class AbstractLastChanges extends BaseQueryComponent {
 AbstractLastChanges.propTypes = {
   last_changes_loading: PropTypes.bool,
   last_changes_result: PropTypes.shape({
-    merged_changes: ({
+    merged_changes: PropTypes.shape({
       items: PropTypes.array
     }),
-    opened_changes: ({
+    opened_changes: PropTypes.shape({
       items: PropTypes.array
     })
   })
@@ -357,8 +380,9 @@ AbstractLastChanges.propTypes = {
 class LastMergedChanges extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.title = 'Recently Merged Changes'
+    this.state.title = 'Merged Changes'
     this.state.merged = true
+    this.state.duration = true
   }
 
   extractTime = x => x.merged_at
@@ -368,7 +392,7 @@ class LastMergedChanges extends AbstractLastChanges {
 class LastOpenedChanges extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.title = 'Recently Opened Changes'
+    this.state.title = 'Opened Changes'
     this.state.created = true
     this.state.updated = true
   }
@@ -377,12 +401,76 @@ class LastOpenedChanges extends AbstractLastChanges {
   extractData = x => x.opened_changes
 }
 
-export {
-  RepoChanges,
-  HotChanges,
-  ColdChanges,
-  LastChanges,
-  LastOpenedChanges
+class AbandonedChanges extends BaseQueryComponent {
+  constructor (props) {
+    super(props)
+    this.state.name = 'last_abandoned_changes'
+    this.state.graph_type = 'last_abandoned_changes'
+  }
+
+  render () {
+    if (!this.props.last_abandoned_changes_loading) {
+      if (this.props.last_abandoned_changes_error) {
+        return <ErrorBox
+          error={this.props.last_abandoned_changes_error}
+        />
+      }
+      const data = this.props.last_abandoned_changes_result
+      return (
+        <ChangesTable
+          index={this.props.index}
+          data={data}
+          title={<a href={newRelativeUrl('/abandoned-changes')}>Last Abandoned Changes</a>}
+          created={true}
+          duration={true}
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
+}
+
+class AbandonedChangesFull extends BaseQueryComponent {
+  constructor (props) {
+    super(props)
+    this.state.name = 'last_abandoned_changes'
+    this.state.graph_type = 'last_abandoned_changes'
+    this.state.pageSize = 100
+  }
+
+  extractTime = x => x.created_at
+
+  render () {
+    if (!this.props.last_abandoned_changes_loading) {
+      if (this.props.last_abandoned_changes_error) {
+        return <ErrorBox
+          error={this.props.last_abandoned_changes_error}
+        />
+      }
+      const data = this.props.last_abandoned_changes_result
+      return (
+        <ChangesTable
+          index={this.props.index}
+          data={data}
+          title={data.total + ' Abandoned Changes'}
+          created={true}
+          duration={true}
+          graph={<DurationComplexityGraph
+            data={data}
+            timeFunc={this.extractTime}
+            index={this.props.index}
+          />}
+          selectedPage={this.state.selectedPage}
+          pageCount={Math.ceil(data.total / this.state.pageSize)}
+          pageChangeCallback={this.handlePageChange}
+          pageChangeTarget={this}
+        />
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
 }
 
 const mapStateToProps = state => {
@@ -404,6 +492,9 @@ const mapStateToProps = state => {
     cold_changes_loading: state.QueryReducer.cold_changes_loading,
     cold_changes_result: state.QueryReducer.cold_changes_result,
     cold_changes_error: state.QueryReducer.cold_changes_error,
+    last_abandoned_changes_loading: state.QueryReducer.last_abandoned_changes_loading,
+    last_abandoned_changes_result: state.QueryReducer.last_abandoned_changes_result,
+    last_abandoned_changes_error: state.QueryReducer.last_abandoned_changes_error,
     last_changes_loading: state.QueryReducer.last_changes_loading,
     last_changes_result: state.QueryReducer.last_changes_result,
     last_changes_error: state.QueryReducer.last_changes_error
@@ -419,6 +510,8 @@ const mapDispatchToProps = dispatch => {
 const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges)
 const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges)
 const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges)
+const CAbandonedChanges = connect(mapStateToProps, mapDispatchToProps)(AbandonedChanges)
+const CAbandonedChangesFull = connect(mapStateToProps, mapDispatchToProps)(AbandonedChangesFull)
 const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges)
 const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges)
 const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges)
@@ -427,6 +520,8 @@ export {
   CRepoChanges,
   CHotChanges,
   CColdChanges,
+  CAbandonedChanges,
+  CAbandonedChangesFull,
   CLastChanges,
   CLastMergedChanges,
   CLastOpenedChanges

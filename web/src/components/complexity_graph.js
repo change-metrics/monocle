@@ -4,6 +4,11 @@ import { Bubble } from 'react-chartjs-2'
 import moment from 'moment'
 
 class ComplexityGraph extends React.Component {
+  constructor (props) {
+    super(props)
+    this.state = { xScaleType: 'linear' }
+  }
+
   tooltipLabel (item, data) {
     return data[item.index].complexity + ': ' + data[item.index].title
   }
@@ -12,9 +17,19 @@ class ComplexityGraph extends React.Component {
     window.location.href = '/' + this.props.index + '/change/' + item.change_id
   }
 
+  getData (func, x) {
+    return { x: moment(func(x)).format('X'), y: x.complexity, r: 5 }
+  }
+
+  xTickToLabel (q) {
+    for (var tick in q.ticks) {
+      q.ticks[tick] = moment.unix(q.ticks[tick]).format('YYYY-MM-DD HH:mm')
+    }
+  }
+
   render () {
     const data = this.props.data.items.map(
-      x => { return { x: moment(this.props.timeFunc(x)).format('X'), y: x.complexity, r: 5 } }
+      x => { return this.getData(this.props.timeFunc, x) }
     )
     const bubbleData = {
       datasets: [
@@ -50,11 +65,8 @@ class ComplexityGraph extends React.Component {
       },
       scales: {
         xAxes: [{
-          afterTickToLabelConversion: function (q) {
-            for (var tick in q.ticks) {
-              q.ticks[tick] = moment.unix(q.ticks[tick]).format('YYYY-MM-DD HH:mm')
-            }
-          }
+          type: this.state.xScaleType,
+          afterTickToLabelConversion: this.xTickToLabel
         }],
         yAxes: [{
           type: 'logarithmic',
@@ -86,4 +98,26 @@ ComplexityGraph.propTypes = {
   index: PropTypes.string.isRequired
 }
 
-export default ComplexityGraph
+class DurationComplexityGraph extends ComplexityGraph {
+  constructor (props) {
+    super(props)
+    this.state.xScaleType = 'logarithmic'
+  }
+
+  getData (func, x) {
+    return { x: x.duration, y: x.complexity, r: 5 }
+  }
+
+  xTickToLabel (q) {
+    for (var tick in q.ticks) {
+      if (q.ticks[tick] !== '') {
+        q.ticks[tick] = moment.duration(parseFloat(q.ticks[tick]), 'seconds').humanize()
+      }
+    }
+  }
+}
+
+export {
+  ComplexityGraph,
+  DurationComplexityGraph
+}

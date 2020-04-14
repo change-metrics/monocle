@@ -19,9 +19,10 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  addUrlField,
   addS
 } from './common'
+
+import { TimelineGraph } from './timeline'
 
 class ChangeStatus extends React.Component {
   render () {
@@ -30,6 +31,8 @@ class ChangeStatus extends React.Component {
         return <Badge variant="success">Open</Badge>
       case 'MERGED':
         return <Badge variant="primary">Merged</Badge>
+      case 'CLOSED':
+        return <Badge variant="danger">Abandoned</Badge>
       default:
         return null
     }
@@ -67,7 +70,6 @@ class ChangeTable extends React.Component {
     if (!this.props.data || this.props.data.items.length === 0) {
       return <ErrorBox error={{ status: 0, data: 'Invalid change' }}/>
     }
-    console.log(this.props.data)
     const changes = this.props.data.items.filter(x => x.type === 'Change')
     if (changes.length === 0) {
       return <ErrorBox error={{ status: 1, data: 'No change found' }}/>
@@ -119,23 +121,7 @@ class ChangeTable extends React.Component {
             </Card.Header>
             <Card.Body>
               <Card.Text>{this.processText(this.props.index, change)}</Card.Text>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Author</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((x, index) =>
-                    <tr key={index}>
-                      <td>{moment(x.created_at).fromNow()}</td>
-                      <td>{x.type}</td>
-                      <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
-                    </tr>)}
-                </tbody>
-              </Table>
+              <TimelineGraph data={events} index={this.props.index} />
             </Card.Body>
           </Card>
         </Col>

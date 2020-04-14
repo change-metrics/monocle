@@ -24,6 +24,9 @@ class TopEventsTable extends React.Component {
   }
 
   render () {
+    if (!this.props.data || !this.props.data.items) {
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+    }
     return (
       <Row>
         <Col>
