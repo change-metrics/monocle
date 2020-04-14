@@ -31,9 +31,9 @@ const initialState = {
   last_changes_result: null,
   last_changes_loading: true,
   last_changes_error: null,
-  abandoned_changes_result: null,
-  abandoned_changes_loading: true,
-  abandoned_changes_error: null,
+  last_abandoned_changes_result: null,
+  last_abandoned_changes_loading: true,
+  last_abandoned_changes_error: null,
   changes_and_events_result: null,
   changes_and_events_loading: true,
   changes_and_events_error: null
@@ -64,7 +64,7 @@ const queryReducer = (state = initialState, action) => {
     switch (graphType) {
       case 'hot_changes':
       case 'cold_changes':
-      case 'abandoned_changes':
+      case 'last_abandoned_changes':
       case 'changes_and_events':
         action.value.items.forEach(enhanceData)
         break

@@ -36,15 +36,15 @@ class RepoChangesTable extends React.Component {
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    <th>Repository</th>
-                    <th>Number of changes</th>
+                    <th className="text-center">Repository</th>
+                    <th className="text-center">Number of changes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
-                      <td>{item.doc_count}</td>
+                      <td align="center"><a href={addUrlField('repository', item.key)}>{item.key}</a></td>
+                      <td align="center">{item.doc_count}</td>
                     </tr>)}
                 </tbody>
               </Table>
@@ -130,28 +130,28 @@ class ChangesTable extends React.Component {
               <Table striped responsive bordered hover>
                 <thead>
                   <tr>
-                    {this.props.created ? <th>Created</th> : null}
-                    {this.props.updated ? <th>Updated</th> : null}
-                    {this.props.merged ? <th>Merged</th> : null}
-                    {this.props.duration ? <th>Duration</th> : null}
-                    <th>Id</th>
-                    <th>Author</th>
-                    <th>Title</th>
-                    {this.props.mergeable ? <th>Mergeable</th> : null}
-                    <th>Complexity</th>
+                    {this.props.created ? <th className="text-center">Created</th> : null}
+                    {this.props.updated ? <th className="text-center">Updated</th> : null}
+                    {this.props.merged ? <th className="text-center">Merged</th> : null}
+                    {this.props.duration ? <th className="text-center">Duration</th> : null}
+                    <th className="text-center">Repository</th>
+                    <th className="text-center">Author</th>
+                    <th className="text-center">Title</th>
+                    {this.props.mergeable ? <th className="text-center">Mergeable</th> : null}
+                    <th className="text-center">Complexity</th>
                   </tr>
                 </thead>
                 <tbody>
                   {this.props.data.items && this.props.data.items.map((x, index) =>
                     <tr key={index}>
-                      {this.props.created ? <td>{moment(x.created_at).fromNow()}</td> : null}
-                      {this.props.updated ? <td>{moment(x.updated_at).fromNow()}</td> : null}
-                      {this.props.merged ? <td>{moment(x.merged_at).fromNow()}</td> : null}
-                      {this.props.duration ? <td>{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
-                      <td><a href={addUrlField('repository', x.change_id)}>{x.change_id}</a></td>
-                      <td><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
+                      {this.props.created ? <td align="center">{moment(x.created_at).fromNow()}</td> : null}
+                      {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
+                      {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
+                      {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
+                      <td align="center"><a href={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</a></td>
+                      <td align="center"><a href={addUrlField('authors', x.author)}>{x.author}</a></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
-                      {this.props.mergeable ? <td>{x.mergeable}</td> : null}
+                      {this.props.mergeable ? <td align="center">{x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
                     </tr>)}
                 </tbody>
@@ -368,10 +368,10 @@ class AbstractLastChanges extends BaseQueryComponent {
 AbstractLastChanges.propTypes = {
   last_changes_loading: PropTypes.bool,
   last_changes_result: PropTypes.shape({
-    merged_changes: ({
+    merged_changes: PropTypes.shape({
       items: PropTypes.array
     }),
-    opened_changes: ({
+    opened_changes: PropTypes.shape({
       items: PropTypes.array
     })
   })
@@ -404,18 +404,18 @@ class LastOpenedChanges extends AbstractLastChanges {
 class AbandonedChanges extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'abandoned_changes'
-    this.state.graph_type = 'abandoned_changes'
+    this.state.name = 'last_abandoned_changes'
+    this.state.graph_type = 'last_abandoned_changes'
   }
 
   render () {
-    if (!this.props.abandoned_changes_loading) {
-      if (this.props.abandoned_changes_error) {
+    if (!this.props.last_abandoned_changes_loading) {
+      if (this.props.last_abandoned_changes_error) {
         return <ErrorBox
-          error={this.props.abandoned_changes_error}
+          error={this.props.last_abandoned_changes_error}
         />
       }
-      const data = this.props.abandoned_changes_result
+      const data = this.props.last_abandoned_changes_result
       return (
         <ChangesTable
           index={this.props.index}
@@ -434,21 +434,21 @@ class AbandonedChanges extends BaseQueryComponent {
 class AbandonedChangesFull extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'abandoned_changes'
-    this.state.graph_type = 'abandoned_changes'
+    this.state.name = 'last_abandoned_changes'
+    this.state.graph_type = 'last_abandoned_changes'
     this.state.pageSize = 100
   }
 
   extractTime = x => x.created_at
 
   render () {
-    if (!this.props.abandoned_changes_loading) {
-      if (this.props.abandoned_changes_error) {
+    if (!this.props.last_abandoned_changes_loading) {
+      if (this.props.last_abandoned_changes_error) {
         return <ErrorBox
-          error={this.props.abandoned_changes_error}
+          error={this.props.last_abandoned_changes_error}
         />
       }
-      const data = this.props.abandoned_changes_result
+      const data = this.props.last_abandoned_changes_result
       return (
         <ChangesTable
           index={this.props.index}
@@ -492,9 +492,9 @@ const mapStateToProps = state => {
     cold_changes_loading: state.QueryReducer.cold_changes_loading,
     cold_changes_result: state.QueryReducer.cold_changes_result,
     cold_changes_error: state.QueryReducer.cold_changes_error,
-    abandoned_changes_loading: state.QueryReducer.abandoned_changes_loading,
-    abandoned_changes_result: state.QueryReducer.abandoned_changes_result,
-    abandoned_changes_error: state.QueryReducer.abandoned_changes_error,
+    last_abandoned_changes_loading: state.QueryReducer.last_abandoned_changes_loading,
+    last_abandoned_changes_result: state.QueryReducer.last_abandoned_changes_result,
+    last_abandoned_changes_error: state.QueryReducer.last_abandoned_changes_error,
     last_changes_loading: state.QueryReducer.last_changes_loading,
     last_changes_result: state.QueryReducer.last_changes_result,
     last_changes_error: state.QueryReducer.last_changes_error

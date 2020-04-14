@@ -12,8 +12,7 @@ import PropTypes from 'prop-types'
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox,
-  prepareLabels
+  ErrorBox
 } from './common'
 
 import { Line } from 'react-chartjs-2'
@@ -46,7 +45,7 @@ class ChangeReviewEventsHisto extends React.Component {
     }
     const _histos = Object.entries(histos)
     const data = {
-      labels: prepareLabels(histos.ChangeCommentedEvent[0]),
+      labels: histos.ChangeCommentedEvent[0].map(x => x.key_as_string),
       datasets: []
     }
     _histos.forEach(histo => {

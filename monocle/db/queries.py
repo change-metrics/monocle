@@ -166,12 +166,24 @@ def count_authors(es, index, repository_fullname, params):
 
 
 def events_histo(es, index, repository_fullname, params):
+    def interval_to_format(fmt):
+        if fmt.endswith('h'):
+            return 'yyyy-MM-dd HH:00'
+        if fmt.endswith('d') or fmt.endswith('w'):
+            return 'yyyy-MM-dd'
+        if fmt.endswith('M'):
+            return 'yyyy-MM'
+        if fmt.endswith('y'):
+            return 'yyyy'
+        return 'yyyy-MM-dd HH:mm'
+
     body = {
         "aggs": {
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
                     "interval": params['interval'],
+                    "format": interval_to_format(params['interval']),
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params['gte'], "max": params['lte']},
                 }
@@ -647,7 +659,7 @@ def changes_and_events(es, index, repository_fullname, params):
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def abandoned_changes(es, index, repository_fullname, params):
+def last_abandoned_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "CLOSED"

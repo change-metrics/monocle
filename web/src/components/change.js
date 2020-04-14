@@ -32,7 +32,7 @@ class ChangeStatus extends React.Component {
       case 'MERGED':
         return <Badge variant="primary">Merged</Badge>
       case 'CLOSED':
-        return <Badge variant="danger">Closed</Badge>
+        return <Badge variant="danger">Abandoned</Badge>
       default:
         return null
     }
