@@ -94,8 +94,8 @@ def generate_filter(repository_fullname, params):
         must_not.append({"terms": {"author": exclude_authors}})
         must_not.append({"terms": {"on_author": exclude_authors}})
 
-    print(qfilter)
     ret = {"bool": {"filter": qfilter, "must_not": must_not}}
+    log.debug("query EL filter: %s" % ret)
     return ret
 
 
@@ -276,6 +276,7 @@ def authors_top_merged(es, index, repository_fullname, params):
 def peers_exchange_strength(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
+    # Fetch the most active authors for those events
     authors = [
         bucket['key']
         for bucket in _events_top(es, index, repository_fullname, "author", params)[
@@ -283,15 +284,17 @@ def peers_exchange_strength(es, index, repository_fullname, params):
         ]
     ]
     peers_strength = {}
+    # For each of them get authors they most review or comment
     for author in authors:
-        params['author'] = author
-        for bucket in _events_top(es, index, repository_fullname, "on_author", params)[
-            'items'
-        ]:
+        params['authors'] = [author]
+        ret = _events_top(es, index, repository_fullname, "on_author", params)['items']
+        for bucket in ret:
             if bucket['key'] == author:
                 continue
+            # Build a peer identifier
             peers_id = tuple(sorted((author, bucket['key'])))
             peers_strength.setdefault(peers_id, 0)
+            # Cumulate the score
             peers_strength[peers_id] += bucket['doc_count']
     peers_strength = sorted(
         [(peers_id, strength) for peers_id, strength in peers_strength.items()],
