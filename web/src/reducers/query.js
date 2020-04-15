@@ -36,7 +36,10 @@ const initialState = {
   last_abandoned_changes_error: null,
   changes_and_events_result: null,
   changes_and_events_loading: true,
-  changes_and_events_error: null
+  changes_and_events_error: null,
+  new_contributors_result: null,
+  new_contributors_loading: true,
+  new_contributors_error: null
 }
 
 const enhanceData = (x) => {

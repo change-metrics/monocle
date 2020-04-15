@@ -15,6 +15,7 @@ import TopMenu from './components/menu'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import {
+  CNewContributorsStats,
   CMostActiveAuthorsStats,
   CMostReviewedAuthorsStats,
   CAuthorsPeersStats
@@ -82,6 +83,13 @@ class RootView extends React.Component {
               <Row>
                 <Col>
                   <CMostReviewedAuthorsStats
+                    index={this.props.match.params.index} />
+                </Col>
+              </Row>
+              <Row><Col><p></p></Col></Row>
+              <Row>
+                <Col>
+                  <CNewContributorsStats
                     index={this.props.match.params.index} />
                 </Col>
               </Row>
