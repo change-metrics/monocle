@@ -1,9 +1,8 @@
 import React from 'react'
+import { Redirect, Switch, Route } from 'react-router-dom'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
-
-import { Switch, Route } from 'react-router-dom'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -38,12 +37,13 @@ class RootView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
+        <TopMenu index={this.props.match.params.index}/>
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm />
+              <CFiltersForm
+                history={this.props.history}/>
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -67,6 +67,7 @@ class RootView extends React.Component {
               <Row>
                 <Col>
                   <CMostActiveAuthorsStats
+                    search={this.props.location.search}
                     index={this.props.match.params.index} />
                 </Col>
               </Row>
@@ -136,6 +137,8 @@ class RootView extends React.Component {
 }
 
 RootView.propTypes = {
+  history: PropTypes.object.isRequired,
+  location: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
       index: PropTypes.string
@@ -152,14 +155,17 @@ class MergedChangesView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
+              <CFiltersForm
+                history={this.props.history}/>
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CLastMergedChanges index={this.props.match.params.index} />
+              <CLastMergedChanges
+                history={this.props.history}
+                index={this.props.match.params.index} />
             </Col>
           </Row>
         </Container>
@@ -168,6 +174,7 @@ class MergedChangesView extends React.Component {
 }
 
 MergedChangesView.propTypes = {
+  history: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
       index: PropTypes.string
@@ -184,14 +191,17 @@ class OpenChangesView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
+              <CFiltersForm
+                history={this.props.history}/>
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CLastOpenedChanges index={this.props.match.params.index} />
+              <CLastOpenedChanges
+                history={this.props.history}
+                index={this.props.match.params.index} />
             </Col>
           </Row>
         </Container>
@@ -200,6 +210,7 @@ class OpenChangesView extends React.Component {
 }
 
 OpenChangesView.propTypes = {
+  history: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
       index: PropTypes.string
@@ -216,14 +227,17 @@ class AbandonedChangesView extends React.Component {
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CFiltersForm index={this.props.match.params.index}/>
+              <CFiltersForm
+                history={this.props.history}/>
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
-              <CAbandonedChangesFull index={this.props.match.params.index} />
+              <CAbandonedChangesFull
+                history={this.props.history}
+                index={this.props.match.params.index} />
             </Col>
           </Row>
         </Container>
@@ -232,6 +246,7 @@ class AbandonedChangesView extends React.Component {
 }
 
 AbandonedChangesView.propTypes = {
+  history: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
       index: PropTypes.string
@@ -251,15 +266,6 @@ class ChangeView extends React.Component {
               <CChange
                 index={this.props.match.params.index}
                 changeIds={[this.props.match.params.change]}
-                // force the filters to avoid side effects to have all
-                // the events
-                filter_loaded_from_url={true}
-                filter_gte=""
-                filter_lte=""
-                filter_repository=".*"
-                authors=""
-                excludeAuthors=""
-                filter_interval=""
               />
             </Col>
           </Row>
@@ -277,6 +283,21 @@ ChangeView.propTypes = {
   })
 }
 
+const RedirectView = ({ match, location }) => {
+  const newpath = location.pathname.split('/').slice(2).join('/')
+  return (
+    <Redirect to={`/${newpath}${location.search}`} />
+  )
+}
+
+RedirectView.propTypes = {
+  match: PropTypes.object,
+  location: PropTypes.shape({
+    pathname: PropTypes.string.isRequired,
+    search: PropTypes.string
+  })
+}
+
 class App extends React.Component {
   render () {
     return (
@@ -286,6 +307,7 @@ class App extends React.Component {
         <Route path='/:index/opened-changes' component={OpenChangesView} />
         <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
         <Route path='/:index/change/:change' component={ChangeView} />
+        <Route path='/r/' component={RedirectView} />
       </Switch>
     )
   }

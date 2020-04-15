@@ -7,6 +7,7 @@ class ComplexityGraph extends React.Component {
   constructor (props) {
     super(props)
     this.state = { xScaleType: 'linear' }
+    this.handleClick.bind(this)
   }
 
   tooltipLabel (item, data) {
@@ -14,7 +15,7 @@ class ComplexityGraph extends React.Component {
   }
 
   handleClick (item) {
-    window.location.href = '/' + this.props.index + '/change/' + item.change_id
+    this.props.history.push('/' + this.props.index + '/change/' + item.change_id)
   }
 
   getData (func, x) {
@@ -91,6 +92,7 @@ class ComplexityGraph extends React.Component {
 }
 
 ComplexityGraph.propTypes = {
+  history: PropTypes.object.isRequired,
   data: PropTypes.shape({
     items: PropTypes.array
   }).isRequired,
@@ -98,26 +100,4 @@ ComplexityGraph.propTypes = {
   index: PropTypes.string.isRequired
 }
 
-class DurationComplexityGraph extends ComplexityGraph {
-  constructor (props) {
-    super(props)
-    this.state.xScaleType = 'logarithmic'
-  }
-
-  getData (func, x) {
-    return { x: x.duration, y: x.complexity, r: 5 }
-  }
-
-  xTickToLabel (q) {
-    for (var tick in q.ticks) {
-      if (q.ticks[tick] !== '') {
-        q.ticks[tick] = moment.duration(parseFloat(q.ticks[tick]), 'seconds').humanize()
-      }
-    }
-  }
-}
-
-export {
-  ComplexityGraph,
-  DurationComplexityGraph
-}
+export default ComplexityGraph

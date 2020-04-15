@@ -101,14 +101,6 @@ class ApprovalStats extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
-    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
-    filter_gte: state.FiltersReducer.filter_gte,
-    filter_lte: state.FiltersReducer.filter_lte,
-    filter_repository: state.FiltersReducer.filter_repository,
-    filter_index: state.FiltersReducer.filter_index,
-    filter_interval: state.FiltersReducer.filter_interval,
-    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    filter_authors: state.FiltersReducer.filter_authors,
     approval_stats_loading: state.QueryReducer.approval_stats_loading,
     approval_stats_result: state.QueryReducer.approval_stats_result,
     approval_stats_error: state.QueryReducer.approval_stats_error

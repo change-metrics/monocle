@@ -153,14 +153,6 @@ class ChangesReviewStats extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
-    filter_loaded_from_url: state.FiltersReducer.filter_loaded_from_url,
-    filter_gte: state.FiltersReducer.filter_gte,
-    filter_lte: state.FiltersReducer.filter_lte,
-    filter_repository: state.FiltersReducer.filter_repository,
-    filter_index: state.FiltersReducer.filter_index,
-    filter_interval: state.FiltersReducer.filter_interval,
-    filter_exclude_authors: state.FiltersReducer.filter_exclude_authors,
-    filter_authors: state.FiltersReducer.filter_authors,
     changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
     changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
     changes_review_stats_error: state.QueryReducer.changes_review_stats_error
