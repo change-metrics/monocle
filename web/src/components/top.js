@@ -10,6 +10,8 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 import PropTypes from 'prop-types'
 
+import ConnectionDiagram from './connection_diagram'
+
 import {
   BaseQueryComponent,
   LoadingBox,
@@ -190,23 +192,32 @@ class TopStrengthsTable extends React.Component {
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
-              <Table striped responsive bordered hover>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Peers</th>
-                    <th>Strength</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.map((x, index) =>
-                    <tr key={index}>
-                      <td>{index + 1}</td>
-                      <td><Link to={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</Link></td>
-                      <td>{x[1]}</td>
-                    </tr>)}
-                </tbody>
-              </Table>
+              <Row>
+                <Col>
+                  <ConnectionDiagram data={this.props.data}/>
+                </Col>
+              </Row>
+              <Row>
+                <Col>
+                  <Table striped responsive bordered hover>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Peers</th>
+                        <th>Strength</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {this.props.data.slice(0, 15).map((x, index) =>
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td><Link to={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</Link></td>
+                          <td>{x[1]}</td>
+                        </tr>)}
+                    </tbody>
+                  </Table>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>
@@ -237,7 +248,7 @@ class AuthorsPeersStats extends BaseQueryComponent {
       const data = this.props.authors_peers_stats_result
       return (
         <TopStrengthsTable
-          data={data.slice(0, 10)}
+          data={data}
           title="Peers strength"
         />
       )
