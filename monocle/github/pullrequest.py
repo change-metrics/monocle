@@ -177,7 +177,9 @@ class PRsFetcher(object):
             scope = "repo:%(org)s/%(repository)s" % kwargs
         kwargs['scope'] = scope
         qdata = '''{
-          search(query: "%(scope)s is:pr sort:created updated:>%(updated_since)s created:<%(created_before)s" type: ISSUE first: %(size)s %(after)s) {
+          search(
+              query: "%(scope)s is:pr archived:false sort:created updated:>%(updated_since)s created:<%(created_before)s"
+              type: ISSUE first: %(size)s %(after)s) {
             issueCount
             pageInfo {
               hasNextPage endCursor
