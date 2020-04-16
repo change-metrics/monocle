@@ -182,6 +182,48 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
   }
 }
 
+class NewContributorsStats extends BaseQueryComponent {
+  constructor (props) {
+    super(props)
+    this.state.name = 'new_contributors'
+    this.state.graph_type = 'new_contributors'
+  }
+
+  render () {
+    if (!this.props.new_contributors_loading) {
+      if (this.props.new_contributors_error) {
+        return <ErrorBox
+          error={this.props.new_contributors_error}
+        />
+      }
+      const data = this.props.new_contributors_result
+      return (
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                <Card.Title>New contributors stats</Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col>
+                    <TopEventsTable
+                      data={data}
+                      title="Active Authors"
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )
+    } else {
+      return <LoadingBox />
+    }
+  }
+}
+
 class TopStrengthsTable extends React.Component {
   render () {
     return (
@@ -260,6 +302,9 @@ class AuthorsPeersStats extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
+    new_contributors_loading: state.QueryReducer.new_contributors_loading,
+    new_contributors_result: state.QueryReducer.new_contributors_result,
+    new_contributors_error: state.QueryReducer.new_contributors_error,
     most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
     most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
     most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,
@@ -279,10 +324,12 @@ const mapDispatchToProps = dispatch => {
 }
 
 const CMostActiveAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats)
+const CNewContributorsStats = connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats)
 const CMostReviewedAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats)
 const CAuthorsPeersStats = connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
 
 export {
+  CNewContributorsStats,
   CMostActiveAuthorsStats,
   CMostReviewedAuthorsStats,
   CAuthorsPeersStats

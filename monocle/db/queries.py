@@ -675,3 +675,20 @@ def last_abandoned_changes(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
+
+
+def new_contributors(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['size'] = 10000
+    new_authors = events_top_authors(es, index, repository_fullname, params)['items']
+    new = set([x['key'] for x in new_authors])
+    params['lte'] = params['gte']
+    del params['gte']
+    old = set(
+        [
+            x['key']
+            for x in events_top_authors(es, index, repository_fullname, params)['items']
+        ]
+    )
+    diff = new.difference(old)
+    return {'items': [n for n in new_authors if n['key'] in diff]}
