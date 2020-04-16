@@ -267,6 +267,13 @@ def repos_top_merged(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
+def repos_top_opened(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'OPEN'
+    return _events_top(es, index, repository_fullname, "repository_fullname", params)
+
+
 def events_top_authors(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "author", params)
 
@@ -305,7 +312,15 @@ def authors_top_commented(es, index, repository_fullname, params):
 def authors_top_merged(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeMergedEvent",)
+    switch_to_on_authors(params)
     return _events_top(es, index, repository_fullname, "on_author", params)
+
+
+def authors_top_opened(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'OPEN'
+    return _events_top(es, index, repository_fullname, "author", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):

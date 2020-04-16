@@ -21,6 +21,9 @@ const initialState = {
   authors_peers_stats_error: null,
   repos_top_merged_result: null,
   repos_top_merged_loading: true,
+  repos_top_opened_error: null,
+  repos_top_opened_result: null,
+  repos_top_opened_loading: true,
   repos_top_merged_error: null,
   hot_changes_result: null,
   hot_changes_loading: true,
@@ -39,7 +42,13 @@ const initialState = {
   changes_and_events_error: null,
   new_contributors_result: null,
   new_contributors_loading: true,
-  new_contributors_error: null
+  new_contributors_error: null,
+  authors_top_merged_result: null,
+  authors_top_merged_loading: true,
+  authors_top_merged_error: null,
+  authors_top_opened_result: null,
+  authors_top_opened_loading: true,
+  authors_top_opened_error: null
 }
 
 const enhanceData = (x) => {

@@ -15,39 +15,37 @@ import {
 
 import Pie from './pie'
 
-class ApprovalStats extends BaseQueryComponent {
+class ReposMergedPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'changes_top_approval'
-    this.state.graph_type = 'approval_stats'
+    this.state.name = 'repos_top_merged'
+    this.state.graph_type = 'repos_top_merged'
   }
 
   render () {
-    if (!this.props.approval_stats_loading) {
-      if (this.props.approval_stats_error) {
+    if (!this.props.repos_top_merged_loading) {
+      if (this.props.repos_top_merged_error) {
         return <ErrorBox
-          error={this.props.approval_stats_error}
+          error={this.props.repos_top_merged_error}
         />
       }
-      const ignoredApproval = [
-        'Code-Review+0',
-        'Verified+0',
-        'Workflow+0',
-        'COMMENTED'
-      ]
+      if (!this.props.repos_top_merged_result) {
+        return <ErrorBox
+          error={{ data: 'No data for ReposMergedPie', status: 0 }}
+        />
+      }
       return (
         <Row>
           <Col>
             <Card>
               <Card.Header>
-                <Card.Title>Approvals dispersion stats</Card.Title>
+                <Card.Title>Merged Changes per repository</Card.Title>
               </Card.Header>
               <Card.Body>
                 <Row>
                   <Col>
                     <Pie
-                      data={this.props.approval_stats_result}
-                      filtered_items={ignoredApproval}
+                      data={this.props.repos_top_merged_result}
                     />
                   </Col>
                 </Row>
@@ -64,9 +62,9 @@ class ApprovalStats extends BaseQueryComponent {
 
 const mapStateToProps = state => {
   return {
-    approval_stats_loading: state.QueryReducer.approval_stats_loading,
-    approval_stats_result: state.QueryReducer.approval_stats_result,
-    approval_stats_error: state.QueryReducer.approval_stats_error
+    repos_top_merged_loading: state.QueryReducer.repos_top_merged_loading,
+    repos_top_merged_result: state.QueryReducer.repos_top_merged_result,
+    repos_top_merged_error: state.QueryReducer.repos_top_merged_error
   }
 }
 
@@ -76,8 +74,6 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CApprovalStats = connect(mapStateToProps, mapDispatchToProps)(ApprovalStats)
+const CReposMergedPie = connect(mapStateToProps, mapDispatchToProps)(ReposMergedPie)
 
-export {
-  CApprovalStats
-}
+export default CReposMergedPie

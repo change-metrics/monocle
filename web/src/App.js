@@ -33,6 +33,10 @@ import {
 import { CApprovalStats } from './components/approvals'
 import { CFiltersForm } from './components/filtersform'
 import { CChange } from './components/change'
+import CAuthorsMergedPie from './components/authors_merged_pie'
+import CReposMergedPie from './components/repos_merged_pie'
+import CAuthorsOpenedPie from './components/authors_opened_pie'
+import CReposOpenedPie from './components/repos_opened_pie'
 
 class RootView extends React.Component {
   render () {
@@ -168,6 +172,16 @@ class MergedChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CAuthorsMergedPie
+                index={this.props.match.params.index} />
+            </Col>
+            <Col>
+              <CReposMergedPie
+                index={this.props.match.params.index} />
+            </Col>
+          </Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
@@ -204,6 +218,16 @@ class OpenChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CAuthorsOpenedPie
+                index={this.props.match.params.index} />
+            </Col>
+            <Col>
+              <CReposOpenedPie
+                index={this.props.match.params.index} />
+            </Col>
+          </Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
