@@ -154,16 +154,15 @@ class FiltersForm extends React.Component {
   }
 
   handleChange = (key, e) => {
-    let val = null
-    if (e !== null) {
-      val = e.target ? e.target.value : e
-    }
+    let val = (e && e.target) ? e.target.value : e
     const assoc = {}
     if (key === 'gte' || key === 'lte') {
       val = moment(val).format('YYYY-MM-DD')
       if (val === 'Invalid date') {
         val = ''
       }
+    } else if (!e) {
+      val = ''
     }
     assoc[key] = val
     this.setState(assoc)
@@ -194,6 +193,12 @@ class FiltersForm extends React.Component {
     const newsearch = urlparams.toString()
     // do not push a new url if the search didn't change
     if (`?${newsearch}` !== window.location.search) {
+      // trick to be able to use the back button of the browser
+      // note that the forward button will not work...
+      const current = new URL(window.location.href)
+      current.pathname = `r${current.pathname}`
+      window.history.replaceState(window.history.state, '', current.href)
+      // push the new location
       const newurl = newsearch === '' ? baseurl : baseurl + '?' + newsearch
       this.props.history.push(newurl)
     }
