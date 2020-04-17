@@ -32,6 +32,40 @@ from elasticsearch.helpers import scan as scanner
 
 log = logging.getLogger(__name__)
 
+public_queries = (
+    "count_events",
+    "count_authors",
+    "events_histo",
+    "repos_top_merged",
+    "events_top_authors",
+    "changes_top_approval",
+    "changes_top_commented",
+    "changes_top_reviewed",
+    "authors_top_reviewed",
+    "authors_top_commented",
+    "authors_top_merged",
+    "peers_exchange_strength",
+    "change_merged_count_by_duration",
+    "change_merged_avg_duration",
+    "changes_closed_ratios",
+    "first_comment_on_changes",
+    "first_review_on_changes",
+    "cold_changes",
+    "hot_changes",
+    "changes_lifecycle_histos",
+    "changes_lifecycle_stats",
+    "changes_review_histos",
+    "changes_review_stats",
+    "most_active_authors_stats",
+    "most_reviewed_authors_stats",
+    "last_merged_changes",
+    "last_opened_changes",
+    "last_state_changed_changes",
+    "oldest_open_changes",
+    "changes_and_events",
+    "last_abandoned_changes",
+)
+
 
 def generate_events_filter(params, qfilter):
     gte = params.get('gte')
@@ -237,6 +271,7 @@ def events_top_authors(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "author", params)
 
 
+# TODO(fbo): add tests for queries below
 def changes_top_approval(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
@@ -330,7 +365,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
     return data['aggregations']['agg1']['buckets']
 
 
-def pr_merged_avg_duration(es, index, repository_fullname, params):
+def change_merged_avg_duration(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"

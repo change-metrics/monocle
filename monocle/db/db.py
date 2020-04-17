@@ -32,6 +32,10 @@ from monocle.db import queries
 from monocle import utils
 
 
+class UnknownQueryException(Exception):
+    pass
+
+
 class ELmonocleDB:
 
     log = logging.getLogger("monocle.ELmonocleDB")
@@ -172,6 +176,8 @@ class ELmonocleDB:
     def run_named_query(self, name, *args, **kwargs):
         # Here we set gte and lte if not provided by user
         # especially to be able to set the histogram extended_bounds
+        if name not in queries.public_queries:
+            raise UnknownQueryException("Unknown query: %s" % name)
         if not args[1].get('gte'):
             first_created_event = queries._first_created_event(
                 self.es, self.index, *args, **kwargs

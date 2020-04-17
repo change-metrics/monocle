@@ -1,0 +1,80 @@
+[
+  {
+    "type": "Change",
+    "id": "c1",
+    "number": 1,
+    "repository_prefix": "unit",
+    "repository_fullname": "unit/repo1",
+    "repository_shortname": "repo1",
+    "change_id": "unit@repo1@1",
+    "url": "https://tests.com/unit/repo1/pull/1",
+    "author": "john",
+    "branch": "feature-1",
+    "target_branch": "master",
+    "title": "A PR title",
+    "text": "The body text of the PR",
+    "additions": 10,
+    "deletions": 5,
+    "changed_files_count": 1,
+    "changed_files": [
+      {
+        "additions": 10,
+        "deletions": 5,
+        "path": "path/to/file1.py"
+      }
+    ],
+    "commit_count": 1,
+    "merged_by": "jane",
+    "updated_at": "2020-01-01T00:00:00Z",
+    "created_at": "2020-01-01T00:00:00Z",
+    "merged_at": "2020-01-02T00:00:00Z",
+    "closed_at": "2020-01-02T00:00:00Z",
+    "state": "MERGED",
+    "duration": 86400,
+    "mergeable": "UNKNOWN",
+    "labels": [],
+    "assignees": []
+  },
+  {
+    "type": "ChangeCreatedEvent",
+    "id": "c1_e1",
+    "created_at": "2020-01-01T00:00:00Z",
+    "author": "john",
+    "repository_prefix": "unit",
+    "repository_fullname": "unit/repo1",
+    "repository_shortname": "repo1",
+    "number": 1,
+    "change_id": "unit@repo1@1",
+    "url": "https://tests.com/unit/repo1/pull/1",
+    "on_author": "john",
+    "on_created_at": "2020-01-01T00:00:00Z"
+  },
+  {
+    "type": "ChangeCommentedEvent",
+    "id": "c1_e2",
+    "created_at": "2020-01-01T01:00:00Z",
+    "author": "jane",
+    "repository_prefix": "unit",
+    "repository_fullname": "unit/repo1",
+    "repository_shortname": "repo1",
+    "number": 1,
+    "change_id": "unit@repo1@1",
+    "url": "https://tests.com/unit/repo1/pull/1",
+    "on_author": "john",
+    "on_created_at": "2020-01-01T00:00:00Z"
+  },
+  {
+    "type": "ChangeMergedEvent",
+    "id": "c1_e3",
+    "created_at": "2020-01-02T00:00:00Z",
+    "author": "jane",
+    "repository_prefix": "unit",
+    "repository_fullname": "unit/repo1",
+    "repository_shortname": "repo1",
+    "number": 1,
+    "change_id": "unit@repo1@1",
+    "url": "https://tests.com/unit/repo1/pull/1",
+    "on_author": "john",
+    "on_created_at": "2020-01-01T00:00:00Z"
+  }
+]

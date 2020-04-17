@@ -30,6 +30,7 @@ from flask_cors import CORS
 
 from monocle import utils
 from monocle.db.db import ELmonocleDB
+from monocle.db.db import UnknownQueryException
 
 
 app = Flask(__name__)
@@ -43,7 +44,7 @@ def query(name):
     repository_fullname = request.args.get('repository')
     try:
         params = utils.set_params(request.args)
-    except utils.ExlusiveParametersException as err:
+    except UnknownQueryException as err:
         return "Unable to process query: %s" % err, 400
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),

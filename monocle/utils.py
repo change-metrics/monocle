@@ -28,6 +28,8 @@ events_list = [
     'ChangeMergedEvent',
     'ChangeCommentedEvent',
     'ChangeReviewedEvent',
+    'ChangeCommitPushedEvent',
+    'ChangeCommitForcePushedEvent',
 ]
 
 
