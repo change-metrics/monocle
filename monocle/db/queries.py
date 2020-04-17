@@ -37,6 +37,7 @@ public_queries = (
     "count_authors",
     "events_histo",
     "repos_top_merged",
+    "repos_top_opened",
     "events_top_authors",
     "changes_top_approval",
     "changes_top_commented",
@@ -44,6 +45,7 @@ public_queries = (
     "authors_top_reviewed",
     "authors_top_commented",
     "authors_top_merged",
+    "authors_top_opened",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "change_merged_avg_duration",
@@ -64,6 +66,7 @@ public_queries = (
     "oldest_open_changes",
     "changes_and_events",
     "last_abandoned_changes",
+    "new_contributors",
 )
 
 
