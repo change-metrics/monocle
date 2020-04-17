@@ -299,7 +299,7 @@ class PRsFetcher(object):
                 change['repository_fullname'],
                 change['number'],
             )
-            change['author'] = pr['author']['login']
+            change['author'] = pr['author']['login'] if pr['author'] else None
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
             change['title'] = pr['title']
