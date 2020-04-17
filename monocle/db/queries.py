@@ -97,7 +97,7 @@ def generate_changes_filter(params, qfilter):
         qfilter.append({"term": {"state": state}})
 
 
-def generate_filter(repository_fullname, params):
+def generate_filter(repositories, params):
     gte = params.get('gte')
     lte = params.get('lte')
     etype = params.get('etype')
@@ -112,7 +112,7 @@ def generate_filter(repository_fullname, params):
         created_at_range['created_at']['lte'] = lte
     repositories = [
         {"regexp": {"repository_fullname": {"value": repo_regexp}}}
-        for repo_regexp in repository_fullname
+        for repo_regexp in repositories
     ]
     qfilter = [
         {"bool": {"should": repositories}},
@@ -160,21 +160,21 @@ def run_query(es, index, body):
     return res
 
 
-def _scan(es, index, repository_fullname, params):
+def _scan(es, index, repositories, params):
     body = {
         # "_source": "change_id",
         "_source": params.get('field', []),
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     scanner_params = {'index': index, 'doc_type': index, 'query': body}
     data = scanner(es, **scanner_params)
     return [d['_source'] for d in data]
 
 
-def _first_created_event(es, index, repository_fullname, params):
+def _first_created_event(es, index, repositories, params):
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     data = [r['_source'] for r in data['hits']['hits']]
@@ -182,8 +182,8 @@ def _first_created_event(es, index, repository_fullname, params):
         return data[0]['created_at']
 
 
-def count_events(es, index, repository_fullname, params):
-    body = {"query": generate_filter(repository_fullname, params)}
+def count_events(es, index, repositories, params):
+    body = {"query": generate_filter(repositories, params)}
     count_params = {'index': index, 'doc_type': index}
     count_params['body'] = body
     try:
@@ -193,19 +193,19 @@ def count_events(es, index, repository_fullname, params):
     return res['count']
 
 
-def count_authors(es, index, repository_fullname, params):
+def count_authors(es, index, repositories, params):
     body = {
         "aggs": {
             "agg1": {"cardinality": {"field": "author", "precision_threshold": 3000}}
         },
         "size": 0,
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['value']
 
 
-def events_histo(es, index, repository_fullname, params):
+def events_histo(es, index, repositories, params):
     def interval_to_format(fmt):
         if fmt.endswith('h'):
             return 'yyyy-MM-dd HH:00'
@@ -231,7 +231,7 @@ def events_histo(es, index, repository_fullname, params):
             "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
         },
         "size": 0,
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     return (
@@ -240,7 +240,7 @@ def events_histo(es, index, repository_fullname, params):
     )
 
 
-def _events_top(es, index, repository_fullname, field, params):
+def _events_top(es, index, repositories, field, params):
     body = {
         "aggs": {
             "agg1": {
@@ -248,7 +248,7 @@ def _events_top(es, index, repository_fullname, field, params):
             }
         },
         "size": 0,
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     count_series = [b['doc_count'] for b in data['aggregations']['agg1']['buckets']]
@@ -266,84 +266,82 @@ def _events_top(es, index, repository_fullname, field, params):
     }
 
 
-def repos_top_merged(es, index, repository_fullname, params):
+def repos_top_merged(es, index, repositories, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     params['etype'] = ("ChangeMergedEvent",)
-    return _events_top(es, index, repository_fullname, "repository_fullname", params)
+    return _events_top(es, index, repositories, "repository_fullname", params)
 
 
-def repos_top_opened(es, index, repository_fullname, params):
+def repos_top_opened(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = 'OPEN'
-    return _events_top(es, index, repository_fullname, "repository_fullname", params)
+    return _events_top(es, index, repositories, "repository_fullname", params)
 
 
-def events_top_authors(es, index, repository_fullname, params):
-    return _events_top(es, index, repository_fullname, "author", params)
+def events_top_authors(es, index, repositories, params):
+    return _events_top(es, index, repositories, "author", params)
 
 
 # TODO(fbo): add tests for queries below
-def changes_top_approval(es, index, repository_fullname, params):
+def changes_top_approval(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "approval", params)
+    return _events_top(es, index, repositories, "approval", params)
 
 
-def changes_top_commented(es, index, repository_fullname, params):
+def changes_top_commented(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
-    return _events_top(es, index, repository_fullname, "change_id", params)
+    return _events_top(es, index, repositories, "change_id", params)
 
 
-def changes_top_reviewed(es, index, repository_fullname, params):
+def changes_top_reviewed(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "change_id", params)
+    return _events_top(es, index, repositories, "change_id", params)
 
 
-def authors_top_reviewed(es, index, repository_fullname, params):
+def authors_top_reviewed(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repositories, "on_author", params)
 
 
-def authors_top_commented(es, index, repository_fullname, params):
+def authors_top_commented(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeCommentedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repositories, "on_author", params)
 
 
-def authors_top_merged(es, index, repository_fullname, params):
+def authors_top_merged(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeMergedEvent",)
     switch_to_on_authors(params)
-    return _events_top(es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repositories, "on_author", params)
 
 
-def authors_top_opened(es, index, repository_fullname, params):
+def authors_top_opened(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = 'OPEN'
-    return _events_top(es, index, repository_fullname, "author", params)
+    return _events_top(es, index, repositories, "author", params)
 
 
-def peers_exchange_strength(es, index, repository_fullname, params):
+def peers_exchange_strength(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
     # Fetch the most active authors for those events
     authors = [
         bucket['key']
-        for bucket in _events_top(es, index, repository_fullname, "author", params)[
-            'items'
-        ]
+        for bucket in _events_top(es, index, repositories, "author", params)['items']
     ]
     peers_strength = {}
     # For each of them get authors they most review or comment
     for author in authors:
         params['authors'] = [author]
-        ret = _events_top(es, index, repository_fullname, "on_author", params)['items']
+        ret = _events_top(es, index, repositories, "on_author", params)['items']
         for bucket in ret:
             if bucket['key'] == author:
                 continue
@@ -360,7 +358,7 @@ def peers_exchange_strength(es, index, repository_fullname, params):
     return peers_strength
 
 
-def change_merged_count_by_duration(es, index, repository_fullname, params):
+def change_merged_count_by_duration(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
@@ -380,13 +378,13 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
             }
         },
         "size": 0,
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']['buckets']
 
 
-def change_merged_avg_duration(es, index, repository_fullname, params):
+def change_merged_avg_duration(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
@@ -394,13 +392,13 @@ def change_merged_avg_duration(es, index, repository_fullname, params):
         "aggs": {"agg1": {"avg": {"field": "duration"}}},
         "size": 0,
         "docvalue_fields": [{"field": "created_at", "format": "date_time"}],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     return data['aggregations']['agg1']
 
 
-def changes_closed_ratios(es, index, repository_fullname, params):
+def changes_closed_ratios(es, index, repositories, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     etypes = (
@@ -413,7 +411,7 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     ret = {}
     for etype in etypes:
         params['etype'] = (etype,)
-        ret[etype] = count_events(es, index, repository_fullname, params)
+        ret[etype] = count_events(es, index, repositories, params)
     try:
         ret['merged/created'] = round(
             ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1
@@ -440,14 +438,14 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     return ret
 
 
-def _first_event_on_changes(es, index, repository_fullname, params):
+def _first_event_on_changes(es, index, repositories, params):
     params = deepcopy(params)
 
     def keyfunc(x):
         return x['change_id']
 
     groups = {}
-    _events = _scan(es, index, repository_fullname, params)
+    _events = _scan(es, index, repositories, params)
     _events = sorted(_events, key=lambda k: k['change_id'])
     # Keep by Change the created date + first event date
     for pr, events in groupby(_events, keyfunc):
@@ -487,28 +485,28 @@ def _first_event_on_changes(es, index, repository_fullname, params):
     return ret
 
 
-def first_comment_on_changes(es, index, repository_fullname, params):
+def first_comment_on_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ('ChangeCommentedEvent',)
-    return _first_event_on_changes(es, index, repository_fullname, params)
+    return _first_event_on_changes(es, index, repositories, params)
 
 
-def first_review_on_changes(es, index, repository_fullname, params):
+def first_review_on_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ('ChangeReviewedEvent',)
-    return _first_event_on_changes(es, index, repository_fullname, params)
+    return _first_event_on_changes(es, index, repositories, params)
 
 
-def cold_changes(es, index, repository_fullname, params):
+def cold_changes(es, index, repositories, params):
     params = deepcopy(params)
     size = params.get('size')
     params['etype'] = ('Change',)
     params['state'] = 'OPEN'
-    changes = _scan(es, index, repository_fullname, params)
+    changes = _scan(es, index, repositories, params)
     _changes_ids = set([change['change_id'] for change in changes])
     params['etype'] = ('ChangeCommentedEvent', 'ChangeReviewedEvent')
     del params['state']
-    events = _scan(es, index, repository_fullname, params)
+    events = _scan(es, index, repositories, params)
     _events_ids = set([event['change_id'] for event in events])
     changes_ids_wo_rc = _changes_ids.difference(_events_ids)
     changes_wo_rc = [
@@ -520,14 +518,12 @@ def cold_changes(es, index, repository_fullname, params):
     return {'items': items}
 
 
-def hot_changes(es, index, repository_fullname, params):
+def hot_changes(es, index, repositories, params):
     params = deepcopy(params)
     size = params.get('size')
     # Set a significant depth to get an 'accurate' median value
     params['size'] = 500
-    top_commented_changes = changes_top_commented(
-        es, index, repository_fullname, params
-    )
+    top_commented_changes = changes_top_commented(es, index, repositories, params)
     # Keep changes with comment events > median
     top_commented_changes = [
         change
@@ -545,7 +541,7 @@ def hot_changes(es, index, repository_fullname, params):
         'state': 'OPEN',
         'change_ids': change_ids,
     }
-    changes = _scan(es, index, repository_fullname, _params)
+    changes = _scan(es, index, repositories, _params)
     for change in changes:
         change['hot_score'] = mapping[change['change_id']]
     items = sorted(changes, key=lambda x: x['hot_score'], reverse=True)
@@ -554,7 +550,7 @@ def hot_changes(es, index, repository_fullname, params):
     return {'items': items}
 
 
-def changes_lifecycle_histos(es, index, repository_fullname, params):
+def changes_lifecycle_histos(es, index, repositories, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     ret = {}
@@ -567,16 +563,16 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
     )
     for etype in etypes:
         params['etype'] = (etype,)
-        ret[etype] = events_histo(es, index, repository_fullname, params)
+        ret[etype] = events_histo(es, index, repositories, params)
     return ret
 
 
-def changes_lifecycle_stats(es, index, repository_fullname, params):
+def changes_lifecycle_stats(es, index, repositories, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     ret = {}
-    ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
-    ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
+    ret['ratios'] = changes_closed_ratios(es, index, repositories, params)
+    ret['histos'] = changes_lifecycle_histos(es, index, repositories, params)
     etypes = (
         'ChangeCreatedEvent',
         "ChangeMergedEvent",
@@ -588,62 +584,60 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     for etype in etypes:
         ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
         params['etype'] = (etype,)
-        events_count = count_events(es, index, repository_fullname, params)
-        authors_count = count_authors(es, index, repository_fullname, params)
+        events_count = count_events(es, index, repositories, params)
+        authors_count = count_authors(es, index, repositories, params)
         ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
     return ret
 
 
-def changes_review_histos(es, index, repository_fullname, params):
+def changes_review_histos(es, index, repositories, params):
     params = deepcopy(params)
     ret = {}
     etypes = ('ChangeCommentedEvent', "ChangeReviewedEvent")
     for etype in etypes:
         params['etype'] = (etype,)
-        ret[etype] = events_histo(es, index, repository_fullname, params)
+        ret[etype] = events_histo(es, index, repositories, params)
     return ret
 
 
-def changes_review_stats(es, index, repository_fullname, params):
+def changes_review_stats(es, index, repositories, params):
     params = deepcopy(params)
     ret = {}
     ret['first_event_delay'] = {}
     ret['first_event_delay']['comment'] = first_comment_on_changes(
-        es, index, repository_fullname, params
+        es, index, repositories, params
     )
     ret['first_event_delay']['review'] = first_review_on_changes(
-        es, index, repository_fullname, params
+        es, index, repositories, params
     )
-    ret['histos'] = changes_review_histos(es, index, repository_fullname, params)
+    ret['histos'] = changes_review_histos(es, index, repositories, params)
     for etype in ("ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
-        events_count = count_events(es, index, repository_fullname, params)
-        authors_count = count_authors(es, index, repository_fullname, params)
+        events_count = count_events(es, index, repositories, params)
+        authors_count = count_authors(es, index, repositories, params)
         ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
     return ret
 
 
-def most_active_authors_stats(es, index, repository_fullname, params):
+def most_active_authors_stats(es, index, repositories, params):
     params = deepcopy(params)
     ret = {}
     for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
-        ret[etype] = events_top_authors(es, index, repository_fullname, params)
+        ret[etype] = events_top_authors(es, index, repositories, params)
     switch_to_on_authors(params)
-    ret["ChangeMergedEvent"] = authors_top_merged(
-        es, index, repository_fullname, params
-    )
+    ret["ChangeMergedEvent"] = authors_top_merged(es, index, repositories, params)
     return ret
 
 
-def most_reviewed_authors_stats(es, index, repository_fullname, params):
+def most_reviewed_authors_stats(es, index, repositories, params):
     return {
-        "reviewed": authors_top_reviewed(es, index, repository_fullname, params),
-        "commented": authors_top_commented(es, index, repository_fullname, params),
+        "reviewed": authors_top_reviewed(es, index, repositories, params),
+        "commented": authors_top_commented(es, index, repositories, params),
     }
 
 
-def last_merged_changes(es, index, repository_fullname, params):
+def last_merged_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "MERGED"
@@ -651,14 +645,14 @@ def last_merged_changes(es, index, repository_fullname, params):
         "sort": [{"closed_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def last_opened_changes(es, index, repository_fullname, params):
+def last_opened_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "OPEN"
@@ -666,21 +660,21 @@ def last_opened_changes(es, index, repository_fullname, params):
         "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def last_state_changed_changes(es, index, repository_fullname, params):
+def last_state_changed_changes(es, index, repositories, params):
     return {
-        "merged_changes": last_merged_changes(es, index, repository_fullname, params),
-        "opened_changes": last_opened_changes(es, index, repository_fullname, params),
+        "merged_changes": last_merged_changes(es, index, repositories, params),
+        "opened_changes": last_opened_changes(es, index, repositories, params),
     }
 
 
-def oldest_open_changes(es, index, repository_fullname, params):
+def oldest_open_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "OPEN"
@@ -688,14 +682,14 @@ def oldest_open_changes(es, index, repository_fullname, params):
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params['size'],
         "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def changes_and_events(es, index, repository_fullname, params):
+def changes_and_events(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = (
         "Change",
@@ -711,14 +705,14 @@ def changes_and_events(es, index, repository_fullname, params):
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params['size'],
         "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def last_abandoned_changes(es, index, repository_fullname, params):
+def last_abandoned_changes(es, index, repositories, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = "CLOSED"
@@ -726,25 +720,22 @@ def last_abandoned_changes(es, index, repository_fullname, params):
         "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
+        "query": generate_filter(repositories, params),
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     return {'items': changes, 'total': data['hits']['total']}
 
 
-def new_contributors(es, index, repository_fullname, params):
+def new_contributors(es, index, repositories, params):
     params = deepcopy(params)
     params['size'] = 10000
-    new_authors = events_top_authors(es, index, repository_fullname, params)['items']
+    new_authors = events_top_authors(es, index, repositories, params)['items']
     new = set([x['key'] for x in new_authors])
     params['lte'] = params['gte']
     del params['gte']
     old = set(
-        [
-            x['key']
-            for x in events_top_authors(es, index, repository_fullname, params)['items']
-        ]
+        [x['key'] for x in events_top_authors(es, index, repositories, params)['items']]
     )
     diff = new.difference(old)
     return {'items': [n for n in new_authors if n['key'] in diff]}
