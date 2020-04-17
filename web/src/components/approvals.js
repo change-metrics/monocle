@@ -29,6 +29,18 @@ class ApprovalStats extends BaseQueryComponent {
           error={this.props.approval_stats_error}
         />
       }
+      const palette = {
+        'Code-Review+2': '#00ff9f',
+        'Code-Review+1': '#B6FCD5',
+        'Code-Review-1': '#CA5462',
+        'Code-Review-2': '#AB0000',
+        'Workflow+1': '#00ff9f',
+        'Workflow-1': '#AB0000',
+        APPROVED: '#00ff9f',
+        DISMISSED: '#AB0000',
+        COMMENTED: '#B6FCD5',
+        CHANGES_REQUESTED: '#CA5462'
+      }
       const ignoredApproval = [
         'Code-Review+0',
         'Verified+0',
@@ -48,6 +60,7 @@ class ApprovalStats extends BaseQueryComponent {
                     <Pie
                       data={this.props.approval_stats_result}
                       filtered_items={ignoredApproval}
+                      palette={palette}
                     />
                   </Col>
                 </Row>
