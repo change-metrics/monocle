@@ -31,6 +31,13 @@ name = 'github_crawler'
 help = 'Github Crawler to fetch PRs events'
 
 
+class ExtractPRIssue(Exception):
+    def __init__(self, excpt, pr, idx=-1):
+        self.excpt = excpt
+        self.pr = pr
+        self.idx = idx
+
+
 @dataclass
 class GithubCrawlerArgs(object):
     updated_since: str
@@ -195,6 +202,9 @@ class PRsFetcher(object):
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['search']['issueCount']
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
+        if 'data' not in data:
+            self.log.error('No data collected: %s' % data)
+            return False
         for pr in data['data']['search']['edges']:
             prs.append(pr['node'])
         pageInfo = data['data']['search']['pageInfo']
@@ -258,6 +268,11 @@ class PRsFetcher(object):
         return (raw, self.extract_objects([raw]))
 
     def extract_objects(self, prs):
+        def get_login(data):
+            if data and 'login' in data and data['login']:
+                return data['login']
+            return 'ghost'
+
         def timedelta(start, end):
             format = "%Y-%m-%dT%H:%M:%SZ"
             start = datetime.strptime(start, format)
@@ -284,9 +299,9 @@ class PRsFetcher(object):
             change['type'] = 'Change'
             change['id'] = pr['id']
             change['number'] = pr['number']
-            change['repository_prefix'] = pr['repository']['owner']['login']
+            change['repository_prefix'] = get_login(pr['repository']['owner'])
             change['repository_fullname'] = "%s/%s" % (
-                pr['repository']['owner']['login'],
+                get_login(pr['repository']['owner']),
                 pr['repository']['name'],
             )
             change['repository_shortname'] = pr['repository']['name']
@@ -299,7 +314,7 @@ class PRsFetcher(object):
                 change['repository_fullname'],
                 change['number'],
             )
-            change['author'] = pr['author']['login']
+            change['author'] = get_login(pr['author'])
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
             change['title'] = pr['title']
@@ -317,7 +332,7 @@ class PRsFetcher(object):
             ]
             change['commit_count'] = len(pr['commits']['edges'])
             if pr['mergedBy']:
-                change['merged_by'] = pr['mergedBy']['login']
+                change['merged_by'] = get_login(pr['mergedBy'])
             else:
                 change['merged_by'] = None
             change['updated_at'] = pr['updatedAt']
@@ -335,7 +350,7 @@ class PRsFetcher(object):
                 map(lambda n: n['node']['name'], pr['labels']['edges'])
             )
             change['assignees'] = list(
-                map(lambda n: n['node']['login'], pr['assignees']['edges'])
+                map(lambda n: get_login(n['node']), pr['assignees']['edges'])
             )
             objects.append(change)
             obj = {
@@ -352,20 +367,22 @@ class PRsFetcher(object):
                     'type': 'ChangeCommentedEvent',
                     'id': _comment['id'],
                     'created_at': _comment['createdAt'],
-                    'author': _comment['author']['login'],
+                    'author': get_login(_comment['author']),
                 }
                 insert_change_attributes(obj, change)
                 objects.append(obj)
             for timelineitem in pr['timelineItems']['edges']:
                 _timelineitem = timelineitem['node']
+                _author = _timelineitem.get('actor', {}) or _timelineitem.get(
+                    'author', {}
+                )
+                if not _author:
+                    _author = {'login': 'ghost'}
                 obj = {
                     'type': self.events_map[_timelineitem['__typename']],
                     'id': _timelineitem['id'],
                     'created_at': _timelineitem['createdAt'],
-                    'author': (
-                        _timelineitem.get('actor', {}).get('login')
-                        or _timelineitem.get('author', {}).get('login')
-                    ),
+                    'author': _author.get('login'),
                 }
                 insert_change_attributes(obj, change)
                 if 'state' in _timelineitem:
@@ -386,17 +403,19 @@ class PRsFetcher(object):
                     'created_at': _commit.get('pushedDate', change['created_at']),
                 }
                 if _commit['author'].get('user'):
-                    obj['author'] = _commit['author']['user'].get('login')
+                    obj['author'] = get_login(_commit['author']['user'])
                 insert_change_attributes(obj, change)
                 objects.append(obj)
             return objects
 
         objects = []
+        idx = 0
         for pr in prs:
+            idx += 1
             try:
                 objects.extend(extract_pr_objects(pr))
-            except Exception:
-                self.log.exception("Unable to extract PR data: %s" % pr)
+            except Exception as excpt:
+                raise ExtractPRIssue(excpt, pr, idx)
         return objects
 
 

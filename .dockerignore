@@ -3,3 +3,5 @@ web
 data
 docker-compose.yml
 contrib
+dump
+etc

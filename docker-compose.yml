@@ -24,6 +24,7 @@ services:
     command: monocle --elastic-conn elastic:9200 crawler --config /etc/projects.yaml
     volumes:
       - $PWD/etc:/etc:Z
+      - $PWD/dump:/var/lib/crawler:Z
   web:
     build: web
     depends_on:

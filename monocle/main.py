@@ -35,7 +35,7 @@ from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
 from monocle.github import pullrequest
 from monocle.gerrit import review
-from monocle.crawler import Crawler
+from monocle.crawler import Crawler, Runner, GroupCrawler
 from monocle import projects
 
 
@@ -131,6 +131,8 @@ def main():
         config = yaml.safe_load(open(realpath).read())
         validate(instance=config, schema=projects.schema)
         tpool = []
+        group_crawler = True
+        group = {}
         for project in config['projects']:
             for crawler_item in project['crawler'].get('github_orgs', []):
                 c_args = pullrequest.GithubCrawlerArgs(
@@ -143,13 +145,25 @@ def main():
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
                 )
-                tpool.append(
-                    Crawler(
-                        c_args,
-                        elastic_conn=args.elastic_conn,
-                        elastic_timeout=args.elastic_timeout,
+                if group_crawler:
+                    if crawler_item['token'] not in group:
+                        group[crawler_item['token']] = GroupCrawler()
+                        tpool.append(group[crawler_item['token']])
+                    group[crawler_item['token']].add_crawler(
+                        Runner(
+                            c_args,
+                            elastic_conn=args.elastic_conn,
+                            elastic_timeout=args.elastic_timeout,
+                        )
                     )
-                )
+                else:
+                    tpool.append(
+                        Crawler(
+                            c_args,
+                            elastic_conn=args.elastic_conn,
+                            elastic_timeout=args.elastic_timeout,
+                        )
+                    )
             for crawler_item in project['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',

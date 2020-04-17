@@ -15,7 +15,7 @@ The process below describes how to index changes from a Github repository, a ful
 ```Shell
 $ git clone https://github.com/morucci/monocle.git
 $ cd monocle
-$ mkdir data etc
+$ mkdir data etc dump
 ```
 
 ### Create the projects.yaml file
