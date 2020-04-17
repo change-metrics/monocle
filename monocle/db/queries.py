@@ -37,6 +37,7 @@ public_queries = (
     "count_authors",
     "events_histo",
     "repos_top_merged",
+    "repos_top_opened",
     "events_top_authors",
     "changes_top_approval",
     "changes_top_commented",
@@ -44,6 +45,7 @@ public_queries = (
     "authors_top_reviewed",
     "authors_top_commented",
     "authors_top_merged",
+    "authors_top_opened",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "change_merged_avg_duration",
@@ -64,6 +66,7 @@ public_queries = (
     "oldest_open_changes",
     "changes_and_events",
     "last_abandoned_changes",
+    "new_contributors",
 )
 
 
@@ -267,6 +270,13 @@ def repos_top_merged(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
+def repos_top_opened(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'OPEN'
+    return _events_top(es, index, repository_fullname, "repository_fullname", params)
+
+
 def events_top_authors(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "author", params)
 
@@ -305,7 +315,15 @@ def authors_top_commented(es, index, repository_fullname, params):
 def authors_top_merged(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("ChangeMergedEvent",)
+    switch_to_on_authors(params)
     return _events_top(es, index, repository_fullname, "on_author", params)
+
+
+def authors_top_opened(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'OPEN'
+    return _events_top(es, index, repository_fullname, "author", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
