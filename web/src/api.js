@@ -68,7 +68,7 @@ function getQueryResults (
       changeIds: changeIds
     }
   )
-  params.append('repository', repository)
+  params.append('repositories', repository)
   params.append('index', index)
   params.append('ec_same_date', true)
   return axios.get(
