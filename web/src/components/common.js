@@ -10,7 +10,7 @@ function changeUrl (index, x, name = null) {
   if (!name) {
     name = x.change_id
   }
-  return <Link to={'/' + index + '/change/' + x.change_id}>{name}</Link>
+  return <Link to={`/${index}/change/${x.change_id}${window.location.search}`}>{name}</Link>
 }
 
 function addUrlField (field, value) {

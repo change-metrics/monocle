@@ -14,8 +14,9 @@ class TopMenu extends React.Component {
       </Navbar.Brand>
       <Nav className="mr-auto">
         <Link className="nav-link" to={`/${this.props.index}${search}`}>Top</Link>
-        <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
         <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
+        <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
+        <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
       </Nav>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
     </Navbar>
