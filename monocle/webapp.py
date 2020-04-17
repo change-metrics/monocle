@@ -22,9 +22,7 @@
 import os
 
 from flask import Flask
-from flask import abort
 from flask import jsonify
-from flask import make_response
 from flask import request
 from flask_cors import CORS
 
@@ -40,8 +38,7 @@ CORS(app, resources={r"/api/0/query/*": {"origins": os.getenv('ALLOW_ORIGIN', '*
 @app.route("/api/0/query/<name>", methods=['GET'])
 def query(name):
     if not request.args.get('index'):
-        abort(make_response(jsonify(errors=['No index provided']), 404))
-    repository_fullname = request.args.get('repository')
+        return 'No index provided', 404
     try:
         params = utils.set_params(request.args)
     except UnknownQueryException as err:
@@ -50,7 +47,9 @@ def query(name):
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
         index=request.args.get('index'),
     )
-    result = db.run_named_query(name, repository_fullname, params)
+    repositories = [repo.lstrip('^') for repo in params['repositories']]
+    del params['repositories']
+    result = db.run_named_query(name, repositories, params)
     return jsonify(result)
 
 

@@ -110,8 +110,12 @@ def generate_filter(repository_fullname, params):
         created_at_range['created_at']['gte'] = gte
     if lte:
         created_at_range['created_at']['lte'] = lte
+    repositories = [
+        {"regexp": {"repository_fullname": {"value": repo_regexp}}}
+        for repo_regexp in repository_fullname
+    ]
     qfilter = [
-        {"regexp": {"repository_fullname": {"value": repository_fullname}}},
+        {"bool": {"should": repositories}},
         {"range": created_at_range},
     ]
     qfilter.append({"terms": {"type": etype}})
@@ -130,7 +134,6 @@ def generate_filter(repository_fullname, params):
     if exclude_authors:
         must_not.append({"terms": {"author": exclude_authors}})
         must_not.append({"terms": {"on_author": exclude_authors}})
-
     ret = {"bool": {"filter": qfilter, "must_not": must_not}}
     log.debug("query EL filter: %s" % ret)
     return ret

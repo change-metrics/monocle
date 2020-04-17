@@ -55,6 +55,7 @@ def set_params(input):
             return getattr(input, attr, default) or default
 
     params = {}
+    params['repositories'] = getter('repositories', '.*')
     params['gte'] = date_to_epoch_ml(getter('gte', None))
     params['lte'] = date_to_epoch_ml(getter('lte', None))
     params['on_cc_gte'] = date_to_epoch_ml(getter('on_cc_gte', None))
@@ -68,10 +69,7 @@ def set_params(input):
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))
     params['change_ids'] = getter('change_ids', None)
-    if params['change_ids']:
-        params['change_ids'] = params['change_ids'].split(',')
-    if params['exclude_authors']:
-        params['exclude_authors'] = params['exclude_authors'].split(',')
-    if params['authors']:
-        params['authors'] = params['authors'].split(',')
+    for param in ('repositories', 'change_ids', 'exclude_authors'):
+        if params[param]:
+            params[param] = params[param].split(',')
     return params

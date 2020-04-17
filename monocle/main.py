@@ -79,7 +79,9 @@ def main():
     parser_dbquery.add_argument('--interval', help='Histogram interval', default="3h")
     parser_dbquery.add_argument('--name', help='The query name', required=True)
     parser_dbquery.add_argument(
-        '--repository', help='Scope to events of a repository (regexp)', required=True
+        '--repositories',
+        help='Scope to events of repositories (comma separated regexp)',
+        required=True,
     )
     parser_dbquery.add_argument('--gte', help='Scope to events created after date')
     parser_dbquery.add_argument('--lte', help='Scope to events created before date')
@@ -178,8 +180,10 @@ def main():
     if args.command == "dbquery":
         db = ELmonocleDB(index=args.index)
         params = utils.set_params(args)
+        repositories = [repo.lstrip('^') for repo in params['repositories']]
+        del params['repositories']
         try:
-            ret = db.run_named_query(args.name, args.repository.lstrip('^'), params)
+            ret = db.run_named_query(args.name, repositories, params)
         except UnknownQueryException as err:
             print('Unable to run query: %s' % err)
             sys.exit(1)

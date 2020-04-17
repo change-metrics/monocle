@@ -60,7 +60,7 @@ class TestQueries(unittest.TestCase):
             UnknownQueryException,
             self.eldb.run_named_query,
             'unknown',
-            'unit/repo1',
+            ['unit/repo1'],
             params,
         )
 
@@ -69,7 +69,7 @@ class TestQueries(unittest.TestCase):
         Test internal query: _scan
         """
         params = set_params({})
-        ret = queries._scan(self.eldb.es, self.eldb.index, 'unit/repo1', params)
+        ret = queries._scan(self.eldb.es, self.eldb.index, ['unit/repo1'], params)
         ids = [obj['id'] for obj in ret]
         expected = ['c1_e1', 'c1_e2', 'c1_e3']
         self.assertListEqual(ids, expected)
@@ -80,7 +80,7 @@ class TestQueries(unittest.TestCase):
         """
         params = set_params({})
         ret = queries._first_created_event(
-            self.eldb.es, self.eldb.index, 'unit/repo1', params
+            self.eldb.es, self.eldb.index, ['unit/repo1'], params
         )
         self.assertEqual(ret, "2020-01-01T00:00:00Z")
 
@@ -90,7 +90,7 @@ class TestQueries(unittest.TestCase):
         """
         params = set_params({})
         ret = queries._events_top(
-            self.eldb.es, self.eldb.index, 'unit/repo1', 'type', params
+            self.eldb.es, self.eldb.index, ['unit/repo1'], 'type', params
         )
         expected = {
             'items': [
@@ -112,7 +112,7 @@ class TestQueries(unittest.TestCase):
         Test query: count_events
         """
         params = set_params({})
-        ret = self.eldb.run_named_query('count_events', 'unit/repo1', params)
+        ret = self.eldb.run_named_query('count_events', ['unit/repo1'], params)
         self.assertEqual(ret, 3)
 
     def test_count_authors(self):
@@ -120,11 +120,11 @@ class TestQueries(unittest.TestCase):
         Test query: count_authors
         """
         params = set_params({})
-        ret = self.eldb.run_named_query('count_authors', 'unit/repo1', params)
+        ret = self.eldb.run_named_query('count_authors', ['unit/repo1'], params)
         self.assertEqual(ret, 2)
 
         params = set_params({'type': 'ChangeCreatedEvent'})
-        ret = self.eldb.run_named_query('count_authors', 'unit/repo1', params)
+        ret = self.eldb.run_named_query('count_authors', ['unit/repo1'], params)
         self.assertEqual(ret, 1)
 
     def test_events_histo(self):
@@ -134,7 +134,7 @@ class TestQueries(unittest.TestCase):
         params = set_params(
             {'interval': '1d', 'gte': '2020-01-01', 'lte': '2020-01-03'}
         )
-        ret = self.eldb.run_named_query('events_histo', 'unit/repo1', params)
+        ret = self.eldb.run_named_query('events_histo', ['unit/repo1'], params)
         expected = (
             [
                 {'key_as_string': '2019-12-31', 'key': 1577750400000, 'doc_count': 0},
@@ -152,7 +152,7 @@ class TestQueries(unittest.TestCase):
         Test query: events_top_authors
         """
         params = set_params({})
-        ret = self.eldb.run_named_query('events_top_authors', 'unit/repo1', params)
+        ret = self.eldb.run_named_query('events_top_authors', ['unit/repo1'], params)
         expected = {
             'items': [{'key': 'jane', 'doc_count': 2}, {'key': 'john', 'doc_count': 1}],
             'count_avg': 1.5,
@@ -169,7 +169,9 @@ class TestQueries(unittest.TestCase):
         Test query: repos_top_merged
         """
         params = set_params({})
-        ret = self.eldb.run_named_query('repos_top_merged', 'unit/repo[12]', params)
+        ret = self.eldb.run_named_query(
+            'repos_top_merged', ['unit/repo1', 'unit/repo2'], params
+        )
         expected = {
             'items': [
                 {'key': 'unit/repo2', 'doc_count': 2},
