@@ -19,10 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import json
 import os
 import logging
-import tempfile
 from time import sleep
 from datetime import datetime
 from threading import Thread
@@ -70,24 +68,6 @@ class Runner(object):
             )
             return change['updated_at']
 
-    def dump_data(self, data, prefix=None):
-        try:
-            if self.dump_dir:
-                tmpfile = tempfile.NamedTemporaryFile(
-                    dir=self.dump_dir,
-                    prefix=prefix,
-                    suffix='.json',
-                    mode='w',
-                    delete=False,
-                )
-                json.dump(data, tmpfile)
-                tmpfile.close()
-                log.info('data dumped to %s' % tmpfile.name)
-                return tmpfile.name
-        except Exception:
-            log.exception('Unable to dump data')
-        return None
-
     def run_step(self):
         updated_since = self.get_last_updated_date()
         try:
@@ -95,24 +75,10 @@ class Runner(object):
         except Exception:
             log.exception('Unable to get PR data')
             return
-        if len(prs) > 0:
-            self.dump_data(prs, 'raw_prs_')
-        while len(prs) > 0:
-            try:
-                objects = self.prf.extract_objects(prs)
-                if objects:
-                    log.info(
-                        "%s objects will be updated in the database" % len(objects)
-                    )
-                    self.db.update(objects)
-                break
-            except pullrequest.ExtractPRIssue as err:
-                log.exception('Unable to decode PR')
-                log.error('idx=%d pr=%s' % (err.idx, err.pr))
-                # stop if we were on the last pr
-                if len(prs) == err.idx + 1:
-                    break
-                prs = prs[: err.idx] + prs[err.idx + 1 :]  # noqa
+        objects = self.prf.extract_objects(prs, self.dump_dir)
+        if objects:
+            log.info("%d objects will be updated in the database" % len(objects))
+            self.db.update(objects)
 
     def run(self):
         while True:
