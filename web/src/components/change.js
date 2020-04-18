@@ -144,7 +144,7 @@ class Change extends BaseQueryComponent {
     super(props)
     this.state.name = 'changes_and_events'
     this.state.graph_type = 'changes_and_events'
-    this.pageSize = 100
+    this.state.pageSize = 100
   }
 
   componentDidMount () {
