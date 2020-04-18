@@ -8,7 +8,7 @@ console.log('BaseURL=' + baseurl)
 function setQueryParams (
   {
     gte = undefined, lte = undefined,
-    type = undefined, interval = undefined,
+    type = undefined,
     excludeAuthors = undefined,
     authors = undefined,
     from = undefined,
@@ -24,9 +24,6 @@ function setQueryParams (
   }
   if (type) {
     params.append('type', type)
-  }
-  if (interval) {
-    params.append('interval', interval)
   }
   if (excludeAuthors) {
     params.append('exclude_authors', excludeAuthors)
@@ -50,7 +47,7 @@ function getQueryResults (
   {
     name, repository, index, gte = undefined,
     lte = undefined, type = undefined,
-    interval = undefined, excludeAuthors = undefined,
+    excludeAuthors = undefined,
     authors = undefined, from = undefined, size = undefined,
     changeIds = undefined
   }) {
@@ -60,7 +57,6 @@ function getQueryResults (
       gte: gte,
       lte: lte,
       type: type,
-      interval: interval,
       excludeAuthors: excludeAuthors,
       authors: authors,
       from: from,

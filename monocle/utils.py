@@ -63,7 +63,6 @@ def set_params(input):
     params['etype'] = getter('type', ','.join(events_list)).split(',')
     params['exclude_authors'] = getter('exclude_authors', None)
     params['authors'] = getter('authors', None)
-    params['interval'] = getter('interval', '3h')
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))

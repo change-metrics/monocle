@@ -76,7 +76,6 @@ def main():
     parser_dbquery.add_argument(
         '--index', help='The Elastisearch index name', required=True
     )
-    parser_dbquery.add_argument('--interval', help='Histogram interval', default="3h")
     parser_dbquery.add_argument('--name', help='The query name', required=True)
     parser_dbquery.add_argument(
         '--repository', help='Scope to events of a repository (regexp)', required=True
