@@ -220,7 +220,7 @@ def events_histo(es, index, repository_fullname, params):
 
     def interval_to_format(interval):
         if interval == 'hour':
-            return 'yyyy-MM-dd HH:mm'
+            return 'HH:mm'
         if interval == 'day' or interval == 'week':
             return 'yyyy-MM-dd'
         if interval == 'month':
@@ -230,16 +230,16 @@ def events_histo(es, index, repository_fullname, params):
         return 'yyyy-MM-dd HH:mm'
 
     duration = (params['lte'] - params['gte']) / 1000
-    res = set_histo_granularity(duration)
-    interval = interval_to_format(res)
+    interval = set_histo_granularity(duration)
+    fmt = interval_to_format(interval)
 
     body = {
         "aggs": {
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
-                    "interval": res,
-                    "format": interval,
+                    "interval": interval,
+                    "format": fmt,
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params['gte'], "max": params['lte']},
                 }

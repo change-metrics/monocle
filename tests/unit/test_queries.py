@@ -131,7 +131,7 @@ class TestQueries(unittest.TestCase):
         """
         Test query: events_histo
         """
-        params = set_params({'gte': '2020-01-01', 'lte': '2020-01-03'})
+        params = set_params({'gte': '2020-01-01', 'lte': '2020-01-02'})
         ret = self.eldb.run_named_query('events_histo', 'unit/repo1', params)
         expected = (
             [
