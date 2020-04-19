@@ -11,6 +11,51 @@ import 'react-datepicker/dist/react-datepicker.css'
 
 import moment from 'moment'
 
+class DateFormBox extends React.Component {
+  render () {
+    return (
+      <React.Fragment>
+        <Col>
+          <Form.Group controlId='formFromDate'>
+            <Form.Label>From date</Form.Label>
+            <br />
+            <DatePicker
+              selected={
+                this.props.gte
+                  ? moment(this.props.gte).toDate() : ''}
+              onChange={v => this.props.handleChange('gte', v)}
+              dateFormat='yyyy-MM-dd'
+              placeholderText='Set a from date boundary'
+              showYearDropdown
+            />
+          </Form.Group>
+        </Col>
+        <Col>
+          <Form.Group controlId='formToDate'>
+            <Form.Label>To date</Form.Label>
+            <br />
+            <DatePicker
+              selected={
+                this.props.lte
+                  ? moment(this.props.lte).toDate() : ''}
+              onChange={v => this.props.handleChange('lte', v)}
+              dateFormat='yyyy-MM-dd'
+              placeholderText='Set a to date boundary'
+              showYearDropdown
+            />
+          </Form.Group>
+        </Col>
+      </React.Fragment>
+    )
+  }
+}
+
+DateFormBox.propTypes = {
+  gte: PropTypes.string.isRequired,
+  lte: PropTypes.string.isRequired,
+  handleChange: PropTypes.func.isRequired
+}
+
 class FiltersForm extends React.Component {
   constructor (props) {
     super(props)
@@ -102,36 +147,11 @@ class FiltersForm extends React.Component {
                   />
                 </Form.Group>
               </Col>
-              <Col>
-                <Form.Group controlId='formFromDate'>
-                  <Form.Label>From date</Form.Label>
-                  <br />
-                  <DatePicker
-                    selected={
-                      this.state.gte
-                        ? moment(this.state.gte).toDate() : ''}
-                    onChange={v => this.handleChange('gte', v)}
-                    dateFormat='yyyy-MM-dd'
-                    placeholderText='Set a from date boundary'
-                    showYearDropdown
-                  />
-                </Form.Group>
-              </Col>
-              <Col>
-                <Form.Group controlId='formToDate'>
-                  <Form.Label>To date</Form.Label>
-                  <br />
-                  <DatePicker
-                    selected={
-                      this.state.lte
-                        ? moment(this.state.lte).toDate() : ''}
-                    onChange={v => this.handleChange('lte', v)}
-                    dateFormat='yyyy-MM-dd'
-                    placeholderText='Set a to date boundary'
-                    showYearDropdown
-                  />
-                </Form.Group>
-              </Col>
+              <DateFormBox
+                gte={this.state.gte}
+                lte={this.state.lte}
+                handleChange={this.handleChange}
+              />
               <Col>
                 <Form.Group controlId='formExcludeAuthorsInput'>
                   <Form.Label>Exclude Authors</Form.Label>
