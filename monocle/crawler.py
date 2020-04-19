@@ -19,8 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
+import json
 import logging
+import os
+import tempfile
 from time import sleep
 from datetime import datetime
 from threading import Thread
@@ -69,13 +71,31 @@ class Runner(object):
             return change['updated_at']
 
     def run_step(self):
+        def dump_data(data, prefix=None):
+            try:
+                if self.dump_dir:
+                    tmpfile = tempfile.NamedTemporaryFile(
+                        dir=self.dump_dir,
+                        prefix=prefix,
+                        suffix='.json',
+                        mode='w',
+                        delete=False,
+                    )
+                    json.dump(data, tmpfile)
+                    tmpfile.close()
+                    log.info('Data dumped to %s' % tmpfile.name)
+                    return tmpfile.name
+            except Exception:
+                log.exception('Unable to dump data')
+            return None
+
         updated_since = self.get_last_updated_date()
         try:
             prs = self.prf.get(updated_since)
         except Exception:
             log.exception('Unable to get PR data')
             return
-        objects = self.prf.extract_objects(prs, self.dump_dir)
+        objects = self.prf.extract_objects(prs, dump_data)
         if objects:
             log.info("%d objects will be updated in the database" % len(objects))
             self.db.update(objects)
@@ -89,7 +109,8 @@ class Runner(object):
 
 class Crawler(Thread, Runner):
     def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
-        super().__init__(args, elastic_conn='localhost:9200', elastic_timeout=10)
+        Runner.__init__(self, args, elastic_conn, elastic_timeout)
+        Thread.__init__(self)
         self.setName(self.repository_el_re)
 
 

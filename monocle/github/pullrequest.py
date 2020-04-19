@@ -20,9 +20,7 @@
 # SOFTWARE.
 
 
-import json
 import logging
-import tempfile
 import requests
 from datetime import datetime
 from time import sleep
@@ -269,7 +267,7 @@ class PRsFetcher(object):
         raw = self.gql.query(qdata % kwargs)['data']['repository']['pullRequest']
         return (raw, self.extract_objects([raw]))
 
-    def extract_objects(self, prs, dump_dir=None):
+    def extract_objects(self, prs, dumper):
         def get_login(data):
             if data and 'login' in data and data['login']:
                 return data['login']
@@ -410,38 +408,19 @@ class PRsFetcher(object):
                 objects.append(obj)
             return objects
 
-        def dump_data(data, prefix=None):
-            try:
-                if dump_dir:
-                    tmpfile = tempfile.NamedTemporaryFile(
-                        dir=dump_dir,
-                        prefix=prefix,
-                        suffix='.json',
-                        mode='w',
-                        delete=False,
-                    )
-                    json.dump(data, tmpfile)
-                    tmpfile.close()
-                    self.log.info('PR dumped to %s' % tmpfile.name)
-                    return tmpfile.name
-            except Exception:
-                self.log.exception('Unable to dump data')
-            return None
-
         objects = []
-        idx = 0
         for pr in prs:
-            idx += 1
             try:
                 objects.extend(extract_pr_objects(pr))
             except Exception:
                 self.log.expection('Unable to extract PR')
-                dump_data(pr)
+                dumper(pr, 'github_')
         return objects
 
 
 if __name__ == '__main__':
     import os
+    import json
     import argparse
     from pprint import pprint
     from monocle.github import graphql

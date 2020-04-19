@@ -34,7 +34,7 @@ class TestGithubCrawler(unittest.TestCase):
         input_pr, xtrd_ref = load_change(name)
 
         pr_fetcher = pullrequest.PRsFetcher(None, 'https://github.com', None, None)
-        xtrd = pr_fetcher.extract_objects([input_pr])
+        xtrd = pr_fetcher.extract_objects([input_pr], print)
 
         ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
         if ddiff:

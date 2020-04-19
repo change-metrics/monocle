@@ -112,7 +112,7 @@ class ReviewesFetcher(object):
                 break
         return reviews
 
-    def extract_objects(self, reviewes):
+    def extract_objects(self, reviewes, dumper):
         def timedelta(start, end):
             format = "%Y-%m-%dT%H:%M:%SZ"
             start = datetime.strptime(start, format)
@@ -306,6 +306,7 @@ class ReviewesFetcher(object):
                 objects.extend(extract_pr_objects(review))
             except Exception:
                 self.log.exception("Unable to extract Review data: %s" % review)
+                dumper(review, 'gerrit_')
         return objects
 
 
