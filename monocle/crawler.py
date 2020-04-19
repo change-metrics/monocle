@@ -100,18 +100,18 @@ class Runner(object):
             log.info("%d objects will be updated in the database" % len(objects))
             self.db.update(objects)
 
-    def run(self):
-        while True:
-            self.run_step()
-            log.info("Waiting %s seconds before next fetch ..." % (self.loop_delay))
-            sleep(self.loop_delay)
-
 
 class Crawler(Thread, Runner):
     def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
         Runner.__init__(self, args, elastic_conn, elastic_timeout)
         Thread.__init__(self)
+
+    def run(self):
         self.setName(self.repository_el_re)
+        while True:
+            self.run_step()
+            log.info("Waiting %s seconds before next fetch ..." % (self.loop_delay))
+            sleep(self.loop_delay)
 
 
 class GroupCrawler(Thread):

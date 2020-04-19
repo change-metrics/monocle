@@ -119,6 +119,7 @@ def main():
         format="%(asctime)s - %(name)s - %(threadName)s - "
         + "%(levelname)s - %(message)s",
     )
+    log = logging.getLogger(__name__)
 
     if not args.command:
         parser.print_usage()
@@ -131,7 +132,6 @@ def main():
         config = yaml.safe_load(open(realpath).read())
         validate(instance=config, schema=projects.schema)
         tpool = []
-        group_crawler = True
         group = {}
         for project in config['projects']:
             for crawler_item in project['crawler'].get('github_orgs', []):
@@ -145,25 +145,16 @@ def main():
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
                 )
-                if group_crawler:
-                    if crawler_item['token'] not in group:
-                        group[crawler_item['token']] = GroupCrawler()
-                        tpool.append(group[crawler_item['token']])
-                    group[crawler_item['token']].add_crawler(
-                        Runner(
-                            c_args,
-                            elastic_conn=args.elastic_conn,
-                            elastic_timeout=args.elastic_timeout,
-                        )
+                if crawler_item['token'] not in group:
+                    group[crawler_item['token']] = GroupCrawler()
+                    tpool.append(group[crawler_item['token']])
+                group[crawler_item['token']].add_crawler(
+                    Runner(
+                        c_args,
+                        elastic_conn=args.elastic_conn,
+                        elastic_timeout=args.elastic_timeout,
                     )
-                else:
-                    tpool.append(
-                        Crawler(
-                            c_args,
-                            elastic_conn=args.elastic_conn,
-                            elastic_timeout=args.elastic_timeout,
-                        )
-                    )
+                )
             for crawler_item in project['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
@@ -180,6 +171,7 @@ def main():
                         elastic_timeout=args.elastic_timeout,
                     )
                 )
+        log.info('%d configured threads' % len(tpool))
         for cthread in tpool:
             cthread.start()
 
