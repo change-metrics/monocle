@@ -4,14 +4,42 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
+import Dropdown from 'react-bootstrap/Dropdown'
+import DropDownButton from 'react-bootstrap/DropdownButton'
 import PropTypes from 'prop-types'
 
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-
 import moment from 'moment'
 
 class DateFormBox extends React.Component {
+  handleClick = (e) => {
+    switch (e.target.attributes.value.value) {
+      case '1-week':
+        this.props.handleChange(
+          'gte', moment().subtract(7, 'days')
+            .format('YYYY-MM-DD'))
+        break
+      case '2-weeks':
+        this.props.handleChange(
+          'gte', moment().subtract(14, 'days')
+            .format('YYYY-MM-DD'))
+        break
+      case '1-month':
+        this.props.handleChange(
+          'gte', moment().subtract(1, 'months')
+            .format('YYYY-MM-DD'))
+        break
+      case '3-months':
+        this.props.handleChange(
+          'gte', moment().subtract(3, 'months')
+            .format('YYYY-MM-DD'))
+        break
+      default:
+        break
+    }
+  }
+
   render () {
     return (
       <React.Fragment>
@@ -29,8 +57,6 @@ class DateFormBox extends React.Component {
               showYearDropdown
             />
           </Form.Group>
-        </Col>
-        <Col>
           <Form.Group controlId='formToDate'>
             <Form.Label>To date</Form.Label>
             <br />
@@ -43,6 +69,41 @@ class DateFormBox extends React.Component {
               placeholderText='Set a to date boundary'
               showYearDropdown
             />
+          </Form.Group>
+        </Col>
+        <Col>
+          <Form.Group controlId='formToDate'>
+            <Form.Label>Relative date</Form.Label>
+            <DropDownButton
+              title="Select"
+              size="sm"
+              variant="secondary"
+            >
+              <Dropdown.Item
+                value="1-week"
+                onClick={this.handleClick}
+              >
+                Since 1 week
+              </Dropdown.Item>
+              <Dropdown.Item
+                value="2-weeks"
+                onClick={this.handleClick}
+              >
+                Since 2 weeks
+              </Dropdown.Item>
+              <Dropdown.Item
+                value="1-month"
+                onClick={this.handleClick}
+              >
+                Since 1 month
+              </Dropdown.Item>
+              <Dropdown.Item
+                value="3-months"
+                onClick={this.handleClick}
+              >
+                Since 3 months
+              </Dropdown.Item>
+            </DropDownButton>
           </Form.Group>
         </Col>
       </React.Fragment>
@@ -92,7 +153,8 @@ class FiltersForm extends React.Component {
     const params = new URLSearchParams(window.location.search)
     this.setState({
       lte: params.get('lte') || '',
-      gte: params.get('gte') || '',
+      gte: params.get('gte') || moment().subtract(3, 'months')
+        .format('YYYY-MM-DD'),
       repository: params.get('repository') || '',
       excludeAuthors: params.get('exclude_authors') || '',
       authors: params.get('authors') || ''
