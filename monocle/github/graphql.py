@@ -26,6 +26,8 @@ import requests
 from time import sleep
 from datetime import datetime
 
+from tenacity import retry, stop_after_attempt, wait_fixed
+
 
 class GithubGraphQLQuery(object):
 
@@ -77,6 +79,7 @@ class GithubGraphQLQuery(object):
         data = self.query(qdata, skip_get_rate_limit=True)
         return data['data']['rateLimit']
 
+    @retry(stop=stop_after_attempt(6), wait=wait_fixed(10))
     def query(self, qdata, skip_get_rate_limit=False, ignore_not_found=False):
         if not skip_get_rate_limit:
             if self.query_count % self.get_rate_limit_rate == 0:

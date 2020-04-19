@@ -19,7 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import json
 import logging
+import os
+import tempfile
 from time import sleep
 from datetime import datetime
 from threading import Thread
@@ -29,14 +32,16 @@ from monocle.db.db import ELmonocleDB
 from monocle.github import pullrequest
 from monocle.gerrit import review
 
+log = logging.getLogger(__name__)
 
-class Crawler(Thread):
+DUMP_DIR = '/var/lib/crawler'
 
-    log = logging.getLogger(__name__)
 
+class Runner(object):
     def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
         super().__init__()
         self.updated_since = args.updated_since
+        self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
         self.db = ELmonocleDB(elastic_conn, index=args.index, timeout=elastic_timeout)
         if args.command == 'github_crawler':
@@ -53,31 +58,77 @@ class Crawler(Thread):
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
             self.prf = review.ReviewesFetcher(args.base_url, args.repository)
-        self.setName(self.repository_el_re)
 
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)
         if not change:
             return self.updated_since or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
-            logging.info(
+            log.info(
                 "Most recent change date in the database for %s is %s"
                 % (self.repository_el_re, change['updated_at'])
             )
             return change['updated_at']
 
     def run_step(self):
+        def dump_data(data, prefix=None):
+            try:
+                if self.dump_dir:
+                    tmpfile = tempfile.NamedTemporaryFile(
+                        dir=self.dump_dir,
+                        prefix=prefix,
+                        suffix='.json',
+                        mode='w',
+                        delete=False,
+                    )
+                    json.dump(data, tmpfile)
+                    tmpfile.close()
+                    log.info('Data dumped to %s' % tmpfile.name)
+                    return tmpfile.name
+            except Exception:
+                log.exception('Unable to dump data')
+            return None
+
         updated_since = self.get_last_updated_date()
-        prs = self.prf.get(updated_since)
-        objects = self.prf.extract_objects(prs)
+        try:
+            prs = self.prf.get(updated_since)
+        except Exception:
+            log.exception('Unable to get PR data')
+            return
+        objects = self.prf.extract_objects(prs, dump_data)
         if objects:
-            self.log.info("%s objects will be updated in the database" % len(objects))
+            log.info("%d objects will be updated in the database" % len(objects))
             self.db.update(objects)
+
+
+class Crawler(Thread, Runner):
+    def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
+        Runner.__init__(self, args, elastic_conn, elastic_timeout)
+        Thread.__init__(self)
+
+    def run(self):
+        self.setName(self.repository_el_re)
+        while True:
+            self.run_step()
+            log.info("Waiting %s seconds before next fetch ..." % (self.loop_delay))
+            sleep(self.loop_delay)
+
+
+class GroupCrawler(Thread):
+    def __init__(self):
+        super().__init__()
+        self.crawlers = []
+
+    def add_crawler(self, crawler):
+        self.crawlers.append(crawler)
 
     def run(self):
         while True:
-            self.run_step()
-            self.log.info(
-                "Waiting %s seconds before next fetch ..." % (self.loop_delay)
+            for crawler in self.crawlers:
+                self.setName(crawler.repository_el_re)
+                crawler.run_step()
+            log.info(
+                "Waiting %s seconds before next fetch ..."
+                % (self.crawlers[0].loop_delay)
             )
-            sleep(self.loop_delay)
+            sleep(self.crawlers[0].loop_delay)
