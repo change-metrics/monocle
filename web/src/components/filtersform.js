@@ -18,7 +18,6 @@ class FiltersForm extends React.Component {
       gte: '',
       lte: '',
       repository: '',
-      interval: '',
       exclude_authors: '',
       authors: ''
     }
@@ -47,7 +46,6 @@ class FiltersForm extends React.Component {
       lte: params.get('lte') || '',
       gte: params.get('gte') || '',
       repository: params.get('repository') || '',
-      interval: params.get('interval') || '',
       excludeAuthors: params.get('exclude_authors') || '',
       authors: params.get('authors') || ''
     })
@@ -76,7 +74,6 @@ class FiltersForm extends React.Component {
       gte: this.state.gte,
       lte: this.state.lte,
       repository: this.state.repository,
-      interval: this.state.interval,
       exclude_authors: this.state.exclude_authors,
       authors: this.state.authors
     })
@@ -129,16 +126,6 @@ class FiltersForm extends React.Component {
                     dateFormat='yyyy-MM-dd'
                     placeholderText='Set a to date boundary'
                     showYearDropdown
-                  />
-                </Form.Group>
-              </Col>
-              <Col>
-                <Form.Group controlId='formIntervalInput'>
-                  <Form.Label>Interval</Form.Label>
-                  <Form.Control
-                    type='text'
-                    value={this.state.interval}
-                    onChange={v => this.handleChange('interval', v)}
                   />
                 </Form.Group>
               </Col>

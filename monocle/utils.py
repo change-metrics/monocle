@@ -39,6 +39,14 @@ def date_to_epoch_ml(datestr):
     return int(datetime.strptime(datestr, "%Y-%m-%d").timestamp() * 1000)
 
 
+def end_of_day_to_epoch_ml(datestr):
+    if not datestr:
+        return None
+    return int(
+        datetime.strptime(datestr + ' 23:59:59', "%Y-%m-%d %H:%M:%S").timestamp() * 1000
+    )
+
+
 def dbdate_to_datetime(datestr):
     return datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%SZ")
 
@@ -56,14 +64,13 @@ def set_params(input):
 
     params = {}
     params['gte'] = date_to_epoch_ml(getter('gte', None))
-    params['lte'] = date_to_epoch_ml(getter('lte', None))
+    params['lte'] = end_of_day_to_epoch_ml(getter('lte', None))
     params['on_cc_gte'] = date_to_epoch_ml(getter('on_cc_gte', None))
-    params['on_cc_lte'] = date_to_epoch_ml(getter('on_cc_gte', None))
+    params['on_cc_lte'] = end_of_day_to_epoch_ml(getter('on_cc_gte', None))
     params['ec_same_date'] = getter('ec_same_date', False)
     params['etype'] = getter('type', ','.join(events_list)).split(',')
     params['exclude_authors'] = getter('exclude_authors', None)
     params['authors'] = getter('authors', None)
-    params['interval'] = getter('interval', '3h')
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))

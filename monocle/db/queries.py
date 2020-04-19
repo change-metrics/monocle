@@ -203,24 +203,43 @@ def count_authors(es, index, repository_fullname, params):
 
 
 def events_histo(es, index, repository_fullname, params):
-    def interval_to_format(fmt):
-        if fmt.endswith('h'):
-            return 'yyyy-MM-dd HH:00'
-        if fmt.endswith('d') or fmt.endswith('w'):
+    def set_histo_granularity(duration):
+        # Set resolution by hour if duration <= 1 day (max 24 buckets)
+        if (duration / (24 * 3600)) <= 1:
+            return 'hour'
+        # Set resolution by day if duration <= 1 month (max 31 buckets)
+        if (duration / (24 * 3600 * 31)) <= 1:
+            return 'day'
+        # Set resolution by week if duration <= 6 months (max 24 buckets)
+        if (duration / (24 * 3600 * 31)) <= 6:
+            return 'week'
+        # Set resolution by month if duration <= 2 years (max 24 buckets)
+        if (duration / (24 * 3600 * 31 * 12)) <= 2:
+            return 'month'
+        return 'year'
+
+    def interval_to_format(interval):
+        if interval == 'hour':
+            return 'HH:mm'
+        if interval == 'day' or interval == 'week':
             return 'yyyy-MM-dd'
-        if fmt.endswith('M'):
+        if interval == 'month':
             return 'yyyy-MM'
-        if fmt.endswith('y'):
+        if interval == 'year':
             return 'yyyy'
         return 'yyyy-MM-dd HH:mm'
+
+    duration = (params['lte'] - params['gte']) / 1000
+    interval = set_histo_granularity(duration)
+    fmt = interval_to_format(interval)
 
     body = {
         "aggs": {
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
-                    "interval": params['interval'],
-                    "format": interval_to_format(params['interval']),
+                    "interval": interval,
+                    "format": fmt,
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params['gte'], "max": params['lte']},
                 }

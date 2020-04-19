@@ -131,7 +131,6 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
         />
       }
       const data = this.props.changes_lifecycle_stats_result
-      const int = this.props.filter_interval
       return (
         <Row>
           <Col>
@@ -163,15 +162,6 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ratios['iterations/created']} iterations per change
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Changes abandoned every {int}: {data.avgs.ChangeAbandonedEvent}
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Changes created every {int}: {data.avgs.ChangeCreatedEvent}
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Changes merged every {int}: {data.avgs.ChangeMergedEvent}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
