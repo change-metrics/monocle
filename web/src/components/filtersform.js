@@ -28,7 +28,10 @@ class FiltersForm extends React.Component {
   }
 
   handleChange = (key, e) => {
-    let val = e.target ? e.target.value : e
+    let val = null
+    if (e !== null) {
+      val = e.target ? e.target.value : e
+    }
     const assoc = {}
     if (key === 'gte' || key === 'lte') {
       val = moment(val).format('YYYY-MM-DD')
