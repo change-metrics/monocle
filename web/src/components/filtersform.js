@@ -13,27 +13,37 @@ import 'react-datepicker/dist/react-datepicker.css'
 import moment from 'moment'
 
 class DateFormBox extends React.Component {
+  getDateString = (count, unit) => {
+    return moment().subtract(count, unit)
+      .format('YYYY-MM-DD')
+  }
+
   handleClick = (e) => {
     switch (e.target.attributes.value.value) {
       case '1-week':
         this.props.handleChange(
-          'gte', moment().subtract(7, 'days')
-            .format('YYYY-MM-DD'))
+          'gte', this.getDateString(7, 'days'))
+        this.props.handleChange('lte', '')
         break
       case '2-weeks':
         this.props.handleChange(
-          'gte', moment().subtract(14, 'days')
-            .format('YYYY-MM-DD'))
+          'gte', this.getDateString(14, 'days'))
+        this.props.handleChange('lte', '')
         break
       case '1-month':
         this.props.handleChange(
-          'gte', moment().subtract(1, 'months')
-            .format('YYYY-MM-DD'))
+          'gte', this.getDateString(1, 'months'))
+        this.props.handleChange('lte', '')
         break
       case '3-months':
         this.props.handleChange(
-          'gte', moment().subtract(3, 'months')
-            .format('YYYY-MM-DD'))
+          'gte', this.getDateString(3, 'months'))
+        this.props.handleChange('lte', '')
+        break
+      case '6-months':
+        this.props.handleChange(
+          'gte', this.getDateString(6, 'months'))
+        this.props.handleChange('lte', '')
         break
       default:
         break
@@ -75,34 +85,27 @@ class DateFormBox extends React.Component {
           <Form.Group controlId='formToDate'>
             <Form.Label>Relative date</Form.Label>
             <DropDownButton
-              title="Select"
+              title="Select a relative date"
               size="sm"
               variant="secondary"
             >
-              <Dropdown.Item
-                value="1-week"
-                onClick={this.handleClick}
-              >
-                Since 1 week
-              </Dropdown.Item>
-              <Dropdown.Item
-                value="2-weeks"
-                onClick={this.handleClick}
-              >
-                Since 2 weeks
-              </Dropdown.Item>
-              <Dropdown.Item
-                value="1-month"
-                onClick={this.handleClick}
-              >
-                Since 1 month
-              </Dropdown.Item>
-              <Dropdown.Item
-                value="3-months"
-                onClick={this.handleClick}
-              >
-                Since 3 months
-              </Dropdown.Item>
+              {[
+                ['1-week', '1 week'],
+                ['2-weeks', '2 weeks'],
+                ['1-month', '1 month'],
+                ['3-months', '3 months'],
+                ['6-months', '6 months']].map(
+                (entry) => {
+                  return <Dropdown.Item
+                    key={entry[0]}
+                    value={entry[0]}
+                    onClick={this.handleClick}
+                  >
+                    {entry[1]}
+                  </Dropdown.Item>
+                }
+              )
+              }
             </DropDownButton>
           </Form.Group>
         </Col>
