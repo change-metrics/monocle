@@ -4,69 +4,32 @@
 * Deciders: Fabien Boucher
 * Date: 2019-12-02
 
-Technical Story: [description | ticket/issue URL] <!-- optional -->
-
 ## Context and Problem Statement
 
-[Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.]
-
-## Decision Drivers <!-- optional -->
-
-* [driver 1, e.g., a force, facing concern, …]
-* [driver 2, e.g., a force, facing concern, …]
-* … <!-- numbers of drivers can vary -->
+We need to store changes data (Pull Requests and Reviewes) in a scalable way. The stored data must be easily accessible in an intelligible manner.
 
 ## Considered Options
 
-* [option 1]
-* [option 2]
-* [option 3]
-* … <!-- numbers of options can vary -->
+* MySQL
+* ElasticSearch
 
 ## Decision Outcome
 
-Chosen option: "[option 1]", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | … | comes out best (see below)].
+Chosen option: "ElasticSearch".
+Because it fits better our need regarding the style of data we expect to store and how we expect to query the data.
 
-### Positive Consequences <!-- optional -->
+## Pros and Cons of the Options
 
-* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, …]
-* …
+### MySQL
 
-### Negative Consequences <!-- optional -->
+* Good, because free and well known interaction format SQL
 
-* [e.g., compromising quality attribute, follow-up decisions required, …]
-* …
+### ElasticSearch
 
-## Pros and Cons of the Options <!-- optional -->
+* Good, because it is a search engine (full text)
+* Good, because it implements boolean filters and powerful aggregations
+* Good, because it is designed by default to scale
+* Good, because it is fast, performance is not an issue even with million docs
+* Good, bacause our data can be stored denormalized and ElasticSearch fits this usecase
+* Bad, because open core and some features might not be available for free
 
-### [option 1]
-
-[example | description | pointer to more information | …] <!-- optional -->
-
-* Good, because [argument a]
-* Good, because [argument b]
-* Bad, because [argument c]
-* … <!-- numbers of pros and cons can vary -->
-
-### [option 2]
-
-[example | description | pointer to more information | …] <!-- optional -->
-
-* Good, because [argument a]
-* Good, because [argument b]
-* Bad, because [argument c]
-* … <!-- numbers of pros and cons can vary -->
-
-### [option 3]
-
-[example | description | pointer to more information | …] <!-- optional -->
-
-* Good, because [argument a]
-* Good, because [argument b]
-* Bad, because [argument c]
-* … <!-- numbers of pros and cons can vary -->
-
-## Links <!-- optional -->
-
-* [Link type] [Link to ADR] <!-- example: Refined by [ADR-0005](0005-example.md) -->
-* … <!-- numbers of links can vary -->
