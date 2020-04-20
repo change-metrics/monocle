@@ -1,4 +1,5 @@
 import axios from 'axios'
+import moment from 'moment'
 
 var server = process.env.REACT_APP_API_URL || 'http://localhost:9876'
 var baseurl = server + '/api/0'
@@ -18,6 +19,10 @@ function setQueryParams (
   var params = new URLSearchParams()
   if (gte) {
     params.append('gte', gte)
+  } else {
+    params.append(
+      'gte', moment().subtract(3, 'months')
+        .format('YYYY-MM-DD'))
   }
   if (lte) {
     params.append('lte', lte)
