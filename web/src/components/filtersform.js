@@ -1,6 +1,7 @@
 import React from 'react'
 
 import Col from 'react-bootstrap/Col'
+import Row from 'react-bootstrap/Row'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
@@ -196,11 +197,25 @@ class FiltersForm extends React.Component {
   render () {
     return (
       <Card>
-        <Card.Header>
-          <b>Filters</b>
-        </Card.Header>
-        <Card.Body>
-          <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.handleSubmit}>
+          <Card.Header>
+            <Row>
+              <Col>
+                <b>Filters</b>
+              </Col>
+              <Col>
+                <Button
+                  className='float-right'
+                  variant='primary'
+                  type='submit'
+                  size='sm'
+                >
+                  Apply filters
+                </Button>
+              </Col>
+            </Row>
+          </Card.Header>
+          <Card.Body>
             <Form.Row>
               <Col>
                 <Form.Group controlId='formRepositoryInput'>
@@ -218,6 +233,14 @@ class FiltersForm extends React.Component {
                 handleChange={this.handleChange}
               />
               <Col>
+                <Form.Group controlId='formAuthorsInput'>
+                  <Form.Label>Authors</Form.Label>
+                  <Form.Control
+                    type='text'
+                    value={this.state.authors}
+                    onChange={v => this.handleChange('authors', v)}
+                  />
+                </Form.Group>
                 <Form.Group controlId='formExcludeAuthorsInput'>
                   <Form.Label>Exclude Authors</Form.Label>
                   <Form.Control
@@ -227,26 +250,9 @@ class FiltersForm extends React.Component {
                   />
                 </Form.Group>
               </Col>
-              <Col>
-                <Form.Group controlId='formAuthorsInput'>
-                  <Form.Label>Authors</Form.Label>
-                  <Form.Control
-                    type='text'
-                    value={this.state.authors}
-                    onChange={v => this.handleChange('authors', v)}
-                  />
-                </Form.Group>
-              </Col>
             </Form.Row>
-            <Form.Row>
-              <Col>
-                <Button variant='primary' type='submit'>
-                  Apply filters
-                </Button>
-              </Col>
-            </Form.Row>
-          </Form>
-        </Card.Body>
+          </Card.Body>
+        </Form>
       </Card >
     )
   }
