@@ -83,6 +83,13 @@ You should be able to access the web UI at <http://localhost:3000/monocle>.
 
 ## Hacking
 
+### Understanding the design choices
+
+Follow the [Architectural Decision Records](doc/adr/index.md) to
+understand the choices made by the project.
+
+### Reloading code
+
 This section explains how you can hack the Monocle code. The idea is to use
 the docker deployment to avoid complex development methods.
 
@@ -95,7 +102,7 @@ $ docker-compose up -d --build
 
 ### Git hooks
 
-### pre-push
+#### pre-push
 
 To be sure to push correct branches, you have to configure the
 `pre-push` git hook by creating `.git/hooks/pre-push` with the
@@ -109,7 +116,7 @@ exec ./contrib/pre-push "$@"
 
 and making it executable with `chmod +x .git/hooks/pre-push`.
 
-### pre-commit
+#### pre-commit
 
 Optionnaly, you can enable the `pre-commit` git hook to reformat your
 code by creating `.git/hooks/pre-commit` with the following

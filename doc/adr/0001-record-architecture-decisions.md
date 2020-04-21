@@ -1,4 +1,4 @@
-# Use Markdown Architectural Decision Records
+# 1. Use Markdown Architectural Decision Records
 
 ## Context and Problem Statement
 

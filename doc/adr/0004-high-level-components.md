@@ -1,4 +1,4 @@
-# 4. High level components
+# 4. High Level Components
 
 * Status: accepted
 * Deciders: Fabien Boucher
