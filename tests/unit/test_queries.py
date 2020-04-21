@@ -58,6 +58,23 @@ class TestQueries(unittest.TestCase):
             params,
         )
 
+    def test_all_queries(self):
+        """
+        Test all public queries
+        """
+        failing = []
+        for query in queries.public_queries:
+            params = set_params({})
+            ret = self.eldb.run_named_query(query, 'unit/repo1', params)
+            if (
+                not isinstance(ret, dict)
+                and not isinstance(ret, list)
+                and not isinstance(ret, tuple)
+                and not isinstance(ret, int)
+            ):
+                failing.append((query, ret))
+        self.assertEqual(failing, [])
+
     def test_scan(self):
         """
         Test internal query: _scan
