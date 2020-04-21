@@ -45,7 +45,7 @@ class ChangeStatus extends React.Component {
   render () {
     switch (this.props.data.state) {
       case 'OPEN':
-        return <Badge variant="success">Open</Badge>
+        return <span><Badge variant="success">Open</Badge> <small>[{this.props.data.mergeable.toLowerCase()}]</small></span>
       case 'MERGED':
         return <Badge variant="primary">Merged</Badge>
       case 'CLOSED':
