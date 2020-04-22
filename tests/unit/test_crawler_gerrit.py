@@ -28,7 +28,7 @@ class TestGerritCrawler(unittest.TestCase):
         input_review, xtrd_ref = load_change(name)
 
         rf = review.ReviewesFetcher(base_url, None)
-        xtrd = rf.extract_objects([input_review], print)
+        xtrd = rf.extract_objects([input_review], None)
 
         ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
         if ddiff:
