@@ -45,6 +45,11 @@
               "user": {
                 "login": "flepied"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "flepied"
+              }
             }
           }
         }

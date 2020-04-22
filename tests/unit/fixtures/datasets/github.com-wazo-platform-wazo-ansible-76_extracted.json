@@ -2,6 +2,7 @@
   {
     "type": "Change",
     "id": "MDExOlB1bGxSZXF1ZXN0NDAwOTUxODE3",
+    "draft": false,
     "number": 76,
     "repository_prefix": "wazo-platform",
     "repository_fullname": "wazo-platform/wazo-ansible",
@@ -122,7 +123,6 @@
     "state": "MERGED",
     "duration": 146992,
     "mergeable": "UNKNOWN",
-    "draft": false,
     "labels": [
       "mergeit"
     ],

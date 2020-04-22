@@ -87,6 +87,11 @@
               "user": {
                 "login": "mwolff44"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "mwolff44"
+              }
             }
           }
         }
@@ -97,6 +102,11 @@
             "oid": "9df4d88fe33041eee1ff1841fa6609e7148c48cd",
             "pushedDate": null,
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -113,6 +123,11 @@
               "user": {
                 "login": "mwolff44"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "mwolff44"
+              }
             }
           }
         }
@@ -123,6 +138,11 @@
             "oid": "2180c178f4f5b3ac9db466d182b2060f1389f3b4",
             "pushedDate": "2020-04-08T15:59:02Z",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -139,6 +159,11 @@
               "user": {
                 "login": "mwolff44"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "mwolff44"
+              }
             }
           }
         }
@@ -149,6 +174,11 @@
             "oid": "7f264f3f6a7cdcae01d53cbe39c7b58ec76f5cf4",
             "pushedDate": null,
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -165,6 +195,11 @@
               "user": {
                 "login": "mwolff44"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "mwolff44"
+              }
             }
           }
         }
@@ -175,6 +210,11 @@
             "oid": "c2b7237b81df06d4657d0c6ac11f82d9d6a8c6e9",
             "pushedDate": "2020-04-08T16:23:15Z",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -191,6 +231,11 @@
               "user": {
                 "login": "mwolff44"
               }
+            },
+            "committer": {
+              "user": {
+                "login": "mwolff44"
+              }
             }
           }
         }
@@ -201,6 +246,11 @@
             "oid": "183cac87b1ce3fb800fd9ab235a8782395471e81",
             "pushedDate": "2020-04-10T07:53:26Z",
             "author": {
+              "user": {
+                "login": "fredericlepied"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "fredericlepied"
               }

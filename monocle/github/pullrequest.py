@@ -113,6 +113,11 @@ class PRsFetcher(object):
                       login
                     }
                   }
+                  committer {
+                    user {
+                      login
+                    }
+                  }
                 }
               }
             }
@@ -392,6 +397,9 @@ class PRsFetcher(object):
                         obj['type'] = 'ChangeMergedEvent'
                         obj['author'] = change['merged_by']
                 objects.append(obj)
+            # Here we don't use the PullRequestCommit timeline event because
+            # it does not provide more data than the current list of commits
+            # of the pull request
             for commit in pr['commits']['edges']:
                 _commit = commit['node']['commit']
                 obj = {
@@ -402,8 +410,8 @@ class PRsFetcher(object):
                     # change
                     'created_at': _commit.get('pushedDate', change['created_at']),
                 }
-                if _commit['author'].get('user'):
-                    obj['author'] = get_login(_commit['author']['user'])
+                if _commit['committer'].get('user'):
+                    obj['author'] = get_login(_commit['committer']['user'])
                 insert_change_attributes(obj, change)
                 objects.append(obj)
             return objects

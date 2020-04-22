@@ -2,6 +2,7 @@
   {
     "type": "Change",
     "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+    "draft": false,
     "number": 70,
     "repository_prefix": "morucci",
     "repository_fullname": "morucci/monocle",
@@ -42,7 +43,6 @@
     "state": "MERGED",
     "duration": 52790,
     "mergeable": "UNKNOWN",
-    "draft": false,
     "labels": [],
     "assignees": []
   },
