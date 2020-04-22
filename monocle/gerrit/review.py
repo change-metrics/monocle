@@ -148,8 +148,6 @@ class ReviewesFetcher(object):
                     if review.get('submitted')
                     else None
                 ),
-                # Note(fbo): The mergeable field is sometime absent
-                'mergeable': (True if review.get('mergeable') == 'true' else False),
                 'state': self.status_map[review['status']],
                 # Note(fbo): Gerrit labels must be handled as Review
                 'labels': [],
@@ -188,6 +186,16 @@ class ReviewesFetcher(object):
                 change['repository_fullname'].replace('/', '@'),
                 change['number'],
             )
+
+            # Note(fbo): Gerrit 3.x does not return the mergeable status
+            mergeable = review.get('mergeable')
+            if mergeable is True:
+                change['mergeable'] = 'MERGEABLE'
+            elif mergeable is False:
+                change['mergeable'] = 'CONFLICTING'
+            else:
+                change['mergeable'] = 'UNKNOWN'
+
             if change['state'] == 'CLOSED':
                 # CLOSED means abandoned in that context
                 # use updated_at date as closed_at
@@ -326,9 +334,12 @@ if __name__ == "__main__":
     # https://review.opendev.org zuul/zuul
     # https://softwarefactory-project.io/r software-factory/sf-config
 
+    def _dumper(raw, prefix=None):
+        pprint(raw)
+
     rf = ReviewesFetcher(args.base_url, args.repository)
     review = rf.get("2020-01-01 00:00:00", args.id)
-    objs = rf.extract_objects(review)
+    objs = rf.extract_objects(review, _dumper)
     if not args.output_dir:
         pprint([review[0], objs])
     else:

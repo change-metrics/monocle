@@ -373,6 +373,7 @@ class AbstractLastChanges extends BaseQueryComponent {
                 created={this.state.created}
                 updated={this.state.updated}
                 merged={this.state.merged}
+                mergeable={this.state.mergeable}
                 duration={this.state.duration}
               />
             </Col>
@@ -415,6 +416,7 @@ class LastOpenedChanges extends AbstractLastChanges {
     this.state.title = 'Opened Changes'
     this.state.created = true
     this.state.updated = true
+    this.state.mergeable = true
   }
 
   extractTime = x => x.created_at

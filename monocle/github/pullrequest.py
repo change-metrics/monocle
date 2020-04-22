@@ -19,6 +19,7 @@ import requests
 from datetime import datetime
 from time import sleep
 from dataclasses import dataclass
+from pprint import pprint
 
 
 name = 'github_crawler'
@@ -244,6 +245,9 @@ class PRsFetcher(object):
         return prs
 
     def get_one(self, org, repository, number):
+        def _dumper(raw, prefix=None):
+            pprint(raw)
+
         qdata = '''{
           repository(owner: "%(org)s", name:"%(repository)s") {
             pullRequest(number: %(number)s) {
@@ -259,7 +263,7 @@ class PRsFetcher(object):
             'number': number,
         }
         raw = self.gql.query(qdata % kwargs)['data']['repository']['pullRequest']
-        return (raw, self.extract_objects([raw]))
+        return (raw, self.extract_objects([raw], _dumper))
 
     def extract_objects(self, prs, dumper):
         def get_login(data):
@@ -406,6 +410,8 @@ class PRsFetcher(object):
         for pr in prs:
             try:
                 objects.extend(extract_pr_objects(pr))
+                if pr['mergeable'] == 'UNKNOWN' and dumper:
+                    dumper(pr, 'github_unknown_')
             except Exception:
                 self.log.expection('Unable to extract PR')
                 dumper(pr, 'github_')
@@ -416,7 +422,6 @@ if __name__ == '__main__':
     import os
     import json
     import argparse
-    from pprint import pprint
     from monocle.github import graphql
 
     parser = argparse.ArgumentParser(prog='pullrequest')
