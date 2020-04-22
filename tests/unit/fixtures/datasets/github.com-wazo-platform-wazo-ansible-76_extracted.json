@@ -122,6 +122,7 @@
     "state": "MERGED",
     "duration": 146992,
     "mergeable": "UNKNOWN",
+    "draft": false,
     "labels": [
       "mergeit"
     ],

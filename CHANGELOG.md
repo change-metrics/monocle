@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web,backend] add support for Github Draft status in PR. Displayed
+  in change details and tables of open changes.
 - [web] display mergeable status in open changes.
 - [web] add a relative date selection box in the filter form.
 - [dev] functional tests for the crawler and the query system.

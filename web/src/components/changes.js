@@ -169,7 +169,7 @@ class ChangesTable extends React.Component {
                       <td align="center"><Link to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</Link></td>
                       <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
-                      {this.props.mergeable ? <td align="center">{x.mergeable}</td> : null}
+                      {this.props.mergeable ? <td align="center">{x.draft ? 'DRAFT' : x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
                     </tr>)}
                 </tbody>

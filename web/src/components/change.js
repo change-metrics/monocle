@@ -43,6 +43,9 @@ import { TimelineGraph } from './timeline'
 
 class ChangeStatus extends React.Component {
   render () {
+    if (this.props.data.state === 'OPEN' && this.props.data.draft) {
+      return <Badge variant="dark">Draft</Badge>
+    }
     switch (this.props.data.state) {
       case 'OPEN':
         return <span><Badge variant="success">Open</Badge> <small>[{this.props.data.mergeable.toLowerCase()}]</small></span>

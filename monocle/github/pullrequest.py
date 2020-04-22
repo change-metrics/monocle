@@ -76,6 +76,7 @@ class PRsFetcher(object):
           state
           number
           mergeable
+          isDraft
           labels (first: 100){
             edges {
               node {
@@ -265,7 +266,7 @@ class PRsFetcher(object):
         raw = self.gql.query(qdata % kwargs)['data']['repository']['pullRequest']
         return (raw, self.extract_objects([raw], _dumper))
 
-    def extract_objects(self, prs, dumper):
+    def extract_objects(self, prs, dumper=None):
         def get_login(data):
             if data and 'login' in data and data['login']:
                 return data['login']
@@ -296,6 +297,7 @@ class PRsFetcher(object):
             change = {}
             change['type'] = 'Change'
             change['id'] = pr['id']
+            change['draft'] = pr['isDraft']
             change['number'] = pr['number']
             change['repository_prefix'] = get_login(pr['repository']['owner'])
             change['repository_fullname'] = "%s/%s" % (
@@ -414,7 +416,8 @@ class PRsFetcher(object):
                     dumper(pr, 'github_unknown_')
             except Exception:
                 self.log.expection('Unable to extract PR')
-                dumper(pr, 'github_')
+                if dumper:
+                    dumper(pr, 'github_')
         return objects
 
 

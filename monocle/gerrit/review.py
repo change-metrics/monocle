@@ -106,7 +106,7 @@ class ReviewesFetcher(object):
                 break
         return reviews
 
-    def extract_objects(self, reviewes, dumper):
+    def extract_objects(self, reviewes, dumper=None):
         def timedelta(start, end):
             format = "%Y-%m-%dT%H:%M:%SZ"
             start = datetime.strptime(start, format)
@@ -131,6 +131,7 @@ class ReviewesFetcher(object):
             change = {
                 'type': 'Change',
                 'id': review['id'],
+                'draft': False,
                 'number': review['_number'],
                 'target_branch': review['branch'],
                 'branch': review['branch'],
