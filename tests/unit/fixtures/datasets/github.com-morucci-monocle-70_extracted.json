@@ -42,6 +42,7 @@
     "state": "MERGED",
     "duration": 52790,
     "mergeable": "UNKNOWN",
+    "draft": false,
     "labels": [],
     "assignees": []
   },

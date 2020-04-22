@@ -102,6 +102,7 @@ class ELmonocleDB:
                     "label": {"type": "keyword"},
                     "assignee": {"type": "keyword"},
                     "approval": {"type": "keyword"},
+                    "draft": {"type": "boolean"},
                 }
             }
         }
