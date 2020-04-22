@@ -41,6 +41,11 @@
           "commit": {
             "oid": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
             "pushedDate": "2020-04-11T10:22:06Z",
+            "authoredDate": "2020-04-11T07:01:15Z",
+            "committedDate": "2020-04-11T10:21:23Z",
+            "additions": 90,
+            "deletions": 33,
+            "message": "expose ChangeCommitForcePushedEven and ChangeCommitPushedEvent\n\n- exposed in the changes_lifecycle_stats API query\n- exposed in the web \"Changes lifecycle stats\" graph + iteration/change",
             "author": {
               "user": {
                 "login": "flepied"

@@ -108,6 +108,11 @@ class PRsFetcher(object):
                 commit {
                   oid
                   pushedDate
+                  authoredDate
+                  committedDate
+                  additions
+                  deletions
+                  message
                   author {
                     user {
                       login
@@ -335,6 +340,7 @@ class PRsFetcher(object):
                 }
                 for fd in pr["files"]["edges"]
             ]
+            change['commits'] = []
             change['commit_count'] = len(pr['commits']['edges'])
             if pr['mergedBy']:
                 change['merged_by'] = get_login(pr['mergedBy'])
@@ -414,6 +420,21 @@ class PRsFetcher(object):
                     obj['author'] = get_login(_commit['committer']['user'])
                 insert_change_attributes(obj, change)
                 objects.append(obj)
+            # Now attach a commits list to the change
+            for commit in pr['commits']['edges']:
+                _commit = commit['node']['commit']
+                obj = {
+                    'sha': _commit['oid'],
+                    'authored_at': _commit['authoredDate'],
+                    'committed_at': _commit['committedDate'],
+                    'additions': _commit['additions'],
+                    'deletions': _commit['deletions'],
+                    'title': _commit['message'],
+                }
+                for k in ('author', 'committer'):
+                    if _commit[k].get('user'):
+                        obj[k] = get_login(_commit[k]['user'])
+                change['commits'].append(obj)
             return objects
 
         objects = []
@@ -423,7 +444,7 @@ class PRsFetcher(object):
                 if pr['mergeable'] == 'UNKNOWN' and dumper:
                     dumper(pr, 'github_unknown_')
             except Exception:
-                self.log.expection('Unable to extract PR')
+                self.log.exception('Unable to extract PR')
                 if dumper:
                     dumper(pr, 'github_')
         return objects
