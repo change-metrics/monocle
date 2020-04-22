@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] display mergeable status in open changes.
 - [web] add a relative date selection box in the filter form.
 - [dev] functional tests for the crawler and the query system.
 - [web] menus to ease navigation.
