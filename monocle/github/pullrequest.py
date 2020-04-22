@@ -410,6 +410,8 @@ class PRsFetcher(object):
         for pr in prs:
             try:
                 objects.extend(extract_pr_objects(pr))
+                if pr['mergeable'] == 'UNKNOWN' and dumper:
+                    dumper(pr, 'github_unknown_')
             except Exception:
                 self.log.expection('Unable to extract PR')
                 dumper(pr, 'github_')
