@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [dev] document Architectural Decisions in [doc/adr/index.md](doc/adr/index.md)
 - [web,backend] add support for Github Draft status in PR. Displayed
   in change details and tables of open changes.
 - [web] display mergeable status in open changes.
