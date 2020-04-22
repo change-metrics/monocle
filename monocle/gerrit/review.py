@@ -308,7 +308,8 @@ class ReviewesFetcher(object):
                 objects.extend(extract_pr_objects(review))
             except Exception:
                 self.log.exception("Unable to extract Review data: %s" % review)
-                dumper(review, 'gerrit_')
+                if dumper:
+                    dumper(review, 'gerrit_')
         return objects
 
 
