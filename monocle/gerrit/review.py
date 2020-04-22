@@ -166,6 +166,7 @@ class ReviewesFetcher(object):
                 ),
                 'additions': review['insertions'],
                 'deletions': review['deletions'],
+                'commits': [],
                 # Gerrit review is one commit by review
                 'commit_count': 1,
                 'changed_files_count': len(
@@ -187,6 +188,26 @@ class ReviewesFetcher(object):
                 change['repository_fullname'].replace('/', '@'),
                 change['number'],
             )
+
+            # Extract commit data
+            _commit = list(review['revisions'].values())[0]
+            obj = {}
+            obj['sha'] = list(review['revisions'].keys())[0]
+            obj['title'] = _commit['commit']['subject']
+            obj['additions'] = change['additions']
+            obj['deletions'] = change['deletions']
+            obj['authored_at'] = self.convert_date_for_db(
+                _commit['commit']['author']['date']
+            )
+            obj['committed_at'] = self.convert_date_for_db(
+                _commit['commit']['committer']['date']
+            )
+            obj['author'] = change['author']
+            obj['committer'] = "%s/%s" % (
+                _commit['uploader'].get('name'),
+                _commit['uploader']['_account_id'],
+            )
+            change['commits'].append(obj)
 
             # Note(fbo): Gerrit 3.x does not return the mergeable status
             mergeable = review.get('mergeable')
