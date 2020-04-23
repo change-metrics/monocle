@@ -68,6 +68,7 @@ def set_params(input):
     params['approval'] = getter('approval', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))
+    params['files'] = getter('files', None)
     params['change_ids'] = getter('change_ids', None)
     if params['change_ids']:
         params['change_ids'] = params['change_ids'].split(',')
