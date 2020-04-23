@@ -26,6 +26,7 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 import PropTypes from 'prop-types'
 
+import MyLink from './my_link'
 import ConnectionDiagram from './connection_diagram'
 
 import {
@@ -66,7 +67,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.items.map((x, index) =>
                     <tr key={index}>
                       <td style={this.rowStyleFormat(this.props.data.count_avg, x.doc_count)}>{index + 1}</td>
-                      <td><Link to={addUrlField('authors', x.key)}>{x.key}</Link></td>
+                      <td><MyLink to={addUrlField('authors', x.key)}>{x.key}</MyLink></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>

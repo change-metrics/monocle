@@ -29,6 +29,7 @@ import PropTypes from 'prop-types'
 
 import moment from 'moment'
 
+import MyLink from './my_link'
 import {
   BaseQueryComponent,
   LoadingBox,
@@ -61,7 +62,7 @@ class RepoChangesTable extends React.Component {
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td align="center"><Link to={addUrlField('repository', item.key)}>{item.key}</Link></td>
+                      <td align="center"><MyLink to={addUrlField('repository', item.key)}>{item.key}</MyLink></td>
                       <td align="center">{item.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -166,8 +167,8 @@ class ChangesTable extends React.Component {
                       {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
                       {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
-                      <td align="center"><Link to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</Link></td>
-                      <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
+                      <td align="center"><MyLink to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</MyLink></td>
+                      <td align="center"><MyLink to={addUrlField('authors', x.author)}>{x.author}</MyLink></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
                       {this.props.mergeable ? <td align="center">{x.draft ? 'DRAFT' : x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>

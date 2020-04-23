@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [web] make the browser back button work if the search filter changes
 - [backend] crawler uses one thread per Github token.
 - [backend] crawler retries multiple times if a Github query doesn't work.
 - [web] interval is no more exposed in the UI and computed automcatically in the backend according to the period.

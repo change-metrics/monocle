@@ -21,6 +21,8 @@ import Nav from 'react-bootstrap/Nav'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
+import MyLink from './my_link'
+
 class TopMenu extends React.Component {
   render () {
     const search = window.location.search
@@ -29,10 +31,10 @@ class TopMenu extends React.Component {
         <Link className="navbar-brand" to={`/r/${this.props.index}`}>Monocle</Link>
       </Navbar.Brand>
       <Nav className="mr-auto">
-        <Link className="nav-link" to={`/${this.props.index}${search}`}>Top</Link>
-        <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
-        <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
-        <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
+        <MyLink className="nav-link" to={`/${this.props.index}${search}`}>Top</MyLink>
+        <MyLink className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</MyLink>
+        <MyLink className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</MyLink>
+        <MyLink className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</MyLink>
       </Nav>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
     </Navbar>
