@@ -2,6 +2,7 @@
   {
     "type": "Change",
     "id": "gerrit~master~Ia19d38d96aeb946faacc7c5d62505186e2e6f4c5",
+    "draft": false,
     "number": 246332,
     "target_branch": "master",
     "branch": "master",
@@ -14,13 +15,23 @@
     "updated_at": "2020-04-13T22:43:52Z",
     "created_at": "2019-11-20T15:52:35Z",
     "merged_at": "2020-04-13T22:43:52Z",
-    "mergeable": "UNKNOWN",
-    "draft": false,
     "state": "MERGED",
     "labels": [],
     "assignees": [],
     "additions": 95,
     "deletions": 1,
+    "commits": [
+      {
+        "sha": "a669b899d3a6af2beee8e045c6a30dcad30fb577",
+        "title": "Add support for file uploads in the UI",
+        "additions": 95,
+        "deletions": 1,
+        "authored_at": "2019-11-20T15:52:35Z",
+        "committed_at": "2020-04-13T15:36:24Z",
+        "author": "Paladox none/1029953",
+        "committer": "Paladox none/1029953"
+      }
+    ],
     "commit_count": 1,
     "changed_files_count": 4,
     "changed_files": [
@@ -47,6 +58,7 @@
     ],
     "text": "Add support for file uploads in the UI\n\nThe UI for uploading is from @Thomas Dr\u00e4bing\n\nScreenshot: https://imgur.com/a/dL91kwI\n\nChange-Id: Ia19d38d96aeb946faacc7c5d62505186e2e6f4c5\n",
     "change_id": "gerrit@246332",
+    "mergeable": "UNKNOWN",
     "closed_at": "2020-04-13T22:43:52Z",
     "duration": 12552677,
     "merged_by": "Paladox none/1029953"

@@ -66,7 +66,7 @@ class ELmonocleDB:
                     "type": {"type": "keyword"},
                     "number": {"type": "keyword"},
                     "change_id": {"type": "keyword"},
-                    "title": {"type": "keyword"},
+                    "title": {"type": "text"},
                     "text": {"type": "text"},
                     "url": {"type": "keyword"},
                     "commit_count": {"type": "integer"},
@@ -78,6 +78,24 @@ class ELmonocleDB:
                             "additions": {"type": "integer"},
                             "deletions": {"type": "integer"},
                             "path": {"type": "keyword"},
+                        }
+                    },
+                    "commits": {
+                        "properties": {
+                            "sha": {"type": "keyword"},
+                            "author": {"type": "keyword"},
+                            "committer": {"type": "keyword"},
+                            "authored_at": {
+                                "type": "date",
+                                "format": "date_time_no_millis",
+                            },
+                            "committed_at": {
+                                "type": "date",
+                                "format": "date_time_no_millis",
+                            },
+                            "additions": {"type": "integer"},
+                            "deletions": {"type": "integer"},
+                            "title": {"type": "text"},
                         }
                     },
                     "repository_prefix": {"type": "keyword"},
@@ -94,8 +112,6 @@ class ELmonocleDB:
                     "merged_at": {"type": "date", "format": "date_time_no_millis"},
                     "updated_at": {"type": "date", "format": "date_time_no_millis"},
                     "closed_at": {"type": "date", "format": "date_time_no_millis"},
-                    "authored_at": {"type": "date", "format": "date_time_no_millis"},
-                    "committed_at": {"type": "date", "format": "date_time_no_millis"},
                     "state": {"type": "keyword"},
                     "duration": {"type": "integer"},
                     "mergeable": {"type": "keyword"},

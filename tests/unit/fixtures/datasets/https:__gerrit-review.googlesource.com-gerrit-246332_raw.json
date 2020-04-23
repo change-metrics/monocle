@@ -71,7 +71,8 @@
           "value": 0,
           "_account_id": 1011123,
           "name": "David Pursehouse",
-          "email": "dpursehouse@collab.net",
+          "display_name": "David P.",
+          "email": "dpursehouse@digital.ai",
           "avatars": [
             {
               "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -185,7 +186,8 @@
           "value": 0,
           "_account_id": 1011123,
           "name": "David Pursehouse",
-          "email": "dpursehouse@collab.net",
+          "display_name": "David P.",
+          "email": "dpursehouse@digital.ai",
           "avatars": [
             {
               "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -300,7 +302,8 @@
           "value": 0,
           "_account_id": 1011123,
           "name": "David Pursehouse",
-          "email": "dpursehouse@collab.net",
+          "display_name": "David P.",
+          "email": "dpursehouse@digital.ai",
           "avatars": [
             {
               "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -411,36 +414,12 @@
   },
   "removable_reviewers": [],
   "reviewers": {
-    "CC": [
-      {
-        "_account_id": 1086906,
-        "name": "Tao Zhou",
-        "email": "taoalpha@google.com",
-        "avatars": [
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s32-p/photo.jpg",
-            "height": 32
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s56-p/photo.jpg",
-            "height": 56
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s100-p/photo.jpg",
-            "height": 100
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s120-p/photo.jpg",
-            "height": 120
-          }
-        ]
-      }
-    ],
     "REVIEWER": [
       {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -530,6 +509,31 @@
           }
         ],
         "status": "\ud83c\udf39- \ud83c\uddea\ud83c\uddfa- \ud83c\uddec\ud83c\udde7"
+      }
+    ],
+    "CC": [
+      {
+        "_account_id": 1086906,
+        "name": "Tao Zhou",
+        "email": "taoalpha@google.com",
+        "avatars": [
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s32-p/photo.jpg",
+            "height": 32
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s56-p/photo.jpg",
+            "height": 56
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s100-p/photo.jpg",
+            "height": 100
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s120-p/photo.jpg",
+            "height": 120
+          }
+        ]
       }
     ]
   },
@@ -8931,7 +8935,8 @@
       "author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -8954,7 +8959,8 @@
       "real_author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -9036,7 +9042,8 @@
       "author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -9059,7 +9066,8 @@
       "real_author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -9521,7 +9529,8 @@
       "author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",
@@ -9544,7 +9553,8 @@
       "real_author": {
         "_account_id": 1011123,
         "name": "David Pursehouse",
-        "email": "dpursehouse@collab.net",
+        "display_name": "David P.",
+        "email": "dpursehouse@digital.ai",
         "avatars": [
           {
             "url": "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/s32/photo.jpg",

@@ -2,6 +2,7 @@
   {
     "type": "Change",
     "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+    "draft": false,
     "number": 70,
     "repository_prefix": "morucci",
     "repository_fullname": "morucci/monocle",
@@ -33,6 +34,18 @@
         "path": "web/src/components/changes_review.js"
       }
     ],
+    "commits": [
+      {
+        "sha": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+        "authored_at": "2020-04-11T07:01:15Z",
+        "committed_at": "2020-04-11T10:21:23Z",
+        "additions": 90,
+        "deletions": 33,
+        "title": "expose ChangeCommitForcePushedEven and ChangeCommitPushedEvent\n\n- exposed in the changes_lifecycle_stats API query\n- exposed in the web \"Changes lifecycle stats\" graph + iteration/change",
+        "author": "flepied",
+        "committer": "flepied"
+      }
+    ],
     "commit_count": 1,
     "merged_by": "morucci",
     "updated_at": "2020-04-12T06:20:26Z",
@@ -42,7 +55,6 @@
     "state": "MERGED",
     "duration": 52790,
     "mergeable": "UNKNOWN",
-    "draft": false,
     "labels": [],
     "assignees": []
   },

@@ -83,7 +83,17 @@
           "commit": {
             "oid": "8bbc5b8de7c9b360ff93e4323492f48d93cdbcd0",
             "pushedDate": null,
+            "authoredDate": "2020-04-08T15:38:56Z",
+            "committedDate": "2020-04-08T15:38:56Z",
+            "additions": 1,
+            "deletions": 1,
+            "message": "correct router-confd port",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -96,7 +106,17 @@
           "commit": {
             "oid": "9df4d88fe33041eee1ff1841fa6609e7148c48cd",
             "pushedDate": null,
+            "authoredDate": "2020-04-08T15:48:20Z",
+            "committedDate": "2020-04-08T15:48:20Z",
+            "additions": 1,
+            "deletions": 1,
+            "message": "correct router-confd port in sbc config",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -109,7 +129,17 @@
           "commit": {
             "oid": "9674f6d4c7a1f3cf3b650b6d6fb034f723e2f7cc",
             "pushedDate": null,
+            "authoredDate": "2020-04-08T15:55:44Z",
+            "committedDate": "2020-04-08T15:55:44Z",
+            "additions": 7,
+            "deletions": 7,
+            "message": "pin strict kamailio version",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -122,7 +152,17 @@
           "commit": {
             "oid": "2180c178f4f5b3ac9db466d182b2060f1389f3b4",
             "pushedDate": "2020-04-08T15:59:02Z",
+            "authoredDate": "2020-04-08T15:58:41Z",
+            "committedDate": "2020-04-08T15:58:41Z",
+            "additions": 1,
+            "deletions": 1,
+            "message": "correct router-confd port in wazo-vars",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -135,7 +175,17 @@
           "commit": {
             "oid": "3786981fd4c5d4129d8176ea64dee4ebdb2089ed",
             "pushedDate": "2020-04-08T15:59:42Z",
+            "authoredDate": "2020-04-08T15:59:34Z",
+            "committedDate": "2020-04-08T15:59:34Z",
+            "additions": 126,
+            "deletions": 0,
+            "message": "wazo-c4-aio role - 1st version",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -148,7 +198,17 @@
           "commit": {
             "oid": "7f264f3f6a7cdcae01d53cbe39c7b58ec76f5cf4",
             "pushedDate": null,
+            "authoredDate": "2020-04-08T16:02:48Z",
+            "committedDate": "2020-04-08T16:02:48Z",
+            "additions": 36,
+            "deletions": 0,
+            "message": "c4-aio playbook",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -161,7 +221,17 @@
           "commit": {
             "oid": "50042a326b1dfa7f9d26f0675f81122c7db30f89",
             "pushedDate": "2020-04-08T16:06:16Z",
+            "authoredDate": "2020-04-08T16:06:08Z",
+            "committedDate": "2020-04-08T16:06:08Z",
+            "additions": 28,
+            "deletions": 0,
+            "message": "c4-aio inventory file",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -174,7 +244,17 @@
           "commit": {
             "oid": "c2b7237b81df06d4657d0c6ac11f82d9d6a8c6e9",
             "pushedDate": "2020-04-08T16:23:15Z",
+            "authoredDate": "2020-04-08T16:23:06Z",
+            "committedDate": "2020-04-08T16:23:06Z",
+            "additions": 35,
+            "deletions": 10,
+            "message": "add kamailio project repo to have 52 version",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -187,7 +267,17 @@
           "commit": {
             "oid": "b1d012addf818981cc8bb34fe1d585bbd19b4256",
             "pushedDate": "2020-04-10T06:59:55Z",
+            "authoredDate": "2020-04-10T06:59:47Z",
+            "committedDate": "2020-04-10T06:59:47Z",
+            "additions": 4,
+            "deletions": 4,
+            "message": "change localhost to ip address cause deb error",
             "author": {
+              "user": {
+                "login": "mwolff44"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "mwolff44"
               }
@@ -200,7 +290,17 @@
           "commit": {
             "oid": "183cac87b1ce3fb800fd9ab235a8782395471e81",
             "pushedDate": "2020-04-10T07:53:26Z",
+            "authoredDate": "2020-04-10T07:50:02Z",
+            "committedDate": "2020-04-10T07:53:19Z",
+            "additions": 39,
+            "deletions": 36,
+            "message": "add a zuul job to test C4 aio",
             "author": {
+              "user": {
+                "login": "fredericlepied"
+              }
+            },
+            "committer": {
               "user": {
                 "login": "fredericlepied"
               }
