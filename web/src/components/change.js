@@ -76,7 +76,7 @@ class ChangeTable extends React.Component {
           loop++
           return <Link key={loop} to={w.replace(githubRegexp, `/${index}/change/$2@$3@$4`)}>{w.replace(githubRegexp, '$1 ')}</Link>
         } else if (change.url.startsWith('https://github.com/') && w.match(githubIssueRegexp)) {
-          return <Link key={loop} to={w.replace(githubIssueRegexp, `https://github.com/${change.repository_fullname}/issues/$1`)} target="_blank" rel="noopener noreferrer">{w.replace(githubIssueRegexp, '#$1')}</Link>
+          return <a key={loop} href={w.replace(githubIssueRegexp, `https://github.com/${change.repository_fullname}/issues/$1`)} target="_blank" rel="noopener noreferrer">{w.replace(githubIssueRegexp, '#$1')}</a>
         }
         if (w.match(urlRegexp)) {
           loop++
