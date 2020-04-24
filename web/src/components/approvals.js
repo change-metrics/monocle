@@ -22,6 +22,7 @@ import { query } from '../reducers/query'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import { withRouter } from 'react-router-dom'
 
 import {
   LoadingBox,
@@ -105,7 +106,7 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CApprovalStats = connect(mapStateToProps, mapDispatchToProps)(ApprovalStats)
+const CApprovalStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ApprovalStats))
 
 export {
   CApprovalStats

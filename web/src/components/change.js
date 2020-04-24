@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -29,6 +28,7 @@ import Button from 'react-bootstrap/Button'
 import Popover from 'react-bootstrap/Popover'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import PropTypes from 'prop-types'
+import { withRouter, Link } from 'react-router-dom'
 
 import moment from 'moment'
 
@@ -209,7 +209,7 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CChange = connect(mapStateToProps, mapDispatchToProps)(Change)
+const CChange = withRouter(connect(mapStateToProps, mapDispatchToProps)(Change))
 
 export {
   CChange

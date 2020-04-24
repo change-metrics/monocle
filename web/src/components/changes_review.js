@@ -24,6 +24,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
+import { withRouter } from 'react-router-dom'
 
 import {
   BaseQueryComponent,
@@ -181,7 +182,7 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CChangesReviewStats = connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats)
+const CChangesReviewStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats))
 
 export {
   CChangesReviewStats

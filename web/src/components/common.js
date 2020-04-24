@@ -108,6 +108,11 @@ class BaseQueryComponent extends React.Component {
     }
     this.handlePageChange.bind(this)
     this.queryBackend.bind(this)
+    if (this.props.history !== undefined) {
+      this.props.history.listen((location, action) => {
+        this.queryBackend()
+      })
+    }
   }
 
   componentDidMount () {
@@ -146,7 +151,8 @@ BaseQueryComponent.propTypes = {
   filter_exclude_authors: PropTypes.string,
   filter_loaded_from_url: PropTypes.bool,
   handleQuery: PropTypes.func.isRequired,
-  changeIds: PropTypes.array
+  changeIds: PropTypes.array,
+  history: PropTypes.object.isRequired
 }
 
 export {

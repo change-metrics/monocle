@@ -24,6 +24,7 @@ import Button from 'react-bootstrap/Button'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropDownButton from 'react-bootstrap/DropdownButton'
 import PropTypes from 'prop-types'
+import { withRouter } from 'react-router-dom'
 
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -147,6 +148,11 @@ class FiltersForm extends React.Component {
       exclude_authors: '',
       authors: ''
     }
+    if (this.props.history !== undefined) {
+      this.props.history.listen((location, action) => {
+        this.fetchQueryParams()
+      })
+    }
   }
 
   componentDidMount () {
@@ -169,7 +175,7 @@ class FiltersForm extends React.Component {
   }
 
   fetchQueryParams = () => {
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(this.props.history.location.search)
     this.setState({
       lte: params.get('lte') || '',
       gte: params.get('gte') || moment().subtract(3, 'months')
@@ -181,8 +187,8 @@ class FiltersForm extends React.Component {
   }
 
   updateHistoryURL = (params) => {
-    const baseurl = `/r${window.location.pathname}`
-    const urlparams = new URLSearchParams(window.location.search)
+    console.log(this.props.history.location)
+    const urlparams = new URLSearchParams(this.props.history.location.search)
     Object.keys(params).forEach(element => {
       if (params[element]) {
         urlparams.set(element, params[element])
@@ -190,18 +196,9 @@ class FiltersForm extends React.Component {
         urlparams.delete(element)
       }
     })
-    const newsearch = urlparams.toString()
-    // do not push a new url if the search didn't change
-    if (`?${newsearch}` !== window.location.search) {
-      // trick to be able to use the back button of the browser
-      // note that the forward button will not work...
-      const current = new URL(window.location.href)
-      current.pathname = `r${current.pathname}`
-      window.history.replaceState(window.history.state, '', current.href)
-      // push the new location
-      const newurl = newsearch === '' ? baseurl : baseurl + '?' + newsearch
-      this.props.history.push(newurl)
-    }
+    const newsearch = this.props.history.location.pathname + '?' + urlparams.toString()
+    console.log('push in history:' + newsearch)
+    this.props.history.push(newsearch)
   }
 
   handleSubmit = (event) => {
@@ -283,7 +280,7 @@ FiltersForm.propTypes = {
   history: PropTypes.object.isRequired
 }
 
-const CFiltersForm = FiltersForm
+const CFiltersForm = withRouter(FiltersForm)
 
 export {
   CFiltersForm
