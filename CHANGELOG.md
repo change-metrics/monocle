@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [0.2] - 2020-04-24
+
+### Added
 
 - [dev] document Architectural Decisions in [doc/adr/index.md](doc/adr/index.md)
 - [web,backend] add support for Github Draft status in PR. Displayed
@@ -33,8 +40,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] humanize dates and durations.
 - [backend] store the filenames impacted by a change. Need to recreate the indexes.
 
-### Removed
-
 ### Fixed
 
 - [backend] peer strength computation.
@@ -42,6 +47,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] no more warnings on the console output.
 - [backend] managed Github deleted accounts (ghost).
 
-## [0.1] - 2029-04-01
+## [0.1] - 2020-04-01
 
 - initial release
