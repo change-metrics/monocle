@@ -1,2 +1,3 @@
 nose
 deepdiff
+git+https://github.com/flepied/madr-tools-python@template
