@@ -150,13 +150,20 @@ class FiltersForm extends React.Component {
     }
     if (this.props.history !== undefined) {
       this.props.history.listen((location, action) => {
-        this.fetchQueryParams()
+        if (this.mounted) {
+          this.fetchQueryParams()
+        }
       })
     }
   }
 
   componentDidMount () {
+    this.mounted = true
     this.fetchQueryParams()
+  }
+
+  componentWillUnmount () {
+    this.mounted = false
   }
 
   handleChange = (key, e) => {

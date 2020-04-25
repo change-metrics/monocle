@@ -482,6 +482,7 @@ class AbandonedChangesFull extends BaseQueryComponent {
             data={data}
             timeFunc={this.extractTime}
             index={this.props.index}
+            history={this.props.history}
           />}
           selectedPage={this.state.selectedPage}
           pageCount={Math.ceil(data.total / this.state.pageSize)}
