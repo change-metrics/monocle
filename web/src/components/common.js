@@ -34,7 +34,7 @@ function addUrlField (field, value) {
 
   url.searchParams.set(field, value)
 
-  return '/r' + url.pathname + url.search
+  return url.pathname + url.search
 }
 
 function newRelativeUrl (dest) {
