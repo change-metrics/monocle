@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+
+- [web] add a Treemap of the files impacted by the changes on the opened and merged pages.
+- [api] add 2 requests: changes_by_file_map and authors_by_file_map.
+- [api] add files (regexp) and state (OPEN, CLOSED or MERGED) as query parameters.
+
 ### Changed
 ### Removed
 ### Fixed
