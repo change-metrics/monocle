@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -32,7 +31,9 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  addUrlField
+  addUrlField,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 class TopEventsTable extends React.Component {
@@ -317,26 +318,14 @@ class AuthorsPeersStats extends BaseQueryComponent {
 }
 
 const mapStateToProps = state => {
-  return {
-    new_contributors_loading: state.QueryReducer.new_contributors_loading,
-    new_contributors_result: state.QueryReducer.new_contributors_result,
-    new_contributors_error: state.QueryReducer.new_contributors_error,
-    most_active_authors_stats_loading: state.QueryReducer.most_active_authors_stats_loading,
-    most_active_authors_stats_result: state.QueryReducer.most_active_authors_stats_result,
-    most_active_authors_stats_error: state.QueryReducer.most_active_authors_stats_error,
-    most_reviewed_authors_stats_loading: state.QueryReducer.most_reviewed_authors_stats_loading,
-    most_reviewed_authors_stats_result: state.QueryReducer.most_reviewed_authors_stats_result,
-    most_reviewed_authors_stats_error: state.QueryReducer.most_reviewed_authors_stats_error,
-    authors_peers_stats_loading: state.QueryReducer.authors_peers_stats_loading,
-    authors_peers_stats_result: state.QueryReducer.authors_peers_stats_result,
-    authors_peers_stats_error: state.QueryReducer.authors_peers_stats_error
-  }
-}
+  const map = {}
 
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
+  addMap(map, state.QueryReducer, 'new_contributors')
+  addMap(map, state.QueryReducer, 'most_active_authors_stats')
+  addMap(map, state.QueryReducer, 'most_reviewed_authors_stats')
+  addMap(map, state.QueryReducer, 'authors_peers_stats')
+
+  return map
 }
 
 const CMostActiveAuthorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats))

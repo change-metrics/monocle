@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -27,7 +26,9 @@ import { withRouter } from 'react-router-dom'
 import {
   LoadingBox,
   ErrorBox,
-  BaseQueryComponent
+  BaseQueryComponent,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 import Pie from './pie'
@@ -77,19 +78,7 @@ class AuthorsOpenedPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => {
-  return {
-    authors_top_opened_loading: state.QueryReducer.authors_top_opened_loading,
-    authors_top_opened_result: state.QueryReducer.authors_top_opened_result,
-    authors_top_opened_error: state.QueryReducer.authors_top_opened_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'authors_top_opened')
 
 const CAuthorsOpenedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(AuthorsOpenedPie))
 

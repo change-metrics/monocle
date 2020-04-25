@@ -779,10 +779,7 @@ def changes_by_file_map(es, index, repository_fullname, params):
     for change in changes:
         for f in change['changed_files']:
             key = '{}:{}'.format(change['repository_fullname'], f['path'])
-            try:
-                files[key] += 1
-            except KeyError:
-                files[key] = 1
+            files[key] = files.get(key, 0) + 1
     return {'changes': files}
 
 

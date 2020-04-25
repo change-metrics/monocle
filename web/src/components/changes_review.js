@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -29,12 +28,14 @@ import { withRouter } from 'react-router-dom'
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox
+  ErrorBox,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 import { Line } from 'react-chartjs-2'
 
-var moment = require('moment')
+import moment from 'moment'
 
 function secondsToDhms (seconds) {
   const d = moment.duration()
@@ -168,19 +169,7 @@ class ChangesReviewStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => {
-  return {
-    changes_review_stats_loading: state.QueryReducer.changes_review_stats_loading,
-    changes_review_stats_result: state.QueryReducer.changes_review_stats_result,
-    changes_review_stats_error: state.QueryReducer.changes_review_stats_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'changes_review_stats')
 
 const CChangesReviewStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats))
 
