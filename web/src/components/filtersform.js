@@ -187,7 +187,6 @@ class FiltersForm extends React.Component {
   }
 
   updateHistoryURL = (params) => {
-    console.log(this.props.history.location)
     const urlparams = new URLSearchParams(this.props.history.location.search)
     Object.keys(params).forEach(element => {
       if (params[element]) {
@@ -196,9 +195,10 @@ class FiltersForm extends React.Component {
         urlparams.delete(element)
       }
     })
-    const newsearch = this.props.history.location.pathname + '?' + urlparams.toString()
-    console.log('push in history:' + newsearch)
-    this.props.history.push(newsearch)
+    if (this.props.history.location.search !== '?' + urlparams.toString()) {
+      const newsearch = this.props.history.location.pathname + '?' + urlparams.toString()
+      this.props.history.push(newsearch)
+    }
   }
 
   handleSubmit = (event) => {
