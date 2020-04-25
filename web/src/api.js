@@ -50,6 +50,12 @@ function getQueryResults (queryParams) {
     })
 }
 
+function getIndices () {
+  const url = baseurl + '/indices'
+  return axios.get(url)
+}
+
 export {
-  getQueryResults
+  getQueryResults,
+  getIndices
 }

@@ -27,9 +27,8 @@ from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
 
-
 app = Flask(__name__)
-CORS(app, resources={r"/api/0/query/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
+CORS(app, resources={r"/api/0/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
 
 
 @app.route("/api/0/query/<name>", methods=['GET'])
@@ -46,6 +45,13 @@ def query(name):
         index=request.args.get('index'),
     )
     result = db.run_named_query(name, repository_fullname, params)
+    return jsonify(result)
+
+
+@app.route("/api/0/indices", methods=['GET'])
+def indices():
+    db = ELmonocleDB(elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'))
+    result = db.get_indices()
     return jsonify(result)
 
 

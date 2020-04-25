@@ -8,12 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] add a homepage redirecting to the first index or displaying a message to create an index.
+- [api] add a /indices api to get the list of available indices.
 - [web] add a Treemap of the files impacted by the changes on the opened and merged pages.
 - [api] add 2 requests: changes_by_file_map and authors_by_file_map.
 - [api] add files (regexp) and state (OPEN, CLOSED or MERGED) as query parameters.
 
 ### Changed
+
+- [db] prefix the names of indices by `monocle.changes.`. Need to recreate the indexes or create an alias if you want to keep them.
+
 ### Removed
+
 ### Fixed
 
 - [web] back and forward browser buttons are working fine now when you change filters.
