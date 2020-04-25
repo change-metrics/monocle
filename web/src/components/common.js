@@ -22,6 +22,8 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import PropTypes from 'prop-types'
 
+import { query } from '../reducers/query'
+
 function changeUrl (index, x, name = null) {
   if (!name) {
     name = x.change_id
@@ -52,6 +54,19 @@ function addS (count, s = 's') {
   }
 }
 
+function addMap (dict, reducer, name) {
+  dict[name + '_loading'] = reducer[name + '_loading']
+  dict[name + '_result'] = reducer[name + '_result']
+  dict[name + '_error'] = reducer[name + '_error']
+  return dict
+}
+
+const mapDispatchToProps = dispatch => {
+  return {
+    handleQuery: (params) => dispatch(query(params))
+  }
+}
+
 class LoadingBox extends React.Component {
   render () {
     return (
@@ -78,8 +93,8 @@ class ErrorBox extends React.Component {
           <Card>
             <Card.Body>
               <h1>
-                Error: code: {this.props.error.status},
-                message: {this.props.error.data}
+                Error: code: {this.props.error ? this.props.error.status : 'none'},
+                message: {this.props.error ? this.props.error.data : 'none'}
               </h1>
             </Card.Body>
           </Card>
@@ -104,7 +119,8 @@ class BaseQueryComponent extends React.Component {
       graph_type: null, // must be set by sub-class
       pageSize: 10,
       selectedPage: 0,
-      forceAllAuthors: false // could be set by sub-class
+      forceAllAuthors: false, // could be set by sub-class
+      state: null // could be set by sub-class
     }
     this.handlePageChange.bind(this)
     this.queryBackend.bind(this)
@@ -137,7 +153,8 @@ class BaseQueryComponent extends React.Component {
       graph_type: this.state.graph_type,
       from: start * this.state.pageSize,
       size: this.state.pageSize,
-      changeIds: this.props.changeIds
+      changeIds: this.props.changeIds,
+      state: this.state.state
     })
   }
 }
@@ -151,7 +168,7 @@ BaseQueryComponent.propTypes = {
   filter_exclude_authors: PropTypes.string,
   filter_loaded_from_url: PropTypes.bool,
   handleQuery: PropTypes.func.isRequired,
-  changeIds: PropTypes.array,
+  changeIds: PropTypes.string,
   history: PropTypes.object.isRequired
 }
 
@@ -162,5 +179,7 @@ export {
   changeUrl,
   addUrlField,
   newRelativeUrl,
-  addS
+  addS,
+  addMap,
+  mapDispatchToProps
 }

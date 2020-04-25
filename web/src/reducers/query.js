@@ -16,56 +16,32 @@
 
 import { getQueryResults } from '../api'
 
-const initialState = {
-  changes_lifecycle_stats_result: null,
-  changes_lifecycle_stats_loading: true,
-  changes_lifecycle_stats_error: null,
-  changes_review_stats_result: null,
-  changes_review_stats_loading: true,
-  changes_review_stats_error: null,
-  most_active_authors_stats_result: null,
-  most_active_authors_stats_loading: true,
-  most_active_authors_stats_error: null,
-  approval_stats_result: null,
-  approval_stats_loading: true,
-  approval_stats_error: null,
-  most_reviewed_authors_stats_result: null,
-  most_reviewed_authors_stats_loading: true,
-  most_reviewed_authors_stats_error: null,
-  authors_peers_stats_result: null,
-  authors_peers_stats_loading: true,
-  authors_peers_stats_error: null,
-  repos_top_merged_result: null,
-  repos_top_merged_loading: true,
-  repos_top_opened_error: null,
-  repos_top_opened_result: null,
-  repos_top_opened_loading: true,
-  repos_top_merged_error: null,
-  hot_changes_result: null,
-  hot_changes_loading: true,
-  hot_changes_error: null,
-  cold_changes_result: null,
-  cold_changes_loading: true,
-  cold_changes_error: null,
-  last_changes_result: null,
-  last_changes_loading: true,
-  last_changes_error: null,
-  last_abandoned_changes_result: null,
-  last_abandoned_changes_loading: true,
-  last_abandoned_changes_error: null,
-  changes_and_events_result: null,
-  changes_and_events_loading: true,
-  changes_and_events_error: null,
-  new_contributors_result: null,
-  new_contributors_loading: true,
-  new_contributors_error: null,
-  authors_top_merged_result: null,
-  authors_top_merged_loading: true,
-  authors_top_merged_error: null,
-  authors_top_opened_result: null,
-  authors_top_opened_loading: true,
-  authors_top_opened_error: null
+const addStates = (init, name) => {
+  init[name + '_result'] = null
+  init[name + '_loading'] = true
+  init[name + '_error'] = null
 }
+
+const initialState = {}
+
+addStates(initialState, 'changes_lifecycle_stats')
+addStates(initialState, 'changes_review_stats')
+addStates(initialState, 'most_active_authors_stats')
+addStates(initialState, 'approval_stats')
+addStates(initialState, 'most_reviewed_authors_stats')
+addStates(initialState, 'authors_peers_stats')
+addStates(initialState, 'repos_top_merged')
+addStates(initialState, 'repos_top_opened')
+addStates(initialState, 'hot_changes')
+addStates(initialState, 'cold_changes')
+addStates(initialState, 'last_changes')
+addStates(initialState, 'last_abandoned_changes')
+addStates(initialState, 'changes_and_events')
+addStates(initialState, 'new_contributors')
+addStates(initialState, 'authors_top_merged')
+addStates(initialState, 'authors_top_opened')
+addStates(initialState, 'opened_changes_by_file_map')
+addStates(initialState, 'merged_changes_by_file_map')
 
 const enhanceData = (x) => {
   if (x.type === 'Change') {
@@ -119,6 +95,7 @@ const queryReducer = (state = initialState, action) => {
 }
 
 function query (params) {
+  // console.log(params)
   return (dispatch) => {
     dispatch({ type: params.graph_type + '_QUERY_LOADING' })
     return getQueryResults(params)
@@ -142,6 +119,7 @@ function query (params) {
 }
 
 export default queryReducer
+
 export {
   query
 }

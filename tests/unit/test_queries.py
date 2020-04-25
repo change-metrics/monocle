@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import unittest
 
 from deepdiff import DeepDiff
@@ -192,3 +193,19 @@ class TestQueries(unittest.TestCase):
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
+
+    def test_files_param(self):
+        """
+        Test files param: last_merged_changes
+        """
+        params = set_params({'files': r'.*backend.py'})
+        ret = self.eldb.run_named_query('last_merged_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1, ret)
+
+    def test_state_param(self):
+        """
+        Test files param: changes_and_events
+        """
+        params = set_params({'state': 'MERGED'})
+        ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 3, ret)

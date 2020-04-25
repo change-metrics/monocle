@@ -40,6 +40,10 @@ import {
 
 import ComplexityGraph from './complexity_graph'
 import DurationComplexityGraph from './duration_complexity_graph'
+import {
+  COpenedFilesTreeMap,
+  CMergedFilesTreeMap
+} from './files_treemap'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -346,6 +350,14 @@ class AbstractLastChanges extends BaseQueryComponent {
       }
       return (
         <React.Fragment>
+          <Row>
+            <Col>
+              {this.state.merged ? <CMergedFilesTreeMap index={this.props.index}/>
+                : <COpenedFilesTreeMap index={this.props.index}/>
+              }
+            </Col>
+          </Row>
+          <Row><Col><p/></Col></Row>
           <Row>
             <Col>
               <ChangesTable

@@ -62,6 +62,8 @@ public_queries = (
     "changes_and_events",
     "last_abandoned_changes",
     "new_contributors",
+    "changes_by_file_map",
+    "authors_by_file_map",
 )
 
 
@@ -88,8 +90,11 @@ def generate_events_filter(params, qfilter):
 
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
+    files = params.get('files')
     if state:
         qfilter.append({"term": {"state": state}})
+    if files:
+        qfilter.append({"regexp": {"changed_files.path": files}})
 
 
 def generate_filter(repository_fullname, params):
@@ -759,3 +764,41 @@ def new_contributors(es, index, repository_fullname, params):
     )
     diff = new.difference(old)
     return {'items': [n for n in new_authors if n['key'] in diff]}
+
+
+def changes_by_file_map(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    body = {
+        "size": 1000,
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    files = {}
+    for change in changes:
+        for f in change['changed_files']:
+            key = '{}:{}'.format(change['repository_fullname'], f['path'])
+            files[key] = files.get(key, 0) + 1
+    return {'changes': files}
+
+
+def authors_by_file_map(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    body = {
+        "size": 1000,
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r['_source'] for r in data['hits']['hits']]
+    authors = {}
+    for change in changes:
+        for f in change['changed_files']:
+            key = '{}:{}'.format(change['repository_fullname'], f['path'])
+            try:
+                authors[key].add(change['author'])
+            except KeyError:
+                authors[key] = set()
+                authors[key].add(change['author'])
+    return {'authors': authors}

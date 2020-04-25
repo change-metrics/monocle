@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -31,7 +30,9 @@ import { Line } from 'react-chartjs-2'
 import {
   BaseQueryComponent,
   LoadingBox,
-  ErrorBox
+  ErrorBox,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
@@ -199,19 +200,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => {
-  return {
-    changes_lifecycle_stats_loading: state.QueryReducer.changes_lifecycle_stats_loading,
-    changes_lifecycle_stats_result: state.QueryReducer.changes_lifecycle_stats_result,
-    changes_lifecycle_stats_error: state.QueryReducer.changes_lifecycle_stats_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'changes_lifecycle_stats')
 
 const CChangesLifeCycleStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats))
 

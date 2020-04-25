@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -27,7 +26,9 @@ import { withRouter } from 'react-router-dom'
 import {
   LoadingBox,
   ErrorBox,
-  BaseQueryComponent
+  BaseQueryComponent,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 import Pie from './pie'
@@ -92,19 +93,7 @@ class ApprovalStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => {
-  return {
-    approval_stats_loading: state.QueryReducer.approval_stats_loading,
-    approval_stats_result: state.QueryReducer.approval_stats_result,
-    approval_stats_error: state.QueryReducer.approval_stats_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'approval_stats')
 
 const CApprovalStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ApprovalStats))
 

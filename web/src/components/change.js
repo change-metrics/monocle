@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -36,7 +35,9 @@ import {
   BaseQueryComponent,
   LoadingBox,
   ErrorBox,
-  addS
+  addS,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 import { TimelineGraph } from './timeline'
@@ -195,19 +196,7 @@ Change.propTypes = {
   index: PropTypes.string.isRequired
 }
 
-const mapStateToProps = state => {
-  return {
-    changes_and_events_loading: state.QueryReducer.changes_and_events_loading,
-    changes_and_events_result: state.QueryReducer.changes_and_events_result,
-    changes_and_events_error: state.QueryReducer.changes_and_events_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'changes_and_events')
 
 const CChange = withRouter(connect(mapStateToProps, mapDispatchToProps)(Change))
 

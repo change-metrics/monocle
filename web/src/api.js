@@ -22,72 +22,28 @@ var baseurl = server + '/api/0'
 
 console.log('BaseURL=' + baseurl)
 
-function setQueryParams (
-  {
-    gte = undefined, lte = undefined,
-    type = undefined,
-    excludeAuthors = undefined,
-    authors = undefined,
-    from = undefined,
-    size = undefined,
-    changeIds = undefined
-  }) {
-  var params = new URLSearchParams()
-  if (gte) {
-    params.append('gte', gte)
-  } else {
-    params.append(
-      'gte', moment().subtract(3, 'months')
-        .format('YYYY-MM-DD'))
-  }
-  if (lte) {
-    params.append('lte', lte)
-  }
-  if (type) {
-    params.append('type', type)
-  }
-  if (excludeAuthors) {
-    params.append('exclude_authors', excludeAuthors)
-  }
-  if (authors) {
-    params.append('authors', authors)
-  }
-  if (from) {
-    params.append('from', from)
-  }
-  if (size) {
-    params.append('size', size)
-  }
-  if (changeIds) {
-    params.append('change_ids', changeIds)
-  }
-  return params
-}
+function getQueryResults (queryParams) {
+  const params = { ...queryParams }
+  const url = baseurl + '/query/' + params.name
 
-function getQueryResults (
-  {
-    name, repository, index, gte = undefined,
-    lte = undefined, type = undefined,
-    excludeAuthors = undefined,
-    authors = undefined, from = undefined, size = undefined,
-    changeIds = undefined
-  }) {
-  const url = baseurl + '/query/' + name
-  var params = setQueryParams(
-    {
-      gte: gte,
-      lte: lte,
-      type: type,
-      excludeAuthors: excludeAuthors,
-      authors: authors,
-      from: from,
-      size: size,
-      changeIds: changeIds
-    }
-  )
-  params.append('repository', repository)
-  params.append('index', index)
-  params.append('ec_same_date', true)
+  params.ec_same_date = true
+  delete params.name
+  delete params.graph_type
+
+  if (!params.gte) {
+    params.gte = moment().subtract(3, 'months').format('YYYY-MM-DD')
+  }
+
+  if (params.changeIds) {
+    params.change_ids = params.changeIds
+    delete params.changeIds
+  }
+
+  if (params.excludeAuthors) {
+    params.exclude_authors = params.excludeAuthors
+    delete params.excludeAuthors
+  }
+
   return axios.get(
     url, {
       params: params

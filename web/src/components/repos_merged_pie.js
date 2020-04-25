@@ -17,7 +17,6 @@
 import React from 'react'
 
 import { connect } from 'react-redux'
-import { query } from '../reducers/query'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -27,7 +26,9 @@ import { withRouter } from 'react-router-dom'
 import {
   LoadingBox,
   ErrorBox,
-  BaseQueryComponent
+  BaseQueryComponent,
+  mapDispatchToProps,
+  addMap
 } from './common'
 
 import Pie from './pie'
@@ -77,19 +78,7 @@ class ReposMergedPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => {
-  return {
-    repos_top_merged_loading: state.QueryReducer.repos_top_merged_loading,
-    repos_top_merged_result: state.QueryReducer.repos_top_merged_result,
-    repos_top_merged_error: state.QueryReducer.repos_top_merged_error
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    handleQuery: (params) => dispatch(query(params))
-  }
-}
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_merged')
 
 const CReposMergedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposMergedPie))
 

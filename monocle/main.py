@@ -92,6 +92,14 @@ def main():
         '--type', help='Scope to events types list (comma separated)'
     )
     parser_dbquery.add_argument(
+        '--files', help='Scope to changes containing this file regexp'
+    )
+    parser_dbquery.add_argument(
+        '--state',
+        help='Scope to changes having this state',
+        choices=['OPEN', 'CLOSED', 'MERGED'],
+    )
+    parser_dbquery.add_argument(
         '--change-ids', help='Scope to change ids (comma separated)'
     )
     parser_dbquery.add_argument('--authors', help='Scope to authors (comma separated)')
