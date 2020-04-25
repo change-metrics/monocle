@@ -244,7 +244,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -260,7 +319,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -276,7 +394,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -292,7 +469,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -308,7 +544,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -324,7 +619,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -341,6 +695,65 @@
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
     "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ],
     "approval": "CHANGES_REQUESTED"
   },
   {
@@ -357,7 +770,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitForcePushedEvent",
@@ -373,7 +845,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -390,6 +921,65 @@
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
     "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ],
     "approval": "APPROVED"
   },
   {
@@ -406,7 +996,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -422,7 +1071,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -438,7 +1146,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -454,7 +1221,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -470,7 +1296,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -486,7 +1371,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -502,7 +1446,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -518,7 +1521,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -534,7 +1596,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -550,7 +1671,66 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -566,6 +1746,65 @@
     "change_id": "wazo-platform@wazo-ansible@76",
     "url": "https://github.com/wazo-platform/wazo-ansible/pull/76",
     "on_author": "mwolff44",
-    "on_created_at": "2020-04-08T16:25:30Z"
+    "on_created_at": "2020-04-08T16:25:30Z",
+    "changed_files": [
+      {
+        "path": "c4-aio.yml"
+      },
+      {
+        "path": "inventories/c4-aio"
+      },
+      {
+        "path": "roles/wazo-c4-aio/handlers/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/meta/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/kamailio.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-db.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/tasks/wazo-packages.yml"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/domain.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-aio/templates/rtpengine.j2"
+      },
+      {
+        "path": "roles/wazo-c4-router/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-c4-sbc/templates/kamailio-local.cfg.j2"
+      },
+      {
+        "path": "roles/wazo-kamailio/tasks/main.yml"
+      },
+      {
+        "path": "roles/wazo-vars/defaults/main.yml"
+      },
+      {
+        "path": "zuul.d/c4-aio-run.yaml"
+      },
+      {
+        "path": "zuul.d/c4-pre.yaml"
+      },
+      {
+        "path": "zuul.d/c4-sbc-pre.yaml"
+      },
+      {
+        "path": "zuul.yaml"
+      }
+    ]
   }
 ]

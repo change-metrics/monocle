@@ -142,21 +142,33 @@ class BaseQueryComponent extends React.Component {
 
   queryBackend (start = 0) {
     const params = (new URL(window.location.href)).searchParams
-    this.props.handleQuery({
-      index: this.props.index,
-      name: this.state.name,
-      repository: params.get('repository') || '.*',
-      branch: params.get('branch'),
-      gte: params.get('gte'),
-      lte: params.get('lte'),
-      excludeAuthors: params.get('exclude_authors'),
-      authors: this.state.forceAllAuthors ? null : params.get('authors'),
-      graph_type: this.state.graph_type,
-      from: start * this.state.pageSize,
-      size: this.state.pageSize,
-      changeIds: this.props.changeIds,
-      state: this.state.state
-    })
+    // if we have a changeIds, don't pass other non mandatory filters
+    if (this.props.changeIds) {
+      this.props.handleQuery({
+        index: this.props.index,
+        name: this.state.name,
+        graph_type: this.state.graph_type,
+        repository: params.get('repository') || '.*',
+        branch: params.get('branch'),
+        changeIds: this.props.changeIds
+      })
+    } else {
+      this.props.handleQuery({
+        index: this.props.index,
+        name: this.state.name,
+        repository: params.get('repository') || '.*',
+        branch: params.get('branch'),
+        files: params.get('files'),
+        gte: params.get('gte'),
+        lte: params.get('lte'),
+        excludeAuthors: params.get('exclude_authors'),
+        authors: this.state.forceAllAuthors ? null : params.get('authors'),
+        graph_type: this.state.graph_type,
+        from: start * this.state.pageSize,
+        size: this.state.pageSize,
+        state: this.state.state
+      })
+    }
   }
 }
 
