@@ -313,7 +313,7 @@ class ChangeView extends React.Component {
             <Col>
               <CChange
                 index={this.props.match.params.index}
-                changeIds={[this.props.match.params.change]}
+                changeIds={this.props.match.params.change}
               />
             </Col>
           </Row>

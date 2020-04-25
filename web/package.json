@@ -11,6 +11,7 @@
     "react-bootstrap": "^1.0.0",
     "react-chartjs-2": "^2.9.0",
     "react-chord-diagram": "^1.6.0",
+    "react-d3-treemap": "^1.0.15",
     "react-datepicker": "^2.14.1",
     "react-dom": "^16.13.1",
     "react-event-timeline": "^1.6.3",
