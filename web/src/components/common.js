@@ -103,7 +103,8 @@ class BaseQueryComponent extends React.Component {
       name: null, // must be set by sub-class
       graph_type: null, // must be set by sub-class
       pageSize: 10,
-      selectedPage: 0
+      selectedPage: 0,
+      forceAllAuthors: false // could be set by sub-class
     }
     this.handlePageChange.bind(this)
     this.queryBackend.bind(this)
@@ -127,7 +128,7 @@ class BaseQueryComponent extends React.Component {
       gte: params.get('gte'),
       lte: params.get('lte'),
       excludeAuthors: params.get('exclude_authors'),
-      authors: params.get('authors'),
+      authors: this.state.forceAllAuthors ? null : params.get('authors'),
       graph_type: this.state.graph_type,
       from: start * this.state.pageSize,
       size: this.state.pageSize,
