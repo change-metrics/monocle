@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -25,8 +24,8 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 import PropTypes from 'prop-types'
+import { withRouter, Link } from 'react-router-dom'
 
-import MyLink from './my_link'
 import ConnectionDiagram from './connection_diagram'
 
 import {
@@ -67,7 +66,7 @@ class TopEventsTable extends React.Component {
                   {this.props.data.items.map((x, index) =>
                     <tr key={index}>
                       <td style={this.rowStyleFormat(this.props.data.count_avg, x.doc_count)}>{index + 1}</td>
-                      <td><MyLink to={addUrlField('authors', x.key)}>{x.key}</MyLink></td>
+                      <td><Link to={addUrlField('authors', x.key)}>{x.key}</Link></td>
                       <td>{x.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -340,10 +339,10 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CMostActiveAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats)
-const CNewContributorsStats = connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats)
-const CMostReviewedAuthorsStats = connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats)
-const CAuthorsPeersStats = connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
+const CMostActiveAuthorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats))
+const CNewContributorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats))
+const CMostReviewedAuthorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats))
+const CAuthorsPeersStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats))
 
 export {
   CNewContributorsStats,

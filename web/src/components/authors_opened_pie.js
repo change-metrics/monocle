@@ -22,6 +22,7 @@ import { query } from '../reducers/query'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import { withRouter } from 'react-router-dom'
 
 import {
   LoadingBox,
@@ -90,6 +91,6 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CAuthorsOpenedPie = connect(mapStateToProps, mapDispatchToProps)(AuthorsOpenedPie)
+const CAuthorsOpenedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(AuthorsOpenedPie))
 
 export default CAuthorsOpenedPie

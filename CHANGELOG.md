@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [web] back and forward browser buttons are working fine now when you change filters.
 - [web] have a correct history of events in /change/ when filtered on authors (#136)
 
 ## [0.2] - 2020-04-24

@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { Link } from 'react-router-dom'
 
 import { connect } from 'react-redux'
 import { query } from '../reducers/query'
@@ -26,10 +25,10 @@ import Card from 'react-bootstrap/Card'
 import Table from 'react-bootstrap/Table'
 import ReactPaginate from 'react-paginate'
 import PropTypes from 'prop-types'
+import { withRouter, Link } from 'react-router-dom'
 
 import moment from 'moment'
 
-import MyLink from './my_link'
 import {
   BaseQueryComponent,
   LoadingBox,
@@ -62,7 +61,7 @@ class RepoChangesTable extends React.Component {
                 <tbody>
                   {this.props.data.items.map((item, index) =>
                     <tr key={index}>
-                      <td align="center"><MyLink to={addUrlField('repository', item.key)}>{item.key}</MyLink></td>
+                      <td align="center"><Link to={addUrlField('repository', item.key)}>{item.key}</Link></td>
                       <td align="center">{item.doc_count}</td>
                     </tr>)}
                 </tbody>
@@ -167,8 +166,8 @@ class ChangesTable extends React.Component {
                       {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
                       {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
                       {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
-                      <td align="center"><MyLink to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</MyLink></td>
-                      <td align="center"><MyLink to={addUrlField('authors', x.author)}>{x.author}</MyLink></td>
+                      <td align="center"><Link to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</Link></td>
+                      <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
                       {this.props.mergeable ? <td align="center">{x.draft ? 'DRAFT' : x.mergeable}</td> : null}
                       <td align="center">{ x.complexity }</td>
@@ -522,14 +521,14 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CRepoChanges = connect(mapStateToProps, mapDispatchToProps)(RepoChanges)
-const CHotChanges = connect(mapStateToProps, mapDispatchToProps)(HotChanges)
-const CColdChanges = connect(mapStateToProps, mapDispatchToProps)(ColdChanges)
-const CAbandonedChanges = connect(mapStateToProps, mapDispatchToProps)(AbandonedChanges)
-const CAbandonedChangesFull = connect(mapStateToProps, mapDispatchToProps)(AbandonedChangesFull)
-const CLastChanges = connect(mapStateToProps, mapDispatchToProps)(LastChanges)
-const CLastMergedChanges = connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges)
-const CLastOpenedChanges = connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges)
+const CRepoChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(RepoChanges))
+const CHotChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(HotChanges))
+const CColdChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(ColdChanges))
+const CAbandonedChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(AbandonedChanges))
+const CAbandonedChangesFull = withRouter(connect(mapStateToProps, mapDispatchToProps)(AbandonedChangesFull))
+const CLastChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(LastChanges))
+const CLastMergedChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(LastMergedChanges))
+const CLastOpenedChanges = withRouter(connect(mapStateToProps, mapDispatchToProps)(LastOpenedChanges))
 
 export {
   CRepoChanges,

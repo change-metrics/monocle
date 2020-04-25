@@ -24,6 +24,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
+import { withRouter } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
@@ -212,7 +213,7 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-const CChangesLifeCycleStats = connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats)
+const CChangesLifeCycleStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats))
 
 export {
   CChangesLifeCycleStats

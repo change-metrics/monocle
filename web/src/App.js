@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { Redirect, Switch, Route } from 'react-router-dom'
+import { Switch, Route } from 'react-router-dom'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
@@ -58,13 +58,13 @@ class RootView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
               <CFiltersForm
-                history={this.props.history}/>
+                history={this.props.history} />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -178,13 +178,13 @@ class MergedChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
               <CFiltersForm
-                history={this.props.history}/>
+                history={this.props.history} />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -224,13 +224,13 @@ class OpenChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
               <CFiltersForm
-                history={this.props.history}/>
+                history={this.props.history} />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -270,13 +270,13 @@ class AbandonedChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
               <CFiltersForm
-                history={this.props.history}/>
+                history={this.props.history} />
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
@@ -306,7 +306,7 @@ class ChangeView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index}/>
+        <TopMenu index={this.props.match.params.index} />
         <Container>
           <Row><Col><p></p></Col></Row>
           <Row>
@@ -331,21 +331,6 @@ ChangeView.propTypes = {
   })
 }
 
-const RedirectView = ({ match, location }) => {
-  const newpath = location.pathname.split('/').slice(2).join('/')
-  return (
-    <Redirect to={`/${newpath}${location.search}`} />
-  )
-}
-
-RedirectView.propTypes = {
-  match: PropTypes.object,
-  location: PropTypes.shape({
-    pathname: PropTypes.string.isRequired,
-    search: PropTypes.string
-  })
-}
-
 class App extends React.Component {
   render () {
     return (
@@ -355,7 +340,6 @@ class App extends React.Component {
         <Route path='/:index/opened-changes' component={OpenChangesView} />
         <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
         <Route path='/:index/change/:change' component={ChangeView} />
-        <Route path='/r/' component={RedirectView} />
       </Switch>
     )
   }
