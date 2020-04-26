@@ -53,6 +53,7 @@ import CAuthorsMergedPie from './components/authors_merged_pie'
 import CReposMergedPie from './components/repos_merged_pie'
 import CAuthorsOpenedPie from './components/authors_opened_pie'
 import CReposOpenedPie from './components/repos_opened_pie'
+import TopView from './top_view'
 
 class RootView extends React.Component {
   render () {
@@ -335,6 +336,7 @@ class App extends React.Component {
   render () {
     return (
       <Switch>
+        <Route exact path='/' component={TopView} />
         <Route exact path='/:index' component={RootView} />
         <Route path='/:index/merged-changes' component={MergedChangesView} />
         <Route path='/:index/opened-changes' component={OpenChangesView} />

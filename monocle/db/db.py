@@ -26,6 +26,8 @@ from elasticsearch import client
 from monocle.db import queries
 from monocle import utils
 
+CHANGE_PREFIX = 'monocle.changes.'
+
 
 class UnknownQueryException(Exception):
     pass
@@ -35,11 +37,14 @@ class ELmonocleDB:
 
     log = logging.getLogger("monocle.ELmonocleDB")
 
-    def __init__(self, elastic_conn='localhost:9200', index='monocle', timeout=10):
+    def __init__(
+        self, index, elastic_conn='localhost:9200', timeout=10, prefix=CHANGE_PREFIX,
+    ):
         host, port = elastic_conn.split(':')
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
         self.log.info('ES IP is %s' % ip)
+        self.log.info('ES prefix is %s' % prefix)
 
         while True:
             try:
@@ -58,7 +63,9 @@ class ELmonocleDB:
         self.es = client.Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
-        self.index = index
+        self.prefix = prefix
+        self.index = '{}{}'.format(self.prefix, index)
+        self.log.info('Using ES index %s' % self.index)
         self.mapping = {
             self.index: {
                 "properties": {
@@ -204,3 +211,9 @@ class ELmonocleDB:
         if not args[1].get('lte'):
             args[1]['lte'] = int(datetime.now().timestamp() * 1000)
         return getattr(queries, name)(self.es, self.index, *args, **kwargs)
+
+    def get_indices(self):
+        return [
+            ind.replace(self.prefix, '')
+            for ind in self.es.indices.get(self.prefix + '*')
+        ]

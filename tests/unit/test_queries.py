@@ -38,13 +38,20 @@ class TestQueries(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.eldb = ELmonocleDB(index=cls.index)
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - " + "%(levelname)s - %(message)s",
+        )
+        log = logging.getLogger(__name__)
+        # log to stderr
+        log.addHandler(logging.StreamHandler())
+        cls.eldb = ELmonocleDB(index=cls.index, prefix='monocle.test.')
         for dataset in cls.datasets:
-            index_dataset(cls.index, dataset)
+            index_dataset(cls.eldb, dataset)
 
     @classmethod
     def tearDownClass(cls):
-        cls.eldb.es.indices.delete(index=cls.index, ignore=[400, 404])
+        cls.eldb.es.indices.delete(index=cls.eldb.prefix + cls.index)
 
     def test_unknown_query(self):
         """
@@ -209,3 +216,10 @@ class TestQueries(unittest.TestCase):
         params = set_params({'state': 'MERGED'})
         ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
         self.assertEqual(ret['total'], 3, ret)
+
+    def test_get_indices(self):
+        """
+        Test get_indices
+        """
+        ret = self.eldb.get_indices()
+        self.assertEqual(ret, [self.index])
