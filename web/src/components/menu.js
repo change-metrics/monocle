@@ -20,6 +20,7 @@ import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
+import { CUserView } from './user'
 
 class TopMenu extends React.Component {
   render () {
@@ -33,6 +34,9 @@ class TopMenu extends React.Component {
         <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
         <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
         <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
+      </Nav>
+      <Nav pullRight>
+        <CUserView />
       </Nav>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
     </Navbar>
