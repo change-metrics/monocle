@@ -22,6 +22,7 @@ from datetime import datetime
 
 from elasticsearch.helpers import bulk
 from elasticsearch import client
+from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
 from monocle import utils
@@ -33,12 +34,20 @@ class UnknownQueryException(Exception):
     pass
 
 
+InvalidIndexError = NotFoundError
+
+
 class ELmonocleDB:
 
     log = logging.getLogger("monocle.ELmonocleDB")
 
     def __init__(
-        self, index, elastic_conn='localhost:9200', timeout=10, prefix=CHANGE_PREFIX,
+        self,
+        elastic_conn='localhost:9200',
+        index=None,
+        timeout=10,
+        prefix=CHANGE_PREFIX,
+        create=True,
     ):
         host, port = elastic_conn.split(':')
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,6 +73,11 @@ class ELmonocleDB:
         self.log.info(self.es.info())
 
         self.prefix = prefix
+
+        if not index:
+            self.log.info('No index provided')
+            return
+
         self.index = '{}{}'.format(self.prefix, index)
         self.log.info('Using ES index %s' % self.index)
         self.mapping = {
@@ -131,7 +145,8 @@ class ELmonocleDB:
         }
         settings = {'mappings': self.mapping}
         self.ic = client.IndicesClient(self.es)
-        self.ic.create(index=self.index, ignore=400, body=settings)
+        if create:
+            self.ic.create(index=self.index, ignore=400, body=settings)
 
     def update(self, source_it):
         def gen(it):

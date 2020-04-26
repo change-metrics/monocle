@@ -130,7 +130,8 @@ def main():
     if args.command == "crawler":
         realpath = os.path.expanduser(args.config)
         if not os.path.isfile(realpath):
-            print('Unable to access config: %s' % realpath)
+            log.error('Unable to access config: %s' % realpath)
+            sys.exit(1)
         config = yaml.safe_load(open(realpath).read())
         validate(instance=config, schema=projects.schema)
         tpool = []
@@ -147,6 +148,7 @@ def main():
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
                 )
+                log.info('args=%s' % c_args)
                 if crawler_item['token'] not in group:
                     group[crawler_item['token']] = GroupCrawler()
                     tpool.append(group[crawler_item['token']])
@@ -179,16 +181,16 @@ def main():
 
     if args.command == "dbmanage":
         if args.delete_repository:
-            db = ELmonocleDB(index=args.index)
+            db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
             db.delete_repository(args.delete_repository)
 
     if args.command == "dbquery":
-        db = ELmonocleDB(index=args.index)
+        db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
         params = utils.set_params(args)
         try:
             ret = db.run_named_query(args.name, args.repository.lstrip('^'), params)
         except UnknownQueryException as err:
-            print('Unable to run query: %s' % err)
+            log.error('Unable to run query: %s' % err)
             sys.exit(1)
         pprint(ret)
 

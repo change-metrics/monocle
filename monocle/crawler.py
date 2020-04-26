@@ -38,7 +38,9 @@ class Runner(object):
         self.updated_since = args.updated_since
         self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
-        self.db = ELmonocleDB(elastic_conn, index=args.index, timeout=elastic_timeout)
+        self.db = ELmonocleDB(
+            elastic_conn=elastic_conn, index=args.index, timeout=elastic_timeout
+        )
         if args.command == 'github_crawler':
             if args.repository:
                 self.repository_el_re = "%s/%s" % (

@@ -24,6 +24,7 @@ from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
 
 from elasticsearch.helpers import scan as scanner
+from elasticsearch.exceptions import NotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -55,12 +56,10 @@ public_queries = (
     "changes_review_stats",
     "most_active_authors_stats",
     "most_reviewed_authors_stats",
-    "last_merged_changes",
-    "last_opened_changes",
+    "last_changes",
     "last_state_changed_changes",
     "oldest_open_changes",
     "changes_and_events",
-    "last_abandoned_changes",
     "new_contributors",
     "changes_by_file_map",
     "authors_by_file_map",
@@ -151,6 +150,8 @@ def run_query(es, index, body):
     try:
         log.debug('run_query "%s"' % search_params)
         res = es.search(**search_params)
+    except NotFoundError:
+        raise
     except Exception:
         log.exception('Unable to run query: "%s"' % search_params)
         return []
@@ -183,10 +184,7 @@ def count_events(es, index, repository_fullname, params):
     body = {"query": generate_filter(repository_fullname, params)}
     count_params = {'index': index, 'doc_type': index}
     count_params['body'] = body
-    try:
-        res = es.count(**count_params)
-    except Exception:
-        return {}
+    res = es.count(**count_params)
     return res['count']
 
 
@@ -659,10 +657,9 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
     }
 
 
-def last_merged_changes(es, index, repository_fullname, params):
+def last_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
-    params['state'] = "MERGED"
     body = {
         "sort": [{"closed_at": {"order": "desc"}}],
         "size": params['size'],
@@ -674,19 +671,16 @@ def last_merged_changes(es, index, repository_fullname, params):
     return {'items': changes, 'total': data['hits']['total']}
 
 
+def last_merged_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['state'] = 'MERGED'
+    return last_changes(es, index, repository_fullname, params)
+
+
 def last_opened_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
-    params['etype'] = ("Change",)
-    params['state'] = "OPEN"
-    body = {
-        "sort": [{"created_at": {"order": "desc"}}],
-        "size": params['size'],
-        "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
-    }
-    data = run_query(es, index, body)
-    changes = [r['_source'] for r in data['hits']['hits']]
-    return {'items': changes, 'total': data['hits']['total']}
+    params['state'] = 'OPEN'
+    return last_changes(es, index, repository_fullname, params)
 
 
 def last_state_changed_changes(es, index, repository_fullname, params):
@@ -725,21 +719,6 @@ def changes_and_events(es, index, repository_fullname, params):
     )
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
-        "size": params['size'],
-        "from": params['from'],
-        "query": generate_filter(repository_fullname, params),
-    }
-    data = run_query(es, index, body)
-    changes = [r['_source'] for r in data['hits']['hits']]
-    return {'items': changes, 'total': data['hits']['total']}
-
-
-def last_abandoned_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params['etype'] = ("Change",)
-    params['state'] = "CLOSED"
-    body = {
-        "sort": [{"created_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
         "query": generate_filter(repository_fullname, params),

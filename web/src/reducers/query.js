@@ -35,7 +35,10 @@ addStates(initialState, 'repos_top_opened')
 addStates(initialState, 'hot_changes')
 addStates(initialState, 'cold_changes')
 addStates(initialState, 'last_changes')
+addStates(initialState, 'last_opened_changes')
+addStates(initialState, 'last_merged_changes')
 addStates(initialState, 'last_abandoned_changes')
+addStates(initialState, 'full_last_abandoned_changes')
 addStates(initialState, 'changes_and_events')
 addStates(initialState, 'new_contributors')
 addStates(initialState, 'authors_top_merged')
@@ -68,7 +71,10 @@ const queryReducer = (state = initialState, action) => {
     switch (graphType) {
       case 'hot_changes':
       case 'cold_changes':
+      case 'last_opened_changes':
+      case 'last_merged_changes':
       case 'last_abandoned_changes':
+      case 'full_last_abandoned_changes':
       case 'changes_and_events':
         action.value.items.forEach(enhanceData)
         break
@@ -108,6 +114,7 @@ function query (params) {
         )
       })
       .catch(error => {
+        console.log(error)
         dispatch(
           {
             type: params.graph_type + '_QUERY_ERROR',
