@@ -24,6 +24,7 @@ from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
 
 from elasticsearch.helpers import scan as scanner
+from elasticsearch.exceptions import NotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -149,6 +150,8 @@ def run_query(es, index, body):
     try:
         log.debug('run_query "%s"' % search_params)
         res = es.search(**search_params)
+    except NotFoundError:
+        raise
     except Exception:
         log.exception('Unable to run query: "%s"' % search_params)
         return []
@@ -181,10 +184,7 @@ def count_events(es, index, repository_fullname, params):
     body = {"query": generate_filter(repository_fullname, params)}
     count_params = {'index': index, 'doc_type': index}
     count_params['body'] = body
-    try:
-        res = es.count(**count_params)
-    except Exception:
-        return {}
+    res = es.count(**count_params)
     return res['count']
 
 

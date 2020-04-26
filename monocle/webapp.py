@@ -25,7 +25,7 @@ from flask_cors import CORS
 
 from monocle import utils
 from monocle.db.db import ELmonocleDB
-from monocle.db.db import UnknownQueryException
+from monocle.db.db import UnknownQueryException, InvalidIndexError
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/0/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
@@ -43,14 +43,20 @@ def query(name):
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
         index=request.args.get('index'),
+        create=False,
     )
-    result = db.run_named_query(name, repository_fullname, params)
+    try:
+        result = db.run_named_query(name, repository_fullname, params)
+    except InvalidIndexError:
+        return 'Invalid index: %s' % request.args.get('index'), 404
     return jsonify(result)
 
 
 @app.route("/api/0/indices", methods=['GET'])
 def indices():
-    db = ELmonocleDB(elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'))
+    db = ELmonocleDB(
+        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'), create=False
+    )
     result = db.get_indices()
     return jsonify(result)
 
