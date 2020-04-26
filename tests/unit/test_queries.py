@@ -203,10 +203,10 @@ class TestQueries(unittest.TestCase):
 
     def test_files_param(self):
         """
-        Test files param: last_merged_changes
+        Test files param: last_changes
         """
         params = set_params({'files': r'.*backend.py'})
-        ret = self.eldb.run_named_query('last_merged_changes', 'unit/repo[12]', params)
+        ret = self.eldb.run_named_query('last_changes', '.*', params)
         self.assertEqual(ret['total'], 1, ret)
 
     def test_state_param(self):
