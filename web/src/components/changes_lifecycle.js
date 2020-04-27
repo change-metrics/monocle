@@ -27,6 +27,8 @@ import { withRouter } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
+import moment from 'moment'
+
 import {
   BaseQueryComponent,
   LoadingBox,
@@ -180,6 +182,12 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ratios['iterations/created']} iterations per change
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        {data.commits.toFixed(2)} commits per change
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
