@@ -28,6 +28,10 @@ import Tabs from 'react-bootstrap/Tabs'
 import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
+import {
+  LoginView,
+  CUserView
+} from './components/user'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import {
@@ -337,6 +341,8 @@ class App extends React.Component {
     return (
       <Switch>
         <Route exact path='/' component={TopView} />
+        <Route exact path='/login' component={LoginView} />
+        <Route exact path='/user' component={CUserView} />
         <Route exact path='/:index' component={RootView} />
         <Route path='/:index/merged-changes' component={MergedChangesView} />
         <Route path='/:index/opened-changes' component={OpenChangesView} />

@@ -18,11 +18,13 @@ import { createStore, applyMiddleware, combineReducers } from 'redux'
 import thunk from 'redux-thunk'
 import QueryReducer from './reducers/query'
 import IndicesReducer from './reducers/indices'
+import LoggedUserReducer from './reducers/user'
 
 function createMyStore () {
   const rootReducer = combineReducers({
     QueryReducer: QueryReducer,
-    IndicesReducer: IndicesReducer
+    IndicesReducer: IndicesReducer,
+    LoggedUserReducer: LoggedUserReducer
   })
 
   return createStore(

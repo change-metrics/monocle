@@ -21,14 +21,65 @@ from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
+from flask import redirect
+from flask import session
 from flask_cors import CORS
+
+# https://docs.authlib.org/en/latest/client/frameworks.html#frameworks-clients
+# https://docs.authlib.org/en/latest/client/flask.html#flask-client
+from authlib.integrations.flask_client import OAuth
 
 from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException, InvalidIndexError
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/0/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}})
+
+app.secret_key = os.urandom(16)
+CORS(
+    app,
+    resources={r"/api/0/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}},
+    supports_credentials=True,
+)
+oauth = OAuth(app)
+
+oauth.register(
+    name='github',
+    client_id=os.getenv('CLIENT_ID'),
+    client_secret=os.getenv('CLIENT_SECRET'),
+    access_token_url='https://github.com/login/oauth/access_token',
+    access_token_params=None,
+    authorize_url='https://github.com/login/oauth/authorize',
+    authorize_params=None,
+    api_base_url='https://api.github.com/',
+    client_kwargs={'scope': 'user:email'},
+)
+
+
+@app.route("/api/0/login", methods=['GET'])
+def login():
+    github = oauth.create_client('github')
+    redirect_uri = os.getenv('REDIRECT_URL')
+    return github.authorize_redirect(redirect_uri)
+
+
+@app.route("/api/0/authorize", methods=['GET'])
+def authorize():
+    github = oauth.create_client('github')
+    # token = github.authorize_access_token()
+    github.authorize_access_token()
+    resp = github.get('user')
+    profile = resp.json()
+    # do something with the token and profile
+    session['username'] = profile.get('login')
+    # return jsonify(profile)
+    return redirect('http://localhost:3000/monocle')
+
+
+@app.route("/api/0/whoami", methods=['GET'])
+def whoami():
+    username = session.get('username')
+    return jsonify(username)
 
 
 @app.route("/api/0/query/<name>", methods=['GET'])
