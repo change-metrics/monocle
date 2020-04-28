@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web,api] display mean time to merge and commits per change in lifecycle stats.
 - [web] add a homepage redirecting to the first index or displaying a message to create an index.
 - [api] add a /indices api to get the list of available indices.
 - [web] add a Treemap of the files impacted by the changes on the opened and merged pages.
