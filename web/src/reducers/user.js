@@ -46,7 +46,7 @@ const LoggedUserReducer = (state = initialState, action) => {
     newState.logged_user_result = null
   }
 
-  console.log(newState)
+  // console.log(newState)
   return newState
 }
 

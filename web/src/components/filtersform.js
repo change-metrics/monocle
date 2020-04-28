@@ -145,6 +145,7 @@ class FiltersForm extends React.Component {
       gte: '',
       lte: '',
       repository: '',
+      branch: '',
       exclude_authors: '',
       authors: ''
     }
@@ -188,6 +189,7 @@ class FiltersForm extends React.Component {
       gte: params.get('gte') || moment().subtract(3, 'months')
         .format('YYYY-MM-DD'),
       repository: params.get('repository') || '',
+      branch: params.get('branch') || '',
       excludeAuthors: params.get('exclude_authors') || '',
       authors: params.get('authors') || ''
     })
@@ -213,6 +215,7 @@ class FiltersForm extends React.Component {
       gte: this.state.gte,
       lte: this.state.lte,
       repository: this.state.repository,
+      branch: this.state.branch,
       exclude_authors: this.state.exclude_authors,
       authors: this.state.authors
     })
@@ -249,6 +252,14 @@ class FiltersForm extends React.Component {
                     type='text'
                     value={this.state.repository}
                     onChange={v => this.handleChange('repository', v)}
+                  />
+                </Form.Group>
+                <Form.Group controlId='formBranchInput'>
+                  <Form.Label>Branch regexp</Form.Label>
+                  <Form.Control
+                    type='text'
+                    value={this.state.branch}
+                    onChange={v => this.handleChange('branch', v)}
                   />
                 </Form.Group>
               </Col>

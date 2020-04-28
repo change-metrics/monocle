@@ -44,6 +44,11 @@ function getQueryResults (queryParams) {
     delete params.excludeAuthors
   }
 
+  if (params.branch) {
+    params.target_branch = params.branch
+    delete params.branch
+  }
+
   return axios.get(
     url, {
       params: params

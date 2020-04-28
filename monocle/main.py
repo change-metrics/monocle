@@ -72,7 +72,10 @@ def main():
     )
     parser_dbquery.add_argument('--name', help='The query name', required=True)
     parser_dbquery.add_argument(
-        '--repository', help='Scope to events of a repository (regexp)', required=True
+        '--repository', help='Scope to events of repositories (regexp)', required=True
+    )
+    parser_dbquery.add_argument(
+        '--target-branch', help='Scope to events of a target branches (regexp)'
     )
     parser_dbquery.add_argument('--gte', help='Scope to events created after date')
     parser_dbquery.add_argument('--lte', help='Scope to events created before date')

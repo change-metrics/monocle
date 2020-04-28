@@ -117,7 +117,7 @@ class ChangeTable extends React.Component {
               <Table>
                 <tbody>
                   <tr key={0}>
-                    <td align="center">Repository: {change.repository_fullname}</td>
+                    <td align="center">Repository: {change.repository_fullname} | Branch: {change.target_branch}</td>
                   </tr>
                   <tr key={1}>
                     <td align="center"><a href={change.url} target="_blank" rel="noopener noreferrer">{change.url}</a></td>

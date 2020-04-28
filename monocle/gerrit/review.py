@@ -119,6 +119,8 @@ class ReviewesFetcher(object):
                     'repository_prefix': change['repository_prefix'],
                     'repository_fullname': change['repository_fullname'],
                     'repository_shortname': change['repository_shortname'],
+                    'branch': change['branch'],
+                    'target_branch': change['target_branch'],
                     'number': change['number'],
                     'change_id': change['change_id'],
                     'on_author': change['author'],
