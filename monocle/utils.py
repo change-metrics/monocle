@@ -71,6 +71,7 @@ def set_params(input):
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
     params['change_ids'] = getter('change_ids', None)
+    params['target_branch'] = getter('target_branch', None)
     if params['change_ids']:
         params['change_ids'] = params['change_ids'].split(',')
     if params['exclude_authors']:

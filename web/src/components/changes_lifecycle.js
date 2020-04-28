@@ -187,7 +187,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.commits.toFixed(2)} commits per change
+                        {data.commits ? data.commits.toFixed(2) : 'no'} commits per change
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>

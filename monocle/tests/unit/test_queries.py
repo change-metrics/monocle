@@ -223,3 +223,17 @@ class TestQueries(unittest.TestCase):
         """
         ret = self.eldb.get_indices()
         self.assertEqual(ret, [self.index])
+
+    def test_branch_param(self):
+        """
+        Test branch param: last_changes
+        """
+        params = set_params({'state': 'MERGED', 'target_branch': 'maintainance'})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 0, ret)
+        params = set_params({'target_branch': 'master'})
+        ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
+        ret2 = self.eldb.run_named_query(
+            'changes_and_events', 'unit/repo[12]', set_params({})
+        )
+        self.assertEqual(ret['total'], ret2['total'])

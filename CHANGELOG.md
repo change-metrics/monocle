@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web,api] allow to filter on target_branch. Display the branch name of a change in /change/.
 - [web,api] display mean time to merge and commits per change in lifecycle stats.
 - [web] add a homepage redirecting to the first index or displaying a message to create an index.
 - [api] add a /indices api to get the list of available indices.
@@ -17,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- [db] prefix the names of indices by `monocle.changes.`. Need to recreate the indexes or create an alias if you want to keep them.
+- [db] add target_branch and branch to events. Need to re-index to be able to use these fields. [BREAKING]
+- [db] prefix the names of indices by `monocle.changes.`. Need to recreate the indexes or create an alias if you want to keep them. [BREAKING]
 
 ### Removed
 

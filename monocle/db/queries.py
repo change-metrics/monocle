@@ -104,6 +104,7 @@ def generate_filter(repository_fullname, params):
     exclude_authors = params.get('exclude_authors')
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     change_ids = params.get('change_ids')
+    target_branch = params.get('target_branch')
     if gte:
         created_at_range['created_at']['gte'] = gte
     if lte:
@@ -119,6 +120,8 @@ def generate_filter(repository_fullname, params):
         qfilter.append({"terms": {"on_author": on_authors}})
     if change_ids:
         qfilter.append({"terms": {"change_id": change_ids}})
+    if target_branch:
+        qfilter.append({"regexp": {"target_branch": {"value": target_branch}}})
     if 'Change' in params['etype']:
         generate_changes_filter(params, qfilter)
     else:

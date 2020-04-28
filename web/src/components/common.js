@@ -146,6 +146,7 @@ class BaseQueryComponent extends React.Component {
       index: this.props.index,
       name: this.state.name,
       repository: params.get('repository') || '.*',
+      branch: params.get('branch'),
       gte: params.get('gte'),
       lte: params.get('lte'),
       excludeAuthors: params.get('exclude_authors'),
