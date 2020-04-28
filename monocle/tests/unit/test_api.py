@@ -14,17 +14,70 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import unittest
 from flask import json
 from monocle import webapp
+from monocle import projects
+from monocle.db.db import ELmonocleDB
+
+from .common import index_dataset
 
 
 class TestWebAPI(unittest.TestCase):
+    prefix = 'monocle.test.'
+    index1 = 'monocle-unittest-1'
+    index2 = 'monocle-unittest-2'
+    datasets = ['objects/unit_repo1.json']
+
+    @classmethod
+    def setUpClass(cls):
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - " + "%(levelname)s - %(message)s",
+        )
+        log = logging.getLogger(__name__)
+        # log to stderr
+        log.addHandler(logging.StreamHandler())
+        for index in (cls.index1, cls.index2):
+            cls.eldb = ELmonocleDB(index=index, prefix=cls.prefix)
+            for dataset in cls.datasets:
+                index_dataset(cls.eldb, dataset)
+
+    @classmethod
+    def tearDownClass(cls):
+        for index in (cls.index1, cls.index2):
+            cls.eldb.es.indices.delete(index=cls.eldb.prefix + index)
+
     def setUp(self):
+        webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config['TESTING'] = True
         self.client = webapp.app.test_client()
+        projects_data = {
+            "projects": [
+                {
+                    # Private index
+                    "index": self.index1,
+                    "users_whitelist": ['jane', 'john'],
+                },
+                {
+                    # Public index
+                    "index": self.index2
+                },
+            ]
+        }
+        webapp.indexes_acl = projects.build_index_acl(projects_data)
 
-    def test_webapp(self):
+    def test_get_indices(self):
         "Test indices endpoint"
         resp = self.client.get('/api/0/indices')
-        self.assertListEqual(["monocle"], json.loads(resp.data))
+        self.assertListEqual(["monocle-unittest-2"], json.loads(resp.data))
+
+    def test_get_indices_with_acl(self):
+        "Test indices endpoint with acl"
+        with self.client.session_transaction() as sess:
+            sess['username'] = 'jane'
+        resp = self.client.get('/api/0/indices')
+        self.assertListEqual(
+            ["monocle-unittest-1", "monocle-unittest-2"], json.loads(resp.data)
+        )

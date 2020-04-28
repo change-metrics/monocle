@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
+import yaml
 
 from flask import Flask
 from flask import abort
@@ -30,8 +32,10 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 
 from monocle import utils
+from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException, InvalidIndexError
+from monocle import projects
 
 app = Flask(__name__)
 
@@ -54,6 +58,8 @@ oauth.register(
     api_base_url='https://api.github.com/',
     client_kwargs={'scope': 'user:email'},
 )
+
+indexes_acl = {}
 
 
 @app.route("/api/0/login", methods=['GET'])
@@ -106,13 +112,26 @@ def query(name):
 @app.route("/api/0/indices", methods=['GET'])
 def indices():
     db = ELmonocleDB(
-        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'), create=False
+        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
+        create=False,
+        prefix=CHANGE_PREFIX,
     )
-    result = db.get_indices()
-    return jsonify(result)
+    _indices = db.get_indices()
+    indices = []
+    for indice in _indices:
+        if projects.is_public_index(indexes_acl, indice):
+            indices.append(indice)
+        else:
+            user = session.get('username')
+            if user:
+                if user in projects.get_authorized_users(indexes_acl, indice):
+                    indices.append(indice)
+    return jsonify(indices)
 
 
 def main():
+    if sys.argv[1]:
+        globals()['indexes_acl'] = projects.build_index_acl(yaml.safe_load(sys.argv[1]))
     app.run(host='0.0.0.0', port=9876)
 
 

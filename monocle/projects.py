@@ -160,7 +160,7 @@ def build_index_acl(data: dict) -> Dict[str, List[Username]]:
 
 
 def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:
-    if not indexes_acl[index_name]:
+    if not indexes_acl.get(index_name, []):
         return True
     else:
         return False
@@ -169,4 +169,4 @@ def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> 
 def get_authorized_users(
     indexes_acl: Dict[str, List[Username]], index_name: str
 ) -> List[Username]:
-    return indexes_acl[index_name]
+    return indexes_acl.get(index_name, [])
