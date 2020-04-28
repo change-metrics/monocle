@@ -6,3 +6,4 @@ data
 etc
 .venv
 .tox
+.mypy_cache

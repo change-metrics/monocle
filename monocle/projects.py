@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Dict, List
+
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
@@ -78,6 +80,11 @@ schema = {
                         "type": "string",
                         "description": "Elasticsearch index name",
                     },
+                    "users_whitelist": {
+                        "description": "User authorized to see and access the index",
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
                     "crawler": {
                         "type": "object",
                         "properties": {
@@ -102,6 +109,9 @@ projects_sample_yaml = """
 ---
 projects:
   - index: default
+    users_whitelist:
+      - john
+      - jane
     crawler:
       loop_delay: 10
       github_orgs:
@@ -113,7 +123,7 @@ projects:
           updated_since: "2020-01-01"
           token: "123"
           base_url: https://github.com
-  - index: default
+  - index: tenant1
     crawler:
       loop_delay: 10
       github_orgs:
@@ -133,3 +143,30 @@ projects:
           updated_since: "2020-01-01"
           base_url: https://softwarefactory-project.io/r
 """
+
+
+class Username(str):
+    pass
+
+
+def build_index_acl(data: dict) -> Dict[str, List[Username]]:
+    indexes_acl: Dict[str, List[Username]] = {}
+    for project in data["projects"]:
+        if "users_whitelist" not in project.keys():
+            indexes_acl[project["index"]] = []
+        else:
+            indexes_acl[project["index"]] = project["users_whitelist"]
+    return indexes_acl
+
+
+def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:
+    if not indexes_acl[index_name]:
+        return True
+    else:
+        return False
+
+
+def get_authorized_users(
+    indexes_acl: Dict[str, List[Username]], index_name: str
+) -> List[Username]:
+    return indexes_acl[index_name]
