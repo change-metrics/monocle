@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import yaml
-from jsonschema import validate
-
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
@@ -104,7 +101,7 @@ schema = {
 projects_sample_yaml = """
 ---
 projects:
-  - name: project1
+  - index: default
     crawler:
       loop_delay: 10
       github_orgs:
@@ -116,7 +113,7 @@ projects:
           updated_since: "2020-01-01"
           token: "123"
           base_url: https://github.com
-  - name: project2
+  - index: default
     crawler:
       loop_delay: 10
       github_orgs:
@@ -136,12 +133,3 @@ projects:
           updated_since: "2020-01-01"
           base_url: https://softwarefactory-project.io/r
 """
-
-
-def test(self, path):
-    self.path = path
-    validate(instance=yaml.safe_load(self.projects_sample_yaml), schema=self.schema)
-
-
-if __name__ == "__main__":
-    test()
