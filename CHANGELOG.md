@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web,api] add github authentication and basic authorization engine
 - [web,api] allow to filter on target_branch. Display the branch name of a change in /change/.
 - [web,api] display mean time to merge and commits per change in lifecycle stats.
 - [web] add a homepage redirecting to the first index or displaying a message to create an index.

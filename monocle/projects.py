@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import yaml
-from jsonschema import validate
+from typing import Dict, List
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -81,6 +80,11 @@ schema = {
                         "type": "string",
                         "description": "Elasticsearch index name",
                     },
+                    "users_whitelist": {
+                        "description": "User authorized to see and access the index",
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
                     "crawler": {
                         "type": "object",
                         "properties": {
@@ -104,7 +108,10 @@ schema = {
 projects_sample_yaml = """
 ---
 projects:
-  - name: project1
+  - index: default
+    users_whitelist:
+      - john
+      - jane
     crawler:
       loop_delay: 10
       github_orgs:
@@ -116,7 +123,7 @@ projects:
           updated_since: "2020-01-01"
           token: "123"
           base_url: https://github.com
-  - name: project2
+  - index: tenant1
     crawler:
       loop_delay: 10
       github_orgs:
@@ -138,10 +145,28 @@ projects:
 """
 
 
-def test(self, path):
-    self.path = path
-    validate(instance=yaml.safe_load(self.projects_sample_yaml), schema=self.schema)
+class Username(str):
+    pass
 
 
-if __name__ == "__main__":
-    test()
+def build_index_acl(data: dict) -> Dict[str, List[Username]]:
+    indexes_acl: Dict[str, List[Username]] = {}
+    for project in data["projects"]:
+        if "users_whitelist" not in project.keys():
+            indexes_acl[project["index"]] = []
+        else:
+            indexes_acl[project["index"]] = project["users_whitelist"]
+    return indexes_acl
+
+
+def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:
+    if not indexes_acl.get(index_name, []):
+        return True
+    else:
+        return False
+
+
+def get_authorized_users(
+    indexes_acl: Dict[str, List[Username]], index_name: str
+) -> List[Username]:
+    return indexes_acl.get(index_name, [])

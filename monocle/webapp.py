@@ -15,6 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
+import yaml
+
+from typing import Dict, List
 
 from flask import Flask
 from flask import abort
@@ -30,8 +34,10 @@ from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 
 from monocle import utils
+from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException, InvalidIndexError
+from monocle import projects
 
 app = Flask(__name__)
 
@@ -54,6 +60,8 @@ oauth.register(
     api_base_url='https://api.github.com/',
     client_kwargs={'scope': 'user:email'},
 )
+
+indexes_acl: Dict[str, List[projects.Username]] = {}
 
 
 @app.route("/api/0/login", methods=['GET'])
@@ -86,6 +94,15 @@ def whoami():
 def query(name):
     if not request.args.get('index'):
         abort(make_response(jsonify(errors=['No index provided']), 404))
+    index = request.args.get('index')
+    if not projects.is_public_index(indexes_acl, index):
+        user = session.get('username')
+        if user:
+            if user not in projects.get_authorized_users(indexes_acl, index):
+                return 'Unauthorized to access index %s' % index, 503
+        else:
+            return 'Unauthorized to access index %s' % index, 503
+
     repository_fullname = request.args.get('repository')
     try:
         params = utils.set_params(request.args)
@@ -93,7 +110,8 @@ def query(name):
         return "Unable to process query: %s" % err, 400
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
-        index=request.args.get('index'),
+        index=index,
+        prefix=CHANGE_PREFIX,
         create=False,
     )
     try:
@@ -106,13 +124,34 @@ def query(name):
 @app.route("/api/0/indices", methods=['GET'])
 def indices():
     db = ELmonocleDB(
-        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'), create=False
+        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
+        create=False,
+        prefix=CHANGE_PREFIX,
     )
-    result = db.get_indices()
-    return jsonify(result)
+    _indices = db.get_indices()
+    indices = []
+    for indice in _indices:
+        if projects.is_public_index(indexes_acl, indice):
+            indices.append(indice)
+        else:
+            user = session.get('username')
+            if user:
+                if user in projects.get_authorized_users(indexes_acl, indice):
+                    indices.append(indice)
+    return jsonify(indices)
 
 
 def main():
+    projects_config = os.getenv('PROJECTS_YAML', None)
+    if not projects_config:
+        print('PROJECTS_YAML env is missing. Quit')
+        sys.exit(1)
+    if not os.path.isfile(projects_config):
+        print('Unable to access %s. Quit' % projects_config)
+        sys.exit(1)
+    globals()['indexes_acl'] = projects.build_index_acl(
+        yaml.safe_load(open(projects_config))
+    )
     app.run(host='0.0.0.0', port=9876)
 
 
