@@ -18,6 +18,8 @@ import os
 import sys
 import yaml
 
+from typing import Dict, List
+
 from flask import Flask
 from flask import abort
 from flask import jsonify
@@ -59,7 +61,7 @@ oauth.register(
     client_kwargs={'scope': 'user:email'},
 )
 
-indexes_acl = {}
+indexes_acl: Dict[str, List[projects.Username]] = {}
 
 
 @app.route("/api/0/login", methods=['GET'])
@@ -130,8 +132,16 @@ def indices():
 
 
 def main():
-    if sys.argv[1]:
-        globals()['indexes_acl'] = projects.build_index_acl(yaml.safe_load(sys.argv[1]))
+    projects_config = os.getenv('PROJECTS_YAML', None)
+    if not projects_config:
+        print('PROJECTS_YAML env is missing. Quit')
+        sys.exit(1)
+    if not os.path.isfile(projects_config):
+        print('Unable to access %s. Quit' % projects_config)
+        sys.exit(1)
+    globals()['indexes_acl'] = projects.build_index_acl(
+        yaml.safe_load(open(projects_config))
+    )
     app.run(host='0.0.0.0', port=9876)
 
 
