@@ -40,7 +40,8 @@ import {
   addMap
 } from './common'
 
-import { TimelineGraph } from './timeline'
+import TimelineGraph from './timeline'
+import CommitsTimelineGraph from './commits_timeline'
 
 class ChangeStatus extends React.Component {
   render () {
@@ -145,7 +146,14 @@ class ChangeTable extends React.Component {
             </Card.Header>
             <Card.Body>
               <Card.Text>{this.processText(this.props.index, change)}</Card.Text>
-              <TimelineGraph data={events} index={this.props.index} />
+              <Row>
+                <Col>
+                  <TimelineGraph data={events} />
+                </Col>
+                <Col>
+                  <CommitsTimelineGraph data={change.commits} />
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>
