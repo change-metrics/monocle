@@ -414,7 +414,7 @@ class PRsFetcher(object):
                     'type': 'ChangeCommitPushedEvent',
                     'id': _commit['oid'],
                     # Seems the first PR's commit get a date with Node value
-                    # So make sense to set the same createdçat date then the
+                    # So make sense to set the same created_at date as the
                     # change
                     'created_at': _commit.get('pushedDate', change['created_at']),
                 }

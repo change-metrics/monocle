@@ -63,10 +63,7 @@ class TimelineGraph extends React.Component {
 }
 
 TimelineGraph.propTypes = {
-  data: PropTypes.array.isRequired,
-  index: PropTypes.string.isRequired
+  data: PropTypes.array.isRequired
 }
 
-export {
-  TimelineGraph
-}
+export default TimelineGraph
