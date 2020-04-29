@@ -44,6 +44,18 @@ projects:
         - name: ^zuul/.*
           updated_since: "2020-03-15 00:00:00"
           base_url: https://review.opendev.org
+  # A private index only whitelisted users are authorized to access
+  - index: monocle-private
+    users_whitelist:
+      - github_login
+    crawler:
+      loop_delay: 10
+      github_orgs:
+        - name: containers
+          repository: libpod
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
 ```
 
 ### Start docker-compose
@@ -129,3 +141,15 @@ exec ./contrib/pre-commit "$@"
 ```
 
 and making it executable with `chmod +x .git/hooks/pre-commit`.
+
+### Configure the Github Oauth authentication to secure private indexes
+
+1. Create an Oauth APP in your Github user settings page
+2. Add "http://localhost:9876/api/0/authorize" in "User authorization callback URL"
+3. Set "CLIENT_ID" and "CLIENT_SECRET" in docker-compose.yaml
+4. Re/start the Docker compose
+5. Navigate to "http://localhost:3000/login" to authenticate
+
+The authentication and authorization support is new and only provides
+a solution to control access to private indexes. Only login users
+part of "users_whitelist" will be authorized to access the related index.
