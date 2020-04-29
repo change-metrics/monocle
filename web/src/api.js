@@ -51,13 +51,16 @@ function getQueryResults (queryParams) {
 
   return axios.get(
     url, {
-      params: params
+      params: params,
+      withCredentials: true
     })
 }
 
 function getIndices () {
   const url = baseurl + '/indices'
-  return axios.get(url)
+  return axios.get(url, {
+    withCredentials: true
+  })
 }
 
 function getLoggedUser () {

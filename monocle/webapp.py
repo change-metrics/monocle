@@ -94,6 +94,15 @@ def whoami():
 def query(name):
     if not request.args.get('index'):
         abort(make_response(jsonify(errors=['No index provided']), 404))
+    index = request.args.get('index')
+    if not projects.is_public_index(indexes_acl, index):
+        user = session.get('username')
+        if user:
+            if user not in projects.get_authorized_users(indexes_acl, index):
+                return 'Unauthorized to access index %s' % index, 503
+        else:
+            return 'Unauthorized to access index %s' % index, 503
+
     repository_fullname = request.args.get('repository')
     try:
         params = utils.set_params(request.args)
@@ -101,7 +110,8 @@ def query(name):
         return "Unable to process query: %s" % err, 400
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
-        index=request.args.get('index'),
+        index=index,
+        prefix=CHANGE_PREFIX,
         create=False,
     )
     try:
