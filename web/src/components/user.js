@@ -9,7 +9,7 @@ var server = process.env.REACT_APP_API_URL || 'http://localhost:9876'
 class LoginView extends React.Component {
   render () {
     return (
-      <a href={server + '/api/0/login'}>Login to Github</a>
+      <a className="nav-link" href={server + '/api/0/login'}>Sign in with GitHub</a>
     )
   }
 }
@@ -39,7 +39,7 @@ class UserView extends React.Component {
         <Link className="nav-link" to="/">Hello {this.props.logged_user_result}</Link>
       )
     } else {
-      return ''
+      return (<LoginView />)
     }
   }
 }

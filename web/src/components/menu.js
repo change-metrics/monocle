@@ -27,15 +27,16 @@ class TopMenu extends React.Component {
     const search = window.location.search
     return <Navbar bg="light" expand="lg">
       <Navbar.Brand>
-        <Link className="navbar-brand" to={`/${this.props.index}`}>Monocle</Link>
+        <Link className="navbar-brand" to="/">Monocle</Link>
       </Navbar.Brand>
-      <Nav className="mr-auto">
-        <Link className="nav-link" to={`/${this.props.index}${search}`}>Top</Link>
-        <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
-        <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
-        <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
-      </Nav>
-      <Nav pullRight>
+      {this.props.index
+        ? <Nav className="mr-auto">
+          <Link className="nav-link" to={`/${this.props.index}${search}`}>Top</Link>
+          <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
+          <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
+          <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
+        </Nav> : null}
+      <Nav className="ml-auto">
         <CUserView />
       </Nav>
       <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -44,7 +45,7 @@ class TopMenu extends React.Component {
 }
 
 TopMenu.propTypes = {
-  index: PropTypes.string.isRequired
+  index: PropTypes.string
 }
 
 export default TopMenu
