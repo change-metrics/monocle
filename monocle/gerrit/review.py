@@ -149,7 +149,7 @@ class ReviewesFetcher(object):
                 'merged_at': (
                     self.convert_date_for_db(review.get('submitted'))
                     if review.get('submitted')
-                    else None
+                    else self.convert_date_for_db(review['updated'])
                 ),
                 'state': self.status_map[review['status']],
                 # Note(fbo): Gerrit labels must be handled as Review

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
@@ -21,6 +22,8 @@ from monocle.github import pullrequest
 
 from .common import load_change
 from .common import DiffException
+from .common import DATASETS
+from .common import load_dataset
 
 
 class TestGithubCrawler(unittest.TestCase):
@@ -45,3 +48,14 @@ class TestGithubCrawler(unittest.TestCase):
         Github crawler extracts github.com-wazo-platform-wazo-ansible-76
         """
         self.extract_and_compare('github.com-wazo-platform-wazo-ansible-76')
+
+    def test_load_buggy(self):
+        """
+        Github crawler extracts buggy prs
+        """
+        pr_fetcher = pullrequest.PRsFetcher(None, 'https://github.com', None, None)
+        datasets_dir = Path(DATASETS)
+        for fn in datasets_dir.glob('github_*.json'):
+            dataset = load_dataset(fn)
+            xtrd = pr_fetcher.extract_objects([dataset], None)
+            self.assertNotEqual(xtrd, [])
