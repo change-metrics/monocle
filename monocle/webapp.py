@@ -37,7 +37,7 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException, InvalidIndexError
-from monocle import projects
+from monocle import config
 
 app = Flask(__name__)
 
@@ -61,7 +61,7 @@ oauth.register(
     client_kwargs={'scope': 'user:email'},
 )
 
-indexes_acl: Dict[str, List[projects.Username]] = {}
+indexes_acl: Dict[str, List[config.Username]] = {}
 
 
 @app.route("/api/0/login", methods=['GET'])
@@ -95,10 +95,10 @@ def query(name):
     if not request.args.get('index'):
         abort(make_response(jsonify(errors=['No index provided']), 404))
     index = request.args.get('index')
-    if not projects.is_public_index(indexes_acl, index):
+    if not config.is_public_index(indexes_acl, index):
         user = session.get('username')
         if user:
-            if user not in projects.get_authorized_users(indexes_acl, index):
+            if user not in config.get_authorized_users(indexes_acl, index):
                 return 'Unauthorized to access index %s' % index, 503
         else:
             return 'Unauthorized to access index %s' % index, 503
@@ -131,12 +131,12 @@ def indices():
     _indices = db.get_indices()
     indices = []
     for indice in _indices:
-        if projects.is_public_index(indexes_acl, indice):
+        if config.is_public_index(indexes_acl, indice):
             indices.append(indice)
         else:
             user = session.get('username')
             if user:
-                if user in projects.get_authorized_users(indexes_acl, indice):
+                if user in config.get_authorized_users(indexes_acl, indice):
                     indices.append(indice)
     return jsonify(indices)
 
@@ -149,7 +149,7 @@ def main():
     if not os.path.isfile(projects_config):
         print('Unable to access %s. Quit' % projects_config)
         sys.exit(1)
-    globals()['indexes_acl'] = projects.build_index_acl(
+    globals()['indexes_acl'] = config.build_index_acl(
         yaml.safe_load(open(projects_config))
     )
     app.run(host='0.0.0.0', port=9876)

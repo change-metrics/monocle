@@ -18,7 +18,7 @@ import logging
 import unittest
 from flask import json
 from monocle import webapp
-from monocle import projects
+from monocle import config
 from monocle.db.db import ELmonocleDB
 
 from .common import index_dataset
@@ -66,7 +66,7 @@ class TestWebAPI(unittest.TestCase):
                 },
             ]
         }
-        webapp.indexes_acl = projects.build_index_acl(projects_data)
+        webapp.indexes_acl = config.build_index_acl(projects_data)
 
     def test_get_indices(self):
         "Test indices endpoint"
