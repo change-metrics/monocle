@@ -125,6 +125,9 @@ class ReviewesFetcher(object):
                     'change_id': change['change_id'],
                     'on_author': change['author'],
                     'on_created_at': change['created_at'],
+                    'changed_files': [
+                        {'path': cf['path']} for cf in change['changed_files']
+                    ],
                 }
             )
 

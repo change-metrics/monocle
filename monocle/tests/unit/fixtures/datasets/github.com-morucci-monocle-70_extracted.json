@@ -72,7 +72,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -88,7 +99,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitForcePushedEvent",
@@ -104,7 +126,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitForcePushedEvent",
@@ -120,7 +153,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitForcePushedEvent",
@@ -136,7 +180,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitForcePushedEvent",
@@ -152,7 +207,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -169,6 +235,17 @@
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
     "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
     "approval": "APPROVED"
   },
   {
@@ -185,7 +262,18 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -201,6 +289,17 @@
     "change_id": "morucci@monocle@70",
     "url": "https://github.com/morucci/monocle/pull/70",
     "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z"
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ]
   }
 ]

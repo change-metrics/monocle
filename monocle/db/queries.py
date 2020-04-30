@@ -88,11 +88,8 @@ def generate_events_filter(params, qfilter):
 
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
-    files = params.get('files')
     if state:
         qfilter.append({"term": {"state": state}})
-    if files:
-        qfilter.append({"regexp": {"changed_files.path": files}})
 
 
 def generate_filter(repository_fullname, params):
@@ -105,6 +102,7 @@ def generate_filter(repository_fullname, params):
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     change_ids = params.get('change_ids')
     target_branch = params.get('target_branch')
+    files = params.get('files')
     if gte:
         created_at_range['created_at']['gte'] = gte
     if lte:
@@ -126,6 +124,8 @@ def generate_filter(repository_fullname, params):
         generate_changes_filter(params, qfilter)
     else:
         generate_events_filter(params, qfilter)
+    if files:
+        qfilter.append({"regexp": {"changed_files.path": files}})
 
     must_not = []
     if exclude_authors:

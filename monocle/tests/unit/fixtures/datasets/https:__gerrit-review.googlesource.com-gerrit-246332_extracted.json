@@ -71,12 +71,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeMergedEvent",
@@ -86,12 +100,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -101,12 +129,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -116,12 +158,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -131,12 +187,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -146,12 +216,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -161,12 +245,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -176,12 +274,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -191,12 +303,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -206,12 +332,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -221,12 +361,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -236,12 +390,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -251,12 +419,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -266,12 +448,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -281,12 +477,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -296,12 +506,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -311,12 +535,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -326,12 +564,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -341,12 +593,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -356,12 +622,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -371,12 +651,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -386,12 +680,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -401,12 +709,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -416,12 +738,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -431,12 +767,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -446,12 +796,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -461,12 +825,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -476,12 +854,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -491,12 +883,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -506,12 +912,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
     "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -521,12 +941,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -536,12 +970,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -551,12 +999,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -566,12 +1028,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -581,12 +1057,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -596,12 +1086,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -611,12 +1115,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -626,12 +1144,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -641,12 +1173,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -656,12 +1202,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -671,12 +1231,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -686,12 +1260,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -701,12 +1289,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -716,12 +1318,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -731,12 +1347,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -746,12 +1376,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -761,12 +1405,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -776,12 +1434,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -791,12 +1463,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -806,12 +1492,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -821,12 +1521,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -836,12 +1550,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -851,12 +1579,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -866,12 +1608,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -881,12 +1637,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -896,12 +1666,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -911,12 +1695,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -926,12 +1724,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -941,12 +1753,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -956,12 +1782,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -971,12 +1811,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -986,12 +1840,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1001,12 +1869,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1016,12 +1898,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1031,12 +1927,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1046,12 +1956,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1061,12 +1985,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1076,12 +2014,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1091,12 +2043,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1106,12 +2072,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1121,12 +2101,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1136,12 +2130,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1151,12 +2159,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1166,12 +2188,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1181,12 +2217,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1196,12 +2246,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1211,12 +2275,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1226,12 +2304,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1241,12 +2333,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1256,12 +2362,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1271,12 +2391,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1286,12 +2420,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1301,12 +2449,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1316,12 +2478,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -1331,12 +2507,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1346,12 +2536,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommitPushedEvent",
@@ -1361,12 +2565,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1376,12 +2594,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1391,12 +2623,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1406,12 +2652,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1421,12 +2681,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1436,12 +2710,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1451,12 +2739,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeCommentedEvent",
@@ -1466,12 +2768,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -1482,12 +2798,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -1498,12 +2828,26 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   },
   {
     "type": "ChangeReviewedEvent",
@@ -1514,11 +2858,25 @@
     "repository_prefix": "gerrit",
     "repository_fullname": "gerrit",
     "repository_shortname": "",
-    "number": 246332,
-    "target_branch": "master",
     "branch": "master",
+    "target_branch": "master",
+    "number": 246332,
     "change_id": "gerrit@246332",
     "on_author": "Paladox none/1029953",
-    "on_created_at": "2019-11-20T15:52:35Z"
+    "on_created_at": "2019-11-20T15:52:35Z",
+    "changed_files": [
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_html.js"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/edit/gr-edit-controls/gr-edit-controls_test.html"
+      },
+      {
+        "path": "polygerrit-ui/app/elements/shared/gr-rest-api-interface/gr-rest-api-interface.js"
+      }
+    ]
   }
 ]

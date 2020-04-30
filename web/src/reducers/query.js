@@ -101,7 +101,6 @@ const queryReducer = (state = initialState, action) => {
 }
 
 function query (params) {
-  // console.log(params)
   return (dispatch) => {
     dispatch({ type: params.graph_type + '_QUERY_LOADING' })
     return getQueryResults(params)

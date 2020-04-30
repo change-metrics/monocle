@@ -73,37 +73,32 @@ class DateFormBox extends React.Component {
       <React.Fragment>
         <Col>
           <Form.Group controlId='formFromDate'>
-            <Form.Label>From date</Form.Label>
-            <br />
             <DatePicker
               selected={
                 this.props.gte
                   ? moment(this.props.gte).toDate() : ''}
               onChange={v => this.props.handleChange('gte', v)}
               dateFormat='yyyy-MM-dd'
-              placeholderText='Set a from date boundary'
+              placeholderText='From date'
               showYearDropdown
             />
           </Form.Group>
           <Form.Group controlId='formToDate'>
-            <Form.Label>To date</Form.Label>
-            <br />
             <DatePicker
               selected={
                 this.props.lte
                   ? moment(this.props.lte).toDate() : ''}
               onChange={v => this.props.handleChange('lte', v)}
               dateFormat='yyyy-MM-dd'
-              placeholderText='Set a to date boundary'
+              placeholderText='To date'
               showYearDropdown
             />
           </Form.Group>
         </Col>
         <Col>
           <Form.Group controlId='formToDate'>
-            <Form.Label>Relative date</Form.Label>
             <DropDownButton
-              title="Select a relative date"
+              title="Relative date"
               size="sm"
               variant="secondary"
             >
@@ -146,6 +141,7 @@ class FiltersForm extends React.Component {
       lte: '',
       repository: '',
       branch: '',
+      files: '',
       exclude_authors: '',
       authors: ''
     }
@@ -190,6 +186,7 @@ class FiltersForm extends React.Component {
         .format('YYYY-MM-DD'),
       repository: params.get('repository') || '',
       branch: params.get('branch') || '',
+      files: params.get('files') || '',
       excludeAuthors: params.get('exclude_authors') || '',
       authors: params.get('authors') || ''
     })
@@ -216,6 +213,7 @@ class FiltersForm extends React.Component {
       lte: this.state.lte,
       repository: this.state.repository,
       branch: this.state.branch,
+      files: this.state.files,
       exclude_authors: this.state.exclude_authors,
       authors: this.state.authors
     })
@@ -245,24 +243,6 @@ class FiltersForm extends React.Component {
           </Card.Header>
           <Card.Body>
             <Form.Row>
-              <Col>
-                <Form.Group controlId='formRepositoryInput'>
-                  <Form.Label>Repository regexp</Form.Label>
-                  <Form.Control
-                    type='text'
-                    value={this.state.repository}
-                    onChange={v => this.handleChange('repository', v)}
-                  />
-                </Form.Group>
-                <Form.Group controlId='formBranchInput'>
-                  <Form.Label>Branch regexp</Form.Label>
-                  <Form.Control
-                    type='text'
-                    value={this.state.branch}
-                    onChange={v => this.handleChange('branch', v)}
-                  />
-                </Form.Group>
-              </Col>
               <DateFormBox
                 gte={this.state.gte}
                 lte={this.state.lte}
@@ -270,19 +250,45 @@ class FiltersForm extends React.Component {
               />
               <Col>
                 <Form.Group controlId='formAuthorsInput'>
-                  <Form.Label>Authors</Form.Label>
                   <Form.Control
                     type='text'
                     value={this.state.authors}
+                    placeholder="Authors"
                     onChange={v => this.handleChange('authors', v)}
                   />
                 </Form.Group>
                 <Form.Group controlId='formExcludeAuthorsInput'>
-                  <Form.Label>Exclude Authors</Form.Label>
                   <Form.Control
                     type='text'
                     value={this.state.exclude_authors}
+                    placeholder="Exclude Authors"
                     onChange={v => this.handleChange('exclude_authors', v)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col>
+                <Form.Group controlId='formRepositoryInput'>
+                  <Form.Control
+                    type='text'
+                    value={this.state.repository}
+                    placeholder="Repositories regexp"
+                    onChange={v => this.handleChange('repository', v)}
+                  />
+                </Form.Group>
+                <Form.Group controlId='formBranchInput'>
+                  <Form.Control
+                    type='text'
+                    value={this.state.branch}
+                    placeholder="Branch regexp"
+                    onChange={v => this.handleChange('branch', v)}
+                  />
+                </Form.Group>
+                <Form.Group controlId='formFilesInput'>
+                  <Form.Control
+                    type='text'
+                    value={this.state.files}
+                    placeholder="Files regexp"
+                    onChange={v => this.handleChange('files', v)}
                   />
                 </Form.Group>
               </Col>

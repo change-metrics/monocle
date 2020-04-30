@@ -301,6 +301,9 @@ class PRsFetcher(object):
                     'url': change['url'],
                     'on_author': change['author'],
                     'on_created_at': change['created_at'],
+                    'changed_files': [
+                        {'path': cf['path']} for cf in change['changed_files']
+                    ],
                 }
             )
 
