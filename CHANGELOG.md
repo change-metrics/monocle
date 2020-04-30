@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - [web] list all indices on home page.
 - [web] allow to filter on files (regexp).
+- [db] add approvals in Change object for Gerrit crawler
 - [web] display the timeline of commits in /change/.
 - [web,api] add github authentication and basic authorization engine
 - [web,api] allow to filter on target_branch. Display the branch name of a change in /change/.
@@ -30,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [db] fix missing ChangeReviewedEvent events for Gerrit crawler
 - [web] back and forward browser buttons are working fine now when you change filters.
 - [web] have a correct history of events in /change/ when filtered on authors (#136)
 
