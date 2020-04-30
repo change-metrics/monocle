@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
@@ -21,6 +22,8 @@ from monocle.gerrit import review
 
 from .common import load_change
 from .common import DiffException
+from .common import DATASETS
+from .common import load_dataset
 
 
 class TestGerritCrawler(unittest.TestCase):
@@ -42,3 +45,14 @@ class TestGerritCrawler(unittest.TestCase):
             'https://gerrit-review.googlesource.com',
             'https:__gerrit-review.googlesource.com-gerrit-246332',
         )
+
+    def test_load_buggy(self):
+        """
+        Gerrit crawler extracts buggy reviews
+        """
+        rf = review.ReviewesFetcher('https://gerrit.org', None)
+        datasets_dir = Path(DATASETS)
+        for fn in datasets_dir.glob('gerrit_*.json'):
+            dataset = load_dataset(fn)
+            xtrd = rf.extract_objects([dataset], None)
+            self.assertNotEqual(xtrd, [])
