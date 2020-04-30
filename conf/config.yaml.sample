@@ -1,6 +1,6 @@
 ---
-projects:
-  - name: Tektoncd
+tenants:
+  - index: tenant1
     crawler:
       loop_delay: 10
       github_orgs:
@@ -8,7 +8,7 @@ projects:
           updated_since: "2020-03-15"
           token: "123"
           base_url: https://github.com
-  - name: Zuul
+  - index: tenant2
     crawler:
       loop_delay: 10
       gerrit_repositories:

@@ -68,9 +68,9 @@ schema = {
         },
     },
     "type": "object",
-    "required": ["projects"],
+    "required": ["tenants"],
     "properties": {
-        "projects": {
+        "tenants": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -80,7 +80,7 @@ schema = {
                         "type": "string",
                         "description": "Elasticsearch index name",
                     },
-                    "users_whitelist": {
+                    "users": {
                         "description": "User authorized to see and access the index",
                         "type": "array",
                         "items": {"type": "string"},
@@ -105,11 +105,11 @@ schema = {
     },
 }
 
-projects_sample_yaml = """
+config_sample_yaml = """
 ---
-projects:
+tenants:
   - index: default
-    users_whitelist:
+    users:
       - john
       - jane
     crawler:
@@ -149,13 +149,13 @@ class Username(str):
     pass
 
 
-def build_index_acl(data: dict) -> Dict[str, List[Username]]:
+def build_index_acl(config: dict) -> Dict[str, List[Username]]:
     indexes_acl: Dict[str, List[Username]] = {}
-    for project in data["projects"]:
-        if "users_whitelist" not in project.keys():
-            indexes_acl[project["index"]] = []
+    for tenant in config["tenants"]:
+        if "users" not in tenant.keys():
+            indexes_acl[tenant["index"]] = []
         else:
-            indexes_acl[project["index"]] = project["users_whitelist"]
+            indexes_acl[tenant["index"]] = tenant["users"]
     return indexes_acl
 
 

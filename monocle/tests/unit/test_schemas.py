@@ -21,27 +21,24 @@ from jsonschema import validate
 from deepdiff import DeepDiff
 from .common import DiffException
 
-from monocle import projects
+from monocle import config
 
 
 class TestSchemas(unittest.TestCase):
-    def test_projects_schema(self):
+    def test_config_schema(self):
         validate(
-            instance=yaml.safe_load(projects.projects_sample_yaml),
-            schema=projects.schema,
+            instance=yaml.safe_load(config.config_sample_yaml), schema=config.schema,
         )
 
     def test_indexes_acl(self):
-        indexes_acl = projects.build_index_acl(
-            yaml.safe_load(projects.projects_sample_yaml)
-        )
+        indexes_acl = config.build_index_acl(yaml.safe_load(config.config_sample_yaml))
         expected = {'default': ['john', 'jane'], 'tenant1': []}
         ddiff = DeepDiff(indexes_acl, expected)
         if ddiff:
             raise DiffException(ddiff)
 
-        self.assertTrue(projects.is_public_index(indexes_acl, 'tenant1'))
-        self.assertFalse(projects.is_public_index(indexes_acl, 'default'))
+        self.assertTrue(config.is_public_index(indexes_acl, 'tenant1'))
+        self.assertFalse(config.is_public_index(indexes_acl, 'default'))
 
-        users = projects.get_authorized_users(indexes_acl, 'default')
+        users = config.get_authorized_users(indexes_acl, 'default')
         self.assertListEqual(users, ['john', 'jane'])

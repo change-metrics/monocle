@@ -30,7 +30,7 @@ from monocle.db.db import UnknownQueryException
 from monocle.github import pullrequest
 from monocle.gerrit import review
 from monocle.crawler import Crawler, Runner, GroupCrawler
-from monocle import projects
+from monocle import config
 
 
 def main():
@@ -135,18 +135,18 @@ def main():
         if not os.path.isfile(realpath):
             log.error('Unable to access config: %s' % realpath)
             sys.exit(1)
-        config = yaml.safe_load(open(realpath).read())
-        validate(instance=config, schema=projects.schema)
+        configdata = yaml.safe_load(open(realpath).read())
+        validate(instance=configdata, schema=config.schema)
         tpool = []
         group = {}
-        for project in config['projects']:
-            for crawler_item in project['crawler'].get('github_orgs', []):
+        for tenant in configdata['tenants']:
+            for crawler_item in tenant['crawler'].get('github_orgs', []):
                 c_args = pullrequest.GithubCrawlerArgs(
                     command='github_crawler',
-                    index=project['index'],
+                    index=tenant['index'],
                     org=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
-                    loop_delay=project['crawler']['loop_delay'],
+                    loop_delay=tenant['crawler']['loop_delay'],
                     token=crawler_item['token'],
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
@@ -162,13 +162,13 @@ def main():
                         elastic_timeout=args.elastic_timeout,
                     )
                 )
-            for crawler_item in project['crawler'].get('gerrit_repositories', []):
+            for crawler_item in tenant['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
-                    index=project['index'],
+                    index=tenant['index'],
                     repository=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
-                    loop_delay=project['crawler']['loop_delay'],
+                    loop_delay=tenant['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'],
                 )
                 tpool.append(

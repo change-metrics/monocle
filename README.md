@@ -18,15 +18,15 @@ $ cd monocle
 $ mkdir data etc dump
 ```
 
-### Create the projects.yaml file
+### Create the config.yaml file
 
 Generate a personal access token on Github (w/o any specific rights).
 
-Then create the config file `etc/projects.yaml`:
+Then create the config file `etc/config.yaml`:
 
 ```YAML
 ---
-projects:
+tenants:
   - index: monocle
     crawler:
       loop_delay: 10
@@ -46,7 +46,7 @@ projects:
           base_url: https://review.opendev.org
   # A private index only whitelisted users are authorized to access
   - index: monocle-private
-    users_whitelist:
+    users:
       - github_login
     crawler:
       loop_delay: 10
@@ -152,4 +152,4 @@ and making it executable with `chmod +x .git/hooks/pre-commit`.
 
 The authentication and authorization support is new and only provides
 a solution to control access to private indexes. Only login users
-part of "users_whitelist" will be authorized to access the related index.
+part of "users" will be authorized to access the related index.

@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [api,backend] renamed projects.yaml to config.yaml. projects key replaced by tenants key. [BREAKING] 
 - [db] add target_branch and branch to events. Need to re-index to be able to use these fields. [BREAKING]
 - [db] prefix the names of indices by `monocle.changes.`. Need to recreate the indexes or create an alias if you want to keep them. [BREAKING]
 
