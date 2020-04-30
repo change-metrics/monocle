@@ -58,7 +58,7 @@ class TestWebAPI(unittest.TestCase):
                 {
                     # Private index
                     "index": self.index1,
-                    "users_whitelist": ['jane', 'john'],
+                    "users": ['jane', 'john'],
                 },
                 {
                     # Public index
