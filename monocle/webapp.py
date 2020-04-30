@@ -142,16 +142,14 @@ def indices():
 
 
 def main():
-    projects_config = os.getenv('PROJECTS_YAML', None)
-    if not projects_config:
-        print('PROJECTS_YAML env is missing. Quit')
+    config_path = os.getenv('CONFIG', None)
+    if not config_path:
+        print('CONFIG env is missing. Quit')
         sys.exit(1)
-    if not os.path.isfile(projects_config):
-        print('Unable to access %s. Quit' % projects_config)
+    if not os.path.isfile(config_path):
+        print('Unable to access %s. Quit' % config_path)
         sys.exit(1)
-    globals()['indexes_acl'] = config.build_index_acl(
-        yaml.safe_load(open(projects_config))
-    )
+    globals()['indexes_acl'] = config.build_index_acl(yaml.safe_load(open(config_path)))
     app.run(host='0.0.0.0', port=9876)
 
 

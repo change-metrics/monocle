@@ -53,8 +53,8 @@ class TestWebAPI(unittest.TestCase):
         webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config['TESTING'] = True
         self.client = webapp.app.test_client()
-        projects_data = {
-            "projects": [
+        config_data = {
+            "tenants": [
                 {
                     # Private index
                     "index": self.index1,
@@ -66,7 +66,7 @@ class TestWebAPI(unittest.TestCase):
                 },
             ]
         }
-        webapp.indexes_acl = config.build_index_acl(projects_data)
+        webapp.indexes_acl = config.build_index_acl(config_data)
 
     def test_get_indices(self):
         "Test indices endpoint"

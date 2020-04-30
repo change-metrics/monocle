@@ -18,15 +18,15 @@ $ cd monocle
 $ mkdir data etc dump
 ```
 
-### Create the projects.yaml file
+### Create the config.yaml file
 
 Generate a personal access token on Github (w/o any specific rights).
 
-Then create the config file `etc/projects.yaml`:
+Then create the config file `etc/config.yaml`:
 
 ```YAML
 ---
-projects:
+tenants:
   - index: monocle
     crawler:
       loop_delay: 10

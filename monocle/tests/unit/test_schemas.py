@@ -25,15 +25,13 @@ from monocle import config
 
 
 class TestSchemas(unittest.TestCase):
-    def test_projects_schema(self):
+    def test_config_schema(self):
         validate(
-            instance=yaml.safe_load(config.projects_sample_yaml), schema=config.schema,
+            instance=yaml.safe_load(config.config_sample_yaml), schema=config.schema,
         )
 
     def test_indexes_acl(self):
-        indexes_acl = config.build_index_acl(
-            yaml.safe_load(config.projects_sample_yaml)
-        )
+        indexes_acl = config.build_index_acl(yaml.safe_load(config.config_sample_yaml))
         expected = {'default': ['john', 'jane'], 'tenant1': []}
         ddiff = DeepDiff(indexes_acl, expected)
         if ddiff:
