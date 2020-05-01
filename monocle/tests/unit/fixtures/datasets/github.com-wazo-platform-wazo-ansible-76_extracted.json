@@ -16,7 +16,9 @@
     "text": "",
     "additions": 263,
     "deletions": 45,
-    "approval": "APPROVED",
+    "approval": [
+      "APPROVED"
+    ],
     "changed_files_count": 19,
     "changed_files": [
       {

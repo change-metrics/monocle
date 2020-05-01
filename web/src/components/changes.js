@@ -214,11 +214,9 @@ class ChangesTable extends React.Component {
                       {this.props.approval
                         ? <td align="center">
                           {
-                            typeof (x.approval || '') === 'string'
-                              ? this.chooseBadgeStyle(x.approval)
-                              : x.approval.map((app, idx) => {
-                                return <div key={idx}>{this.chooseBadgeStyle(app, idx)}</div>
-                              })
+                            x.approval.map((app, idx) => {
+                              return <div key={idx}>{this.chooseBadgeStyle(app, idx)}</div>
+                            })
                           }
                         </td> : null}
                     </tr>)}
@@ -250,7 +248,7 @@ ChangesTable.propTypes = {
   merged: PropTypes.bool,
   mergeable: PropTypes.bool,
   duration: PropTypes.bool,
-  approval: PropTypes.object,
+  approval: PropTypes.bool,
   graph: PropTypes.element,
   index: PropTypes.string.isRequired
 }
