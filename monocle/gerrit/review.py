@@ -45,6 +45,7 @@ class ReviewesFetcher(object):
         self.repository_prefix = repository_prefix
         self.status_map = {'NEW': 'OPEN', 'MERGED': 'MERGED', 'ABANDONED': 'CLOSED'}
         self.message_re = re.compile(r"Patch Set \d+:( [^ ]+[+-]\d+)?\n\n.+")
+        self.approval_re = re.compile(r"Patch Set \d+:(?P<approval> [^ ]+[+-]\d+)\n.*")
 
     def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
@@ -154,6 +155,7 @@ class ReviewesFetcher(object):
                     if review.get('submitted')
                     else self.convert_date_for_db(review['updated'])
                 ),
+                'approval': [],
                 'state': self.status_map[review['status']],
                 # Note(fbo): Gerrit labels must be handled as Review
                 'labels': [],
@@ -298,24 +300,28 @@ class ReviewesFetcher(object):
                     }
                     insert_change_attributes(obj, change)
                     objects.append(obj)
+                approval_match = self.approval_re.match(comment['message'])
+                if approval_match:
+                    obj = {
+                        'type': 'ChangeReviewedEvent',
+                        'id': "approval_%s" % comment['id'],
+                        'created_at': self.convert_date_for_db(comment['date']),
+                        'approval': approval_match.groupdict().get('approval'),
+                        'author': "%s/%s"
+                        % (
+                            comment['author'].get('name'),
+                            comment['author']['_account_id'],
+                        ),
+                    }
+                    insert_change_attributes(obj, change)
+                    objects.append(obj)
             for label in review['labels']:
                 for _review in review['labels'][label].get('all', []):
                     # If the date field exists then it means a review label
                     # has been set by someone
                     if 'date' in _review and 'value' in _review:
-                        obj = {
-                            'type': 'ChangeReviewedEvent',
-                            'id': "%s_%s_%s_%s"
-                            % (
-                                self.convert_date_for_db(_review['date']),
-                                label,
-                                _review['value'],
-                                _review['_account_id'],
-                            ),
-                            'created_at': self.convert_date_for_db(_review['date']),
-                            'author': "%s/%s"
-                            % (_review.get('name'), _review['_account_id']),
-                            'approval': "%s%s"
+                        change['approval'].append(
+                            "%s%s"
                             % (
                                 label,
                                 (
@@ -323,10 +329,8 @@ class ReviewesFetcher(object):
                                     if not str(_review['value']).startswith('-')
                                     else _review['value']
                                 ),
-                            ),
-                        }
-                        insert_change_attributes(obj, change)
-                        objects.append(obj)
+                            )
+                        )
             return objects
 
         objects = []
@@ -351,9 +355,7 @@ if __name__ == "__main__":
     parser.add_argument('--base-url', help='A Gerrit server', required=True)
     parser.add_argument('--repository', help='The repository name', required=True)
     parser.add_argument('--id', help='The review change id', required=True)
-    parser.add_argument(
-        '--output-dir', help='Store the dump in this directory',
-    )
+    parser.add_argument('--output-dir', help='Store the dump in this directory')
 
     args = parser.parse_args()
 

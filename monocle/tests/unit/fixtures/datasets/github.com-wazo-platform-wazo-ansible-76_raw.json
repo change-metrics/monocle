@@ -12,6 +12,7 @@
   "baseRefName": "master",
   "bodyText": "",
   "state": "MERGED",
+  "reviewDecision": "APPROVED",
   "number": 76,
   "mergeable": "UNKNOWN",
   "isDraft": false,

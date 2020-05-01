@@ -16,6 +16,9 @@
     "text": "exposed in the changes_lifecycle_stats API query\nexposed in the web \"Changes lifecycle stats\" graph + iteration/change",
     "additions": 90,
     "deletions": 33,
+    "approval": [
+      "APPROVED"
+    ],
     "changed_files_count": 3,
     "changed_files": [
       {

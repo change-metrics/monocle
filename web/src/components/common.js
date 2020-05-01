@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import Badge from 'react-bootstrap/Badge'
 import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
@@ -64,6 +65,32 @@ function addMap (dict, reducer, name) {
 const mapDispatchToProps = dispatch => {
   return {
     handleQuery: (params) => dispatch(query(params))
+  }
+}
+
+function chooseBadgeStyle (app, idx = 0) {
+  if (app === null) {
+    return ''
+  }
+  if (app === 'REVIEW_REQUIRED' || app === 'CHANGES_REQUESTED' || app === 'APPROVED') {
+    let approvalCat = 'success'
+    if (app === 'REVIEW_REQUIRED') {
+      approvalCat = 'info'
+    }
+    if (app === 'CHANGES_REQUESTED') {
+      approvalCat = 'danger'
+    }
+    return <Badge variant={approvalCat} key={idx}>{app}</Badge>
+  } else {
+    const patt = new RegExp('.*-.$')
+    let approvalCat = 'success'
+    if (patt.test(app)) {
+      approvalCat = 'danger'
+    }
+    if (app.includes('+0')) {
+      approvalCat = 'info'
+    }
+    return <Badge variant={approvalCat} key={idx}>{app}</Badge>
   }
 }
 
@@ -194,5 +221,6 @@ export {
   newRelativeUrl,
   addS,
   addMap,
-  mapDispatchToProps
+  mapDispatchToProps,
+  chooseBadgeStyle
 }

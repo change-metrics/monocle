@@ -74,6 +74,7 @@ class PRsFetcher(object):
           baseRefName
           bodyText
           state
+          reviewDecision
           number
           mergeable
           isDraft
@@ -336,6 +337,7 @@ class PRsFetcher(object):
             change['text'] = pr['bodyText']
             change['additions'] = pr['additions']
             change['deletions'] = pr['deletions']
+            change['approval'] = [pr['reviewDecision']]
             change['changed_files_count'] = pr['changedFiles']
             change["changed_files"] = [
                 {

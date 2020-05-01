@@ -36,7 +36,8 @@ import {
   addUrlField,
   newRelativeUrl,
   mapDispatchToProps,
-  addMap
+  addMap,
+  chooseBadgeStyle
 } from './common'
 
 import ComplexityGraph from './complexity_graph'
@@ -49,7 +50,7 @@ import {
 class RepoChangesTable extends React.Component {
   render () {
     if (!this.props.data || !this.props.data.items) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }} />
     }
     return (
       <Row>
@@ -121,11 +122,11 @@ class ChangesTable extends React.Component {
     let graphElement
 
     if (!this.props.data || !this.props.data.items) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }} />
     }
 
     if (this.props.graph) {
-      graphElement = <React.Fragment>{this.props.graph}<br/></React.Fragment>
+      graphElement = <React.Fragment>{this.props.graph}<br /></React.Fragment>
     }
 
     if (this.props.pageChangeCallback && this.props.pageCount > 1) {
@@ -169,6 +170,7 @@ class ChangesTable extends React.Component {
                     <th className="text-center">Title</th>
                     {this.props.mergeable ? <th className="text-center">Mergeable</th> : null}
                     <th className="text-center">Complexity</th>
+                    {this.props.approval ? <th className="text-center">Approval</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -182,7 +184,15 @@ class ChangesTable extends React.Component {
                       <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
                       <td>{changeUrl(this.props.index, x, x.title)}</td>
                       {this.props.mergeable ? <td align="center">{x.draft ? 'DRAFT' : x.mergeable}</td> : null}
-                      <td align="center">{ x.complexity }</td>
+                      <td align="center">{x.complexity}</td>
+                      {this.props.approval
+                        ? <td align="center">
+                          {
+                            x.approval.map((app, idx) => {
+                              return <div key={idx}>{chooseBadgeStyle(app, idx)}</div>
+                            })
+                          }
+                        </td> : null}
                     </tr>)}
                 </tbody>
               </Table>
@@ -212,6 +222,7 @@ ChangesTable.propTypes = {
   merged: PropTypes.bool,
   mergeable: PropTypes.bool,
   duration: PropTypes.bool,
+  approval: PropTypes.bool,
   graph: PropTypes.element,
   index: PropTypes.string.isRequired
 }
@@ -329,6 +340,7 @@ class LastChanges extends BaseQueryComponent {
                       title={<Link to={newRelativeUrl('/opened-changes')}>Recently Opened Changes</Link>}
                       created={true}
                       mergeable={true}
+                      approval={true}
                     />
                   </Col>
                 </Row>
@@ -356,28 +368,29 @@ class AbstractLastChanges extends BaseQueryComponent {
     this.state.updated = false
     this.state.merged = false
     this.state.duration = false
+    this.state.approval = false
   }
 
   render () {
     if (!this.props[this.state.graph_type + '_loading']) {
       if (!this.props[this.state.graph_type + '_result']) {
-        return <ErrorBox error={{ status: 0, data: 'No data' }}/>
+        return <ErrorBox error={{ status: 0, data: 'No data' }} />
       }
       const data = this.props[this.state.graph_type + '_result']
       if (!data || data.items.length === 0) {
-        return <ErrorBox error={{ status: 1, data: 'Invalid data' }}/>
+        return <ErrorBox error={{ status: 1, data: 'Invalid data' }} />
       }
       const LocalComplexityGraph = this.state.complexityGraph
       return (
         <React.Fragment>
           <Row>
             <Col>
-              {this.state.merged ? <CMergedFilesTreeMap index={this.props.index}/>
-                : <COpenedFilesTreeMap index={this.props.index}/>
+              {this.state.merged ? <CMergedFilesTreeMap index={this.props.index} />
+                : <COpenedFilesTreeMap index={this.props.index} />
               }
             </Col>
           </Row>
-          <Row><Col><p/></Col></Row>
+          <Row><Col><p /></Col></Row>
           <Row>
             <Col>
               <ChangesTable
@@ -399,6 +412,7 @@ class AbstractLastChanges extends BaseQueryComponent {
                 merged={this.state.merged}
                 mergeable={this.state.mergeable}
                 duration={this.state.duration}
+                approval={this.state.approval}
               />
             </Col>
           </Row>
@@ -449,6 +463,7 @@ class LastOpenedChanges extends AbstractLastChanges {
     this.state.created = true
     this.state.updated = true
     this.state.mergeable = true
+    this.state.approval = true
     this.state.complexityGraph = ComplexityGraph
   }
 

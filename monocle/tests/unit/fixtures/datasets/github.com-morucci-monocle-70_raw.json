@@ -12,6 +12,7 @@
   "baseRefName": "master",
   "bodyText": "exposed in the changes_lifecycle_stats API query\nexposed in the web \"Changes lifecycle stats\" graph + iteration/change",
   "state": "MERGED",
+  "reviewDecision": "APPROVED",
   "number": 70,
   "mergeable": "UNKNOWN",
   "isDraft": false,
