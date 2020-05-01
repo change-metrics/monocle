@@ -7,7 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+### Changed
+### Removed
+### Fixed
 
+##  [0.3] - 2020-05-01
+
+### Added
+
+- [crawlers] skip GitHub archived repositories.
 - [web] list all indices on home page.
 - [web] allow to filter on files (regexp).
 - [web] add approvals in open changes listing.
@@ -27,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [api,backend] renamed projects.yaml to config.yaml. projects key replaced by tenants key. [BREAKING] 
 - [db] add target_branch and branch to events. Need to re-index to be able to use these fields. [BREAKING]
 - [db] prefix the names of indices by `monocle.changes.`. Need to recreate the indexes or create an alias if you want to keep them. [BREAKING]
-
-### Removed
 
 ### Fixed
 
