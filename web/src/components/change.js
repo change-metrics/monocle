@@ -37,7 +37,8 @@ import {
   ErrorBox,
   addS,
   mapDispatchToProps,
-  addMap
+  addMap,
+  chooseBadgeStyle
 } from './common'
 
 import TimelineGraph from './timeline'
@@ -114,7 +115,7 @@ class ChangeTable extends React.Component {
         <Col>
           <Card>
             <Card.Header>
-              <Card.Title>{change.title}<br/><ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()}</Card.Title>
+              <Card.Title>{change.title}<br/><ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
               <Table>
                 <tbody>
                   <tr key={0}>
