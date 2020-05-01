@@ -16,11 +16,14 @@ The process below describes how to index changes from a Github repository, a ful
 $ git clone https://github.com/morucci/monocle.git
 $ cd monocle
 $ mkdir data etc dump
+$ cp docker-compose.yml.img docker-compose.yml
 ```
 
 ### Create the config.yaml file
 
-Generate a personal access token on Github (w/o any specific rights).
+The `config.yaml` file is used by the crawler and api containers.
+
+To crawl Gihub repositories, generate a personal access token on Github (w/o any specific rights).
 
 Then create the config file `etc/config.yaml`:
 
@@ -58,6 +61,23 @@ tenants:
           base_url: https://github.com
 ```
 
+## Configuration of the containers
+
+To configure the host serving the api and web UI, add
+`MONOCLE_HOST=<host or ip>` into the `.env` file.
+
+### GitHub authentication for private indices
+
+Configure the Github Oauth authentication to secure private indexes
+
+1. Create an Oauth APP in your Github user settings page
+2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
+3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
+
+The authentication and authorization support is new and only provides
+a solution to control access to private indexes. Only login users
+part of `users` will be authorized to access the related index.
+
 ### Start docker-compose
 
 ```ShellSession
@@ -93,63 +113,6 @@ $ docker-compose logs crawler
 
 You should be able to access the web UI at <http://localhost:3000/monocle>.
 
-## Hacking
+## Contributing
 
-### Understanding the design choices
-
-Follow the [Architectural Decision Records](doc/adr/index.md) to
-understand the choices made by the project.
-
-### Reloading code
-
-This section explains how you can hack the Monocle code. The idea is to use
-the docker deployment to avoid complex development methods.
-
-After changes, simply run the following command. docker-compose will
-rebuild and re-spawn the changed containers:
-
-```ShellSession
-$ docker-compose up -d --build
-```
-
-### Git hooks
-
-#### pre-push
-
-To be sure to push correct branches, you have to configure the
-`pre-push` git hook by creating `.git/hooks/pre-push` with the
-following content:
-
-```Shell
-#!/bin/bash
-
-exec ./contrib/pre-push "$@"
-```
-
-and making it executable with `chmod +x .git/hooks/pre-push`.
-
-#### pre-commit
-
-Optionnaly, you can enable the `pre-commit` git hook to reformat your
-code by creating `.git/hooks/pre-commit` with the following
-content:
-
-```Shell
-#!/bin/bash
-
-exec ./contrib/pre-commit "$@"
-```
-
-and making it executable with `chmod +x .git/hooks/pre-commit`.
-
-### Configure the Github Oauth authentication to secure private indexes
-
-1. Create an Oauth APP in your Github user settings page
-2. Add "http://localhost:9876/api/0/authorize" in "User authorization callback URL"
-3. Set "CLIENT_ID" and "CLIENT_SECRET" in docker-compose.yaml
-4. Re/start the Docker compose
-5. Navigate to "http://localhost:3000/login" to authenticate
-
-The authentication and authorization support is new and only provides
-a solution to control access to private indexes. Only login users
-part of "users" will be authorized to access the related index.
+Follow [our contributing guide](CONTRIBUTING.md).
