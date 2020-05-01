@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] list all indices on home page.
 - [web] allow to filter on files (regexp).
 - [web] display the timeline of commits in /change/.
 - [web,api] add github authentication and basic authorization engine
