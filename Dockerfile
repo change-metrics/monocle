@@ -17,9 +17,13 @@
 FROM python:3.7-alpine
 WORKDIR /code
 COPY requirements.txt requirements.txt
-RUN apk add build-base libffi-dev openssl-dev
+RUN apk --no-cache add build-base libffi-dev openssl-dev
 RUN pip install -r requirements.txt
-RUN mkdir /etc/monocle
 COPY monocle monocle
 COPY setup.py setup.py
 RUN python setup.py install
+
+FROM python:3.7-alpine
+RUN mkdir /etc/monocle
+COPY --from=0 /usr/local/lib/python3.7/site-packages /usr/local/lib/python3.7/site-packages
+COPY --from=0 /usr/local/bin /usr/local/bin
