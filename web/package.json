@@ -6,7 +6,7 @@
     "axios": "^0.19.2",
     "bootstrap": "^4.4.1",
     "chart.js": "^2.9.3",
-    "moment": "^2.24.0",
+    "moment": "2.24.0",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.0",
     "react-chartjs-2": "^2.9.0",
@@ -22,7 +22,8 @@
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.0",
     "redux": "^4.0.5",
-    "redux-thunk": "^2.3.0"
+    "redux-thunk": "^2.3.0",
+    "serve": "^11.3.0"
   },
   "scripts": {
     "start": "react-scripts start",

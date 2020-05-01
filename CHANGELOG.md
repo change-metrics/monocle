@@ -7,7 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+
+- [install] split `README.md` in [`README.md`](README.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ### Changed
+
+- [dev] distribute 2 docker-compose.yml files: one for dev and one using images from docker hub.
+
 ### Removed
 ### Fixed
 
@@ -28,7 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [api] add a /indices api to get the list of available indices.
 - [web] add a Treemap of the files impacted by the changes on the opened and merged pages.
 - [api] add 2 requests: changes_by_file_map and authors_by_file_map.
-- [api] add files (regexp) and state (OPEN, CLOSED or MERGED) as query parameters.
+- [api] add files (regexp) and state (`OPEN`, `CLOSED` or `MERGED`) as query parameters.
 
 ### Changed
 

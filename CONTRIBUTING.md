@@ -11,7 +11,7 @@ To use `docker-compose.yml` from source code, use
 `docker-compose.yml.dev` instead of the image based one:
 
 ```ShellSession
-$ cp docker-compose.yml.dev docker-compose.yml
+$ ln -sf docker-compose.yml.dev docker-compose.yml
 ```
 
 ## Reloading code

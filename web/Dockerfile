@@ -33,5 +33,8 @@ RUN npm install
 COPY public /app/public/
 COPY src /app/src/
 
+# install dependencies
+RUN npm run build
+
 # start app
-CMD npm start
+CMD serve -s build -l 3000

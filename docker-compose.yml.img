@@ -16,8 +16,9 @@
 
 version: '3'
 services:
+
   api:
-    build: .
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     depends_on:
       - elastic
     ports:
@@ -25,28 +26,31 @@ services:
     environment:
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
-      ALLOW_ORIGIN: http://localhost:3000
+      ALLOW_ORIGIN: "http://${MONOCLE_HOST:-localhost}:3000"
       #FLASK_ENV: development
-      CLIENT_ID: ''
-      CLIENT_SECRET: ''
-      REDIRECT_URL: 'http://localhost:9876/api/0/authorize'
+      CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
+      CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
+      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}:9876/api/0/authorize'
     command: webapi
     volumes:
       - $PWD/etc:/etc/monocle:Z
+
   elastic:
     image: "docker.elastic.co/elasticsearch/elasticsearch:6.8.7"
-    ports:
-      - "9200:9200"
+    expose:
+      - "9200"
     volumes:
       - $PWD/data:/usr/share/elasticsearch/data:Z
+
   crawler:
-    build: .
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     depends_on:
       - elastic
     command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
     volumes:
       - $PWD/etc:/etc/monocle:Z
       - $PWD/dump:/var/lib/crawler:Z
+
   web:
     build: web
     depends_on:
@@ -54,4 +58,4 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:9876
+      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}:9876"

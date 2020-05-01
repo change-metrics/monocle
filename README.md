@@ -4,7 +4,7 @@ Monocle purpose is to provide metrics about Changes through a web API and a web 
 
 ![Screenshot](https://user-images.githubusercontent.com/529708/78028243-fc958980-735e-11ea-8fd4-f5ecfb6af02a.png)
 
-## Deploy the master version
+## Installation
 
 Monocle is in an early phase of developement. Feedback is highly welcome.
 
@@ -16,14 +16,15 @@ The process below describes how to index changes from a Github repository, a ful
 $ git clone https://github.com/morucci/monocle.git
 $ cd monocle
 $ mkdir data etc dump
-$ cp docker-compose.yml.img docker-compose.yml
+$ ln -s docker-compose.yml.img docker-compose.yml
 ```
 
 ### Create the config.yaml file
 
-The `config.yaml` file is used by the crawler and api containers.
+The `config.yaml` file is used by the crawler and api services.
 
-To crawl Gihub repositories, generate a personal access token on Github (w/o any specific rights).
+If you want to crawl Gihub repositories, generate a personal access
+token on Github (w/o any specific rights).
 
 Then create the config file `etc/config.yaml`:
 
@@ -50,7 +51,8 @@ tenants:
   # A private index only whitelisted users are authorized to access
   - index: monocle-private
     users:
-      - github_login
+      - <github_login1>
+      - <github_login2>
     crawler:
       loop_delay: 10
       github_orgs:
@@ -64,9 +66,17 @@ tenants:
 ## Configuration of the containers
 
 To configure the host serving the api and web UI, add
-`MONOCLE_HOST=<host or ip>` into the `.env` file.
+`MONOCLE_HOST=<host or ip>` into the `.env` file. If you don't
+configure it, `MONOCLE_HOST` is set to `localhost`.
 
-### GitHub authentication for private indices
+If you want to use a specific version, add `MONOCLE_VERSION=<version>`
+into the `.env` file.
+
+### GitHub authentication
+
+If you want to protect the access to your indices, you can require a
+GitHub login to access and the people able to use the indeices will be
+the ones listed in the `users` section in `config.yaml`.
 
 Configure the Github Oauth authentication to secure private indexes
 
@@ -111,7 +121,7 @@ $ docker-compose logs crawler
 
 ### Accessing the web UI
 
-You should be able to access the web UI at <http://localhost:3000/monocle>.
+You should be able to access the web UI at <http://localhost:3000>.
 
 ## Contributing
 
