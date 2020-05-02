@@ -1,8 +1,51 @@
 # Monocle
 
-Monocle purpose is to provide metrics about Changes through a web API and a web UI. Monocle supports Github Pull Requests and Gerrit Reviews. Monocle provides a set of crawlers designed to fetch Pull Requests and Reviews data from the Github or Gerrit APIs and to store changes and changes related events into Elasticsearch. Furthermore Monocle implements ready to use queries and a React based web UI.
+The purpose of Monocle is to provide insights on the way changes are
+produced in your team on GitHub and Gerrit.
 
-![Screenshot](https://user-images.githubusercontent.com/529708/78028243-fc958980-735e-11ea-8fd4-f5ecfb6af02a.png)
+The philosophy is to let you visualize and explore metrics that are
+relevant to the way you work.
+
+For example, your team may want to know:
+
+- what is the ratio of created changes vs merged changes?
+- is there a good balance between change creation and change reviews?
+- what is the ratio of abandoned changes?
+- what are the collaboration patterns between the team members?
+- how long does it take to merge a change?
+- average delay for the first comment or review?
+- long standing changes?
+- do we have new contributors?
+
+The main idea behind Monocle is to detect anomalies in your development process.
+
+Here is a graph representing what has been going on during a period of time:
+
+![Main Stats Graph](https://user-images.githubusercontent.com/529708/80858201-0c530700-8c58-11ea-867c-9b1b4568b781.png)
+
+Here is the collaboration pattern:
+
+![Collaboration Graph](https://user-images.githubusercontent.com/529708/80858244-79ff3300-8c58-11ea-8caa-b3e72f5d9c88.png)
+
+Here is the complexity versus time to merge changes:
+
+![Complexity Graph](https://user-images.githubusercontent.com/529708/80858379-45d84200-8c59-11ea-854e-9548be7968ff.png)
+
+## Components
+
+Monocle supports Github Pull Requests and Gerrit Reviews. Monocle
+provides a set of crawlers designed to fetch Pull Requests and Reviews
+data from the Github or Gerrit APIs and to store changes and changes
+related events into Elasticsearch. These changes and events are expose
+via a JSON API. Furthermore Monocle implements ready to use queries
+and a React based web UI.
+
+To summarize we have the following components in Monocle:
+
+1. an Elasticsearch data store.
+2. an api service.
+3. a crawler service.
+4. a web UI.
 
 ## Installation
 
