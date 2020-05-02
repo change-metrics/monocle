@@ -1,23 +1,24 @@
 # Monocle
 
-The purpose of Monocle is to provide insights on the way changes are
-produced in your team on GitHub and Gerrit.
+The main idea behind Monocle is to detect anomalies in the way changes
+are produced in your project on GitHub and Gerrit.
 
-The philosophy is to let you visualize and explore metrics that are
-relevant to the way you work.
+Each team is unique in its way of working: how to do code reviews, how
+many reviewers, how to do CI, is self merge allowed...
+
+So the philosophy behind Monocle is to let you visualize and explore
+metrics that are relevant to the way you work.
 
 For example, your team may want to know:
 
 - what is the ratio of created changes vs merged changes?
-- is there a good balance between change creation and change reviews?
+- is there a good balance between change creations and change reviews?
 - what is the ratio of abandoned changes?
 - what are the collaboration patterns between the team members?
 - how long does it take to merge a change?
 - average delay for the first comment or review?
 - long standing changes?
 - do we have new contributors?
-
-The main idea behind Monocle is to detect anomalies in your development process.
 
 Here is a graph representing what has been going on during a period of time:
 
@@ -66,7 +67,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 
 The `config.yaml` file is used by the crawler and api services.
 
-If you want to crawl Gihub repositories, generate a personal access
+If you want to crawl GitHub repositories, generate a personal access
 token on Github (w/o any specific rights).
 
 Then create the config file `etc/config.yaml`:

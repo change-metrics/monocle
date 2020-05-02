@@ -5,13 +5,13 @@
 Follow the [Architectural Decision Records](doc/adr/index.md) to
 understand the choices made by the project.
 
-## Use source based docker-compose.yml
+## To deploy from source code
 
-To use `docker-compose.yml` from source code, use
-`docker-compose.yml.dev` instead of the image based one:
+To use `docker-compose` from source code, use the
+`docker-compose.yml.dev` file instead of the image based one:
 
 ```ShellSession
-$ ln -s docker-compose.yml.dev docker-compose.yml
+$ ln -sf docker-compose.yml.dev docker-compose.yml
 ```
 
 ## Reloading code
