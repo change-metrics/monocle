@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # base image
-FROM node:12.16.1-alpine
+FROM node:12-alpine
 
 # set working directory
 WORKDIR /app
@@ -36,5 +36,17 @@ COPY src /app/src/
 # install dependencies
 RUN npm run build
 
+################################################################################
+
+FROM node:12-alpine
+
+# set working directory
+WORKDIR /app
+
+# install serve globally
+RUN npm install -g serve
+
+COPY --from=0 /app/build /app
+
 # start app
-CMD serve -s build -l 3000
+CMD serve -s /app -l 3000

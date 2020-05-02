@@ -11,7 +11,7 @@ To use `docker-compose.yml` from source code, use
 `docker-compose.yml.dev` instead of the image based one:
 
 ```ShellSession
-$ ln -sf docker-compose.yml.dev docker-compose.yml
+$ ln -s docker-compose.yml.dev docker-compose.yml
 ```
 
 ## Reloading code
@@ -26,18 +26,23 @@ rebuild and re-spawn the changed containers:
 $ docker-compose up -d --build
 ```
 
-### auto-reloading web UI code
+### auto-reloading the web UI code
 
-To have your code automatically reloaded for each change, just run it
+To have your code automatically reloaded on each change, just run it
 outside the container:
 
 ```ShellSession
 $ docker-compose stop web
 $ cd web
+$ npm install
 $ npm start
 ```
 
 ## Git hooks
+
+Before submitting a [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork),
+make sure to configure the git hooks locally to avoid proposing broken code
+or not well formatted code.
 
 ### pre-push
 
@@ -55,9 +60,9 @@ and making it executable with `chmod +x .git/hooks/pre-push`.
 
 ### pre-commit
 
-Optionnaly, you can enable the `pre-commit` git hook to reformat your
-code by creating `.git/hooks/pre-commit` with the following
-content:
+To be sure to have correctly formatted code, enable the `pre-commit`
+git hook to reformat your code by creating `.git/hooks/pre-commit`
+with the following content:
 
 ```Shell
 #!/bin/bash
