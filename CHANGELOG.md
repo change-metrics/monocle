@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [web] split top page into a people and changes pages.
 - [dev] distribute 2 docker-compose.yml files: one for dev and one using images from docker hub.
 
 ### Removed
