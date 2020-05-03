@@ -17,6 +17,8 @@
 # base image
 FROM node:12-alpine
 
+RUN apk --no-cache add bash
+
 # set working directory
 WORKDIR /app
 
@@ -46,7 +48,9 @@ WORKDIR /app
 # install serve globally
 RUN npm install -g serve
 
+COPY --from=0 /usr/lib/ /usr/lib/
+COPY --from=0 /bin/ /bin/
 COPY --from=0 /app/build /app
 
 # start app
-CMD serve -s /app -l 3000
+CMD bash -c "set -x; test -z \"$REACT_APP_API_URL\" || sed -i -e \"s@__API_URL__@$REACT_APP_API_URL@\" /app/index.html; serve -s /app -l 3000"
