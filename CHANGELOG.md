@@ -16,7 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [dev] distribute 2 docker-compose.yml files: one for dev and one using images from docker hub.
 
 ### Removed
+
 ### Fixed
+
+- [web] passing `REACT_APP_API_URL` in container image mode.
 
 ##  [0.3] - 2020-05-01
 

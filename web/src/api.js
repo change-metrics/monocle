@@ -17,8 +17,8 @@
 import axios from 'axios'
 import moment from 'moment'
 
-var server = process.env.REACT_APP_API_URL || 'http://localhost:9876'
-var baseurl = server + '/api/0'
+const server = window.API_URL !== '__API_URL__' ? window.API_URL : (process.env.REACT_APP_API_URL || 'http://localhost:9876')
+const baseurl = server + '/api/0'
 
 console.log('BaseURL=' + baseurl)
 
