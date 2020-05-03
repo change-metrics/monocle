@@ -1,0 +1,60 @@
+# Monocle.
+# Copyright (C) 2019-2020 Monocle authors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+version: '3'
+services:
+
+  api:
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    depends_on:
+      - elastic
+    ports:
+      - "9876:9876"
+    environment:
+      CONFIG: /etc/monocle/config.yaml
+      ELASTIC_CONN: elastic:9200
+      ALLOW_ORIGIN: "http://${MONOCLE_HOST:-localhost}:3000"
+      CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
+      CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
+      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}:9876/api/0/authorize'
+    command: webapi
+    volumes:
+      - $PWD/etc:/etc/monocle:Z
+
+  elastic:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:6.8.7"
+    expose:
+      - "9200"
+    volumes:
+      - $PWD/data:/usr/share/elasticsearch/data:Z
+
+  crawler:
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    depends_on:
+      - elastic
+    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
+    volumes:
+      - $PWD/etc:/etc/monocle:Z
+      - $PWD/dump:/var/lib/crawler:Z
+
+  web:
+    image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}:9876"

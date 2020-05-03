@@ -7,3 +7,5 @@ etc
 .venv
 .tox
 .mypy_cache
+.env
+docker-compose.yml

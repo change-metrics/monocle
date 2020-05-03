@@ -6,7 +6,7 @@
     "axios": "^0.19.2",
     "bootstrap": "^4.4.1",
     "chart.js": "^2.9.3",
-    "moment": "^2.24.0",
+    "moment": "2.24.0",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.0",
     "react-chartjs-2": "^2.9.0",
