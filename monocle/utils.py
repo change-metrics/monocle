@@ -63,9 +63,9 @@ class Detector(object):
     def enhance(self, change):
         if change['type'] == 'Change':
             if self.is_tests_included(change):
-                change['_tests_included'] = True
+                change['tests_included'] = True
             else:
-                change['_tests_included'] = False
+                change['tests_included'] = False
         return change
 
 
