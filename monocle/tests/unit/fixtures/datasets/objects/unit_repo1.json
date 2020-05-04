@@ -13,14 +13,19 @@
     "target_branch": "master",
     "title": "A PR title",
     "text": "The body text of the PR",
-    "additions": 10,
+    "additions": 11,
     "deletions": 5,
-    "changed_files_count": 1,
+    "changed_files_count": 2,
     "changed_files": [
       {
         "additions": 10,
         "deletions": 5,
         "path": "path/to/file1.py"
+      },
+      {
+        "additions": 1,
+        "deletions": 0,
+        "path": "path/to/tests/test_file1.py"
       }
     ],
     "commit_count": 1,

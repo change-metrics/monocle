@@ -137,7 +137,7 @@ class ChangeTable extends React.Component {
                     </tr> : null
                   }
                   <tr key={5}>
-                    <td align="center">{change.hasTests ? <font color="DarkGreen">Has tests</font> : <font color="red">Does not have tests</font>}</td>
+                    <td align="center">{change._tests_included ? <font color="DarkGreen">Has tests</font> : <font color="red">Does not have tests</font>}</td>
                   </tr>
                   <tr key={6}>
                     <td align="center">{change.hasLinks ? <font color="DarkGreen">Has a potential issue link</font> : <font color="red">Does not have an issue link</font>}</td>

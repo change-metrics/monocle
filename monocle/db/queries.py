@@ -22,6 +22,7 @@ from datetime import datetime
 from itertools import groupby
 from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
+from monocle.utils import enhance_changes
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -544,6 +545,7 @@ def cold_changes(es, index, repository_fullname, params):
     changes_wo_rc = [
         change for change in changes if change['change_id'] in changes_ids_wo_rc
     ]
+    changes_wo_rc = enhance_changes(changes_wo_rc)
     items = sorted(changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
     if size:
         items = items[:size]
@@ -578,6 +580,7 @@ def hot_changes(es, index, repository_fullname, params):
     changes = _scan(es, index, repository_fullname, _params)
     for change in changes:
         change['hot_score'] = mapping[change['change_id']]
+    changes = enhance_changes(changes)
     items = sorted(changes, key=lambda x: x['hot_score'], reverse=True)
     if size:
         items = items[:size]
@@ -686,6 +689,7 @@ def last_changes(es, index, repository_fullname, params):
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
+    changes = enhance_changes(changes)
     return {'items': changes, 'total': data['hits']['total']}
 
 
@@ -720,6 +724,7 @@ def oldest_open_changes(es, index, repository_fullname, params):
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
+    changes = enhance_changes(changes)
     return {'items': changes, 'total': data['hits']['total']}
 
 
@@ -743,6 +748,7 @@ def changes_and_events(es, index, repository_fullname, params):
     }
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
+    changes = enhance_changes(changes)
     return {'items': changes, 'total': data['hits']['total']}
 
 

@@ -237,3 +237,28 @@ class TestQueries(unittest.TestCase):
             'changes_and_events', 'unit/repo[12]', set_params({})
         )
         self.assertEqual(ret['total'], ret2['total'])
+
+    def test_change_and_events(self):
+        """
+        Test change_and_events query
+        """
+        params = set_params({})
+        ret = self.eldb.run_named_query('changes_and_events', 'unit/repo1', params)
+        self.assertEqual(ret['total'], 4)
+        change = [c for c in ret['items'] if c['type'] == 'Change'][0]
+        self.assertTrue(change['_tests_included'])
+
+    def test_last_changes(self):
+        """
+        Test last_changes query
+        """
+        params = set_params({'state': 'OPEN'})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1)
+        self.assertFalse(ret['items'][0]['_tests_included'])
+
+        params = set_params({'state': 'MERGED'})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 3)
+        for change in ret['items']:
+            self.assertIn('_tests_included', list(change.keys()))

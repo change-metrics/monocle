@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import re
 from datetime import datetime
 
 events_list = [
@@ -47,6 +48,30 @@ def dbdate_to_datetime(datestr):
 
 def float_trunc(f, n=2):
     return float(int(f * 10 ** n)) / 10 ** n
+
+
+class Detector(object):
+    tests_re = re.compile(".*[Tt]est.*")
+
+    def is_tests_included(self, change):
+        for file in change['changed_files']:
+            if self.tests_re.match(file['path']):
+                return True
+        return False
+
+    def enhance(self, change):
+        if change['type'] == 'Change':
+            if self.is_tests_included(change):
+                change['_tests_included'] = True
+            else:
+                change['_tests_included'] = False
+        return change
+
+
+def enhance_changes(changes):
+    detector = Detector()
+    changes = list(map(detector.enhance, changes))
+    return changes
 
 
 def set_params(input):
