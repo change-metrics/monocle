@@ -23,7 +23,7 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-import { withRouter } from 'react-router-dom'
+import { withRouter, Link } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
@@ -151,6 +151,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
         />
       }
       const data = this.props.changes_lifecycle_stats_result
+      const search = window.location.search
       return (
         <Row>
           <Col>
@@ -166,13 +167,16 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
+                        <Link to={`/${this.props.index}/opened-changes${search}`}>{data.ChangeCreatedEvent.events_count - data.ChangeMergedEvent.events_count - data.ChangeAbandonedEvent.events_count} opened changes</Link>
+                      </ListGroup.Item>
+                      <ListGroup.Item>
                         {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ChangeMergedEvent.events_count} changes merged by {data.ChangeMergedEvent.authors_count} authors
+                        <Link to={`/${this.props.index}/merged-changes${search}`}>{data.ChangeMergedEvent.events_count} changes merged by {data.ChangeMergedEvent.authors_count} authors</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ChangeAbandonedEvent.events_count} changes abandoned by {data.ChangeAbandonedEvent.authors_count} authors
+                        <Link to={`/${this.props.index}/abandoned-changes${search}`}>{data.ChangeAbandonedEvent.events_count} changes abandoned by {data.ChangeAbandonedEvent.authors_count} authors</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Changes abandoned: {data.ratios['abandoned/created']}%

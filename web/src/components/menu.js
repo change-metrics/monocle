@@ -18,6 +18,7 @@ import React from 'react'
 
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
+import NavDropdown from 'react-bootstrap/NavDropdown'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { CUserView } from './user'
@@ -32,9 +33,13 @@ class TopMenu extends React.Component {
       {this.props.index
         ? <Nav className="mr-auto">
           <Link className="nav-link" to={`/${this.props.index}${search}`}>Top</Link>
-          <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
-          <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
-          <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
+          <Link className="nav-link" to={`/${this.props.index}/people${search}`}>People</Link>
+          <NavDropdown title="Changes" id="changes-nav-dropdown">
+            <Link className="nav-link" to={`/${this.props.index}/changes${search}`}>Summary</Link>
+            <Link className="nav-link" to={`/${this.props.index}/opened-changes${search}`}>Opened</Link>
+            <Link className="nav-link" to={`/${this.props.index}/merged-changes${search}`}>Merged</Link>
+            <Link className="nav-link" to={`/${this.props.index}/abandoned-changes${search}`}>Abandoned</Link>
+          </NavDropdown>
         </Nav> : null}
       <Nav className="ml-auto">
         <CUserView />
