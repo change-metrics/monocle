@@ -262,3 +262,14 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(ret['total'], 3)
         for change in ret['items']:
             self.assertIn('_tests_included', list(change.keys()))
+
+    def test_tests_included_param(self):
+        """
+        Test tests_included param: last_changes
+        """
+        params = set_params({'tests_included': True})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1, ret)
+        params = set_params({})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 4, ret)

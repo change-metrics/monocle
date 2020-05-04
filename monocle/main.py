@@ -116,6 +116,11 @@ def main():
     parser_dbquery.add_argument(
         '--exclude-authors', help='Authors exclude list (comma separated)'
     )
+    parser_dbquery.add_argument(
+        '--tests-included',
+        help='Scope to changes containing tests',
+        action='store_true',
+    )
 
     args = parser.parse_args()
 

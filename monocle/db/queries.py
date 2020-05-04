@@ -23,6 +23,7 @@ from itertools import groupby
 from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
 from monocle.utils import enhance_changes
+from monocle.utils import Detector
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -89,8 +90,13 @@ def generate_events_filter(params, qfilter):
 
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
+    tests_included = params.get('tests_included')
     if state:
         qfilter.append({"term": {"state": state}})
+    if tests_included:
+        qfilter.append(
+            {"regexp": {"changed_files.path": {'value': Detector.tests_regexp}}}
+        )
 
 
 def generate_filter(repository_fullname, params):

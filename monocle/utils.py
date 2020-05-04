@@ -51,7 +51,8 @@ def float_trunc(f, n=2):
 
 
 class Detector(object):
-    tests_re = re.compile(".*[Tt]est.*")
+    tests_regexp = ".*[Tt]est.*"
+    tests_re = re.compile(tests_regexp)
 
     def is_tests_included(self, change):
         for file in change['changed_files']:
@@ -95,6 +96,7 @@ def set_params(input):
     params['from'] = int(getter('from', 0))
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
+    params['tests_included'] = getter('tests_included', False)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
     if params['change_ids']:
