@@ -31,7 +31,7 @@ class ComplexityGraph extends React.Component {
   }
 
   handleClick (item) {
-    this.props.history.push('/' + this.props.index + '/change/' + item.change_id)
+    this.props.history.push('/' + this.props.index + '/change/' + item.change_id + window.location.search)
   }
 
   getData (func, x) {
