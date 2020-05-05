@@ -24,6 +24,25 @@ from monocle.utils import Detector
 
 
 class TestDetector(unittest.TestCase):
+    def test_generic_issue_tracker_links(self):
+        """
+        Test Detector tracker links: generic
+        """
+        d = Detector()
+
+        change = {
+            'title': 'A text PR',
+            'text': 'This PR fix the issue https://bugs.demo.net/1749',
+        }
+
+        # Test #1 style
+        d.issue_tracker_extract_links(change)
+        self.assertTrue(change['has_issue_tracker_links'])
+        expected = [['https://bugs.demo.net/1749', 'https://bugs.demo.net/1749']]
+        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
     def test_github_issue_tracker_links(self):
         """
         Test Detector tracker links: GitHub.com
@@ -90,6 +109,32 @@ class TestDetector(unittest.TestCase):
         change['text'] = 'This fix GH-12'
         d.issue_tracker_extract_links(change)
         expected = [['GH-12', 'https://github.com/change-metrics/monocle/issues/12']]
+        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
+    def test_altassian_net_issue_tracker_links(self):
+        """
+        Test Detector tracker links: altassian.net
+        """
+        d = Detector()
+
+        change = {
+            'repository_prefix': 'change-metrics',
+            'repository_shortname': 'monocle',
+            'title': 'A text PR',
+            'text': 'This PR fix the issue https://yoyo.atlassian.net/browse/YOYO-1749',
+        }
+
+        # Test #1 style
+        d.issue_tracker_extract_links(change)
+        self.assertTrue(change['has_issue_tracker_links'])
+        expected = [
+            [
+                'https://yoyo.atlassian.net/browse/YOYO-1749',
+                'https://yoyo.atlassian.net/browse/YOYO-1749',
+            ]
+        ]
         ddiff = DeepDiff(change['issue_tracker_links'], expected)
         if ddiff:
             raise DiffException(ddiff)

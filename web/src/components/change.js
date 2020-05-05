@@ -27,7 +27,10 @@ import Button from 'react-bootstrap/Button'
 import Popover from 'react-bootstrap/Popover'
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import PropTypes from 'prop-types'
-import { withRouter, Link } from 'react-router-dom'
+import { withRouter } from 'react-router-dom'
+
+import Interweave from 'interweave'
+import { UrlMatcher } from 'interweave-autolink'
 
 import moment from 'moment'
 
@@ -67,55 +70,41 @@ ChangeStatus.propTypes = {
 }
 
 class ChangeTable extends React.Component {
-  processText (index, change) {
-    var loop = 0
-    const processLine = (line) => {
-      const words = line.split(' ')
-      const githubRegexp = /(([^/ :]+)\/([^/]+)#([0-9]+))/
-      const urlRegexp = /(https?:\/\/.*)/
-      const githubIssueRegexp = /#([0-9]+)/
-      const processWord = (w) => {
-        if (w.match(githubRegexp)) {
-          loop++
-          return <Link key={loop} to={w.replace(githubRegexp, `/${index}/change/$2@$3@$4`)}>{w.replace(githubRegexp, '$1 ')}</Link>
-        } else if (change.url.startsWith('https://github.com/') && w.match(githubIssueRegexp)) {
-          return <a key={loop} href={w.replace(githubIssueRegexp, `https://github.com/${change.repository_fullname}/issues/$1`)} target="_blank" rel="noopener noreferrer">{w.replace(githubIssueRegexp, '#$1')}</a>
-        }
-        if (w.match(urlRegexp)) {
-          loop++
-          return <a key={loop} href={w} target="_blank" rel="noopener noreferrer">{w }</a>
-        }
-        return w + ' '
-      }
-      return words.map(processWord)
-    }
-    return change.text.split('\n').map((line, idx) => <React.Fragment key={idx}>{processLine(line)}<br/></React.Fragment>)
-  }
-
   render () {
     if (!this.props.data || this.props.data.items.length === 0) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid change' }}/>
+      return <ErrorBox error={{ status: 0, data: 'Invalid change' }} />
     }
     const changes = this.props.data.items.filter(x => x.type === 'Change')
     if (changes.length === 0) {
-      return <ErrorBox error={{ status: 1, data: 'No change found' }}/>
+      return <ErrorBox error={{ status: 1, data: 'No change found' }} />
     }
     const change = changes[0]
     const events = this.props.data.items.filter(x => x.type !== 'Change')
     const popover = <Popover id="popover-basic">
       <Popover.Title>Changed File{addS(change.changed_files_count)}</Popover.Title>
       <Popover.Content>
-        {change.changed_files.map((f, idx) => <React.Fragment key={idx}>{f.path} (+{f.additions}-{f.deletions})<br/></React.Fragment>)}
+        {change.changed_files.map((f, idx) => <React.Fragment key={idx}>{f.path} (+{f.additions}-{f.deletions})<br /></React.Fragment>)}
       </Popover.Content>
     </Popover>
     const labels = change.labels.map((l, idx) => <Badge variant="warning" key={idx}>{l}</Badge>)
+    change.issue_tracker_links.forEach(e => {
+      change.title = change.title.replace(e[0], '<a href=' + e[1] + '>' + e[0] + '</a>')
+      change.text = change.text.replace(e[0], '<a href=' + e[1] + '>' + e[0] + '</a>')
+    })
 
     return (
       <Row>
         <Col>
           <Card>
             <Card.Header>
-              <Card.Title>{change.title}<br/><ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
+              <Card.Title>
+                <Interweave
+                  content={change.title}
+                  disableLineBreaks={false}
+                  matchers={[new UrlMatcher('url')]} />
+                <br />
+                <br />
+                <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
               <Table>
                 <tbody>
                   <tr key={0}>
@@ -140,13 +129,21 @@ class ChangeTable extends React.Component {
                     <td align="center">{change.tests_included ? <font color="DarkGreen">Has tests</font> : <font color="red">Does not have tests</font>}</td>
                   </tr>
                   <tr key={6}>
-                    <td align="center">{change.hasLinks ? <font color="DarkGreen">Has a potential issue link</font> : <font color="red">Does not have an issue link</font>}</td>
+                    <td align="center">{change.has_issue_tracker_links ? <font color="DarkGreen">Has an issue link</font> : <font color="red">Does not have an issue link</font>}</td>
                   </tr>
                 </tbody>
               </Table>
             </Card.Header>
             <Card.Body>
-              <Card.Text>{this.processText(this.props.index, change)}</Card.Text>
+              {change.text.split('\n').map((line, idx) => {
+                return <Interweave
+                  key={idx}
+                  tagName="div"
+                  content={line}
+                  disableLineBreaks={false}
+                  matchers={[new UrlMatcher('url')]} />
+              })
+              }
               <Row>
                 <Col>
                   <TimelineGraph data={events} />

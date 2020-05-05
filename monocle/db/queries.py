@@ -99,17 +99,18 @@ def generate_changes_filter(params, qfilter):
             {"regexp": {"changed_files.path": {'value': Detector.tests_regexp}}}
         )
     if has_issue_tracker_links:
-        value = Detector().get_issue_tracker_regexp()
-        qfilter.append(
-            {
-                "bool": {
-                    "should": [
-                        {"regexp": {"text.keyword": {'value': value}}},
-                        {"regexp": {"title.keyword": {'value': value}}},
-                    ]
+        value = Detector().get_issue_tracker_regexp(style=has_issue_tracker_links)
+        if value:
+            qfilter.append(
+                {
+                    "bool": {
+                        "should": [
+                            {"regexp": {"text.keyword": {'value': value}}},
+                            {"regexp": {"title.keyword": {'value': value}}},
+                        ]
+                    }
                 }
-            }
-        )
+            )
 
 
 def generate_filter(repository_fullname, params):

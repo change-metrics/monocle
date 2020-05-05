@@ -283,7 +283,7 @@ class TestQueries(unittest.TestCase):
         """
         Test has_issue_tracker_links param: last_changes
         """
-        params = set_params({'has_issue_tracker_links': True})
+        params = set_params({'has_issue_tracker_links': 'github.com'})
         ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
         self.assertEqual(ret['total'], 1, ret)
         params = set_params({})

@@ -55,12 +55,20 @@ class Detector(object):
     tests_re = re.compile(tests_regexp)
 
     issue_tracker_links = {
+        'generic': [
+            {
+                'regexp': '|'.join(
+                    [
+                        r'https?:\/\/.*issue.*',
+                        r'https?:\/\/.*bug.*',
+                        r'https?:\/\/.*jira.*',
+                    ]
+                ),
+                'rewrite': None,
+            }
+        ],
         # https://help.github.com/en/github/writing-on-github/autolinked-references-and-urls
         'github.com': [
-            {
-                'regexp': r"https?:\/\/github.com\/[^/]+\/[^/]+\/issues/\d+",
-                'rewrite': None,
-            },
             {
                 'regexp': r" #[0-9]+",
                 'rewrite': {
@@ -84,7 +92,10 @@ class Detector(object):
                     'to': "https://github.com/%(repository_prefix)s/%(repository_shortname)s/issues/%%(id)s",
                 },
             },
-        ]
+        ],
+        'altassian.net': [
+            {'regexp': r"https?:\/\/.+.atlassian.net\/browse\/.*", 'rewrite': None}
+        ],
     }
 
     def is_tests_included(self, change):
@@ -93,11 +104,10 @@ class Detector(object):
                 return True
         return False
 
-    def get_issue_tracker_regexp(self):
+    def get_issue_tracker_regexp(self, style='generic'):
         regexps = []
-        for tracker_regs in self.issue_tracker_links.values():
-            for reg in tracker_regs:
-                regexps.append(".*%s.*" % reg['regexp'].replace('#', r'\#'))
+        for reg in self.issue_tracker_links.get(style, []):
+            regexps.append(".*%s.*" % reg['regexp'].replace('#', r'\#'))
         regexp = "|".join(regexps)
         return regexp
 
@@ -166,7 +176,7 @@ def set_params(input):
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
     params['tests_included'] = getter('tests_included', False)
-    params['has_issue_tracker_links'] = getter('has_issue_tracker_links', False)
+    params['has_issue_tracker_links'] = getter('has_issue_tracker_links', None)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
     if params['change_ids']:
