@@ -54,11 +54,79 @@ class Detector(object):
     tests_regexp = ".*[Tt]est.*"
     tests_re = re.compile(tests_regexp)
 
+    issue_tracker_links = {
+        # https://help.github.com/en/github/writing-on-github/autolinked-references-and-urls
+        'github.com': [
+            {
+                'regexp': r"https?:\/\/github.com\/[^/]+\/[^/]+\/issues/\d+",
+                'rewrite': None,
+            },
+            {
+                'regexp': r" #[0-9]+",
+                'rewrite': {
+                    'from': re.compile(r" #(?P<id>[0-9]+)"),
+                    'to': "https://github.com/%(repository_prefix)s/%(repository_shortname)s/issues/%%(id)s",
+                },
+            },
+            {
+                'regexp': r"[^/ :]+\/[^/]+#[0-9]+",
+                'rewrite': {
+                    'from': re.compile(
+                        r"(?P<org>[^/ :]+)\/(?P<repo>[^/]+)#(?P<id>[0-9]+)"
+                    ),
+                    'to': "https://github.com/%%(org)s/%%(repo)s/issues/%%(id)s",
+                },
+            },
+            {
+                'regexp': r"GH-[1-9]+",
+                'rewrite': {
+                    'from': re.compile(r"GH-(?P<id>[1-9]+)"),
+                    'to': "https://github.com/%(repository_prefix)s/%(repository_shortname)s/issues/%%(id)s",
+                },
+            },
+        ]
+    }
+
     def is_tests_included(self, change):
         for file in change['changed_files']:
             if self.tests_re.match(file['path']):
                 return True
         return False
+
+    def get_issue_tracker_regexp(self):
+        regexps = []
+        for tracker_regs in self.issue_tracker_links.values():
+            for reg in tracker_regs:
+                regexps.append(".*%s.*" % reg['regexp'].replace('#', r'\#'))
+        regexp = "|".join(regexps)
+        return regexp
+
+    def issue_match_and_rewrite(self, change, field, reg):
+        store = change['issue_tracker_links']
+        r = re.compile(reg['regexp'])
+        matches = r.findall(change[field])
+        for match in matches:
+            if not reg['rewrite']:
+                # This is already a link. Do not rewrite
+                store.append([match, match])
+            else:
+                m = reg['rewrite']['from'].match(match)
+                if m:
+                    # Format rewrite with change attributes
+                    rewrite = reg['rewrite']['to'] % change
+                    # Format rewrite with matched attributes
+                    rewrite = rewrite % m.groupdict()
+                    store.append([match.strip(), rewrite])
+
+    def issue_tracker_extract_links(self, change):
+        change['issue_tracker_links'] = []
+        for tracker_regs in self.issue_tracker_links.values():
+            for reg in tracker_regs:
+                for field in ('title', 'text'):
+                    self.issue_match_and_rewrite(change, field, reg)
+        change['has_issue_tracker_links'] = (
+            True if change['issue_tracker_links'] else False
+        )
 
     def enhance(self, change):
         if change['type'] == 'Change':
@@ -66,6 +134,7 @@ class Detector(object):
                 change['tests_included'] = True
             else:
                 change['tests_included'] = False
+            self.issue_tracker_extract_links(change)
         return change
 
 
@@ -97,6 +166,7 @@ def set_params(input):
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
     params['tests_included'] = getter('tests_included', False)
+    params['has_issue_tracker_links'] = getter('has_issue_tracker_links', False)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
     if params['change_ids']:

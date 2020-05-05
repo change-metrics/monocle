@@ -91,11 +91,24 @@ def generate_events_filter(params, qfilter):
 def generate_changes_filter(params, qfilter):
     state = params.get('state')
     tests_included = params.get('tests_included')
+    has_issue_tracker_links = params.get('has_issue_tracker_links')
     if state:
         qfilter.append({"term": {"state": state}})
     if tests_included:
         qfilter.append(
             {"regexp": {"changed_files.path": {'value': Detector.tests_regexp}}}
+        )
+    if has_issue_tracker_links:
+        value = Detector().get_issue_tracker_regexp()
+        qfilter.append(
+            {
+                "bool": {
+                    "should": [
+                        {"regexp": {"text.keyword": {'value': value}}},
+                        {"regexp": {"title.keyword": {'value': value}}},
+                    ]
+                }
+            }
         )
 
 

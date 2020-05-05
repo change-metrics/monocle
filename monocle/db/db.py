@@ -87,8 +87,14 @@ class ELmonocleDB:
                     "type": {"type": "keyword"},
                     "number": {"type": "keyword"},
                     "change_id": {"type": "keyword"},
-                    "title": {"type": "text"},
-                    "text": {"type": "text"},
+                    "title": {
+                        "type": "text",
+                        "fields": {"keyword": {"type": "keyword"}},
+                    },
+                    "text": {
+                        "type": "text",
+                        "fields": {"keyword": {"type": "keyword"}},
+                    },
                     "url": {"type": "keyword"},
                     "commit_count": {"type": "integer"},
                     "additions": {"type": "integer"},

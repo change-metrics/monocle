@@ -247,6 +247,11 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(ret['total'], 4)
         change = [c for c in ret['items'] if c['type'] == 'Change'][0]
         self.assertTrue(change['tests_included'])
+        self.assertTrue(change['has_issue_tracker_links'])
+        self.assertListEqual(
+            change['issue_tracker_links'][0],
+            ['#42', 'https://github.com/unit/repo1/issues/42'],
+        )
 
     def test_last_changes(self):
         """
@@ -268,6 +273,17 @@ class TestQueries(unittest.TestCase):
         Test tests_included param: last_changes
         """
         params = set_params({'tests_included': True})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1, ret)
+        params = set_params({})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 4, ret)
+
+    def test_has_issue_tracker_links_param(self):
+        """
+        Test has_issue_tracker_links param: last_changes
+        """
+        params = set_params({'has_issue_tracker_links': True})
         ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
         self.assertEqual(ret['total'], 1, ret)
         params = set_params({})
