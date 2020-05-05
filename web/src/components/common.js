@@ -33,17 +33,17 @@ function changeUrl (index, x, name = null) {
 }
 
 function addUrlField (field, value) {
-  var url = new URL(window.location.href)
+  const url = new URL(window.location.href)
 
   url.searchParams.set(field, value)
 
   return url.pathname + url.search
 }
 
-function newRelativeUrl (dest) {
-  var url = new URL(window.location.href)
+function indexUrl (index, dest) {
+  const url = new URL(window.location.href)
 
-  url.pathname += dest
+  url.pathname = `/${index}${dest}`
   return url.search ? url.pathname + url.search : url.pathname
 }
 
@@ -218,7 +218,7 @@ export {
   BaseQueryComponent,
   changeUrl,
   addUrlField,
-  newRelativeUrl,
+  indexUrl,
   addS,
   addMap,
   mapDispatchToProps,

@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- [web] do not use the Treemap anymore as it is not consistent in the changes view.
+
 ### Fixed
 
 - [web] passing `REACT_APP_API_URL` in container image mode.
