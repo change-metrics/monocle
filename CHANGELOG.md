@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [web] sync between exclude_authors search param and filter field.
 - [web] passing `REACT_APP_API_URL` in container image mode.
 
 ##  [0.3] - 2020-05-01
