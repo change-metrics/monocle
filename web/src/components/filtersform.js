@@ -142,7 +142,7 @@ class FiltersForm extends React.Component {
       repository: '',
       branch: '',
       files: '',
-      exclude_authors: '',
+      excludeAuthors: '',
       authors: ''
     }
     if (this.props.history !== undefined) {
@@ -214,7 +214,7 @@ class FiltersForm extends React.Component {
       repository: this.state.repository,
       branch: this.state.branch,
       files: this.state.files,
-      exclude_authors: this.state.exclude_authors,
+      exclude_authors: this.state.excludeAuthors,
       authors: this.state.authors
     })
     event.preventDefault()
@@ -260,9 +260,9 @@ class FiltersForm extends React.Component {
                 <Form.Group controlId='formExcludeAuthorsInput'>
                   <Form.Control
                     type='text'
-                    value={this.state.exclude_authors}
+                    value={this.state.excludeAuthors}
                     placeholder="Exclude Authors"
-                    onChange={v => this.handleChange('exclude_authors', v)}
+                    onChange={v => this.handleChange('excludeAuthors', v)}
                   />
                 </Form.Group>
               </Col>

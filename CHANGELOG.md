@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] make the authors and repos pie charts clickable.
 - [api] add the tests_included parameter.
 - [install] split `README.md` in [`README.md`](README.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [build] build containers in 2 steps to save space.
@@ -20,8 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- [web] do not use the Treemap anymore as it is not consistent in the changes view.
+
 ### Fixed
 
+- [web] carry search params in links inside complexity graphs.
+- [web] sync between exclude_authors search param and filter field.
 - [web] passing `REACT_APP_API_URL` in container image mode.
 
 ##  [0.3] - 2020-05-01

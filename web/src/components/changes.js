@@ -34,7 +34,7 @@ import {
   ErrorBox,
   changeUrl,
   addUrlField,
-  newRelativeUrl,
+  indexUrl,
   mapDispatchToProps,
   addMap,
   chooseBadgeStyle
@@ -42,10 +42,6 @@ import {
 
 import ComplexityGraph from './complexity_graph'
 import DurationComplexityGraph from './duration_complexity_graph'
-import {
-  COpenedFilesTreeMap,
-  CMergedFilesTreeMap
-} from './files_treemap'
 
 class RepoChangesTable extends React.Component {
   render () {
@@ -325,7 +321,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.merged_changes}
-                      title={<Link to={newRelativeUrl('/merged-changes')}>Recently Merged Changes</Link>}
+                      title={<Link to={indexUrl(this.props.index, '/merged-changes')}>Recently Merged Changes</Link>}
                       merged={true}
                       duration={true}
                     />
@@ -337,7 +333,7 @@ class LastChanges extends BaseQueryComponent {
                     <ChangesTable
                       index={this.props.index}
                       data={data.opened_changes}
-                      title={<Link to={newRelativeUrl('/opened-changes')}>Recently Opened Changes</Link>}
+                      title={<Link to={indexUrl(this.props.index, '/opened-changes')}>Recently Opened Changes</Link>}
                       created={true}
                       mergeable={true}
                       approval={true}
@@ -383,14 +379,6 @@ class AbstractLastChanges extends BaseQueryComponent {
       const LocalComplexityGraph = this.state.complexityGraph
       return (
         <React.Fragment>
-          <Row>
-            <Col>
-              {this.state.merged ? <CMergedFilesTreeMap index={this.props.index} />
-                : <COpenedFilesTreeMap index={this.props.index} />
-              }
-            </Col>
-          </Row>
-          <Row><Col><p /></Col></Row>
           <Row>
             <Col>
               <ChangesTable
@@ -513,7 +501,7 @@ class AbandonedChanges extends BaseQueryComponent {
         <ChangesTable
           index={this.props.index}
           data={data}
-          title={<Link to={newRelativeUrl('/abandoned-changes')}>Last Abandoned Changes</Link>}
+          title={<Link to={indexUrl(this.props.index, '/abandoned-changes')}>Last Abandoned Changes</Link>}
           created={true}
           duration={true}
         />

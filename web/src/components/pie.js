@@ -19,6 +19,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import {
+  addUrlField,
   ErrorBox
 } from './common'
 
@@ -50,6 +51,13 @@ class Pie extends React.Component {
     return pieData
   }
 
+  handleClick (obj, elems) {
+    if (obj.props.field && obj.props.history && elems && elems.length > 0 && elems[0]._index < obj.props.data.items.length) {
+      const key = obj.props.data.items[elems[0]._index].key
+      obj.props.history.push(addUrlField(obj.props.field, key))
+    }
+  }
+
   render () {
     const data = this.prepareDataSet(this.props.data)
     if (!data) {
@@ -57,11 +65,15 @@ class Pie extends React.Component {
         error="No data for Pie"
       />
     }
-    return <BasePie data={data} />
+    return <BasePie
+      getElementsAtEvent={elems => this.handleClick(this, elems)}
+      data={data} />
   }
 }
 
 Pie.propTypes = {
+  history: PropTypes.object,
+  field: PropTypes.string,
   data: PropTypes.shape({
     items: PropTypes.array.isRequired,
     total_hits: PropTypes.number.isRequired

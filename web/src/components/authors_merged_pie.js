@@ -63,6 +63,8 @@ class AuthorsMergedPie extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <Pie
+                      field="authors"
+                      history={this.props.history}
                       data={this.props.authors_top_merged_result}
                     />
                   </Col>
