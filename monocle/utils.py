@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import re
 from datetime import datetime
 
 events_list = [
@@ -49,6 +50,31 @@ def float_trunc(f, n=2):
     return float(int(f * 10 ** n)) / 10 ** n
 
 
+class Detector(object):
+    tests_regexp = ".*[Tt]est.*"
+    tests_re = re.compile(tests_regexp)
+
+    def is_tests_included(self, change):
+        for file in change['changed_files']:
+            if self.tests_re.match(file['path']):
+                return True
+        return False
+
+    def enhance(self, change):
+        if change['type'] == 'Change':
+            if self.is_tests_included(change):
+                change['tests_included'] = True
+            else:
+                change['tests_included'] = False
+        return change
+
+
+def enhance_changes(changes):
+    detector = Detector()
+    changes = list(map(detector.enhance, changes))
+    return changes
+
+
 def set_params(input):
     def getter(attr, default):
         if isinstance(input, dict):
@@ -70,6 +96,7 @@ def set_params(input):
     params['from'] = int(getter('from', 0))
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
+    params['tests_included'] = getter('tests_included', False)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
     if params['change_ids']:

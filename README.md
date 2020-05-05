@@ -34,9 +34,9 @@ Here is the complexity versus time to merge changes:
 
 ## Components
 
-Monocle supports Github Pull Requests and Gerrit Reviews. Monocle
+Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
 provides a set of crawlers designed to fetch Pull Requests and Reviews
-data from the Github or Gerrit APIs and to store changes and changes
+data from the GitHub or Gerrit APIs and to store changes and changes
 related events into Elasticsearch. These changes and events are expose
 via a JSON API. Furthermore Monocle implements ready to use queries
 and a React based web UI.
@@ -50,9 +50,9 @@ To summarize we have the following components in Monocle:
 
 ## Installation
 
-Monocle is in an early phase of developement. Feedback is highly welcome.
+Monocle is in an early phase of development. Feedback is highly welcome.
 
-The process below describes how to index changes from a Github repository, a full Github organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
+The process below describes how to index changes from a GitHub repository, a full GitHub organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
 
 ### Clone and prepare data directory
 
@@ -68,7 +68,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 The `config.yaml` file is used by the crawler and api services.
 
 If you want to crawl GitHub repositories, generate a personal access
-token on Github (w/o any specific rights).
+token on GitHub (w/o any specific rights).
 
 Then create the config file `etc/config.yaml`:
 
@@ -119,12 +119,12 @@ into the `.env` file.
 ### GitHub authentication
 
 If you want to protect the access to your indices, you can require a
-GitHub login to access and the people able to use the indeices will be
+GitHub login to access and the people able to use the indices will be
 the ones listed in the `users` section in `config.yaml`.
 
-Configure the Github Oauth authentication to secure private indexes
+Configure the GitHub Oauth authentication to secure private indexes
 
-1. Create an Oauth APP in your Github user settings page
+1. Create an Oauth APP in your GitHub user settings page
 2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
 3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
 

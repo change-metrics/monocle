@@ -49,7 +49,6 @@ addStates(initialState, 'merged_changes_by_file_map')
 const enhanceData = (x) => {
   if (x.type === 'Change') {
     x.complexity = x.changed_files_count + x.additions + x.deletions
-    x.hasTests = (x.changed_files.filter(x => x.path.match(/.*[/].*test/i)).length !== 0)
     x.hasLinks = x.text && x.text.match(/https?:\/\/.*\/.*|#[0-9]+/i)
   }
 }
