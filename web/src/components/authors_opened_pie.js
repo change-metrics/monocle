@@ -63,6 +63,8 @@ class AuthorsOpenedPie extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <Pie
+                      field="authors"
+                      history={this.props.history}
                       data={this.props.authors_top_opened_result}
                     />
                   </Col>

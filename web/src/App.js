@@ -244,10 +244,12 @@ class MergedChangesView extends React.Component {
           <Row>
             <Col>
               <CAuthorsMergedPie
+                history={this.props.history}
                 index={this.props.match.params.index} />
             </Col>
             <Col>
               <CReposMergedPie
+                history={this.props.history}
                 index={this.props.match.params.index} />
             </Col>
           </Row>
@@ -290,10 +292,12 @@ class OpenChangesView extends React.Component {
           <Row>
             <Col>
               <CAuthorsOpenedPie
+                history={this.props.history}
                 index={this.props.match.params.index} />
             </Col>
             <Col>
               <CReposOpenedPie
+                history={this.props.history}
                 index={this.props.match.params.index} />
             </Col>
           </Row>

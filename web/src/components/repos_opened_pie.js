@@ -63,6 +63,8 @@ class ReposOpenedPie extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <Pie
+                      field="repository"
+                      history={this.props.history}
                       data={this.props.repos_top_opened_result}
                     />
                   </Col>

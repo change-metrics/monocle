@@ -63,6 +63,8 @@ class ReposMergedPie extends BaseQueryComponent {
                 <Row>
                   <Col>
                     <Pie
+                      field="repository"
+                      history={this.props.history}
                       data={this.props.repos_top_merged_result}
                     />
                   </Col>
