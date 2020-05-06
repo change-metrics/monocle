@@ -557,23 +557,23 @@ def cold_changes(es, index, repository_fullname, params):
 def hot_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     size = params.get('size')
-    # Set a significant depth to get an 'accurate' median value
+    # Set a significant depth to get an 'accurate' average value
     params['size'] = 500
     top_commented_changes = changes_top_commented(
         es, index, repository_fullname, params
     )
-    # Keep changes with comment events > median
+    # Keep changes with comment events > average
     top_commented_changes = [
         change
         for change in top_commented_changes['items']
-        if change['doc_count'] > top_commented_changes['count_median']
+        if change['doc_count'] > top_commented_changes['count_avg']
     ]
     mapping = {}
     for top_commented_change in top_commented_changes:
         mapping[top_commented_change['key']] = top_commented_change['doc_count']
     change_ids = [_id['key'] for _id in top_commented_changes]
     if not change_ids:
-        return []
+        return {'items': []}
     _params = {
         'etype': ('Change',),
         'state': 'OPEN',
