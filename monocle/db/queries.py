@@ -681,11 +681,17 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
     }
 
 
+def params_to_datefield(params):
+    if 'state' in params and params['state'] == 'OPEN':
+        return "created_at"
+    return "closed_at"
+
+
 def last_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     body = {
-        "sort": [{"closed_at": {"order": "desc"}}],
+        "sort": [{params_to_datefield(params): {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
         "query": generate_filter(repository_fullname, params),
