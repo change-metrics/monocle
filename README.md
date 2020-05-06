@@ -7,7 +7,8 @@ Each team is unique in its way of working: how to do code reviews, how
 many reviewers, how to do CI, is self merge allowed...
 
 So the philosophy behind Monocle is to let you visualize and explore
-metrics that are relevant to the way you work.
+metrics and data that are relevant to the way you work by navigating
+and filtering in the web user interface.
 
 For example, your team may want to know:
 
@@ -24,11 +25,11 @@ Here is a graph representing what has been going on during a period of time:
 
 ![Main Stats Graph](https://user-images.githubusercontent.com/529708/80858201-0c530700-8c58-11ea-867c-9b1b4568b781.png)
 
-Here is the collaboration pattern:
+Here is the graph of collaboration patterns:
 
 ![Collaboration Graph](https://user-images.githubusercontent.com/529708/80858244-79ff3300-8c58-11ea-8caa-b3e72f5d9c88.png)
 
-Here is the complexity versus time to merge changes:
+Here is the graph of the complexity versus time to merge changes:
 
 ![Complexity Graph](https://user-images.githubusercontent.com/529708/80858379-45d84200-8c59-11ea-854e-9548be7968ff.png)
 
@@ -68,7 +69,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 The `config.yaml` file is used by the crawler and api services.
 
 If you want to crawl GitHub repositories, generate a personal access
-token on GitHub (w/o any specific rights).
+token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
 
 Then create the config file `etc/config.yaml`:
 
