@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] add a footer with a link to the GitHub project.
 - [web] allow to customize the title with the `REACT_APP_TITLE`
   environment variable or `MONOCLE_TITLE` in the `.env` file.
 - [web] do not display login link if authentication is not configured.
@@ -21,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [web] fix the menu header.
+- [web] add a spinner in the LoadingBox.
 - [crawler] log error before retrying GitHub graphql queries.
 - [backend] upgraded to Elasticsearch 6.8.8.
 - [web, api] improve and move issue tracker links detection from ui to the backend.
