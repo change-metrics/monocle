@@ -185,8 +185,8 @@ class TestQueries(unittest.TestCase):
         """
         Test query: repos_top_merged
         """
-        params = set_params({})
-        ret = self.eldb.run_named_query('repos_top_merged', 'unit/repo[12]', params)
+        params = set_params({'state': 'MERGED'})
+        ret = self.eldb.run_named_query('repos_top', 'unit/repo[12]', params)
         expected = {
             'items': [
                 {'key': 'unit/repo2', 'doc_count': 2},

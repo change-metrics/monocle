@@ -33,24 +33,24 @@ import {
 
 import Pie from './pie'
 
-class ReposOpenedPie extends BaseQueryComponent {
+class ReposAbandonedPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
     this.state.name = 'repos_top'
-    this.state.graph_type = 'repos_top_opened'
-    this.state.state = 'OPEN'
+    this.state.graph_type = 'repos_top_abandoned'
+    this.state.state = 'CLOSED'
   }
 
   render () {
-    if (!this.props.repos_top_opened_loading) {
-      if (this.props.repos_top_opened_error) {
+    if (!this.props.repos_top_abandoned_loading) {
+      if (this.props.repos_top_abandoned_error) {
         return <ErrorBox
-          error={this.props.repos_top_opened_error}
+          error={this.props.repos_top_abandoned_error}
         />
       }
-      if (!this.props.repos_top_opened_result) {
+      if (!this.props.repos_top_abandoned_result) {
         return <ErrorBox
-          error={{ data: 'No data for ReposOpenedPie', status: 0 }}
+          error={{ data: 'No data for ReposAbandonedPie', status: 0 }}
         />
       }
       return (
@@ -58,7 +58,7 @@ class ReposOpenedPie extends BaseQueryComponent {
           <Col>
             <Card>
               <Card.Header>
-                <Card.Title>Opened Changes per repository</Card.Title>
+                <Card.Title>Abandoned Changes per repository</Card.Title>
               </Card.Header>
               <Card.Body>
                 <Row>
@@ -66,7 +66,7 @@ class ReposOpenedPie extends BaseQueryComponent {
                     <Pie
                       field="repository"
                       history={this.props.history}
-                      data={this.props.repos_top_opened_result}
+                      data={this.props.repos_top_abandoned_result}
                     />
                   </Col>
                 </Row>
@@ -81,8 +81,8 @@ class ReposOpenedPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_opened')
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_abandoned')
 
-const CReposOpenedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposOpenedPie))
+const CReposAbandonedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposAbandonedPie))
 
-export default CReposOpenedPie
+export default CReposAbandonedPie

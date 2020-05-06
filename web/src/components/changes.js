@@ -89,8 +89,9 @@ RepoChangesTable.propTypes = {
 class RepoChanges extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'repos_top_merged'
+    this.state.name = 'repos_top'
     this.state.graph_type = 'repos_top_merged'
+    this.state.state = 'MERGED'
   }
 
   render () {

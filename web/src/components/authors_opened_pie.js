@@ -36,8 +36,9 @@ import Pie from './pie'
 class AuthorsOpenedPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'authors_top_opened'
+    this.state.name = 'authors_top'
     this.state.graph_type = 'authors_top_opened'
+    this.state.state = 'OPEN'
   }
 
   render () {
