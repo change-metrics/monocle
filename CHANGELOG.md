@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [crawler] sleep 120 s when we have this message from GitHub: 'You
+  have triggered an abuse detection mechanism. Please wait a few
+  minutes before you try again.'.
+- [crawler] fix GitHub PR with empty files.
 - [web] carry search params in links inside complexity graphs.
 - [web] sync between exclude_authors search param and filter field.
 - [web] passing `REACT_APP_API_URL` in container image mode.
