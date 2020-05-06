@@ -36,8 +36,9 @@ import Pie from './pie'
 class AuthorsMergedPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'authors_top_merged'
+    this.state.name = 'authors_top'
     this.state.graph_type = 'authors_top_merged'
+    this.state.state = 'MERGED'
   }
 
   render () {

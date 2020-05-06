@@ -55,6 +55,8 @@ import CAuthorsMergedPie from './components/authors_merged_pie'
 import CReposMergedPie from './components/repos_merged_pie'
 import CAuthorsOpenedPie from './components/authors_opened_pie'
 import CReposOpenedPie from './components/repos_opened_pie'
+import CAuthorsAbandonedPie from './components/authors_abandoned_pie'
+import CReposAbandonedPie from './components/repos_abandoned_pie'
 import TopView from './top_view'
 
 class RootView extends React.Component {
@@ -337,6 +339,18 @@ class AbandonedChangesView extends React.Component {
             </Col>
           </Row>
           <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <CAuthorsAbandonedPie
+                history={this.props.history}
+                index={this.props.match.params.index} />
+            </Col>
+            <Col>
+              <CReposAbandonedPie
+                history={this.props.history}
+                index={this.props.match.params.index} />
+            </Col>
+          </Row>
           <Row><Col><p></p></Col></Row>
           <Row>
             <Col>
