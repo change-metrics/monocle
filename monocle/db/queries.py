@@ -36,6 +36,7 @@ public_queries = (
     "events_histo",
     "repos_top_merged",
     "repos_top_opened",
+    "repos_top_abandoned",
     "events_top_authors",
     "changes_top_approval",
     "changes_top_commented",
@@ -44,6 +45,7 @@ public_queries = (
     "authors_top_commented",
     "authors_top_merged",
     "authors_top_opened",
+    "authors_top_abandoned",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "changes_closed_ratios",
@@ -303,6 +305,13 @@ def repos_top_opened(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "repository_fullname", params)
 
 
+def repos_top_abandoned(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'CLOSED'
+    return _events_top(es, index, repository_fullname, "repository_fullname", params)
+
+
 def events_top_authors(es, index, repository_fullname, params):
     return _events_top(es, index, repository_fullname, "author", params)
 
@@ -349,6 +358,13 @@ def authors_top_opened(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     params['state'] = 'OPEN'
+    return _events_top(es, index, repository_fullname, "author", params)
+
+
+def authors_top_abandoned(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = 'CLOSED'
     return _events_top(es, index, repository_fullname, "author", params)
 
 
