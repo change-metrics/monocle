@@ -12,7 +12,7 @@
     "branch": "feature-1",
     "target_branch": "master",
     "title": "A PR title",
-    "text": "The body text of the PR",
+    "text": "The body text of the PR\nThis close issue #42",
     "additions": 11,
     "deletions": 5,
     "changed_files_count": 2,

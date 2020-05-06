@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - [web,api] compute and display pie charts for the abandoned-changes page.
 - [web] make the authors and repos pie charts clickable.
+- [api] add the has-issue-tracker-links parameter.
 - [api] add the tests_included parameter.
 - [install] split `README.md` in [`README.md`](README.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [build] build containers in 2 steps to save space.
@@ -18,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - [crawler] log error before retrying GitHub graphql queries.
 - [backend] upgraded to Elasticsearch 6.8.8.
+- [web, api] improve and move issue tracker links detection from ui to the backend.
 - [web] add a new favicon.ico.
 - [web] split top page into a people and changes pages.
 - [dev] distribute 2 docker-compose.yml files: one for dev and one using images from docker hub.

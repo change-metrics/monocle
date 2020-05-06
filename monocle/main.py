@@ -121,6 +121,11 @@ def main():
         help='Scope to changes containing tests',
         action='store_true',
     )
+    parser_dbquery.add_argument(
+        '--has-issue-tracker-links',
+        help='Scope to changes containing an issue tracker link',
+        choices=['generic', 'github.com', 'altassian.net'],
+    )
 
     args = parser.parse_args()
 
