@@ -85,8 +85,10 @@ class GithubGraphQLQuery(object):
         )
         self.query_count += 1
         if not r.status_code != "200":
-            raise Exception("No ok response code see: %s" % r.text)
+            self.log.error('No ok response code: %s' % r)
+            raise Exception("No ok response code: %s" % r.text)
         ret = r.json()
         if 'errors' in ret:
-            raise Exception("Errors in response see: %s" % r.text)
+            self.log.error("Errors in response: %s" % ret)
+            raise Exception("Errors in response: %s" % ret['errors'])
         return ret

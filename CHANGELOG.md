@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [crawler] log error before retrying GitHub graphql queries.
 - [backend] upgraded to Elasticsearch 6.8.8.
 - [web] add a new favicon.ico.
 - [web] split top page into a people and changes pages.
