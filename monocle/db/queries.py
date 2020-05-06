@@ -433,6 +433,24 @@ def change_merged_avg_commits(es, index, repository_fullname, params):
     return data['aggregations']['agg1']['value']
 
 
+def changes_with_tests_ratio(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    all = count_events(es, index, repository_fullname, params)
+    if all == 0:
+        return 0
+    params['tests_included'] = True
+    tests = count_events(es, index, repository_fullname, params)
+    return round(tests / all * 100, 1)
+
+
+def count_opened_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = "OPEN"
+    return count_events(es, index, repository_fullname, params)
+
+
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
@@ -614,6 +632,8 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
     ret['duration'] = change_merged_avg_duration(es, index, repository_fullname, params)
     ret['commits'] = change_merged_avg_commits(es, index, repository_fullname, params)
+    ret['tests'] = changes_with_tests_ratio(es, index, repository_fullname, params)
+    ret['opened'] = count_opened_changes(es, index, repository_fullname, params)
     etypes = (
         'ChangeCreatedEvent',
         "ChangeMergedEvent",
