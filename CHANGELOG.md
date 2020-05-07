@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [api] use Flask-Caching to cache requests for 5 minutes.
 - [web,api] compute and display pie charts for the abandoned-changes page.
 - [web] make the authors and repos pie charts clickable.
 - [api] add the has-issue-tracker-links parameter.

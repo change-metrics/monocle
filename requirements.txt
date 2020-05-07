@@ -6,3 +6,4 @@ jsonschema
 pyyaml
 tenacity
 authlib
+Flask-Caching
