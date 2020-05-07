@@ -34,11 +34,18 @@ class UserView extends React.Component {
   }
 
   render () {
-    if (!this.props.logged_user_loading && this.props.logged_user_result) {
+    if (this.props.logged_user_loading) {
+      return ''
+    } else if (!this.props.logged_user_loading && this.props.logged_user_error) {
+      // Probably authentication is not configured
+      return ''
+    } else if (!this.props.logged_user_loading && this.props.logged_user_result) {
       return (
         <Link className="nav-link" to="/">Hello {this.props.logged_user_result}</Link>
       )
     } else {
+      // Authentication is activated but endpoint returned null meaning
+      // there is not active user session
       return (<LoginView />)
     }
   }

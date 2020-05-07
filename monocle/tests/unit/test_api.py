@@ -94,7 +94,7 @@ class TestWebAPI(unittest.TestCase):
         resp = self.client.get(
             '/api/0/query/count_events?index=%s&repository=.*' % self.index1
         )
-        self.assertEqual(503, resp.status_code)
+        self.assertEqual(403, resp.status_code)
         with self.client.session_transaction() as sess:
             sess['username'] = 'jane'
         resp = self.client.get(
