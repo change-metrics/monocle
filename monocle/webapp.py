@@ -28,6 +28,7 @@ from flask import request
 from flask import redirect
 from flask import session
 from flask_cors import CORS
+from flask_caching import Cache
 
 # https://docs.authlib.org/en/latest/client/frameworks.html#frameworks-clients
 # https://docs.authlib.org/en/latest/client/flask.html#flask-client
@@ -36,10 +37,14 @@ from authlib.integrations.flask_client import OAuth
 from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
-from monocle.db.db import UnknownQueryException, InvalidIndexError
+from monocle.db.db import InvalidIndexError
 from monocle import config
 
+CACHE_TIMEOUT = 300  # 5 mn cache
+
+cache = Cache(config={'CACHE_TYPE': 'simple'})
 app = Flask(__name__)
+cache.init_app(app)
 
 app.secret_key = os.urandom(16)
 CORS(
@@ -102,12 +107,13 @@ def query(name):
                 return 'Unauthorized to access index %s' % index, 503
         else:
             return 'Unauthorized to access index %s' % index, 503
-
     repository_fullname = request.args.get('repository')
-    try:
-        params = utils.set_params(request.args)
-    except UnknownQueryException as err:
-        return "Unable to process query: %s" % err, 400
+    return do_query(index, repository_fullname, request.args, name)
+
+
+@cache.memoize(timeout=CACHE_TIMEOUT)
+def do_query(index, repository_fullname, args, name):
+    params = utils.set_params(args)
     db = ELmonocleDB(
         elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
         index=index,
