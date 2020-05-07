@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [web] api calls perfomed multiple times - history listener was not unregistered.
 - [crawler] sleep 120 s when we have this message from GitHub: 'You
   have triggered an abuse detection mechanism. Please wait a few
   minutes before you try again.'.

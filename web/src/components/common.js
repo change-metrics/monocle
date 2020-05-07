@@ -151,15 +151,19 @@ class BaseQueryComponent extends React.Component {
     }
     this.handlePageChange.bind(this)
     this.queryBackend.bind(this)
-    if (this.props.history !== undefined) {
-      this.props.history.listen((location, action) => {
-        this.queryBackend()
-      })
-    }
   }
 
   componentDidMount () {
     this.queryBackend(this.state.selectedPage)
+    this.unlisten = this.props.history.listen(() => {
+      this.queryBackend()
+    })
+  }
+
+  componentWillUnmount () {
+    if (this.unlisten) {
+      this.unlisten()
+    }
   }
 
   handlePageChange (obj, pageData) {
