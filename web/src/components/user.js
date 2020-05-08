@@ -54,7 +54,7 @@ class UserView extends React.Component {
 UserView.propTypes = {
   logged_user_loading: PropTypes.bool,
   logged_user_result: PropTypes.string,
-  logged_user_error: PropTypes.string,
+  logged_user_error: PropTypes.bool,
   getLoggedUser: PropTypes.func
 }
 

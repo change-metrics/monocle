@@ -27,8 +27,6 @@ import Col from 'react-bootstrap/Col'
 import { connect } from 'react-redux'
 import { query } from './reducers/indices'
 
-import TopMenu from './components/menu'
-
 import {
   ErrorBox,
   LoadingBox
@@ -59,12 +57,7 @@ class TopView extends React.Component {
         </Row>
       </Container>
     }
-    return (
-      <React.Fragment>
-        <TopMenu />
-        {element}
-      </React.Fragment>
-    )
+    return element
   }
 }
 
