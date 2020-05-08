@@ -17,20 +17,27 @@
 version: '3'
 services:
 
+  reverseproxy:
+    image: "nginx:1.18-alpine"
+    ports:
+      - "80:80"
+    volumes:
+      - $PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:Z
+
   api:
     image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     depends_on:
       - elastic
-    ports:
-      - "9876:9876"
+    expose:
+      - "9877"
     environment:
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
       ALLOW_ORIGIN: "http://${MONOCLE_HOST:-localhost}:3000"
       CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
       CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
-      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}:9876/api/0/authorize'
-    command: uwsgi --uid guest --gid nogroup --http :9876 --manage-script-name --mount /app=monocle.webapp:app
+      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}/api/0/authorize'
+    command: uwsgi --uid guest --gid nogroup --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     volumes:
       - $PWD/etc:/etc/monocle:Z
 
@@ -58,7 +65,8 @@ services:
     image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
     depends_on:
       - api
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
-      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}:9876"
+      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}"
+      REACT_APP_TITLE: "${MONOCLE_TITLE:-}"

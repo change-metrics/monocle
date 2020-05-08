@@ -17,10 +17,20 @@
 version: '3'
 services:
 
+  reverseproxy:
+    image: "nginx:1.18-alpine"
+    # build: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - $PWD/nginx/default.conf:/etc/nginx/conf.d/default.conf:Z
+
   api:
     build: .
     depends_on:
       - elastic
+    expose:
+      - "9877"
     ports:
       - "9876:9876"
     environment:
@@ -30,8 +40,8 @@ services:
       #FLASK_ENV: development
       CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
       CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
-      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}:9876/api/0/authorize'
-    command: uwsgi --uid guest --gid nogroup --http :9876 --manage-script-name --mount /app=monocle.webapp:app
+      REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}/api/0/authorize'
+    command: uwsgi --uid guest --gid nogroup --socket :9877 --http :9876 --manage-script-name --mount /app=monocle.webapp:app
     volumes:
       - $PWD/etc:/etc/monocle:Z
 
@@ -62,5 +72,5 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}:9876"
+      REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}"
       REACT_APP_TITLE: "${MONOCLE_TITLE:-}"
