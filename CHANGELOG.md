@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] allow to customize the title with the `REACT_APP_TITLE`
+  environment variable or `MONOCLE_TITLE` in the `.env` file.
 - [web] do not display login link if authentication is not configured.
 - [api] use Flask-Caching to cache requests for 5 minutes.
 - [web,api] compute and display pie charts for the abandoned-changes page.
