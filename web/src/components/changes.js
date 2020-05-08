@@ -45,9 +45,6 @@ import DurationComplexityGraph from './duration_complexity_graph'
 
 class RepoChangesTable extends React.Component {
   render () {
-    if (!this.props.data || !this.props.data.items) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid data' }} />
-    }
     return (
       <Row>
         <Col>
@@ -96,6 +93,11 @@ class RepoChanges extends BaseQueryComponent {
 
   render () {
     if (!this.props.repos_top_merged_loading) {
+      if (this.props.repos_top_merged_error) {
+        return <ErrorBox
+          error={this.props.repos_top_merged_error}
+        />
+      }
       const data = this.props.repos_top_merged_result
       return (
         <RepoChangesTable
@@ -117,10 +119,6 @@ class ChangesTable extends React.Component {
   render () {
     let paginationElement
     let graphElement
-
-    if (!this.props.data || !this.props.data.items) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid data' }} />
-    }
 
     if (this.props.graph) {
       graphElement = <React.Fragment>{this.props.graph}<br /></React.Fragment>
@@ -171,7 +169,7 @@ class ChangesTable extends React.Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {this.props.data.items && this.props.data.items.map((x, index) =>
+                  {this.props.data.items.map((x, index) =>
                     <tr key={index}>
                       {this.props.created ? <td align="center">{moment(x.created_at).fromNow()}</td> : null}
                       {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
@@ -370,13 +368,10 @@ class AbstractLastChanges extends BaseQueryComponent {
 
   render () {
     if (!this.props[this.state.graph_type + '_loading']) {
-      if (!this.props[this.state.graph_type + '_result']) {
-        return <ErrorBox error={{ status: 0, data: 'No data' }} />
+      if (this.props[this.state.graph_type + '_error']) {
+        return <ErrorBox error={this.props[this.state.graph_type + '_error']} />
       }
       const data = this.props[this.state.graph_type + '_result']
-      if (!data || data.items.length === 0) {
-        return <ErrorBox error={{ status: 1, data: 'Invalid data' }} />
-      }
       const LocalComplexityGraph = this.state.complexityGraph
       return (
         <React.Fragment>
