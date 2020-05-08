@@ -9,6 +9,10 @@ py_files=
 js_files=
 
 for f in $files; do
+    # managed removed files
+    if [ ! -r "$f" ]; then
+        continue
+    fi
     case $f in
         *.py)
             py_files="$py_files $f"
@@ -21,9 +25,8 @@ for f in $files; do
 done
 
 if [ -n "$py_files" ]; then
-
     if [ ! -x .tox/linters/bin/black ]; then
-        "Installing black..."
+        echo "Installing linters..."
         tox -elinters --notest
     fi
     echo "Checking Python files: $py_files"
