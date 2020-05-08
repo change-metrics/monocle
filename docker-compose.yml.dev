@@ -64,3 +64,4 @@ services:
       - "3000:3000"
     environment:
       REACT_APP_API_URL: "http://${MONOCLE_HOST:-localhost}:9876"
+      REACT_APP_TITLE: "${MONOCLE_TITLE:-}"

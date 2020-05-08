@@ -110,12 +110,14 @@ tenants:
 
 ## Configuration of the containers
 
-To configure the host serving the api and web UI, add
-`MONOCLE_HOST=<host or ip>` into the `.env` file. If you don't
-configure it, `MONOCLE_HOST` is set to `localhost`.
+The following settings are available in the `.env` file:
 
-If you want to use a specific version, add `MONOCLE_VERSION=<version>`
-into the `.env` file.
+- `MONOCLE_HOST=<host or ip>` to configure the host serving the api
+  and web UI. By default it is set to `localhost`.
+- `MONOCLE_VERSION=<version>` to use a specific version. By default it
+  uses `latest`.
+- `MONOCLE_TITLE=<title>` to change the title of the web application. By
+  default it is `Monocle`.
 
 ### GitHub authentication
 

@@ -23,12 +23,15 @@ import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { CUserView } from './user'
 
+const TITLE = (window.TITLE && window.TITLE !== '__TITLE__') ? window.TITLE : (process.env.REACT_APP_TITLE || 'Monocle')
+
 class TopMenu extends React.Component {
   render () {
     const search = window.location.search
+    document.title = this.props.index ? `${TITLE} / ${this.props.index}` : TITLE
     return <Navbar bg="light" expand="lg">
       <Navbar.Brand>
-        <Link className="navbar-brand" to="/">Monocle</Link>
+        <Link className="navbar-brand" to="/">{TITLE}</Link>
       </Navbar.Brand>
       {this.props.index
         ? <Nav className="mr-auto">
