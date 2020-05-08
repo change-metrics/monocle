@@ -174,10 +174,6 @@ class Change extends BaseQueryComponent {
     this.state.forceAllAuthors = true
   }
 
-  componentDidMount () {
-    this.queryBackend()
-  }
-
   render () {
     if (!this.props.changes_and_events_loading) {
       if (this.props.changes_and_events_error) {

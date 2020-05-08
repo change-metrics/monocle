@@ -145,22 +145,19 @@ class FiltersForm extends React.Component {
       excludeAuthors: '',
       authors: ''
     }
-    if (this.props.history !== undefined) {
-      this.props.history.listen((location, action) => {
-        if (this.mounted) {
-          this.fetchQueryParams()
-        }
-      })
-    }
   }
 
   componentDidMount () {
-    this.mounted = true
     this.fetchQueryParams()
+    this.unlisten = this.props.history.listen((location, action) => {
+      this.fetchQueryParams()
+    })
   }
 
   componentWillUnmount () {
-    this.mounted = false
+    if (this.unlisten) {
+      this.unlisten()
+    }
   }
 
   handleChange = (key, e) => {
@@ -306,6 +303,4 @@ FiltersForm.propTypes = {
 
 const CFiltersForm = withRouter(FiltersForm)
 
-export {
-  CFiltersForm
-}
+export default CFiltersForm

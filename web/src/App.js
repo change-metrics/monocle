@@ -49,7 +49,7 @@ import {
   CLastOpenedChanges
 } from './components/changes'
 import { CApprovalStats } from './components/approvals'
-import { CFiltersForm } from './components/filtersform'
+import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
 import CAuthorsMergedPie from './components/authors_merged_pie'
 import CReposMergedPie from './components/repos_merged_pie'
@@ -63,32 +63,23 @@ class RootView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CChangesLifeCycleStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CChangesReviewStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CChangesLifeCycleStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CChangesReviewStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -106,53 +97,44 @@ class PeopleView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CMostActiveAuthorsStats
-                search={this.props.location.search}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CApprovalStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CMostReviewedAuthorsStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CNewContributorsStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAuthorsPeersStats
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CMostActiveAuthorsStats
+              search={this.props.location.search}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CApprovalStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CMostReviewedAuthorsStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CNewContributorsStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsPeersStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -170,52 +152,43 @@ class ChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CLastChanges
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CRepoChanges
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CHotChanges
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CColdChanges
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAbandonedChanges
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CLastChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CRepoChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CHotChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CColdChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAbandonedChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -233,38 +206,29 @@ class MergedChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAuthorsMergedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-            <Col>
-              <CReposMergedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CLastMergedChanges
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsMergedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+          <Col>
+            <CReposMergedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CLastMergedChanges
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -281,38 +245,29 @@ class OpenChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAuthorsOpenedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-            <Col>
-              <CReposOpenedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CLastOpenedChanges
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsOpenedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+          <Col>
+            <CReposOpenedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CLastOpenedChanges
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -329,38 +284,29 @@ class AbandonedChangesView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CFiltersForm
-                history={this.props.history} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAuthorsAbandonedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-            <Col>
-              <CReposAbandonedPie
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CAbandonedChangesFull
-                history={this.props.history}
-                index={this.props.match.params.index} />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsAbandonedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+          <Col>
+            <CReposAbandonedPie
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAbandonedChangesFull
+              history={this.props.history}
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -377,19 +323,17 @@ class ChangeView extends React.Component {
   render () {
     return (
       <React.Fragment>
-        <TopMenu index={this.props.match.params.index} />
-        <Container>
-          <Row><Col><p></p></Col></Row>
-          <Row>
-            <Col>
-              <CChange
-                index={this.props.match.params.index}
-                changeIds={this.props.match.params.change}
-              />
-            </Col>
-          </Row>
-        </Container>
-      </React.Fragment>)
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CChange
+              index={this.props.match.params.index}
+              changeIds={this.props.match.params.change}
+            />
+          </Col>
+        </Row>
+      </React.Fragment>
+    )
   }
 }
 
@@ -402,21 +346,42 @@ ChangeView.propTypes = {
   })
 }
 
+class FiltersFormBox extends React.Component {
+  render () {
+    return <Switch>
+      <Route exact path='/' />
+      <Route path='/:index/change/' />
+      <Route path='/' component={CFiltersForm} />
+    </Switch>
+  }
+}
+
 class App extends React.Component {
   render () {
     return (
-      <Switch>
-        <Route exact path='/' component={TopView} />
-        <Route exact path='/login' component={LoginView} />
-        <Route exact path='/user' component={CUserView} />
-        <Route exact path='/:index/people' component={PeopleView} />
-        <Route exact path='/:index/changes' component={ChangesView} />
-        <Route exact path='/:index' component={RootView} />
-        <Route path='/:index/merged-changes' component={MergedChangesView} />
-        <Route path='/:index/opened-changes' component={OpenChangesView} />
-        <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
-        <Route path='/:index/change/:change' component={ChangeView} />
-      </Switch>
+      <React.Fragment>
+        <TopMenu />
+        <Container>
+          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <FiltersFormBox />
+            </Col>
+          </Row>
+          <Switch>
+            <Route exact path='/' component={TopView} />
+            <Route exact path='/login' component={LoginView} />
+            <Route exact path='/user' component={CUserView} />
+            <Route exact path='/:index/people' component={PeopleView} />
+            <Route exact path='/:index/changes' component={ChangesView} />
+            <Route exact path='/:index' component={RootView} />
+            <Route path='/:index/merged-changes' component={MergedChangesView} />
+            <Route path='/:index/opened-changes' component={OpenChangesView} />
+            <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
+            <Route path='/:index/change/:change' component={ChangeView} />
+          </Switch>
+        </Container>
+      </React.Fragment>
     )
   }
 }

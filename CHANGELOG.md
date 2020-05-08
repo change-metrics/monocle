@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - [web] fix fetching data when changing page.
+- [web] do not recreate menu and filter form if not needed.
 - [api] fix wrong http code return in case of accessing unauthorized index.
 - [web] api calls perfomed multiple times - history listener was not unregistered.
 - [crawler] sleep 120 s when we have this message from GitHub: 'You
