@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [web] do not display login link if authentication is not configured.
 - [api] use Flask-Caching to cache requests for 5 minutes.
 - [web,api] compute and display pie charts for the abandoned-changes page.
 - [web] make the authors and repos pie charts clickable.
@@ -31,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [api] fix wrong http code return in case of accessing unauthorized index.
 - [web] api calls perfomed multiple times - history listener was not unregistered.
 - [crawler] sleep 120 s when we have this message from GitHub: 'You
   have triggered an abuse detection mechanism. Please wait a few

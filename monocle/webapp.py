@@ -91,6 +91,8 @@ def authorize():
 
 @app.route("/api/0/whoami", methods=['GET'])
 def whoami():
+    if not os.getenv('CLIENT_ID'):
+        return 'Authentication not configured', 503
     username = session.get('username')
     return jsonify(username)
 
@@ -104,9 +106,9 @@ def query(name):
         user = session.get('username')
         if user:
             if user not in config.get_authorized_users(indexes_acl, index):
-                return 'Unauthorized to access index %s' % index, 503
+                return 'Unauthorized to access index %s' % index, 403
         else:
-            return 'Unauthorized to access index %s' % index, 503
+            return 'Unauthorized to access index %s' % index, 403
     repository_fullname = request.args.get('repository')
     return do_query(index, repository_fullname, request.args, name)
 
