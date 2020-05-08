@@ -142,6 +142,7 @@ class BaseQueryComponent extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
+      pathname: null,
       name: null, // must be set by sub-class
       graph_type: null, // must be set by sub-class
       pageSize: 10,
@@ -154,9 +155,14 @@ class BaseQueryComponent extends React.Component {
   }
 
   componentDidMount () {
+    this.setState({ pathname: window.location.pathname })
     this.queryBackend(this.state.selectedPage)
-    this.unlisten = this.props.history.listen(() => {
-      this.queryBackend()
+    this.unlisten = this.props.history.listen((location, action) => {
+      // send a query only when the filter has changed parameters and
+      // we are still on the same page
+      if (this.state.pathname === location.pathname) {
+        this.queryBackend()
+      }
     })
   }
 
