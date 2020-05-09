@@ -68,6 +68,17 @@ oauth.register(
 
 indexes_acl: Dict[str, List[config.Username]] = {}
 
+config_path = os.getenv('CONFIG', None)
+if not config_path:
+    print('CONFIG env is missing.', file=sys.stderr)
+else:
+    if not os.path.isfile(config_path):
+        print('Unable to access %s.' % config_path, file=sys.stderr)
+    else:
+        globals()['indexes_acl'] = config.build_index_acl(
+            yaml.safe_load(open(config_path))
+        )
+
 
 @app.route("/api/0/login", methods=['GET'])
 def login():
@@ -150,14 +161,6 @@ def indices():
 
 
 def main():
-    config_path = os.getenv('CONFIG', None)
-    if not config_path:
-        print('CONFIG env is missing. Quit')
-        sys.exit(1)
-    if not os.path.isfile(config_path):
-        print('Unable to access %s. Quit' % config_path)
-        sys.exit(1)
-    globals()['indexes_acl'] = config.build_index_acl(yaml.safe_load(open(config_path)))
     app.run(host='0.0.0.0', port=9876)
 
 

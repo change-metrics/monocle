@@ -23,6 +23,7 @@ services:
       - elastic
     ports:
       - "9876:9876"
+      - "9877:9877"
     environment:
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
@@ -31,7 +32,7 @@ services:
       CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
       CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
       REDIRECT_URL: 'http://${MONOCLE_HOST:-localhost}:9876/api/0/authorize'
-    command: webapi
+    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     volumes:
       - $PWD/etc:/etc/monocle:Z
 
@@ -41,7 +42,6 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-
     ports:
       - "9200:9200"
     volumes:

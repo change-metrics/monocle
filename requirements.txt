@@ -7,3 +7,4 @@ pyyaml
 tenacity
 authlib
 Flask-Caching
+uwsgi
