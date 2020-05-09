@@ -123,14 +123,14 @@ class PeopleView extends React.Component {
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CNewContributorsStats
+            <CAuthorsPeersStats
               index={this.props.match.params.index} />
           </Col>
         </Row>
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CAuthorsPeersStats
+            <CNewContributorsStats
               index={this.props.match.params.index} />
           </Col>
         </Row>

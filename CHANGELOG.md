@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - [web] fix the menu header.
 - [web] add a spinner in the LoadingBox.
+- [web] put the new contributors at the end of the /people/ page because the list can be long.
+- [web] make the peer strength graph smaller on the /people/ page.
 - [crawler] log error before retrying GitHub graphql queries.
 - [backend] upgraded to Elasticsearch 6.8.8.
 - [web, api] improve and move issue tracker links detection from ui to the backend.
