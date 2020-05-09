@@ -118,6 +118,8 @@ The following settings are available in the `.env` file:
   uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By
   default it is `Monocle`.
+- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
+  512m.
 
 ### GitHub authentication
 

@@ -42,6 +42,8 @@ services:
       nofile:
         soft: 65535
         hard: 65535
+    environment:
+      - "ES_JAVA_OPTS=-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
     ports:
       - "9200:9200"
     volumes:
