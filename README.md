@@ -168,7 +168,7 @@ $ docker-compose logs crawler
 
 ### Accessing the web UI
 
-You should be able to access the web UI at <http://localhost:3000>.
+You should be able to access the web UI at <http://localhost>.
 
 ## Contributing
 
