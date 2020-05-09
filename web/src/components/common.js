@@ -21,6 +21,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import Badge from 'react-bootstrap/Badge'
+import Spinner from 'react-bootstrap/Spinner'
 import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
@@ -101,9 +102,7 @@ class LoadingBox extends React.Component {
         <Col>
           <Card>
             <Card.Body>
-              <h1>
-                loading
-              </h1>
+              <Spinner animation="border" role="status" /> <span>Loading...</span>
             </Card.Body>
           </Card>
         </Col>

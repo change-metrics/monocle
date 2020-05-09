@@ -57,7 +57,7 @@ IndexMenu.propTypes = {
 class TopMenu extends React.Component {
   render () {
     document.title = TITLE
-    return <Navbar bg="light" expand="lg">
+    return <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
       <Navbar.Brand>
         <Link className="navbar-brand" to="/">{TITLE}</Link>
       </Navbar.Brand>

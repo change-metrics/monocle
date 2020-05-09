@@ -15,28 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { render } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import { createMyStore } from './store'
-import App from './App'
-import { MemoryRouter } from 'react-router-dom'
-import {
-  toBeInTheDocument,
-  toHaveClass
-} from '@testing-library/jest-dom'
 
-expect.extend({ toBeInTheDocument, toHaveClass })
+import Navbar from 'react-bootstrap/Navbar'
+import Nav from 'react-bootstrap/Nav'
 
-test('renders Monocle link', () => {
-  const store = createMyStore()
-  const { getByText } = render(
-    <Provider store={store}>
-      <MemoryRouter initialEntries={['/index']}>
-        <App />
-      </MemoryRouter>
-    </Provider>
-  )
-  const linkElement = getByText(/^Monocle$/i)
-  expect(linkElement).toBeInTheDocument()
-  expect(linkElement).toHaveClass('navbar-brand')
-})
+class Footer extends React.Component {
+  render () {
+    return <Navbar bg="light" expand="lg" sticky="bottom" className="fixed-bottom">
+      <Nav className="ml-auto">
+        <a className="nav-link" href="https://github.com/change-metrics/monocle" target="_blank" rel="noreferrer noopener">Powered by Monocle</a>
+      </Nav>
+      <Navbar.Toggle aria-controls="basic-navbar-nav" />
+    </Navbar>
+  }
+}
+
+export default Footer

@@ -26,6 +26,7 @@ import Col from 'react-bootstrap/Col'
 import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
+import Footer from './components/footer'
 import {
   LoginView,
   CUserView
@@ -381,6 +382,7 @@ class App extends React.Component {
             <Route path='/:index/change/:change' component={ChangeView} />
           </Switch>
         </Container>
+        <Footer />
       </React.Fragment>
     )
   }
