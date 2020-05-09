@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [compose] expose ES_XMS and ES_XMX to configure the ElasticSearch JVM HEAP size.
 - [compose] add MONOCLE_API_URL env var to ease production deployment.
 - [web] add a footer with a link to the GitHub project.
 - [web] allow to customize the title with the `REACT_APP_TITLE`
