@@ -112,8 +112,8 @@ tenants:
 
 The following settings are available in the `.env` file:
 
-- `MONOCLE_HOST=<host or ip>` to configure the host serving the api
-  and web UI. By default it is set to `localhost`.
+- `MONOCLE_URL=<host or ip>` to configure the host the web UI.
+- `MONOCLE_API_URL=<host or ip>` to configure the host serving the api.
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it
   uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By
