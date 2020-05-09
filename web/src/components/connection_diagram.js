@@ -68,8 +68,8 @@ class ConnectionDiagram extends React.Component {
       componentId={1}
       groupLabels={data.labels}
       groupColors={['#003f5c', '#374c80', '#7a5195', '#bc5090', '#ef5675', '#ff764a', '#ffa600']}
-      outerRadius={270}
-      innerRadius={250}
+      outerRadius={200}
+      innerRadius={170}
       style={graphStyle}
       resizeWithWindow={true}
     />
