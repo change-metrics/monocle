@@ -33,6 +33,9 @@ log = logging.getLogger(__name__)
 public_queries = (
     "count_events",
     "count_authors",
+    "count_opened_changes",
+    "count_merged_changes",
+    "count_abandoned_changes",
     "events_histo",
     "repos_top",
     "events_top_authors",
@@ -451,13 +454,25 @@ def count_opened_changes(es, index, repository_fullname, params):
     return count_events(es, index, repository_fullname, params)
 
 
+def count_merged_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = "MERGED"
+    return count_events(es, index, repository_fullname, params)
+
+
+def count_abandoned_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    params['state'] = "CLOSED"
+    return count_events(es, index, repository_fullname, params)
+
+
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
     switch_to_on_authors(params)
     etypes = (
         'ChangeCreatedEvent',
-        "ChangeMergedEvent",
-        "ChangeAbandonedEvent",
         "ChangeCommitPushedEvent",
         "ChangeCommitForcePushedEvent",
     )
@@ -465,15 +480,17 @@ def changes_closed_ratios(es, index, repository_fullname, params):
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = count_events(es, index, repository_fullname, params)
+    changes_merged = count_merged_changes(es, index, repository_fullname, params)
+    changes_abandoned = count_abandoned_changes(es, index, repository_fullname, params)
     try:
         ret['merged/created'] = round(
-            ret['ChangeMergedEvent'] / ret['ChangeCreatedEvent'] * 100, 1
+            changes_merged / ret['ChangeCreatedEvent'] * 100, 1
         )
     except ZeroDivisionError:
         ret['merged/created'] = 0
     try:
         ret['abandoned/created'] = round(
-            ret['ChangeAbandonedEvent'] / ret['ChangeCreatedEvent'] * 100, 1
+            changes_abandoned / ret['ChangeCreatedEvent'] * 100, 1
         )
     except ZeroDivisionError:
         ret['abandoned/created'] = 0
@@ -634,6 +651,8 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['commits'] = change_merged_avg_commits(es, index, repository_fullname, params)
     ret['tests'] = changes_with_tests_ratio(es, index, repository_fullname, params)
     ret['opened'] = count_opened_changes(es, index, repository_fullname, params)
+    ret['merged'] = count_merged_changes(es, index, repository_fullname, params)
+    ret['abandoned'] = count_abandoned_changes(es, index, repository_fullname, params)
     etypes = (
         'ChangeCreatedEvent',
         "ChangeMergedEvent",
