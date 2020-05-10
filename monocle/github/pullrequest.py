@@ -16,7 +16,6 @@
 
 import logging
 import requests
-import time
 from datetime import datetime
 from time import sleep
 from dataclasses import dataclass
@@ -214,9 +213,6 @@ class PRsFetcher(object):
             self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
         if 'data' not in data:
             self.log.error('No data collected: %s' % data)
-            if 'message' in data and 'wait a few minutes' in data['message']:
-                self.log.info('sleeping 120s')
-                time.sleep(120)
             return False
         for pr in data['data']['search']['edges']:
             prs.append(pr['node'])

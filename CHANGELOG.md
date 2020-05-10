@@ -24,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [crawler] follow [GitHub abuse rate limits guidelines](https://developer.github.com/v3/guides/best-practices-for-integrators/#dealing-with-abuse-rate-limits):
+  obey to the Retry-After header for the GitHub api calls, sleep 1s
+  between calls and set the User-Agent header to change-metrics/monocle.
 - [compose] allow to configure on which addresses the services are exposed.
 - [web] fix the menu header.
 - [web] add a spinner in the LoadingBox.
