@@ -29,7 +29,10 @@ class GithubGraphQLQuery(object):
 
     def __init__(self, token):
         self.url = 'https://api.github.com/graphql'
-        self.headers = {'Authorization': 'token %s' % token}
+        self.headers = {
+            'Authorization': 'token %s' % token,
+            'User-Agent': 'change-metrics/monocle',
+        }
         self.session = requests.session()
         # Will get every 25 requests
         self.get_rate_limit_rate = 25
@@ -37,6 +40,7 @@ class GithubGraphQLQuery(object):
         # Set an initial value
         self.quota_remain = 5000
         self.get_rate_limit()
+        self.retry_after = False
 
     def get_rate_limit(self):
         try:
@@ -51,8 +55,13 @@ class GithubGraphQLQuery(object):
             % (self.quota_remain, self.resetat)
         )
 
+    # https://developer.github.com/v3/guides/best-practices-for-integrators/#dealing-with-abuse-rate-limits
     def wait_for_call(self):
-        if self.quota_remain <= 150:
+        if self.retry_after:
+            self.log.info("Waiting for %s secs (Retry-After)" % self.retry_after)
+            sleep(self.retry_after)
+            self.retry_after = False
+        elif self.quota_remain <= 150:
             until_reset = self.resetat - datetime.utcnow()
             self.log.info(
                 "Quota remain: %s/calls delay until "
@@ -60,6 +69,9 @@ class GithubGraphQLQuery(object):
             )
             sleep(until_reset.seconds + 60)
             self.get_rate_limit()
+        else:
+            self.log.info("Sleeping 1 sec to be a good citizen")
+            sleep(1)
 
     def getRateLimit(self):
         qdata = '''{
@@ -84,6 +96,9 @@ class GithubGraphQLQuery(object):
             url=self.url, json=data, headers=self.headers, timeout=30.3
         )
         self.query_count += 1
+        if 'retry-after' in r.headers:
+            self.log.info('Got Retry-After: %s' % r.headers['retry-after'])
+            self.retry_after = int(r.headers['retry-after'])
         if not r.status_code != "200":
             self.log.error('No ok response code: %s' % r)
             raise Exception("No ok response code: %s" % r.text)
