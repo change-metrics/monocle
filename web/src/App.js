@@ -381,6 +381,11 @@ class App extends React.Component {
             <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
             <Route path='/:index/change/:change' component={ChangeView} />
           </Switch>
+          <Row><Col><p></p></Col></Row>
+          <Row><Col><p></p></Col></Row>
+          <Row><Col><p></p></Col></Row>
+          <Row><Col><p></p></Col></Row>
+          <Row><Col><p></p></Col></Row>
         </Container>
         <Footer />
       </React.Fragment>
