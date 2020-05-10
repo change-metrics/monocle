@@ -55,7 +55,7 @@ Monocle is in an early phase of development. Feedback is highly welcome.
 
 The process below describes how to index changes from a GitHub repository, a full GitHub organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
 
-### Clone and prepare data directory
+### Clone and create the needed directories
 
 ```Shell
 $ git clone https://github.com/morucci/monocle.git
@@ -112,14 +112,22 @@ tenants:
 
 The following settings are available in the `.env` file:
 
-- `MONOCLE_URL=<host or ip>` to configure the host the web UI.
-- `MONOCLE_API_URL=<host or ip>` to configure the host serving the api.
+- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI.
+- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API.
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it
   uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By
   default it is `Monocle`.
 - `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
   512m.
+- `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
+  listening to (default `0.0.0.0`).
+- `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
+  listening to (default `0.0.0.0`).
+- `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
+  ElasticSearch service is listening to (default `0.0.0.0`). This is
+  only exposed in the development version of the docker-compose
+  (`docker-compose.yml.dev`).
 
 ### GitHub authentication
 

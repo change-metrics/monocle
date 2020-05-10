@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- [compose] all services exposed on docker host but on the ipv4 loopback.
+- [compose] allow to configure on which addresses the services are exposed.
 - [web] fix the menu header.
 - [web] add a spinner in the LoadingBox.
 - [web] put the new contributors at the end of the /people/ page because the list can be long.
