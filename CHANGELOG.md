@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+##  [0.4] - 2020-05-11
+
+### Added
 
 - [compose] expose ES_XMS and ES_XMX to configure the ElasticSearch JVM HEAP size.
 - [compose] add MONOCLE_API_URL env var to ease production deployment.
