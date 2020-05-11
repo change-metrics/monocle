@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- [api] fix buggy ratio when a change is closed then re-opened
 - [web] fix fetching data when changing page.
 - [web] do not recreate menu and filter form if not needed.
 - [api] fix wrong http code return in case of accessing unauthorized index.

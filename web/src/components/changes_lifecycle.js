@@ -173,10 +173,10 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/abandoned-changes${search}`}>{data.ChangeAbandonedEvent.events_count} changes abandoned: {data.ratios['abandoned/created']}%</Link>
+                        <Link to={`/${this.props.index}/abandoned-changes${search}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/merged-changes${search}`}>{data.ChangeMergedEvent.events_count} changes merged: {data.ratios['merged/created']}%</Link>
+                        <Link to={`/${this.props.index}/merged-changes${search}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Changes with tests: {data.tests}%
