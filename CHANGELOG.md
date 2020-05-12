@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [api] limit first_comment|review_on_changes to 10000 objects to avoid performance issue
+
 ##  [0.4] - 2020-05-11
 
 ### Added

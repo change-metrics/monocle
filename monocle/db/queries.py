@@ -190,7 +190,13 @@ def _scan(es, index, repository_fullname, params):
     }
     scanner_params = {'index': index, 'doc_type': index, 'query': body}
     data = scanner(es, **scanner_params)
-    return [d['_source'] for d in data]
+    ret = []
+    size = params.get('size')
+    for d in data:
+        if size and len(ret) == size:
+            break
+        ret.append(d['_source'])
+    return ret
 
 
 def _first_created_event(es, index, repository_fullname, params):
@@ -558,12 +564,16 @@ def _first_event_on_changes(es, index, repository_fullname, params):
 def first_comment_on_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ('ChangeCommentedEvent',)
+    # limit the depth of the scan query as this query is expensive
+    params['size'] = 10000
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
 def first_review_on_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ('ChangeReviewedEvent',)
+    # limit the depth of the scan query as this query is expensive
+    params['size'] = 10000
     return _first_event_on_changes(es, index, repository_fullname, params)
 
 
