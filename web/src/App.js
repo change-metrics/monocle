@@ -33,6 +33,7 @@ import {
 } from './components/user'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
+import { CAuthorsHistoStats } from './components/authors_histo'
 import {
   CNewContributorsStats,
   CMostActiveAuthorsStats,
@@ -98,6 +99,13 @@ class PeopleView extends React.Component {
   render () {
     return (
       <React.Fragment>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsHistoStats
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>

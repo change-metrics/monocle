@@ -26,6 +26,7 @@ const initialState = {}
 
 addStates(initialState, 'changes_lifecycle_stats')
 addStates(initialState, 'changes_review_stats')
+addStates(initialState, 'authors_histo_stats')
 addStates(initialState, 'most_active_authors_stats')
 addStates(initialState, 'approval_stats')
 addStates(initialState, 'most_reviewed_authors_stats')

@@ -20,6 +20,7 @@ import statistics
 from copy import deepcopy
 from datetime import datetime
 from itertools import groupby
+from itertools import chain
 from monocle.utils import dbdate_to_datetime
 from monocle.utils import float_trunc
 from monocle.utils import enhance_changes
@@ -37,6 +38,7 @@ public_queries = (
     "count_merged_changes",
     "count_abandoned_changes",
     "events_histo",
+    "authors_histo",
     "repos_top",
     "events_top_authors",
     "changes_top_approval",
@@ -56,6 +58,7 @@ public_queries = (
     "changes_lifecycle_stats",
     "changes_review_histos",
     "changes_review_stats",
+    "authors_histo_stats",
     "most_active_authors_stats",
     "most_reviewed_authors_stats",
     "last_changes",
@@ -230,33 +233,35 @@ def count_authors(es, index, repository_fullname, params):
     return data['aggregations']['agg1']['value']
 
 
+def set_histo_granularity(duration):
+    # Set resolution by hour if duration <= 1 day (max 24 buckets)
+    if (duration / (24 * 3600)) <= 1:
+        return 'hour'
+    # Set resolution by day if duration <= 1 month (max 31 buckets)
+    if (duration / (24 * 3600 * 31)) <= 1:
+        return 'day'
+    # Set resolution by week if duration <= 6 months (max 24 buckets)
+    if (duration / (24 * 3600 * 31)) <= 6:
+        return 'week'
+    # Set resolution by month if duration <= 2 years (max 24 buckets)
+    if (duration / (24 * 3600 * 31 * 12)) <= 2:
+        return 'month'
+    return 'year'
+
+
+def interval_to_format(interval):
+    if interval == 'hour':
+        return 'HH:mm'
+    if interval == 'day' or interval == 'week':
+        return 'yyyy-MM-dd'
+    if interval == 'month':
+        return 'yyyy-MM'
+    if interval == 'year':
+        return 'yyyy'
+    return 'yyyy-MM-dd HH:mm'
+
+
 def events_histo(es, index, repository_fullname, params):
-    def set_histo_granularity(duration):
-        # Set resolution by hour if duration <= 1 day (max 24 buckets)
-        if (duration / (24 * 3600)) <= 1:
-            return 'hour'
-        # Set resolution by day if duration <= 1 month (max 31 buckets)
-        if (duration / (24 * 3600 * 31)) <= 1:
-            return 'day'
-        # Set resolution by week if duration <= 6 months (max 24 buckets)
-        if (duration / (24 * 3600 * 31)) <= 6:
-            return 'week'
-        # Set resolution by month if duration <= 2 years (max 24 buckets)
-        if (duration / (24 * 3600 * 31 * 12)) <= 2:
-            return 'month'
-        return 'year'
-
-    def interval_to_format(interval):
-        if interval == 'hour':
-            return 'HH:mm'
-        if interval == 'day' or interval == 'week':
-            return 'yyyy-MM-dd'
-        if interval == 'month':
-            return 'yyyy-MM'
-        if interval == 'year':
-            return 'yyyy'
-        return 'yyyy-MM-dd HH:mm'
-
     duration = (params['lte'] - params['gte']) / 1000
     interval = set_histo_granularity(duration)
     fmt = interval_to_format(interval)
@@ -282,6 +287,39 @@ def events_histo(es, index, repository_fullname, params):
         data['aggregations']['agg1']['buckets'],
         data['aggregations']['avg_count']['value'] or 0,
     )
+
+
+def authors_histo(es, index, repository_fullname, params):
+    duration = (params['lte'] - params['gte']) / 1000
+    interval = set_histo_granularity(duration)
+    fmt = interval_to_format(interval)
+
+    body = {
+        "aggs": {
+            "agg1": {
+                "date_histogram": {
+                    "field": "created_at",
+                    "interval": interval,
+                    "format": fmt,
+                    "min_doc_count": 0,
+                    "extended_bounds": {"min": params['gte'], "max": params['lte']},
+                },
+                "aggs": {"authors": {"terms": {"field": "author", "size": 100000}}},
+            },
+            "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
+        },
+        "size": 0,
+        "query": generate_filter(repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    res = data["aggregations"]["agg1"]["buckets"]
+    for bucket in res:
+        bucket['authors'] = [b['key'] for b in bucket['authors']['buckets']]
+        bucket['doc_count'] = len(bucket['authors'])
+    avg = sum([len(b['authors']) for b in res]) / len(res)
+    total = [b['authors'] for b in res]
+    total = len(set(chain(*total)))
+    return {'buckets': res, 'avg_authors': avg, 'total_authors': total}
 
 
 def _events_top(es, index, repository_fullname, field, params):
@@ -677,6 +715,20 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
         ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
+    return ret
+
+
+def authors_histo_stats(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    ret = {}
+    etypes = (
+        'ChangeCreatedEvent',
+        "ChangeReviewedEvent",
+        "ChangeCommentedEvent",
+    )
+    for etype in etypes:
+        params['etype'] = (etype,)
+        ret[etype] = authors_histo(es, index, repository_fullname, params)
     return ret
 
 

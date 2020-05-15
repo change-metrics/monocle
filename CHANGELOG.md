@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+
+- [web] display active authors histogram in People page
+- [api] add authors_histo and authors_histo_stats queries
+
 ### Changed
 ### Removed
 ### Fixed

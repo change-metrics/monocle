@@ -164,6 +164,40 @@ class TestQueries(unittest.TestCase):
         if ddiff:
             raise DiffException(ddiff)
 
+    def test_authors_histo(self):
+        """
+        Test query: authors_histo
+        """
+        params = set_params({'gte': '2020-01-01', 'lte': '2020-01-02'})
+        ret = self.eldb.run_named_query('authors_histo', 'unit/repo1', params)
+        expected = {
+            'buckets': [
+                {
+                    'key_as_string': '2019-12-31',
+                    'key': 1577750400000,
+                    'doc_count': 0,
+                    'authors': [],
+                },
+                {
+                    'key_as_string': '2020-01-01',
+                    'key': 1577836800000,
+                    'doc_count': 2,
+                    'authors': ['jane', 'john'],
+                },
+                {
+                    'key_as_string': '2020-01-02',
+                    'key': 1577923200000,
+                    'doc_count': 1,
+                    'authors': ['jane'],
+                },
+            ],
+            'avg_authors': 1.0,
+            'total_authors': 2,
+        }
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
     def test_events_top_authors(self):
         """
         Test query: events_top_authors
