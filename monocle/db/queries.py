@@ -723,7 +723,7 @@ def authors_histo_stats(es, index, repository_fullname, params):
     ret = {}
     etypes = (
         'ChangeCreatedEvent',
-        "ChangeMergedEvent",
+        "ChangeReviewedEvent",
         "ChangeCommentedEvent",
     )
     for etype in etypes:
