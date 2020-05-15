@@ -58,6 +58,7 @@ public_queries = (
     "changes_lifecycle_stats",
     "changes_review_histos",
     "changes_review_stats",
+    "authors_histo_stats",
     "most_active_authors_stats",
     "most_reviewed_authors_stats",
     "last_changes",
@@ -714,6 +715,20 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
         ret[etype] = {'events_count': events_count, 'authors_count': authors_count}
+    return ret
+
+
+def authors_histo_stats(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    ret = {}
+    etypes = (
+        'ChangeCreatedEvent',
+        "ChangeMergedEvent",
+        "ChangeCommentedEvent",
+    )
+    for etype in etypes:
+        params['etype'] = (etype,)
+        ret[etype] = authors_histo(es, index, repository_fullname, params)
     return ret
 
 
