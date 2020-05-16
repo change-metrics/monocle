@@ -3,13 +3,12 @@ import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import { loggedUser } from '../reducers/user'
 import { withRouter, Link } from 'react-router-dom'
-
-var server = process.env.REACT_APP_API_URL || 'http://localhost:9876'
+import { baseurl } from '../api'
 
 class LoginView extends React.Component {
   render () {
     return (
-      <a className="nav-link" href={server + '/api/0/login'}>Sign in with GitHub</a>
+      <a className="nav-link" href={baseurl + '/login'}>Sign in with GitHub</a>
     )
   }
 }

@@ -76,5 +76,6 @@ function getLoggedUser () {
 export {
   getQueryResults,
   getIndices,
-  getLoggedUser
+  getLoggedUser,
+  baseurl
 }

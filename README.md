@@ -137,7 +137,7 @@ the ones listed in the `users` section in `config.yaml`.
 
 Configure the GitHub Oauth authentication to secure private indexes
 
-1. Create an Oauth APP in your GitHub user settings page
+1. [Create an Oauth APP in your GitHub user settings page](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
 2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
 3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
 
