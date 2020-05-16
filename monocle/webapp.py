@@ -97,7 +97,7 @@ def authorize():
     # do something with the token and profile
     session['username'] = profile.get('login')
     # return jsonify(profile)
-    return redirect('http://localhost:3000/monocle')
+    return redirect(os.getenv('WEB_URL'))
 
 
 @app.route("/api/0/whoami", methods=['GET'])
