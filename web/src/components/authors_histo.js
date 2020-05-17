@@ -32,7 +32,8 @@ import {
   LoadingBox,
   ErrorBox,
   mapDispatchToProps,
-  addMap
+  addMap,
+  getWindowDimensions
 } from './common'
 
 class AuthorsHisto extends React.Component {
@@ -87,6 +88,7 @@ class AuthorsHisto extends React.Component {
 
   render () {
     const data = this.prepareDataSet(this.props.data)
+    const { width } = getWindowDimensions()
     return (
       <Row>
         <Col>
@@ -95,16 +97,26 @@ class AuthorsHisto extends React.Component {
               <Row>
                 <Col md={3}>
                   <ListGroup>
-                    <ListGroup.Item>Change authors: { this.props.data.ChangeCreatedEvent.total_authors }</ListGroup.Item>
-                    <ListGroup.Item>Review authors: { this.props.data.ChangeReviewedEvent.total_authors }</ListGroup.Item>
-                    <ListGroup.Item>Comment authors: { this.props.data.ChangeCommentedEvent.total_authors }</ListGroup.Item>
+                    <ListGroup.Item>Change authors: {this.props.data.ChangeCreatedEvent.total_authors}</ListGroup.Item>
+                    <ListGroup.Item>Review authors: {this.props.data.ChangeReviewedEvent.total_authors}</ListGroup.Item>
+                    <ListGroup.Item>Comment authors: {this.props.data.ChangeCommentedEvent.total_authors}</ListGroup.Item>
                   </ListGroup>
                 </Col>
                 <Col md={9}>
                   <Line
                     data={data}
                     width={100}
-                    height={30}
+                    // On small screen the legend takes the whole height so detect and adjust
+                    height={(width <= 500) ? 90 : 30}
+                    options={
+                      {
+                        legend: {
+                          labels: {
+                            boxWidth: 30
+                          }
+                        }
+                      }
+                    }
                   />
                 </Col>
               </Row>

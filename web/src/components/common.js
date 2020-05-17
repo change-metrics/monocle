@@ -26,6 +26,14 @@ import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
 
+function getWindowDimensions () {
+  const { innerWidth: width, innerHeight: height } = window
+  return {
+    width,
+    height
+  }
+}
+
 function changeUrl (index, x, name = null) {
   if (!name) {
     name = x.change_id
@@ -231,5 +239,6 @@ export {
   addS,
   addMap,
   mapDispatchToProps,
-  chooseBadgeStyle
+  chooseBadgeStyle,
+  getWindowDimensions
 }

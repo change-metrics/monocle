@@ -34,7 +34,8 @@ import {
   LoadingBox,
   ErrorBox,
   mapDispatchToProps,
-  addMap
+  addMap,
+  getWindowDimensions
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
@@ -45,21 +46,21 @@ class ChangeLifeCycleEventsHisto extends React.Component {
     const abandonedColor = '92,92,92'
     const eventNameMapping = {
       ChangeCreatedEvent: {
-        label: 'Created Changes',
+        label: 'Created',
         pointBorderColor: `rgba(${createdColor},1)`,
         pointBackgroundColor: '#fff',
         backgroundColor: `rgba(${createdColor},0.4)`,
         borderColor: `rgba(${createdColor},1)`
       },
       ChangeMergedEvent: {
-        label: 'Merged Changes',
+        label: 'Merged',
         pointBorderColor: `rgba(${mergedColor},1)`,
         pointBackgroundColor: '#fff',
         backgroundColor: `rgba(${mergedColor},0.4)`,
         borderColor: `rgba(${mergedColor},1)`
       },
       ChangeAbandonedEvent: {
-        label: 'Abandoned Changes',
+        label: 'Abandoned',
         pointBorderColor: `rgba(${abandonedColor},1)`,
         pointBackgroundColor: '#fff',
         backgroundColor: `rgba(${abandonedColor},0.4)`,
@@ -94,7 +95,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
     }
     data.datasets.push(
       {
-        label: 'Updated Changes',
+        label: 'Updated',
         data: merged,
         lineTension: 0.5,
         pointBorderColor: `rgba(${updatedColor},1)`,
@@ -108,6 +109,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
 
   render () {
     const data = this.prepareDataSet(this.props.data)
+    const { width } = getWindowDimensions()
     return (
       <Row>
         {/* <Col md={{ span: 8, offset: 2 }}> */}
@@ -117,7 +119,17 @@ class ChangeLifeCycleEventsHisto extends React.Component {
               <Line
                 data={data}
                 width={100}
-                height={68}
+                // on small screen the legend takes the whole height so detect and adjust
+                height={(width <= 500) ? 90 : 68}
+                options={
+                  {
+                    legend: {
+                      labels: {
+                        boxWidth: 30
+                      }
+                    }
+                  }
+                }
               />
             </Card.Body>
           </Card>
