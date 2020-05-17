@@ -30,16 +30,20 @@ class IndexMenu extends React.Component {
   render () {
     const search = window.location.search
     document.title = this.props.match.params.index ? `${TITLE} / ${this.props.match.params.index}` : TITLE
-    return <Nav className="mr-auto">
-      <Link className="nav-link" to={`/${this.props.match.params.index}${search}`}>Top</Link>
-      <Link className="nav-link" to={`/${this.props.match.params.index}/people${search}`}>People</Link>
-      <NavDropdown title="Changes" id="changes-nav-dropdown">
-        <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes${search}`)}>Summary</NavDropdown.Item>
-        <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/opened-changes${search}`)}>Opened</NavDropdown.Item>
-        <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/merged-changes${search}`)}>Merged</NavDropdown.Item>
-        <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/abandoned-changes${search}`)}>Abandoned</NavDropdown.Item>
-      </NavDropdown>
-    </Nav>
+    return (
+      <Navbar.Collapse id="basic-navbar-nav">
+        <Nav className="mr-auto">
+          <Link className="nav-link" to={`/${this.props.match.params.index}${search}`}>Top</Link>
+          <Link className="nav-link" to={`/${this.props.match.params.index}/people${search}`}>People</Link>
+          <NavDropdown title="Changes" id="changes-nav-dropdown">
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes${search}`)}>Summary</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/opened-changes${search}`)}>Opened</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/merged-changes${search}`)}>Merged</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/abandoned-changes${search}`)}>Abandoned</NavDropdown.Item>
+          </NavDropdown>
+        </Nav>
+      </Navbar.Collapse>
+    )
   }
 }
 

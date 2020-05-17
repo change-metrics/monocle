@@ -27,7 +27,6 @@ class Footer extends React.Component {
       <Nav className="ml-auto">
         {a}
       </Nav>
-      <Navbar.Toggle aria-controls="basic-navbar-nav" />
     </Navbar>
   }
 }

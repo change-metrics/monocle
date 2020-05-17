@@ -21,6 +21,7 @@ import Row from 'react-bootstrap/Row'
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
+import Collapse from 'react-bootstrap/Collapse'
 import Dropdown from 'react-bootstrap/Dropdown'
 import DropDownButton from 'react-bootstrap/DropdownButton'
 import PropTypes from 'prop-types'
@@ -143,7 +144,8 @@ class FiltersForm extends React.Component {
       branch: '',
       files: '',
       excludeAuthors: '',
-      authors: ''
+      authors: '',
+      open: false
     }
   }
 
@@ -223,74 +225,99 @@ class FiltersForm extends React.Component {
         <Form onSubmit={this.handleSubmit}>
           <Card.Header>
             <Row>
-              <Col>
-                <b>Filters</b>
+              <Col xs={4} sm={9}>
+                <Card.Title>
+                  Filters
+                </Card.Title>
               </Col>
-              <Col>
+              <Col xs={4} sm={2}>
                 <Button
                   className='float-right'
                   variant='primary'
                   type='submit'
                   size='sm'
                 >
-                  Apply filters
+                  Apply
+                </Button>
+              </Col>
+              <Col xs={4} sm={1}>
+                <Button
+                  className='float-right'
+                  onClick={() => this.setState({ open: !this.state.open })}
+                  aria-controls='example-collapse-text'
+                  aria-expanded={this.state.open}
+                  variant='outline-secondary'
+                  size='sm'
+                >
+                  {this.state.open
+                    ? <svg className="bi bi-chevron-double-up" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M7.646 2.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708L8 3.707 2.354 9.354a.5.5 0 11-.708-.708l6-6z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M7.646 6.646a.5.5 0 01.708 0l6 6a.5.5 0 01-.708.708L8 7.707l-5.646 5.647a.5.5 0 01-.708-.708l6-6z" clipRule="evenodd" />
+                    </svg>
+                    : <svg className="bi bi-chevron-double-down" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" d="M1.646 6.646a.5.5 0 01.708 0L8 12.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M1.646 2.646a.5.5 0 01.708 0L8 8.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z" clipRule="evenodd" />
+                    </svg>
+                  }
                 </Button>
               </Col>
             </Row>
           </Card.Header>
-          <Card.Body>
-            <Form.Row>
-              <DateFormBox
-                gte={this.state.gte}
-                lte={this.state.lte}
-                handleChange={this.handleChange}
-              />
-              <Col>
-                <Form.Group controlId='formAuthorsInput'>
-                  <Form.Control
-                    type='text'
-                    value={this.state.authors}
-                    placeholder="Authors"
-                    onChange={v => this.handleChange('authors', v)}
-                  />
-                </Form.Group>
-                <Form.Group controlId='formExcludeAuthorsInput'>
-                  <Form.Control
-                    type='text'
-                    value={this.state.excludeAuthors}
-                    placeholder="Exclude Authors"
-                    onChange={v => this.handleChange('excludeAuthors', v)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col>
-                <Form.Group controlId='formRepositoryInput'>
-                  <Form.Control
-                    type='text'
-                    value={this.state.repository}
-                    placeholder="Repositories regexp"
-                    onChange={v => this.handleChange('repository', v)}
-                  />
-                </Form.Group>
-                <Form.Group controlId='formBranchInput'>
-                  <Form.Control
-                    type='text'
-                    value={this.state.branch}
-                    placeholder="Branch regexp"
-                    onChange={v => this.handleChange('branch', v)}
-                  />
-                </Form.Group>
-                <Form.Group controlId='formFilesInput'>
-                  <Form.Control
-                    type='text'
-                    value={this.state.files}
-                    placeholder="Files regexp"
-                    onChange={v => this.handleChange('files', v)}
-                  />
-                </Form.Group>
-              </Col>
-            </Form.Row>
-          </Card.Body>
+          <Collapse in={this.state.open}>
+            <Card.Body id="example-collapse-text">
+              <Form.Row>
+                <DateFormBox
+                  gte={this.state.gte}
+                  lte={this.state.lte}
+                  handleChange={this.handleChange}
+                />
+                <Col>
+                  <Form.Group controlId='formAuthorsInput'>
+                    <Form.Control
+                      type='text'
+                      value={this.state.authors}
+                      placeholder="Authors"
+                      onChange={v => this.handleChange('authors', v)}
+                    />
+                  </Form.Group>
+                  <Form.Group controlId='formExcludeAuthorsInput'>
+                    <Form.Control
+                      type='text'
+                      value={this.state.excludeAuthors}
+                      placeholder="Exclude Authors"
+                      onChange={v => this.handleChange('excludeAuthors', v)}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group controlId='formRepositoryInput'>
+                    <Form.Control
+                      type='text'
+                      value={this.state.repository}
+                      placeholder="Repositories regexp"
+                      onChange={v => this.handleChange('repository', v)}
+                    />
+                  </Form.Group>
+                  <Form.Group controlId='formBranchInput'>
+                    <Form.Control
+                      type='text'
+                      value={this.state.branch}
+                      placeholder="Branch regexp"
+                      onChange={v => this.handleChange('branch', v)}
+                    />
+                  </Form.Group>
+                  <Form.Group controlId='formFilesInput'>
+                    <Form.Control
+                      type='text'
+                      value={this.state.files}
+                      placeholder="Files regexp"
+                      onChange={v => this.handleChange('files', v)}
+                    />
+                  </Form.Group>
+                </Col>
+              </Form.Row>
+            </Card.Body>
+          </Collapse>
         </Form>
       </Card >
     )

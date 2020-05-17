@@ -30,7 +30,8 @@ import {
   LoadingBox,
   ErrorBox,
   mapDispatchToProps,
-  addMap
+  addMap,
+  getWindowDimensions
 } from './common'
 
 import { Line } from 'react-chartjs-2'
@@ -47,14 +48,14 @@ class ChangeReviewEventsHisto extends React.Component {
   prepareDataSet (histos) {
     const eventNameMapping = {
       ChangeCommentedEvent: {
-        label: 'Commented Changes',
+        label: 'Commented',
         pointBorderColor: 'rgba(247,242,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,242,141,0.4)',
         borderColor: 'rgba(247,242,141,1)'
       },
       ChangeReviewedEvent: {
-        label: 'Reviewed Changes',
+        label: 'Reviewed',
         pointBorderColor: 'rgba(247,141,141,1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(247,141,141,0.4)',
@@ -84,16 +85,26 @@ class ChangeReviewEventsHisto extends React.Component {
 
   render () {
     const data = this.prepareDataSet(this.props.data)
+    const { width } = getWindowDimensions()
     return (
       <Row>
-        {/* <Col md={{ span: 8, offset: 2 }}> */}
         <Col>
           <Card>
             <Card.Body>
               <Line
                 data={data}
                 width={100}
-                height={50}
+                // on small screen the legend takes the whole height so detect and adjust
+                height={(width <= 500) ? 90 : 68}
+                options={
+                  {
+                    legend: {
+                      labels: {
+                        boxWidth: 30
+                      }
+                    }
+                  }
+                }
               />
             </Card.Body>
           </Card>
