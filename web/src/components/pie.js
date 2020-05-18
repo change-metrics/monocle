@@ -21,7 +21,7 @@ import PropTypes from 'prop-types'
 import {
   addUrlField,
   ErrorBox,
-  getWindowDimensions
+  hasSmallWidth
 } from './common'
 
 import { Pie as BasePie } from 'react-chartjs-2'
@@ -66,11 +66,10 @@ class Pie extends React.Component {
         error="No data for Pie"
       />
     }
-    const { width } = getWindowDimensions()
     return <BasePie
       getElementsAtEvent={elems => this.handleClick(this, elems)}
       // on small screen the legend takes the whole height so detect and adjust
-      height={(width <= 500) ? 300 : 200}
+      height={(hasSmallWidth()) ? 300 : 200}
       options={
         {
           legend: {

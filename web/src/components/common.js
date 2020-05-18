@@ -35,6 +35,12 @@ function getWindowDimensions () {
   }
 }
 
+function hasSmallWidth () {
+  const { width } = getWindowDimensions()
+
+  return width <= 500
+}
+
 function changeUrl (index, x, name = null) {
   if (!name) {
     name = x.change_id
@@ -266,5 +272,6 @@ export {
   mapDispatchToProps,
   chooseBadgeStyle,
   getWindowDimensions,
-  SmallSizeWarning
+  SmallSizeWarning,
+  hasSmallWidth
 }
