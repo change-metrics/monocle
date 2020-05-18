@@ -8,15 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- [web] display active authors histogram in People page
-- [api] add authors_histo and authors_histo_stats queries
+- [web] warning message when small screen (width < 1024).
+- [web] display active authors histogram in People page.
+- [api] add authors_histo and authors_histo_stats queries.
 
 ### Changed
+
+- [web] moved approval dispersion pie in changes summary.
+
 ### Removed
 ### Fixed
 
-- [web] better look and feel on small device like smartphone
-- [api] limit first_comment|review_on_changes to 10000 objects to avoid performance issue
+- [web] better look and feel on small device like smartphone.
+- [api] limit first_comment|review_on_changes to 10000 objects to avoid performance issue.
 
 ##  [0.4] - 2020-05-11
 

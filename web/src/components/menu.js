@@ -23,6 +23,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import PropTypes from 'prop-types'
 import { CUserView } from './user'
+import { SmallSizeWarning } from './common'
 
 const TITLE = (window.TITLE && window.TITLE !== '__TITLE__') ? window.TITLE : (process.env.REACT_APP_TITLE || 'Monocle')
 
@@ -61,19 +62,24 @@ IndexMenu.propTypes = {
 class TopMenu extends React.Component {
   render () {
     document.title = TITLE
-    return <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
-      <Navbar.Brand>
-        <Link className="navbar-brand" to="/">{TITLE}</Link>
-      </Navbar.Brand>
-      <Switch>
-        <Route exact path='/' />
-        <Route path='/:index' component={IndexMenu} />
-      </Switch>
-      <Nav className="ml-auto">
-        <CUserView />
-      </Nav>
-      <Navbar.Toggle aria-controls="basic-navbar-nav" />
-    </Navbar>
+    return (
+      <React.Fragment>
+        <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
+          <Navbar.Brand>
+            <Link className="navbar-brand" to="/">{TITLE}</Link>
+          </Navbar.Brand>
+          <Switch>
+            <Route exact path='/' />
+            <Route path='/:index' component={IndexMenu} />
+          </Switch>
+          <Nav className="ml-auto">
+            <CUserView />
+          </Nav>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        </Navbar>
+        <SmallSizeWarning />
+      </React.Fragment>
+    )
   }
 }
 

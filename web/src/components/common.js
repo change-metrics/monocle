@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
+import Alert from 'react-bootstrap/Alert'
 import Badge from 'react-bootstrap/Badge'
 import Spinner from 'react-bootstrap/Spinner'
 import PropTypes from 'prop-types'
@@ -145,6 +146,30 @@ ErrorBox.propTypes = {
   })
 }
 
+class SmallSizeWarning extends React.Component {
+  render () {
+    const { width } = getWindowDimensions()
+    return <React.Fragment>
+      {
+        (width < 1024)
+          ? <Row>
+            <Col>
+              <Alert
+                variant='warning'
+                className='text-center'
+              >
+                To get the best experience please use a device
+                with a larger screen or rotate your device.
+              </Alert>
+            </Col>
+          </Row>
+          : ''
+      }
+
+    </React.Fragment>
+  }
+}
+
 class BaseQueryComponent extends React.Component {
   constructor (props) {
     super(props)
@@ -240,5 +265,6 @@ export {
   addMap,
   mapDispatchToProps,
   chooseBadgeStyle,
-  getWindowDimensions
+  getWindowDimensions,
+  SmallSizeWarning
 }

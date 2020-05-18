@@ -70,7 +70,7 @@ class Pie extends React.Component {
     return <BasePie
       getElementsAtEvent={elems => this.handleClick(this, elems)}
       // on small screen the legend takes the whole height so detect and adjust
-      height={(width <= 500) ? 300 : 100}
+      height={(width <= 500) ? 300 : 200}
       options={
         {
           legend: {
