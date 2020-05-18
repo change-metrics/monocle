@@ -38,7 +38,7 @@ Here is the graph of the complexity versus time to merge changes:
 Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
 provides a set of crawlers designed to fetch Pull Requests and Reviews
 data from the GitHub or Gerrit APIs and to store changes and changes
-related events into Elasticsearch. These changes and events are expose
+related events into Elasticsearch. These changes and events are exposed
 via a JSON API. Furthermore Monocle implements ready to use queries
 and a React based web UI.
 
