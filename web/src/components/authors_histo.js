@@ -33,7 +33,7 @@ import {
   ErrorBox,
   mapDispatchToProps,
   addMap,
-  getWindowDimensions
+  hasSmallWidth
 } from './common'
 
 class AuthorsHisto extends React.Component {
@@ -88,7 +88,6 @@ class AuthorsHisto extends React.Component {
 
   render () {
     const data = this.prepareDataSet(this.props.data)
-    const { width } = getWindowDimensions()
     return (
       <Row>
         <Col>
@@ -107,7 +106,7 @@ class AuthorsHisto extends React.Component {
                     data={data}
                     width={100}
                     // On small screen the legend takes the whole height so detect and adjust
-                    height={(width <= 500) ? 90 : 30}
+                    height={hasSmallWidth() ? 90 : 30}
                     options={
                       {
                         legend: {

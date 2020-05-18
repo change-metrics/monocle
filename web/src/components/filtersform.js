@@ -31,6 +31,10 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import moment from 'moment'
 
+import {
+  hasSmallWidth
+} from './common'
+
 class DateFormBox extends React.Component {
   getDateString = (count, unit) => {
     return moment().subtract(count, unit)
@@ -70,61 +74,78 @@ class DateFormBox extends React.Component {
   }
 
   render () {
-    return (
-      <React.Fragment>
-        <Col>
-          <Form.Group controlId='formFromDate'>
-            <DatePicker
-              selected={
-                this.props.gte
-                  ? moment(this.props.gte).toDate() : ''}
-              onChange={v => this.props.handleChange('gte', v)}
-              dateFormat='yyyy-MM-dd'
-              placeholderText='From date'
-              showYearDropdown
-            />
-          </Form.Group>
-          <Form.Group controlId='formToDate'>
-            <DatePicker
-              selected={
-                this.props.lte
-                  ? moment(this.props.lte).toDate() : ''}
-              onChange={v => this.props.handleChange('lte', v)}
-              dateFormat='yyyy-MM-dd'
-              placeholderText='To date'
-              showYearDropdown
-            />
-          </Form.Group>
-        </Col>
-        <Col>
-          <Form.Group controlId='formToDate'>
-            <DropDownButton
-              title="Relative date"
-              size="sm"
-              variant="secondary"
+    const fromDate = <Form.Group controlId='formFromDate'>
+      <DatePicker
+        selected={
+          this.props.gte
+            ? moment(this.props.gte).toDate() : ''}
+        onChange={v => this.props.handleChange('gte', v)}
+        dateFormat='yyyy-MM-dd'
+        placeholderText='From date'
+        showYearDropdown
+      />
+    </Form.Group>
+    const toDate = <Form.Group controlId='formToDate'>
+      <DatePicker
+        selected={
+          this.props.lte
+            ? moment(this.props.lte).toDate() : ''}
+        onChange={v => this.props.handleChange('lte', v)}
+        dateFormat='yyyy-MM-dd'
+        placeholderText='To date'
+        showYearDropdown
+      />
+    </Form.Group>
+    const relativeDate = <Form.Group controlId='formToDate'>
+      <DropDownButton
+        title="Relative date"
+        size="sm"
+        variant="secondary"
+      >
+        {[
+          ['1-week', '1 week'],
+          ['2-weeks', '2 weeks'],
+          ['1-month', '1 month'],
+          ['3-months', '3 months'],
+          ['6-months', '6 months']].map(
+          (entry) => {
+            return <Dropdown.Item
+              key={entry[0]}
+              value={entry[0]}
+              onClick={this.handleClick}
             >
-              {[
-                ['1-week', '1 week'],
-                ['2-weeks', '2 weeks'],
-                ['1-month', '1 month'],
-                ['3-months', '3 months'],
-                ['6-months', '6 months']].map(
-                (entry) => {
-                  return <Dropdown.Item
-                    key={entry[0]}
-                    value={entry[0]}
-                    onClick={this.handleClick}
-                  >
-                    {entry[1]}
-                  </Dropdown.Item>
-                }
-              )
-              }
-            </DropDownButton>
-          </Form.Group>
+              {entry[1]}
+            </Dropdown.Item>
+          }
+        )
+        }
+      </DropDownButton>
+    </Form.Group>
+    if (hasSmallWidth()) {
+      return <React.Fragment>
+        <Col>
+          <Row>
+            {fromDate}
+          </Row>
+          <Row>
+            {toDate}
+          </Row>
+          <Row>
+            {relativeDate}
+          </Row>
         </Col>
       </React.Fragment>
-    )
+    } else {
+      return <React.Fragment>
+        <Col>
+          {fromDate}
+          {toDate}
+        </Col>
+        <Col>
+          {relativeDate}
+        </Col>
+      </React.Fragment>
+    }
   }
 }
 
@@ -220,6 +241,55 @@ class FiltersForm extends React.Component {
   }
 
   render () {
+    const authors = <Form.Group controlId='formAuthorsInput'>
+      <Form.Control
+        type='text'
+        value={this.state.authors}
+        placeholder="Authors"
+        onChange={v => this.handleChange('authors', v)}
+      />
+    </Form.Group>
+    const excludeAuthors = <Form.Group controlId='formExcludeAuthorsInput'>
+      <Form.Control
+        type='text'
+        value={this.state.excludeAuthors}
+        placeholder="Exclude Authors"
+        onChange={v => this.handleChange('excludeAuthors', v)}
+      />
+    </Form.Group>
+    const repository = <Form.Group controlId='formRepositoryInput'>
+      <Form.Control
+        type='text'
+        value={this.state.repository}
+        placeholder="Repositories regexp"
+        onChange={v => this.handleChange('repository', v)}
+      />
+    </Form.Group>
+    const branch = <Form.Group controlId='formBranchInput'>
+      <Form.Control
+        type='text'
+        value={this.state.branch}
+        placeholder="Branch regexp"
+        onChange={v => this.handleChange('branch', v)}
+      />
+    </Form.Group>
+    const files = <Form.Group controlId='formFilesInput'>
+      <Form.Control
+        type='text'
+        value={this.state.files}
+        placeholder="Files regexp"
+        onChange={v => this.handleChange('files', v)}
+      />
+    </Form.Group>
+    const apply = <Button
+      className='float-right'
+      variant='primary'
+      type='submit'
+      size='sm'
+    >
+                    Apply
+    </Button>
+
     return (
       <Card>
         <Form onSubmit={this.handleSubmit}>
@@ -231,14 +301,7 @@ class FiltersForm extends React.Component {
                 </Card.Title>
               </Col>
               <Col xs={4} sm={2}>
-                <Button
-                  className='float-right'
-                  variant='primary'
-                  type='submit'
-                  size='sm'
-                >
-                  Apply
-                </Button>
+                {apply}
               </Col>
               <Col xs={4} sm={1}>
                 <Button
@@ -266,55 +329,51 @@ class FiltersForm extends React.Component {
           <Collapse in={this.state.open}>
             <Card.Body id="example-collapse-text">
               <Form.Row>
-                <DateFormBox
-                  gte={this.state.gte}
-                  lte={this.state.lte}
-                  handleChange={this.handleChange}
-                />
-                <Col>
-                  <Form.Group controlId='formAuthorsInput'>
-                    <Form.Control
-                      type='text'
-                      value={this.state.authors}
-                      placeholder="Authors"
-                      onChange={v => this.handleChange('authors', v)}
+                {(hasSmallWidth())
+                  ? <Col>
+                    <Row>
+                      <DateFormBox
+                        gte={this.state.gte}
+                        lte={this.state.lte}
+                        handleChange={this.handleChange}
+                      />
+                    </Row>
+                    <Row>
+                      {authors}
+                    </Row>
+                    <Row>
+                      {excludeAuthors}
+                    </Row>
+                    <Row>
+                      {repository}
+                    </Row>
+                    <Row>
+                      {branch}
+                    </Row>
+                    <Row>
+                      {files}
+                    </Row>
+                    <Row>
+                      {apply}
+                    </Row>
+                  </Col>
+                  : <React.Fragment>
+                    <DateFormBox
+                      gte={this.state.gte}
+                      lte={this.state.lte}
+                      handleChange={this.handleChange}
                     />
-                  </Form.Group>
-                  <Form.Group controlId='formExcludeAuthorsInput'>
-                    <Form.Control
-                      type='text'
-                      value={this.state.excludeAuthors}
-                      placeholder="Exclude Authors"
-                      onChange={v => this.handleChange('excludeAuthors', v)}
-                    />
-                  </Form.Group>
-                </Col>
-                <Col>
-                  <Form.Group controlId='formRepositoryInput'>
-                    <Form.Control
-                      type='text'
-                      value={this.state.repository}
-                      placeholder="Repositories regexp"
-                      onChange={v => this.handleChange('repository', v)}
-                    />
-                  </Form.Group>
-                  <Form.Group controlId='formBranchInput'>
-                    <Form.Control
-                      type='text'
-                      value={this.state.branch}
-                      placeholder="Branch regexp"
-                      onChange={v => this.handleChange('branch', v)}
-                    />
-                  </Form.Group>
-                  <Form.Group controlId='formFilesInput'>
-                    <Form.Control
-                      type='text'
-                      value={this.state.files}
-                      placeholder="Files regexp"
-                      onChange={v => this.handleChange('files', v)}
-                    />
-                  </Form.Group>
-                </Col>
+                    <Col>
+                      {authors}
+                      {excludeAuthors}
+                    </Col>
+                    <Col>
+                      {repository}
+                      {branch}
+                      {files}
+                    </Col>
+                  </React.Fragment>
+                }
               </Form.Row>
             </Card.Body>
           </Collapse>

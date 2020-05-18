@@ -117,13 +117,6 @@ class PeopleView extends React.Component {
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CApprovalStats
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
             <CMostReviewedAuthorsStats
               index={this.props.match.params.index} />
           </Col>
@@ -193,6 +186,13 @@ class ChangesView extends React.Component {
         <Row>
           <Col>
             <CAbandonedChanges
+              index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CApprovalStats
               index={this.props.match.params.index} />
           </Col>
         </Row>
