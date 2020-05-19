@@ -10,6 +10,8 @@ So the philosophy behind Monocle is to let you visualize and explore
 metrics and data that are relevant to the way you work by navigating
 and filtering in the web user interface.
 
+Browse changes metrics on the [demo instance](https://demo.changemetrics.io).
+
 For example, your team may want to know:
 
 - what is the ratio of created changes vs merged changes?
@@ -110,10 +112,14 @@ tenants:
 
 ## Configuration of the containers
 
+For a local deployment, default settings are fine.
+
 The following settings are available in the `.env` file:
 
-- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI.
-- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API.
+- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI
+  (default `http://localhost:3000`).
+- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API
+  (default `http://localhost:9876`).
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it
   uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By
@@ -147,9 +153,30 @@ part of `users` will be authorized to access the related index.
 
 ### Start docker-compose
 
+Start Monocle:
+
 ```ShellSession
 $ docker-compose up -d
 ```
+
+Ensure services are running:
+
+```ShellSession
+$ docker-compose ps
+monocle_api_1       uwsgi --uid guest --gid no ...   Up      0.0.0.0:9876->9876/tcp, 0.0.0.0:9877->9877/tcp
+monocle_crawler_1   monocle --elastic-conn ela ...   Up
+monocle_elastic_1   /usr/local/bin/docker-entr ...   Up      0.0.0.0:9200->9200/tcp, 9300/tcp
+monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:3000->3000/tcp
+```
+
+After a change in the configuration file, the api and crawler services need to be restarted:
+
+```ShellSession
+$ docker-compose restart api
+$ docker-compose restart crawler
+```
+
+#### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
 mode. Take a look at the logs to see if it started correctly:
