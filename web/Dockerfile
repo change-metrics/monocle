@@ -27,6 +27,7 @@ ENV PATH /app/node_modules/.bin:$PATH
 
 # copy files to install js modules
 COPY package.json /app/
+COPY package-lock.json /app/
 
 # install dependencies
 RUN npm install
