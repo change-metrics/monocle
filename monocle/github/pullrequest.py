@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import logging
 from datetime import datetime
 from dataclasses import dataclass
 from pprint import pprint
 
 from monocle.github.graphql import RequestTimeout
+from monocle.utils import dbdate_to_datetime
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -191,24 +193,24 @@ class PRsFetcher(object):
         '''  # noqa: E501
 
     def _getPage(self, kwargs, prs):
-        # Note: usage of the default sort on created field because
-        # sort on the updated field does not return well ordered PRs
         scope = "org:%(org)s" % kwargs
         if kwargs.get('repository'):
             scope = "repo:%(org)s/%(repository)s" % kwargs
         kwargs['scope'] = scope
         qdata = '''{
-          search(
-              query: "%(scope)s is:pr archived:false sort:created updated:>%(updated_since)s created:<%(created_before)s"
-              type: ISSUE first: %(size)s %(after)s) {
-            issueCount
-            pageInfo {
-              hasNextPage endCursor
-            }
-            edges {
-              node {
-                ... on PullRequest {
-                    %(pr_query)s
+          repository(owner: "%(org)s", name:"%(repository)s") {
+            pullRequests(
+              first: %(size)s
+              %(after)s
+              orderBy: { field: UPDATED_AT, direction: DESC }
+            ) {
+              totalCount
+              pageInfo {
+                hasNextPage endCursor
+              }
+              edges {
+                node {
+                  %(pr_query)s
                 }
               }
             }
@@ -216,14 +218,31 @@ class PRsFetcher(object):
         }'''  # noqa: E501
         data = self.gql.query(qdata % kwargs)
         if not kwargs['total_prs_count']:
-            kwargs['total_prs_count'] = data['data']['search']['issueCount']
-            self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
+            kwargs['total_prs_count'] = data['data']['repository']['pullRequests'][
+                'totalCount'
+            ]
+            self.log.info(
+                "Total PRs: %s but will fetch until we reached a PR"
+                "updated at date < %s"
+                % (kwargs['total_prs_count'], kwargs['updated_since'])
+            )
         if 'data' not in data:
             self.log.error('No data collected: %s' % data)
             return False
-        for pr in data['data']['search']['edges']:
+        edges = data['data']['repository']['pullRequests']['edges']
+        for pr in edges:
             prs.append(pr['node'])
-        pageInfo = data['data']['search']['pageInfo']
+        # We sort to mitigate this
+        # https://github.community/t5/GitHub-API-Development-and/apiv4-pullrequests-listing-broken-ordering/m-p/59439#M4968
+        oldest_update = sorted(
+            [dbdate_to_datetime(pr['node']['updatedAt']) for pr in edges], reverse=True
+        )[-1]
+        logging.info("page oldest updated at date is %s" % oldest_update)
+        if oldest_update < kwargs['updated_since']:
+            # The crawler reached a page where the oldest updated PR
+            # is oldest than the configured limit
+            return False
+        pageInfo = data['data']['repository']['pullRequests']['pageInfo']
         if pageInfo['hasNextPage']:
             kwargs['after'] = 'after: "%s"' % pageInfo['endCursor']
             return True
@@ -236,9 +255,8 @@ class PRsFetcher(object):
             'pr_query': self.pr_query % self.pr_commits,
             'org': self.org,
             'repository': self.repository,
-            'updated_since': updated_since,
+            'updated_since': datetime.strptime(updated_since, "%Y-%m-%d"),
             'after': '',
-            'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'total_prs_count': 0,
             'size': self.size,
         }
@@ -279,10 +297,6 @@ class PRsFetcher(object):
                 continue
             self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
-                if len(prs) < kwargs['total_prs_count']:
-                    kwargs['created_before'] = prs[-1]['createdAt']
-                    kwargs['after'] = ''
-                    continue
                 break
         return prs
 
@@ -502,13 +516,15 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='pullrequest')
 
+    parser.add_argument('--crawler', help='run crawler', action='store_true')
+    parser.add_argument('--updated-since', help='stop date for the crawler')
     parser.add_argument('--loglevel', help='logging level', default='INFO')
     parser.add_argument('--token', help='A Github personal token', required=True)
     parser.add_argument('--org', help='A Github organization', required=True)
     parser.add_argument(
         '--repository', help='The repository within the organization', required=True
     )
-    parser.add_argument('--id', help='The pull request id', required=True)
+    parser.add_argument('--id', help='The pull request id')
     parser.add_argument(
         '--output-dir', help='Store the dump in this directory',
     )
@@ -522,11 +538,21 @@ if __name__ == '__main__':
         args.org,
         args.repository,
     )
-    data = prf.get_one(args.org, args.repository, args.id)
-    if not args.output_dir:
-        pprint(data)
+    if args.crawler:
+        if not args.updated_since:
+            print("please provide --update-since arg")
+            sys.exit(1)
+        prs = prf.get(args.updated_since)
+        pprint(prs)
     else:
-        basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
-        basepath = os.path.join(args.output_dir, basename)
-        json.dump(data[0], open(basepath + '_raw.json', 'w'), indent=2)
-        json.dump(data[1], open(basepath + '_extracted.json', 'w'), indent=2)
+        if not args.id:
+            print("please provide --id arg")
+            sys.exit(1)
+        data = prf.get_one(args.org, args.repository, args.id)
+        if not args.output_dir:
+            pprint(data)
+        else:
+            basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
+            basepath = os.path.join(args.output_dir, basename)
+            json.dump(data[0], open(basepath + '_raw.json', 'w'), indent=2)
+            json.dump(data[1], open(basepath + '_extracted.json', 'w'), indent=2)
