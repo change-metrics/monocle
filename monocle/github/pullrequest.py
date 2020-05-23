@@ -531,7 +531,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.loglevel.upper()),)
+    logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
     prf = PRsFetcher(
         graphql.GithubGraphQLQuery(args.token),
         'https://github.com',
