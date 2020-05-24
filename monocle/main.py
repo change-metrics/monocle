@@ -29,6 +29,8 @@ from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
 from monocle.github import pullrequest
 from monocle.github import application
+from monocle.github import organization
+from monocle.github import graphql
 from monocle.gerrit import review
 from monocle.crawler import Crawler, Runner, GroupCrawler
 from monocle import config
@@ -181,13 +183,32 @@ def main():
                 if gid not in group:
                     group[gid] = GroupCrawler()
                     tpool.append(group[gid])
-                group[gid].add_crawler(
-                    Runner(
-                        c_args,
-                        elastic_conn=args.elastic_conn,
-                        elastic_timeout=args.elastic_timeout,
+                if c_args.repository:
+                    repositories = [c_args.repository]
+                else:
+                    log.info('Discovering repositories in %s ...' % c_args.org)
+                    # No repository specified for that organization so
+                    # try to discover all of them
+                    rf = organization.RepositoriesFetcher(
+                        graphql.GithubGraphQLQuery(token_getter=tg)
                     )
-                )
+                    repos = rf.get(c_args.org)
+                    repositories = [
+                        repo['name'] for repo in repos if not repo['isArchived']
+                    ]
+                    log.info(
+                        'Found %s repositories in %s ...'
+                        % (len(repositories), c_args.org)
+                    )
+                for repository in repositories:
+                    c_args.repository = repository
+                    group[gid].add_crawler(
+                        Runner(
+                            c_args,
+                            elastic_conn=args.elastic_conn,
+                            elastic_timeout=args.elastic_timeout,
+                        )
+                    )
             for crawler_item in tenant['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
