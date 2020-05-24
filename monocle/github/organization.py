@@ -16,6 +16,8 @@
 
 
 import logging
+from monocle.github import pullrequest
+from monocle.github import application
 
 
 class RepositoriesFetcher(object):
@@ -76,12 +78,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='organization')
 
     parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--token', help='A Github personal token', required=True)
+    parser.add_argument('--token', help='A Github personal token')
     parser.add_argument('--org', help='A Github organization', required=True)
+    parser.add_argument('--app-id', help='The Github app-id')
+    parser.add_argument('--app-key-path', help='A Github app key path')
 
     args = parser.parse_args()
 
+    app = None
+    if args.app_id and args.app_key_path:
+        app = application.get_app(args.app_id, args.app_key_path)
+    tg = pullrequest.TokenGetter(args.org, args.token, app)
+
     logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
-    rf = RepositoriesFetcher(graphql.GithubGraphQLQuery(args.token))
+    rf = RepositoriesFetcher(graphql.GithubGraphQLQuery(token_getter=tg))
     data = rf.get(args.org)
     pprint(data)

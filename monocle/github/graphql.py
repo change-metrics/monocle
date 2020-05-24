@@ -41,10 +41,9 @@ class GithubGraphQLQuery(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, token, token_getter=None):
+    def __init__(self, token_getter):
         self.url = 'https://api.github.com/graphql'
         self.session = requests.session()
-        self.token = token
         # Will get every 25 requests
         self.get_rate_limit_rate = 25
         self.query_count = 0
@@ -55,10 +54,7 @@ class GithubGraphQLQuery(object):
         self.retry_after = False
 
     def get_token(self):
-        if self.token:
-            return self.token
-        else:
-            return self.token_getter.get_token()
+        return self.token_getter.get_token()
 
     def get_headers(self):
         headers = {

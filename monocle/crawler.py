@@ -50,7 +50,10 @@ class Runner(object):
             else:
                 self.repository_el_re = args.org.lstrip('^') + '/.*'
             self.prf = pullrequest.PRsFetcher(
-                GithubGraphQLQuery(args.token), args.base_url, args.org, args.repository
+                GithubGraphQLQuery(token_getter=args.token_getter),
+                args.base_url,
+                args.org,
+                args.repository,
             )
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')

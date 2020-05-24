@@ -50,6 +50,7 @@ class GithubCrawlerArgs(object):
     repository: str
     base_url: str
     token: str
+    token_getter: object
 
 
 class PRsFetcher(object):
@@ -252,6 +253,7 @@ class PRsFetcher(object):
 
     def get(self, updated_since):
         prs = []
+        updated_since = updated_since.split('T')[0]
         kwargs = {
             'pr_query': self.pr_query % self.pr_commits,
             'org': self.org,
@@ -510,17 +512,10 @@ class PRsFetcher(object):
 
 
 class TokenGetter:
-    def __init__(self, org, token=None, app_id=None, app_key_path=None):
+    def __init__(self, org, token=None, app=None):
         self.org = org
         self.token = token
-        self.app_id = app_id
-        self.app_key = None
-        if app_key_path:
-            with open(app_key_path, 'r') as f:
-                self.app_key = f.read()
-        if self.app_id and self.app_key:
-            self.app = application.MonocleGihtubApp(self.app_key, self.app_id)
-            self.app.search_installations()
+        self.app = app
 
     def get_token(self):
         if self.token:
@@ -560,10 +555,13 @@ if __name__ == '__main__':
         + "%(levelname)s - %(message)s",
     )
 
-    tg = TokenGetter(args.org, args.token, args.app_id, args.app_key_path)
+    app = None
+    if args.app_id and args.app_key_path:
+        app = application.get_app(args.app_id, args.app_key_path)
+    tg = TokenGetter(args.org, args.token, app)
 
     prf = PRsFetcher(
-        graphql.GithubGraphQLQuery(args.token, token_getter=tg),
+        graphql.GithubGraphQLQuery(token_getter=tg),
         'https://github.com',
         args.org,
         args.repository,

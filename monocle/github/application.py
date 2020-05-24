@@ -190,12 +190,17 @@ class MonocleGihtubApp:
         return None
 
 
+def get_app(app_id, app_key_path):
+    with open(app_key_path, 'r') as f:
+        app_key = f.read()
+    app = MonocleGihtubApp(app_key, app_id)
+    app.search_installations()
+    return app
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     key_file = "app_key.rsa"
-    with open(key_file, 'r') as f:
-        app_key = f.read()
-    app = MonocleGihtubApp(app_key=app_key, app_id="59519",)
-    installations = app.search_installations()
-    print(installations)
+    app = get_app(app_key_path=key_file, app_id="59519")
+    print(app.installations)
     print(app.get_token('monocle-org'))
