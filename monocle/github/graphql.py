@@ -41,20 +41,32 @@ class GithubGraphQLQuery(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, token):
+    def __init__(self, token, token_getter=None):
         self.url = 'https://api.github.com/graphql'
-        self.headers = {
-            'Authorization': 'token %s' % token,
-            'User-Agent': 'change-metrics/monocle',
-        }
         self.session = requests.session()
+        self.token = token
         # Will get every 25 requests
         self.get_rate_limit_rate = 25
         self.query_count = 0
         # Set an initial value
         self.quota_remain = 5000
+        self.token_getter = token_getter
         self.get_rate_limit()
         self.retry_after = False
+
+    def get_token(self):
+        if self.token:
+            return self.token
+        else:
+            return self.token_getter.get_token()
+
+    def get_headers(self):
+        headers = {
+            'Authorization': 'token %s' % self.get_token(),
+            'User-Agent': 'change-metrics/monocle',
+        }
+        self.log.debug('request headers: %s' % headers)
+        return headers
 
     def get_rate_limit(self):
         try:
@@ -121,7 +133,7 @@ class GithubGraphQLQuery(object):
         data = {'query': qdata}
         try:
             r = self.session.post(
-                url=self.url, json=data, headers=self.headers, timeout=30.3
+                url=self.url, json=data, headers=self.get_headers(), timeout=30.3
             )
         except requests.exceptions.ConnectionError:
             raise RequestException("Error connecting to the API")

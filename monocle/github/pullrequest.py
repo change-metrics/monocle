@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pprint import pprint
 
 from monocle.github.graphql import RequestTimeout
+from monocle.github import application
 from monocle.utils import dbdate_to_datetime
 
 MAX_TRY = 3
@@ -508,6 +509,26 @@ class PRsFetcher(object):
         return objects
 
 
+class TokenGetter:
+    def __init__(self, org, token=None, app_id=None, app_key_path=None):
+        self.org = org
+        self.token = token
+        self.app_id = app_id
+        self.app_key = None
+        if app_key_path:
+            with open(app_key_path, 'r') as f:
+                self.app_key = f.read()
+        if self.app_id and self.app_key:
+            self.app = application.MonocleGihtubApp(self.app_key, self.app_id)
+            self.app.search_installations()
+
+    def get_token(self):
+        if self.token:
+            return self.token
+        else:
+            return self.app.get_token(self.org)
+
+
 if __name__ == '__main__':
     import os
     import json
@@ -519,8 +540,10 @@ if __name__ == '__main__':
     parser.add_argument('--crawler', help='run crawler', action='store_true')
     parser.add_argument('--updated-since', help='stop date for the crawler')
     parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--token', help='A Github personal token', required=True)
+    parser.add_argument('--token', help='A Github personal token')
     parser.add_argument('--org', help='A Github organization', required=True)
+    parser.add_argument('--app-id', help='The Github app-id')
+    parser.add_argument('--app-key-path', help='A Github app key path')
     parser.add_argument(
         '--repository', help='The repository within the organization', required=True
     )
@@ -531,9 +554,16 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
+    logging.basicConfig(
+        level=getattr(logging, args.loglevel.upper()),
+        format="%(asctime)s - %(name)s - %(threadName)s - "
+        + "%(levelname)s - %(message)s",
+    )
+
+    tg = TokenGetter(args.org, args.token, args.app_id, args.app_key_path)
+
     prf = PRsFetcher(
-        graphql.GithubGraphQLQuery(args.token),
+        graphql.GithubGraphQLQuery(args.token, token_getter=tg),
         'https://github.com',
         args.org,
         args.repository,
