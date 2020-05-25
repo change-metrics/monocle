@@ -228,6 +228,8 @@ class PRsFetcher(object):
                 "updated at date < %s"
                 % (kwargs['total_prs_count'], kwargs['updated_since'])
             )
+            if kwargs['total_prs_count'] == 0:
+                return False
         if 'data' not in data:
             self.log.error('No data collected: %s' % data)
             return False

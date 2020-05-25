@@ -9,4 +9,4 @@ authlib
 Flask-Caching
 uwsgi
 iso8601
-jwt
+pyjwt

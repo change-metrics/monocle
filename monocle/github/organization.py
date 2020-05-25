@@ -25,7 +25,11 @@ class RepositoriesFetcher(object):
         self.gql = gql
         self.qdata = '''{
           organization(login: "%(login)s") {
-            repositories(isFork: false first: 100) {
+            repositories(
+                isFork: false
+                first: 100
+                %(after)s
+              ) {
               totalCount
               pageInfo {
                 hasNextPage endCursor
