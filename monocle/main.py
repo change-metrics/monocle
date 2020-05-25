@@ -162,15 +162,17 @@ def main():
                 )
                 c_args = pullrequest.GithubCrawlerArgs(
                     command='github_crawler',
-                    index=tenant['index'],
                     org=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=tenant['crawler']['loop_delay'],
-                    # todo(fbo): remove token attribute
-                    token=crawler_item.get('token'),
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
                     token_getter=tg,
+                    db=ELmonocleDB(
+                        elastic_conn=args.elastic_conn,
+                        index=tenant['index'],
+                        timeout=args.elastic_timeout,
+                    ),
                 )
                 gid = crawler_item.get('token')
                 if not gid:
@@ -202,29 +204,21 @@ def main():
                     )
                 for repository in repositories:
                     c_args.repository = repository
-                    group[gid].add_crawler(
-                        Runner(
-                            c_args,
-                            elastic_conn=args.elastic_conn,
-                            elastic_timeout=args.elastic_timeout,
-                        )
-                    )
+                    group[gid].add_crawler(Runner(c_args))
             for crawler_item in tenant['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
-                    index=tenant['index'],
                     repository=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=tenant['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'],
-                )
-                tpool.append(
-                    Crawler(
-                        c_args,
+                    db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
-                        elastic_timeout=args.elastic_timeout,
-                    )
+                        index=tenant['index'],
+                        timeout=args.elastic_timeout,
+                    ),
                 )
+                tpool.append(Crawler(c_args))
         log.info('%d configured threads' % len(tpool))
         for cthread in tpool:
             cthread.start()

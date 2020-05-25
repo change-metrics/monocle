@@ -45,12 +45,11 @@ class GithubCrawlerArgs(object):
     updated_since: str
     loop_delay: int
     command: str
-    index: str
     org: str
     repository: str
     base_url: str
-    token: str
     token_getter: object
+    db: object
 
 
 class PRsFetcher(object):
@@ -255,12 +254,14 @@ class PRsFetcher(object):
 
     def get(self, updated_since):
         prs = []
-        updated_since = updated_since.split('T')[0]
+        if len(updated_since.split('T')) == 1:
+            updated_since += 'T00:00:00Z'
+        updated_since = dbdate_to_datetime(updated_since)
         kwargs = {
             'pr_query': self.pr_query % self.pr_commits,
             'org': self.org,
             'repository': self.repository,
-            'updated_since': datetime.strptime(updated_since, "%Y-%m-%d"),
+            'updated_since': updated_since,
             'after': '',
             'total_prs_count': 0,
             'size': self.size,

@@ -50,7 +50,6 @@ class GithubGraphQLQuery(object):
         # Set an initial value
         self.quota_remain = 5000
         self.token_getter = token_getter
-        self.get_rate_limit()
         self.retry_after = False
 
     def get_token(self):
@@ -123,7 +122,7 @@ class GithubGraphQLQuery(object):
             if (
                 not self.retry_after
                 and self.query_count % self.get_rate_limit_rate == 0
-            ):
+            ) or self.query_count == 0:
                 self.get_rate_limit()
             self.wait_for_call()
         data = {'query': qdata}
