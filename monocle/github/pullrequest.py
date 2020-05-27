@@ -49,7 +49,7 @@ class PRsFetcher(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, gql, base_url, org, repository, bulk_size=25):
+    def __init__(self, gql, base_url, org, repository, bulk_size=15):
         self.gql = gql
         self.size = bulk_size
         self.base_url = base_url
