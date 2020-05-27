@@ -218,6 +218,9 @@ class PRsFetcher(object):
           }
         }'''  # noqa: E501
         data = self.gql.query(qdata % kwargs)
+        if 'data' not in data:
+            self.log.error('No data collected: %s' % data)
+            return False
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['repository']['pullRequests'][
                 'totalCount'
@@ -229,9 +232,6 @@ class PRsFetcher(object):
             )
             if kwargs['total_prs_count'] == 0:
                 return False
-        if 'data' not in data:
-            self.log.error('No data collected: %s' % data)
-            return False
         edges = data['data']['repository']['pullRequests']['edges']
         for pr in edges:
             prs.append(pr['node'])

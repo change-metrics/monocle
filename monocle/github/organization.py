@@ -21,6 +21,9 @@ from monocle.github import application
 
 
 class RepositoriesFetcher(object):
+
+    log = logging.getLogger(__name__)
+
     def __init__(self, gql):
         self.gql = gql
         self.qdata = '''{
@@ -50,6 +53,9 @@ class RepositoriesFetcher(object):
 
         def _getPage(kwargs):
             data = self.gql.query(self.qdata % kwargs)
+            if 'data' not in data:
+                self.log.error('No data collected: %s' % data)
+                return False
             for repository in data['data']['organization']['repositories']['edges']:
                 # That's curious but the API return some forked repos
                 # even isFork is at false. We can detect the bogus result

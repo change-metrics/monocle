@@ -161,5 +161,11 @@ class GithubGraphQLQuery(object):
                     # the failing commit(s). So return the data to the caller and
                     # move on.
                     return ret
-            raise RequestException("Errors in response: %s" % ret['errors'])
+            is_forbiden = any([error['type'] == 'FORBIDDEN'] for error in ret['errors'])
+            if is_forbiden:
+                # Do not raise to not retrigger tenacity
+                self.log.info('Query forbidden due to unsuffcient token ACLs')
+                ret = {}
+            else:
+                raise RequestException("Errors in response: %s" % ret['errors'])
         return ret
