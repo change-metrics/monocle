@@ -20,7 +20,11 @@ import requests
 from time import sleep
 from datetime import datetime
 
-from tenacity import retry, wait_exponential, before_log
+from tenacity import retry, wait_fixed, after_log, stop_after_attempt
+
+
+class Timeout(Exception):
+    pass
 
 
 class GithubGraphQLQuery(object):
@@ -70,7 +74,7 @@ class GithubGraphQLQuery(object):
             sleep(until_reset.seconds + 60)
             self.get_rate_limit()
         else:
-            self.log.info("Sleeping 1 sec to be a good citizen")
+            self.log.debug("Sleeping 1 sec to be a good citizen")
             sleep(1)
 
     def getRateLimit(self):
@@ -86,9 +90,12 @@ class GithubGraphQLQuery(object):
         return data['data']['rateLimit']
 
     @retry(
-        before=before_log(log, logging.INFO), wait=wait_exponential(min=10, max=300),
+        after=after_log(log, logging.INFO),
+        wait=wait_fixed(1),
+        stop=stop_after_attempt(1),
+        reraise=True,
     )
-    def query(self, qdata, skip_get_rate_limit=False, ignore_not_found=False):
+    def query(self, qdata, skip_get_rate_limit=False):
         if not skip_get_rate_limit:
             if self.query_count % self.get_rate_limit_rate == 0:
                 self.get_rate_limit()
@@ -107,5 +114,11 @@ class GithubGraphQLQuery(object):
         ret = r.json()
         if 'errors' in ret:
             self.log.error("Errors in response: %s" % ret)
+            if (
+                len(ret['errors']) >= 1
+                and 'message' in ret['errors'][0]
+                and 'timeout' in ret['errors'][0]['message']
+            ):
+                raise Timeout(ret['errors'][0]['message'])
             raise Exception("Errors in response: %s" % ret['errors'])
         return ret
