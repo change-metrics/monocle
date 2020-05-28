@@ -36,6 +36,7 @@
     ]
   },
   "commits": {
+    "totalCount": 1,
     "edges": [
       {
         "node": {
@@ -160,7 +161,7 @@
   },
   "repository": {
     "owner": {
-      "login": "morucci"
+      "login": "change-metrics"
     },
     "name": "monocle"
   }

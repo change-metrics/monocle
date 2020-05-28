@@ -167,6 +167,7 @@ class PRsFetcher(object):
         '''  # noqa: E501
         self.pr_commits = '''
           commits (first: 100){
+            totalCount
             edges {
               node {
                 commit {
@@ -382,6 +383,8 @@ class PRsFetcher(object):
             )
             if 'commits' not in pr:
                 pr['commits'] = {'edges': []}
+            if 'edges' not in pr['commits']:
+                pr['commits']['edges'] = []
             change['author'] = get_login(pr['author'])
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
@@ -403,7 +406,7 @@ class PRsFetcher(object):
             else:
                 change["changed_files"] = []
             change['commits'] = []
-            change['commit_count'] = len(pr['commits']['edges'])
+            change['commit_count'] = int(pr['commits']['totalCount'])
             if pr['mergedBy']:
                 change['merged_by'] = get_login(pr['mergedBy'])
             else:
