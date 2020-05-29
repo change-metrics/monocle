@@ -308,7 +308,9 @@ class PRsFetcher(object):
                             % (MAX_TRY - 1)
                         )
                         get_commits = False
-                        kwargs['pr_query'] = self.get_pr_query(include_commits=get_commits)
+                        kwargs['pr_query'] = self.get_pr_query(
+                            include_commits=get_commits
+                        )
                     elif one >= MAX_TRY:
                         self.log.info(
                             '%d timeouts in a raw for one pr, giving up.' % MAX_TRY

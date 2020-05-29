@@ -47,6 +47,7 @@ class Installation:
     login: str
     account_type: str
     site_admin: str
+    permissions: dict
     repository_selection: str
     access_tokens_url: str
     repositories_url: str
@@ -144,6 +145,7 @@ def get_installations(base_url: str, app_id: str, app_key: str) -> List[Installa
                 login=inst['account']['login'],
                 account_type=inst['account']['type'],
                 site_admin=inst['account']['site_admin'],
+                permissions=inst['permissions'],
                 repository_selection=inst['repository_selection'],
                 access_tokens_url=inst['access_tokens_url'],
                 repositories_url=inst['repositories_url'],
@@ -199,8 +201,26 @@ def get_app(app_id, app_key_path):
 
 
 if __name__ == '__main__':
+    import argparse
+
     logging.basicConfig(level=logging.INFO)
-    key_file = "app_key.rsa"
-    app = get_app(app_key_path=key_file, app_id="59519")
+
+    parser = argparse.ArgumentParser(prog='application')
+
+    parser.add_argument('--loglevel', help='logging level', default='INFO')
+    parser.add_argument('--org', help='A Github organization', required=True)
+    parser.add_argument('--app-id', help='The Github app-id', required=True)
+    parser.add_argument('--app-key-path', help='A Github app key path', required=True)
+
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=getattr(logging, args.loglevel.upper()),
+        format="%(asctime)s - %(name)s - %(threadName)s - "
+        + "%(levelname)s - %(message)s",
+    )
+
+    app = get_app(app_key_path=args.app_key_path, app_id=args.app_id)
+
     print(app.installations)
-    print(app.get_token('monocle-org'))
+    print(app.get_token(args.org))
