@@ -67,7 +67,44 @@ class PRsFetcher(object):
             'PullRequestReview': 'ChangeReviewedEvent',
             'HeadRefForcePushedEvent': 'ChangeCommitForcePushedEvent',
         }
-        self.pr_query = '''
+
+    def get_pr_query(self, include_commits=True):
+        commits = '''
+            edges {
+              node {
+                commit {
+                  oid
+                  pushedDate
+                  authoredDate
+                  committedDate
+                  additions
+                  deletions
+                  message
+                  author {
+                    user {
+                      login
+                    }
+                  }
+                  committer {
+                    user {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+        '''
+        force_push_event = 'HEAD_REF_FORCE_PUSHED_EVENT'
+        force_push_event_item = '''
+                ... on HeadRefForcePushedEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+        '''
+        pr_query = '''
           id
           updatedAt
           createdAt
@@ -99,7 +136,6 @@ class PRsFetcher(object):
               }
             }
           }
-          %s
           comments (first: 100){
             edges {
               node {
@@ -110,6 +146,10 @@ class PRsFetcher(object):
                 }
               }
             }
+          }
+          commits (first: 100){
+            totalCount
+            %(commits)s
           }
           files (first: 100){
             edges {
@@ -123,7 +163,8 @@ class PRsFetcher(object):
           timelineItems (first: 100 itemTypes: [
                 CLOSED_EVENT,
                 PULL_REQUEST_REVIEW,
-                HEAD_REF_FORCE_PUSHED_EVENT]) {
+                %(force_push_event)s
+                ]) {
             edges {
               node {
                 __typename
@@ -142,13 +183,7 @@ class PRsFetcher(object):
                     login
                   }
                 }
-                ... on HeadRefForcePushedEvent {
-                  id
-                  createdAt
-                  actor {
-                    login
-                  }
-                }
+                %(force_push_event_item)s
               }
             }
           }
@@ -165,34 +200,12 @@ class PRsFetcher(object):
             name
           }
         '''  # noqa: E501
-        self.pr_commits = '''
-          commits (first: 100){
-            totalCount
-            edges {
-              node {
-                commit {
-                  oid
-                  pushedDate
-                  authoredDate
-                  committedDate
-                  additions
-                  deletions
-                  message
-                  author {
-                    user {
-                      login
-                    }
-                  }
-                  committer {
-                    user {
-                      login
-                    }
-                  }
-                }
-              }
-            }
-          }
-        '''  # noqa: E501
+        query_params = {
+            'commits': commits if include_commits else '',
+            'force_push_event': force_push_event if include_commits else '',
+            'force_push_event_item': force_push_event_item if include_commits else '',
+        }
+        return pr_query % query_params
 
     def _getPage(self, kwargs, prs):
         scope = "org:%(org)s" % kwargs
@@ -258,8 +271,9 @@ class PRsFetcher(object):
         if len(updated_since.split('T')) == 1:
             updated_since += 'T00:00:00Z'
         updated_since = dbdate_to_datetime(updated_since)
+        get_commits = True
         kwargs = {
-            'pr_query': self.pr_query % self.pr_commits,
+            'pr_query': self.get_pr_query(include_commits=get_commits),
             'org': self.org,
             'repository': self.repository,
             'updated_since': updated_since,
@@ -268,7 +282,6 @@ class PRsFetcher(object):
             'size': self.size,
         }
         one = 0
-        get_commits = True
         while True:
             self.log.info(
                 'Running request %s'
@@ -283,7 +296,7 @@ class PRsFetcher(object):
                 one = 0
                 if not get_commits:
                     self.log.info('Will get full commits on next query.')
-                    kwargs['pr_query'] = self.pr_query % self.pr_commits
+                    kwargs['pr_query'] = self.get_pr_query(include_commits=get_commits)
                     get_commits = True
             except RequestTimeout:
                 kwargs['size'] = max(1, kwargs['size'] // REDUCE)
@@ -295,7 +308,7 @@ class PRsFetcher(object):
                             % (MAX_TRY - 1)
                         )
                         get_commits = False
-                        kwargs['pr_query'] = self.pr_query % ''
+                        kwargs['pr_query'] = self.get_pr_query(include_commits=get_commits)
                     elif one >= MAX_TRY:
                         self.log.info(
                             '%d timeouts in a raw for one pr, giving up.' % MAX_TRY
@@ -320,7 +333,7 @@ class PRsFetcher(object):
         }
         '''
         kwargs = {
-            'pr_query': self.pr_query % self.pr_commits,
+            'pr_query': self.get_pr_query(),
             'org': org,
             'repository': repository,
             'number': number,
