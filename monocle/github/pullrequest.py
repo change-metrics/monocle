@@ -15,13 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import requests
 from datetime import datetime
-from time import sleep
 from dataclasses import dataclass
 from pprint import pprint
 
-from .graphql import Timeout
+from .graphql import RequestTimeout
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -262,13 +260,7 @@ class PRsFetcher(object):
                     self.log.info('Will get full commits on next query.')
                     kwargs['pr_query'] = self.pr_query % self.pr_commits
                     get_commits = True
-            except requests.exceptions.ConnectionError:
-                self.log.exception(
-                    "Error connecting to the Github API - retrying in 5s ..."
-                )
-                sleep(5)
-                continue
-            except Timeout:
+            except RequestTimeout:
                 kwargs['size'] = max(1, kwargs['size'] // REDUCE)
                 if kwargs['size'] == 1:
                     one += 1
