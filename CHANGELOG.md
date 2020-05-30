@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- [crawler] github decrease the page size to limit the github api timeout.
+- [crawler] adaptative page size for GitHub. If it's not enough, don't
+  get the commits data when we are failing for one PR.
 - [web] moved approval dispersion pie in changes summary.
 
 ### Removed

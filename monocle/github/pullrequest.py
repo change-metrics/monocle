@@ -15,12 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import requests
 from datetime import datetime
-from time import sleep
 from dataclasses import dataclass
 from pprint import pprint
 
+from .graphql import RequestTimeout
+
+MAX_TRY = 3
+MAX_BULK_SIZE = 100
+REDUCE = 2
+AUGMENT = 1.1
 
 name = 'github_crawler'
 help = 'Github Crawler to fetch PRs events'
@@ -49,9 +53,9 @@ class PRsFetcher(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, gql, base_url, org, repository, bulk_size=15):
+    def __init__(self, gql, base_url, org, repository):
         self.gql = gql
-        self.size = bulk_size
+        self.size = MAX_BULK_SIZE
         self.base_url = base_url
         self.org = org
         self.repository = repository
@@ -92,6 +96,7 @@ class PRsFetcher(object):
               }
             }
           }
+          %s
           comments (first: 100){
             edges {
               node {
@@ -99,31 +104,6 @@ class PRsFetcher(object):
                 createdAt
                 author {
                   login
-                }
-              }
-            }
-          }
-          commits (first: 100){
-            edges {
-              node {
-                commit {
-                  oid
-                  pushedDate
-                  authoredDate
-                  committedDate
-                  additions
-                  deletions
-                  message
-                  author {
-                    user {
-                      login
-                    }
-                  }
-                  committer {
-                    user {
-                      login
-                    }
-                  }
                 }
               }
             }
@@ -182,6 +162,33 @@ class PRsFetcher(object):
             name
           }
         '''  # noqa: E501
+        self.pr_commits = '''
+          commits (first: 100){
+            edges {
+              node {
+                commit {
+                  oid
+                  pushedDate
+                  authoredDate
+                  committedDate
+                  additions
+                  deletions
+                  message
+                  author {
+                    user {
+                      login
+                    }
+                  }
+                  committer {
+                    user {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          }
+        '''  # noqa: E501
 
     def _getPage(self, kwargs, prs):
         # Note: usage of the default sort on created field because
@@ -226,7 +233,7 @@ class PRsFetcher(object):
     def get(self, updated_since):
         prs = []
         kwargs = {
-            'pr_query': self.pr_query,
+            'pr_query': self.pr_query % self.pr_commits,
             'org': self.org,
             'repository': self.repository,
             'updated_since': updated_since,
@@ -235,7 +242,8 @@ class PRsFetcher(object):
             'total_prs_count': 0,
             'size': self.size,
         }
-
+        one = 0
+        get_commits = True
         while True:
             self.log.info(
                 'Running request %s'
@@ -243,15 +251,35 @@ class PRsFetcher(object):
             )
             try:
                 hnp = self._getPage(kwargs, prs)
-            except requests.exceptions.ConnectionError:
-                self.log.exception(
-                    "Error connecting to the Github API - retrying in 5s ..."
-                )
-                sleep(5)
+                if kwargs['size'] == 1:
+                    pr = prs[0]
+                    self.log.info('PR %s' % pr)
+                kwargs['size'] = min(MAX_BULK_SIZE, int(kwargs['size'] * AUGMENT) + 1)
+                one = 0
+                if not get_commits:
+                    self.log.info('Will get full commits on next query.')
+                    kwargs['pr_query'] = self.pr_query % self.pr_commits
+                    get_commits = True
+            except RequestTimeout:
+                kwargs['size'] = max(1, kwargs['size'] // REDUCE)
+                if kwargs['size'] == 1:
+                    one += 1
+                    if one == MAX_TRY - 1:
+                        self.log.info(
+                            '%d timeouts in a raw for one pr, retrying without commits.'
+                            % (MAX_TRY - 1)
+                        )
+                        get_commits = False
+                        kwargs['pr_query'] = self.pr_query % ''
+                    elif one >= MAX_TRY:
+                        self.log.info(
+                            '%d timeouts in a raw for one pr, giving up.' % MAX_TRY
+                        )
+                        raise
                 continue
             self.log.info("%s PRs fetched" % len(prs))
             if not hnp:
-                if len(prs) < kwargs['total_prs_count'] and len(prs) % self.size == 0:
+                if len(prs) < kwargs['total_prs_count']:
                     kwargs['created_before'] = prs[-1]['createdAt']
                     kwargs['after'] = ''
                     continue
@@ -332,6 +360,8 @@ class PRsFetcher(object):
                 change['repository_fullname'],
                 change['number'],
             )
+            if 'commits' not in pr:
+                pr['commits'] = {'edges': []}
             change['author'] = get_login(pr['author'])
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']

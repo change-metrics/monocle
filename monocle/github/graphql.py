@@ -20,7 +20,21 @@ import requests
 from time import sleep
 from datetime import datetime
 
-from tenacity import retry, wait_exponential, before_log
+from tenacity import (
+    retry,
+    wait_fixed,
+    after_log,
+    stop_after_attempt,
+    retry_if_exception_type,
+)
+
+
+class RequestTimeout(Exception):
+    pass
+
+
+class RequestException(Exception):
+    pass
 
 
 class GithubGraphQLQuery(object):
@@ -70,7 +84,7 @@ class GithubGraphQLQuery(object):
             sleep(until_reset.seconds + 60)
             self.get_rate_limit()
         else:
-            self.log.info("Sleeping 1 sec to be a good citizen")
+            self.log.debug("Sleeping 1 sec to be a good citizen")
             sleep(1)
 
     def getRateLimit(self):
@@ -86,26 +100,39 @@ class GithubGraphQLQuery(object):
         return data['data']['rateLimit']
 
     @retry(
-        before=before_log(log, logging.INFO), wait=wait_exponential(min=10, max=300),
+        after=after_log(log, logging.INFO),
+        wait=wait_fixed(10),
+        stop=stop_after_attempt(30),
+        retry=retry_if_exception_type(RequestException),
+        reraise=True,
     )
-    def query(self, qdata, skip_get_rate_limit=False, ignore_not_found=False):
+    def query(self, qdata, skip_get_rate_limit=False):
         if not skip_get_rate_limit:
             if self.query_count % self.get_rate_limit_rate == 0:
                 self.get_rate_limit()
             self.wait_for_call()
         data = {'query': qdata}
-        r = self.session.post(
-            url=self.url, json=data, headers=self.headers, timeout=30.3
-        )
+        try:
+            r = self.session.post(
+                url=self.url, json=data, headers=self.headers, timeout=30.3
+            )
+        except requests.exceptions.ConnectionError:
+            raise RequestException("Error connecting to the API")
         self.query_count += 1
         if 'retry-after' in r.headers:
             self.log.info('Got Retry-After: %s' % r.headers['retry-after'])
             self.retry_after = int(r.headers['retry-after'])
         if not r.status_code != "200":
             self.log.error('No ok response code: %s' % r)
-            raise Exception("No ok response code: %s" % r.text)
+            raise RequestException("No ok response code: %s" % r.text)
         ret = r.json()
         if 'errors' in ret:
             self.log.error("Errors in response: %s" % ret)
-            raise Exception("Errors in response: %s" % ret['errors'])
+            if (
+                len(ret['errors']) >= 1
+                and 'message' in ret['errors'][0]
+                and 'timeout' in ret['errors'][0]['message']
+            ):
+                raise RequestTimeout(ret['errors'][0]['message'])
+            raise RequestException("Errors in response: %s" % ret['errors'])
         return ret
