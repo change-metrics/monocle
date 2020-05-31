@@ -449,6 +449,8 @@ class PRsFetcher(object):
             # it does not provide more data than the current list of commits
             # of the pull request
             for commit in pr['commits']['edges']:
+                if not commit['node']:
+                    continue
                 _commit = commit['node']['commit']
                 obj = {
                     'type': 'ChangeCommitPushedEvent',
@@ -464,6 +466,8 @@ class PRsFetcher(object):
                 objects.append(obj)
             # Now attach a commits list to the change
             for commit in pr['commits']['edges']:
+                if not commit['node']:
+                    continue
                 _commit = commit['node']['commit']
                 obj = {
                     'sha': _commit['oid'],
