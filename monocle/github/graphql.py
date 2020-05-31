@@ -141,5 +141,18 @@ class GithubGraphQLQuery(object):
                 and 'timeout' in ret['errors'][0]['message']
             ):
                 raise RequestTimeout(ret['errors'][0]['message'])
+            if len(ret['errors']) >= 1:
+                if all(
+                    [
+                        error
+                        for error in ret['errors']
+                        if 'The additions count for this commit is unavailable'
+                        in error['message']
+                    ]
+                ):
+                    # This errors are not critical, PRs data are complete, w/o
+                    # the failing commit(s). So return the data to the caller and
+                    # move on.
+                    return ret
             raise RequestException("Errors in response: %s" % ret['errors'])
         return ret
