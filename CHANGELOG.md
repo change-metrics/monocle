@@ -19,8 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] moved approval dispersion pie in changes summary.
 
 ### Removed
+
 ### Fixed
 
+- [crawler] protect get rate limit calls.
 - [web] better look and feel on small device like smartphone.
 - [api] limit first_comment|review_on_changes to 10000 objects to avoid performance issue.
 

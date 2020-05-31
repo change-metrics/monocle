@@ -97,7 +97,11 @@ class GithubGraphQLQuery(object):
           }
         }'''
         data = self.query(qdata, skip_get_rate_limit=True)
-        return data['data']['rateLimit']
+        try:
+            return data['data']['rateLimit']
+        except KeyError:
+            self.log.error('No rate limit data: %s' % data)
+            raise RequestException('No rate limit data: %s' % data)
 
     @retry(
         after=after_log(log, logging.INFO),
@@ -108,7 +112,10 @@ class GithubGraphQLQuery(object):
     )
     def query(self, qdata, skip_get_rate_limit=False):
         if not skip_get_rate_limit:
-            if self.query_count % self.get_rate_limit_rate == 0:
+            if (
+                not self.retry_after
+                and self.query_count % self.get_rate_limit_rate == 0
+            ):
                 self.get_rate_limit()
             self.wait_for_call()
         data = {'query': qdata}
