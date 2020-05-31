@@ -124,8 +124,9 @@ class GroupCrawler(Thread):
             for crawler in self.crawlers:
                 self.setName(crawler.repository_el_re)
                 crawler.run_step()
-            log.info(
-                "Waiting %s seconds before next fetch ..."
-                % (self.crawlers[0].loop_delay)
-            )
-            sleep(self.crawlers[0].loop_delay)
+            if self.crawlers:
+                delay = self.crawlers[0].loop_delay
+            else:
+                delay = 300
+            log.info("Waiting %s seconds before next fetch ..." % delay)
+            sleep(delay)

@@ -160,7 +160,7 @@ def get_installations(base_url: str, app_id: str, app_key: str) -> List[Installa
     return installations
 
 
-class MonocleGihtubApp:
+class MonocleGithubApp:
     def __init__(
         self, app_key: str, app_id: str, base_url: str = "https://api.github.com"
     ) -> None:
@@ -181,13 +181,6 @@ class MonocleGihtubApp:
             if installation.login == org:
                 logging.info("Found matching app installed on %s. Use token." % org)
                 return get_installation_key(installation)
-        # No macthing org so fallback to use the first app token
-        # that may work in case of public org
-        if self.installations:
-            logging.info(
-                "No app installed on this org %s. Use a first app found token." % org
-            )
-            return get_installation_key(self.installations[0])
         logging.info("No app installed. No token to use.")
         return None
 
@@ -195,7 +188,7 @@ class MonocleGihtubApp:
 def get_app(app_id, app_key_path):
     with open(app_key_path, 'r') as f:
         app_key = f.read()
-    app = MonocleGihtubApp(app_key, app_id)
+    app = MonocleGithubApp(app_key, app_id)
     app.search_installations()
     return app
 

@@ -64,17 +64,14 @@ class GithubGraphQLQuery(object):
         return headers
 
     def get_rate_limit(self):
-        try:
-            ratelimit = self.getRateLimit()
-        except requests.exceptions.ConnectionError:
-            sleep(5)
-            ratelimit = self.getRateLimit()
-        self.quota_remain = ratelimit['remaining']
-        self.resetat = datetime.strptime(ratelimit['resetAt'], '%Y-%m-%dT%H:%M:%SZ')
-        self.log.info(
-            "Got rate limit data: remain %s resetat %s"
-            % (self.quota_remain, self.resetat)
-        )
+        ratelimit = self.getRateLimit()
+        if ratelimit:
+            self.quota_remain = ratelimit['remaining']
+            self.resetat = datetime.strptime(ratelimit['resetAt'], '%Y-%m-%dT%H:%M:%SZ')
+            self.log.info(
+                "Got rate limit data: remain %s resetat %s"
+                % (self.quota_remain, self.resetat)
+            )
 
     # https://developer.github.com/v3/guides/best-practices-for-integrators/#dealing-with-abuse-rate-limits
     def wait_for_call(self):
@@ -104,11 +101,12 @@ class GithubGraphQLQuery(object):
           }
         }'''
         data = self.query(qdata, skip_get_rate_limit=True)
-        try:
-            return data['data']['rateLimit']
-        except KeyError:
-            self.log.error('No rate limit data: %s' % data)
-            raise RequestException('No rate limit data: %s' % data)
+        if data:
+            try:
+                return data['data']['rateLimit']
+            except KeyError:
+                self.log.error('No rate limit data: %s' % data)
+                raise RequestException('No rate limit data: %s' % data)
 
     @retry(
         after=after_log(log, logging.INFO),
@@ -140,6 +138,9 @@ class GithubGraphQLQuery(object):
             self.log.error('No ok response code: %s' % r)
             raise RequestException("No ok response code: %s" % r.text)
         ret = r.json()
+        if 'Bad credentials' == ret.get('message', ''):
+            self.log.info('Query forbidden due to bad credentials')
+            ret = {}
         if 'errors' in ret:
             self.log.error("Errors in response: %s" % ret)
             if (
