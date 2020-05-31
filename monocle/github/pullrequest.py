@@ -19,7 +19,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from pprint import pprint
 
-from .graphql import RequestTimeout
+from monocle.github.graphql import RequestTimeout
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -299,7 +299,7 @@ class PRsFetcher(object):
         }
         '''
         kwargs = {
-            'pr_query': self.pr_query,
+            'pr_query': self.pr_query % self.pr_commits,
             'org': org,
             'repository': repository,
             'number': number,
