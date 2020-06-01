@@ -19,6 +19,7 @@ import logging
 from datetime import datetime
 from dataclasses import dataclass
 from pprint import pprint
+from time import sleep
 
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
@@ -234,7 +235,13 @@ class PRsFetcher(object):
         data = self.gql.query(qdata % kwargs)
         if 'data' not in data:
             self.log.error('No data collected: %s' % data)
-            return False
+            if 'message' in data and 'wait a few minutes' in data['message']:
+                self.log.info('sleeping 2 mn')
+                sleep(120)
+            else:
+                self.log.info('sleeping 20 s')
+                sleep(20)
+            return None
         if not kwargs['total_prs_count']:
             kwargs['total_prs_count'] = data['data']['repository']['pullRequests'][
                 'totalCount'
@@ -317,7 +324,7 @@ class PRsFetcher(object):
                         raise
                 continue
             self.log.info("%s PRs fetched" % len(prs))
-            if not hnp:
+            if hnp is False:
                 break
         return prs
 
