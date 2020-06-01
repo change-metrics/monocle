@@ -290,8 +290,7 @@ class PRsFetcher(object):
             try:
                 hnp = self._getPage(kwargs, prs)
                 if kwargs['size'] == 1:
-                    pr = prs[0]
-                    self.log.info('PR %s' % pr)
+                    self.log.debug('Getting this PR, with page size 1: %s' % prs[0])
                 kwargs['size'] = min(MAX_BULK_SIZE, int(kwargs['size'] * AUGMENT) + 1)
                 one = 0
                 if not get_commits:

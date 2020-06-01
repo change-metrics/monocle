@@ -128,7 +128,10 @@ class GithubGraphQLQuery(object):
             r = self.session.post(
                 url=self.url, json=data, headers=self.get_headers(), timeout=30.3
             )
-        except requests.exceptions.ConnectionError:
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ChunkedEncodingError,
+        ):
             raise RequestException("Error connecting to the API")
         self.query_count += 1
         if 'retry-after' in r.headers:
