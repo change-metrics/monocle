@@ -50,7 +50,6 @@ class GithubGraphQLQuery(object):
         # Set an initial value
         self.quota_remain = 5000
         self.token_getter = token_getter
-        self.retry_after = False
 
     def get_token(self):
         return self.token_getter.get_token()
@@ -75,11 +74,7 @@ class GithubGraphQLQuery(object):
 
     # https://developer.github.com/v3/guides/best-practices-for-integrators/#dealing-with-abuse-rate-limits
     def wait_for_call(self):
-        if self.retry_after:
-            self.log.info("Waiting for %s secs (Retry-After)" % self.retry_after)
-            sleep(self.retry_after)
-            self.retry_after = False
-        elif self.quota_remain <= 150:
+        if self.quota_remain <= 150:
             until_reset = self.resetat - datetime.utcnow()
             self.log.info(
                 "Quota remain: %s/calls delay until "
@@ -117,10 +112,7 @@ class GithubGraphQLQuery(object):
     )
     def query(self, qdata, skip_get_rate_limit=False):
         if not skip_get_rate_limit:
-            if (
-                not self.retry_after
-                and self.query_count % self.get_rate_limit_rate == 0
-            ) or self.query_count == 0:
+            if self.query_count % self.get_rate_limit_rate == 0:
                 self.get_rate_limit()
             self.wait_for_call()
         data = {'query': qdata}
@@ -135,8 +127,8 @@ class GithubGraphQLQuery(object):
             raise RequestException("Error connecting to the API")
         self.query_count += 1
         if 'retry-after' in r.headers:
-            self.log.info('Got Retry-After: %s' % r.headers['retry-after'])
-            self.retry_after = int(r.headers['retry-after'])
+            self.log.info('Got Retry-After: %s, sleeping...' % r.headers['retry-after'])
+            sleep(int(r.headers['retry-after']))
         if not r.status_code != "200":
             self.log.error('No ok response code: %s' % r)
             raise RequestException("No ok response code: %s" % r.text)
