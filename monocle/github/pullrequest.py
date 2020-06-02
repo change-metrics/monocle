@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from pprint import pprint
 from time import sleep
 
+from typing import Optional
+
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
 from monocle.utils import dbdate_to_datetime
@@ -201,6 +203,11 @@ class PRsFetcher(object):
             name
           }
         '''  # noqa: E501
+        if include_commits and not self.gql.token_getter.can_read_commit():
+            self.log.info(
+                "Disable commits fetching for org %s due to unsufficent ACLs" % self.org
+            )
+            include_commits = False
         query_params = {
             'commits': commits if include_commits else '',
             'force_push_event': force_push_event if include_commits else '',
@@ -209,10 +216,6 @@ class PRsFetcher(object):
         return pr_query % query_params
 
     def _getPage(self, kwargs, prs):
-        scope = "org:%(org)s" % kwargs
-        if kwargs.get('repository'):
-            scope = "repo:%(org)s/%(repository)s" % kwargs
-        kwargs['scope'] = scope
         qdata = '''{
           repository(owner: "%(org)s", name:"%(repository)s") {
             pullRequests(
@@ -539,16 +542,26 @@ class PRsFetcher(object):
 
 
 class TokenGetter:
-    def __init__(self, org, token=None, app=None):
+    def __init__(
+        self,
+        org,
+        token: Optional[str] = None,
+        app: Optional[application.MonocleGithubApp] = None,
+    ) -> None:
         self.org = org
         self.token = token
         self.app = app
 
     def get_token(self):
         if self.token:
-            return self.token
+            return self.token, {'contents': 'read'}
+        elif self.app:
+            return self.app.get_token(self.org), self.app.get_permissions(self.org)
         else:
-            return self.app.get_token(self.org)
+            raise RuntimeError("TokenGetter need a Token or a GithubApp")
+
+    def can_read_commit(self) -> bool:
+        return 'contents' in self.get_token()[1].keys()
 
 
 if __name__ == '__main__':

@@ -179,13 +179,19 @@ class MonocleGithubApp:
     def get_token(self, org: str) -> Optional[str]:
         for installation in self.installations:
             if installation.login == org:
-                logging.info("Found matching app installed on %s. Use token." % org)
                 return get_installation_key(installation)
-        logging.info("No app installed. No token to use.")
+        logging.info("No app installed on %s. No token to use." % org)
+        return None
+
+    def get_permissions(self, org: str) -> Optional[dict]:
+        for installation in self.installations:
+            if installation.login == org:
+                return installation.permissions
+        logging.info("No app installed on %s. No permissions defined." % org)
         return None
 
 
-def get_app(app_id, app_key_path):
+def get_app(app_id, app_key_path) -> MonocleGithubApp:
     with open(app_key_path, 'r') as f:
         app_key = f.read()
     app = MonocleGithubApp(app_key, app_id)
@@ -217,3 +223,4 @@ if __name__ == '__main__':
 
     print(app.installations)
     print(app.get_token(args.org))
+    print(app.get_permissions(args.org))

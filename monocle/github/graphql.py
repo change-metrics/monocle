@@ -51,10 +51,10 @@ class GithubGraphQLQuery(object):
         self.quota_remain = 5000
         self.token_getter = token_getter
 
-    def get_token(self):
-        return self.token_getter.get_token()
+    def get_token(self) -> str:
+        return self.token_getter.get_token()[0]
 
-    def get_headers(self):
+    def get_headers(self) -> dict:
         headers = {
             'Authorization': 'token %s' % self.get_token(),
             'User-Agent': 'change-metrics/monocle',
