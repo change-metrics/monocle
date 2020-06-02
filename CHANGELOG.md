@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- [crawler] support for a GitHub application.
 - [web] warning message when small screen (width < 1024).
 - [web] display active authors histogram in People page.
 - [api] add authors_histo and authors_histo_stats queries.

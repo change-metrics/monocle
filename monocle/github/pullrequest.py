@@ -14,12 +14,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import logging
 from datetime import datetime
 from dataclasses import dataclass
 from pprint import pprint
+from time import sleep
+
+from typing import Optional
 
 from monocle.github.graphql import RequestTimeout
+from monocle.github import application
+from monocle.utils import dbdate_to_datetime
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -42,11 +48,11 @@ class GithubCrawlerArgs(object):
     updated_since: str
     loop_delay: int
     command: str
-    index: str
     org: str
     repository: str
     base_url: str
-    token: str
+    token_getter: object
+    db: object
 
 
 class PRsFetcher(object):
@@ -64,7 +70,44 @@ class PRsFetcher(object):
             'PullRequestReview': 'ChangeReviewedEvent',
             'HeadRefForcePushedEvent': 'ChangeCommitForcePushedEvent',
         }
-        self.pr_query = '''
+
+    def get_pr_query(self, include_commits=True):
+        commits = '''
+            edges {
+              node {
+                commit {
+                  oid
+                  pushedDate
+                  authoredDate
+                  committedDate
+                  additions
+                  deletions
+                  message
+                  author {
+                    user {
+                      login
+                    }
+                  }
+                  committer {
+                    user {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+        '''
+        force_push_event = 'HEAD_REF_FORCE_PUSHED_EVENT'
+        force_push_event_item = '''
+                ... on HeadRefForcePushedEvent {
+                  id
+                  createdAt
+                  actor {
+                    login
+                  }
+                }
+        '''
+        pr_query = '''
           id
           updatedAt
           createdAt
@@ -96,7 +139,6 @@ class PRsFetcher(object):
               }
             }
           }
-          %s
           comments (first: 100){
             edges {
               node {
@@ -107,6 +149,10 @@ class PRsFetcher(object):
                 }
               }
             }
+          }
+          commits (first: 100){
+            totalCount
+            %(commits)s
           }
           files (first: 100){
             edges {
@@ -120,7 +166,8 @@ class PRsFetcher(object):
           timelineItems (first: 100 itemTypes: [
                 CLOSED_EVENT,
                 PULL_REQUEST_REVIEW,
-                HEAD_REF_FORCE_PUSHED_EVENT]) {
+                %(force_push_event)s
+                ]) {
             edges {
               node {
                 __typename
@@ -139,13 +186,7 @@ class PRsFetcher(object):
                     login
                   }
                 }
-                ... on HeadRefForcePushedEvent {
-                  id
-                  createdAt
-                  actor {
-                    login
-                  }
-                }
+                %(force_push_event_item)s
               }
             }
           }
@@ -162,68 +203,73 @@ class PRsFetcher(object):
             name
           }
         '''  # noqa: E501
-        self.pr_commits = '''
-          commits (first: 100){
-            edges {
-              node {
-                commit {
-                  oid
-                  pushedDate
-                  authoredDate
-                  committedDate
-                  additions
-                  deletions
-                  message
-                  author {
-                    user {
-                      login
-                    }
-                  }
-                  committer {
-                    user {
-                      login
-                    }
-                  }
-                }
-              }
-            }
-          }
-        '''  # noqa: E501
+        if include_commits and not self.gql.token_getter.can_read_commit():
+            self.log.info(
+                "Disable commits fetching for org %s due to unsufficent ACLs" % self.org
+            )
+            include_commits = False
+        query_params = {
+            'commits': commits if include_commits else '',
+            'force_push_event': force_push_event if include_commits else '',
+            'force_push_event_item': force_push_event_item if include_commits else '',
+        }
+        return pr_query % query_params
 
     def _getPage(self, kwargs, prs):
-        # Note: usage of the default sort on created field because
-        # sort on the updated field does not return well ordered PRs
-        scope = "org:%(org)s" % kwargs
-        if kwargs.get('repository'):
-            scope = "repo:%(org)s/%(repository)s" % kwargs
-        kwargs['scope'] = scope
         qdata = '''{
-          search(
-              query: "%(scope)s is:pr archived:false sort:created updated:>%(updated_since)s created:<%(created_before)s"
-              type: ISSUE first: %(size)s %(after)s) {
-            issueCount
-            pageInfo {
-              hasNextPage endCursor
-            }
-            edges {
-              node {
-                ... on PullRequest {
-                    %(pr_query)s
+          repository(owner: "%(org)s", name:"%(repository)s") {
+            pullRequests(
+              first: %(size)s
+              %(after)s
+              orderBy: { field: UPDATED_AT, direction: DESC }
+            ) {
+              totalCount
+              pageInfo {
+                hasNextPage endCursor
+              }
+              edges {
+                node {
+                  %(pr_query)s
                 }
               }
             }
           }
         }'''  # noqa: E501
         data = self.gql.query(qdata % kwargs)
-        if not kwargs['total_prs_count']:
-            kwargs['total_prs_count'] = data['data']['search']['issueCount']
-            self.log.info("Total PRs to fetch: %s" % kwargs['total_prs_count'])
         if 'data' not in data:
             self.log.error('No data collected: %s' % data)
-            return False
-        for pr in data['data']['search']['edges']:
+            if 'message' in data and 'wait a few minutes' in data['message']:
+                self.log.info('sleeping 2 mn')
+                sleep(120)
+            else:
+                self.log.info('sleeping 20 s')
+                sleep(20)
+            return None
+        if not kwargs['total_prs_count']:
+            kwargs['total_prs_count'] = data['data']['repository']['pullRequests'][
+                'totalCount'
+            ]
+            self.log.info(
+                "Total PRs: %s but will fetch until we reached a PR"
+                "updated at date < %s"
+                % (kwargs['total_prs_count'], kwargs['updated_since'])
+            )
+            if kwargs['total_prs_count'] == 0:
+                return False
+        edges = data['data']['repository']['pullRequests']['edges']
+        for pr in edges:
             prs.append(pr['node'])
-        pageInfo = data['data']['search']['pageInfo']
+        # We sort to mitigate this
+        # https://github.community/t5/GitHub-API-Development-and/apiv4-pullrequests-listing-broken-ordering/m-p/59439#M4968
+        oldest_update = sorted(
+            [dbdate_to_datetime(pr['node']['updatedAt']) for pr in edges], reverse=True
+        )[-1]
+        logging.info("page oldest updated at date is %s" % oldest_update)
+        if oldest_update < kwargs['updated_since']:
+            # The crawler reached a page where the oldest updated PR
+            # is oldest than the configured limit
+            return False
+        pageInfo = data['data']['repository']['pullRequests']['pageInfo']
         if pageInfo['hasNextPage']:
             kwargs['after'] = 'after: "%s"' % pageInfo['endCursor']
             return True
@@ -232,18 +278,20 @@ class PRsFetcher(object):
 
     def get(self, updated_since):
         prs = []
+        if len(updated_since.split('T')) == 1:
+            updated_since += 'T00:00:00Z'
+        updated_since = dbdate_to_datetime(updated_since)
+        get_commits = True
         kwargs = {
-            'pr_query': self.pr_query % self.pr_commits,
+            'pr_query': self.get_pr_query(include_commits=get_commits),
             'org': self.org,
             'repository': self.repository,
             'updated_since': updated_since,
             'after': '',
-            'created_before': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             'total_prs_count': 0,
             'size': self.size,
         }
         one = 0
-        get_commits = True
         while True:
             self.log.info(
                 'Running request %s'
@@ -252,13 +300,12 @@ class PRsFetcher(object):
             try:
                 hnp = self._getPage(kwargs, prs)
                 if kwargs['size'] == 1:
-                    pr = prs[0]
-                    self.log.info('PR %s' % pr)
+                    self.log.debug('Getting this PR, with page size 1: %s' % prs[0])
                 kwargs['size'] = min(MAX_BULK_SIZE, int(kwargs['size'] * AUGMENT) + 1)
                 one = 0
                 if not get_commits:
                     self.log.info('Will get full commits on next query.')
-                    kwargs['pr_query'] = self.pr_query % self.pr_commits
+                    kwargs['pr_query'] = self.get_pr_query(include_commits=get_commits)
                     get_commits = True
             except RequestTimeout:
                 kwargs['size'] = max(1, kwargs['size'] // REDUCE)
@@ -270,7 +317,9 @@ class PRsFetcher(object):
                             % (MAX_TRY - 1)
                         )
                         get_commits = False
-                        kwargs['pr_query'] = self.pr_query % ''
+                        kwargs['pr_query'] = self.get_pr_query(
+                            include_commits=get_commits
+                        )
                     elif one >= MAX_TRY:
                         self.log.info(
                             '%d timeouts in a raw for one pr, giving up.' % MAX_TRY
@@ -278,11 +327,7 @@ class PRsFetcher(object):
                         raise
                 continue
             self.log.info("%s PRs fetched" % len(prs))
-            if not hnp:
-                if len(prs) < kwargs['total_prs_count']:
-                    kwargs['created_before'] = prs[-1]['createdAt']
-                    kwargs['after'] = ''
-                    continue
+            if hnp is False:
                 break
         return prs
 
@@ -299,7 +344,7 @@ class PRsFetcher(object):
         }
         '''
         kwargs = {
-            'pr_query': self.pr_query % self.pr_commits,
+            'pr_query': self.get_pr_query(),
             'org': org,
             'repository': repository,
             'number': number,
@@ -362,6 +407,8 @@ class PRsFetcher(object):
             )
             if 'commits' not in pr:
                 pr['commits'] = {'edges': []}
+            if 'edges' not in pr['commits']:
+                pr['commits']['edges'] = []
             change['author'] = get_login(pr['author'])
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
@@ -383,7 +430,7 @@ class PRsFetcher(object):
             else:
                 change["changed_files"] = []
             change['commits'] = []
-            change['commit_count'] = len(pr['commits']['edges'])
+            change['commit_count'] = int(pr['commits']['totalCount'])
             if pr['mergedBy']:
                 change['merged_by'] = get_login(pr['mergedBy'])
             else:
@@ -494,6 +541,29 @@ class PRsFetcher(object):
         return objects
 
 
+class TokenGetter:
+    def __init__(
+        self,
+        org,
+        token: Optional[str] = None,
+        app: Optional[application.MonocleGithubApp] = None,
+    ) -> None:
+        self.org = org
+        self.token = token
+        self.app = app
+
+    def get_token(self):
+        if self.token:
+            return self.token, {'contents': 'read'}
+        elif self.app:
+            return self.app.get_token(self.org), self.app.get_permissions(self.org)
+        else:
+            raise RuntimeError("TokenGetter need a Token or a GithubApp")
+
+    def can_read_commit(self) -> bool:
+        return 'contents' in self.get_token()[1].keys()
+
+
 if __name__ == '__main__':
     import os
     import json
@@ -502,31 +572,55 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='pullrequest')
 
+    parser.add_argument('--crawler', help='run crawler', action='store_true')
+    parser.add_argument('--updated-since', help='stop date for the crawler')
     parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--token', help='A Github personal token', required=True)
+    parser.add_argument('--token', help='A Github personal token')
     parser.add_argument('--org', help='A Github organization', required=True)
+    parser.add_argument('--app-id', help='The Github app-id')
+    parser.add_argument('--app-key-path', help='A Github app key path')
     parser.add_argument(
         '--repository', help='The repository within the organization', required=True
     )
-    parser.add_argument('--id', help='The pull request id', required=True)
+    parser.add_argument('--id', help='The pull request id')
     parser.add_argument(
         '--output-dir', help='Store the dump in this directory',
     )
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.loglevel.upper()),)
+    logging.basicConfig(
+        level=getattr(logging, args.loglevel.upper()),
+        format="%(asctime)s - %(name)s - %(threadName)s - "
+        + "%(levelname)s - %(message)s",
+    )
+
+    app = None
+    if args.app_id and args.app_key_path:
+        app = application.get_app(args.app_id, args.app_key_path)
+    tg = TokenGetter(args.org, args.token, app)
+
     prf = PRsFetcher(
-        graphql.GithubGraphQLQuery(args.token),
+        graphql.GithubGraphQLQuery(token_getter=tg),
         'https://github.com',
         args.org,
         args.repository,
     )
-    data = prf.get_one(args.org, args.repository, args.id)
-    if not args.output_dir:
-        pprint(data)
+    if args.crawler:
+        if not args.updated_since:
+            print("please provide --update-since arg")
+            sys.exit(1)
+        prs = prf.get(args.updated_since)
+        pprint(prs)
     else:
-        basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
-        basepath = os.path.join(args.output_dir, basename)
-        json.dump(data[0], open(basepath + '_raw.json', 'w'), indent=2)
-        json.dump(data[1], open(basepath + '_extracted.json', 'w'), indent=2)
+        if not args.id:
+            print("please provide --id arg")
+            sys.exit(1)
+        data = prf.get_one(args.org, args.repository, args.id)
+        if not args.output_dir:
+            pprint(data)
+        else:
+            basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
+            basepath = os.path.join(args.output_dir, basename)
+            json.dump(data[0], open(basepath + '_raw.json', 'w'), indent=2)
+            json.dump(data[1], open(basepath + '_extracted.json', 'w'), indent=2)

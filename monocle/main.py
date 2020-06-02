@@ -28,6 +28,9 @@ from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
 from monocle.github import pullrequest
+from monocle.github import application
+from monocle.github import organization
+from monocle.github import graphql
 from monocle.gerrit import review
 from monocle.crawler import Crawler, Runner, GroupCrawler
 from monocle import config
@@ -131,7 +134,7 @@ def main():
 
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper()),
-        format="%(asctime)s - %(name)s - %(threadName)s - "
+        format="%(asctime)s - %(name)s - %(thread)d - %(threadName)s - "
         + "%(levelname)s - %(message)s",
     )
     log = logging.getLogger(__name__)
@@ -149,45 +152,73 @@ def main():
         validate(instance=configdata, schema=config.schema)
         tpool = []
         group = {}
+        app = None
+        if os.getenv('APP_ID') and os.getenv('APP_KEY_PATH'):
+            app = application.get_app(os.getenv('APP_ID'), os.getenv('APP_KEY_PATH'))
         for tenant in configdata['tenants']:
             for crawler_item in tenant['crawler'].get('github_orgs', []):
+                tg = pullrequest.TokenGetter(
+                    crawler_item['name'], crawler_item.get('token'), app
+                )
                 c_args = pullrequest.GithubCrawlerArgs(
                     command='github_crawler',
-                    index=tenant['index'],
                     org=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=tenant['crawler']['loop_delay'],
-                    token=crawler_item['token'],
                     repository=crawler_item.get('repository'),
                     base_url=crawler_item['base_url'],
-                )
-                log.info('args=%s' % c_args)
-                if crawler_item['token'] not in group:
-                    group[crawler_item['token']] = GroupCrawler()
-                    tpool.append(group[crawler_item['token']])
-                group[crawler_item['token']].add_crawler(
-                    Runner(
-                        c_args,
+                    token_getter=tg,
+                    db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
-                        elastic_timeout=args.elastic_timeout,
-                    )
+                        index=tenant['index'],
+                        timeout=args.elastic_timeout,
+                    ),
                 )
+                gid = crawler_item.get('token')
+                if not gid:
+                    if app:
+                        # No token, if we have a app then get the token from the app
+                        gid = app.get_token(org=crawler_item['name'])
+                    else:
+                        log.info('Skip crawler because no token: %s' % c_args)
+                        continue
+                if gid not in group:
+                    group[gid] = GroupCrawler()
+                    tpool.append(group[gid])
+                if c_args.repository:
+                    repositories = [c_args.repository]
+                else:
+                    log.info('Discovering repositories in %s ...' % c_args.org)
+                    # No repository specified for that organization so
+                    # try to discover all of them
+                    rf = organization.RepositoriesFetcher(
+                        graphql.GithubGraphQLQuery(token_getter=tg)
+                    )
+                    repos = rf.get(c_args.org)
+                    repositories = [
+                        repo['name'] for repo in repos if not repo['isArchived']
+                    ]
+                    log.info(
+                        'Found %s repositories in %s ...'
+                        % (len(repositories), c_args.org)
+                    )
+                for repository in repositories:
+                    c_args.repository = repository
+                    group[gid].add_crawler(Runner(c_args))
             for crawler_item in tenant['crawler'].get('gerrit_repositories', []):
                 c_args = review.GerritCrawlerArgs(
                     command='gerrit_crawler',
-                    index=tenant['index'],
                     repository=crawler_item['name'],
                     updated_since=crawler_item['updated_since'],
                     loop_delay=tenant['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'],
-                )
-                tpool.append(
-                    Crawler(
-                        c_args,
+                    db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
-                        elastic_timeout=args.elastic_timeout,
-                    )
+                        index=tenant['index'],
+                        timeout=args.elastic_timeout,
+                    ),
                 )
+                tpool.append(Crawler(c_args))
         log.info('%d configured threads' % len(tpool))
         for cthread in tpool:
             cthread.start()

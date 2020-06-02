@@ -96,6 +96,7 @@ tenants:
           updated_since: "2020-03-15 00:00:00"
           base_url: https://review.opendev.org
   # A private index only whitelisted users are authorized to access
+  # See "Advanced deployment configuration" section
   - index: monocle-private
     users:
       - <github_login1>
@@ -109,47 +110,6 @@ tenants:
           token: <github_token>
           base_url: https://github.com
 ```
-
-## Configuration of the containers
-
-For a local deployment, default settings are fine.
-
-The following settings are available in the `.env` file:
-
-- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI
-  (default `http://localhost:3000`).
-- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API
-  (default `http://localhost:9876`).
-- `MONOCLE_VERSION=<version>` to use a specific version. By default it
-  uses `latest`.
-- `MONOCLE_TITLE=<title>` to change the title of the web application. By
-  default it is `Monocle`.
-- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
-  512m.
-- `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
-  ElasticSearch service is listening to (default `0.0.0.0`). This is
-  only exposed in the development version of the docker-compose
-  (`docker-compose.yml.dev`).
-
-### GitHub authentication
-
-If you want to protect the access to your indices, you can require a
-GitHub login to access and the people able to use the indices will be
-the ones listed in the `users` section in `config.yaml`.
-
-Configure the GitHub Oauth authentication to secure private indexes
-
-1. [Create an Oauth APP in your GitHub user settings page](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
-2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
-3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
-
-The authentication and authorization support is new and only provides
-a solution to control access to private indexes. Only login users
-part of `users` will be authorized to access the related index.
 
 ### Start docker-compose
 
@@ -206,6 +166,76 @@ $ docker-compose logs crawler
 ### Accessing the web UI
 
 You should be able to access the web UI at <http://localhost:3000>.
+
+## Advanced deployment configuration
+
+### Configuration of the containers
+
+For a local deployment, default settings are fine.
+
+The following settings are available in the `.env` file:
+
+- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI
+  (default `http://localhost:3000`).
+- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API
+  (default `http://localhost:9876`).
+- `MONOCLE_VERSION=<version>` to use a specific version. By default it
+  uses `latest`.
+- `MONOCLE_TITLE=<title>` to change the title of the web application. By
+  default it is `Monocle`.
+- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
+  512m.
+- `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
+  listening to (default `0.0.0.0`).
+- `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
+  listening to (default `0.0.0.0`).
+- `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
+  ElasticSearch service is listening to (default `0.0.0.0`). This is
+  only exposed in the development version of the docker-compose
+  (`docker-compose.yml.dev`).
+
+### GitHub authentication
+
+If you want to protect the access to your indices, you can require a
+GitHub login to access and the people able to use the indices will be
+the ones listed in the `users` section in `config.yaml`.
+
+Configure the GitHub Oauth authentication to secure private indexes
+
+1. [Create an Oauth APP in your GitHub user settings page](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
+2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
+3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
+
+The authentication and authorization support is new and only provides
+a solution to control access to private indexes. Only login users
+part of `users` will be authorized to access the related index.
+
+Note that the GitHub application can be also used as a Oauth APP.
+
+### GitHub application
+
+Monocle can interact with a GitHub application to create and use installed
+application token to query the API.
+
+Once the application is created and Monocle started with application id and
+private key. If a `github_orgs` entry's token attribute is missing Monocle will
+search accross the application installations for an installed application
+on the related GitHub organization. If any, it will generate an installation token
+for the matching installation and use it to query the GitHub API.
+
+#### Create the application on GitHub
+
+1. [Register new GitHub App](https://github.com/settings/apps/new)
+2. In `Repository permissions` set `Metadata` as `Read-Only`,
+   `Pull requests` as `Read-Only` and `Contents` as `Read-Only`
+3. Click `Create the GitHub App`
+4. Click `Generate a private key` and download the key
+5. Save the `App ID`
+
+#### Setup Monocle to use the application
+
+1. Save the private key into `etc/app_key.rsa`
+2. Into the `.env` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
 
 ## Contributing
 

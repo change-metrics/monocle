@@ -23,7 +23,6 @@ from datetime import datetime
 from threading import Thread
 
 from monocle.github.graphql import GithubGraphQLQuery
-from monocle.db.db import ELmonocleDB
 from monocle.github import pullrequest
 from monocle.gerrit import review
 
@@ -33,14 +32,12 @@ DUMP_DIR = '/var/lib/crawler'
 
 
 class Runner(object):
-    def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
+    def __init__(self, args):
         super().__init__()
         self.updated_since = args.updated_since
         self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
-        self.db = ELmonocleDB(
-            elastic_conn=elastic_conn, index=args.index, timeout=elastic_timeout
-        )
+        self.db = args.db
         if args.command == 'github_crawler':
             if args.repository:
                 self.repository_el_re = "%s/%s" % (
@@ -50,7 +47,10 @@ class Runner(object):
             else:
                 self.repository_el_re = args.org.lstrip('^') + '/.*'
             self.prf = pullrequest.PRsFetcher(
-                GithubGraphQLQuery(args.token), args.base_url, args.org, args.repository
+                GithubGraphQLQuery(token_getter=args.token_getter),
+                args.base_url,
+                args.org,
+                args.repository,
             )
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
@@ -99,8 +99,8 @@ class Runner(object):
 
 
 class Crawler(Thread, Runner):
-    def __init__(self, args, elastic_conn='localhost:9200', elastic_timeout=10):
-        Runner.__init__(self, args, elastic_conn, elastic_timeout)
+    def __init__(self, args):
+        Runner.__init__(self, args)
         Thread.__init__(self)
 
     def run(self):
@@ -124,8 +124,9 @@ class GroupCrawler(Thread):
             for crawler in self.crawlers:
                 self.setName(crawler.repository_el_re)
                 crawler.run_step()
-            log.info(
-                "Waiting %s seconds before next fetch ..."
-                % (self.crawlers[0].loop_delay)
-            )
-            sleep(self.crawlers[0].loop_delay)
+            if self.crawlers:
+                delay = self.crawlers[0].loop_delay
+            else:
+                delay = 300
+            log.info("Waiting %s seconds before next fetch ..." % delay)
+            sleep(delay)

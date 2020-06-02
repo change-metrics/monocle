@@ -24,7 +24,7 @@ schema = {
             "title": "Github organization",
             "description": "A github organization description for the crawler",
             "type": "object",
-            "required": ["name", "updated_since", "base_url", "token"],
+            "required": ["name", "updated_since", "base_url"],
             "properties": {
                 "name": {"description": "The organization name", "type": "string"},
                 "repository": {
