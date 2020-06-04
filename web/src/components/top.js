@@ -112,13 +112,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
               </Card.Header>
               <Card.Body>
                 <Row>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.ChangeCreatedEvent}
                       title="By Created Changes"
                     />
                   </Col>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.ChangeMergedEvent}
                       title="By Merged Changes"
@@ -127,13 +127,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                 </Row>
                 <Row><Col><p></p></Col></Row>
                 <Row>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.ChangeReviewedEvent}
                       title="By Reviewed Changes"
                     />
                   </Col>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.ChangeCommentedEvent}
                       title="By Commented Changes"
@@ -175,13 +175,13 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
               </Card.Header>
               <Card.Body>
                 <Row>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.reviewed}
                       title="Reviews"
                     />
                   </Col>
-                  <Col>
+                  <Col md>
                     <TopEventsTable
                       data={data.commented}
                       title="Comments"

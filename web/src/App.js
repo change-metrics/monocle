@@ -217,12 +217,12 @@ class MergedChangesView extends React.Component {
       <React.Fragment>
         <Row><Col><p></p></Col></Row>
         <Row>
-          <Col>
+          <Col md>
             <CAuthorsMergedPie
               history={this.props.history}
               index={this.props.match.params.index} />
           </Col>
-          <Col>
+          <Col md>
             <CReposMergedPie
               history={this.props.history}
               index={this.props.match.params.index} />
@@ -256,12 +256,12 @@ class OpenChangesView extends React.Component {
       <React.Fragment>
         <Row><Col><p></p></Col></Row>
         <Row>
-          <Col>
+          <Col md>
             <CAuthorsOpenedPie
               history={this.props.history}
               index={this.props.match.params.index} />
           </Col>
-          <Col>
+          <Col md>
             <CReposOpenedPie
               history={this.props.history}
               index={this.props.match.params.index} />
@@ -295,12 +295,12 @@ class AbandonedChangesView extends React.Component {
       <React.Fragment>
         <Row><Col><p></p></Col></Row>
         <Row>
-          <Col>
+          <Col md>
             <CAuthorsAbandonedPie
               history={this.props.history}
               index={this.props.match.params.index} />
           </Col>
-          <Col>
+          <Col md>
             <CReposAbandonedPie
               history={this.props.history}
               index={this.props.match.params.index} />
