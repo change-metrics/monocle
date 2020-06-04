@@ -55,7 +55,7 @@ class TopEventsTable extends React.Component {
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
-              <Table striped responsive bordered hover>
+              <Table striped responsive bordered hover size="sm">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -258,7 +258,7 @@ class TopStrengthsTable extends React.Component {
               </Row>
               <Row>
                 <Col>
-                  <Table striped responsive bordered hover>
+                  <Table striped responsive bordered hover size="sm">
                     <thead>
                       <tr>
                         <th>#</th>
