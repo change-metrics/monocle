@@ -105,7 +105,7 @@ class ChangeTable extends React.Component {
                 <br />
                 <br />
                 <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
-              <Table>
+              <Table striped responsive bordered hover size="sm">
                 <tbody>
                   <tr key={0}>
                     <td align="center">Repository: {change.repository_fullname} | Branch: {change.target_branch}</td>

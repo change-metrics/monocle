@@ -53,7 +53,7 @@ class RepoChangesTable extends React.Component {
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
-              <Table striped responsive bordered hover>
+              <Table striped responsive bordered hover size="sm">
                 <thead>
                   <tr>
                     <th className="text-center">Repository</th>
@@ -153,7 +153,7 @@ class ChangesTable extends React.Component {
             <Card.Body>
               {graphElement}
               {paginationElement}
-              <Table striped responsive bordered hover>
+              <Table striped responsive bordered hover size="sm">
                 <thead>
                   <tr>
                     {this.props.created ? <th className="text-center">Created</th> : null}
