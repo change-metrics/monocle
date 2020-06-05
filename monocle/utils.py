@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import re
+import copy
 from datetime import datetime
 
 events_list = [
@@ -138,6 +139,15 @@ class Detector(object):
             True if change['issue_tracker_links'] else False
         )
 
+    def remove_plus_0_approvals(self, change: dict) -> dict:
+        _change = copy.deepcopy(change)
+        _change['approval'] = [
+            approval
+            for approval in change.get('approval', [])
+            if approval and not approval.endswith('+0')
+        ]
+        return _change
+
     def enhance(self, change):
         if change['type'] == 'Change':
             if self.is_tests_included(change):
@@ -145,6 +155,7 @@ class Detector(object):
             else:
                 change['tests_included'] = False
             self.issue_tracker_extract_links(change)
+            change = self.remove_plus_0_approvals(change)
         return change
 
 
