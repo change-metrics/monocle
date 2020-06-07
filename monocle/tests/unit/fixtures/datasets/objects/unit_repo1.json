@@ -15,6 +15,7 @@
     "text": "The body text of the PR\nThis close issue #42",
     "additions": 11,
     "deletions": 5,
+    "approval": [],
     "changed_files_count": 2,
     "changed_files": [
       {

@@ -15,6 +15,7 @@
     "text": "The body text of the PR",
     "additions": 13,
     "deletions": 7,
+    "approval": [],
     "changed_files_count": 2,
     "changed_files": [
       {

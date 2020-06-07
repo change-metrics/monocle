@@ -41,33 +41,12 @@ import {
   addS,
   mapDispatchToProps,
   addMap,
-  chooseBadgeStyle
+  chooseApprovalBadgeStyle,
+  ChangeStatus
 } from './common'
 
 import TimelineGraph from './timeline'
 import CommitsTimelineGraph from './commits_timeline'
-
-class ChangeStatus extends React.Component {
-  render () {
-    if (this.props.data.state === 'OPEN' && this.props.data.draft) {
-      return <Badge variant="dark">Draft</Badge>
-    }
-    switch (this.props.data.state) {
-      case 'OPEN':
-        return <span><Badge variant="success">Open</Badge> <small>[{this.props.data.mergeable.toLowerCase()}]</small></span>
-      case 'MERGED':
-        return <Badge variant="primary">Merged</Badge>
-      case 'CLOSED':
-        return <Badge variant="danger">Abandoned</Badge>
-      default:
-        return null
-    }
-  }
-}
-
-ChangeStatus.propTypes = {
-  data: PropTypes.object
-}
 
 class ChangeTable extends React.Component {
   render () {
@@ -104,7 +83,7 @@ class ChangeTable extends React.Component {
                   matchers={[new UrlMatcher('url')]} />
                 <br />
                 <br />
-                <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
+                <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseApprovalBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
               <Table striped responsive bordered hover size="sm">
                 <tbody>
                   <tr key={0}>
