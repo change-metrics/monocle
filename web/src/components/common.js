@@ -84,7 +84,7 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-function chooseBadgeStyle (app, idx = 0) {
+function chooseApprovalBadgeStyle (app, idx = 0) {
   if (app === null) {
     return ''
   }
@@ -108,6 +108,28 @@ function chooseBadgeStyle (app, idx = 0) {
     }
     return <Badge variant={approvalCat} key={idx}>{app}</Badge>
   }
+}
+
+class ChangeStatus extends React.Component {
+  render () {
+    if (this.props.data.state === 'OPEN' && this.props.data.draft) {
+      return <Badge variant="dark">Draft</Badge>
+    }
+    switch (this.props.data.state) {
+      case 'OPEN':
+        return <span><Badge variant="success">Open</Badge> <small>[{this.props.data.mergeable.toLowerCase()}]</small></span>
+      case 'MERGED':
+        return <Badge variant="primary">Merged</Badge>
+      case 'CLOSED':
+        return <Badge variant="danger">Abandoned</Badge>
+      default:
+        return null
+    }
+  }
+}
+
+ChangeStatus.propTypes = {
+  data: PropTypes.object
 }
 
 class LoadingBox extends React.Component {
@@ -270,8 +292,9 @@ export {
   addS,
   addMap,
   mapDispatchToProps,
-  chooseBadgeStyle,
+  chooseApprovalBadgeStyle,
   getWindowDimensions,
   SmallSizeWarning,
-  hasSmallWidth
+  hasSmallWidth,
+  ChangeStatus
 }

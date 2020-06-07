@@ -37,10 +37,10 @@ import {
   indexUrl,
   mapDispatchToProps,
   addMap,
-  chooseBadgeStyle
+  chooseApprovalBadgeStyle,
+  ChangeStatus
 } from './common'
 
-import ComplexityGraph from './complexity_graph'
 import DurationComplexityGraph from './duration_complexity_graph'
 
 class RepoChangesTable extends React.Component {
@@ -118,11 +118,6 @@ const CRepoChanges = withRouter(connect(reposTopMergedMapStateToProps, mapDispat
 class ChangesTable extends React.Component {
   render () {
     let paginationElement
-    let graphElement
-
-    if (this.props.graph) {
-      graphElement = <React.Fragment>{this.props.graph}<br /></React.Fragment>
-    }
 
     if (this.props.pageChangeCallback && this.props.pageCount > 1) {
       paginationElement = <ReactPaginate
@@ -143,6 +138,12 @@ class ChangesTable extends React.Component {
         activeClassName={'active'}
       />
     }
+    var ChangeRowStyle = {
+      paddingTop: '5px',
+      paddingBottom: '5px',
+      backgroundColor: '#f7f7f7',
+      backgroundClip: 'content-box'
+    }
     return (
       <Row>
         <Col>
@@ -151,51 +152,49 @@ class ChangesTable extends React.Component {
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
-              {graphElement}
+              {this.props.graph !== '' ? <React.Fragment>{this.props.graph}</React.Fragment> : null}
               {paginationElement}
-              <Table striped responsive bordered hover size="sm">
-                <thead>
-                  <tr>
-                    {this.props.created ? <th className="text-center">Created</th> : null}
-                    {this.props.updated ? <th className="text-center">Updated</th> : null}
-                    {this.props.merged ? <th className="text-center">Merged</th> : null}
-                    {this.props.duration ? <th className="text-center">Duration</th> : null}
-                    <th className="text-center">Repository</th>
-                    <th className="text-center">Author</th>
-                    <th className="text-center">Title</th>
-                    {this.props.mergeable ? <th className="text-center">Mergeable</th> : null}
-                    <th className="text-center">Complexity</th>
-                    {this.props.approval ? <th className="text-center">Approval</th> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.items.map((x, index) =>
-                    <tr key={index}>
-                      {this.props.created ? <td align="center">{moment(x.created_at).fromNow()}</td> : null}
-                      {this.props.updated ? <td align="center">{moment(x.updated_at).fromNow()}</td> : null}
-                      {this.props.merged ? <td align="center">{moment(x.merged_at).fromNow()}</td> : null}
-                      {this.props.duration ? <td align="center">{moment.duration(x.duration, 'seconds').humanize()}</td> : null}
-                      <td align="center"><Link to={addUrlField('repository', x.repository_fullname)}>{x.repository_fullname}</Link></td>
-                      <td align="center"><Link to={addUrlField('authors', x.author)}>{x.author}</Link></td>
-                      <td>{changeUrl(this.props.index, x, x.title)}</td>
-                      {this.props.mergeable ? <td align="center">{x.draft ? 'DRAFT' : x.mergeable}</td> : null}
-                      <td align="center">{x.complexity}</td>
-                      {this.props.approval
-                        ? <td align="center">
+              {this.props.data.items.map((change, index) =>
+                <Row key={index} style={ChangeRowStyle}>
+                  <Col>
+                    <Row>
+                      <Col md={9}>
+                        <ChangeStatus data={change} />{' '}
+                        {' - '}
+                        <Link to={addUrlField('repository', change.repository_fullname)}>{change.repository_fullname}</Link>
+                        {' - '}
+                        {changeUrl(this.props.index, change, change.title)}
+                      </Col>
+                      <Col md={3}>
+                        Complexity: {change.complexity}
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md={9}>
+                        Created {moment(change.created_at).fromNow()} by <Link className='span' to={addUrlField('authors', change.author)}>{change.author}</Link>
+                        {' - '}
+                        Updated {moment(change.updated_at).fromNow()}
+                      </Col>
+                      {change.state === 'MERGED' || change.state === 'CLOSED' ? <Col>Duration: {moment.duration(change.duration, 'seconds').humanize()}</Col> : null}
+                    </Row>
+                    {change.approval.length > 0
+                      ? <Row>
+                        <Col>
+                          Review approvals:{' '}
                           {
-                            x.approval.map((app, idx) => {
-                              return <div key={idx}>{chooseBadgeStyle(app, idx)}</div>
+                            change.approval.map((app, idx) => {
+                              return <span key={idx}>{chooseApprovalBadgeStyle(app, idx)}{' '}</span>
                             })
                           }
-                        </td> : null}
-                    </tr>)}
-                </tbody>
-              </Table>
-              {paginationElement}
+                        </Col>
+                      </Row>
+                      : ''}
+                  </Col>
+                </Row>)}
             </Card.Body>
           </Card>
         </Col>
-      </Row>
+      </Row >
     )
   }
 }
@@ -212,12 +211,6 @@ ChangesTable.propTypes = {
   selectedPage: PropTypes.number,
   pageChangeCallback: PropTypes.func,
   pageChangeTarget: PropTypes.object,
-  created: PropTypes.bool,
-  updated: PropTypes.bool,
-  merged: PropTypes.bool,
-  mergeable: PropTypes.bool,
-  duration: PropTypes.bool,
-  approval: PropTypes.bool,
   graph: PropTypes.element,
   index: PropTypes.string.isRequired
 }
@@ -242,9 +235,6 @@ class HotChanges extends BaseQueryComponent {
           index={this.props.index}
           data={data}
           title="Hot changes"
-          created={true}
-          updated={true}
-          mergeable={true}
         />
       )
     } else {
@@ -277,9 +267,6 @@ class ColdChanges extends BaseQueryComponent {
           index={this.props.index}
           data={data}
           title="Cold changes"
-          created={true}
-          updated={true}
-          mergeable={true}
         />
       )
     } else {
@@ -321,8 +308,6 @@ class LastChanges extends BaseQueryComponent {
                       index={this.props.index}
                       data={data.merged_changes}
                       title={<Link to={indexUrl(this.props.index, '/merged-changes')}>Recently Merged Changes</Link>}
-                      merged={true}
-                      duration={true}
                     />
                   </Col>
                 </Row>
@@ -333,9 +318,6 @@ class LastChanges extends BaseQueryComponent {
                       index={this.props.index}
                       data={data.opened_changes}
                       title={<Link to={indexUrl(this.props.index, '/opened-changes')}>Recently Opened Changes</Link>}
-                      created={true}
-                      mergeable={true}
-                      approval={true}
                     />
                   </Col>
                 </Row>
@@ -359,11 +341,6 @@ class AbstractLastChanges extends BaseQueryComponent {
     super(props)
     this.state.name = 'last_changes'
     this.state.pageSize = 100
-    this.state.created = false
-    this.state.updated = false
-    this.state.merged = false
-    this.state.duration = false
-    this.state.approval = false
   }
 
   render () {
@@ -372,31 +349,28 @@ class AbstractLastChanges extends BaseQueryComponent {
         return <ErrorBox error={this.props[this.state.graph_type + '_error']} />
       }
       const data = this.props[this.state.graph_type + '_result']
-      const LocalComplexityGraph = this.state.complexityGraph
+      var graph = <div></div>
+      if (this.state.complexityGraph) {
+        graph = <this.state.complexityGraph
+          history={this.props.history}
+          data={data}
+          timeFunc={this.extractTime}
+          index={this.props.index}
+        />
+      }
       return (
         <React.Fragment>
           <Row>
             <Col>
               <ChangesTable
                 index={this.props.index}
-                graph={<LocalComplexityGraph
-                  history={this.props.history}
-                  data={data}
-                  timeFunc={this.extractTime}
-                  index={this.props.index}
-                />}
+                graph={graph}
                 data={data}
                 title={data.total + ' ' + this.state.title}
                 selectedPage={this.state.selectedPage}
                 pageCount={Math.ceil(data.total / this.state.pageSize)}
                 pageChangeCallback={this.handlePageChange}
                 pageChangeTarget={this}
-                created={this.state.created}
-                updated={this.state.updated}
-                merged={this.state.merged}
-                mergeable={this.state.mergeable}
-                duration={this.state.duration}
-                approval={this.state.approval}
               />
             </Col>
           </Row>
@@ -426,8 +400,6 @@ class LastMergedChanges extends AbstractLastChanges {
     this.state.graph_type = 'last_merged_changes'
     this.state.state = 'MERGED'
     this.state.title = 'Merged Changes'
-    this.state.merged = true
-    this.state.duration = true
     this.state.complexityGraph = DurationComplexityGraph
   }
 
@@ -444,11 +416,6 @@ class LastOpenedChanges extends AbstractLastChanges {
     this.state.graph_type = 'last_opened_changes'
     this.state.state = 'OPEN'
     this.state.title = 'Opened Changes'
-    this.state.created = true
-    this.state.updated = true
-    this.state.mergeable = true
-    this.state.approval = true
-    this.state.complexityGraph = ComplexityGraph
   }
 
   extractTime = x => x.created_at
@@ -466,8 +433,6 @@ class AbandonedChangesFull extends AbstractLastChanges {
     this.state.pageSize = 100
     this.state.title = 'Abandoned Changes'
     this.state.complexityGraph = DurationComplexityGraph
-    this.state.created = true
-    this.state.duration = true
   }
 
   extractTime = x => x.created_at
@@ -498,8 +463,6 @@ class AbandonedChanges extends BaseQueryComponent {
           index={this.props.index}
           data={data}
           title={<Link to={indexUrl(this.props.index, '/abandoned-changes')}>Last Abandoned Changes</Link>}
-          created={true}
-          duration={true}
         />
       )
     } else {

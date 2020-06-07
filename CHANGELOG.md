@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 ### Changed
 
+[web] reworked the look and feel of changes tables for a better readability
 [web] set bootstrap table with size=sm for a better look and feel
 
 ### Removed
