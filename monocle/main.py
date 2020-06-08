@@ -213,6 +213,8 @@ def main():
                     loop_delay=tenant['crawler']['loop_delay'],
                     base_url=crawler_item['base_url'],
                     insecure=crawler_item.get('insecure', False),
+                    login=crawler_item.get('login'),
+                    password=crawler_item.get('password'),
                     db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
                         index=tenant['index'],

@@ -16,6 +16,7 @@
 
 import logging
 import requests
+from requests.auth import HTTPBasicAuth
 from datetime import datetime
 import json
 import re
@@ -35,19 +36,26 @@ class GerritCrawlerArgs(object):
     repository: str
     db: object
     insecure: bool
+    login: str
+    password: str
 
 
 class ReviewesFetcher(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, base_url, repository_prefix, insecure=False):
+    def __init__(
+        self, base_url, repository_prefix, insecure=False, login=None, password=None
+    ):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
         self.insecure = insecure
         self.status_map = {'NEW': 'OPEN', 'MERGED': 'MERGED', 'ABANDONED': 'CLOSED'}
         self.message_re = re.compile(r"Patch Set \d+:( [^ ]+[+-]\d+)?\n\n.+")
         self.approval_re = re.compile(r"Patch Set \d+:(?P<approval> [^ ]+[+-]\d+)\n.*")
+        self.auth = None
+        if login:
+            self.auth = HTTPBasicAuth(login, password)
 
     def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
@@ -96,7 +104,14 @@ class ReviewesFetcher(object):
                 + '&n=%s&start=%s' % (count, start_after)
             )
             self.log.info("query: %s" % urlpath)
-            response = requests.get(urlpath, verify=not self.insecure)
+            try:
+                response = requests.get(
+                    urlpath, verify=not self.insecure, auth=self.auth
+                )
+                response.raise_for_status()
+            except Exception:
+                self.log.exception('Unable to process the Gerrit query request')
+                break
             _reviewes = json.loads(response.text[4:])
             if _reviewes:
                 reviews.extend(_reviewes)
@@ -358,6 +373,11 @@ if __name__ == "__main__":
     parser.add_argument('--repository', help='The repository name', required=True)
     parser.add_argument('--id', help='The review change id', required=True)
     parser.add_argument('--output-dir', help='Store the dump in this directory')
+    parser.add_argument(
+        '--insecure', help='Bypass the HTTP X509 verification', action='store_true'
+    )
+    parser.add_argument('--login', help='Login to use to authenticate')
+    parser.add_argument('--password', help='Password to use to authenticate')
 
     args = parser.parse_args()
 
@@ -369,7 +389,13 @@ if __name__ == "__main__":
     def _dumper(raw, prefix=None):
         pprint(raw)
 
-    rf = ReviewesFetcher(args.base_url, args.repository)
+    rf = ReviewesFetcher(
+        args.base_url,
+        args.repository,
+        insecure=args.insecure,
+        login=args.login,
+        password=args.password,
+    )
     review = rf.get("2020-01-01 00:00:00", args.id)
     objs = rf.extract_objects(review, _dumper)
     if not args.output_dir:
