@@ -68,6 +68,14 @@ schema = {
                     "description": "Set to true to bypass the HTTP X509 certificate verification",
                     "type": "boolean",
                 },
+                "login": {
+                    "description": "Login to use to authenticate on Gerrit",
+                    "type": "string",
+                },
+                "password": {
+                    "description": "Password to use to authenticate on Gerrit",
+                    "type": "string",
+                },
             },
         },
     },
@@ -147,6 +155,8 @@ tenants:
           updated_since: "2020-01-01"
           base_url: https://softwarefactory-project.io/r
           insecure: true
+          login: fabien
+          password: secure
 """
 
 
