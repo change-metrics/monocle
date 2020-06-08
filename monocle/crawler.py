@@ -54,7 +54,9 @@ class Runner(object):
             )
         elif args.command == 'gerrit_crawler':
             self.repository_el_re = args.repository.lstrip('^')
-            self.prf = review.ReviewesFetcher(args.base_url, args.repository)
+            self.prf = review.ReviewesFetcher(
+                args.base_url, args.repository, args.insecure
+            )
 
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)

@@ -34,15 +34,17 @@ class GerritCrawlerArgs(object):
     base_url: str
     repository: str
     db: object
+    insecure: bool
 
 
 class ReviewesFetcher(object):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, base_url, repository_prefix):
+    def __init__(self, base_url, repository_prefix, insecure=False):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
+        self.insecure = insecure
         self.status_map = {'NEW': 'OPEN', 'MERGED': 'MERGED', 'ABANDONED': 'CLOSED'}
         self.message_re = re.compile(r"Patch Set \d+:( [^ ]+[+-]\d+)?\n\n.+")
         self.approval_re = re.compile(r"Patch Set \d+:(?P<approval> [^ ]+[+-]\d+)\n.*")
@@ -94,7 +96,7 @@ class ReviewesFetcher(object):
                 + '&n=%s&start=%s' % (count, start_after)
             )
             self.log.info("query: %s" % urlpath)
-            response = requests.get(urlpath)
+            response = requests.get(urlpath, verify=not self.insecure)
             _reviewes = json.loads(response.text[4:])
             if _reviewes:
                 reviews.extend(_reviewes)

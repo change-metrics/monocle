@@ -64,6 +64,10 @@ schema = {
                     "description": "Base url of the Gerrit instance",
                     "type": "string",
                 },
+                "insecure": {
+                    "description": "Set to true to bypass the HTTP X509 certificate verification",
+                    "type": "boolean",
+                },
             },
         },
     },
@@ -142,6 +146,7 @@ tenants:
         - name: ^rpms/.*
           updated_since: "2020-01-01"
           base_url: https://softwarefactory-project.io/r
+          insecure: true
 """
 
 

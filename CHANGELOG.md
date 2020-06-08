@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [master]
 
 ### Added
+
+- [crawler] gerrit add insecure option to bypass SSL certificate verification.
+
 ### Changed
 
 [web] reworked the look and feel of changes tables for a better readability
