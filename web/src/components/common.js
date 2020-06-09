@@ -272,6 +272,7 @@ class BaseQueryComponent extends React.Component {
         graph_type: this.state.graph_type,
         repository: params.get('repository') || '.*',
         branch: params.get('branch'),
+        gte: params.get('gte'),
         changeIds: this.props.changeIds
       })
     } else {
