@@ -110,6 +110,26 @@ function chooseApprovalBadgeStyle (app, idx = 0) {
   }
 }
 
+class MergeableStatusBadge extends React.Component {
+  render () {
+    const mergeable = this.props.mergeable.toLowerCase()
+    switch (mergeable) {
+      case 'mergeable':
+        return <Badge variant="success">{mergeable}</Badge>
+      case 'conflicting':
+        return <Badge variant="warning">{mergeable}</Badge>
+      case 'unknown':
+        return <Badge variant="secondary">{mergeable}</Badge>
+      default:
+        return null
+    }
+  }
+}
+
+MergeableStatusBadge.propTypes = {
+  mergeable: PropTypes.string.isRequired
+}
+
 class ChangeStatus extends React.Component {
   render () {
     if (this.props.data.state === 'OPEN' && this.props.data.draft) {
@@ -117,7 +137,12 @@ class ChangeStatus extends React.Component {
     }
     switch (this.props.data.state) {
       case 'OPEN':
-        return <span><Badge variant="success">Open</Badge> <small>[{this.props.data.mergeable.toLowerCase()}]</small></span>
+        return (
+          <span>
+            <Badge variant="success">Open</Badge>{' '}
+            <MergeableStatusBadge mergeable={this.props.data.mergeable} />
+          </span>
+        )
       case 'MERGED':
         return <Badge variant="primary">Merged</Badge>
       case 'CLOSED':
