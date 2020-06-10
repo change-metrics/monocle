@@ -638,3 +638,97 @@ class TestQueries(unittest.TestCase):
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
+
+    def test_most_active_authors_stats(self):
+        """
+        Test query: most_active_authors_stats
+        """
+        params = set_params({})
+        ret = self.eldb.run_named_query('most_active_authors_stats', '.*', params)
+        expected = {
+            'ChangeCommentedEvent': {
+                'count_avg': 1,
+                'count_median': 1.0,
+                'items': [
+                    {'doc_count': 1, 'key': 'jane'},
+                    {'doc_count': 1, 'key': 'steve'},
+                ],
+                'total': 2,
+                'total_hits': 2,
+            },
+            'ChangeCreatedEvent': {
+                'count_avg': 1.3333333333333333,
+                'count_median': 1,
+                'items': [
+                    {'doc_count': 2, 'key': 'jane'},
+                    {'doc_count': 1, 'key': 'john'},
+                    {'doc_count': 1, 'key': 'steve'},
+                ],
+                'total': 3,
+                'total_hits': 4,
+            },
+            'ChangeMergedEvent': {
+                'count_avg': 1,
+                'count_median': 1,
+                'items': [
+                    {'doc_count': 1, 'key': 'jane'},
+                    {'doc_count': 1, 'key': 'john'},
+                    {'doc_count': 1, 'key': 'steve'},
+                ],
+                'total': 3,
+                'total_hits': 3,
+            },
+            'ChangeReviewedEvent': {
+                'count_avg': 1,
+                'count_median': 1.0,
+                'items': [
+                    {'doc_count': 1, 'key': 'john'},
+                    {'doc_count': 1, 'key': 'steve'},
+                ],
+                'total': 2,
+                'total_hits': 2,
+            },
+        }
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
+        params = set_params({'authors': 'jane'})
+        ret = self.eldb.run_named_query('most_active_authors_stats', '.*', params)
+        from pprint import pprint
+
+        pprint(ret)
+        expected = {
+            'ChangeCommentedEvent': {
+                'count_avg': 1,
+                'count_median': 1,
+                'items': [{'doc_count': 1, 'key': 'jane'}],
+                'total': 1,
+                'total_hits': 1,
+            },
+            'ChangeCreatedEvent': {
+                'count_avg': 2,
+                'count_median': 2,
+                'items': [{'doc_count': 2, 'key': 'jane'}],
+                'total': 1,
+                'total_hits': 2,
+            },
+            'ChangeMergedEvent': {
+                'count_avg': 1,
+                'count_median': 1,
+                'items': [{'doc_count': 1, 'key': 'jane'}],
+                'total': 1,
+                'total_hits': 1,
+            },
+            'ChangeReviewedEvent': {
+                'count_avg': 0,
+                'count_median': 0,
+                'items': [],
+                'total': 0,
+                'total_hits': 0,
+            },
+        }
+
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)
