@@ -323,3 +323,318 @@ class TestQueries(unittest.TestCase):
         params = set_params({})
         ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
         self.assertEqual(ret['total'], 4, ret)
+
+    def test_changes_lifecycle_stats(self):
+        """
+        Test changes_lifecycle_stats query
+        """
+        params = set_params({'gte': '2020-01-01', 'lte': '2020-01-03'})
+        ret = self.eldb.run_named_query('changes_lifecycle_stats', '.*', params)
+        expected = {
+            'ChangeCommitForcePushedEvent': {'authors_count': 0, 'events_count': 0},
+            'ChangeCommitPushedEvent': {'authors_count': 1, 'events_count': 1},
+            'ChangeCreatedEvent': {'authors_count': 2, 'events_count': 2},
+            'abandoned': 0,
+            'commits': 1.0,
+            'duration': 86400.0,
+            'histos': {
+                'ChangeAbandonedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0,
+                ),
+                'ChangeCommitForcePushedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0,
+                ),
+                'ChangeCommitPushedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0.25,
+                ),
+                'ChangeCreatedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0.5,
+                ),
+                'ChangeMergedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0.25,
+                ),
+            },
+            'merged': 1,
+            'opened': 1,
+            'ratios': {
+                'abandoned/created': 0.0,
+                'iterations/created': 1.5,
+                'merged/created': 50.0,
+            },
+            'tests': 50.0,
+        }
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
+        params = set_params(
+            {'gte': '2020-01-01', 'lte': '2020-01-03', 'authors': 'john,jane'}
+        )
+        ret = self.eldb.run_named_query('changes_lifecycle_stats', '.*', params)
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
+        params = set_params(
+            {'gte': '2020-01-01', 'lte': '2020-01-03', 'authors': 'john'}
+        )
+        ret = self.eldb.run_named_query('changes_lifecycle_stats', '.*', params)
+        from pprint import pprint
+
+        pprint(ret)
+        expected = {
+            'ChangeCommitForcePushedEvent': {'authors_count': 0, 'events_count': 0},
+            'ChangeCommitPushedEvent': {'authors_count': 0, 'events_count': 0},
+            'ChangeCreatedEvent': {'authors_count': 1, 'events_count': 1},
+            'abandoned': 0,
+            'commits': 1.0,
+            'duration': 86400.0,
+            'histos': {
+                'ChangeAbandonedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0,
+                ),
+                'ChangeCommitForcePushedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0,
+                ),
+                'ChangeCommitPushedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0,
+                ),
+                'ChangeCreatedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0.25,
+                ),
+                'ChangeMergedEvent': (
+                    [
+                        {
+                            'doc_count': 0,
+                            'key': 1577750400000,
+                            'key_as_string': '2019-12-31',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1577836800000,
+                            'key_as_string': '2020-01-01',
+                        },
+                        {
+                            'doc_count': 1,
+                            'key': 1577923200000,
+                            'key_as_string': '2020-01-02',
+                        },
+                        {
+                            'doc_count': 0,
+                            'key': 1578009600000,
+                            'key_as_string': '2020-01-03',
+                        },
+                    ],
+                    0.25,
+                ),
+            },
+            'merged': 1,
+            'opened': 0,
+            'ratios': {
+                'abandoned/created': 0.0,
+                'iterations/created': 1.0,
+                'merged/created': 100.0,
+            },
+            'tests': 100.0,
+        }
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)

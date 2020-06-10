@@ -22,7 +22,6 @@ from datetime import datetime
 from itertools import groupby
 from itertools import chain
 from monocle.utils import dbdate_to_datetime
-from monocle.utils import float_trunc
 from monocle.utils import enhance_changes
 from monocle.utils import Detector
 
@@ -514,7 +513,6 @@ def count_abandoned_changes(es, index, repository_fullname, params):
 
 def changes_closed_ratios(es, index, repository_fullname, params):
     params = deepcopy(params)
-    switch_to_on_authors(params)
     etypes = (
         'ChangeCreatedEvent',
         "ChangeCommitPushedEvent",
@@ -691,7 +689,6 @@ def changes_lifecycle_histos(es, index, repository_fullname, params):
 
 def changes_lifecycle_stats(es, index, repository_fullname, params):
     params = deepcopy(params)
-    switch_to_on_authors(params)
     ret = {}
     ret['ratios'] = changes_closed_ratios(es, index, repository_fullname, params)
     ret['histos'] = changes_lifecycle_histos(es, index, repository_fullname, params)
@@ -703,14 +700,10 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['abandoned'] = count_abandoned_changes(es, index, repository_fullname, params)
     etypes = (
         'ChangeCreatedEvent',
-        "ChangeMergedEvent",
-        "ChangeAbandonedEvent",
         "ChangeCommitPushedEvent",
         "ChangeCommitForcePushedEvent",
     )
-    ret['avgs'] = {}
     for etype in etypes:
-        ret['avgs'][etype] = float_trunc(ret['histos'][etype][-1])
         params['etype'] = (etype,)
         events_count = count_events(es, index, repository_fullname, params)
         authors_count = count_authors(es, index, repository_fullname, params)
