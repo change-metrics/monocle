@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [master]
+## [master] 
+
 
 ### Added
 
@@ -24,9 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - [api] ensure most_active_authors_stats display top authors by merged change.
+- [crawler] gerrit ChangeReviewedEvent approval remove leading space.
+  No data migration script provided, a wipe then re-indexation of the
+  gerrit repositories is needed.
 - [api] fix change_lifecycle_stats return null values when authors is set
-
-[web] fix wrong backend query on the change page (gte missing)
+- [web] fix wrong backend query on the change page (gte missing)
 
 
 ## [0.5] - 2020-06-04
