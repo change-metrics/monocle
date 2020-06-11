@@ -90,8 +90,8 @@ class TestQueries(unittest.TestCase):
         params = set_params({})
         ret = queries._scan(self.eldb.es, self.eldb.index, 'unit/repo1', params)
         ids = [obj['id'] for obj in ret]
-        expected = ['c1_e1', 'c1_e2', 'c1_e3']
-        self.assertListEqual(ids, expected)
+        expected = ['c1_e1', 'c1_e2', 'c1_e3', 'c1_e4', 'c1_e5']
+        self.assertCountEqual(ids, expected)
 
     def test_first_created_event(self):
         """
@@ -112,15 +112,16 @@ class TestQueries(unittest.TestCase):
             self.eldb.es, self.eldb.index, 'unit/repo1', 'type', params
         )
         expected = {
+            'count_avg': 1.25,
+            'count_median': 1.0,
             'items': [
-                {'key': 'ChangeCommentedEvent', 'doc_count': 1},
-                {'key': 'ChangeCreatedEvent', 'doc_count': 1},
-                {'key': 'ChangeMergedEvent', 'doc_count': 1},
+                {'doc_count': 2, 'key': 'ChangeReviewedEvent'},
+                {'doc_count': 1, 'key': 'ChangeCommentedEvent'},
+                {'doc_count': 1, 'key': 'ChangeCreatedEvent'},
+                {'doc_count': 1, 'key': 'ChangeMergedEvent'},
             ],
-            'count_avg': 1,
-            'count_median': 1,
-            'total': 3,
-            'total_hits': 3,
+            'total': 4,
+            'total_hits': 5,
         }
         ddiff = DeepDiff(ret, expected)
         if ddiff:
@@ -132,7 +133,7 @@ class TestQueries(unittest.TestCase):
         """
         params = set_params({})
         ret = self.eldb.run_named_query('count_events', 'unit/repo1', params)
-        self.assertEqual(ret, 3)
+        self.assertEqual(ret, 5)
 
     def test_count_authors(self):
         """
@@ -154,11 +155,11 @@ class TestQueries(unittest.TestCase):
         ret = self.eldb.run_named_query('events_histo', 'unit/repo1', params)
         expected = (
             [
-                {'key_as_string': '2019-12-31', 'key': 1577750400000, 'doc_count': 0},
-                {'key_as_string': '2020-01-01', 'key': 1577836800000, 'doc_count': 2},
-                {'key_as_string': '2020-01-02', 'key': 1577923200000, 'doc_count': 1},
+                {'doc_count': 0, 'key': 1577750400000, 'key_as_string': '2019-12-31'},
+                {'doc_count': 4, 'key': 1577836800000, 'key_as_string': '2020-01-01'},
+                {'doc_count': 1, 'key': 1577923200000, 'key_as_string': '2020-01-02'},
             ],
-            1.0,
+            1.6666666666666667,
         )
         ddiff = DeepDiff(ret, expected)
         if ddiff:
@@ -205,11 +206,11 @@ class TestQueries(unittest.TestCase):
         params = set_params({})
         ret = self.eldb.run_named_query('events_top_authors', 'unit/repo1', params)
         expected = {
-            'items': [{'key': 'jane', 'doc_count': 2}, {'key': 'john', 'doc_count': 1}],
-            'count_avg': 1.5,
-            'count_median': 1.5,
+            'count_avg': 2.5,
+            'count_median': 2.5,
+            'items': [{'doc_count': 3, 'key': 'jane'}, {'doc_count': 2, 'key': 'john'}],
             'total': 2,
-            'total_hits': 3,
+            'total_hits': 5,
         }
         ddiff = DeepDiff(ret, expected)
         if ddiff:
@@ -251,6 +252,24 @@ class TestQueries(unittest.TestCase):
         ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
         self.assertEqual(ret['total'], 3, ret)
 
+    def test_approvals_param(self):
+        """
+        Test approvals param: changes_and_events
+        """
+        params = set_params({'approvals': 'Code-Review+2', 'gte': '2020-01-01'})
+        ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 2, ret)
+        self.assertCountEqual([item['id'] for item in ret['items']], ['c1', 'c1_e4'])
+
+        params = set_params(
+            {'approvals': 'CHANGES_REQUESTED,APPROVED', 'gte': '2020-01-01'}
+        )
+        ret = self.eldb.run_named_query('changes_and_events', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 4, ret)
+        self.assertCountEqual(
+            [item['id'] for item in ret['items']], ['c2', 'c2_e4', 'c3', 'c3_e2']
+        )
+
     def test_get_indices(self):
         """
         Test get_indices
@@ -278,7 +297,7 @@ class TestQueries(unittest.TestCase):
         """
         params = set_params({})
         ret = self.eldb.run_named_query('changes_and_events', 'unit/repo1', params)
-        self.assertEqual(ret['total'], 4)
+        self.assertEqual(ret['total'], 6)
         change = [c for c in ret['items'] if c['type'] == 'Change'][0]
         self.assertTrue(change['tests_included'])
         self.assertTrue(change['has_issue_tracker_links'])
@@ -679,25 +698,24 @@ class TestQueries(unittest.TestCase):
                 'total_hits': 3,
             },
             'ChangeReviewedEvent': {
-                'count_avg': 1,
-                'count_median': 1.0,
+                'count_avg': 1.3333333333333333,
+                'count_median': 1,
                 'items': [
-                    {'doc_count': 1, 'key': 'john'},
+                    {'doc_count': 2, 'key': 'john'},
+                    {'doc_count': 1, 'key': 'jane'},
                     {'doc_count': 1, 'key': 'steve'},
                 ],
-                'total': 2,
-                'total_hits': 2,
+                'total': 3,
+                'total_hits': 4,
             },
         }
+
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
 
         params = set_params({'authors': 'jane'})
         ret = self.eldb.run_named_query('most_active_authors_stats', '.*', params)
-        from pprint import pprint
-
-        pprint(ret)
         expected = {
             'ChangeCommentedEvent': {
                 'count_avg': 1,
@@ -721,14 +739,13 @@ class TestQueries(unittest.TestCase):
                 'total_hits': 1,
             },
             'ChangeReviewedEvent': {
-                'count_avg': 0,
-                'count_median': 0,
-                'items': [],
-                'total': 0,
-                'total_hits': 0,
+                'count_avg': 1,
+                'count_median': 1,
+                'items': [{'doc_count': 1, 'key': 'jane'}],
+                'total': 1,
+                'total_hits': 1,
             },
         }
-
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)

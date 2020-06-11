@@ -20,7 +20,7 @@ from datetime import datetime
 
 events_list = [
     'ChangeCreatedEvent',
-    'ChangeAbandonEvent',
+    'ChangeAbandonedEvent',
     'ChangeMergedEvent',
     'ChangeCommentedEvent',
     'ChangeReviewedEvent',
@@ -181,7 +181,7 @@ def set_params(input):
     params['etype'] = getter('type', ','.join(events_list)).split(',')
     params['exclude_authors'] = getter('exclude_authors', None)
     params['authors'] = getter('authors', None)
-    params['approval'] = getter('approval', None)
+    params['approvals'] = getter('approvals', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))
     params['files'] = getter('files', None)
@@ -196,4 +196,6 @@ def set_params(input):
         params['exclude_authors'] = params['exclude_authors'].split(',')
     if params['authors']:
         params['authors'] = params['authors'].split(',')
+    if params['approvals']:
+        params['approvals'] = params['approvals'].split(',')
     return params

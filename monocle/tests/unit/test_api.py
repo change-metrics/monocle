@@ -87,7 +87,7 @@ class TestWebAPI(unittest.TestCase):
         resp = self.client.get(
             '/api/0/query/count_events?index=%s&repository=.*' % self.index2
         )
-        self.assertEqual(3, json.loads(resp.data))
+        self.assertEqual(5, json.loads(resp.data))
 
     def test_query_with_acl(self):
         "Test we can run query via the api with acl"
@@ -100,8 +100,8 @@ class TestWebAPI(unittest.TestCase):
         resp = self.client.get(
             '/api/0/query/count_events?index=%s&repository=.*' % self.index1
         )
-        self.assertEqual(3, json.loads(resp.data))
+        self.assertEqual(5, json.loads(resp.data))
         resp = self.client.get(
             '/api/0/query/count_events?index=%s&repository=.*' % self.index2
         )
-        self.assertEqual(3, json.loads(resp.data))
+        self.assertEqual(5, json.loads(resp.data))

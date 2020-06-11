@@ -75,7 +75,6 @@ def generate_events_filter(params, qfilter):
     lte = params.get('lte')
     on_cc_gte = params.get('on_cc_gte')
     on_cc_lte = params.get('on_cc_lte')
-    approval = params.get('approval')
     ec_same_date = params.get('ec_same_date')
 
     on_created_at_range = {"on_created_at": {"format": "epoch_millis"}}
@@ -87,8 +86,6 @@ def generate_events_filter(params, qfilter):
     if on_cc_lte or ec_same_date:
         on_created_at_range['on_created_at']['lte'] = on_cc_lte
     qfilter.append({"range": on_created_at_range})
-    if approval:
-        qfilter.append({'term': {"approval": approval}})
 
 
 def generate_changes_filter(params, qfilter):
@@ -122,6 +119,7 @@ def generate_filter(repository_fullname, params):
     etype = params.get('etype')
     authors = params.get('authors')
     on_authors = params.get('on_authors')
+    approvals = params.get('approvals')
     exclude_authors = params.get('exclude_authors')
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     change_ids = params.get('change_ids')
@@ -150,6 +148,8 @@ def generate_filter(repository_fullname, params):
         generate_events_filter(params, qfilter)
     if files:
         qfilter.append({"regexp": {"changed_files.path": files}})
+    if approvals:
+        qfilter.append({'terms': {"approval": approvals}})
 
     must_not = []
     if exclude_authors:

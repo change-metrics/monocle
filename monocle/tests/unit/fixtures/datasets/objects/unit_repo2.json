@@ -15,7 +15,9 @@
     "text": "The body text of the PR",
     "additions": 13,
     "deletions": 7,
-    "approval": [],
+    "approval": [
+      "CHANGES_REQUESTED"
+    ],
     "changed_files_count": 2,
     "changed_files": [
       {
@@ -94,6 +96,7 @@
     "id": "c2_e4",
     "created_at": "2020-01-05T13:00:00Z",
     "author": "steve",
+    "approval": "CHANGES_REQUESTED",
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo2",
     "repository_shortname": "repo2",
@@ -121,6 +124,9 @@
     "text": "The body text of the PR",
     "additions": 50,
     "deletions": 0,
+    "approval": [
+      "APPROVED"
+    ],
     "changed_files_count": 1,
     "changed_files": [
       {
@@ -162,6 +168,7 @@
     "id": "c3_e2",
     "created_at": "2020-01-05T17:00:00Z",
     "author": "john",
+    "approval": "APPROVED",
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo2",
     "repository_shortname": "repo2",
@@ -205,6 +212,7 @@
     "text": "The body text of the PR",
     "additions": 2,
     "deletions": 115,
+    "approval": [],
     "changed_files_count": 1,
     "changed_files": [
       {
