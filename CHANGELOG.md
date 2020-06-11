@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [api] ensure most_active_authors_stats display top authors by merged change.
 - [api] fix change_lifecycle_stats return null values when authors is set
 
 [web] fix wrong backend query on the change page (gte missing)

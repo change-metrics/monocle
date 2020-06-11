@@ -760,8 +760,8 @@ def most_active_authors_stats(es, index, repository_fullname, params):
     for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
         params['etype'] = (etype,)
         ret[etype] = events_top_authors(es, index, repository_fullname, params)
-    switch_to_on_authors(params)
-    params['etype'] = ("ChangeMergedEvent",)
+    params['etype'] = ("Change",)
+    params['state'] = 'MERGED'
     ret["ChangeMergedEvent"] = events_top_authors(
         es, index, repository_fullname, params
     )
