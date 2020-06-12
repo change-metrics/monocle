@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - [cli] add dbmanage option to delete a Monocle index.
+- [web] add the approvals and exclude_approvals filters available into the changes pages.
 - [api] add the exclude_approvals paramater support.
 - [crawler] gerrit add support for http basic auth.
 - [crawler] gerrit add insecure option to bypass SSL certificate verification.

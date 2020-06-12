@@ -49,6 +49,11 @@ function getQueryResults (queryParams) {
     delete params.branch
   }
 
+  if (params.excludeApprovals) {
+    params.exclude_approvals = params.excludeApprovals
+    delete params.excludeApprovals
+  }
+
   return axios.get(
     url, {
       params: params,
