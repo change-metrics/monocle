@@ -173,6 +173,10 @@ class ELmonocleDB:
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
+    def delete_index(self):
+        self.log.info('Deleting index: %s' % self.index)
+        self.ic.delete(index=self.index)
+
     def delete_repository(self, repository_fullname):
         params = {'index': self.index, 'doc_type': self.index}
         body = {

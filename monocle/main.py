@@ -59,9 +59,12 @@ def main():
 
     parser_dbmanage = subparsers.add_parser('dbmanage', help='Database manager')
     parser_dbmanage.add_argument(
-        '--delete-repository',
+        '--delete-repository', help='Delete events related to a repository (regexp)',
+    )
+    parser_dbmanage.add_argument(
+        '--delete-index',
         help='Delete events related to a repository (regexp)',
-        required=True,
+        action='store_true',
     )
     parser_dbmanage.add_argument(
         '--index', help='The Elastisearch index name', required=True
@@ -227,9 +230,11 @@ def main():
             cthread.start()
 
     if args.command == "dbmanage":
+        db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
         if args.delete_repository:
-            db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
             db.delete_repository(args.delete_repository)
+        if args.delete_index:
+            db.delete_index()
 
     if args.command == "dbquery":
         db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
