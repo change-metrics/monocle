@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [master] 
+## [master]
 
 
 ### Added
 
 - [cli] add dbmanage option to delete a Monocle index.
+- [api] add the exclude_approvals paramater support.
 - [crawler] gerrit add support for http basic auth.
 - [crawler] gerrit add insecure option to bypass SSL certificate verification.
 

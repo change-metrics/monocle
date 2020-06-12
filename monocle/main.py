@@ -116,6 +116,9 @@ def main():
         '--approvals', help='Scope to objects with approvals (comma separated)'
     )
     parser_dbquery.add_argument(
+        '--exclude-approvals', help='Approvals exclude list (comma separated)'
+    )
+    parser_dbquery.add_argument(
         '--size', help='Return maximum of size results', default=10
     )
     parser_dbquery.add_argument(

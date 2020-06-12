@@ -270,6 +270,24 @@ class TestQueries(unittest.TestCase):
             [item['id'] for item in ret['items']], ['c2', 'c2_e4', 'c3', 'c3_e2']
         )
 
+    def test_exclude_approvals_param(self):
+        """
+        Test exclude_approvals param: last_changes
+        """
+        params = set_params({'exclude_approvals': 'Verified-1', 'gte': '2020-01-01'})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo1', params)
+        self.assertEqual(ret['total'], 0, ret)
+
+        params = set_params(
+            {
+                'approvals': 'Code-Review+2',
+                'exclude_approvals': 'Verified-1',
+                'gte': '2020-01-01',
+            }
+        )
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo1', params)
+        self.assertEqual(ret['total'], 0, ret)
+
     def test_get_indices(self):
         """
         Test get_indices

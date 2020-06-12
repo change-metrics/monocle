@@ -17,7 +17,8 @@
     "deletions": 5,
     "approval": [
       "Code-Review+1",
-      "Code-Review+2"
+      "Code-Review+2",
+      "Verified-1"
     ],
     "changed_files_count": 2,
     "changed_files": [

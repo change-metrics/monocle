@@ -120,6 +120,7 @@ def generate_filter(repository_fullname, params):
     authors = params.get('authors')
     on_authors = params.get('on_authors')
     approvals = params.get('approvals')
+    exclude_approvals = params.get('exclude_approvals')
     exclude_authors = params.get('exclude_authors')
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     change_ids = params.get('change_ids')
@@ -155,6 +156,8 @@ def generate_filter(repository_fullname, params):
     if exclude_authors:
         must_not.append({"terms": {"author": exclude_authors}})
         must_not.append({"terms": {"on_author": exclude_authors}})
+    if exclude_approvals:
+        must_not.append({"terms": {"approval": exclude_approvals}})
 
     ret = {"bool": {"filter": qfilter, "must_not": must_not}}
     log.debug("query EL filter: %s" % ret)

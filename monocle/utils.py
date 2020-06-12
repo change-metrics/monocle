@@ -182,6 +182,7 @@ def set_params(input):
     params['exclude_authors'] = getter('exclude_authors', None)
     params['authors'] = getter('authors', None)
     params['approvals'] = getter('approvals', None)
+    params['exclude_approvals'] = getter('exclude_approvals', None)
     params['size'] = int(getter('size', 10))
     params['from'] = int(getter('from', 0))
     params['files'] = getter('files', None)
@@ -190,12 +191,13 @@ def set_params(input):
     params['has_issue_tracker_links'] = getter('has_issue_tracker_links', None)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
-    if params['change_ids']:
-        params['change_ids'] = params['change_ids'].split(',')
-    if params['exclude_authors']:
-        params['exclude_authors'] = params['exclude_authors'].split(',')
-    if params['authors']:
-        params['authors'] = params['authors'].split(',')
-    if params['approvals']:
-        params['approvals'] = params['approvals'].split(',')
+    for sp in (
+        'change_ids',
+        'exclude_authors',
+        'authors',
+        'approvals',
+        'exclude_approvals',
+    ):
+        if params[sp]:
+            params[sp] = params[sp].split(',')
     return params
