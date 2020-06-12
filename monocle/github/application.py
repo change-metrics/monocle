@@ -16,7 +16,8 @@
 
 import requests
 import iso8601
-import jwt
+
+from authlib.jose import jwt
 
 from typing import Dict
 from typing import List
@@ -59,8 +60,9 @@ def get_app_auth_headers(app_id: str, app_key: str) -> Dict[str, str]:
     now = datetime.now(timezone.utc)
     expiry = now + timedelta(minutes=5)
 
+    header = {'alg': 'RS256'}
     data = {'iat': now, 'exp': expiry, 'iss': app_id}
-    app_token = jwt.encode(data, app_key, algorithm='RS256').decode('utf-8')
+    app_token = jwt.encode(header, data, app_key).decode('utf-8')
 
     headers = {'Accept': PREVIEW_JSON_ACCEPT, 'Authorization': 'Bearer %s' % app_token}
 
