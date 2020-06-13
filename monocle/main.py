@@ -62,9 +62,7 @@ def main():
         '--delete-repository', help='Delete events related to a repository (regexp)',
     )
     parser_dbmanage.add_argument(
-        '--delete-index',
-        help='Delete events related to a repository (regexp)',
-        action='store_true',
+        '--delete-index', help='Delete the index', action='store_true',
     )
     parser_dbmanage.add_argument(
         '--index', help='The Elastisearch index name', required=True

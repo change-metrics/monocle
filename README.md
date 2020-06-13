@@ -129,12 +129,21 @@ monocle_elastic_1   /usr/local/bin/docker-entr ...   Up      0.0.0.0:9200->9200/
 monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:3000->3000/tcp
 ```
 
+You might need to check the crawler logs to ensure the crawler started to fetch changes:
+
+```ShellSession
+$ docker-compose logs crawler
+```
+
 After a change in the configuration file, the api and crawler services need to be restarted:
 
 ```ShellSession
 $ docker-compose restart api
 $ docker-compose restart crawler
 ```
+
+You should be able to access the web UI at <http://localhost:3000>.
+
 
 #### Troubleshooting
 
@@ -157,15 +166,19 @@ or make the data directory writable for other:
 $ chmod o+w data
 ```
 
-You might need to check the crawler logs:
+You might want to wipe a Monocle index:
 
-```ShellSession
-$ docker-compose logs crawler
+```
+docker-compose run --no-deps crawler /usr/local/bin/monocle \
+--elastic-conn elastic:9200 dbmanage --index <index-name> --delete-repository ".*"
 ```
 
-### Accessing the web UI
+or delete an index:
 
-You should be able to access the web UI at <http://localhost:3000>.
+```
+docker-compose run --no-deps crawler /usr/local/bin/monocle \
+--elastic-conn elastic:9200 dbmanage --index <index-name> --delete-index
+```
 
 ## Advanced deployment configuration
 
