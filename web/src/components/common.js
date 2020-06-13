@@ -264,9 +264,10 @@ class BaseQueryComponent extends React.Component {
 
   queryBackend (start = 0) {
     const params = (new URL(window.location.href)).searchParams
+    var queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
     if (this.props.changeIds) {
-      this.props.handleQuery({
+      queryParams = {
         index: this.props.index,
         name: this.state.name,
         graph_type: this.state.graph_type,
@@ -274,9 +275,9 @@ class BaseQueryComponent extends React.Component {
         branch: params.get('branch'),
         gte: params.get('gte'),
         changeIds: this.props.changeIds
-      })
+      }
     } else {
-      this.props.handleQuery({
+      queryParams = {
         index: this.props.index,
         name: this.state.name,
         repository: params.get('repository') || '.*',
@@ -290,8 +291,19 @@ class BaseQueryComponent extends React.Component {
         from: start * this.state.pageSize,
         size: this.state.pageSize,
         state: this.state.state
-      })
+      }
+      if (['last_changes', 'repos_top', 'authors_top'].includes(this.state.name)) {
+        // Merge both associative arrays
+        queryParams = {
+          ...queryParams,
+          ...{
+            approvals: params.get('approvals'),
+            excludeApprovals: params.get('exclude_approvals')
+          }
+        }
+      }
     }
+    this.props.handleQuery(queryParams)
   }
 }
 

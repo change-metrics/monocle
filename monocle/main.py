@@ -110,7 +110,12 @@ def main():
         '--change-ids', help='Scope to change ids (comma separated)'
     )
     parser_dbquery.add_argument('--authors', help='Scope to authors (comma separated)')
-    parser_dbquery.add_argument('--approval', help='Scope to events with approval')
+    parser_dbquery.add_argument(
+        '--approvals', help='Scope to objects with approvals (comma separated)'
+    )
+    parser_dbquery.add_argument(
+        '--exclude-approvals', help='Approvals exclude list (comma separated)'
+    )
     parser_dbquery.add_argument(
         '--size', help='Return maximum of size results', default=10
     )

@@ -147,7 +147,9 @@ class FiltersForm extends React.Component {
       files: '',
       excludeAuthors: '',
       authors: '',
-      open: false
+      open: false,
+      approvals: '',
+      excludeApprovals: ''
     }
   }
 
@@ -189,7 +191,9 @@ class FiltersForm extends React.Component {
       branch: params.get('branch') || '',
       files: params.get('files') || '',
       excludeAuthors: params.get('exclude_authors') || '',
-      authors: params.get('authors') || ''
+      authors: params.get('authors') || '',
+      approvals: params.get('approvals') || '',
+      excludeApprovals: params.get('exclude_approvals') || ''
     })
   }
 
@@ -216,7 +220,9 @@ class FiltersForm extends React.Component {
       branch: this.state.branch,
       files: this.state.files,
       exclude_authors: this.state.excludeAuthors,
-      authors: this.state.authors
+      authors: this.state.authors,
+      approvals: this.state.approvals,
+      exclude_approvals: this.state.excludeApprovals
     })
     event.preventDefault()
   }
@@ -284,6 +290,24 @@ class FiltersForm extends React.Component {
                           onChange={v => this.handleChange('excludeAuthors', v)}
                         />
                       </Form.Group>
+                      {this.props.showChangeParams
+                        ? <Form.Group controlId='formApprovalsInput'>
+                          <Form.Control
+                            type='text'
+                            value={this.state.approvals}
+                            placeholder="Approvals"
+                            onChange={v => this.handleChange('approvals', v)}
+                          />
+                        </Form.Group> : null}
+                      {this.props.showChangeParams
+                        ? <Form.Group controlId='formExcludeApprovalsInput'>
+                          <Form.Control
+                            type='text'
+                            value={this.state.excludeApprovals}
+                            placeholder="Exclude Approvals"
+                            onChange={v => this.handleChange('excludeApprovals', v)}
+                          />
+                        </Form.Group> : null}
                     </Col>
                     <Col md={6}>
                       <Form.Group controlId='formRepositoryInput'>
@@ -331,7 +355,12 @@ class FiltersForm extends React.Component {
 }
 
 FiltersForm.propTypes = {
-  history: PropTypes.object.isRequired
+  history: PropTypes.object.isRequired,
+  showChangeParams: PropTypes.bool
+}
+
+FiltersForm.defaultProps = {
+  showChangeParams: false
 }
 
 const CFiltersForm = withRouter(FiltersForm)

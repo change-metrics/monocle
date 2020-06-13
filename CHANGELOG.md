@@ -6,15 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [master]
 
+
 ### Added
 
 - [cli] add dbmanage option to delete a Monocle index.
+- [web] add the approvals and exclude_approvals filters available into the changes pages.
+- [api] add the exclude_approvals paramater support.
 - [crawler] gerrit add support for http basic auth.
 - [crawler] gerrit add insecure option to bypass SSL certificate verification.
 
 ### Changed
 
 - [web] better responsive layout for the filtersbox.
+- [api] rename param approval to approvals and make it comma separated list.
 - [web] reworked the look and feel of changes tables for a better readability
 - [web] set bootstrap table with size=sm for a better look and feel
 - [crawler] github application: use authlib.jose.jwt instead of pyjwt.
@@ -23,9 +27,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - [api] ensure most_active_authors_stats display top authors by merged change.
+- [crawler] gerrit ChangeReviewedEvent approval remove leading space.
+  No data migration script provided, a wipe then re-indexation of the
+  gerrit repositories is needed.
 - [api] fix change_lifecycle_stats return null values when authors is set
-
-[web] fix wrong backend query on the change page (gte missing)
+- [web] fix wrong backend query on the change page (gte missing)
 
 
 ## [0.5] - 2020-06-04

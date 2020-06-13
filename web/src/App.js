@@ -360,6 +360,26 @@ class FiltersFormBox extends React.Component {
     return <Switch>
       <Route exact path='/' />
       <Route path='/:index/change/' />
+      <Route path='/:index/changes/'>
+        <CFiltersForm
+          showChangeParams = {true}
+        />
+      </Route>
+      <Route path='/:index/opened-changes/'>
+        <CFiltersForm
+          showChangeParams = {true}
+        />
+      </Route>
+      <Route path='/:index/merged-changes/'>
+        <CFiltersForm
+          showChangeParams = {true}
+        />
+      </Route>
+      <Route path='/:index/abandoned-changes/'>
+        <CFiltersForm
+          showChangeParams = {true}
+        />
+      </Route>
       <Route path='/' component={CFiltersForm} />
     </Switch>
   }

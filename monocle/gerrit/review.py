@@ -323,7 +323,7 @@ class ReviewesFetcher(object):
                         'type': 'ChangeReviewedEvent',
                         'id': "approval_%s" % comment['id'],
                         'created_at': self.convert_date_for_db(comment['date']),
-                        'approval': approval_match.groupdict().get('approval'),
+                        'approval': approval_match.groupdict().get('approval').strip(),
                         'author': "%s/%s"
                         % (
                             comment['author'].get('name'),
