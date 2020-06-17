@@ -164,6 +164,12 @@ def generate_filter(repository_fullname, params):
     return ret
 
 
+def totalc(val):
+    if isinstance(val, dict) and 'value' in val:
+        return val['value']
+    return val
+
+
 def switch_to_on_authors(params):
     if params.get('authors'):
         # We want the events happening on changes authored by the selected authors
@@ -175,7 +181,7 @@ def switch_to_on_authors(params):
 
 
 def run_query(es, index, body):
-    search_params = {'index': index, 'doc_type': index, 'body': body}
+    search_params = {'index': index, 'body': body}
     try:
         log.debug('run_query "%s"' % search_params)
         res = es.search(**search_params)
@@ -193,7 +199,7 @@ def _scan(es, index, repository_fullname, params):
         "_source": params.get('field', []),
         "query": generate_filter(repository_fullname, params),
     }
-    scanner_params = {'index': index, 'doc_type': index, 'query': body}
+    scanner_params = {'index': index, 'query': body}
     data = scanner(es, **scanner_params)
     ret = []
     size = params.get('size')
@@ -217,7 +223,7 @@ def _first_created_event(es, index, repository_fullname, params):
 
 def count_events(es, index, repository_fullname, params):
     body = {"query": generate_filter(repository_fullname, params)}
-    count_params = {'index': index, 'doc_type': index}
+    count_params = {'index': index}
     count_params['body'] = body
     res = es.count(**count_params)
     return res['count']
@@ -273,7 +279,7 @@ def events_histo(es, index, repository_fullname, params):
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
-                    "interval": interval,
+                    "calendar_interval": interval,
                     "format": fmt,
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params['gte'], "max": params['lte']},
@@ -301,7 +307,7 @@ def authors_histo(es, index, repository_fullname, params):
             "agg1": {
                 "date_histogram": {
                     "field": "created_at",
-                    "interval": interval,
+                    "calendar_interval": interval,
                     "format": fmt,
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params['gte'], "max": params['lte']},
@@ -346,7 +352,7 @@ def _events_top(es, index, repository_fullname, field, params):
         'count_avg': count_avg,
         'count_median': count_median,
         'total': len(buckets),
-        'total_hits': data['hits']['total'],
+        'total_hits': totalc(data['hits']['total']),
     }
 
 
@@ -796,7 +802,7 @@ def last_changes(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     changes = enhance_changes(changes)
-    return {'items': changes, 'total': data['hits']['total']}
+    return {'items': changes, 'total': totalc(data['hits']['total'])}
 
 
 def last_merged_changes(es, index, repository_fullname, params):
@@ -831,7 +837,7 @@ def oldest_open_changes(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     changes = enhance_changes(changes)
-    return {'items': changes, 'total': data['hits']['total']}
+    return {'items': changes, 'total': totalc(data['hits']['total'])}
 
 
 def changes_and_events(es, index, repository_fullname, params):
@@ -855,7 +861,7 @@ def changes_and_events(es, index, repository_fullname, params):
     data = run_query(es, index, body)
     changes = [r['_source'] for r in data['hits']['hits']]
     changes = enhance_changes(changes)
-    return {'items': changes, 'total': data['hits']['total']}
+    return {'items': changes, 'total': totalc(data['hits']['total'])}
 
 
 def new_contributors(es, index, repository_fullname, params):

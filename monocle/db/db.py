@@ -81,76 +81,70 @@ class ELmonocleDB:
         self.index = '{}{}'.format(self.prefix, index)
         self.log.info('Using ES index %s' % self.index)
         self.mapping = {
-            self.index: {
-                "properties": {
-                    "id": {"type": "keyword"},
-                    "type": {"type": "keyword"},
-                    "number": {"type": "keyword"},
-                    "change_id": {"type": "keyword"},
-                    "title": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {"type": "keyword", "ignore_above": 8191}
+            "properties": {
+                "id": {"type": "keyword"},
+                "type": {"type": "keyword"},
+                "number": {"type": "keyword"},
+                "change_id": {"type": "keyword"},
+                "title": {
+                    "type": "text",
+                    "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
+                },
+                "text": {
+                    "type": "text",
+                    "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
+                },
+                "url": {"type": "keyword"},
+                "commit_count": {"type": "integer"},
+                "additions": {"type": "integer"},
+                "deletions": {"type": "integer"},
+                "changed_files_count": {"type": "integer"},
+                "changed_files": {
+                    "properties": {
+                        "additions": {"type": "integer"},
+                        "deletions": {"type": "integer"},
+                        "path": {"type": "keyword"},
+                    }
+                },
+                "commits": {
+                    "properties": {
+                        "sha": {"type": "keyword"},
+                        "author": {"type": "keyword"},
+                        "committer": {"type": "keyword"},
+                        "authored_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
                         },
-                    },
-                    "text": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {"type": "keyword", "ignore_above": 8191}
+                        "committed_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
                         },
-                    },
-                    "url": {"type": "keyword"},
-                    "commit_count": {"type": "integer"},
-                    "additions": {"type": "integer"},
-                    "deletions": {"type": "integer"},
-                    "changed_files_count": {"type": "integer"},
-                    "changed_files": {
-                        "properties": {
-                            "additions": {"type": "integer"},
-                            "deletions": {"type": "integer"},
-                            "path": {"type": "keyword"},
-                        }
-                    },
-                    "commits": {
-                        "properties": {
-                            "sha": {"type": "keyword"},
-                            "author": {"type": "keyword"},
-                            "committer": {"type": "keyword"},
-                            "authored_at": {
-                                "type": "date",
-                                "format": "date_time_no_millis",
-                            },
-                            "committed_at": {
-                                "type": "date",
-                                "format": "date_time_no_millis",
-                            },
-                            "additions": {"type": "integer"},
-                            "deletions": {"type": "integer"},
-                            "title": {"type": "text"},
-                        }
-                    },
-                    "repository_prefix": {"type": "keyword"},
-                    "repository_fullname": {"type": "keyword"},
-                    "repository_shortname": {"type": "keyword"},
-                    "author": {"type": "keyword"},
-                    "on_author": {"type": "keyword"},
-                    "committer": {"type": "keyword"},
-                    "merged_by": {"type": "keyword"},
-                    "branch": {"type": "keyword"},
-                    "target_branch": {"type": "keyword"},
-                    "created_at": {"type": "date", "format": "date_time_no_millis"},
-                    "on_created_at": {"type": "date", "format": "date_time_no_millis"},
-                    "merged_at": {"type": "date", "format": "date_time_no_millis"},
-                    "updated_at": {"type": "date", "format": "date_time_no_millis"},
-                    "closed_at": {"type": "date", "format": "date_time_no_millis"},
-                    "state": {"type": "keyword"},
-                    "duration": {"type": "integer"},
-                    "mergeable": {"type": "keyword"},
-                    "label": {"type": "keyword"},
-                    "assignee": {"type": "keyword"},
-                    "approval": {"type": "keyword"},
-                    "draft": {"type": "boolean"},
-                }
+                        "additions": {"type": "integer"},
+                        "deletions": {"type": "integer"},
+                        "title": {"type": "text"},
+                    }
+                },
+                "repository_prefix": {"type": "keyword"},
+                "repository_fullname": {"type": "keyword"},
+                "repository_shortname": {"type": "keyword"},
+                "author": {"type": "keyword"},
+                "on_author": {"type": "keyword"},
+                "committer": {"type": "keyword"},
+                "merged_by": {"type": "keyword"},
+                "branch": {"type": "keyword"},
+                "target_branch": {"type": "keyword"},
+                "created_at": {"type": "date", "format": "date_time_no_millis"},
+                "on_created_at": {"type": "date", "format": "date_time_no_millis"},
+                "merged_at": {"type": "date", "format": "date_time_no_millis"},
+                "updated_at": {"type": "date", "format": "date_time_no_millis"},
+                "closed_at": {"type": "date", "format": "date_time_no_millis"},
+                "state": {"type": "keyword"},
+                "duration": {"type": "integer"},
+                "mergeable": {"type": "keyword"},
+                "label": {"type": "keyword"},
+                "assignee": {"type": "keyword"},
+                "approval": {"type": "keyword"},
+                "draft": {"type": "boolean"},
             }
         }
         settings = {'mappings': self.mapping}
@@ -163,7 +157,6 @@ class ELmonocleDB:
             for source in it:
                 d = {}
                 d['_index'] = self.index
-                d['_type'] = self.index
                 d['_op_type'] = 'update'
                 d['_id'] = source['id']
                 d['doc'] = source
@@ -178,7 +171,7 @@ class ELmonocleDB:
         self.ic.delete(index=self.index)
 
     def delete_repository(self, repository_fullname):
-        params = {'index': self.index, 'doc_type': self.index}
+        params = {'index': self.index}
         body = {
             "query": {
                 "bool": {
@@ -195,7 +188,7 @@ class ELmonocleDB:
         self.es.indices.refresh(index=self.index)
 
     def get_last_updated(self, repository_fullname):
-        params = {'index': self.index, 'doc_type': self.index}
+        params = {'index': self.index}
         body = {
             "sort": [{"updated_at": {"order": "desc"}}],
             "query": {
