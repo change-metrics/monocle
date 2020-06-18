@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [database] switch to ElasticSearch from 6.8 to 7.7 engine. Indexes created
+  with previous Monocle version are compatible.
 - [web] better responsive layout for the filtersbox.
 - [api] rename param approval to approvals and make it comma separated list.
 - [web] reworked the look and feel of changes tables for a better readability

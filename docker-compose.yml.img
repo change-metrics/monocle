@@ -37,13 +37,14 @@ services:
       - $PWD/etc:/etc/monocle:Z
 
   elastic:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:6.8.8"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.7.1"
     ulimits:
       nofile:
         soft: 65535
         hard: 65535
     environment:
       - "ES_JAVA_OPTS=-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
+      - "discovery.type=single-node"
     expose:
       - "9200"
     volumes:
