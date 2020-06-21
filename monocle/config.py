@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Dict, List
+from jsonschema import validate as schema_validate
+from jsonschema import draft7_format_checker
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -34,6 +36,7 @@ schema = {
                 "updated_since": {
                     "description": "The change updated since date (YYYY-mm-dd)",
                     "type": "string",
+                    "format": "date",
                 },
                 "base_url": {
                     "description": "Base url of the Github instance",
@@ -59,6 +62,7 @@ schema = {
                 "updated_since": {
                     "description": "The change updated since date (YYYY-mm-dd)",
                     "type": "string",
+                    "format": "date",
                 },
                 "base_url": {
                     "description": "Base url of the Gerrit instance",
@@ -158,6 +162,12 @@ tenants:
           login: fabien
           password: secure
 """
+
+
+def validate(data, schema):
+    schema_validate(
+        instance=data, schema=schema, format_checker=draft7_format_checker,
+    )
 
 
 class Username(str):

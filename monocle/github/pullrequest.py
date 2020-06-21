@@ -278,8 +278,6 @@ class PRsFetcher(object):
 
     def get(self, updated_since):
         prs = []
-        if len(updated_since.split('T')) == 1:
-            updated_since += 'T00:00:00Z'
         updated_since = dbdate_to_datetime(updated_since)
         get_commits = True
         kwargs = {
@@ -573,7 +571,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='pullrequest')
 
     parser.add_argument('--crawler', help='run crawler', action='store_true')
-    parser.add_argument('--updated-since', help='stop date for the crawler')
+    parser.add_argument(
+        '--updated-since', help='stop date for the crawler (YYYY-mm-dd)'
+    )
     parser.add_argument('--loglevel', help='logging level', default='INFO')
     parser.add_argument('--token', help='A Github personal token')
     parser.add_argument('--org', help='A Github organization', required=True)
