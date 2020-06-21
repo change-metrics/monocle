@@ -410,6 +410,7 @@ class PRsFetcher(object):
             change['author'] = get_login(pr['author'])
             change['branch'] = pr['headRefName']
             change['target_branch'] = pr['baseRefName']
+            change['self_merged'] = None
             change['title'] = pr['title']
             change['text'] = pr['bodyText']
             change['additions'] = pr['additions']
@@ -431,6 +432,7 @@ class PRsFetcher(object):
             change['commit_count'] = int(pr['commits']['totalCount'])
             if pr['mergedBy']:
                 change['merged_by'] = get_login(pr['mergedBy'])
+                change['self_merged'] = change['merged_by'] == change['author']
             else:
                 change['merged_by'] = None
             change['updated_at'] = pr['updatedAt']

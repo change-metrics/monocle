@@ -66,7 +66,8 @@
     "mergeable": "UNKNOWN",
     "closed_at": "2020-04-13T22:43:52Z",
     "duration": 12552677,
-    "merged_by": "Paladox none/1029953"
+    "merged_by": "Paladox none/1029953",
+    "self_merged": true
   },
   {
     "type": "ChangeCreatedEvent",

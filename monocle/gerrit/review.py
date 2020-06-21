@@ -160,6 +160,7 @@ class ReviewesFetcher(object):
                     if review.get('submitted')
                     else self.convert_date_for_db(review['updated'])
                 ),
+                'self_merged': None,
                 'approval': [],
                 'state': self.status_map[review['status']],
                 # Note(fbo): Gerrit labels must be handled as Review
@@ -247,6 +248,7 @@ class ReviewesFetcher(object):
                         review['submitter'].get('name'),
                         review['submitter']['_account_id'],
                     )
+                    change['self_merged'] = change['merged_by'] == change['author']
             else:
                 change['merged_by'] = None
             objects.append(change)

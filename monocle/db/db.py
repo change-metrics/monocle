@@ -142,6 +142,7 @@ class ELmonocleDB:
                 "assignee": {"type": "keyword"},
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
+                "self_merged": {"type": "boolean"},
             }
         }
         settings = {'mappings': self.mapping}

@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [master]
+
 ### Added
+
+- [crawler] compute if a change is self merged.
+
 ### Changed
 ### Removed
 ### Fixed
@@ -54,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [crawler] github application: use authlib.jose.jwt instead of pyjwt.
 
 ### Removed
+
 ### Fixed
 
 - [compose] change the selinux label Z to z. This indicates that the bind
