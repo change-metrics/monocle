@@ -18,12 +18,12 @@ import logging
 
 import statistics
 from copy import deepcopy
-from datetime import datetime
 from itertools import groupby
 from itertools import chain
 from monocle.utils import dbdate_to_datetime
 from monocle.utils import enhance_changes
 from monocle.utils import Detector
+from monocle.utils import utcnow
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -572,7 +572,7 @@ def _first_event_on_changes(es, index, repository_fullname, params):
     for pr, events in groupby(_events, keyfunc):
         groups[pr] = {
             'change_created_at': None,
-            'first_event_created_at': datetime.now(),
+            'first_event_created_at': utcnow(),
             'first_event_author': None,
             'delta': None,
         }

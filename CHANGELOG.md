@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [api] fix tz issue in queries due to the use of naive datetime object.
 - [api] ensure most_active_authors_stats display top authors by merged change.
 - [crawler] gerrit ChangeReviewedEvent approval remove leading space.
   No data migration script provided, a wipe then re-indexation of the

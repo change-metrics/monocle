@@ -18,8 +18,6 @@ import logging
 import socket
 import time
 
-from datetime import datetime
-
 from elasticsearch.helpers import bulk
 from elasticsearch import client
 from elasticsearch.exceptions import NotFoundError
@@ -228,10 +226,10 @@ class ELmonocleDB:
                     utils.dbdate_to_datetime(first_created_event).timestamp() * 1000
                 )
             else:
-                # There is probably nothing the db that match the query
+                # There is probably nothing in the db that match the query
                 args[1]['gte'] = None
         if not args[1].get('lte'):
-            args[1]['lte'] = int(datetime.now().timestamp() * 1000)
+            args[1]['lte'] = int(utils.utcnow().timestamp() * 1000)
         return getattr(queries, name)(self.es, self.index, *args, **kwargs)
 
     def get_indices(self):

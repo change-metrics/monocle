@@ -16,7 +16,11 @@
 
 import re
 import copy
+import iso8601
+from datetime import date
+from datetime import timezone
 from datetime import datetime
+from datetime import timedelta
 
 events_list = [
     'ChangeCreatedEvent',
@@ -29,22 +33,29 @@ events_list = [
 ]
 
 
+def utcnow():
+    return datetime.now(timezone.utc)
+
+
 def date_to_epoch_ml(datestr):
     if not datestr:
         return None
-    return int(datetime.strptime(datestr, "%Y-%m-%d").timestamp() * 1000)
+    tst = date.fromisoformat(datestr).timetuple()
+    return int(
+        datetime(tst.tm_year, tst.tm_mon, tst.tm_mday, tzinfo=timezone.utc).timestamp()
+        * 1000
+    )
 
 
 def end_of_day_to_epoch_ml(datestr):
     if not datestr:
         return None
-    return int(
-        datetime.strptime(datestr + ' 23:59:59', "%Y-%m-%d %H:%M:%S").timestamp() * 1000
-    )
+    delta = int(timedelta(days=1).total_seconds() - 1) * 1000
+    return date_to_epoch_ml(datestr) + delta
 
 
 def dbdate_to_datetime(datestr):
-    return datetime.strptime(datestr, "%Y-%m-%dT%H:%M:%SZ")
+    return iso8601.parse_date(datestr)
 
 
 def float_trunc(f, n=2):
