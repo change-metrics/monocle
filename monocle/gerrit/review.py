@@ -22,6 +22,8 @@ import json
 import re
 from dataclasses import dataclass
 
+from monocle import utils
+
 
 name = 'gerrit_crawler'
 help = 'Gerrit Crawler to fetch Reviews events'
@@ -66,7 +68,7 @@ class ReviewesFetcher(object):
     def get(self, updated_since, change=None):
         if not change:
             request_params = "?q=after:%s+project:%s" % (
-                updated_since,
+                utils.is8601_to_dt(updated_since).strftime("%Y-%m-%d"),
                 self.repository_prefix,
             )
         else:
@@ -113,9 +115,8 @@ class ReviewesFetcher(object):
 
     def extract_objects(self, reviewes, dumper=None):
         def timedelta(start, end):
-            format = "%Y-%m-%dT%H:%M:%SZ"
-            start = datetime.strptime(start, format)
-            end = datetime.strptime(end, format)
+            start = utils.is8601_to_dt(start)
+            end = utils.is8601_to_dt(end)
             return int((start - end).total_seconds())
 
         def insert_change_attributes(obj, change):

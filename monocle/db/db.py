@@ -223,7 +223,7 @@ class ELmonocleDB:
             )
             if first_created_event:
                 args[1]['gte'] = int(
-                    utils.dbdate_to_datetime(first_created_event).timestamp() * 1000
+                    utils.is8601_to_dt(first_created_event).timestamp() * 1000
                 )
             else:
                 # There is probably nothing in the db that match the query

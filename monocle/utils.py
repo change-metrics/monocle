@@ -54,7 +54,7 @@ def end_of_day_to_epoch_ml(datestr):
     return date_to_epoch_ml(datestr) + delta
 
 
-def dbdate_to_datetime(datestr):
+def is8601_to_dt(datestr):
     return iso8601.parse_date(datestr)
 
 

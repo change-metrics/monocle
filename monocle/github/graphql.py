@@ -18,7 +18,7 @@ import logging
 import requests
 
 from time import sleep
-from datetime import datetime
+from monocle import utils
 
 from tenacity import (
     retry,
@@ -66,7 +66,7 @@ class GithubGraphQLQuery(object):
         ratelimit = self.getRateLimit()
         if ratelimit:
             self.quota_remain = ratelimit['remaining']
-            self.resetat = datetime.strptime(ratelimit['resetAt'], '%Y-%m-%dT%H:%M:%SZ')
+            self.resetat = utils.is8601_to_dt(ratelimit['resetAt'])
             self.log.info(
                 "Got rate limit data: remain %s resetat %s"
                 % (self.quota_remain, self.resetat)
@@ -75,7 +75,7 @@ class GithubGraphQLQuery(object):
     # https://developer.github.com/v3/guides/best-practices-for-integrators/#dealing-with-abuse-rate-limits
     def wait_for_call(self):
         if self.quota_remain <= 150:
-            until_reset = self.resetat - datetime.utcnow()
+            until_reset = self.resetat - utils.utcnow()
             self.log.info(
                 "Quota remain: %s/calls delay until "
                 "reset: %s/secs waiting ..." % (self.quota_remain, until_reset.seconds)
