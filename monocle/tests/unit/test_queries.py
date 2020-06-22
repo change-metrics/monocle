@@ -155,11 +155,10 @@ class TestQueries(unittest.TestCase):
         ret = self.eldb.run_named_query('events_histo', 'unit/repo1', params)
         expected = (
             [
-                {'doc_count': 0, 'key': 1577750400000, 'key_as_string': '2019-12-31'},
                 {'doc_count': 4, 'key': 1577836800000, 'key_as_string': '2020-01-01'},
                 {'doc_count': 1, 'key': 1577923200000, 'key_as_string': '2020-01-02'},
             ],
-            1.6666666666666667,
+            2.5,
         )
         ddiff = DeepDiff(ret, expected)
         if ddiff:
@@ -172,27 +171,21 @@ class TestQueries(unittest.TestCase):
         params = set_params({'gte': '2020-01-01', 'lte': '2020-01-02'})
         ret = self.eldb.run_named_query('authors_histo', 'unit/repo1', params)
         expected = {
+            'avg_authors': 1.5,
             'buckets': [
                 {
-                    'key_as_string': '2019-12-31',
-                    'key': 1577750400000,
-                    'doc_count': 0,
-                    'authors': [],
-                },
-                {
-                    'key_as_string': '2020-01-01',
-                    'key': 1577836800000,
-                    'doc_count': 2,
                     'authors': ['jane', 'john'],
+                    'doc_count': 2,
+                    'key': 1577836800000,
+                    'key_as_string': '2020-01-01',
                 },
                 {
-                    'key_as_string': '2020-01-02',
-                    'key': 1577923200000,
-                    'doc_count': 1,
                     'authors': ['jane'],
+                    'doc_count': 1,
+                    'key': 1577923200000,
+                    'key_as_string': '2020-01-02',
                 },
             ],
-            'avg_authors': 1.0,
             'total_authors': 2,
         }
         ddiff = DeepDiff(ret, expected)
@@ -379,11 +372,6 @@ class TestQueries(unittest.TestCase):
                     [
                         {
                             'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
-                            'doc_count': 0,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
                         },
@@ -402,11 +390,6 @@ class TestQueries(unittest.TestCase):
                 ),
                 'ChangeCommitForcePushedEvent': (
                     [
-                        {
-                            'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
                         {
                             'doc_count': 0,
                             'key': 1577836800000,
@@ -429,11 +412,6 @@ class TestQueries(unittest.TestCase):
                     [
                         {
                             'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
-                            'doc_count': 0,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
                         },
@@ -448,16 +426,11 @@ class TestQueries(unittest.TestCase):
                             'key_as_string': '2020-01-03',
                         },
                     ],
-                    0.25,
+                    0.3333333333333333,
                 ),
                 'ChangeCreatedEvent': (
                     [
                         {
-                            'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
                             'doc_count': 1,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
@@ -473,17 +446,12 @@ class TestQueries(unittest.TestCase):
                             'key_as_string': '2020-01-03',
                         },
                     ],
-                    0.5,
+                    0.6666666666666666,
                 ),
                 'ChangeMergedEvent': (
                     [
                         {
                             'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
-                            'doc_count': 0,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
                         },
@@ -498,7 +466,7 @@ class TestQueries(unittest.TestCase):
                             'key_as_string': '2020-01-03',
                         },
                     ],
-                    0.25,
+                    0.3333333333333333,
                 ),
             },
             'merged': 1,
@@ -510,6 +478,7 @@ class TestQueries(unittest.TestCase):
             },
             'tests': 50.0,
         }
+
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
@@ -526,9 +495,6 @@ class TestQueries(unittest.TestCase):
             {'gte': '2020-01-01', 'lte': '2020-01-03', 'authors': 'john'}
         )
         ret = self.eldb.run_named_query('changes_lifecycle_stats', '.*', params)
-        from pprint import pprint
-
-        pprint(ret)
         expected = {
             'ChangeCommitForcePushedEvent': {'authors_count': 0, 'events_count': 0},
             'ChangeCommitPushedEvent': {'authors_count': 0, 'events_count': 0},
@@ -539,11 +505,6 @@ class TestQueries(unittest.TestCase):
             'histos': {
                 'ChangeAbandonedEvent': (
                     [
-                        {
-                            'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
                         {
                             'doc_count': 0,
                             'key': 1577836800000,
@@ -566,11 +527,6 @@ class TestQueries(unittest.TestCase):
                     [
                         {
                             'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
-                            'doc_count': 0,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
                         },
@@ -589,11 +545,6 @@ class TestQueries(unittest.TestCase):
                 ),
                 'ChangeCommitPushedEvent': (
                     [
-                        {
-                            'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
                         {
                             'doc_count': 0,
                             'key': 1577836800000,
@@ -615,11 +566,6 @@ class TestQueries(unittest.TestCase):
                 'ChangeCreatedEvent': (
                     [
                         {
-                            'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
                             'doc_count': 1,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
@@ -635,17 +581,12 @@ class TestQueries(unittest.TestCase):
                             'key_as_string': '2020-01-03',
                         },
                     ],
-                    0.25,
+                    0.3333333333333333,
                 ),
                 'ChangeMergedEvent': (
                     [
                         {
                             'doc_count': 0,
-                            'key': 1577750400000,
-                            'key_as_string': '2019-12-31',
-                        },
-                        {
-                            'doc_count': 0,
                             'key': 1577836800000,
                             'key_as_string': '2020-01-01',
                         },
@@ -660,7 +601,7 @@ class TestQueries(unittest.TestCase):
                             'key_as_string': '2020-01-03',
                         },
                     ],
-                    0.25,
+                    0.3333333333333333,
                 ),
             },
             'merged': 1,
@@ -672,6 +613,7 @@ class TestQueries(unittest.TestCase):
             },
             'tests': 100.0,
         }
+
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)

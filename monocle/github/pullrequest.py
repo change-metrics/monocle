@@ -25,7 +25,7 @@ from typing import Optional
 
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
-from monocle.utils import dbdate_to_datetime
+from monocle.utils import is8601_to_dt
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -262,7 +262,7 @@ class PRsFetcher(object):
         # We sort to mitigate this
         # https://github.community/t5/GitHub-API-Development-and/apiv4-pullrequests-listing-broken-ordering/m-p/59439#M4968
         oldest_update = sorted(
-            [dbdate_to_datetime(pr['node']['updatedAt']) for pr in edges], reverse=True
+            [is8601_to_dt(pr['node']['updatedAt']) for pr in edges], reverse=True
         )[-1]
         logging.info("page oldest updated at date is %s" % oldest_update)
         if oldest_update < kwargs['updated_since']:
@@ -278,9 +278,7 @@ class PRsFetcher(object):
 
     def get(self, updated_since):
         prs = []
-        if len(updated_since.split('T')) == 1:
-            updated_since += 'T00:00:00Z'
-        updated_since = dbdate_to_datetime(updated_since)
+        updated_since = is8601_to_dt(updated_since)
         get_commits = True
         kwargs = {
             'pr_query': self.get_pr_query(include_commits=get_commits),
@@ -573,7 +571,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='pullrequest')
 
     parser.add_argument('--crawler', help='run crawler', action='store_true')
-    parser.add_argument('--updated-since', help='stop date for the crawler')
+    parser.add_argument(
+        '--updated-since', help='stop date for the crawler (YYYY-mm-dd)'
+    )
     parser.add_argument('--loglevel', help='logging level', default='INFO')
     parser.add_argument('--token', help='A Github personal token')
     parser.add_argument('--org', help='A Github organization', required=True)

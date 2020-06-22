@@ -17,7 +17,6 @@
 import unittest
 
 import yaml
-from jsonschema import validate
 from deepdiff import DeepDiff
 from .common import DiffException
 
@@ -26,9 +25,7 @@ from monocle import config
 
 class TestSchemas(unittest.TestCase):
     def test_config_schema(self):
-        validate(
-            instance=yaml.safe_load(config.config_sample_yaml), schema=config.schema,
-        )
+        config.validate(yaml.safe_load(config.config_sample_yaml), config.schema)
 
     def test_indexes_acl(self):
         indexes_acl = config.build_index_acl(yaml.safe_load(config.config_sample_yaml))

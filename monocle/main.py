@@ -22,8 +22,6 @@ import yaml
 
 from pprint import pprint
 
-from jsonschema import validate
-
 from monocle import utils
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
@@ -155,7 +153,7 @@ def main():
             log.error('Unable to access config: %s' % realpath)
             sys.exit(1)
         configdata = yaml.safe_load(open(realpath).read())
-        validate(instance=configdata, schema=config.schema)
+        config.validate(configdata, config.schema)
         tpool = []
         group = {}
         app = None

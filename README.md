@@ -93,7 +93,7 @@ tenants:
           base_url: https://github.com
       gerrit_repositories:
         - name: ^zuul/.*
-          updated_since: "2020-03-15 00:00:00"
+          updated_since: "2020-03-15"
           base_url: https://review.opendev.org
   # A private index only whitelisted users are authorized to access
   # See "Advanced deployment configuration" section

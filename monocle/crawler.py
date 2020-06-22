@@ -19,12 +19,12 @@ import logging
 import os
 import tempfile
 from time import sleep
-from datetime import datetime
 from threading import Thread
 
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github import pullrequest
 from monocle.gerrit import review
+from monocle.utils import utcnow
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class Runner(object):
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)
         if not change:
-            return self.updated_since or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            return self.updated_since or utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         else:
             log.info(
                 "Most recent change date in the database for %s is %s"

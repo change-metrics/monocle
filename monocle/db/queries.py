@@ -18,12 +18,12 @@ import logging
 
 import statistics
 from copy import deepcopy
-from datetime import datetime
 from itertools import groupby
 from itertools import chain
-from monocle.utils import dbdate_to_datetime
+from monocle.utils import is8601_to_dt
 from monocle.utils import enhance_changes
 from monocle.utils import Detector
+from monocle.utils import utcnow
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -572,16 +572,14 @@ def _first_event_on_changes(es, index, repository_fullname, params):
     for pr, events in groupby(_events, keyfunc):
         groups[pr] = {
             'change_created_at': None,
-            'first_event_created_at': datetime.now(),
+            'first_event_created_at': utcnow(),
             'first_event_author': None,
             'delta': None,
         }
         for event in events:
             if not groups[pr]['change_created_at']:
-                groups[pr]['change_created_at'] = dbdate_to_datetime(
-                    event['on_created_at']
-                )
-            event_created_at = dbdate_to_datetime(event['created_at'])
+                groups[pr]['change_created_at'] = is8601_to_dt(event['on_created_at'])
+            event_created_at = is8601_to_dt(event['created_at'])
             if event_created_at < groups[pr]['first_event_created_at']:
                 groups[pr]['first_event_created_at'] = event_created_at
                 groups[pr]['delta'] = (
@@ -638,7 +636,7 @@ def cold_changes(es, index, repository_fullname, params):
         change for change in changes if change['change_id'] in changes_ids_wo_rc
     ]
     changes_wo_rc = enhance_changes(changes_wo_rc)
-    items = sorted(changes_wo_rc, key=lambda x: dbdate_to_datetime(x['created_at']))
+    items = sorted(changes_wo_rc, key=lambda x: is8601_to_dt(x['created_at']))
     if size:
         items = items[:size]
     return {'items': items}
