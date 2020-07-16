@@ -13,5 +13,5 @@ tenants:
       loop_delay: 10
       gerrit_repositories:
         - name: ^zuul/.*
-          updated_since: "2020-03-15 00:00:00"
+          updated_since: "2020-03-15"
           base_url: https://review.opendev.org
