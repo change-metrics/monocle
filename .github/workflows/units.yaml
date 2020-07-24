@@ -22,7 +22,7 @@ jobs:
           stack-version: 7.7.1
       
       - name: Display indexes
-        run: curl -I -X GET http://localhost:9200/_cat/indices
+        run: curl -s -I -X GET http://localhost:9200/_cat/indices
 
       - name: Set up Python 3.7
         uses: actions/setup-python@v1
@@ -36,3 +36,8 @@ jobs:
 
       - name: Test with tox
         run: tox
+
+      - name: Validate usefulness of tests
+        uses: quality-of-tests/has-useful-tests-action@master
+        with:
+          run-tests: tox -epy3
