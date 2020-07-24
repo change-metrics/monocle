@@ -1,0 +1,25 @@
+on:
+  push:
+    branches:
+      - master
+
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v2
+
+  - name: Build and push monocle_backend Docker image
+    uses: docker/build-push-action@v1
+    with:
+      username: ${{ secrets.DOCKER_USERNAME }}
+      password: ${{ secrets.DOCKER_PASSWORD }}
+      repository: changemetrics/monocle_backend
+      tags: latest
+
+  - name: Build and push monocle_web Docker image
+    uses: docker/build-push-action@v1
+    with:
+      path: web
+      username: ${{ secrets.DOCKER_USERNAME }}
+      password: ${{ secrets.DOCKER_PASSWORD }}
+      repository: changemetrics/monocle_backend
+      tags: latest
