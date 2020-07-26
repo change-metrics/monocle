@@ -1,5 +1,5 @@
-name: Monocle CI
-on: push
+name: Unit tests on PR
+on: pull_request
 
 jobs:
   runner-job:
