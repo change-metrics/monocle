@@ -23,20 +23,10 @@ jobs:
           ln -s docker-compose.yml.dev docker-compose.yml
           docker-compose up -d --build
 
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
-
-      - name: Install dependencies
+      - name: Connect to services
         run: |
-          python -m pip install --upgrade pip
-          pip install tox
-
-      - name: Run tests
-        run: |
-          tox
           curl -s http://localhost:3000/
+          curl -s http://localhost:9876/api/0/indices
 
       - name: Publish images to docker-hub
         run: |
