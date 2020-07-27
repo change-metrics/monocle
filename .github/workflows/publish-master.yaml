@@ -20,8 +20,13 @@ jobs:
       
       - name: Build docker images
         run: |
-          ln -s docker-compose.yml.img docker-compose.yml
+          ln -s docker-compose.yml.dev docker-compose.yml
           docker-compose up -d --build
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
 
       - name: Install dependencies
         run: |
@@ -30,7 +35,7 @@ jobs:
 
       - name: Run tests
         run: |
-          tox -epy3
+          tox
           curl -s http://localhost:3000/
 
       - name: Publish images to docker-hub
