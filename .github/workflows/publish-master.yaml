@@ -21,12 +21,7 @@ jobs:
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
-          docker-compose up -d --build
-
-      - name: Connect to services
-        run: |
-          curl -s http://localhost:3000/
-          curl -s http://localhost:9876/api/0/indices
+          docker-compose --build
 
       - name: Publish images to docker-hub
         run: |
