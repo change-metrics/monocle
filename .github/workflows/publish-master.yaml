@@ -11,19 +11,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
     
-      - name: Build and push monocle_backend Docker image
-        uses: docker/build-push-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: changemetrics/monocle_backend
-          tags: latest
-    
-      - name: Build and push monocle_web Docker image
-        uses: docker/build-push-action@v1
-        with:
-          path: web
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: changemetrics/monocle_backend
-          tags: latest
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      
+      - name: Build docker images
+        run: |
+          ln -s docker-compose.yml.img docker-compose.yml
+          docker-compose up -d --build
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Run tests
+        run: |
+          tox -epy3
+          curl -s http://localhost:3000/
+
+      - name: Publish images to docker-hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          set -x
+          docker tag monocle_web:latest changemetrics/monocle_web:latest
+          docker push changemetrics/monocle_web:latest
+          docker tag monocle_api:latest changemetrics/monocle_backend:latest
+          docker push changemetrics/monocle_backend:latest
