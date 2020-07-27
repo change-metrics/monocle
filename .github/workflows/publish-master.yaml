@@ -21,7 +21,7 @@ jobs:
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
-          docker-compose --build
+          docker-compose build
 
       - name: Publish images to docker-hub
         run: |
