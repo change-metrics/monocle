@@ -4,13 +4,14 @@ on:
       - '*'
 
 jobs:
-  publish-job:
+  publish-release-job:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with: ${{ github.event.release.tag_name }}
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Display tag name
         run : echo ${{ github.event.release.tag_name }}
