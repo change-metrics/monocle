@@ -11,76 +11,82 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.ref }}
 
-      - name: Configure sysctl limits
-        run: |
-          sudo swapoff -a
-          sudo sysctl -w vm.swappiness=1
-          sudo sysctl -w fs.file-max=262144
-          sudo sysctl -w vm.max_map_count=262144
-      
-      - name: Build docker images
-        run: |
-          ln -s docker-compose.yml.dev docker-compose.yml
-          docker-compose build
-
-      - name: Create runtime directories
-        run: |
-          mkdir data etc dump
-          chmod o+w data
-
-      - name: Start containers
-        run: docker-compose up -d
-
-      - name: Create a config.yaml file
-        run: |
-          cat > etc/config.yaml << EOL
-          ---
-          tenants:
-            - index: monocle
-              crawler:
-                loop_delay: 10
-                github_orgs:
-                  - name: tektoncd
-                    repository: pipeline
-                    updated_since: "2020-01-01"
-                    token: "fake token"
-                    base_url: https://github.com
-          EOL
-  
-      - name: Wait for services to start
-        run: sleep 15
-
-      - name: Display docker-compose ps
-        run: docker-compose ps
-
-      - name: Display docker-compose crawler logs
-        run: docker-compose logs crawler
-
-      - name: Check elastic service
-        run: docker-compose ps elastic | grep Up
-      
-      - name: Check api service
-        run: |
-          docker-compose ps api | grep Up
-          curl -s http://localhost:9876/api/0/indices
-
-      - name: Check crawler service
-        run: docker-compose ps crawler | grep Up
-
-      - name: Check web service
-        run: |
-          docker-compose ps web | grep Up
-          curl -s http://localhost:3000/
-
-      - name: Publish images to docker-hub
+      - name: Display ref
         env:
-          TAG_NAME: ${{ github.event.release.tag_name }}
+          TAG_NAME: ${{ github.ref }}
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          set -x
-          docker tag monocle_web:latest changemetrics/monocle_web:$TAG_NAME
-          docker push changemetrics/monocle_web:$TAG_NAME
-          docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
-          docker push changemetrics/monocle_backend:$TAG_NAME
+          echo "tag_name: $TAG_NAME"
+
+#      - name: Configure sysctl limits
+#        run: |
+#          sudo swapoff -a
+#          sudo sysctl -w vm.swappiness=1
+#          sudo sysctl -w fs.file-max=262144
+#          sudo sysctl -w vm.max_map_count=262144
+#      
+#      - name: Build docker images
+#        run: |
+#          ln -s docker-compose.yml.dev docker-compose.yml
+#          docker-compose build
+#
+#      - name: Create runtime directories
+#        run: |
+#          mkdir data etc dump
+#          chmod o+w data
+#
+#      - name: Start containers
+#        run: docker-compose up -d
+#
+#      - name: Create a config.yaml file
+#        run: |
+#          cat > etc/config.yaml << EOL
+#          ---
+#          tenants:
+#            - index: monocle
+#              crawler:
+#                loop_delay: 10
+#                github_orgs:
+#                  - name: tektoncd
+#                    repository: pipeline
+#                    updated_since: "2020-01-01"
+#                    token: "fake token"
+#                    base_url: https://github.com
+#          EOL
+#  
+#      - name: Wait for services to start
+#        run: sleep 15
+#
+#      - name: Display docker-compose ps
+#        run: docker-compose ps
+#
+#      - name: Display docker-compose crawler logs
+#        run: docker-compose logs crawler
+#
+#      - name: Check elastic service
+#        run: docker-compose ps elastic | grep Up
+#      
+#      - name: Check api service
+#        run: |
+#          docker-compose ps api | grep Up
+#          curl -s http://localhost:9876/api/0/indices
+#
+#      - name: Check crawler service
+#        run: docker-compose ps crawler | grep Up
+#
+#      - name: Check web service
+#        run: |
+#          docker-compose ps web | grep Up
+#          curl -s http://localhost:3000/
+#
+#      - name: Publish images to docker-hub
+#        env:
+#          TAG_NAME: ${{ github.ref }}
+#        run: |
+#          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+#          set -x
+#          docker tag monocle_web:latest changemetrics/monocle_web:$TAG_NAME
+#          docker push changemetrics/monocle_web:$TAG_NAME
+#          docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
+#          docker push changemetrics/monocle_backend:$TAG_NAME
