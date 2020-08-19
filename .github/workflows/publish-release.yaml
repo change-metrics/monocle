@@ -55,6 +55,9 @@ jobs:
       - name: Display docker-compose ps
         run: docker-compose ps
 
+      - name: Display docker-compose crawler logs
+        run: docker-compose logs crawler
+
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up
       
