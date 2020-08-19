@@ -4,7 +4,7 @@ on:
       - '*'
 
 jobs:
-  publish-release-job:
+  publish-tag:
     runs-on: ubuntu-latest
 
     steps:
@@ -75,10 +75,12 @@ jobs:
           curl -s http://localhost:3000/
 
       - name: Publish images to docker-hub
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           set -x
-          docker tag monocle_web:latest changemetrics/monocle_web:${{ github.event.release.tag_name }}
-          docker push changemetrics/monocle_web:${{ github.event.release.tag_name }}
-          docker tag monocle_api:latest changemetrics/monocle_backend:${{ github.event.release.tag_name }}
-          docker push changemetrics/monocle_backend:${{ github.event.release.tag_name }}
+          docker tag monocle_web:latest changemetrics/monocle_web:$TAG_NAME
+          docker push changemetrics/monocle_web:$TAG_NAME
+          docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
+          docker push changemetrics/monocle_backend:$TAG_NAME
