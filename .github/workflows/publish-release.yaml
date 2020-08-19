@@ -10,12 +10,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.ref }}
+#        with:
+#          ref: ${{ github.ref }}
+
+      - uses: olegtarasov/get-tag@v2
+        id: tagName
 
       - name: Display ref
         env:
-          TAG_NAME: ${{ github.ref }}
+          TAG_NAME: ${{ steps.tagName.outputs.tag }}
         run: |
           echo "tag_name: $TAG_NAME"
 
