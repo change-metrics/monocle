@@ -1,23 +1,14 @@
-on:
-  push:
-    tags:
-      - '*'
+name: PR validation
+on: pull_request
 
 jobs:
-  publish-tag:
+  tox:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out repository code
         uses: actions/checkout@v2
-
-      - uses: olegtarasov/get-tag@v2
-        id: tagName
-
-      - name: Display tag name
-        env:
-          TAG_NAME: ${{ steps.tagName.outputs.tag }}
-        run: |
-          echo "tag_name: $TAG_NAME"
+        with:
+          fetch-depth: 0
 
       - name: Configure sysctl limits
         run: |
@@ -26,6 +17,44 @@ jobs:
           sudo sysctl -w fs.file-max=262144
           sudo sysctl -w vm.max_map_count=262144
       
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 7.8.0
+      
+      - name: Display indexes
+        run: curl -s -I -X GET http://localhost:9200/_cat/indices
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Test with tox
+        run: tox
+
+      - name: Validate usefulness of tests
+        uses: quality-of-tests/has-useful-tests-action@master
+        with:
+          run-tests: tox -epy3
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
@@ -54,7 +83,7 @@ jobs:
                     token: "fake token"
                     base_url: https://github.com
           EOL
-  
+
       - name: Wait for services to start
         run: sleep 15
 
@@ -63,7 +92,7 @@ jobs:
 
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up
-      
+
       - name: Check api service
         run: |
           docker-compose ps api | grep Up
@@ -76,14 +105,3 @@ jobs:
         run: |
           docker-compose ps web | grep Up
           curl -s http://localhost:3000/
-
-      - name: Publish images to docker-hub
-        env:
-          TAG_NAME: ${{ steps.tagName.outputs.tag }}
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          set -x
-          docker tag monocle_web:latest changemetrics/monocle_web:$TAG_NAME
-          docker push changemetrics/monocle_web:$TAG_NAME
-          docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
-          docker push changemetrics/monocle_backend:$TAG_NAME
