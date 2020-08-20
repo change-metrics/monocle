@@ -28,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [compose] change the selinux label Z to z. This indicates that the bind
+  mount content is shared among multiple containers". This fixes an issue where
+  the config file is not found in the in crawler or api container.
 - [api] validate updated_since date format in the configuration file.
 - [api] fix tz issue in queries due to the use of naive datetime object.
 - [api] ensure most_active_authors_stats display top authors by merged change.
