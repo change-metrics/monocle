@@ -66,6 +66,10 @@ $ mkdir data etc dump
 $ ln -s docker-compose.yml.img docker-compose.yml
 ```
 
+By default docker-compose will fetch the latest published container images.
+Indeed, we produce Docker container images for the master version of Monocle.
+If running master does not git your needs, you could still use the last release by setting the MONOCLE_VERSION to 0.6 in the .env file. Please refer to [Configuration of the containers](#configuration-of-the-containers).  
+
 ### Create the config.yaml file
 
 The `config.yaml` file is used by the crawler and api services.
@@ -73,7 +77,7 @@ The `config.yaml` file is used by the crawler and api services.
 If you want to crawl GitHub repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
 
-Then create the config file `etc/config.yaml`:
+Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to replace `<github_token>` by your personal access token:
 
 ```YAML
 ---
@@ -84,32 +88,13 @@ tenants:
       github_orgs:
         - name: tektoncd
           repository: pipeline
-          updated_since: "2020-03-15"
-          token: <github_token>
-          base_url: https://github.com
-        - name: spinnaker
-          updated_since: "2020-03-15"
-          token: <github_token>
-          base_url: https://github.com
-      gerrit_repositories:
-        - name: ^zuul/.*
-          updated_since: "2020-03-15"
-          base_url: https://review.opendev.org
-  # A private index only whitelisted users are authorized to access
-  # See "Advanced deployment configuration" section
-  - index: monocle-private
-    users:
-      - <github_login1>
-      - <github_login2>
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: containers
-          repository: libpod
-          updated_since: "2020-03-15"
+          updated_since: "2020-05-01"
           token: <github_token>
           base_url: https://github.com
 ```
+
+To crawl the full tektoncd GitHub organization then remove the entry from the file.
+A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
 
@@ -132,8 +117,10 @@ monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:3000->3000/
 You might need to check the crawler logs to ensure the crawler started to fetch changes:
 
 ```ShellSession
-$ docker-compose logs crawler
+$ docker-compose logs -f crawler
 ```
+
+You should be able to access the web UI at <http://localhost:3000>.
 
 After a change in the configuration file, the api and crawler services need to be restarted:
 
@@ -141,9 +128,6 @@ After a change in the configuration file, the api and crawler services need to b
 $ docker-compose restart api
 $ docker-compose restart crawler
 ```
-
-You should be able to access the web UI at <http://localhost:3000>.
-
 
 #### Troubleshooting
 
@@ -249,6 +233,44 @@ for the matching installation and use it to query the GitHub API.
 
 1. Save the private key into `etc/app_key.rsa`
 2. Into the `.env` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
+
+### Full configuration file example
+
+```YAML
+---
+tenants:
+  - index: monocle
+    crawler:
+      loop_delay: 10
+      github_orgs:
+        - name: tektoncd
+          repository: pipeline
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
+        - name: spinnaker
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
+      gerrit_repositories:
+        - name: ^zuul/.*
+          updated_since: "2020-03-15"
+          base_url: https://review.opendev.org
+  # A private index only whitelisted users are authorized to access
+  # See "Advanced deployment configuration" section
+  - index: monocle-private
+    users:
+      - <github_login1>
+      - <github_login2>
+    crawler:
+      loop_delay: 10
+      github_orgs:
+        - name: containers
+          repository: libpod
+          updated_since: "2020-03-15"
+          token: <github_token>
+          base_url: https://github.com
+```
 
 ## Contributing
 

@@ -35,7 +35,7 @@ services:
       WEB_URL: '${MONOCLE_URL:-http://localhost:3000}'
     command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     volumes:
-      - $PWD/etc:/etc/monocle:Z
+      - $PWD/etc:/etc/monocle:z
 
   elastic:
     image: "docker.elastic.co/elasticsearch/elasticsearch:7.8.0"
@@ -60,7 +60,7 @@ services:
       APP_ID: '${GITHUB_APP_ID:-}'
       APP_KEY_PATH: '${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}'
     volumes:
-      - $PWD/etc:/etc/monocle:Z
+      - $PWD/etc:/etc/monocle:z
       - $PWD/dump:/var/lib/crawler:Z
 
   web:

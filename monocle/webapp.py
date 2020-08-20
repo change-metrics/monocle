@@ -74,6 +74,7 @@ if not config_path:
 else:
     if not os.path.isfile(config_path):
         print('Unable to access %s.' % config_path, file=sys.stderr)
+        sys.exit(1)
     else:
         globals()['indexes_acl'] = config.build_index_acl(
             yaml.safe_load(open(config_path))
