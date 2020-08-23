@@ -33,24 +33,23 @@ import {
 
 import Pie from './pie'
 
-class ReposOpenedPie extends BaseQueryComponent {
+class ChangesAuthorsPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'repos_top'
-    this.state.graph_type = 'repos_top_opened'
-    this.state.state = 'OPEN'
+    this.state.name = 'authors_top'
+    this.state.graph_type = 'authors_top'
   }
 
   render () {
-    if (!this.props.repos_top_opened_loading) {
-      if (this.props.repos_top_opened_error) {
+    if (!this.props.authors_top_loading) {
+      if (this.props.authors_top_error) {
         return <ErrorBox
-          error={this.props.repos_top_opened_error}
+          error={this.props.authors_top_error}
         />
       }
-      if (!this.props.repos_top_opened_result) {
+      if (!this.props.authors_top_result) {
         return <ErrorBox
-          error={{ data: 'No data for ReposOpenedPie', status: 0 }}
+          error={{ data: 'No data for authors top', status: 0 }}
         />
       }
       return (
@@ -58,15 +57,15 @@ class ReposOpenedPie extends BaseQueryComponent {
           <Col>
             <Card>
               <Card.Header>
-                <Card.Title>Opened Changes per repository</Card.Title>
+                <Card.Title>Changes per author</Card.Title>
               </Card.Header>
               <Card.Body>
                 <Row>
                   <Col>
                     <Pie
-                      field="repository"
+                      field="authors"
                       history={this.props.history}
-                      data={this.props.repos_top_opened_result}
+                      data={this.props.authors_top_result}
                     />
                   </Col>
                 </Row>
@@ -81,8 +80,8 @@ class ReposOpenedPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_opened')
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'authors_top')
 
-const CReposOpenedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposOpenedPie))
+const CChangesAuthorsPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesAuthorsPie))
 
-export default CReposOpenedPie
+export default CChangesAuthorsPie

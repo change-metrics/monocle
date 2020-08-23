@@ -264,6 +264,7 @@ class BaseQueryComponent extends React.Component {
 
   queryBackend (start = 0) {
     const params = (new URL(window.location.href)).searchParams
+    this.setState({ state: params.get('state') })
     var queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
     if (this.props.changeIds) {
@@ -290,9 +291,9 @@ class BaseQueryComponent extends React.Component {
         graph_type: this.state.graph_type,
         from: start * this.state.pageSize,
         size: this.state.pageSize,
-        state: this.state.state
+        state: params.get('state')
       }
-      if (['last_changes', 'repos_top', 'authors_top'].includes(this.state.name)) {
+      if (['last_changes', 'repos_top', 'authors_top', 'approvals_top'].includes(this.state.name)) {
         // Merge both associative arrays
         queryParams = {
           ...queryParams,

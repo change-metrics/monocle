@@ -33,24 +33,23 @@ import {
 
 import Pie from './pie'
 
-class ReposAbandonedPie extends BaseQueryComponent {
+class ReposPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
     this.state.name = 'repos_top'
-    this.state.graph_type = 'repos_top_abandoned'
-    this.state.state = 'CLOSED'
+    this.state.graph_type = 'repos_top'
   }
 
   render () {
-    if (!this.props.repos_top_abandoned_loading) {
-      if (this.props.repos_top_abandoned_error) {
+    if (!this.props.repos_top_loading) {
+      if (this.props.repos_top_error) {
         return <ErrorBox
-          error={this.props.repos_top_abandoned_error}
+          error={this.props.repos_top_error}
         />
       }
-      if (!this.props.repos_top_abandoned_result) {
+      if (!this.props.repos_top_result) {
         return <ErrorBox
-          error={{ data: 'No data for ReposAbandonedPie', status: 0 }}
+          error={{ data: 'No data for ReposPie', status: 0 }}
         />
       }
       return (
@@ -58,7 +57,7 @@ class ReposAbandonedPie extends BaseQueryComponent {
           <Col>
             <Card>
               <Card.Header>
-                <Card.Title>Abandoned Changes per repository</Card.Title>
+                <Card.Title>Changes per repository</Card.Title>
               </Card.Header>
               <Card.Body>
                 <Row>
@@ -66,7 +65,7 @@ class ReposAbandonedPie extends BaseQueryComponent {
                     <Pie
                       field="repository"
                       history={this.props.history}
-                      data={this.props.repos_top_abandoned_result}
+                      data={this.props.repos_top_result}
                     />
                   </Col>
                 </Row>
@@ -81,8 +80,8 @@ class ReposAbandonedPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_abandoned')
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top')
 
-const CReposAbandonedPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposAbandonedPie))
+const CReposPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposPie))
 
-export default CReposAbandonedPie
+export default CReposPie

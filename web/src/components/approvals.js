@@ -33,18 +33,18 @@ import {
 
 import Pie from './pie'
 
-class ApprovalStats extends BaseQueryComponent {
+class ApprovalsPie extends BaseQueryComponent {
   constructor (props) {
     super(props)
-    this.state.name = 'changes_top_approval'
-    this.state.graph_type = 'approval_stats'
+    this.state.name = 'approvals_top'
+    this.state.graph_type = 'approvals_top'
   }
 
   render () {
-    if (!this.props.approval_stats_loading) {
-      if (this.props.approval_stats_error) {
+    if (!this.props.approvals_top_loading) {
+      if (this.props.approvals_top_error) {
         return <ErrorBox
-          error={this.props.approval_stats_error}
+          error={this.props.approvals_top_error}
         />
       }
       const palette = {
@@ -70,13 +70,13 @@ class ApprovalStats extends BaseQueryComponent {
           <Col>
             <Card>
               <Card.Header>
-                <Card.Title>Approvals dispersion stats</Card.Title>
+                <Card.Title>Approvals</Card.Title>
               </Card.Header>
               <Card.Body>
                 <Row>
                   <Col>
                     <Pie
-                      data={this.props.approval_stats_result}
+                      data={this.props.approvals_top_result}
                       filtered_items={ignoredApproval}
                       palette={palette}
                     />
@@ -93,10 +93,10 @@ class ApprovalStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'approval_stats')
+const mapStateToProps = state => addMap({}, state.QueryReducer, 'approvals_top')
 
-const CApprovalStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ApprovalStats))
+const CApprovalsPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ApprovalsPie))
 
 export {
-  CApprovalStats
+  CApprovalsPie
 }

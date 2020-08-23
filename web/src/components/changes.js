@@ -99,6 +99,7 @@ class RepoChanges extends BaseQueryComponent {
         />
       }
       const data = this.props.repos_top_merged_result
+      console.log(this.props)
       return (
         <RepoChangesTable
           data={data}
@@ -350,8 +351,8 @@ class AbstractLastChanges extends BaseQueryComponent {
       }
       const data = this.props[this.state.graph_type + '_result']
       var graph = <div></div>
-      if (this.state.complexityGraph) {
-        graph = <this.state.complexityGraph
+      if (this.props.showComplexityGraph && (this.state.state === 'MERGED' || this.state.state === 'CLOSED')) {
+        graph = <DurationComplexityGraph
           history={this.props.history}
           data={data}
           timeFunc={this.extractTime}
@@ -394,94 +395,24 @@ AbstractLastChanges.propTypes = {
   })
 }
 
-class LastMergedChanges extends AbstractLastChanges {
+class LastChangesNG extends AbstractLastChanges {
   constructor (props) {
     super(props)
-    this.state.graph_type = 'last_merged_changes'
-    this.state.state = 'MERGED'
-    this.state.title = 'Merged Changes'
-    this.state.complexityGraph = DurationComplexityGraph
-  }
-
-  extractTime = x => x.merged_at
-}
-
-const lastMergedMapStateToProps = state => addMap({}, state.QueryReducer, 'last_merged_changes')
-
-const CLastMergedChanges = withRouter(connect(lastMergedMapStateToProps, mapDispatchToProps)(LastMergedChanges))
-
-class LastOpenedChanges extends AbstractLastChanges {
-  constructor (props) {
-    super(props)
-    this.state.graph_type = 'last_opened_changes'
-    this.state.state = 'OPEN'
-    this.state.title = 'Opened Changes'
+    this.state.graph_type = 'last_changes'
+    this.state.title = 'Changes'
   }
 
   extractTime = x => x.created_at
 }
 
-const lastOpenedChangesMapStateToProps = state => addMap({}, state.QueryReducer, 'last_opened_changes')
+const lastChangesNGMapStateToProps = state => addMap({}, state.QueryReducer, 'last_changes')
 
-const CLastOpenedChanges = withRouter(connect(lastOpenedChangesMapStateToProps, mapDispatchToProps)(LastOpenedChanges))
-
-class AbandonedChangesFull extends AbstractLastChanges {
-  constructor (props) {
-    super(props)
-    this.state.graph_type = 'full_last_abandoned_changes'
-    this.state.state = 'CLOSED'
-    this.state.pageSize = 100
-    this.state.title = 'Abandoned Changes'
-    this.state.complexityGraph = DurationComplexityGraph
-  }
-
-  extractTime = x => x.created_at
-}
-
-const abandonedChangesFullMapStateToProps = state => addMap({}, state.QueryReducer, 'full_last_abandoned_changes')
-
-const CAbandonedChangesFull = withRouter(connect(abandonedChangesFullMapStateToProps, mapDispatchToProps)(AbandonedChangesFull))
-
-class AbandonedChanges extends BaseQueryComponent {
-  constructor (props) {
-    super(props)
-    this.state.name = 'last_changes'
-    this.state.graph_type = 'last_abandoned_changes'
-    this.state.state = 'CLOSED'
-  }
-
-  render () {
-    if (!this.props.last_abandoned_changes_loading) {
-      if (this.props.last_abandoned_changes_error) {
-        return <ErrorBox
-          error={this.props.last_abandoned_changes_error}
-        />
-      }
-      const data = this.props.last_abandoned_changes_result
-      return (
-        <ChangesTable
-          index={this.props.index}
-          data={data}
-          title={<Link to={indexUrl(this.props.index, '/abandoned-changes')}>Last Abandoned Changes</Link>}
-        />
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const abandonedChangesMapStateToProps = state => addMap({}, state.QueryReducer, 'last_abandoned_changes')
-
-const CAbandonedChanges = withRouter(connect(abandonedChangesMapStateToProps, mapDispatchToProps)(AbandonedChanges))
+const CLastChangesNG = withRouter(connect(lastChangesNGMapStateToProps, mapDispatchToProps)(LastChangesNG))
 
 export {
   CRepoChanges,
   CHotChanges,
   CColdChanges,
-  CAbandonedChanges,
-  CAbandonedChangesFull,
   CLastChanges,
-  CLastMergedChanges,
-  CLastOpenedChanges
+  CLastChangesNG
 }

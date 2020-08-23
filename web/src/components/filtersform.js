@@ -149,7 +149,8 @@ class FiltersForm extends React.Component {
       authors: '',
       open: false,
       approvals: '',
-      excludeApprovals: ''
+      excludeApprovals: '',
+      state: 'open'
     }
   }
 
@@ -181,6 +182,11 @@ class FiltersForm extends React.Component {
     this.setState(assoc)
   }
 
+  handleChangeState = (e) => {
+    const state = e.target.attributes.value.value
+    this.setState({ state: state })
+  }
+
   fetchQueryParams = () => {
     const params = new URLSearchParams(this.props.history.location.search)
     this.setState({
@@ -193,7 +199,8 @@ class FiltersForm extends React.Component {
       excludeAuthors: params.get('exclude_authors') || '',
       authors: params.get('authors') || '',
       approvals: params.get('approvals') || '',
-      excludeApprovals: params.get('exclude_approvals') || ''
+      excludeApprovals: params.get('exclude_approvals') || '',
+      state: params.get('state') || ''
     })
   }
 
@@ -222,7 +229,8 @@ class FiltersForm extends React.Component {
       exclude_authors: this.state.excludeAuthors,
       authors: this.state.authors,
       approvals: this.state.approvals,
-      exclude_approvals: this.state.excludeApprovals
+      exclude_approvals: this.state.excludeApprovals,
+      state: this.state.state
     })
     event.preventDefault()
   }
@@ -334,6 +342,32 @@ class FiltersForm extends React.Component {
                           onChange={v => this.handleChange('files', v)}
                         />
                       </Form.Group>
+                      {this.props.showChangeParams
+                        ? <Form.Group controlId='changeStateInput'>
+                          <DropDownButton
+                            title={this.state.state ? 'Change state: ' + this.state.state : 'Change state: ALL'}
+                            size="sm"
+                            variant="secondary"
+                          >
+                            {[
+                              ['', 'All'],
+                              ['OPEN', 'Open'],
+                              ['CLOSED', 'Closed'],
+                              ['MERGED', 'Merged']
+                            ].map(
+                              (entry) => {
+                                return <Dropdown.Item
+                                  key={entry[0]}
+                                  value={entry[0]}
+                                  active={entry[0] === this.state.state}
+                                  onClick={this.handleChangeState}
+                                >
+                                  {entry[1]}
+                                </Dropdown.Item>
+                              }
+                            )
+                            }
+                          </DropDownButton></Form.Group> : null}
                       <Form.Group controlId='formSubmit'>
                         <Button
                           className='float-right'

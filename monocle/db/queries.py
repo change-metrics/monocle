@@ -46,6 +46,7 @@ public_queries = (
     "authors_top_reviewed",
     "authors_top_commented",
     "authors_top",
+    "approvals_top",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "changes_closed_ratios",
@@ -401,6 +402,12 @@ def authors_top(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     return _events_top(es, index, repository_fullname, "author", params)
+
+
+def approvals_top(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    return _events_top(es, index, repository_fullname, "approval", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
@@ -782,17 +789,11 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
     }
 
 
-def params_to_datefield(params):
-    if 'state' in params and params['state'] == 'OPEN':
-        return "created_at"
-    return "closed_at"
-
-
 def last_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     body = {
-        "sort": [{params_to_datefield(params): {"order": "desc"}}],
+        "sort": [{"updated_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
         "query": generate_filter(repository_fullname, params),

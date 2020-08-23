@@ -44,22 +44,15 @@ import {
   CRepoChanges,
   CHotChanges,
   CColdChanges,
-  CAbandonedChanges,
-  CAbandonedChangesFull,
-  CLastChanges,
-  CLastMergedChanges,
-  CLastOpenedChanges
+  CLastChangesNG
 } from './components/changes'
-import { CApprovalStats } from './components/approvals'
+import { CApprovalsPie } from './components/approvals'
 import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
-import CAuthorsMergedPie from './components/authors_merged_pie'
-import CReposMergedPie from './components/repos_merged_pie'
-import CAuthorsOpenedPie from './components/authors_opened_pie'
-import CReposOpenedPie from './components/repos_opened_pie'
-import CAuthorsAbandonedPie from './components/authors_abandoned_pie'
-import CReposAbandonedPie from './components/repos_abandoned_pie'
+import CReposPie from './components/repos_pie'
+import CChangesAuthorsPie from './components/changes_authors_pie'
 import TopView from './top_view'
+import Card from 'react-bootstrap/esm/Card'
 
 class RootView extends React.Component {
   render () {
@@ -157,13 +150,6 @@ class ChangesView extends React.Component {
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CLastChanges
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
             <CRepoChanges
               index={this.props.match.params.index} />
           </Col>
@@ -182,20 +168,6 @@ class ChangesView extends React.Component {
               index={this.props.match.params.index} />
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <CAbandonedChanges
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <CApprovalStats
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
       </React.Fragment>
     )
   }
@@ -211,115 +183,74 @@ ChangesView.propTypes = {
   })
 }
 
-class MergedChangesView extends React.Component {
+class ChangesNGView extends React.Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      open: false
+    }
+  }
+
   render () {
+    const BoxStyle = {
+      backgroundColor: '#dbecff6b',
+      textAlign: 'center',
+      cursor: 'pointer'
+    }
+    const PStyle = {
+      marginTop: '0rem',
+      marginBottom: '0rem',
+      fontWeight: 'bold'
+    }
     return (
       <React.Fragment>
         <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col md>
-            <CAuthorsMergedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-          <Col md>
-            <CReposMergedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
+        <Row
+          onClick={() => this.setState({ open: !this.state.open })}
+        >
+          <Col>
+            <Card style={BoxStyle}>
+              <p style={PStyle}>{this.state.open ? 'Collapse stats' : 'Display stats'}</p>
+            </Card>
           </Col>
         </Row>
+        {this.state.open
+          ? <React.Fragment>
+            <Row><Col><p></p></Col></Row>
+            <Row>
+              <Col md>
+                <CChangesAuthorsPie
+                  history={this.props.history}
+                  index={this.props.match.params.index} />
+              </Col>
+              <Col md>
+                <CReposPie
+                  history={this.props.history}
+                  index={this.props.match.params.index} />
+              </Col>
+              <Col md>
+                <CApprovalsPie
+                  index={this.props.match.params.index} />
+              </Col>
+            </Row>
+          </React.Fragment>
+          : null
+        }
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CLastMergedChanges
+            <CLastChangesNG
               history={this.props.history}
-              index={this.props.match.params.index} />
+              index={this.props.match.params.index}
+              showComplexityGraph={this.state.open} />
           </Col>
         </Row>
-      </React.Fragment>
+      </React.Fragment >
     )
   }
 }
 
-MergedChangesView.propTypes = {
-  history: PropTypes.object.isRequired,
-  match: PropTypes.shape({
-    params: PropTypes.shape({
-      index: PropTypes.string
-    })
-  })
-}
-
-class OpenChangesView extends React.Component {
-  render () {
-    return (
-      <React.Fragment>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col md>
-            <CAuthorsOpenedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-          <Col md>
-            <CReposOpenedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <CLastOpenedChanges
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-      </React.Fragment>
-    )
-  }
-}
-
-OpenChangesView.propTypes = {
-  history: PropTypes.object.isRequired,
-  match: PropTypes.shape({
-    params: PropTypes.shape({
-      index: PropTypes.string
-    })
-  })
-}
-
-class AbandonedChangesView extends React.Component {
-  render () {
-    return (
-      <React.Fragment>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col md>
-            <CAuthorsAbandonedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-          <Col md>
-            <CReposAbandonedPie
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <CAbandonedChangesFull
-              history={this.props.history}
-              index={this.props.match.params.index} />
-          </Col>
-        </Row>
-      </React.Fragment>
-    )
-  }
-}
-
-AbandonedChangesView.propTypes = {
+ChangesNGView.propTypes = {
   history: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
@@ -362,22 +293,27 @@ class FiltersFormBox extends React.Component {
       <Route path='/:index/change/' />
       <Route path='/:index/changes/'>
         <CFiltersForm
-          showChangeParams = {true}
+          showChangeParams={true}
         />
       </Route>
       <Route path='/:index/opened-changes/'>
         <CFiltersForm
-          showChangeParams = {true}
+          showChangeParams={true}
         />
       </Route>
       <Route path='/:index/merged-changes/'>
         <CFiltersForm
-          showChangeParams = {true}
+          showChangeParams={true}
         />
       </Route>
       <Route path='/:index/abandoned-changes/'>
         <CFiltersForm
-          showChangeParams = {true}
+          showChangeParams={true}
+        />
+      </Route>
+      <Route path='/:index/changes-ng/'>
+        <CFiltersForm
+          showChangeParams={true}
         />
       </Route>
       <Route path='/' component={CFiltersForm} />
@@ -404,9 +340,7 @@ class App extends React.Component {
             <Route exact path='/:index/people' component={PeopleView} />
             <Route exact path='/:index/changes' component={ChangesView} />
             <Route exact path='/:index' component={RootView} />
-            <Route path='/:index/merged-changes' component={MergedChangesView} />
-            <Route path='/:index/opened-changes' component={OpenChangesView} />
-            <Route path='/:index/abandoned-changes' component={AbandonedChangesView} />
+            <Route path='/:index/changes-ng' component={ChangesNGView} />
             <Route path='/:index/change/:change' component={ChangeView} />
           </Switch>
           <Row><Col><p></p></Col></Row>
