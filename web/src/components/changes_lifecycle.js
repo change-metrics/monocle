@@ -154,6 +154,12 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
     this.state.graph_type = 'changes_lifecycle_stats'
   }
 
+  getSearchString (state) {
+    const search = new URLSearchParams(window.location.search)
+    search.set('state', state)
+    return '?' + search.toString()
+  }
+
   render () {
     if (!this.props.changes_lifecycle_stats_loading) {
       if (this.props.changes_lifecycle_stats_error) {
@@ -162,7 +168,6 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
         />
       }
       const data = this.props.changes_lifecycle_stats_result
-      const search = window.location.search
       return (
         <Row>
           <Col>
@@ -178,16 +183,16 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/opened-changes${search}`}>{data.opened} opened changes</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('OPEN')}`}>{data.opened} opened changes</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/abandoned-changes${search}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('CLOSED')}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/merged-changes${search}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Changes with tests: {data.tests}%

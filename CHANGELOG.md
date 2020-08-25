@@ -6,7 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [master]
 ### Added
+
+- [web]: display a filter summary below the filter box.
+- [api] and [web]: add a repos summary page
+
 ### Changed
+
+- [web]: re-organization of changes related pages.
+- [web]: re-factored top menu.
+- [web]: make approval pie clickable.
+- [web]: improve relative date selector.
+
 ### Removed
 ### Fixed
 

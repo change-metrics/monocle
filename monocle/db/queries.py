@@ -38,14 +38,16 @@ public_queries = (
     "count_abandoned_changes",
     "events_histo",
     "authors_histo",
-    "repos_top",
     "events_top_authors",
     "changes_top_approval",
     "changes_top_commented",
     "changes_top_reviewed",
     "authors_top_reviewed",
     "authors_top_commented",
+    "repos_top",
     "authors_top",
+    "approvals_top",
+    "repos_summary",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "changes_closed_ratios",
@@ -401,6 +403,12 @@ def authors_top(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     return _events_top(es, index, repository_fullname, "author", params)
+
+
+def approvals_top(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['etype'] = ("Change",)
+    return _events_top(es, index, repository_fullname, "approval", params)
 
 
 def peers_exchange_strength(es, index, repository_fullname, params):
@@ -782,17 +790,11 @@ def most_reviewed_authors_stats(es, index, repository_fullname, params):
     }
 
 
-def params_to_datefield(params):
-    if 'state' in params and params['state'] == 'OPEN':
-        return "created_at"
-    return "closed_at"
-
-
 def last_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
     body = {
-        "sort": [{params_to_datefield(params): {"order": "desc"}}],
+        "sort": [{"updated_at": {"order": "desc"}}],
         "size": params['size'],
         "from": params['from'],
         "query": generate_filter(repository_fullname, params),
@@ -915,3 +917,20 @@ def authors_by_file_map(es, index, repository_fullname, params):
                 authors[key] = set()
                 authors[key].add(change['author'])
     return {'authors': authors}
+
+
+def repos_summary(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    repos = dict(
+        [
+            (item['key'], {'changes': item['doc_count']})
+            for item in repos_top(es, index, repository_fullname, params)['items']
+        ]
+    )
+    for name in repos:
+        repos[name]['changes_open'] = count_opened_changes(es, index, name, params)
+        repos[name]['changes_abandoned'] = count_abandoned_changes(
+            es, index, name, params
+        )
+        repos[name]['changes_merged'] = count_merged_changes(es, index, name, params)
+    return {'summary': repos}

@@ -31,9 +31,8 @@ addStates(initialState, 'most_active_authors_stats')
 addStates(initialState, 'approval_stats')
 addStates(initialState, 'most_reviewed_authors_stats')
 addStates(initialState, 'authors_peers_stats')
-addStates(initialState, 'repos_top_merged')
-addStates(initialState, 'repos_top_opened')
-addStates(initialState, 'repos_top_abandoned')
+addStates(initialState, 'repos_top')
+addStates(initialState, 'repos_summary')
 addStates(initialState, 'hot_changes')
 addStates(initialState, 'cold_changes')
 addStates(initialState, 'last_changes')
@@ -43,9 +42,8 @@ addStates(initialState, 'last_abandoned_changes')
 addStates(initialState, 'full_last_abandoned_changes')
 addStates(initialState, 'changes_and_events')
 addStates(initialState, 'new_contributors')
-addStates(initialState, 'authors_top_merged')
-addStates(initialState, 'authors_top_opened')
-addStates(initialState, 'authors_top_abandoned')
+addStates(initialState, 'authors_top')
+addStates(initialState, 'approvals_top')
 addStates(initialState, 'opened_changes_by_file_map')
 addStates(initialState, 'merged_changes_by_file_map')
 
@@ -58,8 +56,6 @@ const enhanceData = (x) => {
 
 const queryReducer = (state = initialState, action) => {
   const newState = { ...state }
-
-  // console.log(action)
 
   if (action.type.endsWith('_QUERY_LOADING')) {
     const graphType = action.type.replace('_QUERY_LOADING', '')
@@ -77,12 +73,9 @@ const queryReducer = (state = initialState, action) => {
       case 'last_merged_changes':
       case 'last_abandoned_changes':
       case 'full_last_abandoned_changes':
+      case 'last_changes':
       case 'changes_and_events':
         action.value.items.forEach(enhanceData)
-        break
-      case 'last_changes':
-        action.value.merged_changes.items.forEach(enhanceData)
-        action.value.opened_changes.items.forEach(enhanceData)
         break
       default:
         break
