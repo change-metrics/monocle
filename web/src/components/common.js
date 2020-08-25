@@ -290,8 +290,7 @@ class BaseQueryComponent extends React.Component {
         authors: this.state.forceAllAuthors ? null : params.get('authors'),
         graph_type: this.state.graph_type,
         from: start * this.state.pageSize,
-        size: this.state.pageSize,
-        state: params.get('state')
+        size: this.state.pageSize
       }
       if (['last_changes', 'repos_top', 'authors_top', 'approvals_top'].includes(this.state.name)) {
         // Merge both associative arrays
@@ -299,7 +298,8 @@ class BaseQueryComponent extends React.Component {
           ...queryParams,
           ...{
             approvals: params.get('approvals'),
-            excludeApprovals: params.get('exclude_approvals')
+            excludeApprovals: params.get('exclude_approvals'),
+            state: params.get('state')
           }
         }
       }

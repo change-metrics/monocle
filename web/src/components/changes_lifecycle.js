@@ -183,16 +183,16 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes-ng${this.getSearchString('OPEN')}`}>{data.opened} opened changes</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('OPEN')}`}>{data.opened} opened changes</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes-ng${this.getSearchString('CLOSED')}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('CLOSED')}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes-ng${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Changes with tests: {data.tests}%
