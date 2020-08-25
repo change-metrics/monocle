@@ -143,7 +143,7 @@ PeopleView.propTypes = {
   })
 }
 
-class ChangesView extends React.Component {
+class ReposView extends React.Component {
   render () {
     return (
       <React.Fragment>
@@ -154,6 +154,24 @@ class ChangesView extends React.Component {
               index={this.props.match.params.index} />
           </Col>
         </Row>
+      </React.Fragment>
+    )
+  }
+}
+ReposView.propTypes = {
+  history: PropTypes.object.isRequired,
+  location: PropTypes.object.isRequired,
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
+class HotChangesView extends React.Component {
+  render () {
+    return (
+      <React.Fragment>
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
@@ -161,6 +179,24 @@ class ChangesView extends React.Component {
               index={this.props.match.params.index} />
           </Col>
         </Row>
+      </React.Fragment>
+    )
+  }
+}
+HotChangesView.propTypes = {
+  history: PropTypes.object.isRequired,
+  location: PropTypes.object.isRequired,
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
+class ColdChangesView extends React.Component {
+  render () {
+    return (
+      <React.Fragment>
         <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
@@ -172,8 +208,7 @@ class ChangesView extends React.Component {
     )
   }
 }
-
-ChangesView.propTypes = {
+ColdChangesView.propTypes = {
   history: PropTypes.object.isRequired,
   location: PropTypes.object.isRequired,
   match: PropTypes.shape({
@@ -183,7 +218,7 @@ ChangesView.propTypes = {
   })
 }
 
-class ChangesNGView extends React.Component {
+class ChangesView extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
@@ -250,7 +285,7 @@ class ChangesNGView extends React.Component {
   }
 }
 
-ChangesNGView.propTypes = {
+ChangesView.propTypes = {
   history: PropTypes.object.isRequired,
   match: PropTypes.shape({
     params: PropTypes.shape({
@@ -291,27 +326,20 @@ class FiltersFormBox extends React.Component {
     return <Switch>
       <Route exact path='/' />
       <Route path='/:index/change/' />
+      <Route path='/:index/repos/'>
+        <CFiltersForm />
+      </Route>
       <Route path='/:index/changes/'>
         <CFiltersForm
           showChangeParams={true}
         />
       </Route>
-      <Route path='/:index/opened-changes/'>
+      <Route path='/:index/hot-changes/'>
         <CFiltersForm
           showChangeParams={true}
         />
       </Route>
-      <Route path='/:index/merged-changes/'>
-        <CFiltersForm
-          showChangeParams={true}
-        />
-      </Route>
-      <Route path='/:index/abandoned-changes/'>
-        <CFiltersForm
-          showChangeParams={true}
-        />
-      </Route>
-      <Route path='/:index/changes-ng/'>
+      <Route path='/:index/cold-changes/'>
         <CFiltersForm
           showChangeParams={true}
         />
@@ -338,9 +366,11 @@ class App extends React.Component {
             <Route exact path='/login' component={LoginView} />
             <Route exact path='/user' component={CUserView} />
             <Route exact path='/:index/people' component={PeopleView} />
-            <Route exact path='/:index/changes' component={ChangesView} />
+            <Route exact path='/:index/repos' component={ReposView} />
             <Route exact path='/:index' component={RootView} />
-            <Route path='/:index/changes-ng' component={ChangesNGView} />
+            <Route path='/:index/changes' component={ChangesView} />
+            <Route path='/:index/hot-changes' component={HotChangesView} />
+            <Route path='/:index/cold-changes' component={ColdChangesView} />
             <Route path='/:index/change/:change' component={ChangeView} />
           </Switch>
           <Row><Col><p></p></Col></Row>

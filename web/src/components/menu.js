@@ -34,11 +34,13 @@ class IndexMenu extends React.Component {
     return (
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="mr-auto">
-          <Link className="nav-link" to={`/${this.props.match.params.index}${search}`}>Top</Link>
+          <Link className="nav-link" to={`/${this.props.match.params.index}${search}`}>Main</Link>
           <Link className="nav-link" to={`/${this.props.match.params.index}/people${search}`}>People</Link>
+          <Link className="nav-link" to={`/${this.props.match.params.index}/repos${search}`}>Repositories</Link>
           <NavDropdown title="Changes" id="changes-nav-dropdown">
-            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes${search}`)}>Summary</NavDropdown.Item>
-            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes-ng${search}`)}>changes NG</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes${search}`)}>Browse changes</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/hot-changes${search}`)}>Hot changes</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/cold-changes${search}`)}>Cold changes</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>
