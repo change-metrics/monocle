@@ -93,7 +93,7 @@ tenants:
           base_url: https://github.com
 ```
 
-To crawl the full tektoncd GitHub organization then remove the entry from the file.
+To crawl the full tektoncd GitHub organization then remove the *repository* entry from the file.
 A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
