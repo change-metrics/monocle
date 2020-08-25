@@ -32,13 +32,22 @@ import 'react-datepicker/dist/react-datepicker.css'
 import moment from 'moment'
 
 class DateFormBox extends React.Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      selected: '3-months'
+    }
+  }
+
   getDateString = (count, unit) => {
     return moment().subtract(count, unit)
       .format('YYYY-MM-DD')
   }
 
   handleClick = (e) => {
-    switch (e.target.attributes.value.value) {
+    const selected = e.target.attributes.value.value
+    this.setState({ selected: selected })
+    switch (selected) {
       case '1-week':
         this.props.handleChange(
           'gte', this.getDateString(7, 'days'))
@@ -62,6 +71,21 @@ class DateFormBox extends React.Component {
       case '6-months':
         this.props.handleChange(
           'gte', this.getDateString(6, 'months'))
+        this.props.handleChange('lte', '')
+        break
+      case '1-year':
+        this.props.handleChange(
+          'gte', this.getDateString(1, 'years'))
+        this.props.handleChange('lte', '')
+        break
+      case '2-years':
+        this.props.handleChange(
+          'gte', this.getDateString(2, 'years'))
+        this.props.handleChange('lte', '')
+        break
+      case '3-years':
+        this.props.handleChange(
+          'gte', this.getDateString(3, 'years'))
         this.props.handleChange('lte', '')
         break
       default:
@@ -100,7 +124,7 @@ class DateFormBox extends React.Component {
           <Col lg={6}>
             <Form.Group controlId='formToDate'>
               <DropDownButton
-                title="Relative date"
+                title={'Relative date: ' + this.state.selected}
                 size="sm"
                 variant="secondary"
               >
@@ -109,11 +133,15 @@ class DateFormBox extends React.Component {
                   ['2-weeks', '2 weeks'],
                   ['1-month', '1 month'],
                   ['3-months', '3 months'],
-                  ['6-months', '6 months']].map(
+                  ['6-months', '6 months'],
+                  ['1-year', '1 year'],
+                  ['2-years', '2 years'],
+                  ['3-years', '3 years']].map(
                   (entry) => {
                     return <Dropdown.Item
                       key={entry[0]}
                       value={entry[0]}
+                      active={entry[0] === this.state.selected}
                       onClick={this.handleClick}
                     >
                       {entry[1]}
