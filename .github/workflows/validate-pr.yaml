@@ -38,10 +38,10 @@ jobs:
       - name: Test with tox
         run: tox
 
-      - name: Validate usefulness of tests
-        uses: quality-of-tests/has-useful-tests-action@master
-        with:
-          run-tests: tox -epy3
+      # - name: Validate usefulness of tests
+      #   uses: quality-of-tests/has-useful-tests-action@master
+      #   with:
+      #     run-tests: tox -epy3
   docker:
     runs-on: ubuntu-latest
     steps:

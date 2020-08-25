@@ -921,6 +921,8 @@ def authors_by_file_map(es, index, repository_fullname, params):
 
 def repos_summary(es, index, repository_fullname, params):
     params = deepcopy(params)
+    # Override the size default an set a higher value
+    params['size'] = 10000
     repos = dict(
         [
             (item['key'], {'changes': item['doc_count']})
