@@ -709,3 +709,30 @@ class TestQueries(unittest.TestCase):
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
+
+    def test_repos_summary(self):
+        """
+        Test query: repos_summary
+        """
+        params = set_params({})
+        ret = self.eldb.run_named_query('repos_summary', '.*', params)
+        expected = {
+            'summary': {
+                'unit/repo1': {
+                    'changes': 1,
+                    'changes_abandoned': 0,
+                    'changes_merged': 1,
+                    'changes_open': 0,
+                },
+                'unit/repo2': {
+                    'changes': 3,
+                    'changes_abandoned': 0,
+                    'changes_merged': 2,
+                    'changes_open': 1,
+                },
+            }
+        }
+
+        ddiff = DeepDiff(ret, expected)
+        if ddiff:
+            raise DiffException(ddiff)

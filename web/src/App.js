@@ -41,18 +41,20 @@ import {
   CAuthorsPeersStats
 } from './components/top'
 import {
-  CRepoChanges,
   CHotChanges,
   CColdChanges,
   CLastChangesNG
 } from './components/changes'
+import {
+  CRepoChanges
+} from './components/repos_summary'
 import { CApprovalsPie } from './components/approvals'
 import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
 import CReposPie from './components/repos_pie'
 import CChangesAuthorsPie from './components/changes_authors_pie'
 import TopView from './top_view'
-import Card from 'react-bootstrap/esm/Card'
+import Card from 'react-bootstrap/Card'
 
 class RootView extends React.Component {
   render () {

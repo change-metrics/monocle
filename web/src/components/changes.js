@@ -21,7 +21,6 @@ import { connect } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
-import Table from 'react-bootstrap/Table'
 import ReactPaginate from 'react-paginate'
 import PropTypes from 'prop-types'
 import { withRouter, Link } from 'react-router-dom'
@@ -42,79 +41,6 @@ import {
 } from './common'
 
 import DurationComplexityGraph from './duration_complexity_graph'
-
-class RepoChangesTable extends React.Component {
-  render () {
-    return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <Table striped responsive bordered hover size="sm">
-                <thead>
-                  <tr>
-                    <th className="text-center">Repository</th>
-                    <th className="text-center">Number of changes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.props.data.items.map((item, index) =>
-                    <tr key={index}>
-                      <td align="center"><Link to={addUrlField('repository', item.key)}>{item.key}</Link></td>
-                      <td align="center">{item.doc_count}</td>
-                    </tr>)}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
-  }
-}
-
-RepoChangesTable.propTypes = {
-  title: PropTypes.string.isRequired,
-  data: PropTypes.shape({
-    items: PropTypes.array
-  })
-}
-
-class RepoChanges extends BaseQueryComponent {
-  constructor (props) {
-    super(props)
-    this.state.name = 'repos_top'
-    this.state.graph_type = 'repos_top_merged'
-    this.state.state = 'MERGED'
-  }
-
-  render () {
-    if (!this.props.repos_top_merged_loading) {
-      if (this.props.repos_top_merged_error) {
-        return <ErrorBox
-          error={this.props.repos_top_merged_error}
-        />
-      }
-      const data = this.props.repos_top_merged_result
-      console.log(this.props)
-      return (
-        <RepoChangesTable
-          data={data}
-          title="Merged changes by repository"
-        />
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const reposTopMergedMapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top_merged')
-
-const CRepoChanges = withRouter(connect(reposTopMergedMapStateToProps, mapDispatchToProps)(RepoChanges))
 
 class ChangesTable extends React.Component {
   render () {
@@ -410,7 +336,6 @@ const lastChangesNGMapStateToProps = state => addMap({}, state.QueryReducer, 'la
 const CLastChangesNG = withRouter(connect(lastChangesNGMapStateToProps, mapDispatchToProps)(LastChangesNG))
 
 export {
-  CRepoChanges,
   CHotChanges,
   CColdChanges,
   CLastChanges,
