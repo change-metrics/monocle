@@ -267,6 +267,7 @@ class ChangesView extends React.Component {
               </Col>
               <Col md>
                 <CApprovalsPie
+                  history={this.props.history}
                   index={this.props.match.params.index} />
               </Col>
             </Row>

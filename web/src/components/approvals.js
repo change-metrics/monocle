@@ -77,8 +77,11 @@ class ApprovalsPie extends BaseQueryComponent {
                   <Col>
                     <Pie
                       data={this.props.approvals_top_result}
+                      field="approvals"
+                      history={this.props.history}
                       filtered_items={ignoredApproval}
                       palette={palette}
+                      other_label="No approval"
                     />
                   </Col>
                 </Row>

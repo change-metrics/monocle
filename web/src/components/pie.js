@@ -32,7 +32,7 @@ class Pie extends React.Component {
     const data = obj.items.map(x => x.doc_count)
     const sum = data.reduce((a, b) => a + b, 0)
     if (sum < obj.total_hits) {
-      labels.push('Others')
+      labels.push(this.props.other_label || 'Others')
       data.push(obj.total_hits - sum)
     }
     let palette
@@ -91,7 +91,8 @@ Pie.propTypes = {
     total_hits: PropTypes.number.isRequired
   }),
   filteredItems: PropTypes.array,
-  palette: PropTypes.object
+  palette: PropTypes.object,
+  other_label: PropTypes.string
 }
 
 export default Pie
