@@ -122,7 +122,21 @@ def query(name):
         else:
             return 'Unauthorized to access index %s' % index, 403
     repository_fullname = request.args.get('repository')
-    return do_query(index, repository_fullname, request.args, name)
+    try:
+        ret = do_query(index, repository_fullname, request.args, name)
+    except Exception:
+        app.logger.exception(
+            'Unable to process query %s (params: %s)'
+            % (name, list(request.args.items()))
+        )
+        return (
+            (
+                "The API server was unable to process the query."
+                " Please retry after or modify the filter parameters."
+            ),
+            500,
+        )
+    return ret
 
 
 @cache.memoize(timeout=CACHE_TIMEOUT)

@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [db] set max_buckets to a higher default value
+- [web] and [api]: better display of api error and logging server side
 - [web]: re-organization of changes related pages.
 - [web]: re-factored top menu.
 - [web]: make approval pie clickable.

@@ -149,6 +149,12 @@ class ELmonocleDB:
         self.ic = client.IndicesClient(self.es)
         if create:
             self.ic.create(index=self.index, ignore=400, body=settings)
+        # The authors_histo is failing on some context with this error when the
+        # time slice is large: Must be less than or equal to: [10000] but was [10001]. ()This limit can be
+        # set by changing the [search.max_buckets] cluster level)
+        # This is an attempt to mitigate the issue
+        cluster_settings = {'transient': {'search.max_buckets': 100000}}
+        self.es.cluster.put_settings(body=cluster_settings)
 
     def update(self, source_it):
         def gen(it):
