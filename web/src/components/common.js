@@ -175,15 +175,16 @@ class LoadingBox extends React.Component {
 
 class ErrorBox extends React.Component {
   render () {
+    const style = { textAlign: 'center' }
     return (
       <Row>
         <Col>
           <Card>
             <Card.Body>
-              <h1>
+              <p style={style}>
                 Error: code: {this.props.error ? this.props.error.status : 'none'},
                 message: {this.props.error ? this.props.error.data : 'none'}
-              </h1>
+              </p>
             </Card.Body>
           </Card>
         </Col>
