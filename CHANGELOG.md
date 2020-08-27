@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [web] pie charts invisible when legend is too large.
+
 ## [0.6] - 2020-08-20
 
 ### Added

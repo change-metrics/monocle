@@ -166,7 +166,9 @@ tenants:
 
 def validate(data, schema):
     schema_validate(
-        instance=data, schema=schema, format_checker=draft7_format_checker,
+        instance=data,
+        schema=schema,
+        format_checker=draft7_format_checker,
     )
 
 

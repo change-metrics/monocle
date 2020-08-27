@@ -100,12 +100,16 @@ def get_installation_key(install: Installation) -> str:
     return token
 
 
-def get_installation_headers(install: Installation,) -> Dict[str, str]:
+def get_installation_headers(
+    install: Installation,
+) -> Dict[str, str]:
     token = get_installation_key(install)
     return {'Accept': PREVIEW_JSON_ACCEPT, 'Authorization': 'token %s' % token}
 
 
-def get_repos_of_installation(install: Installation,) -> List[str]:
+def get_repos_of_installation(
+    install: Installation,
+) -> List[str]:
     url = install.repositories_url
     headers = get_installation_headers(install)
     projects = []
