@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
 import PropTypes from 'prop-types'
 
@@ -27,12 +29,18 @@ import {
 import { Pie as BasePie } from 'react-chartjs-2'
 
 class Pie extends React.Component {
+  constructor (props) {
+    super(props)
+    this.maxSize = props.maxSize || 7
+    this.other_label = props.other_label || 'Others'
+  }
+
   prepareDataSet (obj) {
-    const labels = obj.items.map(x => x.key)
-    const data = obj.items.map(x => x.doc_count)
+    const labels = obj.items.map(x => x.key).slice(0, this.maxSize)
+    const data = obj.items.map(x => x.doc_count).slice(0, this.maxSize)
     const sum = data.reduce((a, b) => a + b, 0)
     if (sum < obj.total_hits) {
-      labels.push(this.props.other_label || 'Others')
+      labels.push(this.other_label)
       data.push(obj.total_hits - sum)
     }
     let palette
@@ -59,27 +67,82 @@ class Pie extends React.Component {
     }
   }
 
+  handleLegendClick (label) {
+    if (label !== this.other_label) {
+      this.props.history.push(addUrlField(this.props.field, label))
+    }
+  }
+
+  getLabelBoxStyle (palette, index) {
+    const labelBoxStyle = {
+      backgroundColor: palette[index],
+      width: '10px',
+      display: 'inline-block',
+      cursor: 'pointer'
+    }
+    return labelBoxStyle
+  }
+
+  getLabelStyle (label) {
+    const labelStyle = {
+      cursor: 'pointer'
+    }
+    return label !== this.other_label ? labelStyle : {}
+  }
+
   render () {
     const data = this.prepareDataSet(this.props.data)
     if (!data) {
       return <ErrorBox
         error="No data for Pie"
       />
+    } else {
+      return (
+        <React.Fragment>
+          <Row>
+            <Col>
+              <BasePie
+                getElementsAtEvent={elems => this.handleClick(this, elems)}
+                // on small screen the legend takes the whole height so detect and adjust
+                height={(hasSmallWidth()) ? 300 : 200}
+                options={
+                  {
+                    legend: {
+                      display: false
+                    }
+                  }
+                }
+                data={data} />
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              {
+                data.labels.map(
+                  (label, index) =>
+                    <Row key={index} >
+                      <Col sm={2}></Col>
+                      <Col>
+                        <span key={label} id={label} style={
+                          this.getLabelBoxStyle(
+                            data.datasets[0].backgroundColor,
+                            index)}>&nbsp;</span>
+                        <span>&nbsp;</span>
+                        <span
+                          style={this.getLabelStyle(label)}
+                          onClick={e => this.handleLegendClick(label)}
+                          id={label}>
+                          {label}
+                        </span>
+                      </Col>
+                    </Row>
+                )
+              }
+            </Col>
+          </Row>
+        </React.Fragment>
+      )
     }
-    return <BasePie
-      getElementsAtEvent={elems => this.handleClick(this, elems)}
-      // on small screen the legend takes the whole height so detect and adjust
-      height={(hasSmallWidth()) ? 300 : 200}
-      options={
-        {
-          legend: {
-            labels: {
-              boxWidth: 30
-            }
-          }
-        }
-      }
-      data={data} />
   }
 }
 
@@ -92,7 +155,8 @@ Pie.propTypes = {
   }),
   filteredItems: PropTypes.array,
   palette: PropTypes.object,
-  other_label: PropTypes.string
+  other_label: PropTypes.string,
+  maxSize: PropTypes.number
 }
 
 export default Pie

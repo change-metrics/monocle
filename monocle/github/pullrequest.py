@@ -584,7 +584,8 @@ if __name__ == '__main__':
     )
     parser.add_argument('--id', help='The pull request id')
     parser.add_argument(
-        '--output-dir', help='Store the dump in this directory',
+        '--output-dir',
+        help='Store the dump in this directory',
     )
 
     args = parser.parse_args()
