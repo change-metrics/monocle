@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [master]
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [0.7.0] - 2020-08-28
+
+### Added
 
 - [web]: display a filter summary below the filter box.
 - [api] and [web]: add a repos summary page

@@ -11,6 +11,7 @@ metrics and data that are relevant to the way you work by navigating
 and filtering in the web user interface.
 
 Browse changes metrics on the [demo instance](https://demo.changemetrics.io).
+Follow us on [@change_metrics on Twitter](https://twitter.com/change_metrics).
 
 For example, your team may want to know:
 
@@ -68,7 +69,9 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
-If running master does not git your needs, you could still use the last release by setting the MONOCLE_VERSION to 0.6 in the .env file. Please refer to [Configuration of the containers](#configuration-of-the-containers).  
+If running master does not git your needs, you could still use the last release
+by setting the MONOCLE_VERSION to 0.7.0 in the .env file. Please refer
+to [Configuration of the containers](#configuration-of-the-containers).
 
 ### Create the config.yaml file
 
