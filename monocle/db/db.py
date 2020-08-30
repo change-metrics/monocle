@@ -19,6 +19,7 @@ import socket
 import time
 
 from elasticsearch.helpers import bulk
+from elasticsearch.helpers import scan
 from elasticsearch import client
 from elasticsearch.exceptions import NotFoundError
 
@@ -230,3 +231,7 @@ class ELmonocleDB:
             ind.replace(self.prefix, '')
             for ind in self.es.indices.get(self.prefix + '*')
         ]
+
+    def iter_index(self):
+        body = {"query": {"match_all": {}}}
+        return scan(self.es, query=body, index=self.index)

@@ -9,3 +9,4 @@ etc
 .mypy_cache
 .env
 docker-compose.yml
+dump

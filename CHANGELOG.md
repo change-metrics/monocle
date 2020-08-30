@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 ### Removed
 ### Fixed
+### Upgrade
+
+- [db] added the run-migrate option to dbmanage to run migration scripts.
 
 - [api] Ensure the gte and lte date filters are set after all other params are set.
 
