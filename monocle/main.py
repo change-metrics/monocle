@@ -137,6 +137,11 @@ def main():
         action='store_true',
     )
     parser_dbquery.add_argument(
+        '--self-merged',
+        help='Scope to changes merged by their authors',
+        action='store_true',
+    )
+    parser_dbquery.add_argument(
         '--has-issue-tracker-links',
         help='Scope to changes containing an issue tracker link',
         choices=['generic', 'github.com', 'altassian.net'],

@@ -41,7 +41,8 @@
     "duration": null,
     "mergeable": "UNKNOWN",
     "labels": [],
-    "assignees": []
+    "assignees": [],
+    "self_merged": null
   },
   {
     "type": "ChangeCreatedEvent",
@@ -145,7 +146,8 @@
     "duration": 172800,
     "mergeable": "UNKNOWN",
     "labels": [],
-    "assignees": []
+    "assignees": [],
+    "self_merged": false
   },
   {
     "type": "ChangeCreatedEvent",
@@ -222,7 +224,7 @@
       }
     ],
     "commit_count": 1,
-    "merged_by": "bot",
+    "merged_by": "steve",
     "updated_at": "2020-01-08T01:00:00Z",
     "created_at": "2020-01-06T01:00:00Z",
     "merged_at": "2020-01-08T01:00:00Z",
@@ -231,7 +233,8 @@
     "duration": 172800,
     "mergeable": "UNKNOWN",
     "labels": [],
-    "assignees": []
+    "assignees": [],
+    "self_merged": true
   },
   {
     "type": "ChangeCreatedEvent",

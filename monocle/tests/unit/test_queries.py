@@ -332,6 +332,12 @@ class TestQueries(unittest.TestCase):
         for change in ret['items']:
             self.assertIn('tests_included', list(change.keys()))
 
+    def test_self_merged_param(self):
+        params = set_params({'state': 'MERGED', 'self_merged': True})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1)
+        self.assertEqual(ret['items'][0]['author'], ret['items'][0]['merged_by'])
+
     def test_tests_included_param(self):
         """
         Test tests_included param: last_changes

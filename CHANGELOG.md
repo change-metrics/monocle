@@ -9,15 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - [crawler] compute if a change is self merged.
+- [api] add the self_merged query parameter.
 
 ### Changed
 ### Removed
 ### Fixed
+
+- [api] Ensure the gte and lte date filters are set after all other params are set.
+
 ### Upgrade
 
 - [db] added the run-migrate option to dbmanage to run migration scripts.
 
-- [api] Ensure the gte and lte date filters are set after all other params are set.
 
 ## [0.7.0] - 2020-08-28
 

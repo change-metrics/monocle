@@ -199,6 +199,7 @@ def set_params(input):
     params['files'] = getter('files', None)
     params['state'] = getter('state', None)
     params['tests_included'] = getter('tests_included', False)
+    params['self_merged'] = getter('self_merged', False)
     params['has_issue_tracker_links'] = getter('has_issue_tracker_links', None)
     params['change_ids'] = getter('change_ids', None)
     params['target_branch'] = getter('target_branch', None)
