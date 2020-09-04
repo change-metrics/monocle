@@ -706,6 +706,7 @@ class TestQueries(unittest.TestCase):
                 'total_hits': 1,
             },
         }
+
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)

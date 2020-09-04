@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 ### Fixed
 
+- [api] Ensure the gte and lte date filters are set after all other params are set.
+
 ## [0.7.0] - 2020-08-28
 
 ### Added

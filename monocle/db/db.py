@@ -23,7 +23,6 @@ from elasticsearch import client
 from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
-from monocle import utils
 
 CHANGE_PREFIX = 'monocle.changes.'
 
@@ -223,19 +222,6 @@ class ELmonocleDB:
         # especially to be able to set the histogram extended_bounds
         if name not in queries.public_queries:
             raise UnknownQueryException("Unknown query: %s" % name)
-        if not args[1].get('gte'):
-            first_created_event = queries._first_created_event(
-                self.es, self.index, *args, **kwargs
-            )
-            if first_created_event:
-                args[1]['gte'] = int(
-                    utils.is8601_to_dt(first_created_event).timestamp() * 1000
-                )
-            else:
-                # There is probably nothing in the db that match the query
-                args[1]['gte'] = None
-        if not args[1].get('lte'):
-            args[1]['lte'] = int(utils.utcnow().timestamp() * 1000)
         return getattr(queries, name)(self.es, self.index, *args, **kwargs)
 
     def get_indices(self):
