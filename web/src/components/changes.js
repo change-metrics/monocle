@@ -33,7 +33,6 @@ import {
   ErrorBox,
   changeUrl,
   addUrlField,
-  indexUrl,
   mapDispatchToProps,
   addMap,
   chooseApprovalBadgeStyle,
@@ -206,63 +205,6 @@ const coldChangesMapStateToProps = state => addMap({}, state.QueryReducer, 'cold
 
 const CColdChanges = withRouter(connect(coldChangesMapStateToProps, mapDispatchToProps)(ColdChanges))
 
-class LastChanges extends BaseQueryComponent {
-  constructor (props) {
-    super(props)
-    this.state.name = 'last_state_changed_changes'
-    this.state.graph_type = 'last_changes'
-  }
-
-  render () {
-    if (!this.props.last_changes_loading) {
-      if (this.props.last_changes_error) {
-        return <ErrorBox
-          error={this.props.last_changes_error}
-        />
-      }
-      const data = this.props.last_changes_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Recently Merged/Opened changes</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col>
-                    <ChangesTable
-                      index={this.props.index}
-                      data={data.merged_changes}
-                      title={<Link to={indexUrl(this.props.index, '/merged-changes')}>Recently Merged Changes</Link>}
-                    />
-                  </Col>
-                </Row>
-                <Row><Col><p></p></Col></Row>
-                <Row>
-                  <Col>
-                    <ChangesTable
-                      index={this.props.index}
-                      data={data.opened_changes}
-                      title={<Link to={indexUrl(this.props.index, '/opened-changes')}>Recently Opened Changes</Link>}
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const lastChangesMapStateToProps = state => addMap({}, state.QueryReducer, 'last_changes')
-
-const CLastChanges = withRouter(connect(lastChangesMapStateToProps, mapDispatchToProps)(LastChanges))
-
 class AbstractLastChanges extends BaseQueryComponent {
   constructor (props) {
     super(props)
@@ -338,6 +280,5 @@ const CLastChangesNG = withRouter(connect(lastChangesNGMapStateToProps, mapDispa
 export {
   CHotChanges,
   CColdChanges,
-  CLastChanges,
   CLastChangesNG
 }
