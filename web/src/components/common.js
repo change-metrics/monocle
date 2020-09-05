@@ -300,7 +300,8 @@ class BaseQueryComponent extends React.Component {
           ...{
             approvals: params.get('approvals'),
             excludeApprovals: params.get('exclude_approvals'),
-            state: params.get('state')
+            state: params.get('state') === 'SELF-MERGED' ? 'MERGED' : params.get('state'),
+            selfMerged: params.get('state') === 'SELF-MERGED'
           }
         }
       }

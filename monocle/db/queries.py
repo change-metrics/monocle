@@ -35,6 +35,7 @@ public_queries = (
     "count_authors",
     "count_opened_changes",
     "count_merged_changes",
+    "count_self_merged_changes",
     "count_abandoned_changes",
     "events_histo",
     "authors_histo",
@@ -545,6 +546,12 @@ def count_merged_changes(es, index, repository_fullname, params):
     return count_events(es, index, repository_fullname, params)
 
 
+def count_self_merged_changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params['self_merged'] = True
+    return count_merged_changes(es, index, repository_fullname, params)
+
+
 def count_abandoned_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params['etype'] = ("Change",)
@@ -736,6 +743,9 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['tests'] = changes_with_tests_ratio(es, index, repository_fullname, params)
     ret['opened'] = count_opened_changes(es, index, repository_fullname, params)
     ret['merged'] = count_merged_changes(es, index, repository_fullname, params)
+    ret['self_merged'] = count_self_merged_changes(
+        es, index, repository_fullname, params
+    )
     ret['abandoned'] = count_abandoned_changes(es, index, repository_fullname, params)
     etypes = (
         'ChangeCreatedEvent',

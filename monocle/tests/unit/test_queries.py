@@ -371,6 +371,7 @@ class TestQueries(unittest.TestCase):
             'ChangeCommitPushedEvent': {'authors_count': 1, 'events_count': 1},
             'ChangeCreatedEvent': {'authors_count': 2, 'events_count': 2},
             'abandoned': 0,
+            'self_merged': 0,
             'commits': 1.0,
             'duration': 86400.0,
             'histos': {
@@ -506,6 +507,7 @@ class TestQueries(unittest.TestCase):
             'ChangeCommitPushedEvent': {'authors_count': 0, 'events_count': 0},
             'ChangeCreatedEvent': {'authors_count': 1, 'events_count': 1},
             'abandoned': 0,
+            'self_merged': 0,
             'commits': 1.0,
             'duration': 86400.0,
             'histos': {
