@@ -338,14 +338,10 @@ class FiltersFormBox extends React.Component {
         />
       </Route>
       <Route path='/:index/hot-changes/'>
-        <CFiltersForm
-          showChangeParams={true}
-        />
+        <CFiltersForm />
       </Route>
       <Route path='/:index/cold-changes/'>
-        <CFiltersForm
-          showChangeParams={true}
-        />
+        <CFiltersForm />
       </Route>
       <Route path='/' component={CFiltersForm} />
     </Switch>
