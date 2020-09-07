@@ -178,7 +178,8 @@ class FiltersForm extends React.Component {
       open: false,
       approvals: '',
       excludeApprovals: '',
-      state: 'open'
+      state: 'open',
+      selfApproved: false
     }
   }
 
@@ -404,7 +405,8 @@ class FiltersForm extends React.Component {
                                     ['', 'All'],
                                     ['OPEN', 'Open'],
                                     ['CLOSED', 'Closed'],
-                                    ['MERGED', 'Merged']
+                                    ['MERGED', 'Merged'],
+                                    ['SELF-MERGED', 'Self-merged']
                                   ].map(
                                     (entry) => {
                                       return <Dropdown.Item

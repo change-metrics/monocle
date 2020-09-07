@@ -43,7 +43,8 @@
     "duration": 86400,
     "mergeable": "UNKNOWN",
     "labels": [],
-    "assignees": []
+    "assignees": [],
+    "self_merged": false
   },
   {
     "type": "ChangeCreatedEvent",

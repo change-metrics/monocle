@@ -32,6 +32,7 @@ from monocle.github import graphql
 from monocle.gerrit import review
 from monocle.crawler import Crawler, Runner, GroupCrawler
 from monocle import config
+from monocle import migrate
 
 
 def main():
@@ -67,6 +68,10 @@ def main():
     )
     parser_dbmanage.add_argument(
         '--index', help='The Elastisearch index name', required=True
+    )
+    parser_dbmanage.add_argument(
+        '--run-migrate',
+        help='Run the migration process',
     )
 
     parser_dbquery = subparsers.add_parser(
@@ -129,6 +134,11 @@ def main():
     parser_dbquery.add_argument(
         '--tests-included',
         help='Scope to changes containing tests',
+        action='store_true',
+    )
+    parser_dbquery.add_argument(
+        '--self-merged',
+        help='Scope to changes merged by their authors',
         action='store_true',
     )
     parser_dbquery.add_argument(
@@ -239,6 +249,13 @@ def main():
             db.delete_repository(args.delete_repository)
         if args.delete_index:
             db.delete_index()
+        if args.run_migrate:
+            try:
+                migrate.run_migrate(args.run_migrate, args.elastic_conn, args.index)
+            except migrate.NotAvailableException:
+                log.error(
+                    "Error: %s is not a valid migration process" % args.run_migrate
+                )
 
     if args.command == "dbquery":
         db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)

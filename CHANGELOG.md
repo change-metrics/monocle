@@ -5,10 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [master]
+
 ### Added
+
+- [crawler] compute if a change is self merged.
+- [api] add the self_merged query parameter.
+- [web] Add ui integration for the self-merged changed.
+- [web] compute and display self_merged/created ratio.
+
 ### Changed
 ### Removed
 ### Fixed
+
+- [api] Ensure the gte and lte date filters are set after all other params are set.
+
+### Upgrade
+
+- [db] added the run-migrate option to dbmanage to run migration scripts.
+
 
 ## [0.7.0] - 2020-08-28
 
@@ -52,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [crawler] github application: use authlib.jose.jwt instead of pyjwt.
 
 ### Removed
+
 ### Fixed
 
 - [compose] change the selinux label Z to z. This indicates that the bind

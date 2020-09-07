@@ -44,6 +44,11 @@ function getQueryResults (queryParams) {
     delete params.excludeAuthors
   }
 
+  if (params.selfMerged) {
+    params.self_merged = params.selfMerged
+    delete params.selfMerged
+  }
+
   if (params.branch) {
     params.target_branch = params.branch
     delete params.branch

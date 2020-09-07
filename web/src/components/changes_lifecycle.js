@@ -186,22 +186,25 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         <Link to={`/${this.props.index}/changes${this.getSearchString('OPEN')}`}>{data.opened} opened changes</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
-                      </ListGroup.Item>
-                      <ListGroup.Item>
                         <Link to={`/${this.props.index}/changes${this.getSearchString('CLOSED')}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         <Link to={`/${this.props.index}/changes${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('SELF-MERGED')}`}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
+                      </ListGroup.Item>
+                      <ListGroup.Item>
                         Changes with tests: {data.tests}%
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ratios['iterations/created']} iterations per change
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.commits ? data.commits.toFixed(2) : 'no'} commits per change

@@ -332,6 +332,12 @@ class TestQueries(unittest.TestCase):
         for change in ret['items']:
             self.assertIn('tests_included', list(change.keys()))
 
+    def test_self_merged_param(self):
+        params = set_params({'state': 'MERGED', 'self_merged': True})
+        ret = self.eldb.run_named_query('last_changes', 'unit/repo[12]', params)
+        self.assertEqual(ret['total'], 1)
+        self.assertEqual(ret['items'][0]['author'], ret['items'][0]['merged_by'])
+
     def test_tests_included_param(self):
         """
         Test tests_included param: last_changes
@@ -365,6 +371,7 @@ class TestQueries(unittest.TestCase):
             'ChangeCommitPushedEvent': {'authors_count': 1, 'events_count': 1},
             'ChangeCreatedEvent': {'authors_count': 2, 'events_count': 2},
             'abandoned': 0,
+            'self_merged': 0,
             'commits': 1.0,
             'duration': 86400.0,
             'histos': {
@@ -475,6 +482,7 @@ class TestQueries(unittest.TestCase):
                 'abandoned/created': 0.0,
                 'iterations/created': 1.5,
                 'merged/created': 50.0,
+                'self_merged/created': 0.0,
             },
             'tests': 50.0,
         }
@@ -500,6 +508,7 @@ class TestQueries(unittest.TestCase):
             'ChangeCommitPushedEvent': {'authors_count': 0, 'events_count': 0},
             'ChangeCreatedEvent': {'authors_count': 1, 'events_count': 1},
             'abandoned': 0,
+            'self_merged': 0,
             'commits': 1.0,
             'duration': 86400.0,
             'histos': {
@@ -610,6 +619,7 @@ class TestQueries(unittest.TestCase):
                 'abandoned/created': 0.0,
                 'iterations/created': 1.0,
                 'merged/created': 100.0,
+                'self_merged/created': 0.0,
             },
             'tests': 100.0,
         }
@@ -706,6 +716,7 @@ class TestQueries(unittest.TestCase):
                 'total_hits': 1,
             },
         }
+
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
