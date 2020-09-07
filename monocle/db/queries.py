@@ -567,23 +567,31 @@ def changes_closed_ratios(es, index, repository_fullname, params):
         "ChangeCommitForcePushedEvent",
     )
     ret = {}
+
     for etype in etypes:
         params['etype'] = (etype,)
         ret[etype] = count_events(es, index, repository_fullname, params)
-    changes_merged = count_merged_changes(es, index, repository_fullname, params)
-    changes_abandoned = count_abandoned_changes(es, index, repository_fullname, params)
+
+    ret['merged'] = count_merged_changes(es, index, repository_fullname, params)
+    ret['abandoned'] = count_abandoned_changes(es, index, repository_fullname, params)
+    ret['self_merged'] = count_self_merged_changes(
+        es, index, repository_fullname, params
+    )
+
     try:
         ret['merged/created'] = round(
-            changes_merged / ret['ChangeCreatedEvent'] * 100, 1
+            ret['merged'] / ret['ChangeCreatedEvent'] * 100, 1
         )
     except ZeroDivisionError:
         ret['merged/created'] = 0
+
     try:
         ret['abandoned/created'] = round(
-            changes_abandoned / ret['ChangeCreatedEvent'] * 100, 1
+            ret['abandoned'] / ret['ChangeCreatedEvent'] * 100, 1
         )
     except ZeroDivisionError:
         ret['abandoned/created'] = 0
+
     try:
         ret['iterations/created'] = round(
             (ret['ChangeCommitPushedEvent'] + ret['ChangeCommitForcePushedEvent'])
@@ -593,6 +601,14 @@ def changes_closed_ratios(es, index, repository_fullname, params):
         )
     except ZeroDivisionError:
         ret['iterations/created'] = 1
+
+    try:
+        ret['self_merged/created'] = round(
+            ret['self_merged'] / ret['ChangeCreatedEvent'] * 100, 1
+        )
+    except ZeroDivisionError:
+        ret['self_merged/created'] = 0
+
     for etype in etypes:
         del ret[etype]
     return ret
@@ -742,11 +758,9 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret['commits'] = change_merged_avg_commits(es, index, repository_fullname, params)
     ret['tests'] = changes_with_tests_ratio(es, index, repository_fullname, params)
     ret['opened'] = count_opened_changes(es, index, repository_fullname, params)
-    ret['merged'] = count_merged_changes(es, index, repository_fullname, params)
-    ret['self_merged'] = count_self_merged_changes(
-        es, index, repository_fullname, params
-    )
-    ret['abandoned'] = count_abandoned_changes(es, index, repository_fullname, params)
+    for rname in ('merged', 'self_merged', 'abandoned'):
+        ret[rname] = ret['ratios'][rname]
+        del ret['ratios'][rname]
     etypes = (
         'ChangeCreatedEvent',
         "ChangeCommitPushedEvent",

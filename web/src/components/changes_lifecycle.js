@@ -192,7 +192,7 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         <Link to={`/${this.props.index}/changes${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes${this.getSearchString('SELF-MERGED')}`}>{data.self_merged} changes self merged</Link>
+                        <Link to={`/${this.props.index}/changes${this.getSearchString('SELF-MERGED')}`}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}

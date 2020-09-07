@@ -482,6 +482,7 @@ class TestQueries(unittest.TestCase):
                 'abandoned/created': 0.0,
                 'iterations/created': 1.5,
                 'merged/created': 50.0,
+                'self_merged/created': 0.0,
             },
             'tests': 50.0,
         }
@@ -618,6 +619,7 @@ class TestQueries(unittest.TestCase):
                 'abandoned/created': 0.0,
                 'iterations/created': 1.0,
                 'merged/created': 100.0,
+                'self_merged/created': 0.0,
             },
             'tests': 100.0,
         }
