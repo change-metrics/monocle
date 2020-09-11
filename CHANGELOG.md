@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Upgrade
 
 - [db] added the run-migrate option to dbmanage to run migration scripts.
+- [readme] migration instructions for the new self_merged field has added.
 
 
 ## [0.7.0] - 2020-08-28

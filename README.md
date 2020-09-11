@@ -275,6 +275,16 @@ tenants:
           base_url: https://github.com
 ```
 
+## Database migration
+
+### Version 0.7.0 to master
+
+A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
+
+```
+docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
+```
+
 ## Contributing
 
 Follow [our contributing guide](CONTRIBUTING.md).
