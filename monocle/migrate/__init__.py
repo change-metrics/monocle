@@ -27,6 +27,9 @@ def self_merge(elastic_conn, index):
 
     def update_change(change):
         if 'self_merged' not in change.keys():
+            if 'merged_by' not in change:
+                # Here we fix the missing field that can happen with the Gerrit crawler
+                change['merged_by'] = None
             if change['merged_by']:
                 change['self_merged'] = change['merged_by'] == change['author']
             else:
