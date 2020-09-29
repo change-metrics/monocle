@@ -250,7 +250,7 @@ class PRsFetcher(object):
                 'totalCount'
             ]
             self.log.info(
-                "Total PRs: %s but will fetch until we reached a PR"
+                "Total PRs: %s but will fetch until we reached a PR "
                 "updated at date < %s"
                 % (kwargs['total_prs_count'], kwargs['updated_since'])
             )
