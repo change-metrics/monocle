@@ -20,11 +20,13 @@ import os
 import tempfile
 from time import sleep
 from threading import Thread
+from typing import Union
 
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github import pullrequest
 from monocle.gerrit import review
 from monocle.utils import utcnow
+from monocle.db import db
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +34,13 @@ DUMP_DIR = "/var/lib/crawler"
 
 
 class Runner(object):
-    def __init__(self, args):
+    def __init__(self, args) -> None:
         super().__init__()
         self.updated_since = args.updated_since
         self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
-        self.db = args.db
+        self.db: db.ELmonocleDB = args.db
+        self.prf: Union[pullrequest.PRsFetcher, review.ReviewesFetcher]
         if args.command == "github_crawler":
             if args.repository:
                 self.repository_el_re = "%s/%s" % (
@@ -73,7 +76,7 @@ class Runner(object):
             )
             return change["updated_at"]
 
-    def run_step(self):
+    def run_step(self) -> None:
         def dump_data(data, prefix=None):
             try:
                 if self.dump_dir:

@@ -18,6 +18,9 @@ from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
+from typing import List
+
+from monocle.db.db import Change, changeToDict
 from monocle.github import pullrequest
 
 from .common import load_change
@@ -27,13 +30,15 @@ from .common import load_dataset
 
 
 class TestGithubCrawler(unittest.TestCase):
-    def extract_and_compare(self, name):
+    def extract_and_compare(self, name: str) -> None:
         input_pr, xtrd_ref = load_change(name)
 
         pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
-        xtrd = pr_fetcher.extract_objects([input_pr], None)
+        xtrd: List[Change] = pr_fetcher.extract_objects([input_pr], None)
 
-        ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
+        ddiff = DeepDiff(
+            xtrd_ref, list(map(lambda x: changeToDict(x), xtrd)), ignore_order=True
+        )
         if ddiff:
             raise DiffException(ddiff)
 

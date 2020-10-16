@@ -18,17 +18,19 @@ import os
 import json
 import pprint
 
+from typing import Tuple, Dict, List, Any
+
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
 DATASETS = os.path.join(FIXTURES_DIR, "datasets")
 
 
-def load_dataset(name):
+def load_dataset(name: str) -> Any:
     with open(os.path.join(DATASETS, name)) as fd:
         data = json.load(fd)
     return data
 
 
-def load_change(name):
+def load_change(name: str) -> Tuple[Dict, List[Dict]]:
     input_pr = load_dataset(name + "_raw.json")
     xtrd_ref = load_dataset(name + "_extracted.json")
     return input_pr, xtrd_ref

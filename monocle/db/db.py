@@ -18,6 +18,9 @@ import logging
 import socket
 import time
 
+from typing import List, Optional, Literal, Dict, Union
+from dataclasses import dataclass, asdict
+
 from elasticsearch.helpers import bulk
 from elasticsearch.helpers import scan
 from elasticsearch import client
@@ -33,6 +36,91 @@ class UnknownQueryException(Exception):
 
 
 InvalidIndexError = NotFoundError
+
+
+@dataclass
+class File:
+    additions: int
+    deletions: int
+    path: str
+
+
+@dataclass
+class SimpleFile:
+    path: str
+
+
+@dataclass
+class Commit:
+    sha: str
+    author: str
+    committer: str
+    authored_at: str  # eg. 2020-04-11T07:01:15Z
+    committed_at: str  # eg. 2020-04-11T07:01:15Z
+    additions: int
+    deletions: int
+    title: str
+
+
+# Must be splitted in two record type
+# Change and Event
+@dataclass
+class Change:
+    """A generic Change or Event record"""
+
+    _id: str
+    _type: Literal[
+        "Change",
+        "ChangeCreatedEvent",
+        "ChangeCommentedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeReviewedEvent",
+        "ChangeCommitForcePushedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeMergedEvent",
+    ]
+    number: int
+    change_id: str
+    title: Optional[str]
+    text: Optional[str]
+    url: Optional[str]
+    commit_count: Optional[int]
+    additions: Optional[int]
+    deletions: Optional[int]
+    changed_files_count: Optional[int]
+    changed_files: List[Union[File, SimpleFile]]
+    commits: Optional[List[Commit]]
+    repository_prefix: str
+    repository_fullname: str
+    repository_shortname: str
+    author: Optional[str]  # ChangeMergedEvent on Gerrit can have an optional author
+    on_author: Optional[str]
+    committer: Optional[str]
+    merged_by: Optional[str]
+    branch: str
+    target_branch: str
+    created_at: str  # eg. 2020-04-11T07:01:15Z
+    on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
+    merged_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
+    updated_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
+    closed_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
+    state: Optional[Literal["OPEN", "CLOSED", "MERGED"]]
+    duration: Optional[int]
+    mergeable: Optional[str]
+    labels: Optional[List[str]]
+    assignees: Optional[List[str]]
+    approval: Optional[List[str]]
+    draft: Optional[bool]
+    self_merged: Optional[bool]
+
+
+def changeToDict(change: Change) -> Dict:
+    d = asdict(change)
+    for k1, k2 in (("id", "_id"), ("type", "_type")):
+        d[k1] = d[k2]
+        del d[k2]
+    # Remove None attributes
+    return dict([(k, v) for k, v in d.items() if v is not None])
 
 
 class ELmonocleDB:
@@ -139,8 +227,8 @@ class ELmonocleDB:
                 "state": {"type": "keyword"},
                 "duration": {"type": "integer"},
                 "mergeable": {"type": "keyword"},
-                "label": {"type": "keyword"},
-                "assignee": {"type": "keyword"},
+                "labels": {"type": "keyword"},
+                "assignees": {"type": "keyword"},
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},
@@ -157,9 +245,13 @@ class ELmonocleDB:
         cluster_settings = {"transient": {"search.max_buckets": 100000}}
         self.es.cluster.put_settings(body=cluster_settings)
 
-    def update(self, source_it):
+    def update(self, source_it: List[Change]) -> None:
         def gen(it):
-            for source in it:
+            for _source in it:
+                if isinstance(_source, Change):
+                    source = changeToDict(_source)
+                else:
+                    source = _source
                 d = {}
                 d["_index"] = self.index
                 d["_op_type"] = "update"

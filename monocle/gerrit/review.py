@@ -20,9 +20,14 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 import json
 import re
+
+from dacite import from_dict
+
 from dataclasses import dataclass
+from typing import List
 
 from monocle import utils
+from monocle.db.db import Change, File, SimpleFile, Commit
 
 
 name = "gerrit_crawler"
@@ -113,7 +118,7 @@ class ReviewesFetcher(object):
                 break
         return reviews
 
-    def extract_objects(self, reviewes, dumper=None):
+    def extract_objects(self, reviewes, dumper=None) -> List[Change]:
         def timedelta(start, end):
             start = utils.is8601_to_dt(start)
             end = utils.is8601_to_dt(end)
@@ -132,16 +137,16 @@ class ReviewesFetcher(object):
                     "on_author": change["author"],
                     "on_created_at": change["created_at"],
                     "changed_files": [
-                        {"path": cf["path"]} for cf in change["changed_files"]
+                        SimpleFile(path=cf.path) for cf in change["changed_files"]
                     ],
                 }
             )
 
-        def extract_pr_objects(review):
-            objects = []
+        def extract_pr_objects(review) -> List[Change]:
+            objects: List[Change] = []
             change = {
-                "type": "Change",
-                "id": review["id"],
+                "_type": "Change",
+                "_id": review["id"],
                 "draft": False,
                 "number": review["_number"],
                 "target_branch": review["branch"],
@@ -187,11 +192,11 @@ class ReviewesFetcher(object):
                     list(review["revisions"].values())[0]["files"].keys()
                 ),
                 "changed_files": [
-                    {
-                        "additions": details.get("lines_inserted", 0),
-                        "deletions": details.get("lines_deleted", 0),
-                        "path": path,
-                    }
+                    File(
+                        additions=details.get("lines_inserted", 0),
+                        deletions=details.get("lines_deleted", 0),
+                        path=path,
+                    )
                     for path, details in list(review["revisions"].values())[0][
                         "files"
                     ].items()
@@ -221,7 +226,7 @@ class ReviewesFetcher(object):
                 _commit["uploader"].get("name"),
                 _commit["uploader"]["_account_id"],
             )
-            change["commits"].append(obj)
+            change["commits"].append(from_dict(data_class=Commit, data=obj))
 
             # Note(fbo): Gerrit 3.x does not return the mergeable status
             mergeable = review.get("mergeable")
@@ -250,77 +255,6 @@ class ReviewesFetcher(object):
                         review["submitter"]["_account_id"],
                     )
                     change["self_merged"] = change["merged_by"] == change["author"]
-            objects.append(change)
-            obj = {
-                "type": "ChangeCreatedEvent",
-                "id": "CCE" + change["id"],
-                "created_at": change["created_at"],
-                "author": change["author"],
-            }
-            insert_change_attributes(obj, change)
-            objects.append(obj)
-            if change["state"] in ("MERGED", "CLOSED"):
-                obj = {
-                    "type": "ChangeMergedEvent"
-                    if change["state"] == "MERGED"
-                    else "ChangeAbandonedEvent",
-                    "id": "CCLE" + change["id"],
-                    "created_at": change["closed_at"],
-                    # Gerrit does not tell about closed_by so here
-                    # let's set None except if merged_by
-                    # is set (Gerrit 3.x tells about the author of a merge)
-                    "author": change.get("merged_by"),
-                }
-                insert_change_attributes(obj, change)
-                objects.append(obj)
-            for comment in review["messages"]:
-                if comment["message"].startswith("Uploaded patch set "):
-                    obj = {
-                        "type": "ChangeCommitPushedEvent",
-                        "id": comment["id"],
-                        "created_at": self.convert_date_for_db(comment["date"]),
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
-                        ),
-                    }
-                    insert_change_attributes(obj, change)
-                    objects.append(obj)
-                    continue
-                # Here we apply a regexp to ensure the message contains a message
-                # body. Inline comments match as well because they add in the message
-                # body the string '(X comments)'.
-                # Gerrit reports votes as comments, this regexp not match if
-                # the message only match a vote such as Code-Review+1 w/o further comments
-                if self.message_re.match(comment["message"]):
-                    obj = {
-                        "type": "ChangeCommentedEvent",
-                        "id": comment["id"],
-                        "created_at": self.convert_date_for_db(comment["date"]),
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
-                        ),
-                    }
-                    insert_change_attributes(obj, change)
-                    objects.append(obj)
-                approval_match = self.approval_re.match(comment["message"])
-                if approval_match:
-                    obj = {
-                        "type": "ChangeReviewedEvent",
-                        "id": "approval_%s" % comment["id"],
-                        "created_at": self.convert_date_for_db(comment["date"]),
-                        "approval": approval_match.groupdict().get("approval").strip(),
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
-                        ),
-                    }
-                    insert_change_attributes(obj, change)
-                    objects.append(obj)
             for label in review["labels"]:
                 for _review in review["labels"][label].get("all", []):
                     # If the date field exists then it means a review label
@@ -337,9 +271,88 @@ class ReviewesFetcher(object):
                                 ),
                             )
                         )
+            objects.append(from_dict(data_class=Change, data=change))
+
+            obj = {
+                "_type": "ChangeCreatedEvent",
+                "_id": "CCE" + change["_id"],
+                "created_at": change["created_at"],
+                "author": change["author"],
+            }
+            insert_change_attributes(obj, change)
+            objects.append(from_dict(data_class=Change, data=obj))
+
+            if change["state"] in ("MERGED", "CLOSED"):
+                obj = {
+                    "_type": "ChangeMergedEvent"
+                    if change["state"] == "MERGED"
+                    else "ChangeAbandonedEvent",
+                    "_id": "CCLE" + change["_id"],
+                    "created_at": change["closed_at"],
+                    # Gerrit does not tell about closed_by so here
+                    # let's set None except if merged_by
+                    # is set (Gerrit 3.x tells about the author of a merge)
+                    "author": change.get("merged_by"),
+                }
+                insert_change_attributes(obj, change)
+                objects.append(from_dict(data_class=Change, data=obj))
+
+            for comment in review["messages"]:
+                if comment["message"].startswith("Uploaded patch set "):
+                    obj = {
+                        "_type": "ChangeCommitPushedEvent",
+                        "_id": comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "author": "%s/%s"
+                        % (
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
+                        ),
+                    }
+                    insert_change_attributes(obj, change)
+                    objects.append(from_dict(data_class=Change, data=obj))
+                    continue
+
+                # Here we apply a regexp to ensure the message contains a message
+                # body. Inline comments match as well because they add in the message
+                # body the string '(X comments)'.
+                # Gerrit reports votes as comments, this regexp not match if
+                # the message only match a vote such as Code-Review+1 w/o further comments
+                if self.message_re.match(comment["message"]):
+                    obj = {
+                        "_type": "ChangeCommentedEvent",
+                        "_id": comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "author": "%s/%s"
+                        % (
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
+                        ),
+                    }
+                    insert_change_attributes(obj, change)
+                    objects.append(from_dict(data_class=Change, data=obj))
+
+                approval_match = self.approval_re.match(comment["message"])
+                if approval_match:
+                    obj = {
+                        "_type": "ChangeReviewedEvent",
+                        "_id": "approval_%s" % comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "approval": [
+                            approval_match.groupdict().get("approval").strip()
+                        ],
+                        "author": "%s/%s"
+                        % (
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
+                        ),
+                    }
+                    insert_change_attributes(obj, change)
+                    objects.append(from_dict(data_class=Change, data=obj))
+
             return objects
 
-        objects = []
+        objects: List[Change] = []
         for review in reviewes:
             try:
                 objects.extend(extract_pr_objects(review))

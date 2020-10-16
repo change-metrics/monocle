@@ -18,6 +18,9 @@ from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
+from typing import List
+
+from monocle.db.db import Change, changeToDict
 from monocle.gerrit import review
 
 from .common import load_change
@@ -31,9 +34,11 @@ class TestGerritCrawler(unittest.TestCase):
         input_review, xtrd_ref = load_change(name)
 
         rf = review.ReviewesFetcher(base_url, None)
-        xtrd = rf.extract_objects([input_review], None)
+        xtrd: List[Change] = rf.extract_objects([input_review], None)
 
-        ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
+        ddiff = DeepDiff(
+            xtrd_ref, list(map(lambda x: changeToDict(x), xtrd)), ignore_order=True
+        )
         if ddiff:
             raise DiffException(ddiff)
 

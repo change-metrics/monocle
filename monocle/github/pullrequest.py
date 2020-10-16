@@ -21,11 +21,13 @@ from dataclasses import dataclass
 from pprint import pprint
 from time import sleep
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from dacite import from_dict
 
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
 from monocle.utils import is8601_to_dt
+from monocle.db.db import Change, File, SimpleFile, Commit
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -350,7 +352,7 @@ class PRsFetcher(object):
         raw = self.gql.query(qdata % kwargs)["data"]["repository"]["pullRequest"]
         return (raw, self.extract_objects([raw], _dumper))
 
-    def extract_objects(self, prs, dumper=None):
+    def extract_objects(self, prs: List[Dict], dumper=None) -> List[Change]:
         def get_login(data):
             if data and "login" in data and data["login"]:
                 return data["login"]
@@ -375,17 +377,23 @@ class PRsFetcher(object):
                     "url": change["url"],
                     "on_author": change["author"],
                     "on_created_at": change["created_at"],
-                    "changed_files": [
-                        {"path": cf["path"]} for cf in change["changed_files"]
-                    ],
+                    "changed_files": list(
+                        map(lambda x: SimpleFile(path=x.path), change["changed_files"])
+                    ),
                 }
             )
 
-        def extract_pr_objects(pr):
-            objects = []
-            change = {}
-            change["type"] = "Change"
-            change["id"] = pr["id"]
+        def extract_pr_objects(pr: Dict) -> List[Change]:
+            if "commits" not in pr:
+                pr["commits"] = {"edges": []}
+            if "edges" not in pr["commits"]:
+                pr["commits"]["edges"] = []
+
+            objects: List[Change] = []
+
+            change: Dict[str, Any] = {}
+            change["_type"] = "Change"
+            change["_id"] = pr["id"]
             change["draft"] = pr["isDraft"]
             change["number"] = pr["number"]
             change["repository_prefix"] = get_login(pr["repository"]["owner"])
@@ -403,10 +411,6 @@ class PRsFetcher(object):
                 change["repository_fullname"],
                 change["number"],
             )
-            if "commits" not in pr:
-                pr["commits"] = {"edges": []}
-            if "edges" not in pr["commits"]:
-                pr["commits"]["edges"] = []
             change["author"] = get_login(pr["author"])
             change["branch"] = pr["headRefName"]
             change["target_branch"] = pr["baseRefName"]
@@ -417,18 +421,16 @@ class PRsFetcher(object):
             change["deletions"] = pr["deletions"]
             change["approval"] = [pr["reviewDecision"]]
             change["changed_files_count"] = pr["changedFiles"]
+            change["changed_files"] = []
             if pr["files"] and "edges" in pr["files"]:
-                change["changed_files"] = [
-                    {
-                        "additions": fd["node"]["additions"],
-                        "deletions": fd["node"]["deletions"],
-                        "path": fd["node"]["path"],
-                    }
-                    for fd in pr["files"]["edges"]
-                ]
-            else:
-                change["changed_files"] = []
-            change["commits"] = []
+                for fd in pr["files"]["edges"]:
+                    change["changed_files"].append(
+                        File(
+                            additions=fd["node"]["additions"],
+                            deletions=fd["node"]["deletions"],
+                            path=fd["node"]["path"],
+                        )
+                    )
             change["commit_count"] = int(pr["commits"]["totalCount"])
             if pr["mergedBy"]:
                 change["merged_by"] = get_login(pr["mergedBy"])
@@ -452,66 +454,7 @@ class PRsFetcher(object):
             change["assignees"] = list(
                 map(lambda n: get_login(n["node"]), pr["assignees"]["edges"])
             )
-            objects.append(change)
-            obj = {
-                "type": "ChangeCreatedEvent",
-                "id": "CCE" + change["id"],
-                "created_at": change["created_at"],
-                "author": change["author"],
-            }
-            insert_change_attributes(obj, change)
-            objects.append(obj)
-            for comment in pr["comments"]["edges"]:
-                _comment = comment["node"]
-                obj = {
-                    "type": "ChangeCommentedEvent",
-                    "id": _comment["id"],
-                    "created_at": _comment["createdAt"],
-                    "author": get_login(_comment["author"]),
-                }
-                insert_change_attributes(obj, change)
-                objects.append(obj)
-            for timelineitem in pr["timelineItems"]["edges"]:
-                _timelineitem = timelineitem["node"]
-                _author = _timelineitem.get("actor", {}) or _timelineitem.get(
-                    "author", {}
-                )
-                if not _author:
-                    _author = {"login": "ghost"}
-                obj = {
-                    "type": self.events_map[_timelineitem["__typename"]],
-                    "id": _timelineitem["id"],
-                    "created_at": _timelineitem["createdAt"],
-                    "author": _author.get("login"),
-                }
-                insert_change_attributes(obj, change)
-                if "state" in _timelineitem:
-                    obj["approval"] = _timelineitem["state"]
-                if obj["type"] == "ChangeAbandonedEvent":
-                    if change["state"] == "MERGED":
-                        obj["type"] = "ChangeMergedEvent"
-                        obj["author"] = change["merged_by"]
-                objects.append(obj)
-            # Here we don't use the PullRequestCommit timeline event because
-            # it does not provide more data than the current list of commits
-            # of the pull request
-            for commit in pr["commits"]["edges"]:
-                if not commit["node"]:
-                    continue
-                _commit = commit["node"]["commit"]
-                obj = {
-                    "type": "ChangeCommitPushedEvent",
-                    "id": _commit["oid"],
-                    # Seems the first PR's commit get a date with Node value
-                    # So make sense to set the same created_at date as the
-                    # change
-                    "created_at": _commit.get("pushedDate", change["created_at"]),
-                }
-                if _commit["committer"].get("user"):
-                    obj["author"] = get_login(_commit["committer"]["user"])
-                insert_change_attributes(obj, change)
-                objects.append(obj)
-            # Now attach a commits list to the change
+            change["commits"] = []
             for commit in pr["commits"]["edges"]:
                 if not commit["node"]:
                     continue
@@ -527,10 +470,74 @@ class PRsFetcher(object):
                 for k in ("author", "committer"):
                     if _commit[k].get("user"):
                         obj[k] = get_login(_commit[k]["user"])
-                change["commits"].append(obj)
+                change["commits"].append(from_dict(data_class=Commit, data=obj))
+
+            objects.append(from_dict(data_class=Change, data=change))
+
+            obj = {
+                "_type": "ChangeCreatedEvent",
+                "_id": "CCE" + change["_id"],
+                "created_at": change["created_at"],
+                "author": change["author"],
+            }
+            insert_change_attributes(obj, change)
+            objects.append(from_dict(data_class=Change, data=obj))
+
+            for comment in pr["comments"]["edges"]:
+                _comment = comment["node"]
+                obj = {
+                    "_type": "ChangeCommentedEvent",
+                    "_id": _comment["id"],
+                    "created_at": _comment["createdAt"],
+                    "author": get_login(_comment["author"]),
+                }
+                insert_change_attributes(obj, change)
+                objects.append(from_dict(data_class=Change, data=obj))
+
+            for timelineitem in pr["timelineItems"]["edges"]:
+                _timelineitem = timelineitem["node"]
+                _author = _timelineitem.get("actor", {}) or _timelineitem.get(
+                    "author", {}
+                )
+                if not _author:
+                    _author = {"login": "ghost"}
+                obj = {
+                    "_type": self.events_map[_timelineitem["__typename"]],
+                    "_id": _timelineitem["id"],
+                    "created_at": _timelineitem["createdAt"],
+                    "author": _author.get("login"),
+                }
+                insert_change_attributes(obj, change)
+                if "state" in _timelineitem:
+                    obj["approval"] = [_timelineitem["state"]]
+                if obj["_type"] == "ChangeAbandonedEvent":
+                    if change["state"] == "MERGED":
+                        obj["_type"] = "ChangeMergedEvent"
+                        obj["author"] = change["merged_by"]
+                objects.append(from_dict(data_class=Change, data=obj))
+
+            # Here we don't use the PullRequestCommit timeline event because
+            # it does not provide more data than the current list of commits
+            # of the pull request
+            for commit in pr["commits"]["edges"]:
+                if not commit["node"]:
+                    continue
+                _commit = commit["node"]["commit"]
+                obj = {
+                    "_type": "ChangeCommitPushedEvent",
+                    "_id": _commit["oid"],
+                    # Seems the first PR's commit get a date with None value
+                    # So make sense to set the same created_at date as the
+                    # change
+                    "created_at": _commit.get("pushedDate") or change["created_at"],
+                }
+                if _commit["committer"].get("user"):
+                    obj["author"] = get_login(_commit["committer"]["user"])
+                insert_change_attributes(obj, change)
+                objects.append(from_dict(data_class=Change, data=obj))
             return objects
 
-        objects = []
+        objects: List[Change] = []
         for pr in prs:
             try:
                 objects.extend(extract_pr_objects(pr))

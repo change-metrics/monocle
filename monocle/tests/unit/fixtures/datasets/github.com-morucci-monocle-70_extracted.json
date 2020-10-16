@@ -250,7 +250,7 @@
         "path": "web/src/components/changes_review.js"
       }
     ],
-    "approval": "APPROVED"
+    "approval": ["APPROVED"]
   },
   {
     "type": "ChangeMergedEvent",
