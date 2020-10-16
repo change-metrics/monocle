@@ -19,16 +19,16 @@
 from setuptools import setup
 
 setup(
-    name='monocle',
-    version='0.7.0',
+    name="monocle",
+    version="0.7.0",
     packages=[
-        'monocle',
-        'monocle.db',
-        'monocle.gerrit',
-        'monocle.github',
-        'monocle.migrate',
+        "monocle",
+        "monocle.db",
+        "monocle.gerrit",
+        "monocle.github",
+        "monocle.migrate",
     ],
     entry_points={
-        'console_scripts': ['monocle=monocle.main:main', 'webapi=monocle.webapp:main']
+        "console_scripts": ["monocle=monocle.main:main", "webapi=monocle.webapp:main"]
     },
 )

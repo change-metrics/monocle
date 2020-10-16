@@ -42,7 +42,7 @@ class GithubGraphQLQuery(object):
     log = logging.getLogger(__name__)
 
     def __init__(self, token_getter):
-        self.url = 'https://api.github.com/graphql'
+        self.url = "https://api.github.com/graphql"
         self.session = requests.session()
         # Will get every 25 requests
         self.get_rate_limit_rate = 25
@@ -56,17 +56,17 @@ class GithubGraphQLQuery(object):
 
     def get_headers(self) -> dict:
         headers = {
-            'Authorization': 'token %s' % self.get_token(),
-            'User-Agent': 'change-metrics/monocle',
+            "Authorization": "token %s" % self.get_token(),
+            "User-Agent": "change-metrics/monocle",
         }
-        self.log.debug('request headers: %s' % headers)
+        self.log.debug("request headers: %s" % headers)
         return headers
 
     def get_rate_limit(self):
         ratelimit = self.getRateLimit()
         if ratelimit:
-            self.quota_remain = ratelimit['remaining']
-            self.resetat = utils.is8601_to_dt(ratelimit['resetAt'])
+            self.quota_remain = ratelimit["remaining"]
+            self.resetat = utils.is8601_to_dt(ratelimit["resetAt"])
             self.log.info(
                 "Got rate limit data: remain %s resetat %s"
                 % (self.quota_remain, self.resetat)
@@ -87,21 +87,21 @@ class GithubGraphQLQuery(object):
             sleep(1)
 
     def getRateLimit(self):
-        qdata = '''{
+        qdata = """{
           rateLimit {
             limit
             cost
             remaining
             resetAt
           }
-        }'''
+        }"""
         data = self.query(qdata, skip_get_rate_limit=True)
         if data:
             try:
-                return data['data']['rateLimit']
+                return data["data"]["rateLimit"]
             except KeyError:
-                self.log.error('No rate limit data: %s' % data)
-                raise RequestException('No rate limit data: %s' % data)
+                self.log.error("No rate limit data: %s" % data)
+                raise RequestException("No rate limit data: %s" % data)
 
     @retry(
         after=after_log(log, logging.INFO),
@@ -115,7 +115,7 @@ class GithubGraphQLQuery(object):
             if self.query_count % self.get_rate_limit_rate == 0:
                 self.get_rate_limit()
             self.wait_for_call()
-        data = {'query': qdata}
+        data = {"query": qdata}
         try:
             r = self.session.post(
                 url=self.url, json=data, headers=self.get_headers(), timeout=30.3
@@ -126,42 +126,42 @@ class GithubGraphQLQuery(object):
         ):
             raise RequestException("Error connecting to the API")
         self.query_count += 1
-        if 'retry-after' in r.headers:
-            self.log.info('Got Retry-After: %s, sleeping...' % r.headers['retry-after'])
-            sleep(int(r.headers['retry-after']))
+        if "retry-after" in r.headers:
+            self.log.info("Got Retry-After: %s, sleeping..." % r.headers["retry-after"])
+            sleep(int(r.headers["retry-after"]))
         if not r.status_code != "200":
-            self.log.error('No ok response code: %s' % r)
+            self.log.error("No ok response code: %s" % r)
             raise RequestException("No ok response code: %s" % r.text)
         ret = r.json()
-        if 'Bad credentials' == ret.get('message', ''):
-            self.log.info('Query forbidden due to bad credentials')
+        if "Bad credentials" == ret.get("message", ""):
+            self.log.info("Query forbidden due to bad credentials")
             ret = {}
-        if 'errors' in ret:
+        if "errors" in ret:
             self.log.error("Errors in response: %s" % ret)
             if (
-                len(ret['errors']) >= 1
-                and 'message' in ret['errors'][0]
-                and 'timeout' in ret['errors'][0]['message']
+                len(ret["errors"]) >= 1
+                and "message" in ret["errors"][0]
+                and "timeout" in ret["errors"][0]["message"]
             ):
-                raise RequestTimeout(ret['errors'][0]['message'])
-            if len(ret['errors']) >= 1:
+                raise RequestTimeout(ret["errors"][0]["message"])
+            if len(ret["errors"]) >= 1:
                 if all(
                     [
                         error
-                        for error in ret['errors']
-                        if 'The additions count for this commit is unavailable'
-                        in error['message']
+                        for error in ret["errors"]
+                        if "The additions count for this commit is unavailable"
+                        in error["message"]
                     ]
                 ):
                     # This errors are not critical, PRs data are complete, w/o
                     # the failing commit(s). So return the data to the caller and
                     # move on.
                     return ret
-            is_forbiden = any([error['type'] == 'FORBIDDEN'] for error in ret['errors'])
+            is_forbiden = any([error["type"] == "FORBIDDEN"] for error in ret["errors"])
             if is_forbiden:
                 # Do not raise to not retrigger tenacity
-                self.log.info('Query forbidden due to unsuffcient token ACLs')
+                self.log.info("Query forbidden due to unsuffcient token ACLs")
                 ret = {}
             else:
-                raise RequestException("Errors in response: %s" % ret['errors'])
+                raise RequestException("Errors in response: %s" % ret["errors"])
         return ret

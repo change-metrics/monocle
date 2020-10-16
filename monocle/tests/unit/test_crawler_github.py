@@ -30,7 +30,7 @@ class TestGithubCrawler(unittest.TestCase):
     def extract_and_compare(self, name):
         input_pr, xtrd_ref = load_change(name)
 
-        pr_fetcher = pullrequest.PRsFetcher(None, 'https://github.com', None, None)
+        pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
         xtrd = pr_fetcher.extract_objects([input_pr], None)
 
         ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
@@ -41,21 +41,21 @@ class TestGithubCrawler(unittest.TestCase):
         """
         Github crawler extracts github.com-morucci-monocle-70
         """
-        self.extract_and_compare('github.com-morucci-monocle-70')
+        self.extract_and_compare("github.com-morucci-monocle-70")
 
     def test_extract_and_compare_pr2(self):
         """
         Github crawler extracts github.com-wazo-platform-wazo-ansible-76
         """
-        self.extract_and_compare('github.com-wazo-platform-wazo-ansible-76')
+        self.extract_and_compare("github.com-wazo-platform-wazo-ansible-76")
 
     def test_load_buggy(self):
         """
         Github crawler extracts buggy prs
         """
-        pr_fetcher = pullrequest.PRsFetcher(None, 'https://github.com', None, None)
+        pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
         datasets_dir = Path(DATASETS)
-        for fn in datasets_dir.glob('github_*.json'):
+        for fn in datasets_dir.glob("github_*.json"):
             dataset = load_dataset(fn)
             xtrd = pr_fetcher.extract_objects([dataset], None)
             self.assertNotEqual(xtrd, [])

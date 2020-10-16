@@ -28,7 +28,7 @@ from monocle.utils import utcnow
 
 log = logging.getLogger(__name__)
 
-DUMP_DIR = '/var/lib/crawler'
+DUMP_DIR = "/var/lib/crawler"
 
 
 class Runner(object):
@@ -38,22 +38,22 @@ class Runner(object):
         self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
         self.db = args.db
-        if args.command == 'github_crawler':
+        if args.command == "github_crawler":
             if args.repository:
                 self.repository_el_re = "%s/%s" % (
-                    args.org.lstrip('^'),
-                    args.repository.lstrip('^'),
+                    args.org.lstrip("^"),
+                    args.repository.lstrip("^"),
                 )
             else:
-                self.repository_el_re = args.org.lstrip('^') + '/.*'
+                self.repository_el_re = args.org.lstrip("^") + "/.*"
             self.prf = pullrequest.PRsFetcher(
                 GithubGraphQLQuery(token_getter=args.token_getter),
                 args.base_url,
                 args.org,
                 args.repository,
             )
-        elif args.command == 'gerrit_crawler':
-            self.repository_el_re = args.repository.lstrip('^')
+        elif args.command == "gerrit_crawler":
+            self.repository_el_re = args.repository.lstrip("^")
             self.prf = review.ReviewesFetcher(
                 args.base_url,
                 args.repository,
@@ -69,9 +69,9 @@ class Runner(object):
         else:
             log.info(
                 "Most recent change date in the database for %s is %s"
-                % (self.repository_el_re, change['updated_at'])
+                % (self.repository_el_re, change["updated_at"])
             )
-            return change['updated_at']
+            return change["updated_at"]
 
     def run_step(self):
         def dump_data(data, prefix=None):
@@ -80,23 +80,23 @@ class Runner(object):
                     tmpfile = tempfile.NamedTemporaryFile(
                         dir=self.dump_dir,
                         prefix=prefix,
-                        suffix='.json',
-                        mode='w',
+                        suffix=".json",
+                        mode="w",
                         delete=False,
                     )
                     json.dump(data, tmpfile)
                     tmpfile.close()
-                    log.info('Data dumped to %s' % tmpfile.name)
+                    log.info("Data dumped to %s" % tmpfile.name)
                     return tmpfile.name
             except Exception:
-                log.exception('Unable to dump data')
+                log.exception("Unable to dump data")
             return None
 
         updated_since = self.get_last_updated_date()
         try:
             prs = self.prf.get(updated_since)
         except Exception:
-            log.exception('Unable to get PR data')
+            log.exception("Unable to get PR data")
             return
         objects = self.prf.extract_objects(prs, dump_data)
         if objects:

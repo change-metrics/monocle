@@ -42,91 +42,91 @@ from monocle import config
 
 CACHE_TIMEOUT = 300  # 5 mn cache
 
-cache = Cache(config={'CACHE_TYPE': 'simple'})
+cache = Cache(config={"CACHE_TYPE": "simple"})
 app = Flask(__name__)
 cache.init_app(app)
 
 app.secret_key = os.urandom(16)
 CORS(
     app,
-    resources={r"/api/0/*": {"origins": os.getenv('ALLOW_ORIGIN', '*')}},
+    resources={r"/api/0/*": {"origins": os.getenv("ALLOW_ORIGIN", "*")}},
     supports_credentials=True,
 )
 oauth = OAuth(app)
 
 oauth.register(
-    name='github',
-    client_id=os.getenv('CLIENT_ID'),
-    client_secret=os.getenv('CLIENT_SECRET'),
-    access_token_url='https://github.com/login/oauth/access_token',
+    name="github",
+    client_id=os.getenv("CLIENT_ID"),
+    client_secret=os.getenv("CLIENT_SECRET"),
+    access_token_url="https://github.com/login/oauth/access_token",
     access_token_params=None,
-    authorize_url='https://github.com/login/oauth/authorize',
+    authorize_url="https://github.com/login/oauth/authorize",
     authorize_params=None,
-    api_base_url='https://api.github.com/',
-    client_kwargs={'scope': 'user:email'},
+    api_base_url="https://api.github.com/",
+    client_kwargs={"scope": "user:email"},
 )
 
 indexes_acl: Dict[str, List[config.Username]] = {}
 
-config_path = os.getenv('CONFIG', None)
+config_path = os.getenv("CONFIG", None)
 if not config_path:
-    print('CONFIG env is missing.', file=sys.stderr)
+    print("CONFIG env is missing.", file=sys.stderr)
 else:
     if not os.path.isfile(config_path):
-        print('Unable to access %s.' % config_path, file=sys.stderr)
+        print("Unable to access %s." % config_path, file=sys.stderr)
         sys.exit(1)
     else:
-        globals()['indexes_acl'] = config.build_index_acl(
+        globals()["indexes_acl"] = config.build_index_acl(
             yaml.safe_load(open(config_path))
         )
 
 
-@app.route("/api/0/login", methods=['GET'])
+@app.route("/api/0/login", methods=["GET"])
 def login():
-    github = oauth.create_client('github')
-    redirect_uri = os.getenv('REDIRECT_URL')
+    github = oauth.create_client("github")
+    redirect_uri = os.getenv("REDIRECT_URL")
     return github.authorize_redirect(redirect_uri)
 
 
-@app.route("/api/0/authorize", methods=['GET'])
+@app.route("/api/0/authorize", methods=["GET"])
 def authorize():
-    github = oauth.create_client('github')
+    github = oauth.create_client("github")
     # token = github.authorize_access_token()
     github.authorize_access_token()
-    resp = github.get('user')
+    resp = github.get("user")
     profile = resp.json()
     # do something with the token and profile
-    session['username'] = profile.get('login')
+    session["username"] = profile.get("login")
     # return jsonify(profile)
-    return redirect(os.getenv('WEB_URL'))
+    return redirect(os.getenv("WEB_URL"))
 
 
-@app.route("/api/0/whoami", methods=['GET'])
+@app.route("/api/0/whoami", methods=["GET"])
 def whoami():
-    if not os.getenv('CLIENT_ID'):
-        return 'Authentication not configured', 503
-    username = session.get('username')
+    if not os.getenv("CLIENT_ID"):
+        return "Authentication not configured", 503
+    username = session.get("username")
     return jsonify(username)
 
 
-@app.route("/api/0/query/<name>", methods=['GET'])
+@app.route("/api/0/query/<name>", methods=["GET"])
 def query(name):
-    if not request.args.get('index'):
-        abort(make_response(jsonify(errors=['No index provided']), 404))
-    index = request.args.get('index')
+    if not request.args.get("index"):
+        abort(make_response(jsonify(errors=["No index provided"]), 404))
+    index = request.args.get("index")
     if not config.is_public_index(indexes_acl, index):
-        user = session.get('username')
+        user = session.get("username")
         if user:
             if user not in config.get_authorized_users(indexes_acl, index):
-                return 'Unauthorized to access index %s' % index, 403
+                return "Unauthorized to access index %s" % index, 403
         else:
-            return 'Unauthorized to access index %s' % index, 403
-    repository_fullname = request.args.get('repository')
+            return "Unauthorized to access index %s" % index, 403
+    repository_fullname = request.args.get("repository")
     try:
         ret = do_query(index, repository_fullname, request.args, name)
     except Exception:
         app.logger.exception(
-            'Unable to process query %s (params: %s)'
+            "Unable to process query %s (params: %s)"
             % (name, list(request.args.items()))
         )
         return (
@@ -143,7 +143,7 @@ def query(name):
 def do_query(index, repository_fullname, args, name):
     params = utils.set_params(args)
     db = ELmonocleDB(
-        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
+        elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
         index=index,
         prefix=CHANGE_PREFIX,
         create=False,
@@ -151,14 +151,14 @@ def do_query(index, repository_fullname, args, name):
     try:
         result = db.run_named_query(name, repository_fullname, params)
     except InvalidIndexError:
-        return 'Invalid index: %s' % request.args.get('index'), 404
+        return "Invalid index: %s" % request.args.get("index"), 404
     return jsonify(result)
 
 
-@app.route("/api/0/indices", methods=['GET'])
+@app.route("/api/0/indices", methods=["GET"])
 def indices():
     db = ELmonocleDB(
-        elastic_conn=os.getenv('ELASTIC_CONN', 'localhost:9200'),
+        elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
         create=False,
         prefix=CHANGE_PREFIX,
     )
@@ -168,7 +168,7 @@ def indices():
         if config.is_public_index(indexes_acl, indice):
             indices.append(indice)
         else:
-            user = session.get('username')
+            user = session.get("username")
             if user:
                 if user in config.get_authorized_users(indexes_acl, indice):
                     indices.append(indice)
@@ -176,7 +176,7 @@ def indices():
 
 
 def main():
-    app.run(host='0.0.0.0', port=9876)
+    app.run(host="0.0.0.0", port=9876)
 
 
 if __name__ == "__main__":

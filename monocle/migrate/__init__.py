@@ -26,20 +26,20 @@ def self_merge(elastic_conn, index):
     bulk_size = 500
 
     def update_change(change):
-        if 'self_merged' not in change.keys():
-            if 'merged_by' not in change:
+        if "self_merged" not in change.keys():
+            if "merged_by" not in change:
                 # Here we fix the missing field that can happen with the Gerrit crawler
-                change['merged_by'] = None
-            if change['merged_by']:
-                change['self_merged'] = change['merged_by'] == change['author']
+                change["merged_by"] = None
+            if change["merged_by"]:
+                change["self_merged"] = change["merged_by"] == change["author"]
             else:
-                change['self_merged'] = None
+                change["self_merged"] = None
             return True
 
     client = ELmonocleDB(elastic_conn, index)
     for _obj in client.iter_index():
-        obj = _obj['_source']
-        if obj['type'] == 'Change':
+        obj = _obj["_source"]
+        if obj["type"] == "Change":
             updated = update_change(obj)
             if updated:
                 to_update.append(obj)
@@ -55,4 +55,4 @@ def run_migrate(name, elastic_conn, index):
     processes[name](elastic_conn, index)
 
 
-processes = {'self-merge': self_merge}
+processes = {"self-merge": self_merge}

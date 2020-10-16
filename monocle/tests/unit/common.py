@@ -18,8 +18,8 @@ import os
 import json
 import pprint
 
-FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fixtures')
-DATASETS = os.path.join(FIXTURES_DIR, 'datasets')
+FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
+DATASETS = os.path.join(FIXTURES_DIR, "datasets")
 
 
 def load_dataset(name):
@@ -29,8 +29,8 @@ def load_dataset(name):
 
 
 def load_change(name):
-    input_pr = load_dataset(name + '_raw.json')
-    xtrd_ref = load_dataset(name + '_extracted.json')
+    input_pr = load_dataset(name + "_raw.json")
+    xtrd_ref = load_dataset(name + "_extracted.json")
     return input_pr, xtrd_ref
 
 
@@ -45,4 +45,4 @@ class DiffException(Exception):
         self.message = pprint.pformat(message)
 
     def __str__(self):
-        return '\n\n' + self.message
+        return "\n\n" + self.message

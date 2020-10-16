@@ -31,7 +31,7 @@ from datetime import timedelta
 
 import logging
 
-PREVIEW_JSON_ACCEPT = 'application/vnd.github.machine-man-preview+json'
+PREVIEW_JSON_ACCEPT = "application/vnd.github.machine-man-preview+json"
 
 
 @dataclass
@@ -60,11 +60,11 @@ def get_app_auth_headers(app_id: str, app_key: str) -> Dict[str, str]:
     now = datetime.now(timezone.utc)
     expiry = now + timedelta(minutes=5)
 
-    header = {'alg': 'RS256'}
-    data = {'iat': now, 'exp': expiry, 'iss': app_id}
-    app_token = jwt.encode(header, data, app_key).decode('utf-8')
+    header = {"alg": "RS256"}
+    data = {"iat": now, "exp": expiry, "iss": app_id}
+    app_token = jwt.encode(header, data, app_key).decode("utf-8")
 
-    headers = {'Accept': PREVIEW_JSON_ACCEPT, 'Authorization': 'Bearer %s' % app_token}
+    headers = {"Accept": PREVIEW_JSON_ACCEPT, "Authorization": "Bearer %s" % app_token}
 
     return headers
 
@@ -84,12 +84,12 @@ def get_installation_key(install: Installation) -> str:
 
         data = response.json()
 
-        expiry = iso8601.parse_date(data.get('expires_at'))
+        expiry = iso8601.parse_date(data.get("expires_at"))
         if expiry:
             expiry -= timedelta(minutes=2)
         else:
             expiry = datetime.now(timezone.utc) - timedelta(minutes=-1)
-        token = data.get('token', "")
+        token = data.get("token", "")
 
         install.token.token = token
         install.token.expiry = expiry
@@ -104,7 +104,7 @@ def get_installation_headers(
     install: Installation,
 ) -> Dict[str, str]:
     token = get_installation_key(install)
-    return {'Accept': PREVIEW_JSON_ACCEPT, 'Authorization': 'token %s' % token}
+    return {"Accept": PREVIEW_JSON_ACCEPT, "Authorization": "token %s" % token}
 
 
 def get_repos_of_installation(
@@ -118,11 +118,11 @@ def get_repos_of_installation(
         response.raise_for_status()
         repos = response.json()
 
-        for repo in repos.get('repositories'):
-            project = repo.get('full_name')
+        for repo in repos.get("repositories"):
+            project = repo.get("full_name")
             projects.append(project)
 
-        url = response.links.get('next', {}).get('url')
+        url = response.links.get("next", {}).get("url")
     install.repos = projects
     logging.info(
         "Got %s installed repositories for login/org %s"
@@ -132,7 +132,7 @@ def get_repos_of_installation(
 
 
 def get_installations(base_url: str, app_id: str, app_key: str) -> List[Installation]:
-    url = '%s/app/installations' % base_url
+    url = "%s/app/installations" % base_url
     headers = get_app_auth_headers(app_id, app_key)
     installations = []
     page = 1
@@ -145,23 +145,23 @@ def get_installations(base_url: str, app_id: str, app_key: str) -> List[Installa
         _installations = response.json()
         _installations = [
             Installation(
-                id=inst['id'],
-                app_id=inst['app_id'],
+                id=inst["id"],
+                app_id=inst["app_id"],
                 app_key=app_key,
-                login=inst['account']['login'],
-                account_type=inst['account']['type'],
-                site_admin=inst['account']['site_admin'],
-                permissions=inst['permissions'],
-                repository_selection=inst['repository_selection'],
-                access_tokens_url=inst['access_tokens_url'],
-                repositories_url=inst['repositories_url'],
+                login=inst["account"]["login"],
+                account_type=inst["account"]["type"],
+                site_admin=inst["account"]["site_admin"],
+                permissions=inst["permissions"],
+                repository_selection=inst["repository_selection"],
+                access_tokens_url=inst["access_tokens_url"],
+                repositories_url=inst["repositories_url"],
                 token=token,
             )
             for inst in _installations
         ]
         installations.extend(_installations)
 
-        url = response.links.get('next', {}).get('url')
+        url = response.links.get("next", {}).get("url")
     logging.info("Loaded %s installations for app_id:%s" % (len(installations), app_id))
     return installations
 
@@ -198,24 +198,24 @@ class MonocleGithubApp:
 
 
 def get_app(app_id, app_key_path) -> MonocleGithubApp:
-    with open(app_key_path, 'r') as f:
+    with open(app_key_path, "r") as f:
         app_key = f.read()
     app = MonocleGithubApp(app_key, app_id)
     app.search_installations()
     return app
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
     logging.basicConfig(level=logging.INFO)
 
-    parser = argparse.ArgumentParser(prog='application')
+    parser = argparse.ArgumentParser(prog="application")
 
-    parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--org', help='A Github organization', required=True)
-    parser.add_argument('--app-id', help='The Github app-id', required=True)
-    parser.add_argument('--app-key-path', help='A Github app key path', required=True)
+    parser.add_argument("--loglevel", help="logging level", default="INFO")
+    parser.add_argument("--org", help="A Github organization", required=True)
+    parser.add_argument("--app-id", help="The Github app-id", required=True)
+    parser.add_argument("--app-key-path", help="A Github app key path", required=True)
 
     args = parser.parse_args()
 

@@ -29,13 +29,13 @@ class TestSchemas(unittest.TestCase):
 
     def test_indexes_acl(self):
         indexes_acl = config.build_index_acl(yaml.safe_load(config.config_sample_yaml))
-        expected = {'default': ['john', 'jane'], 'tenant1': []}
+        expected = {"default": ["john", "jane"], "tenant1": []}
         ddiff = DeepDiff(indexes_acl, expected)
         if ddiff:
             raise DiffException(ddiff)
 
-        self.assertTrue(config.is_public_index(indexes_acl, 'tenant1'))
-        self.assertFalse(config.is_public_index(indexes_acl, 'default'))
+        self.assertTrue(config.is_public_index(indexes_acl, "tenant1"))
+        self.assertFalse(config.is_public_index(indexes_acl, "default"))
 
-        users = config.get_authorized_users(indexes_acl, 'default')
-        self.assertListEqual(users, ['john', 'jane'])
+        users = config.get_authorized_users(indexes_acl, "default")
+        self.assertListEqual(users, ["john", "jane"])

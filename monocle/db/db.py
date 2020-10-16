@@ -25,7 +25,7 @@ from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
 
-CHANGE_PREFIX = 'monocle.changes.'
+CHANGE_PREFIX = "monocle.changes."
 
 
 class UnknownQueryException(Exception):
@@ -41,17 +41,17 @@ class ELmonocleDB:
 
     def __init__(
         self,
-        elastic_conn='localhost:9200',
+        elastic_conn="localhost:9200",
         index=None,
         timeout=10,
         prefix=CHANGE_PREFIX,
         create=True,
     ):
-        host, port = elastic_conn.split(':')
+        host, port = elastic_conn.split(":")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
-        self.log.info('ES IP is %s' % ip)
-        self.log.info('ES prefix is %s' % prefix)
+        self.log.info("ES IP is %s" % ip)
+        self.log.info("ES prefix is %s" % prefix)
 
         while True:
             try:
@@ -61,23 +61,23 @@ class ELmonocleDB:
                 break
             except Exception as excpt:
                 self.log.info(
-                    'Unable to connect to %s: %s. Sleeping for %ds.'
+                    "Unable to connect to %s: %s. Sleeping for %ds."
                     % (elastic_conn, excpt, timeout)
                 )
                 time.sleep(timeout)
 
-        self.log.info('Connecting to ES server at %s' % elastic_conn)
+        self.log.info("Connecting to ES server at %s" % elastic_conn)
         self.es = client.Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
         self.prefix = prefix
 
         if not index:
-            self.log.info('No index provided')
+            self.log.info("No index provided")
             return
 
-        self.index = '{}{}'.format(self.prefix, index)
-        self.log.info('Using ES index %s' % self.index)
+        self.index = "{}{}".format(self.prefix, index)
+        self.log.info("Using ES index %s" % self.index)
         self.mapping = {
             "properties": {
                 "id": {"type": "keyword"},
@@ -146,7 +146,7 @@ class ELmonocleDB:
                 "self_merged": {"type": "boolean"},
             }
         }
-        settings = {'mappings': self.mapping}
+        settings = {"mappings": self.mapping}
         self.ic = client.IndicesClient(self.es)
         if create:
             self.ic.create(index=self.index, ignore=400, body=settings)
@@ -154,29 +154,29 @@ class ELmonocleDB:
         # time slice is large: Must be less than or equal to: [10000] but was [10001]. ()This limit can be
         # set by changing the [search.max_buckets] cluster level)
         # This is an attempt to mitigate the issue
-        cluster_settings = {'transient': {'search.max_buckets': 100000}}
+        cluster_settings = {"transient": {"search.max_buckets": 100000}}
         self.es.cluster.put_settings(body=cluster_settings)
 
     def update(self, source_it):
         def gen(it):
             for source in it:
                 d = {}
-                d['_index'] = self.index
-                d['_op_type'] = 'update'
-                d['_id'] = source['id']
-                d['doc'] = source
-                d['doc_as_upsert'] = True
+                d["_index"] = self.index
+                d["_op_type"] = "update"
+                d["_id"] = source["id"]
+                d["doc"] = source
+                d["doc_as_upsert"] = True
                 yield d
 
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
     def delete_index(self):
-        self.log.info('Deleting index: %s' % self.index)
+        self.log.info("Deleting index: %s" % self.index)
         self.ic.delete(index=self.index)
 
     def delete_repository(self, repository_fullname):
-        params = {'index': self.index}
+        params = {"index": self.index}
         body = {
             "query": {
                 "bool": {
@@ -188,12 +188,12 @@ class ELmonocleDB:
                 }
             }
         }
-        params['body'] = body
+        params["body"] = body
         self.es.delete_by_query(**params)
         self.es.indices.refresh(index=self.index)
 
     def get_last_updated(self, repository_fullname):
-        params = {'index': self.index}
+        params = {"index": self.index}
         body = {
             "sort": [{"updated_at": {"order": "desc"}}],
             "query": {
@@ -209,12 +209,12 @@ class ELmonocleDB:
                 }
             },
         }
-        params['body'] = body
+        params["body"] = body
         try:
             res = self.es.search(**params)
         except Exception:
             return []
-        ret = [r['_source'] for r in res['hits']['hits']]
+        ret = [r["_source"] for r in res["hits"]["hits"]]
         if not ret:
             return []
         return ret[0]
@@ -228,8 +228,8 @@ class ELmonocleDB:
 
     def get_indices(self):
         return [
-            ind.replace(self.prefix, '')
-            for ind in self.es.indices.get(self.prefix + '*')
+            ind.replace(self.prefix, "")
+            for ind in self.es.indices.get(self.prefix + "*")
         ]
 
     def iter_index(self):
