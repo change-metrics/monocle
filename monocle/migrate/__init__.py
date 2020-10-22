@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from monocle.db.db import ELmonocleDB
+from monocle.db.db import dict_to_change_or_event
 
 
 class NotAvailableException(Exception):
     pass
 
 
-def self_merge(elastic_conn, index):
+def self_merge(elastic_conn, index) -> None:
     to_update = []
     bulk_size = 500
 
@@ -42,7 +43,7 @@ def self_merge(elastic_conn, index):
         if obj["type"] == "Change":
             updated = update_change(obj)
             if updated:
-                to_update.append(obj)
+                to_update.append(dict_to_change_or_event(obj))
             if len(to_update) == bulk_size:
                 print("Updating %s changes ..." % bulk_size)
                 client.update(to_update)
