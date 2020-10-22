@@ -21,13 +21,13 @@ from dataclasses import dataclass
 from pprint import pprint
 from time import sleep
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from dacite import from_dict
 
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
 from monocle.utils import is8601_to_dt
-from monocle.db.db import Change, File, SimpleFile, Commit
+from monocle.db.db import Change, Event, File, SimpleFile, Commit
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -352,7 +352,9 @@ class PRsFetcher(object):
         raw = self.gql.query(qdata % kwargs)["data"]["repository"]["pullRequest"]
         return (raw, self.extract_objects([raw], _dumper))
 
-    def extract_objects(self, prs: List[Dict], dumper=None) -> List[Change]:
+    def extract_objects(
+        self, prs: List[Dict], dumper=None
+    ) -> List[Union[Change, Event]]:
         def get_login(data):
             if data and "login" in data and data["login"]:
                 return data["login"]
@@ -383,13 +385,13 @@ class PRsFetcher(object):
                 }
             )
 
-        def extract_pr_objects(pr: Dict) -> List[Change]:
+        def extract_pr_objects(pr: Dict) -> List[Union[Change, Event]]:
             if "commits" not in pr:
                 pr["commits"] = {"edges": []}
             if "edges" not in pr["commits"]:
                 pr["commits"]["edges"] = []
 
-            objects: List[Change] = []
+            objects: List[Union[Change, Event]] = []
 
             change: Dict[str, Any] = {}
             change["_type"] = "Change"
@@ -481,7 +483,7 @@ class PRsFetcher(object):
                 "author": change["author"],
             }
             insert_change_attributes(obj, change)
-            objects.append(from_dict(data_class=Change, data=obj))
+            objects.append(from_dict(data_class=Event, data=obj))
 
             for comment in pr["comments"]["edges"]:
                 _comment = comment["node"]
@@ -492,7 +494,7 @@ class PRsFetcher(object):
                     "author": get_login(_comment["author"]),
                 }
                 insert_change_attributes(obj, change)
-                objects.append(from_dict(data_class=Change, data=obj))
+                objects.append(from_dict(data_class=Event, data=obj))
 
             for timelineitem in pr["timelineItems"]["edges"]:
                 _timelineitem = timelineitem["node"]
@@ -514,7 +516,7 @@ class PRsFetcher(object):
                     if change["state"] == "MERGED":
                         obj["_type"] = "ChangeMergedEvent"
                         obj["author"] = change["merged_by"]
-                objects.append(from_dict(data_class=Change, data=obj))
+                objects.append(from_dict(data_class=Event, data=obj))
 
             # Here we don't use the PullRequestCommit timeline event because
             # it does not provide more data than the current list of commits
@@ -534,10 +536,10 @@ class PRsFetcher(object):
                 if _commit["committer"].get("user"):
                     obj["author"] = get_login(_commit["committer"]["user"])
                 insert_change_attributes(obj, change)
-                objects.append(from_dict(data_class=Change, data=obj))
+                objects.append(from_dict(data_class=Event, data=obj))
             return objects
 
-        objects: List[Change] = []
+        objects: List[Union[Change, Event]] = []
         for pr in prs:
             try:
                 objects.extend(extract_pr_objects(pr))

@@ -66,19 +66,10 @@ class Commit:
 # Change and Event
 @dataclass
 class Change:
-    """A generic Change or Event record"""
+    """A Change record"""
 
     _id: str
-    _type: Literal[
-        "Change",
-        "ChangeCreatedEvent",
-        "ChangeCommentedEvent",
-        "ChangeAbandonedEvent",
-        "ChangeReviewedEvent",
-        "ChangeCommitForcePushedEvent",
-        "ChangeCommitPushedEvent",
-        "ChangeMergedEvent",
-    ]
+    _type: Literal["Change"]
     number: int
     change_id: str
     title: Optional[str]
@@ -88,19 +79,17 @@ class Change:
     additions: Optional[int]
     deletions: Optional[int]
     changed_files_count: Optional[int]
-    changed_files: List[Union[File, SimpleFile]]
+    changed_files: List[File]
     commits: Optional[List[Commit]]
     repository_prefix: str
     repository_fullname: str
     repository_shortname: str
-    author: Optional[str]  # ChangeMergedEvent on Gerrit can have an optional author
-    on_author: Optional[str]
+    author: str
     committer: Optional[str]
     merged_by: Optional[str]
     branch: str
     target_branch: str
     created_at: str  # eg. 2020-04-11T07:01:15Z
-    on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     merged_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     updated_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     closed_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
@@ -114,7 +103,37 @@ class Change:
     self_merged: Optional[bool]
 
 
-def changeToDict(change: Change) -> Dict:
+@dataclass
+class Event:
+    """An Event record"""
+
+    _id: str
+    _type: Literal[
+        "ChangeCreatedEvent",
+        "ChangeCommentedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeReviewedEvent",
+        "ChangeCommitForcePushedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeMergedEvent",
+    ]
+    created_at: str  # eg. 2020-04-11T07:01:15Z
+    author: Optional[str]  # ChangeMergedEvent on Gerrit can have an optional author
+    repository_prefix: str
+    repository_fullname: str
+    repository_shortname: str
+    branch: str
+    target_branch: str
+    number: int
+    change_id: str
+    url: Optional[str]
+    on_author: Optional[str]
+    on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
+    changed_files: List[SimpleFile]
+    approval: Optional[List[str]]
+
+
+def changeToDict(change: Union[Change, Event]) -> Dict:
     d = asdict(change)
     for k1, k2 in (("id", "_id"), ("type", "_type")):
         d[k1] = d[k2]
@@ -245,7 +264,7 @@ class ELmonocleDB:
         cluster_settings = {"transient": {"search.max_buckets": 100000}}
         self.es.cluster.put_settings(body=cluster_settings)
 
-    def update(self, source_it: List[Change]) -> None:
+    def update(self, source_it: List[Union[Change, Event]]) -> None:
         def gen(it):
             for _source in it:
                 if isinstance(_source, Change):

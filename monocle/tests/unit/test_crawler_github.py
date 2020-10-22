@@ -18,9 +18,9 @@ from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
-from typing import List
+from typing import List, Union
 
-from monocle.db.db import Change, changeToDict
+from monocle.db.db import Change, Event, changeToDict
 from monocle.github import pullrequest
 
 from .common import load_change
@@ -34,7 +34,7 @@ class TestGithubCrawler(unittest.TestCase):
         input_pr, xtrd_ref = load_change(name)
 
         pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
-        xtrd: List[Change] = pr_fetcher.extract_objects([input_pr], None)
+        xtrd: List[Union[Change, Event]] = pr_fetcher.extract_objects([input_pr], None)
 
         ddiff = DeepDiff(
             xtrd_ref, list(map(lambda x: changeToDict(x), xtrd)), ignore_order=True

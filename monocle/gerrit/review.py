@@ -24,10 +24,10 @@ import re
 from dacite import from_dict
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 from monocle import utils
-from monocle.db.db import Change, File, SimpleFile, Commit
+from monocle.db.db import Change, Event, File, SimpleFile, Commit
 
 
 name = "gerrit_crawler"
@@ -118,7 +118,7 @@ class ReviewesFetcher(object):
                 break
         return reviews
 
-    def extract_objects(self, reviewes, dumper=None) -> List[Change]:
+    def extract_objects(self, reviewes, dumper=None) -> List[Union[Change, Event]]:
         def timedelta(start, end):
             start = utils.is8601_to_dt(start)
             end = utils.is8601_to_dt(end)
@@ -142,8 +142,8 @@ class ReviewesFetcher(object):
                 }
             )
 
-        def extract_pr_objects(review) -> List[Change]:
-            objects: List[Change] = []
+        def extract_pr_objects(review) -> List[Union[Change, Event]]:
+            objects: List[Union[Change, Event]] = []
             change = {
                 "_type": "Change",
                 "_id": review["id"],
@@ -280,7 +280,7 @@ class ReviewesFetcher(object):
                 "author": change["author"],
             }
             insert_change_attributes(obj, change)
-            objects.append(from_dict(data_class=Change, data=obj))
+            objects.append(from_dict(data_class=Event, data=obj))
 
             if change["state"] in ("MERGED", "CLOSED"):
                 obj = {
@@ -295,7 +295,7 @@ class ReviewesFetcher(object):
                     "author": change.get("merged_by"),
                 }
                 insert_change_attributes(obj, change)
-                objects.append(from_dict(data_class=Change, data=obj))
+                objects.append(from_dict(data_class=Event, data=obj))
 
             for comment in review["messages"]:
                 if comment["message"].startswith("Uploaded patch set "):
@@ -310,7 +310,7 @@ class ReviewesFetcher(object):
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(from_dict(data_class=Change, data=obj))
+                    objects.append(from_dict(data_class=Event, data=obj))
                     continue
 
                 # Here we apply a regexp to ensure the message contains a message
@@ -330,7 +330,7 @@ class ReviewesFetcher(object):
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(from_dict(data_class=Change, data=obj))
+                    objects.append(from_dict(data_class=Event, data=obj))
 
                 approval_match = self.approval_re.match(comment["message"])
                 if approval_match:
@@ -348,11 +348,11 @@ class ReviewesFetcher(object):
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(from_dict(data_class=Change, data=obj))
+                    objects.append(from_dict(data_class=Event, data=obj))
 
             return objects
 
-        objects: List[Change] = []
+        objects: List[Union[Change, Event]] = []
         for review in reviewes:
             try:
                 objects.extend(extract_pr_objects(review))
