@@ -20,7 +20,7 @@ from deepdiff import DeepDiff
 
 from typing import List, Union
 
-from monocle.db.db import Change, Event, changeToDict
+from monocle.db.db import Change, Event, change_or_event_to_dict
 from monocle.github import pullrequest
 
 from .common import load_change
@@ -37,7 +37,9 @@ class TestGithubCrawler(unittest.TestCase):
         xtrd: List[Union[Change, Event]] = pr_fetcher.extract_objects([input_pr], None)
 
         ddiff = DeepDiff(
-            xtrd_ref, list(map(lambda x: changeToDict(x), xtrd)), ignore_order=True
+            xtrd_ref,
+            list(map(lambda x: change_or_event_to_dict(x), xtrd)),
+            ignore_order=True,
         )
         if ddiff:
             raise DiffException(ddiff)

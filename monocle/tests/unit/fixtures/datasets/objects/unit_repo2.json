@@ -57,6 +57,9 @@
     "number": 2,
     "change_id": "unit@repo2@1",
     "url": "https://tests.com/unit/repo2/pull/2",
+    "changed_files": [
+        {"path": "path/to/file1.txt"},
+        {"path": "path/to/file1.txt"}],
     "on_author": "jane",
     "on_created_at": "2020-01-03T01:00:00Z"
   },
@@ -73,6 +76,9 @@
     "number": 2,
     "change_id": "unit@repo2@2",
     "url": "https://tests.com/unit/repo2/pull/2",
+    "changed_files": [
+        {"path": "path/to/file1.txt"},
+        {"path": "path/to/file1.txt"}],
     "on_author": "jane",
     "on_created_at": "2020-01-03T01:00:00Z"
   },
@@ -89,6 +95,9 @@
     "number": 2,
     "change_id": "unit@repo2@2",
     "url": "https://tests.com/unit/repo2/pull/2",
+    "changed_files": [
+        {"path": "path/to/file1.txt"},
+        {"path": "path/to/file1.txt"}],
     "on_author": "jane",
     "on_created_at": "2020-01-03T01:00:00Z"
   },
@@ -97,7 +106,7 @@
     "id": "c2_e4",
     "created_at": "2020-01-05T13:00:00Z",
     "author": "steve",
-    "approval": "CHANGES_REQUESTED",
+    "approval": ["CHANGES_REQUESTED"],
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo2",
     "repository_shortname": "repo2",
@@ -106,6 +115,9 @@
     "number": 2,
     "change_id": "unit@repo2@1",
     "url": "https://tests.com/unit/repo2/pull/2",
+    "changed_files": [
+        {"path": "path/to/file1.txt"},
+        {"path": "path/to/file1.txt"}],
     "on_author": "jane",
     "on_created_at": "2020-01-03T01:00:00Z"
   },
@@ -162,6 +174,8 @@
     "number": 3,
     "change_id": "unit@repo2@3",
     "url": "https://tests.com/unit/repo2/pull/3",
+    "changed_files": [
+        {"path": "path/to/script.sh"}],
     "on_author": "jane",
     "on_created_at": "2020-01-05T01:00:00Z"
   },
@@ -170,7 +184,7 @@
     "id": "c3_e2",
     "created_at": "2020-01-05T17:00:00Z",
     "author": "john",
-    "approval": "APPROVED",
+    "approval": ["APPROVED"],
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo2",
     "repository_shortname": "repo2",
@@ -179,6 +193,8 @@
     "number": 3,
     "change_id": "unit@repo2@3",
     "url": "https://tests.com/unit/repo2/pull/3",
+    "changed_files": [
+        {"path": "path/to/script.sh"}],
     "on_author": "jane",
     "on_created_at": "2020-01-05T01:00:00Z"
   },
@@ -195,6 +211,8 @@
     "number": 3,
     "change_id": "unit@repo2@3",
     "url": "https://tests.com/unit/repo2/pull/3",
+    "changed_files": [
+        {"path": "path/to/script.sh"}],
     "on_author": "jane",
     "on_created_at": "2020-01-05T01:00:00Z"
   },
@@ -249,6 +267,8 @@
     "number": 4,
     "change_id": "unit@repo2@4",
     "url": "https://tests.com/unit/repo2/pull/4",
+    "changed_files": [
+        {"path": "path/to/backend.py"}],
     "on_author": "steve",
     "on_created_at": "2020-01-06T01:00:00Z"
   },
@@ -265,6 +285,8 @@
     "number": 4,
     "change_id": "unit@repo2@4",
     "url": "https://tests.com/unit/repo2/pull/4",
+    "changed_files": [
+        {"path": "path/to/backend.py"}],
     "on_author": "steve",
     "on_created_at": "2020-01-06T01:00:00Z"
   }

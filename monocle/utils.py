@@ -22,15 +22,7 @@ from datetime import timezone
 from datetime import datetime
 from datetime import timedelta
 
-events_list = [
-    "ChangeCreatedEvent",
-    "ChangeAbandonedEvent",
-    "ChangeMergedEvent",
-    "ChangeCommentedEvent",
-    "ChangeReviewedEvent",
-    "ChangeCommitPushedEvent",
-    "ChangeCommitForcePushedEvent",
-]
+from typing import List
 
 
 def utcnow():
@@ -176,6 +168,18 @@ def enhance_changes(changes):
     return changes
 
 
+def get_events_list() -> List[str]:
+    return [
+        "ChangeCreatedEvent",
+        "ChangeAbandonedEvent",
+        "ChangeMergedEvent",
+        "ChangeCommentedEvent",
+        "ChangeReviewedEvent",
+        "ChangeCommitPushedEvent",
+        "ChangeCommitForcePushedEvent",
+    ]
+
+
 def set_params(input):
     def getter(attr, default):
         if isinstance(input, dict):
@@ -189,7 +193,7 @@ def set_params(input):
     params["on_cc_gte"] = date_to_epoch_ml(getter("on_cc_gte", None))
     params["on_cc_lte"] = end_of_day_to_epoch_ml(getter("on_cc_gte", None))
     params["ec_same_date"] = getter("ec_same_date", False)
-    params["etype"] = getter("type", ",".join(events_list)).split(",")
+    params["etype"] = getter("type", ",".join(get_events_list())).split(",")
     params["exclude_authors"] = getter("exclude_authors", None)
     params["authors"] = getter("authors", None)
     params["approvals"] = getter("approvals", None)

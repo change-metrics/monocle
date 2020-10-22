@@ -21,12 +21,15 @@ import time
 from typing import List, Optional, Literal, Dict, Union
 from dataclasses import dataclass, asdict
 
+from dacite import from_dict
+
 from elasticsearch.helpers import bulk
 from elasticsearch.helpers import scan
 from elasticsearch import client
 from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
+from monocle.utils import get_events_list
 
 CHANGE_PREFIX = "monocle.changes."
 
@@ -133,13 +136,26 @@ class Event:
     approval: Optional[List[str]]
 
 
-def changeToDict(change: Union[Change, Event]) -> Dict:
+def change_or_event_to_dict(change: Union[Change, Event]) -> Dict:
     d = asdict(change)
     for k1, k2 in (("id", "_id"), ("type", "_type")):
         d[k1] = d[k2]
         del d[k2]
     # Remove None attributes
     return dict([(k, v) for k, v in d.items() if v is not None])
+
+
+def dict_to_change_or_event(d: Dict) -> Union[Change, Event]:
+    _type = d["type"]
+    for k1, k2 in (("id", "_id"), ("type", "_type")):
+        d[k2] = d[k1]
+        del d[k1]
+    if _type == "Change":
+        return from_dict(data_class=Change, data=d)
+    elif _type in get_events_list():
+        return from_dict(data_class=Event, data=d)
+    else:
+        raise Exception("Unknown DB item id: %s" % _type)
 
 
 class ELmonocleDB:
@@ -267,10 +283,7 @@ class ELmonocleDB:
     def update(self, source_it: List[Union[Change, Event]]) -> None:
         def gen(it):
             for _source in it:
-                if isinstance(_source, Change):
-                    source = changeToDict(_source)
-                else:
-                    source = _source
+                source = change_or_event_to_dict(_source)
                 d = {}
                 d["_index"] = self.index
                 d["_op_type"] = "update"

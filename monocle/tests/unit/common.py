@@ -20,6 +20,8 @@ import pprint
 
 from typing import Tuple, Dict, List, Any
 
+from monocle.db.db import dict_to_change_or_event
+
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
 DATASETS = os.path.join(FIXTURES_DIR, "datasets")
 
@@ -36,8 +38,9 @@ def load_change(name: str) -> Tuple[Dict, List[Dict]]:
     return input_pr, xtrd_ref
 
 
-def index_dataset(eldb, name):
-    data = load_dataset(name)
+def index_dataset(eldb, name) -> None:
+    _data: List[Dict] = load_dataset(name)
+    data = list(map(lambda x: dict_to_change_or_event(x), _data))
     eldb.update(data)
 
 
