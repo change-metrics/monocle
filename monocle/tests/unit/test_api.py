@@ -25,10 +25,10 @@ from .common import index_dataset
 
 
 class TestWebAPI(unittest.TestCase):
-    prefix = 'monocle.test.'
-    index1 = 'monocle-unittest-1'
-    index2 = 'monocle-unittest-2'
-    datasets = ['objects/unit_repo1.json']
+    prefix = "monocle.test."
+    index1 = "monocle-unittest-1"
+    index2 = "monocle-unittest-2"
+    datasets = ["objects/unit_repo1.json"]
 
     @classmethod
     def setUpClass(cls):
@@ -51,14 +51,14 @@ class TestWebAPI(unittest.TestCase):
 
     def setUp(self):
         webapp.CHANGE_PREFIX = self.prefix
-        webapp.app.config['TESTING'] = True
+        webapp.app.config["TESTING"] = True
         self.client = webapp.app.test_client()
         config_data = {
             "tenants": [
                 {
                     # Private index
                     "index": self.index1,
-                    "users": ['jane', 'john'],
+                    "users": ["jane", "john"],
                 },
                 {
                     # Public index
@@ -70,14 +70,14 @@ class TestWebAPI(unittest.TestCase):
 
     def test_get_indices(self):
         "Test indices endpoint"
-        resp = self.client.get('/api/0/indices')
+        resp = self.client.get("/api/0/indices")
         self.assertListEqual(["monocle-unittest-2"], json.loads(resp.data))
 
     def test_get_indices_with_acl(self):
         "Test indices endpoint with acl"
         with self.client.session_transaction() as sess:
-            sess['username'] = 'jane'
-        resp = self.client.get('/api/0/indices')
+            sess["username"] = "jane"
+        resp = self.client.get("/api/0/indices")
         self.assertListEqual(
             ["monocle-unittest-1", "monocle-unittest-2"], json.loads(resp.data)
         )
@@ -85,23 +85,23 @@ class TestWebAPI(unittest.TestCase):
     def test_query(self):
         "Test we can run query via the api"
         resp = self.client.get(
-            '/api/0/query/count_events?index=%s&repository=.*' % self.index2
+            "/api/0/query/count_events?index=%s&repository=.*" % self.index2
         )
         self.assertEqual(5, json.loads(resp.data))
 
     def test_query_with_acl(self):
         "Test we can run query via the api with acl"
         resp = self.client.get(
-            '/api/0/query/count_events?index=%s&repository=.*' % self.index1
+            "/api/0/query/count_events?index=%s&repository=.*" % self.index1
         )
         self.assertEqual(403, resp.status_code)
         with self.client.session_transaction() as sess:
-            sess['username'] = 'jane'
+            sess["username"] = "jane"
         resp = self.client.get(
-            '/api/0/query/count_events?index=%s&repository=.*' % self.index1
+            "/api/0/query/count_events?index=%s&repository=.*" % self.index1
         )
         self.assertEqual(5, json.loads(resp.data))
         resp = self.client.get(
-            '/api/0/query/count_events?index=%s&repository=.*' % self.index2
+            "/api/0/query/count_events?index=%s&repository=.*" % self.index2
         )
         self.assertEqual(5, json.loads(resp.data))

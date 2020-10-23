@@ -31,15 +31,15 @@ class TestDetector(unittest.TestCase):
         d = Detector()
 
         change = {
-            'title': 'A text PR',
-            'text': 'This PR fix the issue https://bugs.demo.net/1749',
+            "title": "A text PR",
+            "text": "This PR fix the issue https://bugs.demo.net/1749",
         }
 
         # Test #1 style
         d.issue_tracker_extract_links(change)
-        self.assertTrue(change['has_issue_tracker_links'])
-        expected = [['https://bugs.demo.net/1749', 'https://bugs.demo.net/1749']]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        self.assertTrue(change["has_issue_tracker_links"])
+        expected = [["https://bugs.demo.net/1749", "https://bugs.demo.net/1749"]]
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)
 
@@ -50,66 +50,66 @@ class TestDetector(unittest.TestCase):
         d = Detector()
 
         change = {
-            'repository_prefix': 'change-metrics',
-            'repository_shortname': 'monocle',
-            'title': 'A text PR',
-            'text': 'This PR fix the issue #1',
+            "repository_prefix": "change-metrics",
+            "repository_shortname": "monocle",
+            "title": "A text PR",
+            "text": "This PR fix the issue #1",
         }
 
         # Test #1 style
         d.issue_tracker_extract_links(change)
-        self.assertTrue(change['has_issue_tracker_links'])
-        expected = [['#1', 'https://github.com/change-metrics/monocle/issues/1']]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        self.assertTrue(change["has_issue_tracker_links"])
+        expected = [["#1", "https://github.com/change-metrics/monocle/issues/1"]]
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)
 
-        change['title'] = 'A PR that fix #1'
-        change['text'] = 'But also fix #2\n and #31'
+        change["title"] = "A PR that fix #1"
+        change["text"] = "But also fix #2\n and #31"
 
         d.issue_tracker_extract_links(change)
-        self.assertTrue(change['has_issue_tracker_links'])
+        self.assertTrue(change["has_issue_tracker_links"])
         expected = [
-            ['#1', 'https://github.com/change-metrics/monocle/issues/1'],
-            ['#2', 'https://github.com/change-metrics/monocle/issues/2'],
-            ['#31', 'https://github.com/change-metrics/monocle/issues/31'],
+            ["#1", "https://github.com/change-metrics/monocle/issues/1"],
+            ["#2", "https://github.com/change-metrics/monocle/issues/2"],
+            ["#31", "https://github.com/change-metrics/monocle/issues/31"],
         ]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
-        if ddiff:
-            raise DiffException(ddiff)
-
-        # Test full issue url style
-        change['title'] = 'A test PR'
-        change['text'] = 'This fix https://github.com/change-metrics/monocle/issues/1'
-        d.issue_tracker_extract_links(change)
-        expected = [
-            [
-                'https://github.com/change-metrics/monocle/issues/1',
-                'https://github.com/change-metrics/monocle/issues/1',
-            ]
-        ]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)
 
         # Test full issue url style
-        change['text'] = 'This fix change-metrics/cross-repo#12'
+        change["title"] = "A test PR"
+        change["text"] = "This fix https://github.com/change-metrics/monocle/issues/1"
         d.issue_tracker_extract_links(change)
         expected = [
             [
-                'change-metrics/cross-repo#12',
-                'https://github.com/change-metrics/cross-repo/issues/12',
+                "https://github.com/change-metrics/monocle/issues/1",
+                "https://github.com/change-metrics/monocle/issues/1",
             ]
         ]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
+        if ddiff:
+            raise DiffException(ddiff)
+
+        # Test full issue url style
+        change["text"] = "This fix change-metrics/cross-repo#12"
+        d.issue_tracker_extract_links(change)
+        expected = [
+            [
+                "change-metrics/cross-repo#12",
+                "https://github.com/change-metrics/cross-repo/issues/12",
+            ]
+        ]
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)
 
         # Test GH-42 style
-        change['text'] = 'This fix GH-12'
+        change["text"] = "This fix GH-12"
         d.issue_tracker_extract_links(change)
-        expected = [['GH-12', 'https://github.com/change-metrics/monocle/issues/12']]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        expected = [["GH-12", "https://github.com/change-metrics/monocle/issues/12"]]
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)
 
@@ -120,21 +120,21 @@ class TestDetector(unittest.TestCase):
         d = Detector()
 
         change = {
-            'repository_prefix': 'change-metrics',
-            'repository_shortname': 'monocle',
-            'title': 'A text PR',
-            'text': 'This PR fix the issue https://yoyo.atlassian.net/browse/YOYO-1749',
+            "repository_prefix": "change-metrics",
+            "repository_shortname": "monocle",
+            "title": "A text PR",
+            "text": "This PR fix the issue https://yoyo.atlassian.net/browse/YOYO-1749",
         }
 
         # Test #1 style
         d.issue_tracker_extract_links(change)
-        self.assertTrue(change['has_issue_tracker_links'])
+        self.assertTrue(change["has_issue_tracker_links"])
         expected = [
             [
-                'https://yoyo.atlassian.net/browse/YOYO-1749',
-                'https://yoyo.atlassian.net/browse/YOYO-1749',
+                "https://yoyo.atlassian.net/browse/YOYO-1749",
+                "https://yoyo.atlassian.net/browse/YOYO-1749",
             ]
         ]
-        ddiff = DeepDiff(change['issue_tracker_links'], expected)
+        ddiff = DeepDiff(change["issue_tracker_links"], expected)
         if ddiff:
             raise DiffException(ddiff)

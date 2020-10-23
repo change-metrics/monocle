@@ -18,6 +18,9 @@ from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
 
+from typing import List, Union
+
+from monocle.db.db import Change, Event, change_or_event_to_dict
 from monocle.gerrit import review
 
 from .common import load_change
@@ -31,9 +34,13 @@ class TestGerritCrawler(unittest.TestCase):
         input_review, xtrd_ref = load_change(name)
 
         rf = review.ReviewesFetcher(base_url, None)
-        xtrd = rf.extract_objects([input_review], None)
+        xtrd: List[Union[Change, Event]] = rf.extract_objects([input_review], None)
 
-        ddiff = DeepDiff(xtrd_ref, xtrd, ignore_order=True)
+        ddiff = DeepDiff(
+            xtrd_ref,
+            [change_or_event_to_dict(x) for x in xtrd],
+            ignore_order=True,
+        )
         if ddiff:
             raise DiffException(ddiff)
 
@@ -42,17 +49,17 @@ class TestGerritCrawler(unittest.TestCase):
         Gerrit crawler extracts https:__gerrit-review.googlesource.com-gerrit-246332
         """
         self.extract_and_compare(
-            'https://gerrit-review.googlesource.com',
-            'https:__gerrit-review.googlesource.com-gerrit-246332',
+            "https://gerrit-review.googlesource.com",
+            "https:__gerrit-review.googlesource.com-gerrit-246332",
         )
 
     def test_load_buggy(self):
         """
         Gerrit crawler extracts buggy reviews
         """
-        rf = review.ReviewesFetcher('https://gerrit.org', None)
+        rf = review.ReviewesFetcher("https://gerrit.org", None)
         datasets_dir = Path(DATASETS)
-        for fn in datasets_dir.glob('gerrit_*.json'):
+        for fn in datasets_dir.glob("gerrit_*.json"):
             dataset = load_dataset(fn)
             xtrd = rf.extract_objects([dataset], None)
             self.assertNotEqual(xtrd, [])

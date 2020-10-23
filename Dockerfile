@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-FROM python:3.7-alpine
+FROM python:3.8-alpine
 WORKDIR /code
 COPY requirements.txt requirements.txt
 RUN apk --no-cache add build-base libffi-dev openssl-dev
@@ -23,7 +23,7 @@ COPY monocle monocle
 COPY setup.py setup.py
 RUN python setup.py install
 
-FROM python:3.7-alpine
+FROM python:3.8-alpine
 RUN mkdir /etc/monocle
-COPY --from=0 /usr/local/lib/python3.7/site-packages /usr/local/lib/python3.7/site-packages
+COPY --from=0 /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 COPY --from=0 /usr/local/bin /usr/local/bin

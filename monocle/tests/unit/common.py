@@ -18,24 +18,29 @@ import os
 import json
 import pprint
 
-FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fixtures')
-DATASETS = os.path.join(FIXTURES_DIR, 'datasets')
+from typing import Tuple, Dict, List, Any
+
+from monocle.db.db import dict_to_change_or_event
+
+FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
+DATASETS = os.path.join(FIXTURES_DIR, "datasets")
 
 
-def load_dataset(name):
+def load_dataset(name: str) -> Any:
     with open(os.path.join(DATASETS, name)) as fd:
         data = json.load(fd)
     return data
 
 
-def load_change(name):
-    input_pr = load_dataset(name + '_raw.json')
-    xtrd_ref = load_dataset(name + '_extracted.json')
+def load_change(name: str) -> Tuple[Dict, List[Dict]]:
+    input_pr = load_dataset(name + "_raw.json")
+    xtrd_ref = load_dataset(name + "_extracted.json")
     return input_pr, xtrd_ref
 
 
-def index_dataset(eldb, name):
-    data = load_dataset(name)
+def index_dataset(eldb, name) -> None:
+    _data: List[Dict] = load_dataset(name)
+    data = [dict_to_change_or_event(x) for x in _data]
     eldb.update(data)
 
 
@@ -45,4 +50,4 @@ class DiffException(Exception):
         self.message = pprint.pformat(message)
 
     def __str__(self):
-        return '\n\n' + self.message
+        return "\n\n" + self.message

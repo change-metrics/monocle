@@ -26,7 +26,7 @@ class RepositoriesFetcher(object):
 
     def __init__(self, gql):
         self.gql = gql
-        self.qdata = '''{
+        self.qdata = """{
           organization(login: "%(login)s") {
             repositories(
                 isFork: false
@@ -45,30 +45,30 @@ class RepositoriesFetcher(object):
               }
             }}
           }
-        }'''
+        }"""
 
     def get(self, login):
         repositories = []
-        kwargs = {'login': login, 'after': ''}
+        kwargs = {"login": login, "after": ""}
 
         def _getPage(kwargs):
             data = self.gql.query(self.qdata % kwargs)
-            if 'data' not in data:
-                self.log.error('No data collected: %s' % data)
+            if "data" not in data:
+                self.log.error("No data collected: %s" % data)
                 return False
-            for repository in data['data']['organization']['repositories']['edges']:
+            for repository in data["data"]["organization"]["repositories"]["edges"]:
                 # That's curious but the API return some forked repos
                 # even isFork is at false. We can detect the bogus result
                 # with nameWithOwner.
                 # So here let's remove the bogus ones !
-                if not repository['node']['nameWithOwner'].startswith(login + '/'):
+                if not repository["node"]["nameWithOwner"].startswith(login + "/"):
                     continue
-                if repository['node']['isArchived']:
+                if repository["node"]["isArchived"]:
                     continue
-                repositories.append(repository['node'])
-            pageInfo = data['data']['organization']['repositories']['pageInfo']
-            if pageInfo['hasNextPage']:
-                kwargs['after'] = 'after: "%s"' % pageInfo['endCursor']
+                repositories.append(repository["node"])
+            pageInfo = data["data"]["organization"]["repositories"]["pageInfo"]
+            if pageInfo["hasNextPage"]:
+                kwargs["after"] = 'after: "%s"' % pageInfo["endCursor"]
                 return True
             else:
                 return False
@@ -80,18 +80,18 @@ class RepositoriesFetcher(object):
         return repositories
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     from pprint import pprint
     from monocle.github import graphql
 
-    parser = argparse.ArgumentParser(prog='organization')
+    parser = argparse.ArgumentParser(prog="organization")
 
-    parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--token', help='A Github personal token')
-    parser.add_argument('--org', help='A Github organization', required=True)
-    parser.add_argument('--app-id', help='The Github app-id')
-    parser.add_argument('--app-key-path', help='A Github app key path')
+    parser.add_argument("--loglevel", help="logging level", default="INFO")
+    parser.add_argument("--token", help="A Github personal token")
+    parser.add_argument("--org", help="A Github organization", required=True)
+    parser.add_argument("--app-id", help="The Github app-id")
+    parser.add_argument("--app-key-path", help="A Github app key path")
 
     args = parser.parse_args()
 

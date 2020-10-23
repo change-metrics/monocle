@@ -20,13 +20,18 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 import json
 import re
+
+from dacite import from_dict
+
 from dataclasses import dataclass
+from typing import List, Union
 
 from monocle import utils
+from monocle.db.db import Change, Event, File, SimpleFile, Commit
 
 
-name = 'gerrit_crawler'
-help = 'Gerrit Crawler to fetch Reviews events'
+name = "gerrit_crawler"
+help = "Gerrit Crawler to fetch Reviews events"
 
 
 @dataclass
@@ -52,7 +57,7 @@ class ReviewesFetcher(object):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
         self.insecure = insecure
-        self.status_map = {'NEW': 'OPEN', 'MERGED': 'MERGED', 'ABANDONED': 'CLOSED'}
+        self.status_map = {"NEW": "OPEN", "MERGED": "MERGED", "ABANDONED": "CLOSED"}
         self.message_re = re.compile(r"Patch Set \d+:( [^ ]+[+-]\d+)?\n\n.+")
         self.approval_re = re.compile(r"Patch Set \d+:(?P<approval> [^ ]+[+-]\d+)\n.*")
         self.auth = None
@@ -60,7 +65,7 @@ class ReviewesFetcher(object):
             self.auth = HTTPBasicAuth(login, password)
 
     def convert_date_for_db(self, str_date):
-        cdate = datetime.strptime(str_date[:-10], '%Y-%m-%d %H:%M:%S').strftime(
+        cdate = datetime.strptime(str_date[:-10], "%Y-%m-%d %H:%M:%S").strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
         return cdate
@@ -74,23 +79,23 @@ class ReviewesFetcher(object):
         else:
             request_params = "?q=change:%s" % change
         for option in [
-            'MESSAGES',
-            'DETAILED_ACCOUNTS',
-            'DETAILED_LABELS',
-            'CURRENT_REVISION',
-            'CURRENT_FILES',
-            'CURRENT_COMMIT',
+            "MESSAGES",
+            "DETAILED_ACCOUNTS",
+            "DETAILED_LABELS",
+            "CURRENT_REVISION",
+            "CURRENT_FILES",
+            "CURRENT_COMMIT",
         ]:
-            request_params += '&o=%s' % option
+            request_params += "&o=%s" % option
         count = 100
         start_after = 0
         reviews = []
         while True:
             urlpath = (
                 self.base_url
-                + '/changes/'
+                + "/changes/"
                 + request_params
-                + '&n=%s&start=%s' % (count, start_after)
+                + "&n=%s&start=%s" % (count, start_after)
             )
             self.log.info("query: %s" % urlpath)
             try:
@@ -99,13 +104,13 @@ class ReviewesFetcher(object):
                 )
                 response.raise_for_status()
             except Exception:
-                self.log.exception('Unable to process the Gerrit query request')
+                self.log.exception("Unable to process the Gerrit query request")
                 break
             _reviewes = json.loads(response.text[4:])
             if _reviewes:
                 reviews.extend(_reviewes)
                 self.log.info("read %s reviews from the api" % len(reviews))
-                if reviews[-1].get('_more_changes'):
+                if reviews[-1].get("_more_changes"):
                     start_after = len(reviews)
                 else:
                     break
@@ -113,7 +118,7 @@ class ReviewesFetcher(object):
                 break
         return reviews
 
-    def extract_objects(self, reviewes, dumper=None):
+    def extract_objects(self, reviewes, dumper=None) -> List[Union[Change, Event]]:
         def timedelta(start, end):
             start = utils.is8601_to_dt(start)
             end = utils.is8601_to_dt(end)
@@ -122,231 +127,239 @@ class ReviewesFetcher(object):
         def insert_change_attributes(obj, change):
             obj.update(
                 {
-                    'repository_prefix': change['repository_prefix'],
-                    'repository_fullname': change['repository_fullname'],
-                    'repository_shortname': change['repository_shortname'],
-                    'branch': change['branch'],
-                    'target_branch': change['target_branch'],
-                    'number': change['number'],
-                    'change_id': change['change_id'],
-                    'on_author': change['author'],
-                    'on_created_at': change['created_at'],
-                    'changed_files': [
-                        {'path': cf['path']} for cf in change['changed_files']
+                    "repository_prefix": change["repository_prefix"],
+                    "repository_fullname": change["repository_fullname"],
+                    "repository_shortname": change["repository_shortname"],
+                    "branch": change["branch"],
+                    "target_branch": change["target_branch"],
+                    "number": change["number"],
+                    "change_id": change["change_id"],
+                    "on_author": change["author"],
+                    "on_created_at": change["created_at"],
+                    "changed_files": [
+                        SimpleFile(path=cf.path) for cf in change["changed_files"]
                     ],
                 }
             )
 
-        def extract_pr_objects(review):
-            objects = []
+        def extract_pr_objects(review) -> List[Union[Change, Event]]:
+            objects: List[Union[Change, Event]] = []
             change = {
-                'type': 'Change',
-                'id': review['id'],
-                'draft': False,
-                'number': review['_number'],
-                'target_branch': review['branch'],
-                'branch': review['branch'],
-                'repository_prefix': review['project'].split('/')[0],
-                'repository_fullname': review['project'],
-                'repository_shortname': "/".join(review['project'].split('/')[1:]),
-                'url': '%s/%s' % (self.base_url, review['_number']),
-                'author': "%s/%s"
-                % (review['owner'].get('name'), review['owner']['_account_id']),
-                'title': review['subject'],
-                'updated_at': self.convert_date_for_db(review['updated']),
-                'created_at': self.convert_date_for_db(review['created']),
-                'merged_at': (
-                    self.convert_date_for_db(review.get('submitted'))
-                    if review.get('submitted')
-                    else self.convert_date_for_db(review['updated'])
+                "_type": "Change",
+                "_id": review["id"],
+                "draft": False,
+                "number": review["_number"],
+                "target_branch": review["branch"],
+                "branch": review["branch"],
+                "repository_prefix": review["project"].split("/")[0],
+                "repository_fullname": review["project"],
+                "repository_shortname": "/".join(review["project"].split("/")[1:]),
+                "url": "%s/%s" % (self.base_url, review["_number"]),
+                "author": "%s/%s"
+                % (review["owner"].get("name"), review["owner"]["_account_id"]),
+                "title": review["subject"],
+                "updated_at": self.convert_date_for_db(review["updated"]),
+                "created_at": self.convert_date_for_db(review["created"]),
+                "merged_at": (
+                    self.convert_date_for_db(review.get("submitted"))
+                    if review.get("submitted")
+                    else self.convert_date_for_db(review["updated"])
                 ),
-                'self_merged': None,
-                'merged_by': None,
-                'approval': [],
-                'state': self.status_map[review['status']],
+                "self_merged": None,
+                "merged_by": None,
+                "approval": [],
+                "state": self.status_map[review["status"]],
                 # Note(fbo): Gerrit labels must be handled as Review
-                'labels': [],
+                "labels": [],
                 # Note(fbo): Only one assignee possible by review on Gerrit
-                'assignees': (
+                "assignees": (
                     [
                         "%s/%s"
                         % (
-                            review['assignee'].get('name'),
-                            review['assignee']['_account_id'],
+                            review["assignee"].get("name"),
+                            review["assignee"]["_account_id"],
                         )
                     ]
-                    if review.get('assignee')
+                    if review.get("assignee")
                     else []
                 ),
-                'additions': review['insertions'],
-                'deletions': review['deletions'],
-                'commits': [],
+                "additions": review["insertions"],
+                "deletions": review["deletions"],
+                "commits": [],
                 # Gerrit review is one commit by review
-                'commit_count': 1,
-                'changed_files_count': len(
-                    list(review['revisions'].values())[0]['files'].keys()
+                "commit_count": 1,
+                "changed_files_count": len(
+                    list(review["revisions"].values())[0]["files"].keys()
                 ),
-                'changed_files': [
-                    {
-                        'additions': details.get('lines_inserted', 0),
-                        'deletions': details.get('lines_deleted', 0),
-                        'path': path,
-                    }
-                    for path, details in list(review['revisions'].values())[0][
-                        'files'
+                "changed_files": [
+                    File(
+                        additions=details.get("lines_inserted", 0),
+                        deletions=details.get("lines_deleted", 0),
+                        path=path,
+                    )
+                    for path, details in list(review["revisions"].values())[0][
+                        "files"
                     ].items()
                 ],
-                'text': list(review['revisions'].values())[0]['commit']['message'],
+                "text": list(review["revisions"].values())[0]["commit"]["message"],
             }
-            change['change_id'] = "%s@%s" % (
-                change['repository_fullname'].replace('/', '@'),
-                change['number'],
+            change["change_id"] = "%s@%s" % (
+                change["repository_fullname"].replace("/", "@"),
+                change["number"],
             )
 
             # Extract commit data
-            _commit = list(review['revisions'].values())[0]
+            _commit = list(review["revisions"].values())[0]
             obj = {}
-            obj['sha'] = list(review['revisions'].keys())[0]
-            obj['title'] = _commit['commit']['subject']
-            obj['additions'] = change['additions']
-            obj['deletions'] = change['deletions']
-            obj['authored_at'] = self.convert_date_for_db(
-                _commit['commit']['author']['date']
+            obj["sha"] = list(review["revisions"].keys())[0]
+            obj["title"] = _commit["commit"]["subject"]
+            obj["additions"] = change["additions"]
+            obj["deletions"] = change["deletions"]
+            obj["authored_at"] = self.convert_date_for_db(
+                _commit["commit"]["author"]["date"]
             )
-            obj['committed_at'] = self.convert_date_for_db(
-                _commit['commit']['committer']['date']
+            obj["committed_at"] = self.convert_date_for_db(
+                _commit["commit"]["committer"]["date"]
             )
-            obj['author'] = change['author']
-            obj['committer'] = "%s/%s" % (
-                _commit['uploader'].get('name'),
-                _commit['uploader']['_account_id'],
+            obj["author"] = change["author"]
+            obj["committer"] = "%s/%s" % (
+                _commit["uploader"].get("name"),
+                _commit["uploader"]["_account_id"],
             )
-            change['commits'].append(obj)
+            change["commits"].append(from_dict(data_class=Commit, data=obj))
 
             # Note(fbo): Gerrit 3.x does not return the mergeable status
-            mergeable = review.get('mergeable')
+            mergeable = review.get("mergeable")
             if mergeable is True:
-                change['mergeable'] = 'MERGEABLE'
+                change["mergeable"] = "MERGEABLE"
             elif mergeable is False:
-                change['mergeable'] = 'CONFLICTING'
+                change["mergeable"] = "CONFLICTING"
             else:
-                change['mergeable'] = 'UNKNOWN'
+                change["mergeable"] = "UNKNOWN"
 
-            if change['state'] == 'CLOSED':
+            if change["state"] == "CLOSED":
                 # CLOSED means abandoned in that context
                 # use updated_at date as closed_at
-                change['closed_at'] = change['updated_at']
-            if change['state'] == 'MERGED':
-                change['closed_at'] = change['merged_at']
-            if change['state'] in ('CLOSED', 'MERGED'):
-                change['duration'] = timedelta(
-                    change['closed_at'], change['created_at']
+                change["closed_at"] = change["updated_at"]
+            if change["state"] == "MERGED":
+                change["closed_at"] = change["merged_at"]
+            if change["state"] in ("CLOSED", "MERGED"):
+                change["duration"] = timedelta(
+                    change["closed_at"], change["created_at"]
                 )
-            if change['state'] == 'MERGED':
+            if change["state"] == "MERGED":
                 if "submitter" in review:
                     # Gerrit 2.x seems to not have that submitter attribute
-                    change['merged_by'] = "%s/%s" % (
-                        review['submitter'].get('name'),
-                        review['submitter']['_account_id'],
+                    change["merged_by"] = "%s/%s" % (
+                        review["submitter"].get("name"),
+                        review["submitter"]["_account_id"],
                     )
-                    change['self_merged'] = change['merged_by'] == change['author']
-            objects.append(change)
+                    change["self_merged"] = change["merged_by"] == change["author"]
+            for label in review["labels"]:
+                for _review in review["labels"][label].get("all", []):
+                    # If the date field exists then it means a review label
+                    # has been set by someone
+                    if "date" in _review and "value" in _review:
+                        change["approval"].append(
+                            "%s%s"
+                            % (
+                                label,
+                                (
+                                    "+%s" % _review["value"]
+                                    if not str(_review["value"]).startswith("-")
+                                    else _review["value"]
+                                ),
+                            )
+                        )
+            objects.append(from_dict(data_class=Change, data=change))
+
             obj = {
-                'type': 'ChangeCreatedEvent',
-                'id': 'CCE' + change['id'],
-                'created_at': change['created_at'],
-                'author': change['author'],
+                "_type": "ChangeCreatedEvent",
+                "_id": "CCE" + change["_id"],
+                "created_at": change["created_at"],
+                "author": change["author"],
             }
             insert_change_attributes(obj, change)
-            objects.append(obj)
-            if change['state'] in ('MERGED', 'CLOSED'):
+            objects.append(from_dict(data_class=Event, data=obj))
+
+            if change["state"] in ("MERGED", "CLOSED"):
                 obj = {
-                    'type': 'ChangeMergedEvent'
-                    if change['state'] == 'MERGED'
-                    else 'ChangeAbandonedEvent',
-                    'id': 'CCLE' + change['id'],
-                    'created_at': change['closed_at'],
+                    "_type": "ChangeMergedEvent"
+                    if change["state"] == "MERGED"
+                    else "ChangeAbandonedEvent",
+                    "_id": "CCLE" + change["_id"],
+                    "created_at": change["closed_at"],
                     # Gerrit does not tell about closed_by so here
                     # let's set None except if merged_by
                     # is set (Gerrit 3.x tells about the author of a merge)
-                    'author': change.get('merged_by'),
+                    "author": change.get("merged_by"),
                 }
                 insert_change_attributes(obj, change)
-                objects.append(obj)
-            for comment in review['messages']:
-                if comment['message'].startswith('Uploaded patch set '):
+                objects.append(from_dict(data_class=Event, data=obj))
+
+            for comment in review["messages"]:
+                if comment["message"].startswith("Uploaded patch set "):
                     obj = {
-                        'type': 'ChangeCommitPushedEvent',
-                        'id': comment['id'],
-                        'created_at': self.convert_date_for_db(comment['date']),
-                        'author': "%s/%s"
+                        "_type": "ChangeCommitPushedEvent",
+                        "_id": comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "author": "%s/%s"
                         % (
-                            comment['author'].get('name'),
-                            comment['author']['_account_id'],
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(obj)
+                    objects.append(from_dict(data_class=Event, data=obj))
                     continue
+
                 # Here we apply a regexp to ensure the message contains a message
                 # body. Inline comments match as well because they add in the message
                 # body the string '(X comments)'.
                 # Gerrit reports votes as comments, this regexp not match if
                 # the message only match a vote such as Code-Review+1 w/o further comments
-                if self.message_re.match(comment['message']):
+                if self.message_re.match(comment["message"]):
                     obj = {
-                        'type': 'ChangeCommentedEvent',
-                        'id': comment['id'],
-                        'created_at': self.convert_date_for_db(comment['date']),
-                        'author': "%s/%s"
+                        "_type": "ChangeCommentedEvent",
+                        "_id": comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "author": "%s/%s"
                         % (
-                            comment['author'].get('name'),
-                            comment['author']['_account_id'],
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(obj)
-                approval_match = self.approval_re.match(comment['message'])
+                    objects.append(from_dict(data_class=Event, data=obj))
+
+                approval_match = self.approval_re.match(comment["message"])
                 if approval_match:
                     obj = {
-                        'type': 'ChangeReviewedEvent',
-                        'id': "approval_%s" % comment['id'],
-                        'created_at': self.convert_date_for_db(comment['date']),
-                        'approval': approval_match.groupdict().get('approval').strip(),
-                        'author': "%s/%s"
+                        "_type": "ChangeReviewedEvent",
+                        "_id": "approval_%s" % comment["id"],
+                        "created_at": self.convert_date_for_db(comment["date"]),
+                        "approval": [
+                            approval_match.groupdict().get("approval").strip()
+                        ],
+                        "author": "%s/%s"
                         % (
-                            comment['author'].get('name'),
-                            comment['author']['_account_id'],
+                            comment["author"].get("name"),
+                            comment["author"]["_account_id"],
                         ),
                     }
                     insert_change_attributes(obj, change)
-                    objects.append(obj)
-            for label in review['labels']:
-                for _review in review['labels'][label].get('all', []):
-                    # If the date field exists then it means a review label
-                    # has been set by someone
-                    if 'date' in _review and 'value' in _review:
-                        change['approval'].append(
-                            "%s%s"
-                            % (
-                                label,
-                                (
-                                    "+%s" % _review['value']
-                                    if not str(_review['value']).startswith('-')
-                                    else _review['value']
-                                ),
-                            )
-                        )
+                    objects.append(from_dict(data_class=Event, data=obj))
+
             return objects
 
-        objects = []
+        objects: List[Union[Change, Event]] = []
         for review in reviewes:
             try:
                 objects.extend(extract_pr_objects(review))
             except Exception:
                 self.log.exception("Unable to extract Review data: %s" % review)
                 if dumper:
-                    dumper(review, 'gerrit_')
+                    dumper(review, "gerrit_")
         return objects
 
 
@@ -355,18 +368,18 @@ if __name__ == "__main__":
     import argparse
     from pprint import pprint
 
-    parser = argparse.ArgumentParser(prog='review')
+    parser = argparse.ArgumentParser(prog="review")
 
-    parser.add_argument('--loglevel', help='logging level', default='INFO')
-    parser.add_argument('--base-url', help='A Gerrit server', required=True)
-    parser.add_argument('--repository', help='The repository name', required=True)
-    parser.add_argument('--id', help='The review change id', required=True)
-    parser.add_argument('--output-dir', help='Store the dump in this directory')
+    parser.add_argument("--loglevel", help="logging level", default="INFO")
+    parser.add_argument("--base-url", help="A Gerrit server", required=True)
+    parser.add_argument("--repository", help="The repository name", required=True)
+    parser.add_argument("--id", help="The review change id", required=True)
+    parser.add_argument("--output-dir", help="Store the dump in this directory")
     parser.add_argument(
-        '--insecure', help='Bypass the HTTP X509 verification', action='store_true'
+        "--insecure", help="Bypass the HTTP X509 verification", action="store_true"
     )
-    parser.add_argument('--login', help='Login to use to authenticate')
-    parser.add_argument('--password', help='Password to use to authenticate')
+    parser.add_argument("--login", help="Login to use to authenticate")
+    parser.add_argument("--password", help="Password to use to authenticate")
 
     args = parser.parse_args()
 
@@ -391,10 +404,10 @@ if __name__ == "__main__":
         pprint([review[0], objs])
     else:
         basename = "%s-%s-%s" % (
-            args.base_url.replace('/', ('_')),
+            args.base_url.replace("/", ("_")),
             args.repository,
             args.id,
         )
         basepath = os.path.join(args.output_dir, basename)
-        json.dump(review[0], open(basepath + '_raw.json', 'w'), indent=2)
-        json.dump(objs, open(basepath + '_extracted.json', 'w'), indent=2)
+        json.dump(review[0], open(basepath + "_raw.json", "w"), indent=2)
+        json.dump(objs, open(basepath + "_extracted.json", "w"), indent=2)
