@@ -40,7 +40,7 @@ def load_change(name: str) -> Tuple[Dict, List[Dict]]:
 
 def index_dataset(eldb, name) -> None:
     _data: List[Dict] = load_dataset(name)
-    data = list(map(lambda x: dict_to_change_or_event(x), _data))
+    data = [dict_to_change_or_event(x) for x in _data]
     eldb.update(data)
 
 

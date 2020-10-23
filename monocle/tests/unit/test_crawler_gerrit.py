@@ -38,7 +38,7 @@ class TestGerritCrawler(unittest.TestCase):
 
         ddiff = DeepDiff(
             xtrd_ref,
-            list(map(lambda x: change_or_event_to_dict(x), xtrd)),
+            [change_or_event_to_dict(x) for x in xtrd],
             ignore_order=True,
         )
         if ddiff:
