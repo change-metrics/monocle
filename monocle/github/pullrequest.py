@@ -355,7 +355,7 @@ class PRsFetcher(object):
     def extract_objects(
         self, prs: List[Dict], dumper=None
     ) -> List[Union[Change, Event]]:
-        def get_login(data):
+        def get_login(data: Union[None, Dict[str, str]]) -> str:
             if data and "login" in data and data["login"]:
                 return data["login"]
             return "ghost"
@@ -470,8 +470,7 @@ class PRsFetcher(object):
                     "title": _commit["message"],
                 }
                 for k in ("author", "committer"):
-                    if _commit[k].get("user"):
-                        obj[k] = get_login(_commit[k]["user"])
+                    obj[k] = get_login(_commit[k].get("user"))
                 change["commits"].append(from_dict(data_class=Commit, data=obj))
 
             objects.append(from_dict(data_class=Change, data=change))
@@ -531,10 +530,9 @@ class PRsFetcher(object):
                     # Seems the first PR's commit get a date with None value
                     # So make sense to set the same created_at date as the
                     # change
+                    "author": get_login(_commit["committer"].get("user")),
                     "created_at": _commit.get("pushedDate") or change["created_at"],
                 }
-                if _commit["committer"].get("user"):
-                    obj["author"] = get_login(_commit["committer"]["user"])
                 insert_change_attributes(obj, change)
                 objects.append(from_dict(data_class=Event, data=obj))
             return objects
