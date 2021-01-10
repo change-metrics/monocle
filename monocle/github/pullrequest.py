@@ -421,7 +421,9 @@ class PRsFetcher(object):
             change["text"] = pr["bodyText"]
             change["additions"] = pr["additions"]
             change["deletions"] = pr["deletions"]
-            change["approval"] = [pr["reviewDecision"]]
+            change["approval"] = (
+                [pr["reviewDecision"]] if pr["reviewDecision"] else None
+            )
             change["changed_files_count"] = pr["changedFiles"]
             change["changed_files"] = []
             if pr["files"] and "edges" in pr["files"]:

@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] compute and display self_merged/created ratio.
 
 ### Changed
+
+- [api] bump Python version to 3.9.1.
+- [database] bump Elasticsearch to 7.10.1.
+
 ### Removed
 ### Fixed
 
