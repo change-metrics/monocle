@@ -44,24 +44,24 @@ class AuthorsHisto extends React.Component {
     const eventNameMapping = {
       ChangeCreatedEvent: {
         label: 'Changes authors',
-        pointBorderColor: `rgba(${createdColor},1)`,
+        pointBorderColor: 'rgba(' + createdColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${createdColor},0.4)`,
-        borderColor: `rgba(${createdColor},1)`
+        backgroundColor: 'rgba(' + createdColor + ',0.4)',
+        borderColor: 'rgba(' + createdColor + ',1)'
       },
       ChangeReviewedEvent: {
         label: 'Reviews authors',
-        pointBorderColor: `rgba(${reviewedColor},1)`,
+        pointBorderColor: 'rgba(' + reviewedColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${reviewedColor},0.4)`,
-        borderColor: `rgba(${reviewedColor},1)`
+        backgroundColor: 'rgba(' + reviewedColor + ',0.4)',
+        borderColor: 'rgba(' + reviewedColor + ',1)'
       },
       ChangeCommentedEvent: {
         label: 'Comments authors',
-        pointBorderColor: `rgba(${commentedColor},1)`,
+        pointBorderColor: 'rgba(' + commentedColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${commentedColor},0.4)`,
-        borderColor: `rgba(${commentedColor},1)`
+        backgroundColor: 'rgba(' + commentedColor + ',0.4)',
+        borderColor: 'rgba(' + commentedColor + ',1)'
       }
     }
 

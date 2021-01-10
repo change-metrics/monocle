@@ -51,7 +51,7 @@ class TopView extends React.Component {
         <Row>
           <Col>
             <ListGroup>
-              {this.props.indices.map((elt, idx) => <ListGroup.Item key={idx}><Link to={`/${elt}`}>{elt}</Link></ListGroup.Item>)}
+              {this.props.indices.map((elt, idx) => <ListGroup.Item key={idx}><Link to={'/' + elt}>{elt}</Link></ListGroup.Item>)}
             </ListGroup>
           </Col>
         </Row>
