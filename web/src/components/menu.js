@@ -30,17 +30,17 @@ const TITLE = (window.TITLE && window.TITLE !== '__TITLE__') ? window.TITLE : (p
 class IndexMenu extends React.Component {
   render () {
     const search = window.location.search
-    document.title = this.props.match.params.index ? `${TITLE} / ${this.props.match.params.index}` : TITLE
+    document.title = this.props.match.params.index ? TITLE + '/' + this.props.match.params.index : TITLE
     return (
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="mr-auto">
-          <Link className="nav-link" to={`/${this.props.match.params.index}${search}`}>Main</Link>
-          <Link className="nav-link" to={`/${this.props.match.params.index}/people${search}`}>People</Link>
-          <Link className="nav-link" to={`/${this.props.match.params.index}/repos${search}`}>Repositories</Link>
+          <Link className="nav-link" to={'/' + this.props.match.params.index + search}>Main</Link>
+          <Link className="nav-link" to={'/' + this.props.match.params.index + '/people' + search}>People</Link>
+          <Link className="nav-link" to={'/' + this.props.match.params.index + '/repos' + search}>Repositories</Link>
           <NavDropdown title="Changes" id="changes-nav-dropdown">
-            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/changes${search}`)}>Browse changes</NavDropdown.Item>
-            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/hot-changes${search}`)}>Hot changes</NavDropdown.Item>
-            <NavDropdown.Item onClick={() => this.props.history.push(`/${this.props.match.params.index}/cold-changes${search}`)}>Cold changes</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/changes' + search)}>Browse changes</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/hot-changes' + search)}>Hot changes</NavDropdown.Item>
+            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/cold-changes' + search)}>Cold changes</NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>

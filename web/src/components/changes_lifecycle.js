@@ -47,24 +47,24 @@ class ChangeLifeCycleEventsHisto extends React.Component {
     const eventNameMapping = {
       ChangeCreatedEvent: {
         label: 'Created',
-        pointBorderColor: `rgba(${createdColor},1)`,
+        pointBorderColor: 'rgba(' + createdColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${createdColor},0.4)`,
-        borderColor: `rgba(${createdColor},1)`
+        backgroundColor: 'rgba(' + createdColor + ',0.4)',
+        borderColor: 'rgba(' + createdColor + ',1)'
       },
       ChangeMergedEvent: {
         label: 'Merged',
-        pointBorderColor: `rgba(${mergedColor},1)`,
+        pointBorderColor: 'rgba(' + mergedColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${mergedColor},0.4)`,
-        borderColor: `rgba(${mergedColor},1)`
+        backgroundColor: 'rgba(' + mergedColor + ',0.4)',
+        borderColor: 'rgba(' + mergedColor + ',1)'
       },
       ChangeAbandonedEvent: {
         label: 'Abandoned',
-        pointBorderColor: `rgba(${abandonedColor},1)`,
+        pointBorderColor: 'rgba(' + abandonedColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${abandonedColor},0.4)`,
-        borderColor: `rgba(${abandonedColor},1)`
+        backgroundColor: 'rgba(' + abandonedColor + ',0.4)',
+        borderColor: 'rgba(' + abandonedColor + ',1)'
       }
     }
 
@@ -98,10 +98,10 @@ class ChangeLifeCycleEventsHisto extends React.Component {
         label: 'Updated',
         data: merged,
         lineTension: 0.5,
-        pointBorderColor: `rgba(${updatedColor},1)`,
+        pointBorderColor: 'rgba(' + updatedColor + ',1)',
         pointBackgroundColor: '#fff',
-        backgroundColor: `rgba(${updatedColor},0.4)`,
-        borderColor: `rgba(${updatedColor},1)`
+        backgroundColor: 'rgba(' + updatedColor + ',0.4)',
+        borderColor: 'rgba(' + updatedColor + ',1)'
       }
     )
     return data
@@ -183,16 +183,16 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes${this.getSearchString('OPEN')}`}>{data.opened} opened changes</Link>
+                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('OPEN')}>{data.opened} opened changes</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes${this.getSearchString('CLOSED')}`}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
+                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('CLOSED')}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes${this.getSearchString('MERGED')}`}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
+                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('MERGED')}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={`/${this.props.index}/changes${this.getSearchString('SELF-MERGED')}`}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
+                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('SELF-MERGED')}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
