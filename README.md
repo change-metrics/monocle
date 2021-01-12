@@ -61,7 +61,7 @@ The process below describes how to index changes from a GitHub repository, a ful
 ### Clone and create the needed directories
 
 ```Shell
-$ git clone https://github.com/morucci/monocle.git
+$ git clone https://github.com/change-metrics/monocle.git
 $ cd monocle
 $ mkdir data etc dump
 $ ln -s docker-compose.yml.img docker-compose.yml
