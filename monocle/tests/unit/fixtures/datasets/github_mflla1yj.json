@@ -1,0 +1,247 @@
+{
+    "id": "MDExOlB1bGxSZXF1ZXN0NDE4MjQyMDY5",
+    "updatedAt": "2020-05-15T16:04:15Z",
+    "createdAt": "2020-05-14T20:56:25Z",
+    "mergedAt": null,
+    "closedAt": null,
+    "additions": 75,
+    "deletions": 0,
+    "changedFiles": 2,
+    "title": "Add example for co-existence of klog v1 and v2",
+    "headRefName": "add-example-for-co-existence-of-klog-v1-and-v2",
+    "baseRefName": "release-1.x",
+    "bodyText": "Signed-off-by: Davanum Srinivas davanum@gmail.com\n\nWhat this PR does / why we need it:\nNow that we have v1 and v2, we need to show folks how they can deal with a codebase where both are present until dependencies can move to klog v2.\nWhich issue(s) this PR fixes (optional, in fixes #<issue number>(, fixes #<issue_number>, ...) format, will close the issue(s) when PR gets merged):\nFixes #\nSpecial notes for your reviewer:\nPlease confirm that if this PR changes any image versions, then that's the sole change this PR makes.\nRelease note:\n\nExample to show how v1 and v2 can co-exist.",
+    "state": "CLOSED",
+    "reviewDecision": null,
+    "number": 147,
+    "mergeable": "MERGEABLE",
+    "isDraft": false,
+    "labels": {
+        "edges": [
+            {
+                "node": {
+                    "name": "approved"
+                }
+            },
+            {
+                "node": {
+                    "name": "cncf-cla: yes"
+                }
+            },
+            {
+                "node": {
+                    "name": "size/M"
+                }
+            }
+        ]
+    },
+    "assignees": {
+        "edges": [
+            {
+                "node": {
+                    "login": "neolit123"
+                }
+            },
+            {
+                "node": {
+                    "login": "liggitt"
+                }
+            }
+        ]
+    },
+    "comments": {
+        "edges": [
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyODg4MjQ2OQ==",
+                    "createdAt": "2020-05-14T20:56:40Z",
+                    "author": {
+                        "login": "k8s-ci-robot"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyODg4MjkwNg==",
+                    "createdAt": "2020-05-14T20:57:37Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyODg4NjA4MQ==",
+                    "createdAt": "2020-05-14T21:04:47Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTE3NzYwOQ==",
+                    "createdAt": "2020-05-15T11:13:40Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTE3ODA4Ng==",
+                    "createdAt": "2020-05-15T11:14:49Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTIzMDQ1MA==",
+                    "createdAt": "2020-05-15T13:16:54Z",
+                    "author": {
+                        "login": "neolit123"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTIzMTQ5NQ==",
+                    "createdAt": "2020-05-15T13:19:07Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTI0MzE2OA==",
+                    "createdAt": "2020-05-15T13:42:39Z",
+                    "author": {
+                        "login": "liggitt"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDYyOTM0Mjc5NA==",
+                    "createdAt": "2020-05-15T16:04:15Z",
+                    "author": {
+                        "login": "dims"
+                    }
+                }
+            }
+        ]
+    },
+    "commits": {
+        "edges": [
+            {
+                "node": {
+                    "commit": {
+                        "oid": "1a3a79e7d6cd87b8bce2d3fd52e34d7bebbc45c8",
+                        "pushedDate": "2020-05-14T21:04:02Z",
+                        "authoredDate": "2020-05-14T20:53:49Z",
+                        "committedDate": "2020-05-14T21:03:50Z",
+                        "additions": 75,
+                        "deletions": 0,
+                        "message": "Add example for co-existence of klog v1 and v2\n\nSigned-off-by: Davanum Srinivas <davanum@gmail.com>",
+                        "author": {
+                            "user": {
+                                "login": "dims"
+                            }
+                        },
+                        "committer": {
+                            "user": {
+                                "login": "dims"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "files": {
+        "edges": [
+            {
+                "node": {
+                    "additions": 67,
+                    "deletions": 0,
+                    "path": "examples/coexist_klog_v1_and_v2/coexist_klog_v1_and_v2.go"
+                }
+            },
+            {
+                "node": {
+                    "additions": 8,
+                    "deletions": 0,
+                    "path": "examples/coexist_klog_v1_and_v2/go.mod"
+                }
+            }
+        ]
+    },
+    "timelineItems": {
+        "edges": [
+            {
+                "node": {
+                    "__typename": "HeadRefForcePushedEvent",
+                    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzMzODQxNjg3MA==",
+                    "createdAt": "2020-05-14T20:58:56Z",
+                    "actor": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "__typename": "HeadRefForcePushedEvent",
+                    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzMzODQyMDg5Nw==",
+                    "createdAt": "2020-05-14T21:00:15Z",
+                    "actor": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "__typename": "HeadRefForcePushedEvent",
+                    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzMzODQzMjUyMA==",
+                    "createdAt": "2020-05-14T21:04:02Z",
+                    "actor": {
+                        "login": "dims"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "__typename": "PullRequestReview",
+                    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NDEyNjM3Mzc4",
+                    "createdAt": "2020-05-15T13:14:52Z",
+                    "state": "COMMENTED",
+                    "author": {
+                        "login": "liggitt"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "__typename": "ClosedEvent",
+                    "id": "MDExOkNsb3NlZEV2ZW50MzM0MTU1MTYzNQ==",
+                    "createdAt": "2020-05-15T16:04:18Z",
+                    "actor": {
+                        "login": "dims"
+                    }
+                }
+            }
+        ]
+    },
+    "author": {
+        "login": "dims"
+    },
+    "mergedBy": null,
+    "repository": {
+        "owner": {
+            "login": "kubernetes"
+        },
+        "name": "klog"
+    }
+}

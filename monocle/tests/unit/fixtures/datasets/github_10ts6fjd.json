@@ -1,0 +1,144 @@
+{
+    "id": "MDExOlB1bGxSZXF1ZXN0NDM2NjY4ODY1",
+    "updatedAt": "2020-06-18T19:39:19Z",
+    "createdAt": "2020-06-18T17:41:22Z",
+    "mergedAt": null,
+    "closedAt": null,
+    "additions": 4,
+    "deletions": 1,
+    "changedFiles": 2,
+    "title": "Cherry-pick #19275 to 7.x: Add librpm.so.9 to the names dlopen searches",
+    "headRefName": "backport_19275_7.x",
+    "baseRefName": "7.x",
+    "bodyText": "Cherry-pick of PR #19275 to 7.x branch. Original message:\nWhat does this PR do?\nFedora 31 and 32 use librpm.so.9, but Auditbeat's system/package dataset doesn't try to load\nthis version of the library.\nWhy is it important?\nIt makes the system/package dataset work on newer Fedora releases.\nChecklist\n\n My code follows the style guidelines of this project\n I have commented my code, particularly in hard-to-understand areas\n I have made corresponding changes to the documentation\n I have made corresponding change to the default configuration files\n I have added tests that prove my fix is effective or that my feature works\n I have added an entry in CHANGELOG.next.asciidoc or CHANGELOG-developer.next.asciidoc.\n\nRelated issues\n\nFixes #19253",
+    "state": "CLOSED",
+    "reviewDecision": "APPROVED",
+    "number": 19285,
+    "mergeable": "UNKNOWN",
+    "isDraft": false,
+    "labels": {
+        "edges": [
+            {
+                "node": {
+                    "name": "Team:SIEM"
+                }
+            },
+            {
+                "node": {
+                    "name": "[zube]: In Review"
+                }
+            },
+            {
+                "node": {
+                    "name": "backport"
+                }
+            }
+        ]
+    },
+    "assignees": {
+        "edges": []
+    },
+    "comments": {
+        "edges": [
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDY0NjIxMDUyMA==",
+                    "createdAt": "2020-06-18T17:41:24Z",
+                    "author": {
+                        "login": "elasticmachine"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "id": "MDEyOklzc3VlQ29tbWVudDY0NjI2NzMzNw==",
+                    "createdAt": "2020-06-18T19:39:18Z",
+                    "author": {
+                        "login": "elasticmachine"
+                    }
+                }
+            }
+        ]
+    },
+    "commits": {
+        "totalCount": 1,
+        "edges": [
+            {
+                "node": {
+                    "commit": {
+                        "oid": "27b0ca074f8c80822b5a61d9fe4b5c7f20e5fdf9",
+                        "pushedDate": "2020-06-18T17:41:22Z",
+                        "authoredDate": "2020-06-18T17:40:29Z",
+                        "committedDate": "2020-06-18T17:41:12Z",
+                        "additions": 4,
+                        "deletions": 1,
+                        "message": "Add librpm.so.9 to the names dlopen searches (#19275)\n\nFedora 31 and 32 use librpm.so.9, but Auditbeat's system/package dataset doesn't try to load\r\nthis version of the library.\r\n\r\nFixes #19253\n\n(cherry picked from commit 6fedaef96ea8619b3b2f771f3752b791b2528962)",
+                        "author": {
+                            "user": {
+                                "login": "andrewkroh"
+                            }
+                        },
+                        "committer": {
+                            "user": {
+                                "login": "andrewkroh"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "files": {
+        "edges": [
+            {
+                "node": {
+                    "additions": 1,
+                    "deletions": 0,
+                    "path": "CHANGELOG.next.asciidoc"
+                }
+            },
+            {
+                "node": {
+                    "additions": 3,
+                    "deletions": 1,
+                    "path": "x-pack/auditbeat/module/system/package/rpm_linux.go"
+                }
+            }
+        ]
+    },
+    "timelineItems": {
+        "edges": [
+            {
+                "node": {
+                    "__typename": "PullRequestReview",
+                    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3NDMzNTI0OTk4",
+                    "createdAt": "2020-06-18T18:04:00Z",
+                    "state": "APPROVED",
+                    "author": {
+                        "login": "leehinman"
+                    }
+                }
+            },
+            {
+                "node": {
+                    "__typename": "ClosedEvent",
+                    "id": "MDExOkNsb3NlZEV2ZW50MzQ2MDA3Njc2MA==",
+                    "createdAt": "2020-06-18T21:11:00Z",
+                    "actor": {
+                        "login": "andrewkroh"
+                    }
+                }
+            }
+        ]
+    },
+    "author": {
+        "login": "andrewkroh"
+    },
+    "mergedBy": null,
+    "repository": {
+        "owner": {
+            "login": "elastic"
+        },
+        "name": "beats"
+    }
+}
