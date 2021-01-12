@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
+
 from pathlib import Path
 import unittest
 from deepdiff import DeepDiff
@@ -30,6 +32,15 @@ from .common import load_dataset
 
 
 class TestGithubCrawler(unittest.TestCase):
+    def setUp(self):
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - " + "%(levelname)s - %(message)s",
+        )
+        self.log = logging.getLogger(__name__)
+        # log to stderr
+        self.log.addHandler(logging.StreamHandler())
+
     def extract_and_compare(self, name: str) -> None:
         input_pr, xtrd_ref = load_change(name)
 
@@ -63,6 +74,7 @@ class TestGithubCrawler(unittest.TestCase):
         pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
         datasets_dir = Path(DATASETS)
         for fn in datasets_dir.glob("github_*.json"):
+            self.log.info("Loading buggy PR from %s " % fn)
             dataset = load_dataset(fn)
             xtrd = pr_fetcher.extract_objects([dataset], None)
             self.assertNotEqual(xtrd, [])

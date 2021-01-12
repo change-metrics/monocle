@@ -435,7 +435,6 @@ class PRsFetcher(object):
                             path=fd["node"]["path"],
                         )
                     )
-            change["commit_count"] = int(pr["commits"]["totalCount"])
             if pr["mergedBy"]:
                 change["merged_by"] = get_login(pr["mergedBy"])
                 change["self_merged"] = change["merged_by"] == change["author"]
@@ -449,7 +448,8 @@ class PRsFetcher(object):
             change["state"] = pr["state"]
             if pr["state"] in ("CLOSED", "MERGED"):
                 change["duration"] = timedelta(
-                    change["closed_at"], change["created_at"]
+                    change.get("closed_at") or change.get("updated_at"),
+                    change["created_at"],
                 )
             change["mergeable"] = pr["mergeable"]
             change["labels"] = list(
@@ -459,9 +459,8 @@ class PRsFetcher(object):
                 map(lambda n: get_login(n["node"]), pr["assignees"]["edges"])
             )
             change["commits"] = []
-            for commit in pr["commits"]["edges"]:
-                if not commit["node"]:
-                    continue
+            commits = [c for c in pr["commits"]["edges"] if c["node"]]
+            for commit in commits:
                 _commit = commit["node"]["commit"]
                 obj = {
                     "sha": _commit["oid"],
@@ -474,6 +473,11 @@ class PRsFetcher(object):
                 for k in ("author", "committer"):
                     obj[k] = get_login(_commit[k].get("user"))
                 change["commits"].append(from_dict(data_class=Commit, data=obj))
+
+            if pr["commits"].get("totalCount") is not None:
+                change["commit_count"] = int(pr["commits"].get("totalCount"))
+            else:
+                change["commit_count"] = len(commits)
 
             objects.append(from_dict(data_class=Change, data=change))
 
@@ -488,6 +492,8 @@ class PRsFetcher(object):
 
             for comment in pr["comments"]["edges"]:
                 _comment = comment["node"]
+                if not _comment:
+                    continue
                 obj = {
                     "_type": "ChangeCommentedEvent",
                     "_id": _comment["id"],
@@ -522,9 +528,7 @@ class PRsFetcher(object):
             # Here we don't use the PullRequestCommit timeline event because
             # it does not provide more data than the current list of commits
             # of the pull request
-            for commit in pr["commits"]["edges"]:
-                if not commit["node"]:
-                    continue
+            for commit in commits:
                 _commit = commit["node"]["commit"]
                 obj = {
                     "_type": "ChangeCommitPushedEvent",
