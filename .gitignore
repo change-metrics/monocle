@@ -1,4 +1,5 @@
 build
+.vscode
 dist
 *.py[oc]
 monocle.egg-info

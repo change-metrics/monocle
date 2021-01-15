@@ -16,7 +16,7 @@ parserOptions:
   sourceType: module
 plugins:
   - react
-rules: {}
+rules: {'camelcase': 'off'}
 settings:
   react:
     # Regex for Component Factory to use,
