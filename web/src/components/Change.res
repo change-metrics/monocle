@@ -14,15 +14,67 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-type change = {\"type": string}
+%%raw(`
+import Interweave from 'interweave'
+import { UrlMatcher } from 'interweave-autolink'
+`)
+
+module Utils = {
+  let subInText = (text: string, mrs: list<(string, string)>): string =>
+    mrs->List.reduce(text, (acc, mr) => {
+      let (m, r) = mr
+      acc |> Js.String.replace(m, r)
+    })
+}
+
+type issue_tracker_link = array<string>
+
+type change = {
+  \"type": string,
+  issue_tracker_links: array<issue_tracker_link>,
+}
 
 let keepChanges = (items: array<change>) => items->Array.keep(item => item.\"type" === "Change")
 let keepEvents = (items: array<change>) => items->Array.keep(item => item.\"type" != "Change")
 
+let replaceTextToLink = (text: string, itls: array<issue_tracker_link>): string => {
+  let mrs =
+    itls
+    ->Array.map(itl => (
+      itl->Array.getExn(0),
+      Js.String.concatMany(
+        ["<a href='", itl->Array.getExn(1), "'>", itl->Array.getExn(0), "</a>"],
+        "",
+      ),
+    ))
+    ->Belt.List.fromArray
+  text->Utils.subInText(mrs)
+}
+
+module InterweaveText = {
+  let makeInterweave = %raw(`
+    function (content) {
+      return <Interweave
+        content={content}
+        disableLineBreaks={false}
+        matchers={[new UrlMatcher('url')]} />
+      }
+  `)
+  @react.component
+  let make = (~content: string) => {
+    content
+    ->Js.String2.split("\n")
+    ->Belt.Array.mapWithIndex((idx, line) =>
+      <div key={idx->Belt.Int.toString}> {makeInterweave(line)} </div>
+    )
+    ->React.array
+  }
+}
+
 %%raw(`
 /* eslint-disable import/first */
 
-import React from 'react'
+// import React from 'react'
 
 import { connect } from 'react-redux'
 
@@ -37,8 +89,6 @@ import OverlayTrigger from 'react-bootstrap/OverlayTrigger'
 import PropTypes from 'prop-types'
 import { withRouter } from 'react-router-dom'
 
-import Interweave from 'interweave'
-import { UrlMatcher } from 'interweave-autolink'
 
 import moment from 'moment'
 
@@ -74,10 +124,9 @@ class ChangeTable extends React.Component {
       </Popover.Content>
     </Popover>
     const labels = change.labels.map((l, idx) => <Badge variant="warning" key={idx}>{l}</Badge>)
-    change.issue_tracker_links.forEach(e => {
-      change.title = change.title.replace(e[0], '<a href=' + e[1] + '>' + e[0] + '</a>')
-      change.text = change.text.replace(e[0], '<a href=' + e[1] + '>' + e[0] + '</a>')
-    })
+    change.title = replaceTextToLink(change.title, change.issue_tracker_links)
+    change.text = replaceTextToLink(change.text, change.issue_tracker_links)
+
 
     return (
       <Row>
@@ -85,10 +134,7 @@ class ChangeTable extends React.Component {
           <Card>
             <Card.Header>
               <Card.Title>
-                <Interweave
-                  content={change.title}
-                  disableLineBreaks={false}
-                  matchers={[new UrlMatcher('url')]} />
+                {InterweaveText.makeInterweave(change.title)}
                 <br />
                 <br />
                 <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseApprovalBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
@@ -122,15 +168,7 @@ class ChangeTable extends React.Component {
               </Table>
             </Card.Header>
             <Card.Body>
-              {change.text.split('\n').map((line, idx) => {
-                return <Interweave
-                  key={idx}
-                  tagName="div"
-                  content={line}
-                  disableLineBreaks={false}
-                  matchers={[new UrlMatcher('url')]} />
-              })
-              }
+              <InterweaveText.make content={change.text} />
               <Row>
                 <Col>
                   <TimelineGraph data={events} />
