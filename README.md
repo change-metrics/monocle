@@ -77,8 +77,9 @@ to [Configuration of the containers](#configuration-of-the-containers).
 
 The `config.yaml` file is used by the crawler and api services.
 
-If you want to crawl GitHub repositories, generate a personal access
+If you want to crawl GitHub public repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
+In case of GitHub private repositories, see the [GitHub private repositories](#github-private-repositories) section.
 
 Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to replace `<github_token>` by your personal access token:
 
@@ -236,6 +237,12 @@ for the matching installation and use it to query the GitHub API.
 
 1. Save the private key into `etc/app_key.rsa`
 2. Into the `.env` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
+
+### GitHub private repositories
+
+To let Monocle crawl and index privates repositories, either you must use a
+[GitHub Application](#github-application) or you must generate a Personal Access Token
+with the "repo" scope.
 
 ### Full configuration file example
 
