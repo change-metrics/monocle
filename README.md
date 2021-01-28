@@ -77,8 +77,9 @@ to [Configuration of the containers](#configuration-of-the-containers).
 
 The `config.yaml` file is used by the crawler and api services.
 
-If you want to crawl GitHub repositories, generate a personal access
+If you want to crawl GitHub public repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
+In case of GitHub private repositories, see the [GitHub private repositories](#github-private-repositories) section.
 
 Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to replace `<github_token>` by your personal access token:
 
