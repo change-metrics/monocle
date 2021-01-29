@@ -46,11 +46,11 @@ class TestGerritCrawler(unittest.TestCase):
 
     def test_extract_and_compare_review1(self):
         """
-        Gerrit crawler extracts https__gerrit-review.googlesource.com-gerrit-246332
+        Gerrit crawler extracts gerrit-review.googlesource.com-gerrit-246332
         """
         self.extract_and_compare(
             "https://gerrit-review.googlesource.com",
-            "https__gerrit-review.googlesource.com-gerrit-246332",
+            "gerrit-review.googlesource.com-gerrit-246332",
         )
 
     def test_load_buggy(self):
