@@ -1,5 +1,5 @@
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import socket
 import sys
+import time
 import yaml
 
 from typing import Dict, List
@@ -79,6 +81,16 @@ else:
         globals()["indexes_acl"] = config.build_index_acl(
             yaml.safe_load(open(config_path))
         )
+
+
+@app.route("/api/0/health", methods=["GET"])
+def health():
+    data = {
+        "hostname": socket.gethostname(),
+        "status": "success",
+        "timestamp": time.time(),
+    }
+    return jsonify(data)
 
 
 @app.route("/api/0/login", methods=["GET"])
