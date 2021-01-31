@@ -45,7 +45,9 @@ class TestGithubCrawler(unittest.TestCase):
         input_pr, xtrd_ref = load_change(name)
 
         pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
-        xtrd: List[Union[Change, Event]] = pr_fetcher.extract_objects([input_pr], None)
+        xtrd: List[Union[Change, Event]] = pr_fetcher.extract_objects(
+            [input_pr], lambda x, y: None
+        )
 
         ddiff = DeepDiff(
             xtrd_ref,
@@ -76,5 +78,5 @@ class TestGithubCrawler(unittest.TestCase):
         for fn in datasets_dir.glob("github_*.json"):
             self.log.info("Loading buggy PR from %s " % fn)
             dataset = load_dataset(fn)
-            xtrd = pr_fetcher.extract_objects([dataset], None)
+            xtrd = pr_fetcher.extract_objects([dataset], lambda x, y: None)
             self.assertNotEqual(xtrd, [])

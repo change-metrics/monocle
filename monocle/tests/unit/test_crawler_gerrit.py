@@ -34,7 +34,9 @@ class TestGerritCrawler(unittest.TestCase):
         input_review, xtrd_ref = load_change(name)
 
         rf = review.ReviewesFetcher(base_url, None)
-        xtrd: List[Union[Change, Event]] = rf.extract_objects([input_review], None)
+        xtrd: List[Union[Change, Event]] = rf.extract_objects(
+            [input_review], lambda x, y: None
+        )
 
         ddiff = DeepDiff(
             xtrd_ref,
@@ -61,5 +63,5 @@ class TestGerritCrawler(unittest.TestCase):
         datasets_dir = Path(DATASETS)
         for fn in datasets_dir.glob("gerrit_*.json"):
             dataset = load_dataset(fn)
-            xtrd = rf.extract_objects([dataset], None)
+            xtrd = rf.extract_objects([dataset], lambda x, y: None)
             self.assertNotEqual(xtrd, [])

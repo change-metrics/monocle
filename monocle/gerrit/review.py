@@ -24,7 +24,7 @@ import re
 from dacite import from_dict
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Union, Optional, Callable
 
 from monocle import utils
 from monocle.db.db import (
@@ -35,6 +35,7 @@ from monocle.db.db import (
     Commit,
     change_or_event_to_dict,
 )
+from monocle.basecrawler import BaseCrawler, RawChange
 
 
 name = "gerrit_crawler"
@@ -55,7 +56,7 @@ class GerritCrawlerArgs(object):
     prefix: str
 
 
-class ReviewesFetcher(object):
+class ReviewesFetcher(BaseCrawler):
 
     log = logging.getLogger(__name__)
 
@@ -85,14 +86,16 @@ class ReviewesFetcher(object):
         )
         return cdate
 
-    def get(self, updated_since, change=None):
-        if not change:
+    def get(
+        self, updated_since: str, change_id: Optional[str] = None
+    ) -> List[RawChange]:
+        if not change_id:
             request_params = "?q=after:%s+project:%s" % (
                 utils.is8601_to_dt(updated_since).strftime("%Y-%m-%d"),
                 self.repository_prefix,
             )
         else:
-            request_params = "?q=change:%s" % change
+            request_params = "?q=change:%s" % change_id
         for option in [
             "MESSAGES",
             "DETAILED_ACCOUNTS",
@@ -136,7 +139,11 @@ class ReviewesFetcher(object):
                 review["project"] = self.prefix + review["project"]
         return reviews
 
-    def extract_objects(self, reviewes, dumper=None) -> List[Union[Change, Event]]:
+    def extract_objects(
+        self,
+        changes: List[RawChange],
+        dumper: Callable,
+    ) -> List[Union[Change, Event]]:
         def timedelta(start, end):
             start = utils.is8601_to_dt(start)
             end = utils.is8601_to_dt(end)
@@ -386,13 +393,12 @@ class ReviewesFetcher(object):
             return objects
 
         objects: List[Union[Change, Event]] = []
-        for review in reviewes:
+        for review in changes:
             try:
                 objects.extend(extract_pr_objects(review))
             except Exception:
                 self.log.exception("Unable to extract Review data: %s" % review)
-                if dumper:
-                    dumper(review, "gerrit_")
+                dumper(review, "gerrit_")
         return objects
 
 
