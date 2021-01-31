@@ -27,7 +27,14 @@ from dataclasses import dataclass
 from typing import List, Union
 
 from monocle import utils
-from monocle.db.db import Change, Event, File, SimpleFile, Commit
+from monocle.db.db import (
+    Change,
+    Event,
+    File,
+    SimpleFile,
+    Commit,
+    change_or_event_to_dict,
+)
 
 
 name = "gerrit_crawler"
@@ -155,6 +162,21 @@ class ReviewesFetcher(object):
 
         def extract_pr_objects(review) -> List[Union[Change, Event]]:
             objects: List[Union[Change, Event]] = []
+
+            def get_pfs(name):
+                fullname = name
+                if self.prefix:
+                    name = name.replace(self.prefix, "")
+                prefix = name.split("/")[0]
+                if self.prefix:
+                    prefix = self.prefix + prefix
+                shortname = "/".join(name.split("/")[1:]) if "/" in name else name
+                return prefix, fullname, shortname
+
+            repository_prefix, repository_fullname, repository_shortname = get_pfs(
+                review["project"]
+            )
+
             change = {
                 "_type": "Change",
                 "_id": review["id"],
@@ -162,9 +184,9 @@ class ReviewesFetcher(object):
                 "number": review["_number"],
                 "target_branch": review["branch"],
                 "branch": review["branch"],
-                "repository_prefix": "/".join(review["project"].split("/")[:-1]),
-                "repository_fullname": review["project"],
-                "repository_shortname": review["project"].split("/")[-1],
+                "repository_prefix": repository_prefix,
+                "repository_fullname": repository_fullname,
+                "repository_shortname": repository_shortname,
                 "url": "%s/%s" % (self.base_url, review["_number"]),
                 "author": "%s/%s"
                 % (review["owner"].get("name"), review["owner"]["_account_id"]),
@@ -376,7 +398,6 @@ class ReviewesFetcher(object):
 
 if __name__ == "__main__":
     import argparse
-    import dataclasses
     import os
     from pprint import pprint
 
@@ -425,7 +446,7 @@ if __name__ == "__main__":
         basepath = os.path.join(args.output_dir, basename)
         json.dump(review[0], open(basepath + "_raw.json", "w"), indent=2)
         json.dump(
-            [dataclasses.asdict(o) for o in objs],
+            [change_or_event_to_dict(o) for o in objs],
             open(basepath + "_extracted.json", "w"),
             indent=2,
         )
