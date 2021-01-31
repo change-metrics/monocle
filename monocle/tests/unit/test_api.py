@@ -1,5 +1,5 @@
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -67,6 +67,12 @@ class TestWebAPI(unittest.TestCase):
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
+
+    def test_health(self):
+        "Test health endpoint"
+        resp = self.client.get("/api/0/health")
+        for key in ("hostname", "status", "timestamp"):
+            self.assertIn(key, json.loads(resp.data))
 
     def test_get_indices(self):
         "Test indices endpoint"
