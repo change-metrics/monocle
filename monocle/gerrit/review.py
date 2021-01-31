@@ -1,5 +1,5 @@
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -27,7 +27,14 @@ from dataclasses import dataclass
 from typing import List, Union
 
 from monocle import utils
-from monocle.db.db import Change, Event, File, SimpleFile, Commit
+from monocle.db.db import (
+    Change,
+    Event,
+    File,
+    SimpleFile,
+    Commit,
+    change_or_event_to_dict,
+)
 
 
 name = "gerrit_crawler"
@@ -45,6 +52,7 @@ class GerritCrawlerArgs(object):
     insecure: bool
     login: str
     password: str
+    prefix: str
 
 
 class ReviewesFetcher(object):
@@ -52,7 +60,13 @@ class ReviewesFetcher(object):
     log = logging.getLogger(__name__)
 
     def __init__(
-        self, base_url, repository_prefix, insecure=False, login=None, password=None
+        self,
+        base_url,
+        repository_prefix,
+        insecure=False,
+        login=None,
+        password=None,
+        prefix=None,
     ):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
@@ -63,6 +77,7 @@ class ReviewesFetcher(object):
         self.auth = None
         if login:
             self.auth = HTTPBasicAuth(login, password)
+        self.prefix = prefix
 
     def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(str_date[:-10], "%Y-%m-%d %H:%M:%S").strftime(
@@ -116,6 +131,9 @@ class ReviewesFetcher(object):
                     break
             else:
                 break
+        if self.prefix:
+            for review in reviews:
+                review["project"] = self.prefix + review["project"]
         return reviews
 
     def extract_objects(self, reviewes, dumper=None) -> List[Union[Change, Event]]:
@@ -144,6 +162,21 @@ class ReviewesFetcher(object):
 
         def extract_pr_objects(review) -> List[Union[Change, Event]]:
             objects: List[Union[Change, Event]] = []
+
+            def get_pfs(name):
+                fullname = name
+                if self.prefix:
+                    name = name.replace(self.prefix, "")
+                prefix = name.split("/")[0]
+                if self.prefix:
+                    prefix = self.prefix + prefix
+                shortname = "/".join(name.split("/")[1:]) if "/" in name else name
+                return prefix, fullname, shortname
+
+            repository_prefix, repository_fullname, repository_shortname = get_pfs(
+                review["project"]
+            )
+
             change = {
                 "_type": "Change",
                 "_id": review["id"],
@@ -151,9 +184,9 @@ class ReviewesFetcher(object):
                 "number": review["_number"],
                 "target_branch": review["branch"],
                 "branch": review["branch"],
-                "repository_prefix": review["project"].split("/")[0],
-                "repository_fullname": review["project"],
-                "repository_shortname": "/".join(review["project"].split("/")[1:]),
+                "repository_prefix": repository_prefix,
+                "repository_fullname": repository_fullname,
+                "repository_shortname": repository_shortname,
                 "url": "%s/%s" % (self.base_url, review["_number"]),
                 "author": "%s/%s"
                 % (review["owner"].get("name"), review["owner"]["_account_id"]),
@@ -364,8 +397,8 @@ class ReviewesFetcher(object):
 
 
 if __name__ == "__main__":
-    import os
     import argparse
+    import os
     from pprint import pprint
 
     parser = argparse.ArgumentParser(prog="review")
@@ -380,6 +413,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--login", help="Login to use to authenticate")
     parser.add_argument("--password", help="Password to use to authenticate")
+    parser.add_argument("--prefix", help="Project prefix to prepend")
 
     args = parser.parse_args()
 
@@ -397,6 +431,7 @@ if __name__ == "__main__":
         insecure=args.insecure,
         login=args.login,
         password=args.password,
+        prefix=args.prefix,
     )
     review = rf.get("2020-01-01 00:00:00", args.id)
     objs = rf.extract_objects(review, _dumper)
@@ -404,10 +439,14 @@ if __name__ == "__main__":
         pprint([review[0], objs])
     else:
         basename = "%s-%s-%s" % (
-            args.base_url.replace("/", ("_")),
-            args.repository,
+            args.base_url.replace("/", ("_")).replace(":", ""),
+            args.repository.replace("/", "_"),
             args.id,
         )
         basepath = os.path.join(args.output_dir, basename)
         json.dump(review[0], open(basepath + "_raw.json", "w"), indent=2)
-        json.dump(objs, open(basepath + "_extracted.json", "w"), indent=2)
+        json.dump(
+            [change_or_event_to_dict(o) for o in objs],
+            open(basepath + "_extracted.json", "w"),
+            indent=2,
+        )
