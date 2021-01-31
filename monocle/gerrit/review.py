@@ -1,5 +1,5 @@
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -364,8 +364,9 @@ class ReviewesFetcher(object):
 
 
 if __name__ == "__main__":
-    import os
     import argparse
+    import dataclasses
+    import os
     from pprint import pprint
 
     parser = argparse.ArgumentParser(prog="review")
@@ -410,4 +411,8 @@ if __name__ == "__main__":
         )
         basepath = os.path.join(args.output_dir, basename)
         json.dump(review[0], open(basepath + "_raw.json", "w"), indent=2)
-        json.dump(objs, open(basepath + "_extracted.json", "w"), indent=2)
+        json.dump(
+            [dataclasses.asdict(o) for o in objs],
+            open(basepath + "_extracted.json", "w"),
+            indent=2,
+        )
