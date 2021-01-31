@@ -405,8 +405,8 @@ if __name__ == "__main__":
         pprint([review[0], objs])
     else:
         basename = "%s-%s-%s" % (
-            args.base_url.replace("/", ("_")),
-            args.repository,
+            args.base_url.replace("/", ("_")).replace(":", ""),
+            args.repository.replace("/", "_"),
             args.id,
         )
         basepath = os.path.join(args.output_dir, basename)
