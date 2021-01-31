@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] Add ui integration for the self-merged changed.
 - [web] compute and display self_merged/created ratio.
 - [docker-compose] added restart and health-check directives for api and elastic.
+- [crawler] add an optional prefix for gerrit projects (configured in
+  the config file).
 
 ### Changed
 

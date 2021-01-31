@@ -56,13 +56,16 @@ class Runner(object):
                 args.repository,
             )
         elif args.command == "gerrit_crawler":
-            self.repository_el_re = args.repository.lstrip("^")
+            self.repository_el_re = (
+                args.prefix if args.prefix else ""
+            ) + args.repository.lstrip("^")
             self.prf = review.ReviewesFetcher(
                 args.base_url,
                 args.repository,
                 args.insecure,
                 login=args.login,
                 password=args.password,
+                prefix=args.prefix,
             )
 
     def get_last_updated_date(self):

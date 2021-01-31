@@ -45,6 +45,7 @@ class GerritCrawlerArgs(object):
     insecure: bool
     login: str
     password: str
+    prefix: str
 
 
 class ReviewesFetcher(object):
@@ -52,7 +53,13 @@ class ReviewesFetcher(object):
     log = logging.getLogger(__name__)
 
     def __init__(
-        self, base_url, repository_prefix, insecure=False, login=None, password=None
+        self,
+        base_url,
+        repository_prefix,
+        insecure=False,
+        login=None,
+        password=None,
+        prefix=None,
     ):
         self.base_url = base_url
         self.repository_prefix = repository_prefix
@@ -63,6 +70,7 @@ class ReviewesFetcher(object):
         self.auth = None
         if login:
             self.auth = HTTPBasicAuth(login, password)
+        self.prefix = prefix
 
     def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(str_date[:-10], "%Y-%m-%d %H:%M:%S").strftime(
@@ -116,6 +124,9 @@ class ReviewesFetcher(object):
                     break
             else:
                 break
+        if self.prefix:
+            for review in reviews:
+                review["project"] = self.prefix + review["project"]
         return reviews
 
     def extract_objects(self, reviewes, dumper=None) -> List[Union[Change, Event]]:
@@ -151,9 +162,9 @@ class ReviewesFetcher(object):
                 "number": review["_number"],
                 "target_branch": review["branch"],
                 "branch": review["branch"],
-                "repository_prefix": review["project"].split("/")[0],
+                "repository_prefix": "/".join(review["project"].split("/")[:-1]),
                 "repository_fullname": review["project"],
-                "repository_shortname": "/".join(review["project"].split("/")[1:]),
+                "repository_shortname": review["project"].split("/")[-1],
                 "url": "%s/%s" % (self.base_url, review["_number"]),
                 "author": "%s/%s"
                 % (review["owner"].get("name"), review["owner"]["_account_id"]),
@@ -381,6 +392,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--login", help="Login to use to authenticate")
     parser.add_argument("--password", help="Password to use to authenticate")
+    parser.add_argument("--prefix", help="Project prefix to prepend")
 
     args = parser.parse_args()
 
@@ -398,6 +410,7 @@ if __name__ == "__main__":
         insecure=args.insecure,
         login=args.login,
         password=args.password,
+        prefix=args.prefix,
     )
     review = rf.get("2020-01-01 00:00:00", args.id)
     objs = rf.extract_objects(review, _dumper)

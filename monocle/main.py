@@ -1,5 +1,5 @@
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -237,6 +237,7 @@ def main():
                         index=tenant["index"],
                         timeout=args.elastic_timeout,
                     ),
+                    prefix=crawler_item.get("prefix"),
                 )
                 tpool.append(Crawler(c_args))
         log.info("%d configured threads" % len(tpool))

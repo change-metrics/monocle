@@ -262,10 +262,22 @@ tenants:
           updated_since: "2020-03-15"
           token: <github_token>
           base_url: https://github.com
+  - index: zuul
       gerrit_repositories:
         - name: ^zuul/.*
           updated_since: "2020-03-15"
           base_url: https://review.opendev.org
+  - index: openstack
+    crawler:
+      loop_delay: 600
+      gerrit_repositories:
+        - name: "^openstack/.*"
+          updated_since: "2021-01-01"
+          base_url: https://review.opendev.org/
+        - name: "^openstack/.*"
+          updated_since: "2021-01-01"
+          base_url: https://review.rdoproject.org/r/
+          prefix: "rdo/"
   # A private index only whitelisted users are authorized to access
   # See "Advanced deployment configuration" section
   - index: monocle-private
