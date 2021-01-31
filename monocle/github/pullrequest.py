@@ -27,7 +27,14 @@ from dacite import from_dict
 from monocle.github.graphql import RequestTimeout
 from monocle.github import application
 from monocle.utils import is8601_to_dt
-from monocle.db.db import Change, Event, File, SimpleFile, Commit
+from monocle.db.db import (
+    Change,
+    Event,
+    File,
+    SimpleFile,
+    Commit,
+    change_or_event_to_dict,
+)
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -639,4 +646,8 @@ if __name__ == "__main__":
             basename = "github.com-%s-%s-%s" % (args.org, args.repository, args.id)
             basepath = os.path.join(args.output_dir, basename)
             json.dump(data[0], open(basepath + "_raw.json", "w"), indent=2)
-            json.dump(data[1], open(basepath + "_extracted.json", "w"), indent=2)
+            json.dump(
+                [change_or_event_to_dict(o) for o in data[1]],
+                open(basepath + "_extracted.json", "w"),
+                indent=2,
+            )
