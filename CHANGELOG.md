@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [docker-compose] added restart and health-check directives for api and elastic.
 - [crawler] add an optional prefix for gerrit projects (configured in
   the config file).
+- [crawler] add a dummy driver for documentation purpose.
 
 ### Changed
 

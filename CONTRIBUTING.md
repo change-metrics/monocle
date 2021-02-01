@@ -71,3 +71,8 @@ exec ./contrib/pre-commit "$@"
 ```
 
 and making it executable with `chmod +x .git/hooks/pre-commit`.
+
+## Contributing a new driver
+
+Please refer to the file `dummy/change.py` that contain a Dummy driver and
+some comments to help you get started.

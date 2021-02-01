@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pprint import pprint
 from time import sleep
 
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Callable
 from dacite import from_dict
 
 from monocle.github.graphql import RequestTimeout
@@ -35,6 +35,7 @@ from monocle.db.db import (
     Commit,
     change_or_event_to_dict,
 )
+from monocle.basecrawler import BaseCrawler, RawChange
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -64,7 +65,7 @@ class GithubCrawlerArgs(object):
     db: object
 
 
-class PRsFetcher(object):
+class PRsFetcher(BaseCrawler):
 
     log = logging.getLogger(__name__)
 
@@ -285,8 +286,10 @@ class PRsFetcher(object):
         else:
             return False
 
-    def get(self, updated_since):
-        prs = []
+    def get(
+        self, updated_since: str, change_id: Optional[str] = None
+    ) -> List[RawChange]:
+        prs: List[RawChange] = []
         updated_since = is8601_to_dt(updated_since)
         get_commits = True
         kwargs = {
@@ -360,7 +363,7 @@ class PRsFetcher(object):
         return (raw, self.extract_objects([raw], _dumper))
 
     def extract_objects(
-        self, prs: List[Dict], dumper=None
+        self, changes: List[RawChange], dumper: Callable
     ) -> List[Union[Change, Event]]:
         def get_login(data: Union[None, Dict[str, str]]) -> str:
             if data and "login" in data and data["login"]:
@@ -551,13 +554,12 @@ class PRsFetcher(object):
             return objects
 
         objects: List[Union[Change, Event]] = []
-        for pr in prs:
+        for pr in changes:
             try:
                 objects.extend(extract_pr_objects(pr))
             except Exception:
                 self.log.exception("Unable to extract PR")
-                if dumper:
-                    dumper(pr, "github_")
+                dumper(pr, "github_")
         return objects
 
 
