@@ -24,6 +24,7 @@ import Card from 'react-bootstrap/Card'
 import ReactPaginate from 'react-paginate'
 import PropTypes from 'prop-types'
 import { withRouter, Link } from 'react-router-dom'
+import { ArrowUpRightSquare } from 'react-bootstrap-icons'
 
 import moment from 'moment'
 
@@ -86,6 +87,8 @@ class ChangesTable extends React.Component {
                     <Row>
                       <Col md={9}>
                         <ChangeStatus data={change} />{' '}
+                        {' - '}
+                        <a href={change.url} target="_blank" rel="noopener noreferrer" ><ArrowUpRightSquare /></a>
                         {' - '}
                         <Link to={addUrlField('repository', change.repository_fullname)}>{change.repository_fullname}</Link>
                         {' - '}

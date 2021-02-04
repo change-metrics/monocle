@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [crawler] add an optional prefix for gerrit projects (configured in
   the config file).
 - [crawler] add a dummy driver for documentation purpose.
+- [web] Add a direct link to external change url in changes pages.
 
 ### Changed
 
