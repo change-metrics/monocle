@@ -14,6 +14,23 @@ To use `docker-compose` from source code, use the
 $ ln -sf docker-compose.yml.dev docker-compose.yml
 ```
 
+## To run the tests
+
+Tests rely on the Elasticsearch service so first you need to ensure the Elasticsearch container is running.
+You can run the "docker-compose up -d" or you can only run the Elasticsearch container by running "docker-compose start elastic".
+
+If you don't have docker-compose, you can start the elasticsearch service with podman by running this command:
+
+```ShellSession
+$ podman run --env discovery.type=single-node --publish 9200:9200/tcp --name elastic --rm $(awk '/docker.elastic/ { print $2 }' docker-compose.yml* | head -n 1 | sed 's/"//g')
+```
+
+Then the tests can be executed using:
+
+```ShellSession
+$ tox
+```
+
 ## Reloading code
 
 This section explains how you can hack the Monocle code. The idea is to use
