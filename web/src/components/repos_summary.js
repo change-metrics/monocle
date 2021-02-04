@@ -35,6 +35,13 @@ import {
 } from './common'
 
 class RepoChangesTable extends React.Component {
+  createLink (index, name, type, field) {
+    const qs = new URL(window.location.href).search
+    const url = '/' + index + '/changes/' + qs + '&state=' + type
+    const linkName = this.props.data.summary[name][field]
+    return <Link to={url}>{linkName}</Link>
+  }
+
   render () {
     return (
       <Row>
@@ -58,10 +65,10 @@ class RepoChangesTable extends React.Component {
                   {Object.keys(this.props.data.summary).map((name, index) =>
                     <tr key={index}>
                       <td align="center"><Link to={addUrlField('repository', name)}>{name}</Link></td>
-                      <td align="center">{this.props.data.summary[name].changes}</td>
-                      <td align="center">{this.props.data.summary[name].changes_open}</td>
-                      <td align="center">{this.props.data.summary[name].changes_merged}</td>
-                      <td align="center">{this.props.data.summary[name].changes_abandoned}</td>
+                      <td align="center">{this.createLink(this.props.index, name, 'ALL', 'changes')}</td>
+                      <td align="center">{this.createLink(this.props.index, name, 'OPEN', 'changes_open')}</td>
+                      <td align="center">{this.createLink(this.props.index, name, 'MERGED', 'changes_merged')}</td>
+                      <td align="center">{this.createLink(this.props.index, name, 'CLOSED', 'changes_abandoned')}</td>
                     </tr>)}
                 </tbody>
               </Table>
@@ -75,6 +82,7 @@ class RepoChangesTable extends React.Component {
 
 RepoChangesTable.propTypes = {
   title: PropTypes.string.isRequired,
+  index: PropTypes.string.isRequired,
   data: PropTypes.shape({
     summary: PropTypes.object
   })
@@ -97,6 +105,7 @@ class RepoChanges extends BaseQueryComponent {
       const data = this.props.repos_summary_result
       return (
         <RepoChangesTable
+          index={this.props.index}
           data={data}
           title="Repositories summary"
         />
