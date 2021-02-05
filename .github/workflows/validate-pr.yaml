@@ -3,6 +3,7 @@ on: pull_request
 
 jobs:
   tox:
+    if: github.repository_owner == 'change-metrics'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code

@@ -5,6 +5,7 @@ on:
 
 jobs:
   publish-master:
+    if: github.repository_owner == 'change-metrics'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
