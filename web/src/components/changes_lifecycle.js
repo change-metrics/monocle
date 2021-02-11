@@ -195,7 +195,10 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                         <Link to={'/' + this.props.index + '/changes' + this.getSearchString('SELF-MERGED')}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Mean time to merge: {moment.duration(data.duration, 'seconds').humanize()}
+                        Mean Time To Merge: {moment.duration(data.duration, 'seconds').humanize()}
+                      </ListGroup.Item>
+                      <ListGroup.Item>
+                        Median Deviation of TTM: {moment.duration(data.duration_variability, 'seconds').humanize()}
                       </ListGroup.Item>
                       <ListGroup.Item>
                         {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes

@@ -374,6 +374,7 @@ class TestQueries(unittest.TestCase):
             "self_merged": 0,
             "commits": 1.0,
             "duration": 86400.0,
+            "duration_variability": 0.0,
             "histos": {
                 "ChangeAbandonedEvent": (
                     [
@@ -511,6 +512,7 @@ class TestQueries(unittest.TestCase):
             "self_merged": 0,
             "commits": 1.0,
             "duration": 86400.0,
+            "duration_variability": 0.0,
             "histos": {
                 "ChangeAbandonedEvent": (
                     [
