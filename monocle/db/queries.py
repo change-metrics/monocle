@@ -493,18 +493,24 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
     return data["aggregations"]["agg1"]["buckets"]
 
 
-def change_merged_avg_duration(es, index, repository_fullname, params):
+def change_merged_stats_duration(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
     params["state"] = "MERGED"
     body = {
-        "aggs": {"agg1": {"avg": {"field": "duration"}}},
+        "aggs": {
+            "avg": {"avg": {"field": "duration"}},
+            "variability": {"median_absolute_deviation": {"field": "duration"}},
+        },
         "size": 0,
         "docvalue_fields": [{"field": "created_at", "format": "date_time"}],
         "query": generate_filter(es, index, repository_fullname, params),
     }
     data = run_query(es, index, body)
-    return data["aggregations"]["agg1"]["value"]
+    return {
+        "avg": data["aggregations"]["avg"]["value"],
+        "variability": data["aggregations"]["variability"]["value"],
+    }
 
 
 def change_merged_avg_commits(es, index, repository_fullname, params):
@@ -754,7 +760,12 @@ def changes_lifecycle_stats(es, index, repository_fullname, params):
     ret = {}
     ret["ratios"] = changes_closed_ratios(es, index, repository_fullname, params)
     ret["histos"] = changes_lifecycle_histos(es, index, repository_fullname, params)
-    ret["duration"] = change_merged_avg_duration(es, index, repository_fullname, params)
+    ret["duration"] = change_merged_stats_duration(
+        es, index, repository_fullname, params
+    )["avg"]
+    ret["duration_variability"] = change_merged_stats_duration(
+        es, index, repository_fullname, params
+    )["variability"]
     ret["commits"] = change_merged_avg_commits(es, index, repository_fullname, params)
     ret["tests"] = changes_with_tests_ratio(es, index, repository_fullname, params)
     ret["opened"] = count_opened_changes(es, index, repository_fullname, params)

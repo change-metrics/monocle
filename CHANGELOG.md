@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [crawler] add a dummy driver for documentation purpose.
 - [web] Add a direct link to external change url in changes pages.
 - [web] Add links to changes page from the repositories summary page.
+- [api] changes_lifecycle_stats return the Median Deviation of duration (Time To Merge).
+- [web] Display the "Median Deviation of TTM".
 
 ### Changed
 
