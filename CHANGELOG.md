@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [master]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+### Upgrade
+
+## [0.8.0] - 2021-02-12
+
+### Added
 
 - [crawler] compute if a change is self merged.
 - [api] add the self_merged query parameter.
