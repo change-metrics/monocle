@@ -38,6 +38,7 @@ class RepoChangesTable extends React.Component {
   createLink (index, name, type, field) {
     const search = new URLSearchParams(window.location.search)
     search.set('state', type)
+    search.set('repository', name)
     const newurl = '/' + index + '/changes?' + search.toString()
     const linkName = this.props.data.summary[name][field]
     return <Link to={newurl}>{linkName}</Link>
