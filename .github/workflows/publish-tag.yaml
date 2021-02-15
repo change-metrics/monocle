@@ -11,7 +11,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - uses: olegtarasov/get-tag@v2
+      - uses: olegtarasov/get-tag@v2.1
         id: tagName
 
       - name: Display tag name
