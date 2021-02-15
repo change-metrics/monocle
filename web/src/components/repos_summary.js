@@ -36,10 +36,11 @@ import {
 
 class RepoChangesTable extends React.Component {
   createLink (index, name, type, field) {
-    const qs = new URL(window.location.href).search
-    const url = '/' + index + '/changes/' + qs + '&state=' + type
+    const search = new URLSearchParams(window.location.search)
+    search.set('state', type)
+    const newurl = '/' + index + '/changes?' + search.toString()
     const linkName = this.props.data.summary[name][field]
-    return <Link to={url}>{linkName}</Link>
+    return <Link to={newurl}>{linkName}</Link>
   }
 
   render () {

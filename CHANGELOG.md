@@ -12,6 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 ### Upgrade
 
+## [0.8.1] - 2021-02-15
+
+### Fixed
+
+- [web] Fix links computation on the repositories summary page.
+
 ## [0.8.0] - 2021-02-12
 
 ### Added
