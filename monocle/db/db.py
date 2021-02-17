@@ -77,7 +77,7 @@ class Change:
     change_id: str
     title: Optional[str]
     text: Optional[str]
-    url: Optional[str]
+    url: str
     commit_count: Optional[int]
     additions: Optional[int]
     deletions: Optional[int]

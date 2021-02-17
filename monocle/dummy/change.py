@@ -101,7 +101,7 @@ class DummyChangeFetcher(BaseCrawler):
             change_id="org/dummyrepo/1",
             title="A dummy change",
             text="Body text",
-            url=None,
+            url="https://dummy.com/change/id",
             commit_count=1,
             additions=10,
             deletions=0,

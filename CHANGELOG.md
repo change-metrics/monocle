@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - [config] Add missing validation for `prefix` option of the Gerrit crawler.
+- [crawler] Add missing change url field for gerrit events
 
 ### Upgrade
 
