@@ -129,7 +129,7 @@ class Event:
     target_branch: str
     number: int
     change_id: str
-    url: Optional[str]
+    url: str
     on_author: Optional[str]
     on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     changed_files: List[SimpleFile]

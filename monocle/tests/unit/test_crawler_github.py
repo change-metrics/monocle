@@ -59,15 +59,9 @@ class TestGithubCrawler(unittest.TestCase):
 
     def test_extract_and_compare_pr1(self):
         """
-        Github crawler extracts github.com-morucci-monocle-70
+        Github crawler extracts github.com-change-metrics-monocle-70
         """
-        self.extract_and_compare("github.com-morucci-monocle-70")
-
-    def test_extract_and_compare_pr2(self):
-        """
-        Github crawler extracts github.com-wazo-platform-wazo-ansible-76
-        """
-        self.extract_and_compare("github.com-wazo-platform-wazo-ansible-76")
+        self.extract_and_compare("github.com-change-metrics-monocle-70")
 
     def test_load_buggy(self):
         """

@@ -18,6 +18,7 @@
 from typing import Any, List, Dict, Union, Optional
 from collections.abc import Callable
 from monocle.db.db import Change, Event
+from urllib.parse import urlparse
 
 RawChange = Dict[str, Any]
 
@@ -30,3 +31,30 @@ class BaseCrawler(object):
         self, changes: List[RawChange], dumper: Callable
     ) -> List[Union[Change, Event]]:
         raise NotImplementedError
+
+
+def prefix_ident_with_domain(obj: Union[Change, Event]) -> Union[Change, Event]:
+    """Ensure that idents is prefixed with the domain of the code review system"""
+    domain = urlparse(obj.url).netloc
+
+    def prefix(name: str) -> str:
+        return domain + "/" + name
+
+    if isinstance(obj, Change):
+        obj.author = prefix(obj.author)
+        if obj.committer:
+            obj.committer = prefix(obj.committer)
+        if obj.merged_by:
+            obj.merged_by = prefix(obj.merged_by)
+        if obj.assignees:
+            map(prefix, obj.assignees)
+        if obj.commits:
+            for commit in obj.commits:
+                commit.author = prefix(commit.author)
+                commit.committer = prefix(commit.committer)
+    else:
+        if obj.author:
+            obj.author = prefix(obj.author)
+        if obj.on_author:
+            obj.on_author = prefix(obj.on_author)
+    return obj

@@ -35,7 +35,7 @@ from monocle.db.db import (
     Commit,
     change_or_event_to_dict,
 )
-from monocle.basecrawler import BaseCrawler, RawChange
+from monocle.basecrawler import BaseCrawler, RawChange, prefix_ident_with_domain
 
 
 name = "gerrit_crawler"
@@ -391,6 +391,7 @@ class ReviewesFetcher(BaseCrawler):
                     insert_change_attributes(obj, change)
                     objects.append(from_dict(data_class=Event, data=obj))
 
+            objects = list(map(prefix_ident_with_domain, objects))
             return objects
 
         objects: List[Union[Change, Event]] = []
