@@ -148,7 +148,7 @@ class DummyChangeFetcher(BaseCrawler):
             repository_prefix="org",
             repository_fullname="org/dummyrepo",
             repository_shortname="dummyrepo",
-            url=None,
+            url="https://dummy.com/change/id",
             branch="dummy-feature",
             target_branch="main",
             number=1,

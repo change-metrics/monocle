@@ -38,9 +38,12 @@ def prefix_ident_with_domain(obj: Union[Change, Event]) -> Union[Change, Event]:
     domain = urlparse(obj.url).netloc
 
     def prefix(name: str) -> str:
-        return domain + "/" + name
+        if not name.startswith("%s/" % domain):
+            return domain + "/" + name
+        else:
+            return name
 
-    if isinstance(obj, Change):
+    if obj._type == "Change":
         obj.author = prefix(obj.author)
         if obj.committer:
             obj.committer = prefix(obj.committer)

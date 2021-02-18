@@ -16,6 +16,7 @@
 
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import dict_to_change_or_event
+from monocle.basecrawler import prefix_ident_with_domain
 from monocle import utils
 
 from typing import Dict, List
@@ -92,6 +93,26 @@ def missing_url_gerrit_events(elastic_conn, index) -> None:
     bulk_update(to_update)
 
 
+def prefix_idents_with_domain(elastic_conn, index) -> None:
+    bulk_size = 500
+    client = ELmonocleDB(elastic_conn, index)
+
+    def bulk_update(to_update: List) -> List:
+        print("Updating %s objects ..." % len(to_update))
+        print(to_update[0])
+        client.update(to_update)
+        return []
+
+    to_update = []
+    for _obj in client.iter_index():
+        obj = prefix_ident_with_domain(dict_to_change_or_event(_obj["_source"]))
+        to_update.append(obj)
+        if len(to_update) == bulk_size:
+            to_update = bulk_update(to_update)
+
+    bulk_update(to_update)
+
+
 def run_migrate(name, elastic_conn, index):
     if name not in processes:
         raise NotAvailableException()
@@ -101,4 +122,5 @@ def run_migrate(name, elastic_conn, index):
 processes = {
     "self-merge": self_merge,
     "missing-url-gerrit-events": missing_url_gerrit_events,
+    "prefix-idents-with-domain": prefix_idents_with_domain,
 }
