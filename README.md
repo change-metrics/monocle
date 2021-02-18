@@ -297,6 +297,15 @@ tenants:
 
 ## Database migration
 
+### From version 0.8.0
+
+Gerrit event objects in the database were missing of field called `url`. To fix the issue
+run the following migration process.
+
+```
+docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate missing-url-gerrit-events
+```
+
 ### From version 0.7.0
 
 A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.

@@ -24,6 +24,7 @@ from monocle.utils import is8601_to_dt
 from monocle.utils import enhance_changes
 from monocle.utils import Detector
 from monocle.utils import utcnow
+from monocle.utils import get_events_list
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -901,16 +902,9 @@ def oldest_open_changes(es, index, repository_fullname, params):
 
 def changes_and_events(es, index, repository_fullname, params):
     params = deepcopy(params)
-    params["etype"] = (
+    params["etype"] = [
         "Change",
-        "ChangeCreatedEvent",
-        "ChangeMergedEvent",
-        "ChangeAbandonedEvent",
-        "ChangeCommitPushedEvent",
-        "ChangeCommitForcePushedEvent",
-        "ChangeReviewedEvent",
-        "ChangeCommentedEvent",
-    )
+    ] + get_events_list()
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params["size"],
