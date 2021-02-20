@@ -17,7 +17,7 @@
 
 from typing import Any, List, Dict, Union, Optional
 from collections.abc import Callable
-from monocle.db.db import Change, Event
+from monocle.db.db import Change, Event, Ident
 from urllib.parse import urlparse
 
 RawChange = Dict[str, Any]
@@ -33,31 +33,34 @@ class BaseCrawler(object):
         raise NotImplementedError
 
 
-def prefix_ident_with_domain(obj: Union[Change, Event]) -> Union[Change, Event]:
-    """Ensure that idents is prefixed with the domain of the code review system"""
-    domain = urlparse(obj.url).netloc
-
-    def prefix(name: str) -> str:
-        if not name.startswith("%s/" % domain):
-            return domain + "/" + name
-        else:
-            return name
-
-    if obj._type == "Change":
-        obj.author = prefix(obj.author)
-        if obj.committer:
-            obj.committer = prefix(obj.committer)
-        if obj.merged_by:
-            obj.merged_by = prefix(obj.merged_by)
-        if obj.assignees:
-            map(prefix, obj.assignees)
-        if obj.commits:
-            for commit in obj.commits:
-                commit.author = prefix(commit.author)
-                commit.committer = prefix(commit.committer)
+def prefix(domain: str, name: str) -> str:
+    if not name.startswith("%s/" % domain):
+        return domain + "/" + name
     else:
-        if obj.author:
-            obj.author = prefix(obj.author)
-        if obj.on_author:
-            obj.on_author = prefix(obj.on_author)
-    return obj
+        return name
+
+
+def create_muid_from_uid(uid: str) -> str:
+    """This is a temporary implementation
+    The muid is the Monocle Uniq ID of an ident. But for now it
+    uses a placeolder. Later the muid will be used to prettify
+    the ident in the UI with Full Name gathered from a local DB.
+    """
+    elms = uid.split("/")
+    if len(elms) == 3 or len(elms) == 2:
+        muid = "/".join(elms[1:])
+    else:
+        raise RuntimeError("Wrong ident uid format")
+    return muid
+
+
+def create_ident_dict(url: str, uid: str) -> Dict:
+    domain = urlparse(url).netloc
+    uid = prefix(domain, uid)
+    return {"uid": uid, "muid": create_muid_from_uid(uid)}
+
+
+def create_ident(url: str, uid: str) -> Ident:
+    domain = urlparse(url).netloc
+    uid = prefix(domain, uid)
+    return Ident(uid=uid, muid=create_muid_from_uid(uid))

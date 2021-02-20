@@ -31,7 +31,8 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.utils import get_events_list
 
-CHANGE_PREFIX = "monocle.changes."
+CHANGE_PREFIX = "monocle.changes.1."
+PREV_CHANGE_PREFIX = "monocle.changes."
 
 
 class UnknownQueryException(Exception):
@@ -54,10 +55,16 @@ class SimpleFile:
 
 
 @dataclass
+class Ident:
+    uid: str
+    muid: str
+
+
+@dataclass
 class Commit:
     sha: str
-    author: str
-    committer: str
+    author: Ident
+    committer: Ident
     authored_at: str  # eg. 2020-04-11T07:01:15Z
     committed_at: str  # eg. 2020-04-11T07:01:15Z
     additions: int
@@ -87,9 +94,9 @@ class Change:
     repository_prefix: str
     repository_fullname: str
     repository_shortname: str
-    author: str
-    committer: Optional[str]
-    merged_by: Optional[str]
+    author: Ident
+    committer: Optional[Ident]
+    merged_by: Optional[Ident]
     branch: str
     target_branch: str
     created_at: str  # eg. 2020-04-11T07:01:15Z
@@ -100,7 +107,7 @@ class Change:
     duration: Optional[int]
     mergeable: Optional[str]
     labels: Optional[List[str]]
-    assignees: Optional[List[str]]
+    assignees: Optional[List[Ident]]
     approval: Optional[List[str]]
     draft: Optional[bool]
     self_merged: Optional[bool]
@@ -121,7 +128,7 @@ class Event:
         "ChangeMergedEvent",
     ]
     created_at: str  # eg. 2020-04-11T07:01:15Z
-    author: Optional[str]  # ChangeMergedEvent on Gerrit can have an optional author
+    author: Optional[Ident]  # ChangeMergedEvent on Gerrit can have an optional author
     repository_prefix: str
     repository_fullname: str
     repository_shortname: str
@@ -130,7 +137,7 @@ class Event:
     number: int
     change_id: str
     url: str
-    on_author: Optional[str]
+    on_author: Optional[Ident]
     on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     changed_files: List[SimpleFile]
     approval: Optional[List[str]]
@@ -169,6 +176,7 @@ class ELmonocleDB:
         timeout=10,
         prefix=CHANGE_PREFIX,
         create=True,
+        previous_schema=False,
     ):
         host, port = elastic_conn.split(":")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -193,7 +201,10 @@ class ELmonocleDB:
         self.es = client.Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
-        self.prefix = prefix
+        if previous_schema:
+            self.prefix = PREV_CHANGE_PREFIX
+        else:
+            self.prefix = prefix
 
         if not index:
             self.log.info("No index provided")
@@ -230,8 +241,18 @@ class ELmonocleDB:
                 "commits": {
                     "properties": {
                         "sha": {"type": "keyword"},
-                        "author": {"type": "keyword"},
-                        "committer": {"type": "keyword"},
+                        "author": {
+                            "properties": {
+                                "uid": {"type": "keyword"},
+                                "muid": {"type": "keyword"},
+                            }
+                        },
+                        "committer": {
+                            "properties": {
+                                "uid": {"type": "keyword"},
+                                "muid": {"type": "keyword"},
+                            }
+                        },
                         "authored_at": {
                             "type": "date",
                             "format": "date_time_no_millis",
@@ -248,10 +269,30 @@ class ELmonocleDB:
                 "repository_prefix": {"type": "keyword"},
                 "repository_fullname": {"type": "keyword"},
                 "repository_shortname": {"type": "keyword"},
-                "author": {"type": "keyword"},
-                "on_author": {"type": "keyword"},
-                "committer": {"type": "keyword"},
-                "merged_by": {"type": "keyword"},
+                "author": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "on_author": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "committer": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "merged_by": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
                 "branch": {"type": "keyword"},
                 "target_branch": {"type": "keyword"},
                 "created_at": {"type": "date", "format": "date_time_no_millis"},
@@ -263,7 +304,13 @@ class ELmonocleDB:
                 "duration": {"type": "integer"},
                 "mergeable": {"type": "keyword"},
                 "labels": {"type": "keyword"},
-                "assignees": {"type": "keyword"},
+                "assignees": {
+                    "type": "nested",
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    },
+                },
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},

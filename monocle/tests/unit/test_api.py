@@ -26,7 +26,7 @@ from .common import index_dataset
 
 
 class TestWebAPI(unittest.TestCase):
-    prefix = "monocle.test."
+    prefix = "monocle.test.1."
     index1 = "monocle-unittest-1"
     index2 = "monocle-unittest-2"
     datasets = ["objects/unit_repo1.json"]

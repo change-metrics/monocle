@@ -35,7 +35,7 @@ from monocle.db.db import (
     Commit,
     change_or_event_to_dict,
 )
-from monocle.basecrawler import BaseCrawler, RawChange, prefix_ident_with_domain
+from monocle.basecrawler import BaseCrawler, RawChange, create_ident
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -418,12 +418,13 @@ class PRsFetcher(BaseCrawler):
                 change["repository_fullname"].replace("/", "@"),
                 change["number"],
             )
-            change["url"] = "%s/%s/pull/%s" % (
+            url = "%s/%s/pull/%s" % (
                 self.base_url,
                 change["repository_fullname"],
                 change["number"],
             )
-            change["author"] = get_login(pr["author"])
+            change["url"] = url
+            change["author"] = create_ident(url, get_login(pr["author"]))
             change["branch"] = pr["headRefName"]
             change["target_branch"] = pr["baseRefName"]
             change["self_merged"] = None
@@ -446,8 +447,8 @@ class PRsFetcher(BaseCrawler):
                         )
                     )
             if pr["mergedBy"]:
-                change["merged_by"] = get_login(pr["mergedBy"])
-                change["self_merged"] = change["merged_by"] == change["author"]
+                change["merged_by"] = create_ident(url, get_login(pr["mergedBy"]))
+                change["self_merged"] = change["merged_by"].uid == change["author"].uid
             else:
                 change["merged_by"] = None
             change["updated_at"] = pr["updatedAt"]
@@ -466,7 +467,10 @@ class PRsFetcher(BaseCrawler):
                 map(lambda n: n["node"]["name"], pr["labels"]["edges"])
             )
             change["assignees"] = list(
-                map(lambda n: get_login(n["node"]), pr["assignees"]["edges"])
+                map(
+                    lambda n: create_ident(url, get_login(n["node"])),
+                    pr["assignees"]["edges"],
+                )
             )
             change["commits"] = []
             commits = [c for c in pr["commits"]["edges"] if c["node"]]
@@ -481,7 +485,7 @@ class PRsFetcher(BaseCrawler):
                     "title": _commit["message"],
                 }
                 for k in ("author", "committer"):
-                    obj[k] = get_login(_commit[k].get("user"))
+                    obj[k] = create_ident(url, get_login(_commit[k].get("user")))
                 change["commits"].append(from_dict(data_class=Commit, data=obj))
 
             if pr["commits"].get("totalCount") is not None:
@@ -508,7 +512,7 @@ class PRsFetcher(BaseCrawler):
                     "_type": "ChangeCommentedEvent",
                     "_id": _comment["id"],
                     "created_at": _comment["createdAt"],
-                    "author": get_login(_comment["author"]),
+                    "author": create_ident(url, get_login(_comment["author"])),
                 }
                 insert_change_attributes(obj, change)
                 objects.append(from_dict(data_class=Event, data=obj))
@@ -524,7 +528,7 @@ class PRsFetcher(BaseCrawler):
                     "_type": self.events_map[_timelineitem["__typename"]],
                     "_id": _timelineitem["id"],
                     "created_at": _timelineitem["createdAt"],
-                    "author": _author.get("login"),
+                    "author": create_ident(url, _author.get("login")),
                 }
                 insert_change_attributes(obj, change)
                 if "state" in _timelineitem:
@@ -546,13 +550,14 @@ class PRsFetcher(BaseCrawler):
                     # Seems the first PR's commit get a date with None value
                     # So make sense to set the same created_at date as the
                     # change
-                    "author": get_login(_commit["committer"].get("user")),
+                    "author": create_ident(
+                        url, get_login(_commit["committer"].get("user"))
+                    ),
                     "created_at": _commit.get("pushedDate") or change["created_at"],
                 }
                 insert_change_attributes(obj, change)
                 objects.append(from_dict(data_class=Event, data=obj))
 
-            objects = list(map(prefix_ident_with_domain, objects))
             return objects
 
         objects: List[Union[Change, Event]] = []

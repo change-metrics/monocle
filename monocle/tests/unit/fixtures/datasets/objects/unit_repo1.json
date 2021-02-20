@@ -8,7 +8,10 @@
     "repository_shortname": "repo1",
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "author": "john",
+    "author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "branch": "feature-1",
     "target_branch": "master",
     "title": "A PR title",
@@ -34,7 +37,10 @@
       }
     ],
     "commit_count": 1,
-    "merged_by": "jane",
+    "merged_by": {
+      "uid": "tests.com/jane",
+      "muid": "jane"
+    },
     "updated_at": "2020-01-01T00:00:00Z",
     "created_at": "2020-01-01T00:00:00Z",
     "merged_at": "2020-01-02T00:00:00Z",
@@ -50,7 +56,10 @@
     "type": "ChangeCreatedEvent",
     "id": "c1_e1",
     "created_at": "2020-01-01T00:00:00Z",
-    "author": "john",
+    "author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo1",
     "repository_shortname": "repo1",
@@ -59,17 +68,28 @@
     "number": 1,
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "on_author": "john",
+    "on_author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "changed_files": [
-      {"path": "path/to/file1.py"},
-      {"path": "path/to/tests/test_file1.py"}],
+      {
+        "path": "path/to/file1.py"
+      },
+      {
+        "path": "path/to/tests/test_file1.py"
+      }
+    ],
     "on_created_at": "2020-01-01T00:00:00Z"
   },
   {
     "type": "ChangeCommentedEvent",
     "id": "c1_e2",
     "created_at": "2020-01-01T01:00:00Z",
-    "author": "jane",
+    "author": {
+      "uid": "tests.com/jane",
+      "muid": "jane"
+    },
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo1",
     "repository_shortname": "repo1",
@@ -78,18 +98,31 @@
     "number": 1,
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "on_author": "john",
+    "on_author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "changed_files": [
-      {"path": "path/to/file1.py"},
-      {"path": "path/to/tests/test_file1.py"}],
+      {
+        "path": "path/to/file1.py"
+      },
+      {
+        "path": "path/to/tests/test_file1.py"
+      }
+    ],
     "on_created_at": "2020-01-01T00:00:00Z"
   },
   {
     "type": "ChangeReviewedEvent",
     "id": "c1_e3",
     "created_at": "2020-01-01T01:00:00Z",
-    "author": "john",
-    "approval": ["Code-Review+1"],
+    "author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
+    "approval": [
+      "Code-Review+1"
+    ],
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo1",
     "repository_shortname": "repo1",
@@ -98,18 +131,31 @@
     "number": 1,
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "on_author": "john",
+    "on_author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "changed_files": [
-      {"path": "path/to/file1.py"},
-      {"path": "path/to/tests/test_file1.py"}],
+      {
+        "path": "path/to/file1.py"
+      },
+      {
+        "path": "path/to/tests/test_file1.py"
+      }
+    ],
     "on_created_at": "2020-01-01T00:00:00Z"
   },
   {
     "type": "ChangeReviewedEvent",
     "id": "c1_e4",
     "created_at": "2020-01-01T02:00:00Z",
-    "author": "jane",
-    "approval": ["Code-Review+2"],
+    "author": {
+      "uid": "tests.com/jane",
+      "muid": "jane"
+    },
+    "approval": [
+      "Code-Review+2"
+    ],
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo1",
     "repository_shortname": "repo1",
@@ -118,17 +164,28 @@
     "number": 1,
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "on_author": "john",
+    "on_author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "changed_files": [
-      {"path": "path/to/file1.py"},
-      {"path": "path/to/tests/test_file1.py"}],
+      {
+        "path": "path/to/file1.py"
+      },
+      {
+        "path": "path/to/tests/test_file1.py"
+      }
+    ],
     "on_created_at": "2020-01-01T00:00:00Z"
   },
   {
     "type": "ChangeMergedEvent",
     "id": "c1_e5",
     "created_at": "2020-01-02T00:00:00Z",
-    "author": "jane",
+    "author": {
+      "uid": "tests.com/jane",
+      "muid": "jane"
+    },
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo1",
     "repository_shortname": "repo1",
@@ -137,10 +194,18 @@
     "number": 1,
     "change_id": "unit@repo1@1",
     "url": "https://tests.com/unit/repo1/pull/1",
-    "on_author": "john",
+    "on_author": {
+      "uid": "tests.com/john",
+      "muid": "john"
+    },
     "changed_files": [
-      {"path": "path/to/file1.py"},
-      {"path": "path/to/tests/test_file1.py"}],
+      {
+        "path": "path/to/file1.py"
+      },
+      {
+        "path": "path/to/tests/test_file1.py"
+      }
+    ],
     "on_created_at": "2020-01-01T00:00:00Z"
   }
 ]

@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [readme] Added migration instructions for the missing url field in gerrit event objects.
 - [dbmanage] Added migration process: missing-url-gerrit-events
 - [readme] Added migration instructions for updating idents.
-- [dbmanage] Added migration process: prefix-idents-with-domain.
+- [dbmanage] Added migration process: to_idents.
 
 ## [0.8.1] - 2021-02-15
 

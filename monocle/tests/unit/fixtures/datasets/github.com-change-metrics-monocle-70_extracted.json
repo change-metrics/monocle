@@ -29,8 +29,14 @@
     "commits": [
       {
         "sha": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
-        "author": "github.com/flepied",
-        "committer": "github.com/flepied",
+        "author": {
+          "uid": "github.com/flepied",
+          "muid": "flepied"
+        },
+        "committer": {
+          "uid": "github.com/flepied",
+          "muid": "flepied"
+        },
         "authored_at": "2020-04-11T07:01:15Z",
         "committed_at": "2020-04-11T10:21:23Z",
         "additions": 90,
@@ -41,8 +47,14 @@
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
-    "author": "github.com/flepied",
-    "merged_by": "github.com/morucci",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "merged_by": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
     "branch": "changed",
     "target_branch": "master",
     "created_at": "2020-04-11T07:06:29Z",
@@ -64,7 +76,10 @@
   },
   {
     "created_at": "2020-04-11T07:06:29Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -73,7 +88,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -91,7 +109,10 @@
   },
   {
     "created_at": "2020-04-11T21:46:13Z",
-    "author": "github.com/morucci",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -100,7 +121,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -118,7 +142,10 @@
   },
   {
     "created_at": "2020-04-11T07:19:12Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -127,7 +154,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -145,7 +175,10 @@
   },
   {
     "created_at": "2020-04-11T07:39:23Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -154,7 +187,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -172,7 +208,10 @@
   },
   {
     "created_at": "2020-04-11T09:03:45Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -181,7 +220,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -199,7 +241,10 @@
   },
   {
     "created_at": "2020-04-11T10:22:06Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -208,7 +253,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -226,7 +274,10 @@
   },
   {
     "created_at": "2020-04-11T21:46:04Z",
-    "author": "github.com/morucci",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -235,7 +286,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -256,7 +310,10 @@
   },
   {
     "created_at": "2020-04-11T21:46:19Z",
-    "author": "github.com/morucci",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -265,7 +322,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -283,7 +343,10 @@
   },
   {
     "created_at": "2020-04-11T10:22:06Z",
-    "author": "github.com/flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -292,7 +355,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "github.com/flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {

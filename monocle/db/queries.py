@@ -159,9 +159,9 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
     ]
     qfilter.append({"terms": {"type": etype}})
     if authors:
-        qfilter.append({"terms": {"author": authors}})
+        qfilter.append({"terms": {"author.muid": authors}})
     if on_authors:
-        qfilter.append({"terms": {"on_author": on_authors}})
+        qfilter.append({"terms": {"on_author.muid": on_authors}})
     if change_ids:
         qfilter.append({"terms": {"change_id": change_ids}})
     if target_branch:
@@ -177,8 +177,8 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
 
     must_not = []
     if exclude_authors:
-        must_not.append({"terms": {"author": exclude_authors}})
-        must_not.append({"terms": {"on_author": exclude_authors}})
+        must_not.append({"terms": {"author.muid": exclude_authors}})
+        must_not.append({"terms": {"on_author.muid": exclude_authors}})
     if exclude_approvals:
         must_not.append({"terms": {"approval": exclude_approvals}})
 
@@ -233,6 +233,18 @@ def _scan(es, index, repository_fullname, params):
     return ret
 
 
+def _get_all(es, index):
+    body = {
+        "query": {"match_all": {}},
+    }
+    scanner_params = {"index": index, "query": body}
+    data = scanner(es, **scanner_params)
+    ret = []
+    for d in data:
+        ret.append(d["_source"])
+    return ret
+
+
 def _first_created_event(es, index, repository_fullname, params):
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
@@ -257,7 +269,9 @@ def count_events(es, index, repository_fullname, params):
 def count_authors(es, index, repository_fullname, params):
     body = {
         "aggs": {
-            "agg1": {"cardinality": {"field": "author", "precision_threshold": 3000}}
+            "agg1": {
+                "cardinality": {"field": "author.muid", "precision_threshold": 3000}
+            }
         },
         "size": 0,
         "query": generate_filter(es, index, repository_fullname, params),
@@ -339,7 +353,9 @@ def authors_histo(es, index, repository_fullname, params):
                     "min_doc_count": 0,
                     "extended_bounds": {"min": params["gte"], "max": params["lte"]},
                 },
-                "aggs": {"authors": {"terms": {"field": "author", "size": 100000}}},
+                "aggs": {
+                    "authors": {"terms": {"field": "author.muid", "size": 100000}}
+                },
             },
             "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
         },
@@ -391,7 +407,7 @@ def repos_top(es, index, repository_fullname, params):
 
 def events_top_authors(es, index, repository_fullname, params):
     params = deepcopy(params)
-    return _events_top(es, index, repository_fullname, "author", params)
+    return _events_top(es, index, repository_fullname, "author.muid", params)
 
 
 # TODO(fbo): add tests for queries below
@@ -416,19 +432,19 @@ def changes_top_reviewed(es, index, repository_fullname, params):
 def authors_top_reviewed(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repository_fullname, "on_author.muid", params)
 
 
 def authors_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("ChangeCommentedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author", params)
+    return _events_top(es, index, repository_fullname, "on_author.muid", params)
 
 
 def authors_top(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    return _events_top(es, index, repository_fullname, "author", params)
+    return _events_top(es, index, repository_fullname, "author.muid", params)
 
 
 def approvals_top(es, index, repository_fullname, params):
@@ -443,15 +459,17 @@ def peers_exchange_strength(es, index, repository_fullname, params):
     # Fetch the most active authors for those events
     authors = [
         bucket["key"]
-        for bucket in _events_top(es, index, repository_fullname, "author", params)[
-            "items"
-        ]
+        for bucket in _events_top(
+            es, index, repository_fullname, "author.muid", params
+        )["items"]
     ]
     peers_strength = {}
     # For each of them get authors they most review or comment
     for author in authors:
         params["authors"] = [author]
-        ret = _events_top(es, index, repository_fullname, "on_author", params)["items"]
+        ret = _events_top(es, index, repository_fullname, "on_author.muid", params)[
+            "items"
+        ]
         for bucket in ret:
             if bucket["key"] == author:
                 continue
@@ -648,7 +666,7 @@ def _first_event_on_changes(es, index, repository_fullname, params):
                     groups[pr]["first_event_created_at"]
                     - groups[pr]["change_created_at"]
                 )
-                groups[pr]["first_event_author"] = event["author"]
+                groups[pr]["first_event_author"] = event["author"]["muid"]
     ret = {"first_event_delay_avg": 0, "top_authors": {}}
     for pr_data in groups.values():
         ret["first_event_delay_avg"] += pr_data["delta"].seconds
@@ -965,10 +983,10 @@ def authors_by_file_map(es, index, repository_fullname, params):
         for f in change["changed_files"]:
             key = "{}:{}".format(change["repository_fullname"], f["path"])
             try:
-                authors[key].add(change["author"])
+                authors[key].add(change["author"]["muid"])
             except KeyError:
                 authors[key] = set()
-                authors[key].add(change["author"])
+                authors[key].add(change["author"]["muid"])
     return {"authors": authors}
 
 

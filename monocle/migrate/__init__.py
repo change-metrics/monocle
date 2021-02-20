@@ -16,10 +16,10 @@
 
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import dict_to_change_or_event
-from monocle.basecrawler import prefix_ident_with_domain
+from monocle.basecrawler import create_ident_dict
 from monocle import utils
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 class NotAvailableException(Exception):
@@ -56,7 +56,7 @@ def self_merge(elastic_conn, index) -> None:
 
 def missing_url_gerrit_events(elastic_conn, index) -> None:
     bulk_size = 500
-    client = ELmonocleDB(elastic_conn, index)
+    client = ELmonocleDB(elastic_conn, index, previous_schema=True)
     url_cache: Dict[str, str] = {}
 
     def get_change_url(obj: Dict) -> str:
@@ -93,19 +93,43 @@ def missing_url_gerrit_events(elastic_conn, index) -> None:
     bulk_update(to_update)
 
 
-def prefix_idents_with_domain(elastic_conn, index) -> None:
+def to_idents(elastic_conn, index) -> None:
     bulk_size = 500
-    client = ELmonocleDB(elastic_conn, index)
+    client = ELmonocleDB(elastic_conn, index, previous_schema=True)
+    client2 = ELmonocleDB(elastic_conn, index)
 
     def bulk_update(to_update: List) -> List:
         print("Updating %s objects ..." % len(to_update))
-        print(to_update[0])
-        client.update(to_update)
+        client2.update(to_update)
         return []
+
+    def update_ident(obj: Dict) -> Dict:
+
+        url = obj["url"]
+
+        def to_ident(value: Optional[str]) -> Optional[Dict]:
+            if value:
+                return create_ident_dict(url, value)
+            return None
+
+        if obj["type"] == "Change":
+            obj["author"] = to_ident(obj["author"])
+            obj["committer"] = to_ident(obj.get("committer"))
+            obj["merged_by"] = to_ident(obj.get("merged_by"))
+            obj["assignees"] = list(map(to_ident, obj.get("assignees", [])))
+            for commit in obj.get("commits", []):
+                commit["author"] = to_ident(commit["author"])
+                commit["committer"] = to_ident(commit["committer"])
+        else:
+            obj["author"] = to_ident(obj.get("author"))
+            obj["on_author"] = to_ident(obj.get("on_author"))
+
+        return obj
 
     to_update = []
     for _obj in client.iter_index():
-        obj = prefix_ident_with_domain(dict_to_change_or_event(_obj["_source"]))
+        d = update_ident(_obj["_source"])
+        obj = dict_to_change_or_event(d)
         to_update.append(obj)
         if len(to_update) == bulk_size:
             to_update = bulk_update(to_update)
@@ -122,5 +146,5 @@ def run_migrate(name, elastic_conn, index):
 processes = {
     "self-merge": self_merge,
     "missing-url-gerrit-events": missing_url_gerrit_events,
-    "prefix-idents-with-domain": prefix_idents_with_domain,
+    "to_idents": to_idents,
 }

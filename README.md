@@ -306,11 +306,10 @@ tenants:
 docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate missing-url-gerrit-events
 ```
 
-2. Identities are consolidated by being prefixed with the code review system hostname to be uniq accross
-   multiples code review system.
+2. Identities are consolidated in the database.
 
 ```
-docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate prefix-idents-with-domain
+docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate to_idents
 ```
 
 3. The Monocle API must be restarted after the migration.

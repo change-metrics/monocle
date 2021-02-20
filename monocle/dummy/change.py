@@ -27,7 +27,7 @@ from monocle.db.db import (
     SimpleFile,
     Commit,
 )
-from monocle.basecrawler import BaseCrawler, RawChange
+from monocle.basecrawler import BaseCrawler, RawChange, create_ident
 
 name = "dummy_crawler"
 help = "Dummy crawler to demo a crawler for a dummy code review service"
@@ -94,6 +94,7 @@ class DummyChangeFetcher(BaseCrawler):
         # Change and Event's attributes type must be follow (see: db.py)
         #
         objects: List[Union[Change, Event]] = []
+        url = "https://dummy.com/change/id"
         dummy_change = Change(
             _id="123",
             _type="Change",
@@ -101,7 +102,7 @@ class DummyChangeFetcher(BaseCrawler):
             change_id="org/dummyrepo/1",
             title="A dummy change",
             text="Body text",
-            url="https://dummy.com/change/id",
+            url=url,
             commit_count=1,
             additions=10,
             deletions=0,
@@ -110,8 +111,8 @@ class DummyChangeFetcher(BaseCrawler):
             commits=[
                 Commit(
                     sha="12345",
-                    author="John",
-                    committer="John",
+                    author=create_ident(url, "John"),
+                    committer=create_ident(url, "John"),
                     authored_at="2020-04-11T07:01:15Z",
                     committed_at="2020-04-11T07:00:15Z",
                     additions=10,
@@ -122,9 +123,9 @@ class DummyChangeFetcher(BaseCrawler):
             repository_prefix="org",
             repository_fullname="org/dummyrepo",
             repository_shortname="dummyrepo",
-            author="John",
-            committer="John",
-            merged_by="Zuul",
+            author=create_ident(url, "John"),
+            committer=create_ident(url, "John"),
+            merged_by=create_ident(url, "Zuul"),
             branch="dummy-feature",
             target_branch="main",
             created_at="2020-04-11T07:00:15Z",
@@ -144,7 +145,7 @@ class DummyChangeFetcher(BaseCrawler):
             _id="cce_1",
             _type="ChangeCreatedEvent",
             created_at="2020-04-11T07:00:15Z",
-            author="John",
+            author=create_ident(url, "John"),
             repository_prefix="org",
             repository_fullname="org/dummyrepo",
             repository_shortname="dummyrepo",
@@ -153,7 +154,7 @@ class DummyChangeFetcher(BaseCrawler):
             target_branch="main",
             number=1,
             change_id="org/dummyrepo/1",
-            on_author="John",
+            on_author=create_ident(url, "John"),
             on_created_at="2020-04-11T07:00:15Z",
             changed_files=[SimpleFile(path="README.md")],
             approval=None,
