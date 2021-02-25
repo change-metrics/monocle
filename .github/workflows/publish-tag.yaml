@@ -26,15 +26,14 @@ jobs:
           sudo sysctl -w vm.swappiness=1
           sudo sysctl -w fs.file-max=262144
           sudo sysctl -w vm.max_map_count=262144
-      
+
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
           docker-compose build
 
-      - name: Create runtime directories
+      - name: Set write permission for others for data directory
         run: |
-          mkdir data etc dump
           chmod o+w data
 
       - name: Start containers
@@ -55,7 +54,7 @@ jobs:
                     token: "fake token"
                     base_url: https://github.com
           EOL
-  
+
       - name: Wait for services to start
         run: sleep 15
 
@@ -64,7 +63,7 @@ jobs:
 
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up
-      
+
       - name: Check api service
         run: |
           docker-compose ps api | grep Up
