@@ -56,6 +56,14 @@ jobs:
           sudo sysctl -w fs.file-max=262144
           sudo sysctl -w vm.max_map_count=262144
 
+      - name: Copy env sample to env
+        run: |
+          cp -v .env.sample .env
+
+      - name: Read .env file
+        run: |
+          cat .env
+
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
@@ -104,4 +112,93 @@ jobs:
       - name: Check web service
         run: |
           docker-compose ps web | grep Up
+          curl -s http://localhost:3000/
+  podman:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+
+      - name: Install podman
+        run: |
+          sudo apt remove -y docker
+          sudo apt update -y
+          sudo apt install -y podman
+
+      - name: Install podman compose
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --user git+https://github.com/containers/podman-compose
+
+      - name: Copy env sample to env
+        run: |
+          cp -v .env.sample .env
+
+      - name: Read .env file
+        run: |
+          cat .env
+
+      - name: Build docker images
+        run: |
+          ln -s docker-compose.yml.dev docker-compose.yml
+          $HOME/.local/bin/podman-compose build
+
+      - name: Create runtime directories
+        run: |
+          mkdir -p data etc dump
+          chmod go+rw data
+
+      - name: Create a config.yaml file
+        run: |
+          cat > etc/config.yaml << EOL
+          ---
+          tenants:
+            - index: monocle
+              crawler:
+                loop_delay: 10
+                github_orgs:
+                  - name: tektoncd
+                    repository: pipeline
+                    updated_since: "2020-01-01"
+                    token: "fake token"
+                    base_url: https://github.com
+          EOL
+
+      - name: Start containers
+        run: $HOME/.local/bin/podman-compose up -d
+
+      - name: Wait for services to start
+        run: sleep 15
+
+      - name: Read logs from failed container
+        run: |
+          for container in $($HOME/.local/bin/podman-compose ps | grep -i exited | awk '{print $1}'); do
+              podman logs $container
+          done
+
+      - name: Display docker-compose ps
+        run: $HOME/.local/bin/podman-compose ps
+
+      - name: Check elastic service
+        run: $HOME/.local/bin/podman-compose ps | grep monocle_elastic_1 | grep Up
+
+      - name: Check api service
+        run: |
+          $HOME/.local/bin/podman-compose ps | grep monocle_api_1 | grep Up
+          curl -s http://localhost:9876/api/0/indices
+
+      - name: Check crawler service
+        run: |
+          $HOME/.local/bin/podman-compose ps | grep monocle_crawler_1 | grep Up
+
+      - name: Check web service
+        run: |
+          $HOME/.local/bin/podman-compose ps | grep monocle_web_1 | grep Up
           curl -s http://localhost:3000/

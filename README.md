@@ -132,6 +132,47 @@ $ docker-compose restart api
 $ docker-compose restart crawler
 ```
 
+#### Using podman-compose instead of Docker compose
+
+The Monocle services can be also deployed by using podman-compose tool.
+For using that, the docker-compose files are made for use by Docker, so
+some option like "restart: unless-stopped" does not exist in [Podman below
+version 3.0](https://www.redhat.com/sysadmin/podman-docker-compose).
+To install new podman release, you should fallow the
+[official manual guide](https://podman.io/getting-started/installation).
+
+For example, for Centos 7:
+
+```ShellSession
+sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/devel:kubic:libcontainers:stable.repo
+sudo yum -y install podman
+```
+
+After installation of podman 3.0, we suggest to install the latest version
+availble on Github. It can be dowloaded with this simple commands:
+
+```ShellSession
+pip3 install --user git+https://github.com/containers/podman-compose
+```
+
+After doing above steps, you will be able to run podman compose:
+
+```ShellSession
+chmod go+rw data
+$HOME/.local/bin/podman-compose up -d
+```
+
+#### Docker compose with podman as a backend
+
+You are able to run Monocle with podman as a backend.
+To achieve that, you need to install additional packages:
+
+```ShellSession
+sudo yum install -y podman-docker docker-compose
+```
+
+Above commands from section `Start docker-compose` should work without issue.
+
 #### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
