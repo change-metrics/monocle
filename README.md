@@ -263,6 +263,8 @@ tenants:
           token: <github_token>
           base_url: https://github.com
   - index: zuul
+    crawler:
+      loop_delay: 600
       gerrit_repositories:
         - name: ^zuul/.*
           updated_since: "2020-03-15"
