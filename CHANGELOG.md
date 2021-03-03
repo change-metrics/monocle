@@ -19,10 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Upgrade
 
-- [readme] Added migration instructions for the missing url field in gerrit event objects.
-- [dbmanage] Added migration process: missing-url-gerrit-events
-- [readme] Added migration instructions for updating idents.
-- [dbmanage] Added migration process: to_idents.
+- [readme] Added migration instructions for identity consolidation.
+- [dbmanage] Added migration process: from-0.8-to-last-stable
 
 ## [0.8.1] - 2021-02-15
 

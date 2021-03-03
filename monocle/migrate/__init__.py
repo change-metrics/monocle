@@ -54,10 +54,16 @@ def self_merge(elastic_conn, index) -> None:
                 to_update = []
 
 
-def missing_url_gerrit_events(elastic_conn, index) -> None:
+def string_ident_to_ident(elastic_conn, index) -> None:
     bulk_size = 500
     client = ELmonocleDB(elastic_conn, index, previous_schema=True)
+    client2 = ELmonocleDB(elastic_conn, index)
     url_cache: Dict[str, str] = {}
+
+    def bulk_update(to_update: List) -> List:
+        print("Updating %s objects ..." % len(to_update))
+        client2.update(to_update)
+        return []
 
     def get_change_url(obj: Dict) -> str:
         change_id = obj["change_id"]
@@ -74,34 +80,6 @@ def missing_url_gerrit_events(elastic_conn, index) -> None:
         url = change["url"]
         url_cache[change_id] = url
         return url
-
-    def bulk_update(to_update: List) -> List:
-        print("Updating %s events ..." % len(to_update))
-        client.update(to_update)
-        return []
-
-    to_update = []
-    for _obj in client.iter_index():
-        obj = _obj["_source"]
-        if obj["type"] in utils.get_events_list() and "url" not in obj.keys():
-            url = get_change_url(obj)
-            obj["url"] = url
-            to_update.append(dict_to_change_or_event(obj))
-            if len(to_update) == bulk_size:
-                to_update = bulk_update(to_update)
-
-    bulk_update(to_update)
-
-
-def to_idents(elastic_conn, index) -> None:
-    bulk_size = 500
-    client = ELmonocleDB(elastic_conn, index, previous_schema=True)
-    client2 = ELmonocleDB(elastic_conn, index)
-
-    def bulk_update(to_update: List) -> List:
-        print("Updating %s objects ..." % len(to_update))
-        client2.update(to_update)
-        return []
 
     def update_ident(obj: Dict) -> Dict:
 
@@ -128,7 +106,11 @@ def to_idents(elastic_conn, index) -> None:
 
     to_update = []
     for _obj in client.iter_index():
-        d = update_ident(_obj["_source"])
+        __obj = _obj["_source"]
+        if __obj["type"] in utils.get_events_list() and "url" not in __obj.keys():
+            url = get_change_url(__obj)
+            __obj["url"] = url
+        d = update_ident(__obj)
         obj = dict_to_change_or_event(d)
         to_update.append(obj)
         if len(to_update) == bulk_size:
@@ -143,8 +125,4 @@ def run_migrate(name, elastic_conn, index):
     processes[name](elastic_conn, index)
 
 
-processes = {
-    "self-merge": self_merge,
-    "missing-url-gerrit-events": missing_url_gerrit_events,
-    "to_idents": to_idents,
-}
+processes = {"self-merge": self_merge, "from-0.8-to-last-stable": string_ident_to_ident}

@@ -297,27 +297,20 @@ tenants:
 
 ## Database migration
 
-### From version 0.8.0
+### From version 0.8.X to next stable
 
-1. Gerrit event objects in the database were missing of field called `url`. To fix the issue
-   run the following migration process.
+Identities are consolidated in the database, to enable grouping platform multiple code review identities
+to be grouped.
 
-```
-docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate missing-url-gerrit-events
-```
-
-2. Identities are consolidated in the database.
+1. Run the migration process for each index
 
 ```
-docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate to_idents
+docker-compose stop
+docker-compose start elastic
+# For each indexes
+docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate from-0.8-to-last-stable
+docker-compose up -d
 ```
-
-3. The Monocle API must be restarted after the migration.
-
-```
-docker-compose restart api
-```
-
 
 ### From version 0.7.0
 
