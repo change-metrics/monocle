@@ -100,7 +100,7 @@ class ChangesTable extends React.Component {
                     </Row>
                     <Row>
                       <Col md={9}>
-                        Created {moment(change.created_at).fromNow()} by <Link className='span' to={addUrlField('authors', change.author)}>{change.author}</Link>
+                        Created {moment(change.created_at).fromNow()} by <Link className='span' to={addUrlField('authors', change.author.muid)}>{change.author.muid}</Link>
                         {' - '}
                         Updated {moment(change.updated_at).fromNow()}
                       </Col>

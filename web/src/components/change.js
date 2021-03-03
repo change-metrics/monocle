@@ -83,7 +83,7 @@ class ChangeTable extends React.Component {
                   matchers={[new UrlMatcher('url')]} />
                 <br />
                 <br />
-                <ChangeStatus data={change} /> {change.author} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseApprovalBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
+                <ChangeStatus data={change} /> {change.author.muid} authored {moment(change.created_at).fromNow()} <span key={0} style={{ float: 'right' }}>{change.approval.map((app, idx) => <span key={idx + 1}>{chooseApprovalBadgeStyle(app, idx + 1)} </span>)}</span></Card.Title>
               <Table striped responsive bordered hover size="sm">
                 <tbody>
                   <tr key={0}>
