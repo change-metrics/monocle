@@ -61,9 +61,8 @@ jobs:
           ln -s docker-compose.yml.dev docker-compose.yml
           docker-compose build
 
-      - name: Create runtime directories
+      - name: Set write permission for others for data directory
         run: |
-          mkdir data etc dump
           chmod o+w data
 
       - name: Start containers
