@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
 import unittest
 from flask import json
 from monocle import webapp
@@ -111,3 +112,23 @@ class TestWebAPI(unittest.TestCase):
             "/api/0/query/count_events?index=%s&repository=.*" % self.index2
         )
         self.assertEqual(5, json.loads(resp.data))
+        with self.client.session_transaction() as sess:
+            sess["remote_user"] = "jane"
+        resp = self.client.get(
+            "/api/0/query/count_events?index=%s&repository=.*" % self.index1,
+            headers={"REMOTE_USER": "jane"},
+        )
+        self.assertEqual(5, json.loads(resp.data))
+
+    def test_whoami(self):
+        "Test whoami method"
+        resp = self.client.get("/api/0/whoami")
+        self.assertEqual(503, resp.status_code)
+        os.environ["CLIENT_ID"] = "test"
+        resp = self.client.get("/api/0/whoami", headers={"REMOTE_USER": "jane"})
+        self.assertEqual("jane", json.loads(resp.data))
+
+        with self.client.session_transaction() as sess:
+            sess["username"] = "jane"
+        resp = self.client.get("/api/0/whoami")
+        self.assertEqual("jane", json.loads(resp.data))
