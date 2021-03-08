@@ -68,6 +68,10 @@ schema = {
                     "description": "Base url of the Gerrit instance",
                     "type": "string",
                 },
+                "prefix": {
+                    "description": "Repository name prefix in case of name collision",
+                    "type": "string",
+                },
                 "insecure": {
                     "description": "Set to true to bypass the HTTP X509 certificate verification",
                     "type": "boolean",
@@ -161,6 +165,7 @@ tenants:
           insecure: true
           login: fabien
           password: secure
+          prefix: namespace/
 """
 
 
