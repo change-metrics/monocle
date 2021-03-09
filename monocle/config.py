@@ -18,6 +18,8 @@ from typing import Dict, List
 from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
+from monocle.ident import IdentsConfig, ident_from_config
+
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
@@ -105,6 +107,21 @@ schema = {
                         "type": "array",
                         "items": {"type": "string"},
                     },
+                    "idents": {
+                        "description": "Identity aliases",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["ident", "aliases"],
+                            "properties": {
+                                "ident": {"type": "string"},
+                                "aliases": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                        },
+                    },
                     "crawler": {
                         "type": "object",
                         "properties": {
@@ -144,6 +161,12 @@ tenants:
           token: "123"
           base_url: https://github.com
   - index: tenant1
+    idents:
+      - ident: john
+        aliases:
+          - github.com/john
+          - github.domain.org/john
+          - review.opendev.org/John Doe/12345
     crawler:
       loop_delay: 10
       github_orgs:
@@ -202,3 +225,13 @@ def get_authorized_users(
     indexes_acl: Dict[str, List[Username]], index_name: str
 ) -> List[Username]:
     return indexes_acl.get(index_name, [])
+
+
+def get_idents_config(config: dict, index_name: str) -> IdentsConfig:
+    matches = list(
+        filter(lambda tenant: tenant["index"] == index_name, config["tenants"])
+    )
+    if len(matches) > 0:
+        return list(map(ident_from_config, matches[0].get("idents", [])))
+    else:
+        return []

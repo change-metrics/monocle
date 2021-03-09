@@ -39,3 +39,22 @@ class TestSchemas(unittest.TestCase):
 
         users = config.get_authorized_users(indexes_acl, "default")
         self.assertListEqual(users, ["john", "jane"])
+
+    def test_get_ident_config(self):
+        idents_config = config.get_idents_config(
+            yaml.safe_load(config.config_sample_yaml), "tenant1"
+        )
+        self.assertEqual(len(idents_config), 1)
+        self.assertEqual(idents_config[0].ident, "john")
+        self.assertListEqual(
+            idents_config[0].aliases,
+            [
+                "github.com/john",
+                "github.domain.org/john",
+                "review.opendev.org/John Doe/12345",
+            ],
+        )
+        idents_config = config.get_idents_config(
+            yaml.safe_load(config.config_sample_yaml), "default"
+        )
+        self.assertEqual(len(idents_config), 0)

@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from urllib.parse import urlparse
+
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import dict_to_change_or_event
-from monocle.basecrawler import create_ident_dict
+from monocle.ident import prefix, create_muid_from_uid
 from monocle import utils
 
 from typing import Dict, List, Optional
@@ -84,6 +86,14 @@ def string_ident_to_ident(elastic_conn, index) -> None:
     def update_ident(obj: Dict) -> Dict:
 
         url = obj["url"]
+
+        def create_ident_dict(url: str, uid: str) -> Dict:
+            domain = urlparse(url).netloc
+            uid = prefix(domain, uid)
+            return {
+                "uid": uid,
+                "muid": create_muid_from_uid(uid),
+            }
 
         def to_ident(value: Optional[str]) -> Optional[Dict]:
             if value:

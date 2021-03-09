@@ -18,18 +18,20 @@ import logging
 import socket
 import time
 
-from typing import List, Optional, Literal, Dict, Union
+from typing import List, Optional, Literal, Dict, Union, Tuple
 from dataclasses import dataclass, asdict
 
 from dacite import from_dict
 
 from elasticsearch.helpers import bulk
 from elasticsearch.helpers import scan
-from elasticsearch import client
+from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
+from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
+
 
 CHANGE_PREFIX = "monocle.changes.1."
 PREV_CHANGE_PREFIX = "monocle.changes."
@@ -52,12 +54,6 @@ class File:
 @dataclass
 class SimpleFile:
     path: str
-
-
-@dataclass
-class Ident:
-    uid: str
-    muid: str
 
 
 @dataclass
@@ -177,7 +173,8 @@ class ELmonocleDB:
         prefix=CHANGE_PREFIX,
         create=True,
         previous_schema=False,
-    ):
+        idents_config: Optional[IdentsConfig] = None,
+    ) -> None:
         host, port = elastic_conn.split(":")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
@@ -198,7 +195,7 @@ class ELmonocleDB:
                 time.sleep(timeout)
 
         self.log.info("Connecting to ES server at %s" % elastic_conn)
-        self.es = client.Elasticsearch(elastic_conn)
+        self.es = Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
         if previous_schema:
@@ -209,6 +206,8 @@ class ELmonocleDB:
         if not index:
             self.log.info("No index provided")
             return
+
+        self.idents_config = idents_config or []
 
         self.index = "{}{}".format(self.prefix, index)
         self.log.info("Using ES index %s" % self.index)
@@ -317,7 +316,7 @@ class ELmonocleDB:
             }
         }
         settings = {"mappings": self.mapping}
-        self.ic = client.IndicesClient(self.es)
+        self.ic = self.es.indices
         if create:
             self.ic.create(index=self.index, ignore=400, body=settings)
         # The authors_histo is failing on some context with this error when the
@@ -391,8 +390,6 @@ class ELmonocleDB:
         return ret[0]
 
     def run_named_query(self, name, *args, **kwargs):
-        # Here we set gte and lte if not provided by user
-        # especially to be able to set the histogram extended_bounds
         if name not in queries.public_queries:
             raise UnknownQueryException("Unknown query: %s" % name)
         return getattr(queries, name)(self.es, self.index, *args, **kwargs)
@@ -406,3 +403,59 @@ class ELmonocleDB:
     def iter_index(self):
         body = {"query": {"match_all": {}}}
         return scan(self.es, query=body, index=self.index)
+
+    def update_idents(self) -> None:
+
+        import json
+
+        bulk_size = 500
+
+        def get_obj_hash(obj: Union[Change, Event]) -> int:
+            dict_obj = change_or_event_to_dict(obj)
+            dict_obj_json = json.dumps(dict_obj, sort_keys=True)
+            return hash(dict_obj_json)
+
+        def update_ident(ident: Ident) -> Ident:
+            ident.muid = create_muid(ident.uid, self.idents_config)
+            return ident
+
+        def _update_idents(
+            obj: Union[Change, Event]
+        ) -> Tuple[Union[Change, Event], bool]:
+
+            prev_hash = get_obj_hash(obj)
+
+            if obj._type == "Change":
+                obj.author = update_ident(obj.author)
+                if obj.committer:
+                    obj.committer = update_ident(obj.committer)
+                if obj.merged_by:
+                    obj.merged_by = update_ident(obj.merged_by)
+                if obj.assignees:
+                    obj.assignees = list(map(update_ident, obj.assignees))
+                if obj.commits:
+                    for commit in obj.commits:
+                        commit.author = update_ident(commit.author)
+                        commit.committer = update_ident(commit.committer)
+            else:
+                if obj.author:
+                    obj.author = update_ident(obj.author)
+                if obj.on_author:
+                    obj.on_author = update_ident(obj.on_author)
+            return obj, not prev_hash == get_obj_hash(obj)
+
+        def bulk_update(to_update: List) -> List:
+            print("Updating %s objects ..." % len(to_update))
+            self.update(to_update)
+            return []
+
+        to_update = []
+        for _obj in self.iter_index():
+            obj = dict_to_change_or_event(_obj["_source"])
+            obj, updated = _update_idents(obj)
+            if updated:
+                to_update.append(obj)
+            if len(to_update) == bulk_size:
+                to_update = bulk_update(to_update)
+
+        bulk_update(to_update)

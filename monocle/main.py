@@ -20,6 +20,8 @@ import os
 import sys
 import yaml
 
+from typing import List, Union
+
 from pprint import pprint
 
 from monocle import utils
@@ -35,7 +37,7 @@ from monocle import config
 from monocle import migrate
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(prog="monocle")
     parser.add_argument("--loglevel", help="logging level", default="INFO")
     parser.add_argument(
@@ -57,6 +59,7 @@ def main():
     )
 
     parser_dbmanage = subparsers.add_parser("dbmanage", help="Database manager")
+    parser_dbmanage.add_argument("--config", help="Configuration file", required=False)
     parser_dbmanage.add_argument(
         "--delete-repository",
         help="Delete events related to a repository (regexp)",
@@ -72,6 +75,12 @@ def main():
     parser_dbmanage.add_argument(
         "--run-migrate",
         help="Run the migration process",
+    )
+
+    parser_dbmanage.add_argument(
+        "--update-idents",
+        help="Update identities",
+        action="store_true",
     )
 
     parser_dbquery = subparsers.add_parser(
@@ -158,7 +167,7 @@ def main():
 
     if not args.command:
         parser.print_usage()
-        return 1
+        sys.exit(1)
 
     if args.command == "crawler":
         realpath = os.path.expanduser(args.config)
@@ -167,17 +176,18 @@ def main():
             sys.exit(1)
         configdata = yaml.safe_load(open(realpath).read())
         config.validate(configdata, config.schema)
-        tpool = []
+        tpool: List[Union[Crawler, GroupCrawler]] = []
         group = {}
         app = None
         if os.getenv("APP_ID") and os.getenv("APP_KEY_PATH"):
             app = application.get_app(os.getenv("APP_ID"), os.getenv("APP_KEY_PATH"))
         for tenant in configdata["tenants"]:
+            idents_config = config.get_idents_config(configdata, tenant["index"])
             for crawler_item in tenant["crawler"].get("github_orgs", []):
                 tg = pullrequest.TokenGetter(
                     crawler_item["name"], crawler_item.get("token"), app
                 )
-                c_args = pullrequest.GithubCrawlerArgs(
+                github_c_args = pullrequest.GithubCrawlerArgs(
                     command="github_crawler",
                     org=crawler_item["name"],
                     updated_since=crawler_item["updated_since"],
@@ -190,6 +200,7 @@ def main():
                         index=tenant["index"],
                         timeout=args.elastic_timeout,
                     ),
+                    idents_config=idents_config,
                 )
                 gid = crawler_item.get("token")
                 if not gid:
@@ -197,33 +208,33 @@ def main():
                         # No token, if we have a app then get the token from the app
                         gid = app.get_token(org=crawler_item["name"])
                     else:
-                        log.info("Skip crawler because no token: %s" % c_args)
+                        log.info("Skip crawler because no token: %s" % github_c_args)
                         continue
                 if gid not in group:
                     group[gid] = GroupCrawler()
                     tpool.append(group[gid])
-                if c_args.repository:
-                    repositories = [c_args.repository]
+                if github_c_args.repository:
+                    repositories = [github_c_args.repository]
                 else:
-                    log.info("Discovering repositories in %s ..." % c_args.org)
+                    log.info("Discovering repositories in %s ..." % github_c_args.org)
                     # No repository specified for that organization so
                     # try to discover all of them
                     rf = organization.RepositoriesFetcher(
                         graphql.GithubGraphQLQuery(token_getter=tg)
                     )
-                    repos = rf.get(c_args.org)
+                    repos = rf.get(github_c_args.org)
                     repositories = [
                         repo["name"] for repo in repos if not repo["isArchived"]
                     ]
                     log.info(
                         "Found %s repositories in %s ..."
-                        % (len(repositories), c_args.org)
+                        % (len(repositories), github_c_args.org)
                     )
                 for repository in repositories:
-                    c_args.repository = repository
-                    group[gid].add_crawler(Runner(c_args))
+                    github_c_args.repository = repository
+                    group[gid].add_crawler(Runner(github_c_args))
             for crawler_item in tenant["crawler"].get("gerrit_repositories", []):
-                c_args = review.GerritCrawlerArgs(
+                gerrit_c_args = review.GerritCrawlerArgs(
                     command="gerrit_crawler",
                     repository=crawler_item["name"],
                     updated_since=crawler_item["updated_since"],
@@ -238,18 +249,35 @@ def main():
                         timeout=args.elastic_timeout,
                     ),
                     prefix=crawler_item.get("prefix"),
+                    idents_config=idents_config,
                 )
-                tpool.append(Crawler(c_args))
+                tpool.append(Crawler(gerrit_c_args))
         log.info("%d configured threads" % len(tpool))
         for cthread in tpool:
             cthread.start()
 
     if args.command == "dbmanage":
-        db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
+
+        if args.update_idents and not args.config:
+            log.error("Please provide the --config option")
+            sys.exit(1)
+        if args.update_idents:
+            idents_config = config.get_idents_config(
+                yaml.safe_load(open(args.config)), args.index
+            )
+        else:
+            idents_config = []
+        db = ELmonocleDB(
+            elastic_conn=args.elastic_conn,
+            index=args.index,
+            idents_config=idents_config,
+        )
         if args.delete_repository:
             db.delete_repository(args.delete_repository)
         if args.delete_index:
             db.delete_index()
+        if args.update_idents:
+            db.update_idents()
         if args.run_migrate:
             try:
                 migrate.run_migrate(args.run_migrate, args.elastic_conn, args.index)

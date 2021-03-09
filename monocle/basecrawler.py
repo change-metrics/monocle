@@ -17,8 +17,7 @@
 
 from typing import Any, List, Dict, Union, Optional
 from collections.abc import Callable
-from monocle.db.db import Change, Event, Ident
-from urllib.parse import urlparse
+from monocle.db.db import Change, Event
 
 RawChange = Dict[str, Any]
 
@@ -31,36 +30,3 @@ class BaseCrawler(object):
         self, changes: List[RawChange], dumper: Callable
     ) -> List[Union[Change, Event]]:
         raise NotImplementedError
-
-
-def prefix(domain: str, name: str) -> str:
-    if not name.startswith("%s/" % domain):
-        return domain + "/" + name
-    else:
-        return name
-
-
-def create_muid_from_uid(uid: str) -> str:
-    """This is a temporary implementation
-    The muid is the Monocle Uniq ID of an ident. But for now it
-    uses a placeolder. Later the muid will be used to prettify
-    the ident in the UI with Full Name gathered from a local DB.
-    """
-    elms = uid.split("/")
-    if len(elms) == 3 or len(elms) == 2:
-        muid = "/".join(elms[1:])
-    else:
-        raise RuntimeError("Wrong ident uid format")
-    return muid
-
-
-def create_ident_dict(url: str, uid: str) -> Dict:
-    domain = urlparse(url).netloc
-    uid = prefix(domain, uid)
-    return {"uid": uid, "muid": create_muid_from_uid(uid)}
-
-
-def create_ident(url: str, uid: str) -> Ident:
-    domain = urlparse(url).netloc
-    uid = prefix(domain, uid)
-    return Ident(uid=uid, muid=create_muid_from_uid(uid))

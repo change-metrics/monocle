@@ -24,6 +24,7 @@ from typing import List, Union
 
 from monocle.db.db import Change, Event, change_or_event_to_dict
 from monocle.github import pullrequest
+from monocle.github.graphql import GithubGraphQLQuery
 
 from .common import load_change
 from .common import DiffException
@@ -44,7 +45,9 @@ class TestGithubCrawler(unittest.TestCase):
     def extract_and_compare(self, name: str) -> None:
         input_pr, xtrd_ref = load_change(name)
 
-        pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
+        pr_fetcher = pullrequest.PRsFetcher(
+            GithubGraphQLQuery(None), "https://github.com", "", [], ""
+        )
         xtrd: List[Union[Change, Event]] = pr_fetcher.extract_objects(
             [input_pr], lambda x, y: None
         )
@@ -67,7 +70,9 @@ class TestGithubCrawler(unittest.TestCase):
         """
         Github crawler extracts buggy prs
         """
-        pr_fetcher = pullrequest.PRsFetcher(None, "https://github.com", None, None)
+        pr_fetcher = pullrequest.PRsFetcher(
+            GithubGraphQLQuery(None), "https://github.com", "", [], ""
+        )
         datasets_dir = Path(DATASETS)
         for fn in datasets_dir.glob("github_*.json"):
             self.log.info("Loading buggy PR from %s " % fn)

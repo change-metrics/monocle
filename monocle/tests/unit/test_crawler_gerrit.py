@@ -33,7 +33,7 @@ class TestGerritCrawler(unittest.TestCase):
     def extract_and_compare(self, base_url, name):
         input_review, xtrd_ref = load_change(name)
 
-        rf = review.ReviewesFetcher(base_url, None)
+        rf = review.ReviewesFetcher(base_url, None, False, [])
         xtrd: List[Union[Change, Event]] = rf.extract_objects(
             [input_review], lambda x, y: None
         )
@@ -59,7 +59,7 @@ class TestGerritCrawler(unittest.TestCase):
         """
         Gerrit crawler extracts buggy reviews
         """
-        rf = review.ReviewesFetcher("https://gerrit.org", None)
+        rf = review.ReviewesFetcher("https://gerrit.org", None, False, [])
         datasets_dir = Path(DATASETS)
         for fn in datasets_dir.glob("gerrit_*.json"):
             dataset = load_dataset(fn)
