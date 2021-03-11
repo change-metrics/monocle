@@ -117,7 +117,7 @@ def authorize():
 def whoami():
     if not os.getenv("CLIENT_ID"):
         return "Authentication not configured", 503
-    username = session.get("username")
+    username = session.get("username") or request.headers.get("Remote-User")
     return jsonify(username)
 
 
@@ -127,7 +127,7 @@ def query(name):
         abort(make_response(jsonify(errors=["No index provided"]), 404))
     index = request.args.get("index")
     if not config.is_public_index(indexes_acl, index):
-        user = session.get("username")
+        user = session.get("username") or request.headers.get("Remote-User")
         if user:
             if user not in config.get_authorized_users(indexes_acl, index):
                 return "Unauthorized to access index %s" % index, 403

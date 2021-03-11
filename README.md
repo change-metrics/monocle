@@ -305,6 +305,17 @@ A new field `self_merged` has been added. Previously indexed changes can be upda
 docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
 ```
 
+## Using external authentication system
+
+Monocle is supporting the "REMOTE_USER" header, which is mostly used
+by sign-on solutions. When Web server takes care of authentitaction,
+it set a "REMOTE_USER" environment variable, which can be used by Monocle.
+To check that, you are able to run simple curl command:
+
+```Shell
+curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
+```
+
 ## Contributing
 
 Follow [our contributing guide](CONTRIBUTING.md).
