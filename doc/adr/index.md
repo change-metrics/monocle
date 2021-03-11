@@ -5,3 +5,4 @@
 * [Design of ES documents](0005-design-of-es-documents.md)
 * [Cache ES queries](0006-cache-es-queries.md)
 * [Production ready services in all-in-one setup](0007-production-ready-in-all-in-one-setup.md)
+* [Unify idents across code review systems](unify-idents-across-code-review-systems.md)
