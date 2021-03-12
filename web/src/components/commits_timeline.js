@@ -25,7 +25,7 @@ class CommitsTimelineGraph extends React.Component {
   }
 
   getDate (commit) {
-    return moment(commit.authored_at).fromNow() + ' by ' + commit.author
+    return moment(commit.authored_at).fromNow() + ' by ' + commit.author.muid
   }
 
   render () {
