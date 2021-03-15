@@ -402,7 +402,7 @@ class ELmonocleDB:
 
     def iter_index(self):
         body = {"query": {"match_all": {}}}
-        return scan(self.es, query=body, index=self.index)
+        return scan(self.es, query=body, index=self.index, size=5000)
 
     def update_idents(self) -> None:
 
