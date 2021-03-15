@@ -14,8 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from urllib.parse import urlparse
+
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import dict_to_change_or_event
+from monocle.ident import prefix, create_muid_from_uid
+from monocle import utils
+
+from typing import Dict, List, Optional
 
 
 class NotAvailableException(Exception):
@@ -50,10 +56,83 @@ def self_merge(elastic_conn, index) -> None:
                 to_update = []
 
 
+def string_ident_to_ident(elastic_conn, index) -> None:
+    bulk_size = 500
+    client = ELmonocleDB(elastic_conn, index, previous_schema=True)
+    client2 = ELmonocleDB(elastic_conn, index)
+    url_cache: Dict[str, str] = {}
+
+    def bulk_update(to_update: List) -> List:
+        print("Updating %s objects ..." % len(to_update))
+        client2.update(to_update)
+        return []
+
+    def get_change_url(obj: Dict) -> str:
+        change_id = obj["change_id"]
+        if change_id in url_cache:
+            return url_cache[change_id]
+        # Set a large size to avoid pagination, we do not expect more than 10000
+        # objects (change + events) for a given change
+        params = {"change_ids": [change_id], "size": 10000, "from": 0}
+        result = client.run_named_query("changes_and_events", ".*", params=params)
+        changes = list(filter(lambda obj: obj["type"] == "Change", result["items"]))
+        if len(changes) != 1:
+            raise RuntimeError("Wrong unicity for change %s" % change_id)
+        change = changes[0]
+        url = change["url"]
+        url_cache[change_id] = url
+        return url
+
+    def update_ident(obj: Dict) -> Dict:
+
+        url = obj["url"]
+
+        def create_ident_dict(url: str, uid: str) -> Dict:
+            domain = urlparse(url).netloc
+            uid = prefix(domain, uid)
+            return {
+                "uid": uid,
+                "muid": create_muid_from_uid(uid),
+            }
+
+        def to_ident(value: Optional[str]) -> Optional[Dict]:
+            if value:
+                return create_ident_dict(url, value)
+            return None
+
+        if obj["type"] == "Change":
+            obj["author"] = to_ident(obj["author"])
+            obj["committer"] = to_ident(obj.get("committer"))
+            obj["merged_by"] = to_ident(obj.get("merged_by"))
+            obj["assignees"] = list(map(to_ident, obj.get("assignees", [])))
+            for commit in obj.get("commits", []):
+                commit["author"] = to_ident(commit["author"])
+                commit["committer"] = to_ident(commit["committer"])
+        else:
+            obj["author"] = to_ident(obj.get("author"))
+            obj["on_author"] = to_ident(obj.get("on_author"))
+
+        return obj
+
+    to_update = []
+    for _obj in client.iter_index():
+        __obj = _obj["_source"]
+        if __obj["type"] in utils.get_events_list() and "url" not in __obj.keys():
+            url = get_change_url(__obj)
+            __obj["url"] = url
+        d = update_ident(__obj)
+        obj = dict_to_change_or_event(d)
+        to_update.append(obj)
+        if len(to_update) == bulk_size:
+            to_update = bulk_update(to_update)
+
+    bulk_update(to_update)
+
+
 def run_migrate(name, elastic_conn, index):
     if name not in processes:
         raise NotAvailableException()
     processes[name](elastic_conn, index)
 
 
-processes = {"self-merge": self_merge}
+processes = {"self-merge": self_merge, "from-0.8-to-last-stable": string_ident_to_ident}

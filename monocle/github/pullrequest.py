@@ -24,7 +24,7 @@ from time import sleep
 from typing import Optional, List, Dict, Any, Union, Callable
 from dacite import from_dict
 
-from monocle.github.graphql import RequestTimeout
+from monocle.github.graphql import RequestTimeout, GithubGraphQLQuery
 from monocle.github import application
 from monocle.utils import is8601_to_dt
 from monocle.db.db import (
@@ -36,6 +36,7 @@ from monocle.db.db import (
     change_or_event_to_dict,
 )
 from monocle.basecrawler import BaseCrawler, RawChange
+from monocle.ident import create_ident as ci, IdentsConfig
 
 MAX_TRY = 3
 MAX_BULK_SIZE = 100
@@ -44,6 +45,29 @@ AUGMENT = 1.1
 
 name = "github_crawler"
 help = "Github Crawler to fetch PRs events"
+
+
+class TokenGetter:
+    def __init__(
+        self,
+        org,
+        token: Optional[str] = None,
+        app: Optional[application.MonocleGithubApp] = None,
+    ) -> None:
+        self.org = org
+        self.token = token
+        self.app = app
+
+    def get_token(self):
+        if self.token:
+            return self.token, {"contents": "read"}
+        elif self.app:
+            return self.app.get_token(self.org), self.app.get_permissions(self.org)
+        else:
+            raise RuntimeError("TokenGetter need a Token or a GithubApp")
+
+    def can_read_commit(self) -> bool:
+        return "contents" in self.get_token()[1].keys()
 
 
 class ExtractPRIssue(Exception):
@@ -59,27 +83,39 @@ class GithubCrawlerArgs(object):
     loop_delay: int
     command: str
     org: str
-    repository: str
-    base_url: str
-    token_getter: object
     db: object
+    base_url: str
+    token_getter: TokenGetter
+    idents_config: IdentsConfig
+    repository: Optional[str]
 
 
 class PRsFetcher(BaseCrawler):
 
     log = logging.getLogger(__name__)
 
-    def __init__(self, gql, base_url, org, repository):
+    def __init__(
+        self,
+        gql: GithubGraphQLQuery,
+        base_url: str,
+        org: str,
+        idents_config: IdentsConfig,
+        repository: Optional[str],
+    ) -> None:
         self.gql = gql
         self.size = MAX_BULK_SIZE
         self.base_url = base_url
         self.org = org
         self.repository = repository
+        self.idents_config = idents_config
         self.events_map = {
             "ClosedEvent": "ChangeAbandonedEvent",
             "PullRequestReview": "ChangeReviewedEvent",
             "HeadRefForcePushedEvent": "ChangeCommitForcePushedEvent",
         }
+
+    def create_ident(self, url: str, uid: str):
+        return ci(url, uid, self.idents_config)
 
     def get_pr_query(self, include_commits=True):
         commits = """
@@ -418,12 +454,13 @@ class PRsFetcher(BaseCrawler):
                 change["repository_fullname"].replace("/", "@"),
                 change["number"],
             )
-            change["url"] = "%s/%s/pull/%s" % (
+            url = "%s/%s/pull/%s" % (
                 self.base_url,
                 change["repository_fullname"],
                 change["number"],
             )
-            change["author"] = get_login(pr["author"])
+            change["url"] = url
+            change["author"] = self.create_ident(url, get_login(pr["author"]))
             change["branch"] = pr["headRefName"]
             change["target_branch"] = pr["baseRefName"]
             change["self_merged"] = None
@@ -446,8 +483,8 @@ class PRsFetcher(BaseCrawler):
                         )
                     )
             if pr["mergedBy"]:
-                change["merged_by"] = get_login(pr["mergedBy"])
-                change["self_merged"] = change["merged_by"] == change["author"]
+                change["merged_by"] = self.create_ident(url, get_login(pr["mergedBy"]))
+                change["self_merged"] = change["merged_by"].uid == change["author"].uid
             else:
                 change["merged_by"] = None
             change["updated_at"] = pr["updatedAt"]
@@ -466,7 +503,10 @@ class PRsFetcher(BaseCrawler):
                 map(lambda n: n["node"]["name"], pr["labels"]["edges"])
             )
             change["assignees"] = list(
-                map(lambda n: get_login(n["node"]), pr["assignees"]["edges"])
+                map(
+                    lambda n: self.create_ident(url, get_login(n["node"])),
+                    pr["assignees"]["edges"],
+                )
             )
             change["commits"] = []
             commits = [c for c in pr["commits"]["edges"] if c["node"]]
@@ -481,7 +521,7 @@ class PRsFetcher(BaseCrawler):
                     "title": _commit["message"],
                 }
                 for k in ("author", "committer"):
-                    obj[k] = get_login(_commit[k].get("user"))
+                    obj[k] = self.create_ident(url, get_login(_commit[k].get("user")))
                 change["commits"].append(from_dict(data_class=Commit, data=obj))
 
             if pr["commits"].get("totalCount") is not None:
@@ -508,7 +548,7 @@ class PRsFetcher(BaseCrawler):
                     "_type": "ChangeCommentedEvent",
                     "_id": _comment["id"],
                     "created_at": _comment["createdAt"],
-                    "author": get_login(_comment["author"]),
+                    "author": self.create_ident(url, get_login(_comment["author"])),
                 }
                 insert_change_attributes(obj, change)
                 objects.append(from_dict(data_class=Event, data=obj))
@@ -524,7 +564,7 @@ class PRsFetcher(BaseCrawler):
                     "_type": self.events_map[_timelineitem["__typename"]],
                     "_id": _timelineitem["id"],
                     "created_at": _timelineitem["createdAt"],
-                    "author": _author.get("login"),
+                    "author": self.create_ident(url, _author.get("login")),
                 }
                 insert_change_attributes(obj, change)
                 if "state" in _timelineitem:
@@ -546,11 +586,14 @@ class PRsFetcher(BaseCrawler):
                     # Seems the first PR's commit get a date with None value
                     # So make sense to set the same created_at date as the
                     # change
-                    "author": get_login(_commit["committer"].get("user")),
+                    "author": self.create_ident(
+                        url, get_login(_commit["committer"].get("user"))
+                    ),
                     "created_at": _commit.get("pushedDate") or change["created_at"],
                 }
                 insert_change_attributes(obj, change)
                 objects.append(from_dict(data_class=Event, data=obj))
+
             return objects
 
         objects: List[Union[Change, Event]] = []
@@ -561,29 +604,6 @@ class PRsFetcher(BaseCrawler):
                 self.log.exception("Unable to extract PR")
                 dumper(pr, "github_")
         return objects
-
-
-class TokenGetter:
-    def __init__(
-        self,
-        org,
-        token: Optional[str] = None,
-        app: Optional[application.MonocleGithubApp] = None,
-    ) -> None:
-        self.org = org
-        self.token = token
-        self.app = app
-
-    def get_token(self):
-        if self.token:
-            return self.token, {"contents": "read"}
-        elif self.app:
-            return self.app.get_token(self.org), self.app.get_permissions(self.org)
-        else:
-            raise RuntimeError("TokenGetter need a Token or a GithubApp")
-
-    def can_read_commit(self) -> bool:
-        return "contents" in self.get_token()[1].keys()
 
 
 if __name__ == "__main__":
@@ -629,7 +649,8 @@ if __name__ == "__main__":
         graphql.GithubGraphQLQuery(token_getter=tg),
         "https://github.com",
         args.org,
-        args.repository,
+        idents_config=[],
+        repository=args.repository,
     )
     if args.crawler:
         if not args.updated_since:

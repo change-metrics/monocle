@@ -156,14 +156,14 @@ $ chmod o+w data
 You might want to wipe a Monocle index:
 
 ```
-docker-compose run --no-deps crawler /usr/local/bin/monocle \
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
 --elastic-conn elastic:9200 dbmanage --index <index-name> --delete-repository ".*"
 ```
 
 or delete an index:
 
 ```
-docker-compose run --no-deps crawler /usr/local/bin/monocle \
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
 --elastic-conn elastic:9200 dbmanage --index <index-name> --delete-index
 ```
 
@@ -243,6 +243,49 @@ To let Monocle crawl and index privates repositories, either you must use a
 [GitHub Application](#github-application) or you must generate a Personal Access Token
 with the "repo" scope.
 
+### Identity Management
+
+Monocle is able to index changes from multiple code review systems. A contributor
+might get different identities across code review systems. Thus Monocle provides
+a configuration section to define aliases for contributors.
+
+Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity. 
+
+```YAML
+tenants:
+  - index: example
+    idents:
+      - ident: John Doe
+        aliases:
+          - github.com/john-doe
+          - review.opendev.org/John Doe/12345
+    crawler:
+      loop_delay: 300
+      github_orgs:
+        - name: containers
+          updated_since: "2000-01-01"
+          base_url: https://github.com
+      gerrit_repositories:
+        - name: ^openstack/.*
+          updated_since: "2000-01-01"
+          base_url: https://review.opendev.org
+```
+
+A contributor id on github.com or a GitHub enterprise instance is formated as `<domain>/<login>`.
+
+A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerrit-user-id>`.
+
+#### Apply idents configuration
+
+Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
+
+```bash
+docker-compose stop crawler
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --config /etc/monocle/config.yaml --update-idents
+docker-compose restart api
+docker-compose start crawler
+```
+
 ### Full configuration file example
 
 ```YAML
@@ -269,6 +312,11 @@ tenants:
           updated_since: "2020-03-15"
           base_url: https://review.opendev.org
   - index: openstack
+    idents:
+      - ident: "Fabien Boucher"
+        aliases:
+          - "review.opendev.org/Fabien Boucher/6889"
+          - "review.rdoproject.org/Fabien Boucher/112"
     crawler:
       loop_delay: 600
       gerrit_repositories:
@@ -279,7 +327,7 @@ tenants:
           updated_since: "2021-01-01"
           base_url: https://review.rdoproject.org/r/
           prefix: "rdo/"
-  # A private index only whitelisted users are authorized to access
+  # A private index. Only whitelisted users are authorized to access
   # See "Advanced deployment configuration" section
   - index: monocle-private
     users:
@@ -297,12 +345,26 @@ tenants:
 
 ## Database migration
 
+### From version 0.8.X to next stable
+
+Identities are consolidated in the database, to enable multiple code review identities (across code review systems) to be grouped.
+
+1. Run the migration process for each index
+
+```
+docker-compose stop
+docker-compose start elastic
+# For each indexes
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate from-0.8-to-last-stable
+docker-compose up -d
+```
+
 ### From version 0.7.0
 
 A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
 
 ```
-docker-compose run --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
 ```
 
 ## Using external authentication system

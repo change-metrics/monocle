@@ -1,24 +1,13 @@
 [
   {
-    "type": "Change",
-    "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
-    "draft": false,
     "number": 70,
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
     "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "author": "flepied",
-    "branch": "changed",
-    "target_branch": "master",
     "title": "expose ChangeCommitForcePushedEvent and ChangeCommitPushedEvent",
     "text": "exposed in the changes_lifecycle_stats API query\nexposed in the web \"Changes lifecycle stats\" graph + iteration/change",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "commit_count": 1,
     "additions": 90,
     "deletions": 33,
-    "approval": [
-      "APPROVED"
-    ],
     "changed_files_count": 3,
     "changed_files": [
       {
@@ -40,33 +29,57 @@
     "commits": [
       {
         "sha": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+        "author": {
+          "uid": "github.com/flepied",
+          "muid": "flepied"
+        },
+        "committer": {
+          "uid": "github.com/flepied",
+          "muid": "flepied"
+        },
         "authored_at": "2020-04-11T07:01:15Z",
         "committed_at": "2020-04-11T10:21:23Z",
         "additions": 90,
         "deletions": 33,
-        "title": "expose ChangeCommitForcePushedEven and ChangeCommitPushedEvent\n\n- exposed in the changes_lifecycle_stats API query\n- exposed in the web \"Changes lifecycle stats\" graph + iteration/change",
-        "author": "flepied",
-        "committer": "flepied"
+        "title": "expose ChangeCommitForcePushedEven and ChangeCommitPushedEvent\n\n- exposed in the changes_lifecycle_stats API query\n- exposed in the web \"Changes lifecycle stats\" graph + iteration/change"
       }
     ],
-    "commit_count": 1,
-    "merged_by": "morucci",
-    "self_merged": false,
-    "updated_at": "2020-04-12T06:20:26Z",
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "merged_by": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
+    "branch": "changed",
+    "target_branch": "master",
     "created_at": "2020-04-11T07:06:29Z",
     "merged_at": "2020-04-11T21:46:18Z",
+    "updated_at": "2020-04-12T06:20:26Z",
     "closed_at": "2020-04-11T21:46:19Z",
     "state": "MERGED",
     "duration": 52790,
     "mergeable": "UNKNOWN",
     "labels": [],
-    "assignees": []
+    "assignees": [],
+    "approval": [
+      "APPROVED"
+    ],
+    "draft": false,
+    "self_merged": false,
+    "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+    "type": "Change"
   },
   {
-    "type": "ChangeCreatedEvent",
-    "id": "CCEMDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
     "created_at": "2020-04-11T07:06:29Z",
-    "author": "flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -75,169 +88,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeCommentedEvent",
-    "id": "MDEyOklzc3VlQ29tbWVudDYxMjUxOTgxMw==",
-    "created_at": "2020-04-11T21:46:13Z",
-    "author": "morucci",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeCommitForcePushedEvent",
-    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc2NzgyMg==",
-    "created_at": "2020-04-11T07:19:12Z",
-    "author": "flepied",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeCommitForcePushedEvent",
-    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc4NDA5NA==",
-    "created_at": "2020-04-11T07:39:23Z",
-    "author": "flepied",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeCommitForcePushedEvent",
-    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzg1MDU1Nw==",
-    "created_at": "2020-04-11T09:03:45Z",
-    "author": "flepied",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeCommitForcePushedEvent",
-    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzkxMjA2Ng==",
-    "created_at": "2020-04-11T10:22:06Z",
-    "author": "flepied",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
-    "on_created_at": "2020-04-11T07:06:29Z",
-    "changed_files": [
-      {
-        "path": "monocle/db/queries.py"
-      },
-      {
-        "path": "web/src/components/changes_lifecycle.js"
-      },
-      {
-        "path": "web/src/components/changes_review.js"
-      }
-    ]
-  },
-  {
-    "type": "ChangeReviewedEvent",
-    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3MzkxODAyODIy",
-    "created_at": "2020-04-11T21:46:04Z",
-    "author": "morucci",
-    "repository_prefix": "change-metrics",
-    "repository_fullname": "change-metrics/monocle",
-    "repository_shortname": "monocle",
-    "branch": "changed",
-    "target_branch": "master",
-    "number": 70,
-    "change_id": "change-metrics@monocle@70",
-    "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -250,13 +104,15 @@
         "path": "web/src/components/changes_review.js"
       }
     ],
-    "approval": ["APPROVED"]
+    "id": "CCEMDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+    "type": "ChangeCreatedEvent"
   },
   {
-    "type": "ChangeMergedEvent",
-    "id": "MDExOkNsb3NlZEV2ZW50MzIyNDUyNDQwNQ==",
-    "created_at": "2020-04-11T21:46:19Z",
-    "author": "morucci",
+    "created_at": "2020-04-11T21:46:13Z",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -265,7 +121,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -277,13 +136,115 @@
       {
         "path": "web/src/components/changes_review.js"
       }
-    ]
+    ],
+    "id": "MDEyOklzc3VlQ29tbWVudDYxMjUxOTgxMw==",
+    "type": "ChangeCommentedEvent"
   },
   {
-    "type": "ChangeCommitPushedEvent",
-    "id": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+    "created_at": "2020-04-11T07:19:12Z",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc2NzgyMg==",
+    "type": "ChangeCommitForcePushedEvent"
+  },
+  {
+    "created_at": "2020-04-11T07:39:23Z",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzc4NDA5NA==",
+    "type": "ChangeCommitForcePushedEvent"
+  },
+  {
+    "created_at": "2020-04-11T09:03:45Z",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzg1MDU1Nw==",
+    "type": "ChangeCommitForcePushedEvent"
+  },
+  {
     "created_at": "2020-04-11T10:22:06Z",
-    "author": "flepied",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "repository_prefix": "change-metrics",
     "repository_fullname": "change-metrics/monocle",
     "repository_shortname": "monocle",
@@ -292,7 +253,10 @@
     "number": 70,
     "change_id": "change-metrics@monocle@70",
     "url": "https://github.com/change-metrics/monocle/pull/70",
-    "on_author": "flepied",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
     "on_created_at": "2020-04-11T07:06:29Z",
     "changed_files": [
       {
@@ -304,6 +268,110 @@
       {
         "path": "web/src/components/changes_review.js"
       }
-    ]
+    ],
+    "id": "MDIzOkhlYWRSZWZGb3JjZVB1c2hlZEV2ZW50MzIyMzkxMjA2Ng==",
+    "type": "ChangeCommitForcePushedEvent"
+  },
+  {
+    "created_at": "2020-04-11T21:46:04Z",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "approval": [
+      "APPROVED"
+    ],
+    "id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3MzkxODAyODIy",
+    "type": "ChangeReviewedEvent"
+  },
+  {
+    "created_at": "2020-04-11T21:46:19Z",
+    "author": {
+      "uid": "github.com/morucci",
+      "muid": "morucci"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "id": "MDExOkNsb3NlZEV2ZW50MzIyNDUyNDQwNQ==",
+    "type": "ChangeMergedEvent"
+  },
+  {
+    "created_at": "2020-04-11T10:22:06Z",
+    "author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "repository_prefix": "change-metrics",
+    "repository_fullname": "change-metrics/monocle",
+    "repository_shortname": "monocle",
+    "branch": "changed",
+    "target_branch": "master",
+    "number": 70,
+    "change_id": "change-metrics@monocle@70",
+    "url": "https://github.com/change-metrics/monocle/pull/70",
+    "on_author": {
+      "uid": "github.com/flepied",
+      "muid": "flepied"
+    },
+    "on_created_at": "2020-04-11T07:06:29Z",
+    "changed_files": [
+      {
+        "path": "monocle/db/queries.py"
+      },
+      {
+        "path": "web/src/components/changes_lifecycle.js"
+      },
+      {
+        "path": "web/src/components/changes_review.js"
+      }
+    ],
+    "id": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+    "type": "ChangeCommitPushedEvent"
   }
 ]

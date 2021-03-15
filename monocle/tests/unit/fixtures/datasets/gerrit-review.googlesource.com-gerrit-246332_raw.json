@@ -39,6 +39,7 @@
   "unresolved_comment_count": 0,
   "has_review_started": true,
   "submission_id": "246332",
+  "meta_rev_id": "deb37fda7a0fb23f80739c3c9adb01a78048c5d9",
   "_number": 246332,
   "owner": {
     "_account_id": 1029953,
@@ -426,6 +427,32 @@
   },
   "removable_reviewers": [],
   "reviewers": {
+    "CC": [
+      {
+        "_account_id": 1086906,
+        "name": "Tao Zhou",
+        "display_name": "Tao",
+        "email": "taoalpha@google.com",
+        "avatars": [
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s32-p/photo.jpg",
+            "height": 32
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s56-p/photo.jpg",
+            "height": 56
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s100-p/photo.jpg",
+            "height": 100
+          },
+          {
+            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s120-p/photo.jpg",
+            "height": 120
+          }
+        ]
+      }
+    ],
     "REVIEWER": [
       {
         "_account_id": 1011123,
@@ -525,32 +552,6 @@
           }
         ],
         "status": "\ud83c\udf39- \ud83c\uddea\ud83c\uddfa- \ud83c\uddec\ud83c\udde7"
-      }
-    ],
-    "CC": [
-      {
-        "_account_id": 1086906,
-        "name": "Tao Zhou",
-        "display_name": "Tao",
-        "email": "taoalpha@google.com",
-        "avatars": [
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s32-p/photo.jpg",
-            "height": 32
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s56-p/photo.jpg",
-            "height": 56
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s100-p/photo.jpg",
-            "height": 100
-          },
-          {
-            "url": "https://lh4.googleusercontent.com/-4YIB0mIZBGg/AAAAAAAAAAI/AAAAAAAAAAA/uR_1PIelgNs/s120-p/photo.jpg",
-            "height": 120
-          }
-        ]
       }
     ]
   },

@@ -18,20 +18,23 @@ import logging
 import socket
 import time
 
-from typing import List, Optional, Literal, Dict, Union
+from typing import List, Optional, Literal, Dict, Union, Tuple
 from dataclasses import dataclass, asdict
 
 from dacite import from_dict
 
 from elasticsearch.helpers import bulk
 from elasticsearch.helpers import scan
-from elasticsearch import client
+from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 
 from monocle.db import queries
+from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
 
-CHANGE_PREFIX = "monocle.changes."
+
+CHANGE_PREFIX = "monocle.changes.1."
+PREV_CHANGE_PREFIX = "monocle.changes."
 
 
 class UnknownQueryException(Exception):
@@ -56,8 +59,8 @@ class SimpleFile:
 @dataclass
 class Commit:
     sha: str
-    author: str
-    committer: str
+    author: Ident
+    committer: Ident
     authored_at: str  # eg. 2020-04-11T07:01:15Z
     committed_at: str  # eg. 2020-04-11T07:01:15Z
     additions: int
@@ -77,7 +80,7 @@ class Change:
     change_id: str
     title: Optional[str]
     text: Optional[str]
-    url: Optional[str]
+    url: str
     commit_count: Optional[int]
     additions: Optional[int]
     deletions: Optional[int]
@@ -87,9 +90,9 @@ class Change:
     repository_prefix: str
     repository_fullname: str
     repository_shortname: str
-    author: str
-    committer: Optional[str]
-    merged_by: Optional[str]
+    author: Ident
+    committer: Optional[Ident]
+    merged_by: Optional[Ident]
     branch: str
     target_branch: str
     created_at: str  # eg. 2020-04-11T07:01:15Z
@@ -100,7 +103,7 @@ class Change:
     duration: Optional[int]
     mergeable: Optional[str]
     labels: Optional[List[str]]
-    assignees: Optional[List[str]]
+    assignees: Optional[List[Ident]]
     approval: Optional[List[str]]
     draft: Optional[bool]
     self_merged: Optional[bool]
@@ -121,7 +124,7 @@ class Event:
         "ChangeMergedEvent",
     ]
     created_at: str  # eg. 2020-04-11T07:01:15Z
-    author: Optional[str]  # ChangeMergedEvent on Gerrit can have an optional author
+    author: Optional[Ident]  # ChangeMergedEvent on Gerrit can have an optional author
     repository_prefix: str
     repository_fullname: str
     repository_shortname: str
@@ -129,8 +132,8 @@ class Event:
     target_branch: str
     number: int
     change_id: str
-    url: Optional[str]
-    on_author: Optional[str]
+    url: str
+    on_author: Optional[Ident]
     on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     changed_files: List[SimpleFile]
     approval: Optional[List[str]]
@@ -169,7 +172,9 @@ class ELmonocleDB:
         timeout=10,
         prefix=CHANGE_PREFIX,
         create=True,
-    ):
+        previous_schema=False,
+        idents_config: Optional[IdentsConfig] = None,
+    ) -> None:
         host, port = elastic_conn.split(":")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
@@ -190,14 +195,19 @@ class ELmonocleDB:
                 time.sleep(timeout)
 
         self.log.info("Connecting to ES server at %s" % elastic_conn)
-        self.es = client.Elasticsearch(elastic_conn)
+        self.es = Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
-        self.prefix = prefix
+        if previous_schema:
+            self.prefix = PREV_CHANGE_PREFIX
+        else:
+            self.prefix = prefix
 
         if not index:
             self.log.info("No index provided")
             return
+
+        self.idents_config = idents_config or []
 
         self.index = "{}{}".format(self.prefix, index)
         self.log.info("Using ES index %s" % self.index)
@@ -230,8 +240,18 @@ class ELmonocleDB:
                 "commits": {
                     "properties": {
                         "sha": {"type": "keyword"},
-                        "author": {"type": "keyword"},
-                        "committer": {"type": "keyword"},
+                        "author": {
+                            "properties": {
+                                "uid": {"type": "keyword"},
+                                "muid": {"type": "keyword"},
+                            }
+                        },
+                        "committer": {
+                            "properties": {
+                                "uid": {"type": "keyword"},
+                                "muid": {"type": "keyword"},
+                            }
+                        },
                         "authored_at": {
                             "type": "date",
                             "format": "date_time_no_millis",
@@ -248,10 +268,30 @@ class ELmonocleDB:
                 "repository_prefix": {"type": "keyword"},
                 "repository_fullname": {"type": "keyword"},
                 "repository_shortname": {"type": "keyword"},
-                "author": {"type": "keyword"},
-                "on_author": {"type": "keyword"},
-                "committer": {"type": "keyword"},
-                "merged_by": {"type": "keyword"},
+                "author": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "on_author": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "committer": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
+                "merged_by": {
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    }
+                },
                 "branch": {"type": "keyword"},
                 "target_branch": {"type": "keyword"},
                 "created_at": {"type": "date", "format": "date_time_no_millis"},
@@ -263,14 +303,20 @@ class ELmonocleDB:
                 "duration": {"type": "integer"},
                 "mergeable": {"type": "keyword"},
                 "labels": {"type": "keyword"},
-                "assignees": {"type": "keyword"},
+                "assignees": {
+                    "type": "nested",
+                    "properties": {
+                        "uid": {"type": "keyword"},
+                        "muid": {"type": "keyword"},
+                    },
+                },
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},
             }
         }
         settings = {"mappings": self.mapping}
-        self.ic = client.IndicesClient(self.es)
+        self.ic = self.es.indices
         if create:
             self.ic.create(index=self.index, ignore=400, body=settings)
         # The authors_histo is failing on some context with this error when the
@@ -344,8 +390,6 @@ class ELmonocleDB:
         return ret[0]
 
     def run_named_query(self, name, *args, **kwargs):
-        # Here we set gte and lte if not provided by user
-        # especially to be able to set the histogram extended_bounds
         if name not in queries.public_queries:
             raise UnknownQueryException("Unknown query: %s" % name)
         return getattr(queries, name)(self.es, self.index, *args, **kwargs)
@@ -359,3 +403,59 @@ class ELmonocleDB:
     def iter_index(self):
         body = {"query": {"match_all": {}}}
         return scan(self.es, query=body, index=self.index)
+
+    def update_idents(self) -> None:
+
+        import json
+
+        bulk_size = 500
+
+        def get_obj_hash(obj: Union[Change, Event]) -> int:
+            dict_obj = change_or_event_to_dict(obj)
+            dict_obj_json = json.dumps(dict_obj, sort_keys=True)
+            return hash(dict_obj_json)
+
+        def update_ident(ident: Ident) -> Ident:
+            ident.muid = create_muid(ident.uid, self.idents_config)
+            return ident
+
+        def _update_idents(
+            obj: Union[Change, Event]
+        ) -> Tuple[Union[Change, Event], bool]:
+
+            prev_hash = get_obj_hash(obj)
+
+            if obj._type == "Change":
+                obj.author = update_ident(obj.author)
+                if obj.committer:
+                    obj.committer = update_ident(obj.committer)
+                if obj.merged_by:
+                    obj.merged_by = update_ident(obj.merged_by)
+                if obj.assignees:
+                    obj.assignees = list(map(update_ident, obj.assignees))
+                if obj.commits:
+                    for commit in obj.commits:
+                        commit.author = update_ident(commit.author)
+                        commit.committer = update_ident(commit.committer)
+            else:
+                if obj.author:
+                    obj.author = update_ident(obj.author)
+                if obj.on_author:
+                    obj.on_author = update_ident(obj.on_author)
+            return obj, not prev_hash == get_obj_hash(obj)
+
+        def bulk_update(to_update: List) -> List:
+            print("Updating %s objects ..." % len(to_update))
+            self.update(to_update)
+            return []
+
+        to_update = []
+        for _obj in self.iter_index():
+            obj = dict_to_change_or_event(_obj["_source"])
+            obj, updated = _update_idents(obj)
+            if updated:
+                to_update.append(obj)
+            if len(to_update) == bulk_size:
+                to_update = bulk_update(to_update)
+
+        bulk_update(to_update)

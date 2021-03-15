@@ -17,12 +17,13 @@
 import re
 import copy
 import iso8601
+from argparse import Namespace
 from datetime import date
 from datetime import timezone
 from datetime import datetime
 from datetime import timedelta
 
-from typing import List
+from typing import List, Dict
 
 
 def utcnow():
@@ -180,7 +181,7 @@ def get_events_list() -> List[str]:
     ]
 
 
-def set_params(input):
+def set_params(input: Namespace) -> Dict:
     def getter(attr, default):
         if isinstance(input, dict):
             return input.get(attr, default)

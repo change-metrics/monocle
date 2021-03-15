@@ -9,14 +9,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - [web] Support for REMOTE_USER header to enable external authentication system
+- [config] Added configuration section to enable the merge of contributor's metrics
+  across code review systems.
+- [dbmanage] Added update-idents option.
 
 ### Changed
 ### Removed
 ### Fixed
 
 - [config] Add missing validation for `prefix` option of the Gerrit crawler.
+- [crawler] Add missing change url field for gerrit events
 
 ### Upgrade
+
+- [readme] Added migration instructions for identity consolidation.
+- [dbmanage] Added migration process: from-0.8-to-last-stable
 
 ## [0.8.1] - 2021-02-15
 

@@ -36,6 +36,7 @@ from monocle.db.db import (
     change_or_event_to_dict,
 )
 from monocle.basecrawler import BaseCrawler, RawChange
+from monocle.ident import create_ident as ci, IdentsConfig
 
 
 name = "gerrit_crawler"
@@ -48,12 +49,13 @@ class GerritCrawlerArgs(object):
     loop_delay: int
     command: str
     base_url: str
-    repository: str
     db: object
-    insecure: bool
-    login: str
-    password: str
-    prefix: str
+    repository: str
+    idents_config: IdentsConfig
+    insecure: Optional[bool]
+    login: Optional[str]
+    password: Optional[str]
+    prefix: Optional[str]
 
 
 class ReviewesFetcher(BaseCrawler):
@@ -62,13 +64,14 @@ class ReviewesFetcher(BaseCrawler):
 
     def __init__(
         self,
-        base_url,
-        repository_prefix,
-        insecure=False,
-        login=None,
-        password=None,
-        prefix=None,
-    ):
+        base_url: str,
+        repository_prefix: str,
+        insecure: bool,
+        idents_config: IdentsConfig,
+        login: Optional[str] = None,
+        password: Optional[str] = None,
+        prefix: Optional[str] = None,
+    ) -> None:
         self.base_url = base_url
         self.repository_prefix = repository_prefix
         self.insecure = insecure
@@ -79,6 +82,10 @@ class ReviewesFetcher(BaseCrawler):
         if login:
             self.auth = HTTPBasicAuth(login, password)
         self.prefix = prefix
+        self.idents_config = idents_config
+
+    def create_ident(self, url: str, uid: str):
+        return ci(url, uid, self.idents_config)
 
     def convert_date_for_db(self, str_date):
         cdate = datetime.strptime(str_date[:-10], "%Y-%m-%d %H:%M:%S").strftime(
@@ -159,6 +166,7 @@ class ReviewesFetcher(BaseCrawler):
                     "target_branch": change["target_branch"],
                     "number": change["number"],
                     "change_id": change["change_id"],
+                    "url": change["url"],
                     "on_author": change["author"],
                     "on_created_at": change["created_at"],
                     "changed_files": [
@@ -184,6 +192,8 @@ class ReviewesFetcher(BaseCrawler):
                 review["project"]
             )
 
+            url = "%s/%s" % (self.base_url, review["_number"])
+
             change = {
                 "_type": "Change",
                 "_id": review["id"],
@@ -194,9 +204,12 @@ class ReviewesFetcher(BaseCrawler):
                 "repository_prefix": repository_prefix,
                 "repository_fullname": repository_fullname,
                 "repository_shortname": repository_shortname,
-                "url": "%s/%s" % (self.base_url, review["_number"]),
-                "author": "%s/%s"
-                % (review["owner"].get("name"), review["owner"]["_account_id"]),
+                "url": url,
+                "author": self.create_ident(
+                    url,
+                    "%s/%s"
+                    % (review["owner"].get("name"), review["owner"]["_account_id"]),
+                ),
                 "title": review["subject"],
                 "updated_at": self.convert_date_for_db(review["updated"]),
                 "created_at": self.convert_date_for_db(review["created"]),
@@ -214,10 +227,13 @@ class ReviewesFetcher(BaseCrawler):
                 # Note(fbo): Only one assignee possible by review on Gerrit
                 "assignees": (
                     [
-                        "%s/%s"
-                        % (
-                            review["assignee"].get("name"),
-                            review["assignee"]["_account_id"],
+                        self.create_ident(
+                            url,
+                            "%s/%s"
+                            % (
+                                review["assignee"].get("name"),
+                                review["assignee"]["_account_id"],
+                            ),
                         )
                     ]
                     if review.get("assignee")
@@ -262,9 +278,13 @@ class ReviewesFetcher(BaseCrawler):
                 _commit["commit"]["committer"]["date"]
             )
             obj["author"] = change["author"]
-            obj["committer"] = "%s/%s" % (
-                _commit["uploader"].get("name"),
-                _commit["uploader"]["_account_id"],
+            obj["committer"] = self.create_ident(
+                url,
+                "%s/%s"
+                % (
+                    _commit["uploader"].get("name"),
+                    _commit["uploader"]["_account_id"],
+                ),
             )
             change["commits"].append(from_dict(data_class=Commit, data=obj))
 
@@ -290,11 +310,17 @@ class ReviewesFetcher(BaseCrawler):
             if change["state"] == "MERGED":
                 if "submitter" in review:
                     # Gerrit 2.x seems to not have that submitter attribute
-                    change["merged_by"] = "%s/%s" % (
-                        review["submitter"].get("name"),
-                        review["submitter"]["_account_id"],
+                    change["merged_by"] = self.create_ident(
+                        url,
+                        "%s/%s"
+                        % (
+                            review["submitter"].get("name"),
+                            review["submitter"]["_account_id"],
+                        ),
                     )
-                    change["self_merged"] = change["merged_by"] == change["author"]
+                    change["self_merged"] = (
+                        change["merged_by"].uid == change["author"].uid
+                    )
             for label in review["labels"]:
                 for _review in review["labels"][label].get("all", []):
                     # If the date field exists then it means a review label
@@ -343,10 +369,13 @@ class ReviewesFetcher(BaseCrawler):
                         "_type": "ChangeCommitPushedEvent",
                         "_id": comment["id"],
                         "created_at": self.convert_date_for_db(comment["date"]),
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
+                        "author": self.create_ident(
+                            url,
+                            "%s/%s"
+                            % (
+                                comment["author"].get("name"),
+                                comment["author"]["_account_id"],
+                            ),
                         ),
                     }
                     insert_change_attributes(obj, change)
@@ -363,10 +392,13 @@ class ReviewesFetcher(BaseCrawler):
                         "_type": "ChangeCommentedEvent",
                         "_id": comment["id"],
                         "created_at": self.convert_date_for_db(comment["date"]),
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
+                        "author": self.create_ident(
+                            url,
+                            "%s/%s"
+                            % (
+                                comment["author"].get("name"),
+                                comment["author"]["_account_id"],
+                            ),
                         ),
                     }
                     insert_change_attributes(obj, change)
@@ -379,12 +411,17 @@ class ReviewesFetcher(BaseCrawler):
                         "_id": "approval_%s" % comment["id"],
                         "created_at": self.convert_date_for_db(comment["date"]),
                         "approval": [
-                            approval_match.groupdict().get("approval").strip()
+                            a.strip()
+                            for a in [approval_match.groupdict().get("approval")]
+                            if a
                         ],
-                        "author": "%s/%s"
-                        % (
-                            comment["author"].get("name"),
-                            comment["author"]["_account_id"],
+                        "author": self.create_ident(
+                            url,
+                            "%s/%s"
+                            % (
+                                comment["author"].get("name"),
+                                comment["author"]["_account_id"],
+                            ),
                         ),
                     }
                     insert_change_attributes(obj, change)
@@ -434,7 +471,8 @@ if __name__ == "__main__":
     rf = ReviewesFetcher(
         args.base_url,
         args.repository,
-        insecure=args.insecure,
+        args.insecure,
+        idents_config=[],
         login=args.login,
         password=args.password,
         prefix=args.prefix,

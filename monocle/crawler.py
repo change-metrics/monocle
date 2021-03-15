@@ -53,7 +53,8 @@ class Runner(object):
                 GithubGraphQLQuery(token_getter=args.token_getter),
                 args.base_url,
                 args.org,
-                args.repository,
+                args.idents_config,
+                repository=args.repository,
             )
         elif args.command == "gerrit_crawler":
             self.repository_el_re = (
@@ -63,6 +64,7 @@ class Runner(object):
                 args.base_url,
                 args.repository,
                 args.insecure,
+                args.idents_config,
                 login=args.login,
                 password=args.password,
                 prefix=args.prefix,
