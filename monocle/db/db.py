@@ -402,47 +402,48 @@ class ELmonocleDB:
 
     def iter_index(self):
         body = {"query": {"match_all": {}}}
-        return scan(self.es, query=body, index=self.index)
+        return scan(self.es, query=body, index=self.index, size=5000)
 
     def update_idents(self) -> None:
 
         import json
 
-        bulk_size = 500
+        bulk_size = 7500
 
-        def get_obj_hash(obj: Union[Change, Event]) -> int:
-            dict_obj = change_or_event_to_dict(obj)
-            dict_obj_json = json.dumps(dict_obj, sort_keys=True)
-            return hash(dict_obj_json)
+        def get_obj_hash(obj: Dict) -> int:
+            obj_json = json.dumps(obj, sort_keys=True)
+            return hash(obj_json)
 
-        def update_ident(ident: Ident) -> Ident:
-            ident.muid = create_muid(ident.uid, self.idents_config)
-            return ident
+        def update_ident(dict_ident: Dict) -> Dict:
+            dict_ident["muid"] = create_muid(dict_ident["uid"], self.idents_config)
+            return dict_ident
 
-        def _update_idents(
-            obj: Union[Change, Event]
-        ) -> Tuple[Union[Change, Event], bool]:
+        def _update_idents(obj: Dict) -> Tuple[Optional[Union[Change, Event]], bool]:
 
             prev_hash = get_obj_hash(obj)
 
-            if obj._type == "Change":
-                obj.author = update_ident(obj.author)
-                if obj.committer:
-                    obj.committer = update_ident(obj.committer)
-                if obj.merged_by:
-                    obj.merged_by = update_ident(obj.merged_by)
-                if obj.assignees:
-                    obj.assignees = list(map(update_ident, obj.assignees))
-                if obj.commits:
-                    for commit in obj.commits:
-                        commit.author = update_ident(commit.author)
-                        commit.committer = update_ident(commit.committer)
+            if obj["type"] == "Change":
+                obj["author"] = update_ident(obj["author"])
+                if "committer" in obj:
+                    obj["committer"] = update_ident(obj["committer"])
+                if "merged_by" in obj:
+                    obj["merged_by"] = update_ident(obj["merged_by"])
+                if "assignees" in obj:
+                    obj["assignees"] = list(map(update_ident, obj["assignees"]))
+                if "commits" in obj:
+                    for commit in obj["commits"]:
+                        commit["author"] = update_ident(commit["author"])
+                        commit["committer"] = update_ident(commit["committer"])
             else:
-                if obj.author:
-                    obj.author = update_ident(obj.author)
-                if obj.on_author:
-                    obj.on_author = update_ident(obj.on_author)
-            return obj, not prev_hash == get_obj_hash(obj)
+                if "author" in obj:
+                    obj["author"] = update_ident(obj["author"])
+                if "on_author" in obj:
+                    obj["on_author"] = update_ident(obj["on_author"])
+            updated = not prev_hash == get_obj_hash(obj)
+            if updated:
+                return dict_to_change_or_event(obj), True
+            else:
+                return None, False
 
         def bulk_update(to_update: List) -> List:
             print("Updating %s objects ..." % len(to_update))
@@ -450,8 +451,12 @@ class ELmonocleDB:
             return []
 
         to_update = []
+        total_read = 0
         for _obj in self.iter_index():
-            obj = dict_to_change_or_event(_obj["_source"])
+            total_read += 1
+            if total_read % bulk_size == 0:
+                print("%s objects read from the database" % total_read)
+            obj = _obj["_source"]
             obj, updated = _update_idents(obj)
             if updated:
                 to_update.append(obj)

@@ -68,6 +68,7 @@ public_queries = (
     "last_state_changed_changes",
     "oldest_open_changes",
     "changes_and_events",
+    "changes",
     "new_contributors",
     "changes_by_file_map",
     "authors_by_file_map",
@@ -923,6 +924,21 @@ def changes_and_events(es, index, repository_fullname, params):
     params["etype"] = [
         "Change",
     ] + get_events_list()
+    body = {
+        "sort": [{"created_at": {"order": "asc"}}],
+        "size": params["size"],
+        "from": params["from"],
+        "query": generate_filter(es, index, repository_fullname, params),
+    }
+    data = run_query(es, index, body)
+    changes = [r["_source"] for r in data["hits"]["hits"]]
+    changes = enhance_changes(changes)
+    return {"items": changes, "total": totalc(data["hits"]["total"])}
+
+
+def changes(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params["etype"] = ["Change"]
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params["size"],

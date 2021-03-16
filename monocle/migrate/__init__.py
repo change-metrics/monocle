@@ -57,35 +57,39 @@ def self_merge(elastic_conn, index) -> None:
 
 
 def string_ident_to_ident(elastic_conn, index) -> None:
-    bulk_size = 500
+    bulk_size = 7500
     client = ELmonocleDB(elastic_conn, index, previous_schema=True)
     client2 = ELmonocleDB(elastic_conn, index)
-    url_cache: Dict[str, str] = {}
+    changes_url_lookup: Dict[str, str] = {}
+    to_update: List = []
+    need_url_update: List[Dict] = []
+    total_objects_updated = 0
 
-    def bulk_update(to_update: List) -> List:
-        print("Updating %s objects ..." % len(to_update))
+    def bulk_update(to_update: List) -> None:
         client2.update(to_update)
-        return []
 
-    def get_change_url(obj: Dict) -> str:
-        change_id = obj["change_id"]
-        if change_id in url_cache:
-            return url_cache[change_id]
-        # Set a large size to avoid pagination, we do not expect more than 10000
-        # objects (change + events) for a given change
-        params = {"change_ids": [change_id], "size": 10000, "from": 0}
-        result = client.run_named_query("changes_and_events", ".*", params=params)
-        changes = list(filter(lambda obj: obj["type"] == "Change", result["items"]))
-        if len(changes) != 1:
-            raise RuntimeError("Wrong unicity for change %s" % change_id)
-        change = changes[0]
-        url = change["url"]
-        url_cache[change_id] = url
-        return url
+    def update_changes_url_lookup(objs: List[Dict]) -> None:
+        change_ids = [o["change_id"] for o in objs]
+        change_ids = list(set(change_ids))
+        change_ids = [_id for _id in change_ids if _id not in changes_url_lookup]
+        print("Updating change_url_lookup for %s changes ..." % len(change_ids))
+        params = {"change_ids": change_ids, "size": 10000, "from": 0}
+        result = client.run_named_query("changes", ".*", params=params)
+        changes = result["items"]
+        for change in changes:
+            changes_url_lookup[change["change_id"]] = change["url"]
+        print("%s entries in changes_url_lookup" % len(changes_url_lookup))
 
     def update_ident(obj: Dict) -> Dict:
 
         url = obj["url"]
+
+        def update_approval_type(approval):
+            if isinstance(approval, str):
+                ret = [approval]
+            else:
+                ret = approval
+            return [r for r in ret if r is not None]
 
         def create_ident_dict(url: str, uid: str) -> Dict:
             domain = urlparse(url).netloc
@@ -106,27 +110,58 @@ def string_ident_to_ident(elastic_conn, index) -> None:
             obj["merged_by"] = to_ident(obj.get("merged_by"))
             obj["assignees"] = list(map(to_ident, obj.get("assignees", [])))
             for commit in obj.get("commits", []):
-                commit["author"] = to_ident(commit["author"])
-                commit["committer"] = to_ident(commit["committer"])
+                # Also fix commit's author that might be not exists
+                if "author" not in commit.keys():
+                    commit["author"] = obj["author"]
+                else:
+                    commit["author"] = to_ident(commit["author"])
+                # Also fix commit's committer that might be not exists
+                if "committer" not in commit.keys():
+                    commit["committer"] = commit["author"]
+                else:
+                    commit["committer"] = to_ident(commit["committer"])
         else:
             obj["author"] = to_ident(obj.get("author"))
             obj["on_author"] = to_ident(obj.get("on_author"))
+            # Also fix missing created_at date on ChangeCommitPushedEvent
+            if obj["type"] == "ChangeCommitPushedEvent" and obj["created_at"] is None:
+                obj["created_at"] = obj["on_created_at"]
+        # Also fix approval format if needed
+        if obj.get("approval"):
+            obj["approval"] = update_approval_type(obj["approval"])
 
         return obj
 
-    to_update = []
-    for _obj in client.iter_index():
-        __obj = _obj["_source"]
-        if __obj["type"] in utils.get_events_list() and "url" not in __obj.keys():
-            url = get_change_url(__obj)
-            __obj["url"] = url
-        d = update_ident(__obj)
-        obj = dict_to_change_or_event(d)
-        to_update.append(obj)
-        if len(to_update) == bulk_size:
-            to_update = bulk_update(to_update)
+    def proceed():
+        if need_url_update:
+            update_changes_url_lookup(need_url_update)
+        for o in to_update:
+            if o in need_url_update:
+                if o["change_id"] in changes_url_lookup:
+                    o["url"] = changes_url_lookup[o["change_id"]]
+                else:
+                    print("Warning - unable to find change %s" % o["change_id"])
+                    o["url"] = "https://undefined"
+        updated = list(map(update_ident, to_update))
+        print("Updating %s objects ..." % len(to_update))
+        bulk_update(list(map(dict_to_change_or_event, updated)))
 
-    bulk_update(to_update)
+    for _obj in client.iter_index():
+        obj = _obj["_source"]
+        if obj["type"] in utils.get_events_list() and "url" not in obj.keys():
+            need_url_update.append(obj)
+        to_update.append(obj)
+
+        if len(to_update) == bulk_size:
+            proceed()
+            total_objects_updated += len(to_update)
+            print("Total objects updated: %s" % total_objects_updated)
+            need_url_update = []
+            to_update = []
+
+    proceed()
+    total_objects_updated += len(to_update)
+    print("Total objects updated: %s" % total_objects_updated)
 
 
 def run_migrate(name, elastic_conn, index):
