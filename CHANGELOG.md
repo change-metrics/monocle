@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [config] Added configuration section to enable the merge of contributor's metrics
   across code review systems.
 - [dbmanage] Added update-idents option.
+- [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
 
 ### Changed
 ### Removed

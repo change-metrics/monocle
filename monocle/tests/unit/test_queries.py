@@ -16,6 +16,7 @@
 
 import logging
 import unittest
+import os
 
 from deepdiff import DeepDiff
 
@@ -45,7 +46,15 @@ class TestQueries(unittest.TestCase):
         log = logging.getLogger(__name__)
         # log to stderr
         log.addHandler(logging.StreamHandler())
-        cls.eldb = ELmonocleDB(index=cls.index, prefix="monocle.test.")
+        cls.eldb = ELmonocleDB(
+            index=cls.index,
+            prefix="monocle.test.",
+            user=os.getenv("ELASTIC_USER", None),
+            password=os.getenv("ELASTIC_PASSWORD", None),
+            use_ssl=os.getenv("ELASTIC_USE_SSL", None),
+            verify_certs=os.getenv("ELASTIC_INSECURE", None),
+            ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
+        )
         for dataset in cls.datasets:
             index_dataset(cls.eldb, dataset)
 

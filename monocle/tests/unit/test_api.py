@@ -41,7 +41,15 @@ class TestWebAPI(unittest.TestCase):
         # log to stderr
         log.addHandler(logging.StreamHandler())
         for index in (cls.index1, cls.index2):
-            cls.eldb = ELmonocleDB(index=index, prefix=cls.prefix)
+            cls.eldb = ELmonocleDB(
+                index=index,
+                prefix=cls.prefix,
+                user=os.getenv("ELASTIC_USER", None),
+                password=os.getenv("ELASTIC_PASSWORD", None),
+                use_ssl=os.getenv("ELASTIC_USE_SSL", False),
+                verify_certs=os.getenv("ELASTIC_INSECURE", None),
+                ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
+            )
             for dataset in cls.datasets:
                 index_dataset(cls.eldb, dataset)
 

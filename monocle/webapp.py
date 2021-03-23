@@ -159,6 +159,11 @@ def do_query(index, repository_fullname, args, name):
         index=index,
         prefix=CHANGE_PREFIX,
         create=False,
+        user=os.getenv("ELASTIC_USER", None),
+        password=os.getenv("ELASTIC_PASSWORD", None),
+        use_ssl=os.getenv("ELASTIC_USE_SSL", None),
+        verify_certs=os.getenv("ELASTIC_INSECURE", None),
+        ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
     )
     try:
         result = db.run_named_query(name, repository_fullname, params)
@@ -173,6 +178,11 @@ def indices():
         elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
         create=False,
         prefix=CHANGE_PREFIX,
+        user=os.getenv("ELASTIC_USER", None),
+        password=os.getenv("ELASTIC_PASSWORD", None),
+        use_ssl=os.getenv("ELASTIC_USE_SSL", None),
+        verify_certs=os.getenv("ELASTIC_INSECURE", None),
+        ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
     )
     _indices = db.get_indices()
     indices = []
