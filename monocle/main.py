@@ -49,6 +49,30 @@ def main() -> None:
     parser.add_argument(
         "--elastic-conn", help="Elasticsearch connection info", default="localhost:9200"
     )
+    parser.add_argument(
+        "--use-ssl",
+        help="Use https protocol for communication with Elasticsearch",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--insecure",
+        help="Skip SSL CA cert validation",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--ssl_show_warn",
+        help="Skip showing a SSL warning message if it is not signed "
+        "by CA authority",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--elastic-user",
+        help="Username for Elasticsearch authorization",
+    )
+    parser.add_argument(
+        "--elastic-password",
+        help="Password for Elasticsearch authorization",
+    )
     subparsers = parser.add_subparsers(
         title="Subcommands", description="valid subcommands", dest="command"
     )
@@ -199,6 +223,11 @@ def main() -> None:
                         elastic_conn=args.elastic_conn,
                         index=tenant["index"],
                         timeout=args.elastic_timeout,
+                        user=args.elastic_user,
+                        password=args.elastic_password,
+                        use_ssl=args.use_ssl,
+                        verify_certs=args.insecure,
+                        ssl_show_warn=args.ssl_show_warn,
                     ),
                     idents_config=idents_config,
                 )
@@ -247,6 +276,11 @@ def main() -> None:
                         elastic_conn=args.elastic_conn,
                         index=tenant["index"],
                         timeout=args.elastic_timeout,
+                        user=args.elastic_user,
+                        password=args.elastic_password,
+                        use_ssl=args.use_ssl,
+                        verify_certs=args.insecure,
+                        ssl_show_warn=args.ssl_show_warn,
                     ),
                     prefix=crawler_item.get("prefix"),
                     idents_config=idents_config,
@@ -271,6 +305,11 @@ def main() -> None:
             elastic_conn=args.elastic_conn,
             index=args.index,
             idents_config=idents_config,
+            user=args.elastic_user,
+            password=args.elastic_password,
+            use_ssl=args.use_ssl,
+            verify_certs=args.insecure,
+            ssl_show_warn=args.ssl_show_warn,
         )
         if args.delete_repository:
             db.delete_repository(args.delete_repository)
@@ -287,7 +326,15 @@ def main() -> None:
                 )
 
     if args.command == "dbquery":
-        db = ELmonocleDB(elastic_conn=args.elastic_conn, index=args.index)
+        db = ELmonocleDB(
+            elastic_conn=args.elastic_conn,
+            index=args.index,
+            user=args.elastic_user,
+            password=args.elastic_password,
+            use_ssl=args.use_ssl,
+            verify_certs=args.insecure,
+            ssl_show_warn=args.ssl_show_warn,
+        )
         params = utils.set_params(args)
         try:
             ret = db.run_named_query(args.name, args.repository.lstrip("^"), params)

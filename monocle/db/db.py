@@ -174,12 +174,36 @@ class ELmonocleDB:
         create=True,
         previous_schema=False,
         idents_config: Optional[IdentsConfig] = None,
+        user=None,
+        password=None,
+        use_ssl=None,
+        verify_certs=None,
+        ssl_show_warn=None,
     ) -> None:
         host, port = elastic_conn.split(":")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ip = socket.gethostbyname(host)
         self.log.info("ES IP is %s" % ip)
         self.log.info("ES prefix is %s" % prefix)
+
+        elastic_conn = [
+            {
+                "hst": host,
+                "port": port,
+            }
+        ]
+
+        if use_ssl:
+            elastic_conn[0]["use_ssl"] = use_ssl
+
+        if not verify_certs:
+            elastic_conn[0]["verify_certs"] = verify_certs
+
+        if not ssl_show_warn:
+            elastic_conn[0]["ssl_show_warn"] = ssl_show_warn
+
+        if user and password:
+            elastic_conn[0]["http_auth"] = "%s:%s" % (user, password)
 
         while True:
             try:
