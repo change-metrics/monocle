@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   across code review systems.
 - [dbmanage] Added update-idents option.
 - [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
+- [elastic] - changed Elasticsearch backend to Opendistro for Elasticsearch
 
 ### Changed
 ### Removed

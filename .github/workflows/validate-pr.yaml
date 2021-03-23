@@ -21,7 +21,7 @@ jobs:
       - name: Runs Elasticsearch
         uses: elastic/elastic-github-actions/elasticsearch@master
         with:
-          stack-version: 7.8.0
+          stack-version: 7.10.0
 
       - name: Display indexes
         run: curl -s -I -X GET http://localhost:9200/_cat/indices
@@ -43,6 +43,7 @@ jobs:
       #   uses: quality-of-tests/has-useful-tests-action@master
       #   with:
       #     run-tests: tox -epy3
+
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -56,6 +57,21 @@ jobs:
           sudo sysctl -w fs.file-max=262144
           sudo sysctl -w vm.max_map_count=262144
 
+      - name: Enable Opendistro
+        run: |-
+          cat <<EOF > .env
+          ELASTIC_CONTAINER_URL=amazon/opendistro-for-elasticsearch:1.13.1
+          ELASTIC_USER=admin
+          ELASTIC_PASSWORD=admin
+          ELASTIC_USE_SSL=True
+          ELASTIC_INSECURE=True
+          ELASTIC_SSL_SHOW_WARN=False
+          EOF
+
+      - name: Read .env file
+        run: |
+          cat .env
+
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
@@ -64,9 +80,6 @@ jobs:
       - name: Set write permission for others for data directory
         run: |
           chmod o+w data
-
-      - name: Start containers
-        run: docker-compose up -d
 
       - name: Create a config.yaml file
         run: |
@@ -84,8 +97,17 @@ jobs:
                     base_url: https://github.com
           EOL
 
+      - name: Start containers
+        run: docker-compose up -d
+
       - name: Wait for services to start
         run: sleep 15
+
+      - name: Read logs from failed container
+        run: |
+          for container in $(docker-compose ps | grep -i exited | awk '{print $1}'); do
+              docker logs $container
+          done
 
       - name: Display docker-compose ps
         run: docker-compose ps
