@@ -188,7 +188,7 @@ class ELmonocleDB:
 
         elastic_conn = [
             {
-                "hst": host,
+                "host": host,
                 "port": port,
             }
         ]
