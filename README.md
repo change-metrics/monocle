@@ -156,15 +156,17 @@ $ chmod o+w data
 You might want to wipe a Monocle index:
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --index <index-name> --delete-repository ".*"
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --use-ssl \
+  --elastic-user admin --elastic-password admin \
+  --elastic-conn elastic:9200 dbmanage --index <index-name> --delete-repository ".*"
 ```
 
 or delete an index:
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --index <index-name> --delete-index
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --use-ssl \
+  --elastic-user admin --elastic-password admin \
+  --elastic-conn elastic:9200 dbmanage --index <index-name> --delete-index
 ```
 
 ## Advanced deployment configuration
@@ -249,7 +251,7 @@ Monocle is able to index changes from multiple code review systems. A contributo
 might get different identities across code review systems. Thus Monocle provides
 a configuration section to define aliases for contributors.
 
-Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity. 
+Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
 
 ```YAML
 tenants:
@@ -364,7 +366,9 @@ docker-compose up -d
 A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --use-ssl \
+  --elastic-user admin --elastic-password admin \
+  --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
 ```
 
 ## Using external authentication system

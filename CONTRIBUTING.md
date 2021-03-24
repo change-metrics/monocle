@@ -22,8 +22,7 @@ You can run the "docker-compose up -d" or you can only run the Elasticsearch con
 If you don't have docker-compose, you can start the elasticsearch service with podman by running this command:
 
 ```ShellSession
-$ podman run --env discovery.type=single-node --publish 9200:9200/tcp --name elastic --rm $(awk '/docker.elastic/ { print $2 }' docker-compose.yml* | head -n 1 | sed 's/"//g')
-```
+$ podman run --env discovery.type=single-node --publish 9200:9200/tcp --name elastic --rm $(awk '/amazon\/opendistro/ { print $1 }' .env | cut -f2 -d'=')
 
 Then the tests can be executed using:
 
@@ -93,3 +92,15 @@ and making it executable with `chmod +x .git/hooks/pre-commit`.
 
 Please refer to the file `dummy/change.py` that contain a Dummy driver and
 some comments to help you get started.
+
+## Enable tests on Opendistro for Elasticsearch
+
+For validating the code on Opendistro, you need to export variales:
+
+```Shell
+export ELASTIC_USER=admin
+export ELASTIC_PASSWORD=admin
+export ELASTIC_USE_SSL=True
+export ELASTIC_INSECURE=False
+export ELASTIC_SSL_SHOW_WARN=False
+```
