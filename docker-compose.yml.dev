@@ -1,81 +1,57 @@
-# Monocle.
-# Copyright (C) 2019-2021 Monocle authors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-version: '3'
 services:
-
   api:
-    build: .
+    build: '.'
+    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     depends_on:
       - elastic
+    environment:
+      ALLOW_ORIGIN: "${MONOCLE_URL:-http://localhost:3000}"
+      CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
+      CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
+      CONFIG: /etc/monocle/config.yaml
+      ELASTIC_CONN: elastic:9200
+      REDIRECT_URL: "${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize"
+      WEB_URL: "${MONOCLE_URL:-http://localhost:3000}"
+    healthcheck:
+      test: "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
     ports:
       - "${MONOCLE_API_ADDR:-0.0.0.0}:9876:9876"
       - "${MONOCLE_API_ADDR:-0.0.0.0}:9877:9877"
-    environment:
-      CONFIG: /etc/monocle/config.yaml
-      ELASTIC_CONN: elastic:9200
-      ALLOW_ORIGIN: "${MONOCLE_URL:-http://localhost:3000}"
-      #FLASK_ENV: development
-      CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
-      CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
-      REDIRECT_URL: '${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize'
-      WEB_URL: '${MONOCLE_URL:-http://localhost:3000}'
-    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     volumes:
-      - $PWD/etc:/etc/monocle:z
-    healthcheck:
-        test: python -c "import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)"
-
-  elastic:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.10.1"
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
-    environment:
-      - "ES_JAVA_OPTS=-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
-      - "discovery.type=single-node"
-    ports:
-      - "${MONOCLE_ELASTIC_ADDR:-0.0.0.0}:9200:9200"
-    volumes:
-      - $PWD/data:/usr/share/elasticsearch/data:Z
-    healthcheck:
-        test: curl --silent --fail localhost:9200/_cluster/health || exit 1
-        interval: 30s
-        timeout: 30s
-        retries: 3
-
+      - "./etc:/etc/monocle:z"
   crawler:
-    build: .
+    build: '.'
+    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
     depends_on:
       - elastic
-    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
     environment:
-      APP_ID: '${GITHUB_APP_ID:-}'
-      APP_KEY_PATH: '${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}'
+      APP_ID: "${GITHUB_APP_ID:-}"
+      APP_KEY_PATH: "${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}"
     volumes:
-      - $PWD/etc:/etc/monocle:z
-      - $PWD/dump:/var/lib/crawler:Z
-
+      - "./etc:/etc/monocle:z"
+      - "./dump:/var/lib/crawler:Z"
+  elastic:
+    environment:
+      ES_JAVA_OPTS: "-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
+      discovery.type: single-node
+    healthcheck:
+      test: "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    ports:
+      - "${MONOCLE_ELASTIC_ADDR:-0.0.0.0}:9200:9200"
+    ulimits:
+      nofile:
+        hard: 65535
+        soft: 65535
+    volumes:
+      - "./data:/usr/share/elasticsearch/data:Z"
   web:
     build: web
     depends_on:
       - api
-    ports:
-      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
     environment:
       REACT_APP_API_URL: "${MONOCLE_API_URL:-http://localhost:9876}"
       REACT_APP_TITLE: "${MONOCLE_TITLE:-}"
+    ports:
+      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
+version: '3'
