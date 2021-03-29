@@ -69,6 +69,8 @@ oauth.register(
 )
 
 indexes_acl: Dict[str, List[config.Username]] = {}
+project_defs: Dict[str, List[config.ProjectDefinition]] = {}
+
 
 config_path = os.getenv("CONFIG", None)
 if not config_path:
@@ -79,6 +81,9 @@ else:
         sys.exit(1)
     else:
         globals()["indexes_acl"] = config.build_index_acl(
+            yaml.safe_load(open(config_path))
+        )
+        globals()["project_defs"] = config.build_project_definitions(
             yaml.safe_load(open(config_path))
         )
 
@@ -121,11 +126,29 @@ def whoami():
     return jsonify(username)
 
 
-@app.route("/api/0/query/<name>", methods=["GET"])
-def query(name):
+def _get_index(request):
     if not request.args.get("index"):
         abort(make_response(jsonify(errors=["No index provided"]), 404))
-    index = request.args.get("index")
+    return request.args.get("index")
+
+
+@app.route("/api/0/projects", methods=["GET"])
+def get_cfg_project_definition():
+    index = _get_index(request)
+    projects = project_defs[index] if index in project_defs else []
+    if not projects:
+        return (
+            "There are no project definion set in " "config file for index %s" % index,
+            404,
+        )
+    return jsonify(projects)
+
+
+@app.route("/api/0/query/<name>", methods=["GET"])
+def query(name):
+
+    index = _get_index(request)
+
     if not config.is_public_index(indexes_acl, index):
         user = session.get("username") or request.headers.get("Remote-User")
         if user:
@@ -154,6 +177,7 @@ def query(name):
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def do_query(index, repository_fullname, args, name):
     params = utils.set_params(args)
+
     db = ELmonocleDB(
         elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
         index=index,

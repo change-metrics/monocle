@@ -16,7 +16,9 @@
 
 import logging
 import os
+import tempfile
 import unittest
+import yaml
 from flask import json
 from monocle import webapp
 from monocle import config
@@ -140,3 +142,43 @@ class TestWebAPI(unittest.TestCase):
             sess["username"] = "jane"
         resp = self.client.get("/api/0/whoami")
         self.assertEqual("jane", json.loads(resp.data))
+
+    def test_config_project_def(self):
+        "Test we can get project definitions from config file"
+        config_example = """
+---
+tenants:
+  - index: %s
+    crawler:
+      loop_delay: 600
+      gerrit_repositories:
+        - name: "^openstack/.*"
+          updated_since: "2021-01-01"
+          base_url: https://review.opendev.org/
+    projects:
+      - name: %s
+        repositories_regex: "test1/somerepo1"
+      - name: %s
+        repositories_regex: "test2/test"
+        """ % (
+            self.index2,
+            self.index2,
+            self.index2,
+        )
+        with tempfile.NamedTemporaryFile() as fp:
+            with open(fp.name, "w") as f:
+                f.write(config_example)
+            webapp.project_defs = config.build_project_definitions(
+                yaml.safe_load(open(fp.name))
+            )
+            resp = self.client.get("/api/0/projects?index=%s" % self.index2)
+            self.assertEqual(2, len(json.loads(resp.data)))
+
+    def test_config_project_def_no_cfg_provided(self):
+        "Test we can get project definitions without config file"
+        # NOTE: previous tests were changing the configuration file,
+        # so if the index2 name is last set, Monocle will return HTTP conde
+        # 200, instead of 404.
+        fake_index = "fake-index"
+        resp = self.client.get("/api/0/projects?index=%s" % fake_index)
+        self.assertEqual(404, resp.status_code)

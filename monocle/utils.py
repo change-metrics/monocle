@@ -208,6 +208,7 @@ def set_params(input: Namespace) -> Dict:
     params["has_issue_tracker_links"] = getter("has_issue_tracker_links", None)
     params["change_ids"] = getter("change_ids", None)
     params["target_branch"] = getter("target_branch", None)
+    params["project_definition"] = getter("project_definition", None)
     for sp in (
         "change_ids",
         "exclude_authors",
