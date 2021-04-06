@@ -1,84 +1,61 @@
-# Monocle.
-# Copyright (C) 2019-2021 Monocle authors
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-version: '3'
 services:
-
   api:
-    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     depends_on:
       - elastic
-    restart: unless-stopped
+    environment:
+      ALLOW_ORIGIN: "${MONOCLE_URL:-http://localhost:3000}"
+      CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
+      CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
+      CONFIG: /etc/monocle/config.yaml
+      ELASTIC_CONN: elastic:9200
+      REDIRECT_URL: "${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize"
+      WEB_URL: "${MONOCLE_URL:-http://localhost:3000}"
+    healthcheck:
+      test: "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     ports:
       - "${MONOCLE_API_ADDR:-0.0.0.0}:9876:9876"
       - "${MONOCLE_API_ADDR:-0.0.0.0}:9877:9877"
-    environment:
-      CONFIG: /etc/monocle/config.yaml
-      ELASTIC_CONN: elastic:9200
-      ALLOW_ORIGIN: "${MONOCLE_URL:-http://localhost:3000}"
-      CLIENT_ID: '${GITHUB_CLIENT_ID:-}'
-      CLIENT_SECRET: '${GITHUB_CLIENT_SECRET:-}'
-      REDIRECT_URL: '${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize'
-      WEB_URL: '${MONOCLE_URL:-http://localhost:3000}'
-    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
+    restart: unless-stopped
     volumes:
-      - $PWD/etc:/etc/monocle:z
-    healthcheck:
-        test: python -c "import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)"
-
+      - "./etc:/etc/monocle:z"
+  crawler:
+    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
+    depends_on:
+      - elastic
+    environment:
+      APP_ID: "${GITHUB_APP_ID:-}"
+      APP_KEY_PATH: "${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}"
+    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    restart: unless-stopped
+    volumes:
+      - "./etc:/etc/monocle:z"
+      - "./dump:/var/lib/crawler:Z"
   elastic:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.10.1"
+    environment:
+      ES_JAVA_OPTS: "-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
+      discovery.type: single-node
+    expose:
+      - 9200
+    healthcheck:
+      test: "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     restart: unless-stopped
     ulimits:
       nofile:
-        soft: 65535
         hard: 65535
-    environment:
-      - "ES_JAVA_OPTS=-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
-      - "discovery.type=single-node"
-    expose:
-      - "9200"
+        soft: 65535
     volumes:
-      - $PWD/data:/usr/share/elasticsearch/data:Z
-    healthcheck:
-        test: curl --silent --fail localhost:9200/_cluster/health || exit 1
-        interval: 30s
-        timeout: 30s
-        retries: 3
-
-  crawler:
-    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
-    depends_on:
-      - elastic
-    restart: unless-stopped
-    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
-    environment:
-      APP_ID: '${GITHUB_APP_ID:-}'
-      APP_KEY_PATH: '${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}'
-    volumes:
-      - $PWD/etc:/etc/monocle:z
-      - $PWD/dump:/var/lib/crawler:Z
-
+      - "./data:/usr/share/elasticsearch/data:Z"
   web:
-    image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
     depends_on:
       - api
-    restart: unless-stopped
-    ports:
-      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
     environment:
       REACT_APP_API_URL: "${MONOCLE_API_URL:-http://localhost:9876}"
       REACT_APP_TITLE: "${MONOCLE_TITLE:-}"
+    image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
+    ports:
+      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
+    restart: unless-stopped
+version: '3'
