@@ -93,3 +93,81 @@ and making it executable with `chmod +x .git/hooks/pre-commit`.
 
 Please refer to the file `dummy/change.py` that contain a Dummy driver and
 some comments to help you get started.
+
+## Use docker/podman commands for start Monocle
+
+Below commands will start Monocle service without using compose tool.
+Mounting the project in a Python library path, will be also helpful.
+
+```Shell
+# Set public IP address
+PUBLIC_ADDRESS='<YOUR IP ADDRESS>'
+
+# Build dev images:
+docker build -t monocle_web -f web/Dockerfile web
+docker build -t monocle_crawler -f ./Dockerfile .
+docker build -t monocle_api -f ./Dockerfile .
+
+# Create a script for deployment
+cat << EOF > deploy-monocle.sh
+docker run --name=monocle_elastic_1 \
+           -d \
+           -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
+           -e discovery.type="single-node" \
+           -p 9200:9200 \
+           --expose 9200 \
+           --ulimit nofile=65535:65535 \
+           --healthcheck-command 'curl --silent --fail localhost:9200/_cluster/health' \
+           --healthcheck-interval 30s \
+           --healthcheck-timeout 30s \
+           --healthcheck-retries 3 \
+           -v ./data:/usr/share/elasticsearch/data:Z \
+           docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+
+docker run --name=monocle_api_1 \
+           --network host \
+           --env-file .env \
+           -e CONFIG=/etc/monocle/config.yaml \
+           -e ELASTIC_CONN=elastic:9200 \
+           -e ALLOW_ORIGIN=http://$PUBLIC_ADDRESS:3000 \
+           -e CLIENT_ID= \
+           -e CLIENT_SECRET= \
+           -e REDIRECT_URL=http://$PUBLIC_ADDRESS:9876/api/0/authorize \
+           -e WEB_URL=http://$PUBLIC_ADDRESS:3000 \
+           --add-host elastic:127.0.0.1 \
+           --add-host monocle_elastic_1:127.0.0.1 \
+           -p 9876:9876 \
+           -p 9877:9877 \
+           --expose 9876-9877 \
+           -v ./etc:/etc/monocle:Z \
+           -v ./monocle:/usr/local/lib/python3.9/site-packages/monocle:Z \
+           -it \
+           monocle_api sh -c 'uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app'
+
+docker run --name=monocle_crawler_1 \
+           --env-file .env \
+           -e APP_ID= \
+           -e APP_KEY_PATH=/etc/monocle/app_key.rsa \
+           --add-host elastic:127.0.0.1 \
+           --add-host monocle_elastic_1:127.0.0.1 \
+           -v ./etc:/etc/monocle:Z \
+           -v ./dump:/var/lib/crawler:Z \
+           -v ./monocle:/usr/local/lib/python3.9/site-packages/monocle:Z \
+           -it \
+           monocle_crawler sh -c 'monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml'
+
+docker run --name=monocle_web_1 \
+           --env-file .env \
+           -d \
+           -e REACT_APP_API_URL=http://$PUBLIC_ADDRESS:9876 \
+           -e REACT_APP_TITLE='' \
+           -p 3000:3000 \
+           --add-host api:127.0.0.1 \
+           --add-host monocle_api_1:127.0.0.1 \
+           --add-host elastic:127.0.0.1 \
+           --add-host monocle_elastic_1:127.0.0.1 \
+           -v ./web:/app:Z \
+           monocle_web bash -c "set -x; test -z \"$REACT_APP_API_URL\" || sed -i -e \"s@__API_URL__@$REACT_APP_API_URL@\" build/index.html; test -z \"$REACT_APP_TITLE\" || sed -i -e \"s@__TITLE__@$REACT_APP_TITLE@\" build/index.html; serve -s /app/build -l 3000"
+EOF
+sh deploy-monocle.sh
+```
