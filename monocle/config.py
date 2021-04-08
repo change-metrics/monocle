@@ -108,6 +108,10 @@ schema = {
                         "type": "array",
                         "items": {"type": "string"},
                     },
+                    "amend_api_key": {
+                        "type": "string",
+                        "description": "API Key authorized to amend a change",
+                    },
                     "idents": {
                         "description": "Identity aliases",
                         "type": "array",
@@ -158,6 +162,7 @@ config_sample_yaml = """
 ---
 tenants:
   - index: default
+    amend_api_key: 1a2b3c4d5e
     users:
       - john
       - jane
@@ -233,6 +238,14 @@ def build_index_acl(config: dict) -> Dict[str, List[Username]]:
         else:
             indexes_acl[tenant["index"]] = tenant["users"]
     return indexes_acl
+
+
+def build_index_amend_api_key(config: dict) -> Dict[str, str]:
+    ret: Dict[str, str] = {}
+    for tenant in config["tenants"]:
+        if "amend_api_key" in tenant.keys():
+            ret[tenant["index"]] = tenant["amend_api_key"]
+    return ret
 
 
 def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:

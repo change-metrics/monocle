@@ -64,6 +64,7 @@ class TestWebAPI(unittest.TestCase):
         webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config["TESTING"] = True
         self.client = webapp.app.test_client()
+        self.amend_apikey = "1a2b3c4d5e"
         config_data = {
             "tenants": [
                 {
@@ -73,11 +74,13 @@ class TestWebAPI(unittest.TestCase):
                 },
                 {
                     # Public index
-                    "index": self.index2
+                    "index": self.index2,
+                    "amend_api_key": self.amend_apikey,
                 },
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
+        webapp.indexes_amend_api_key = config.build_index_amend_api_key(config_data)
 
     def test_health(self):
         "Test health endpoint"
@@ -185,6 +188,49 @@ tenants:
 
     def test_tracker_data_amend(self):
         "Test tracker_data_amend endpoint"
+        # First try some faulty requests
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s" % self.index2, json=""
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual(
+            "No API Key provided in the request",
+            resp.data.decode(),
+        )
+
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
+        )
+        self.assertEqual(403, resp.status_code)
+        self.assertEqual("Not authorized", resp.data.decode())
+
+        url = "/api/0/amend/tracker_data?index=%s&apikey=%s" % (
+            self.index2,
+            self.amend_apikey,
+        )
+
+        resp = self.client.post(url, json="data")
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual("Input data is not a List", resp.data.decode())
+
+        resp = self.client.post(
+            url,
+            json=list(range(webapp.INPUT_TRACKER_DATA_LIMIT + 1)),
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertTrue(resp.data.decode().startswith("Input data List over limit"))
+
+        resp = self.client.post(
+            url,
+            json=[{"do": "you", "eat": "that"}],
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual(
+            'Unable to extract input data due to: missing value for field "_id"',
+            resp.data.decode(),
+        )
+
+        # Now test a working workflow
         resp = self.client.get(
             "/api/0/query/changes?index=%s&repository=.*&changes_ids=unit@repo1@1"
             % self.index2
@@ -201,9 +247,7 @@ tenants:
                 },
             }
         ]
-        resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s" % self.index2, json=tracker_data
-        )
+        resp = self.client.post(url, json=tracker_data)
         self.assertEqual(200, resp.status_code)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
@@ -212,25 +256,3 @@ tenants:
         )
         new = json.loads(resp.data)["items"][0]
         self.assertIn("tracker_data", new)
-
-        # Now try some faulty requests
-        resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s" % self.index2, json="data"
-        )
-        self.assertEqual(400, resp.status_code)
-        self.assertEqual("Input data is not a List", resp.data.decode())
-        resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s" % self.index2,
-            json=list(range(webapp.INPUT_TRACKER_DATA_LIMIT + 1)),
-        )
-        self.assertEqual(400, resp.status_code)
-        self.assertTrue(resp.data.decode().startswith("Input data List over limit"))
-        resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s" % self.index2,
-            json=[{"do": "you", "eat": "that"}],
-        )
-        self.assertEqual(400, resp.status_code)
-        self.assertEqual(
-            'Unable to extract input data due to: missing value for field "_id"',
-            resp.data.decode(),
-        )

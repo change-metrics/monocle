@@ -83,12 +83,10 @@ else:
         print("Unable to access %s." % config_path, file=sys.stderr)
         sys.exit(1)
     else:
-        globals()["indexes_acl"] = config.build_index_acl(
-            yaml.safe_load(open(config_path))
-        )
-        globals()["project_defs"] = config.build_project_definitions(
-            yaml.safe_load(open(config_path))
-        )
+        rawconfig = yaml.safe_load(open(config_path))
+        globals()["indexes_acl"] = config.build_index_acl(rawconfig)
+        globals()["project_defs"] = config.build_project_definitions(rawconfig)
+        globals()["indexes_amend_api_key"] = config.build_index_amend_api_key(rawconfig)
 
 
 @app.route("/api/0/health", methods=["GET"])
@@ -223,6 +221,15 @@ def tracker_data():
     if not request.args.get("index"):
         abort(make_response(jsonify(errors=["No index provided"]), 404))
     index = request.args.get("index")
+    # Check authorization
+    if not request.args.get("apikey"):
+        return "No API Key provided in the request", 400
+    if (
+        index not in globals()["indexes_amend_api_key"]
+        or request.args.get("apikey") != globals()["indexes_amend_api_key"][index]
+    ):
+        return "Not authorized", 403
+    # Input data validation
     if not request.is_json:
         return "Missing content-type application/json", 400
     json_data = request.get_json()
