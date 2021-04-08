@@ -337,6 +337,22 @@ class ELmonocleDB:
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},
+                "tracker_data": {
+                    "properties": {
+                        "issue_type": {"type": "keyword"},
+                        "severity": {"type": "keyword"},
+                        "priority": {"type": "keyword"},
+                        "score": {"type": "integer"},
+                        "issue_id": {"type": "keyword"},
+                        "issue_url": {"type": "keyword"},
+                        "issue_title": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {"type": "keyword", "ignore_above": 8191}
+                            },
+                        },
+                    }
+                },
             }
         }
         settings = {"mappings": self.mapping}
