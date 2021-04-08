@@ -16,7 +16,12 @@ tested-with:         GHC == 8.8.3
 
 common common-options
   build-depends:       base     < 5
+                     , aeson
+                     , exceptions
+                     , http-client
+                     , http-client-tls
                      , relude   > 1.0.0.0
+                     , time
 
   ghc-options:         -Wall
                        -Wcompat
@@ -39,6 +44,9 @@ library
   import:              common-options
   hs-source-dirs:      src
   exposed-modules:     Lentille
+                     , Lentille.Client
+                     , Lentille.Prelude
+                     , Lentille.Worker
 
 executable lentille
   import:              common-options

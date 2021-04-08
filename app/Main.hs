@@ -1,7 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main (main) where
 
-import Lentille (someFunc)
+import Lentille
 
-
+-- TODO: implement proper CLI
 main :: IO ()
-main = someFunc
+main = withClient "https://demo.changemetrics.io/" $ \client -> do
+  ts <- getYesterday
+  run client ts
