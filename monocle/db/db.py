@@ -23,7 +23,7 @@ from dataclasses import dataclass, asdict
 
 from dacite import from_dict
 
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch.helpers import scan
 from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -382,7 +382,9 @@ class ELmonocleDB:
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
-    def update_tracker_data(self, source_it: List[InputTrackerData]) -> None:
+    def update_tracker_data(
+        self, source_it: List[InputTrackerData]
+    ) -> Optional[BulkIndexError]:
         def gen(it):
             for _source in it:
                 d = {}
@@ -396,8 +398,13 @@ class ELmonocleDB:
                 d["doc_as_upsert"] = True
                 yield d
 
-        bulk(self.es, gen(source_it))
+        ret = None
+        try:
+            bulk(self.es, gen(source_it))
+        except BulkIndexError as err:
+            ret = err
         self.es.indices.refresh(index=self.index)
+        return ret
 
     def delete_index(self):
         self.log.info("Deleting index: %s" % self.index)

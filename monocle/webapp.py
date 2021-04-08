@@ -257,8 +257,9 @@ def tracker_data():
             }
         )
     # Now insert the data
-    db.update_tracker_data(source_it=update_docs)
-    return jsonify([])
+    err = db.update_tracker_data(source_it=update_docs)
+    # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
+    return jsonify(err.errors if err else [])
 
 
 def main():
