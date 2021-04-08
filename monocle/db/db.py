@@ -31,6 +31,7 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
+from monocle.tracker_data import InputTrackerData
 
 
 CHANGE_PREFIX = "monocle.changes.1."
@@ -137,17 +138,6 @@ class Event:
     on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     changed_files: List[SimpleFile]
     approval: Optional[List[str]]
-
-
-@dataclass
-class TrackerData:
-    issue_type: str
-    severity: Optional[str]
-    priority: Optional[str]
-    score: Optional[int]
-    issue_id: str
-    issue_url: str
-    issue_title: str
 
 
 def change_or_event_to_dict(change: Union[Change, Event]) -> Dict:
@@ -386,6 +376,23 @@ class ELmonocleDB:
                 d["_op_type"] = "update"
                 d["_id"] = source["id"]
                 d["doc"] = source
+                d["doc_as_upsert"] = True
+                yield d
+
+        bulk(self.es, gen(source_it))
+        self.es.indices.refresh(index=self.index)
+
+    def update_tracker_data(self, source_it: List[InputTrackerData]) -> None:
+        def gen(it):
+            for _source in it:
+                d = {}
+                d["_index"] = self.index
+                d["_op_type"] = "update"
+                d["_id"] = _source["_id"]
+                d["doc"] = {
+                    "id": _source["_id"],
+                    "tracker_data": asdict(_source["tracker_data"]),
+                }
                 d["doc_as_upsert"] = True
                 yield d
 

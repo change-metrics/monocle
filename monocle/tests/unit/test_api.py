@@ -182,3 +182,55 @@ tenants:
         fake_index = "fake-index"
         resp = self.client.get("/api/0/projects?index=%s" % fake_index)
         self.assertEqual(404, resp.status_code)
+
+    def test_tracker_data_amend(self):
+        "Test tracker_data_amend endpoint"
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&changes_ids=unit@repo1@1"
+            % self.index2
+        )
+        orig = json.loads(resp.data)["items"][0]
+        tracker_data = [
+            {
+                "_id": orig["change_id"],
+                "tracker_data": {
+                    "issue_type": "RFE",
+                    "issue_id": "1234",
+                    "issue_url": "https://issue-tracker.domain.com",
+                    "issue_title": "Implement feature XYZ",
+                },
+            }
+        ]
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s" % self.index2, json=tracker_data
+        )
+        self.assertEqual(200, resp.status_code)
+        webapp.cache.delete_memoized(webapp.do_query)
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&changes_ids=unit@repo1@1"
+            % self.index2
+        )
+        new = json.loads(resp.data)["items"][0]
+        self.assertIn("tracker_data", new)
+
+        # Now try some faulty requests
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s" % self.index2, json="data"
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual("Input data is not a List", resp.data.decode())
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s" % self.index2,
+            json=list(range(webapp.INPUT_TRACKER_DATA_LIMIT + 1)),
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertTrue(resp.data.decode().startswith("Input data List over limit"))
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s" % self.index2,
+            json=[{"do": "you", "eat": "that"}],
+        )
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual(
+            'Unable to extract input data due to: missing value for field "_id"',
+            resp.data.decode(),
+        )

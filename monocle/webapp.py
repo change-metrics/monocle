@@ -20,7 +20,7 @@ import sys
 import time
 import yaml
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from flask import Flask
 from flask import abort
@@ -40,9 +40,12 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
+from monocle.tracker_data import extract_data, InputTrackerData
 from monocle import config
 
+
 CACHE_TIMEOUT = 300  # 5 mn cache
+INPUT_TRACKER_DATA_LIMIT = 500
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 app = Flask(__name__)
@@ -174,11 +177,8 @@ def query(name):
     return ret
 
 
-@cache.memoize(timeout=CACHE_TIMEOUT)
-def do_query(index, repository_fullname, args, name):
-    params = utils.set_params(args)
-
-    db = ELmonocleDB(
+def create_db_connection(index: Optional[str]) -> ELmonocleDB:
+    return ELmonocleDB(
         elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
         index=index,
         prefix=CHANGE_PREFIX,
@@ -189,6 +189,12 @@ def do_query(index, repository_fullname, args, name):
         verify_certs=os.getenv("ELASTIC_INSECURE", None),
         ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
     )
+
+
+@cache.memoize(timeout=CACHE_TIMEOUT)
+def do_query(index, repository_fullname, args, name):
+    params = utils.set_params(args)
+    db = create_db_connection(index)
     try:
         result = db.run_named_query(name, repository_fullname, params)
     except InvalidIndexError:
@@ -198,16 +204,7 @@ def do_query(index, repository_fullname, args, name):
 
 @app.route("/api/0/indices", methods=["GET"])
 def indices():
-    db = ELmonocleDB(
-        elastic_conn=os.getenv("ELASTIC_CONN", "localhost:9200"),
-        create=False,
-        prefix=CHANGE_PREFIX,
-        user=os.getenv("ELASTIC_USER", None),
-        password=os.getenv("ELASTIC_PASSWORD", None),
-        use_ssl=os.getenv("ELASTIC_USE_SSL", None),
-        verify_certs=os.getenv("ELASTIC_INSECURE", None),
-        ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
-    )
+    db = create_db_connection(None)
     _indices = db.get_indices()
     indices = []
     for indice in _indices:
@@ -219,6 +216,42 @@ def indices():
                 if user in config.get_authorized_users(indexes_acl, indice):
                     indices.append(indice)
     return jsonify(indices)
+
+
+@app.route("/api/0/amend/tracker_data", methods=["POST"])
+def tracker_data():
+    if not request.args.get("index"):
+        abort(make_response(jsonify(errors=["No index provided"]), 404))
+    index = request.args.get("index")
+    if not request.is_json:
+        return "Missing content-type application/json", 400
+    json_data = request.get_json()
+    if not isinstance(json_data, list):
+        return "Input data is not a List", 400
+    if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
+        return "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT), 400
+    try:
+        extracted_data = extract_data(json_data)
+    except Exception as exc:
+        return "Unable to extract input data due to: %s" % exc, 400
+    # Find changes EL ids based on change_ids
+    change_ids = [e._id for e in extracted_data]
+    params = {"change_ids": change_ids, "size": INPUT_TRACKER_DATA_LIMIT, "from": 0}
+    db = create_db_connection(index)
+    result = db.run_named_query("changes", ".*", params=params)
+    matching_changes = dict([(r["change_id"], r["id"]) for r in result["items"]])
+    update_docs: List[InputTrackerData] = []
+    # Prepare input data set
+    for input_tracker_data in extracted_data:
+        update_docs.append(
+            {
+                "_id": matching_changes[input_tracker_data._id],
+                "tracker_data": input_tracker_data.tracker_data,
+            }
+        )
+    # Now insert the data
+    db.update_tracker_data(source_it=update_docs)
+    return jsonify([])
 
 
 def main():
