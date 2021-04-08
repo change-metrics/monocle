@@ -1,0 +1,60 @@
+cabal-version:       2.4
+name:                lentille
+version:             0.0.0.0
+synopsis:            See README for more info
+description:         See README for more info
+license:             AGPL-3.0-only
+license-file:        LICENSE
+author:              Monocle authors
+maintainer:          Monocle authors <fboucher@redhat.com>
+copyright:           2021 Monocle authors
+category:            Development
+build-type:          Simple
+extra-doc-files:     README.md
+                     CHANGELOG.md
+tested-with:         GHC == 8.8.3
+
+common common-options
+  build-depends:       base     < 5
+                     , relude   > 1.0.0.0
+
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options:       -Wmissing-deriving-strategies
+
+  default-language:    Haskell2010
+
+library
+  import:              common-options
+  hs-source-dirs:      src
+  exposed-modules:     Lentille
+
+executable lentille
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       lentille
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+
+test-suite lentille-test
+  import:              common-options
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       lentille
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
