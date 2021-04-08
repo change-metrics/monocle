@@ -139,6 +139,17 @@ class Event:
     approval: Optional[List[str]]
 
 
+@dataclass
+class TrackerData:
+    issue_type: str
+    severity: Optional[str]
+    priority: Optional[str]
+    score: Optional[int]
+    issue_id: str
+    issue_url: str
+    issue_title: str
+
+
 def change_or_event_to_dict(change: Union[Change, Event]) -> Dict:
     d = asdict(change)
     for k1, k2 in (("id", "_id"), ("type", "_type")):
