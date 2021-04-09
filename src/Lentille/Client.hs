@@ -44,13 +44,17 @@ withClient ::
   MonadIO m =>
   -- | The monocle api url
   Text ->
+  -- | An optional manager
+  Maybe Manager ->
   -- | The callback
   (MonocleClient -> m ()) ->
   -- | withClient performs the IO
   m ()
-withClient url callBack =
+withClient url managerM callBack =
   do
-    manager <- liftIO $ newManager tlsManagerSettings
+    manager <- case managerM of
+      Just manager' -> pure manager'
+      Nothing -> liftIO $ newManager tlsManagerSettings
     callBack MonocleClient {..}
   where
     baseUrl = T.dropWhileEnd (== '/') url <> "/"
