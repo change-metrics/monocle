@@ -86,7 +86,9 @@ else:
         rawconfig = yaml.safe_load(open(config_path))
         globals()["indexes_acl"] = config.build_index_acl(rawconfig)
         globals()["project_defs"] = config.build_project_definitions(rawconfig)
-        globals()["indexes_amend_api_key"] = config.build_index_amend_api_key(rawconfig)
+        globals()[
+            "indexes_task_tracker_crawlers"
+        ] = config.build_index_task_tracker_crawlers(rawconfig)
 
 
 @app.route("/api/0/health", methods=["GET"])
@@ -224,10 +226,9 @@ def tracker_data():
     # Check authorization
     if not request.args.get("apikey"):
         return "No API Key provided in the request", 400
-    if (
-        index not in globals()["indexes_amend_api_key"]
-        or request.args.get("apikey") != globals()["indexes_amend_api_key"][index]
-    ):
+    if index not in globals()["indexes_task_tracker_crawlers"] or request.args.get(
+        "apikey"
+    ) not in [c.api_key for c in globals()["indexes_task_tracker_crawlers"][index]]:
         return "Not authorized", 403
     # Input data validation
     if not request.is_json:

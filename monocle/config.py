@@ -20,6 +20,7 @@ from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
+from monocle.tracker_data import TaskTrackerCrawler, createTaskTrackerCrawler
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -108,10 +109,6 @@ schema = {
                         "type": "array",
                         "items": {"type": "string"},
                     },
-                    "amend_api_key": {
-                        "type": "string",
-                        "description": "API Key authorized to amend a change",
-                    },
                     "idents": {
                         "description": "Identity aliases",
                         "type": "array",
@@ -124,6 +121,19 @@ schema = {
                                     "type": "array",
                                     "items": {"type": "string"},
                                 },
+                            },
+                        },
+                    },
+                    "task_tracker_crawlers": {
+                        "description": "Task tracker crawlers authorized to act on that index",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["name", "api_key", "updated_since"],
+                            "properties": {
+                                "name": {"type": "string"},
+                                "updated_since": {"type": "string", "format": "date"},
+                                "api_key": {"type": "string"},
                             },
                         },
                     },
@@ -162,7 +172,10 @@ config_sample_yaml = """
 ---
 tenants:
   - index: default
-    amend_api_key: 1a2b3c4d5e
+    task_tracker_crawlers:
+      - name: crawler
+        updated_since: "2020-01-01"
+        api_key: 1a2b3c4d5e
     users:
       - john
       - jane
@@ -240,11 +253,16 @@ def build_index_acl(config: dict) -> Dict[str, List[Username]]:
     return indexes_acl
 
 
-def build_index_amend_api_key(config: dict) -> Dict[str, str]:
-    ret: Dict[str, str] = {}
+def build_index_task_tracker_crawlers(
+    config: dict,
+) -> Dict[str, List[TaskTrackerCrawler]]:
+    ret = {}
     for tenant in config["tenants"]:
-        if "amend_api_key" in tenant.keys():
-            ret[tenant["index"]] = tenant["amend_api_key"]
+        if "task_tracker_crawlers" in tenant.keys():
+            ret[tenant["index"]] = [
+                createTaskTrackerCrawler(entry)
+                for entry in tenant["task_tracker_crawlers"]
+            ]
     return ret
 
 

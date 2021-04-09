@@ -64,7 +64,7 @@ class TestWebAPI(unittest.TestCase):
         webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config["TESTING"] = True
         self.client = webapp.app.test_client()
-        self.amend_apikey = "1a2b3c4d5e"
+        self.apikey = "1a2b3c4d5e"
         config_data = {
             "tenants": [
                 {
@@ -75,12 +75,20 @@ class TestWebAPI(unittest.TestCase):
                 {
                     # Public index
                     "index": self.index2,
-                    "amend_api_key": self.amend_apikey,
+                    "task_tracker_crawlers": [
+                        {
+                            "name": "myttcrawler",
+                            "api_key": self.apikey,
+                            "updated_since": "2020-01-01",
+                        }
+                    ],
                 },
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
-        webapp.indexes_amend_api_key = config.build_index_amend_api_key(config_data)
+        webapp.indexes_task_tracker_crawlers = config.build_index_task_tracker_crawlers(
+            config_data
+        )
 
     def test_health(self):
         "Test health endpoint"
@@ -206,7 +214,7 @@ tenants:
 
         url = "/api/0/amend/tracker_data?index=%s&apikey=%s" % (
             self.index2,
-            self.amend_apikey,
+            self.apikey,
         )
 
         resp = self.client.post(url, json="data")

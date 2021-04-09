@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 from dataclasses import dataclass
+from datetime import datetime
 
 from dacite import from_dict
 
@@ -37,5 +38,20 @@ class InputTrackerData:
     tracker_data: TrackerData
 
 
+@dataclass
+class TaskTrackerCrawler:
+    name: str
+    api_key: str
+    updated_since: datetime
+
+
 def extract_data(data: List) -> List[InputTrackerData]:
     return [from_dict(data_class=InputTrackerData, data=d) for d in data]
+
+
+def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:
+    return TaskTrackerCrawler(
+        name=raw["name"],
+        api_key=raw["api_key"],
+        updated_since=datetime.strptime(raw["updated_since"], "%Y-%m-%d"),
+    )

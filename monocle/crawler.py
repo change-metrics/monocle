@@ -73,7 +73,7 @@ class Runner(object):
     def get_last_updated_date(self):
         change = self.db.get_last_updated(self.repository_el_re)
         if not change:
-            return self.updated_since or utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            return self.updated_since or utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         else:
             log.info(
                 "Most recent change date in the database for %s is %s"
