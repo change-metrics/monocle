@@ -250,7 +250,7 @@ def tracker_data():
     # Find changes in EL ids that match urls
     change_urls = [e.change_url for e in extracted_data]
     db = create_db_connection(index)
-    mc = db.get_changes_by_url(change_urls)
+    mc = db.get_changes_by_url(change_urls, INPUT_TRACKER_DATA_LIMIT)
     mc = dict(
         [
             (

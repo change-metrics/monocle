@@ -457,10 +457,11 @@ class ELmonocleDB:
             return []
         return ret[0]
 
-    def get_changes_by_url(self, change_urls):
+    def get_changes_by_url(self, change_urls, size):
         params = {
             "index": self.index,
             "body": {
+                "size": size,
                 "query": {
                     "bool": {
                         "filter": [
