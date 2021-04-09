@@ -15,12 +15,13 @@ extra-doc-files:     README.md
 tested-with:         GHC == 8.8.3
 
 common common-options
-  build-depends:       base     < 5
+  build-depends:       base                       < 5
                      , aeson
+                     , bugzilla-redhat            < 0.4
                      , exceptions
                      , http-client
                      , http-client-tls
-                     , relude   > 1.0.0.0
+                     , relude                     > 1.0.0.0
                      , time
 
   ghc-options:         -Wall
@@ -66,9 +67,11 @@ test-suite lentille-test
   build-depends:       http-mock                  <  0.2
                      , http-types                 < 0.13
                      , lentille
+                     , network                    < 4
                      , tasty                      >= 0.11.2   && < 1.5
                      , tasty-hunit                >= 0.10     && < 0.11
                      , wai                        < 3.3
+                     , warp                       < 3.4
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N

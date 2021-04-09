@@ -18,8 +18,13 @@ module Lentille.Client
     -- * Data types
     TasksSummary (..),
 
+    -- * Query type
+    IndexName (..),
+    CrawlerName (..),
+
     -- * API
     getIndices,
+    getUpdatedSince,
     getTasksSummary,
   )
 where
@@ -28,7 +33,7 @@ import Control.Monad.Catch (MonadThrow)
 import Data.Aeson (FromJSON (..), Options (fieldLabelModifier, omitNothingFields), defaultOptions, eitherDecode, genericParseJSON)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Network.HTTP.Client (Manager, httpLbs, newManager, parseUrlThrow, requestHeaders, responseBody)
+import Network.HTTP.Client (Manager, httpLbs, newManager, parseUrlThrow, requestHeaders, responseBody, setQueryString)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
 
@@ -61,22 +66,50 @@ withClient url managerM callBack =
 
 newtype APIPath = APIPath Text
 
+type QS = [(ByteString, Maybe ByteString)]
+
 monocleGet ::
   (MonadIO m, MonadThrow m, FromJSON a) =>
   APIPath ->
+  QS ->
   MonocleClient ->
   m a
-monocleGet (APIPath path) MonocleClient {..} =
+monocleGet (APIPath path) qs MonocleClient {..} =
   do
     initRequest <- parseUrlThrow (T.unpack $ baseUrl <> path)
-    let request = initRequest {requestHeaders = [("Accept", "*/*")]}
+    let request = withQs $ initRequest {requestHeaders = [("Accept", "*/*")]}
     response <- liftIO $ httpLbs request manager
     case eitherDecode $ responseBody response of
       Left err -> error $ "Decoding of " <> show (responseBody response) <> " failed with: " <> show err
       Right a -> pure a
+  where
+    withQs = case qs of
+      [] -> id
+      xs -> setQueryString xs
 
 getIndices :: (MonadThrow m, MonadIO m) => MonocleClient -> m [Text]
-getIndices = monocleGet (APIPath "api/0/indices")
+getIndices = monocleGet (APIPath "api/0/indices") mempty
+
+newtype IndexName = IndexName Text
+
+newtype CrawlerName = CrawlerName Text
+
+getUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> m UTCTime
+getUpdatedSince client (IndexName index) (CrawlerName crawler) =
+  monocleGet (APIPath "api/0/task_tracker/updated_since_date") qs client
+  where
+    qs =
+      (fmap . fmap $ Just . encodeUtf8)
+        [ ("index", index),
+          ("name", crawler)
+        ]
+
+{-  -- fmap . fmap  let you go through 2 functors!
+    qsUpdate :: (Functor l, Functor t) => l (t Text) -> l (t (Maybe ByteString))
+    qsUpdate = fmap . fmap $ Just . encodeUtf8
+    qsBase :: [(ByteString, Text)]
+    qsBase = [("index", index), ("name", crawler)]
+-}
 
 -- TODO: check actual implementation and add TaskTracker type
 data TasksSummary = TasksSummary
