@@ -251,14 +251,38 @@ def tracker_data():
     change_urls = [e.change_url for e in extracted_data]
     db = create_db_connection(index)
     mc = db.get_changes_by_url(change_urls)
-    mc = dict([(r["url"], r["id"]) for r in mc])
+    mc = dict(
+        [
+            (
+                r["url"],
+                {
+                    "id": r["id"],
+                    "prev_td": createInputTrackerData(r.get("tracker_data", [])),
+                },
+            )
+            for r in mc
+        ]
+    )
     update_docs: InputTrackerData = []
     # Prepare input data set
     for input_tracker_data in extracted_data:
+        # First check if a td match the input one
+        prev_td = [
+            td
+            for td in mc[input_tracker_data.change_url]["prev_td"]
+            if td.change_url == input_tracker_data.change_url
+        ]
+        if len(prev_td) > 1:
+            raise RuntimeError("Multiple td match in previous td")
+        # Remove the previous outdated one if any
+        if prev_td:
+            mc[input_tracker_data.change_url]["prev_td"].remove(prev_td[0])
+        # Add the new one to the list
+        mc[input_tracker_data.change_url]["prev_td"].append(input_tracker_data)
         update_docs.append(
             {
-                "_id": mc[input_tracker_data.change_url],
-                "tracker_data": input_tracker_data,
+                "_id": mc[input_tracker_data.change_url]["id"],
+                "tracker_data": mc[input_tracker_data.change_url]["prev_td"],
             }
         )
     # Now insert the data

@@ -396,7 +396,7 @@ class ELmonocleDB:
                 d["_id"] = _source["_id"]
                 d["doc"] = {
                     "id": _source["_id"],
-                    "tracker_data": asdict(_source["tracker_data"]),
+                    "tracker_data": [asdict(td) for td in _source["tracker_data"]],
                 }
                 d["doc_as_upsert"] = True
                 yield d

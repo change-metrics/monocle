@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-@dataclass
+@dataclass(frozen=True)
 class TrackerData:
     crawler_name: str
     updated_at: datetime
@@ -47,7 +47,9 @@ def createInputTrackerData(data: List) -> InputTrackerData:
     def createTrackerData(td: Dict) -> TrackerData:
         return TrackerData(
             crawler_name=td["crawler_name"],
-            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S"),
+            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S")
+            if isinstance(td["updated_at"], str)
+            else td["updated_at"],
             change_url=td["change_url"],
             issue_type=td["issue_type"],
             issue_id=td["issue_id"],
