@@ -340,6 +340,9 @@ class ELmonocleDB:
                 "self_merged": {"type": "boolean"},
                 "tracker_data": {
                     "properties": {
+                        "crawler_name": {"type": "keyword"},
+                        "updated_at": {"type": "date", "format": "date_time_no_millis"},
+                        "change_url": {"type": "keyword"},
                         "issue_type": {"type": "keyword"},
                         "severity": {"type": "keyword"},
                         "priority": {"type": "keyword"},
@@ -383,7 +386,7 @@ class ELmonocleDB:
         self.es.indices.refresh(index=self.index)
 
     def update_tracker_data(
-        self, source_it: List[InputTrackerData]
+        self, source_it: InputTrackerData
     ) -> Optional[BulkIndexError]:
         def gen(it):
             for _source in it:
@@ -453,6 +456,26 @@ class ELmonocleDB:
         if not ret:
             return []
         return ret[0]
+
+    def get_changes_by_url(self, change_urls):
+        params = {
+            "index": self.index,
+            "body": {
+                "query": {
+                    "bool": {
+                        "filter": [
+                            {"term": {"type": "Change"}},
+                            {"terms": {"url": change_urls}},
+                        ]
+                    }
+                },
+            },
+        }
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        return [r["_source"] for r in res["hits"]["hits"]]
 
     def run_named_query(self, name, *args, **kwargs):
         if name not in queries.public_queries:

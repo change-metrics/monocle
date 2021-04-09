@@ -18,24 +18,22 @@ from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
 
-from dacite import from_dict
-
 
 @dataclass
 class TrackerData:
+    crawler_name: str
+    updated_at: datetime
+    change_url: str
     issue_type: str
-    severity: Optional[str]
-    priority: Optional[str]
-    score: Optional[int]
     issue_id: str
     issue_url: str
     issue_title: str
+    severity: Optional[str]
+    priority: Optional[str]
+    score: Optional[int]
 
 
-@dataclass
-class InputTrackerData:
-    _id: str
-    tracker_data: TrackerData
+InputTrackerData = List[TrackerData]
 
 
 @dataclass
@@ -45,8 +43,22 @@ class TaskTrackerCrawler:
     updated_since: datetime
 
 
-def extract_data(data: List) -> List[InputTrackerData]:
-    return [from_dict(data_class=InputTrackerData, data=d) for d in data]
+def createInputTrackerData(data: List) -> InputTrackerData:
+    def createTrackerData(td: Dict) -> TrackerData:
+        return TrackerData(
+            crawler_name=td["crawler_name"],
+            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S"),
+            change_url=td["change_url"],
+            issue_type=td["issue_type"],
+            issue_id=td["issue_id"],
+            issue_url=td["issue_url"],
+            issue_title=td["issue_title"],
+            severity=td.get("severity"),
+            priority=td.get("priority"),
+            score=td.get("score"),
+        )
+
+    return [createTrackerData(td) for td in data]
 
 
 def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:

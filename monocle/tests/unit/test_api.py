@@ -202,19 +202,28 @@ tenants:
         )
         self.assertEqual(400, resp.status_code)
         self.assertEqual(
-            "No API Key provided in the request",
+            "No crawler name or/and apikey provided",
             resp.data.decode(),
         )
 
         resp = self.client.post(
             "/api/0/amend/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
         )
+        self.assertEqual(400, resp.status_code)
+        self.assertEqual("No crawler name or/and apikey provided", resp.data.decode())
+
+        resp = self.client.post(
+            "/api/0/amend/tracker_data?index=%s&apikey=badkey&name=myttcrawler"
+            % self.index2,
+            json="",
+        )
         self.assertEqual(403, resp.status_code)
         self.assertEqual("Not authorized", resp.data.decode())
 
-        url = "/api/0/amend/tracker_data?index=%s&apikey=%s" % (
+        url = "/api/0/amend/tracker_data?index=%s&apikey=%s&name=%s" % (
             self.index2,
             self.apikey,
+            "myttcrawler",
         )
 
         resp = self.client.post(url, json="data")
@@ -234,7 +243,7 @@ tenants:
         )
         self.assertEqual(400, resp.status_code)
         self.assertEqual(
-            'Unable to extract input data due to: missing value for field "_id"',
+            "Unable to extract input data due to: 'crawler_name'",
             resp.data.decode(),
         )
 
@@ -244,15 +253,16 @@ tenants:
             % self.index2
         )
         orig = json.loads(resp.data)["items"][0]
+        self.assertNotIn("tracker_data", orig)
         tracker_data = [
             {
-                "_id": orig["change_id"],
-                "tracker_data": {
-                    "issue_type": "RFE",
-                    "issue_id": "1234",
-                    "issue_url": "https://issue-tracker.domain.com",
-                    "issue_title": "Implement feature XYZ",
-                },
+                "crawler_name": "myttcrawler",
+                "updated_at": "2021-04-09T12:00:00",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "issue_type": "RFE",
+                "issue_id": "1234",
+                "issue_url": "https://issue-tracker.domain.com",
+                "issue_title": "Implement feature XYZ",
             }
         ]
         resp = self.client.post(url, json=tracker_data)

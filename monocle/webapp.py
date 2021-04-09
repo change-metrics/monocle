@@ -40,7 +40,7 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
-from monocle.tracker_data import extract_data, InputTrackerData
+from monocle.tracker_data import InputTrackerData, createInputTrackerData
 from monocle import config
 
 
@@ -223,38 +223,42 @@ def tracker_data():
     if not request.args.get("index"):
         abort(make_response(jsonify(errors=["No index provided"]), 404))
     index = request.args.get("index")
+    if "name" not in request.args or "apikey" not in request.args:
+        return "No crawler name or/and apikey provided", 400
+    name = request.args.get("name")
     # Check authorization
-    if not request.args.get("apikey"):
-        return "No API Key provided in the request", 400
     if index not in globals()["indexes_task_tracker_crawlers"] or request.args.get(
         "apikey"
-    ) not in [c.api_key for c in globals()["indexes_task_tracker_crawlers"][index]]:
+    ) not in [
+        c.api_key
+        for c in globals()["indexes_task_tracker_crawlers"][index]
+        if c.name == name
+    ]:
         return "Not authorized", 403
     # Input data validation
     if not request.is_json:
         return "Missing content-type application/json", 400
-    json_data = request.get_json()
+    json_data: List = request.get_json()
     if not isinstance(json_data, list):
         return "Input data is not a List", 400
     if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
         return "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT), 400
     try:
-        extracted_data = extract_data(json_data)
+        extracted_data = createInputTrackerData(json_data)
     except Exception as exc:
         return "Unable to extract input data due to: %s" % exc, 400
-    # Find changes EL ids based on change_ids
-    change_ids = [e._id for e in extracted_data]
-    params = {"change_ids": change_ids, "size": INPUT_TRACKER_DATA_LIMIT, "from": 0}
+    # Find changes in EL ids that match urls
+    change_urls = [e.change_url for e in extracted_data]
     db = create_db_connection(index)
-    result = db.run_named_query("changes", ".*", params=params)
-    matching_changes = dict([(r["change_id"], r["id"]) for r in result["items"]])
-    update_docs: List[InputTrackerData] = []
+    mc = db.get_changes_by_url(change_urls)
+    mc = dict([(r["url"], r["id"]) for r in mc])
+    update_docs: InputTrackerData = []
     # Prepare input data set
     for input_tracker_data in extracted_data:
         update_docs.append(
             {
-                "_id": matching_changes[input_tracker_data._id],
-                "tracker_data": input_tracker_data.tracker_data,
+                "_id": mc[input_tracker_data.change_url],
+                "tracker_data": input_tracker_data,
             }
         )
     # Now insert the data
