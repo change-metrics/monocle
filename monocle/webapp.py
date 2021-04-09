@@ -270,7 +270,7 @@ def tracker_data():
         prev_td = [
             td
             for td in mc[input_tracker_data.change_url]["prev_td"]
-            if td.change_url == input_tracker_data.change_url
+            if td.issue_url == input_tracker_data.issue_url
         ]
         if len(prev_td) > 1:
             raise RuntimeError("Multiple td match in previous td")

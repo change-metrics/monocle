@@ -254,6 +254,7 @@ tenants:
         )
         orig = json.loads(resp.data)["items"][0]
         self.assertNotIn("tracker_data", orig)
+        # Do a first post of tracker_data
         tracker_data = [
             {
                 "crawler_name": "myttcrawler",
@@ -261,7 +262,7 @@ tenants:
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
                 "issue_id": "1234",
-                "issue_url": "https://issue-tracker.domain.com",
+                "issue_url": "https://issue-tracker.domain.com/1234",
                 "issue_title": "Implement feature XYZ",
             }
         ]
@@ -274,3 +275,41 @@ tenants:
         )
         new = json.loads(resp.data)["items"][0]
         self.assertIn("tracker_data", new)
+        # Attempt a new post with an updated task
+        tracker_data = [
+            {
+                "crawler_name": "myttcrawler",
+                "updated_at": "2021-04-09T13:00:00",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "issue_type": "RFE",
+                "issue_id": "1234",
+                "issue_url": "https://issue-tracker.domain.com/1234",
+                "issue_title": "Implement feature XYZ",
+            },
+            {
+                "crawler_name": "myttcrawler",
+                "updated_at": "2021-04-09T12:00:00",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "issue_type": "RFE",
+                "issue_id": "1235",
+                "issue_url": "https://issue-tracker.domain.com/1235",
+                "issue_title": "Implement feature XYZ",
+            },
+        ]
+        resp = self.client.post(url, json=tracker_data)
+        self.assertEqual(200, resp.status_code)
+        webapp.cache.delete_memoized(webapp.do_query)
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&changes_ids=unit@repo1@1"
+            % self.index2
+        )
+        new = json.loads(resp.data)["items"][0]
+        self.assertIn("tracker_data", new)
+        std = [(td["issue_url"], td["updated_at"]) for td in new["tracker_data"]]
+        self.assertListEqual(
+            [
+                ("https://issue-tracker.domain.com/1234", "2021-04-09T13:00:00"),
+                ("https://issue-tracker.domain.com/1235", "2021-04-09T12:00:00"),
+            ],
+            std,
+        )
