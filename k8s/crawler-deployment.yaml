@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.17.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: crawler
+  name: crawler
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      io.kompose.service: crawler
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: crawler
+    spec:
+      containers:
+      - args:
+        - monocle
+        - --elastic-conn
+        - elastic:9200
+        - crawler
+        - --config
+        - /etc/monocle/config.yaml
+        env:
+        - name: APP_ID
+          value: ${GITHUB_APP_ID:-}
+        - name: APP_KEY_PATH
+          value: ${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}
+        image: changemetrics/monocle_backend:latest
+        name: crawler
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/monocle
+          name: crawler-claim0
+        - mountPath: /var/lib/crawler
+          name: crawler-claim1
+      restartPolicy: Always
+      volumes:
+      - name: crawler-claim0
+        persistentVolumeClaim:
+          claimName: crawler-claim0
+      - name: crawler-claim1
+        persistentVolumeClaim:
+          claimName: crawler-claim1
+status: {}
