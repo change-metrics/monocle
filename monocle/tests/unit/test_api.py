@@ -319,6 +319,15 @@ tenants:
                 "issue_url": "https://issue-tracker.domain.com/1235",
                 "issue_title": "Implement feature XYZ",
             },
+            {
+                "crawler_name": "myttcrawler",
+                "updated_at": "2021-04-09T15:00:00",
+                "change_url": "https://tests.com/unit/repomissing/pull/1",
+                "issue_type": "RFE",
+                "issue_id": "1235",
+                "issue_url": "https://issue-tracker.domain.com/421235",
+                "issue_title": "Implement feature XYZ",
+            },
         ]
         resp = self.client.post(url, json=tracker_data)
         self.assertEqual(200, resp.status_code)

@@ -150,7 +150,8 @@ def string_ident_to_ident(elastic_conn, index) -> None:
         obj = _obj["_source"]
         if obj["type"] in utils.get_events_list() and "url" not in obj.keys():
             need_url_update.append(obj)
-        to_update.append(obj)
+        if obj["type"] in utils.get_events_list() + ["Change"]:
+            to_update.append(obj)
 
         if len(to_update) == bulk_size:
             proceed()

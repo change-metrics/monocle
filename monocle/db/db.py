@@ -31,7 +31,6 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
-from monocle.tracker_data import InputTrackerData
 
 
 CHANGE_PREFIX = "monocle.changes.1."
@@ -385,9 +384,7 @@ class ELmonocleDB:
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
-    def update_tracker_data(
-        self, source_it: InputTrackerData
-    ) -> Optional[BulkIndexError]:
+    def update_tracker_data(self, source_it: List[Dict]) -> Optional[BulkIndexError]:
         def gen(it):
             for _source in it:
                 d = {}
@@ -396,6 +393,7 @@ class ELmonocleDB:
                 d["_id"] = _source["_id"]
                 d["doc"] = {
                     "id": _source["_id"],
+                    "type": _source["_type"] if "_type" in _source else "Change",
                     "tracker_data": [asdict(td) for td in _source["tracker_data"]],
                 }
                 d["doc_as_upsert"] = True
@@ -550,7 +548,7 @@ class ELmonocleDB:
                     for commit in obj["commits"]:
                         commit["author"] = update_ident(commit["author"])
                         commit["committer"] = update_ident(commit["committer"])
-            else:
+            if obj["type"] in get_events_list():
                 if "author" in obj:
                     obj["author"] = update_ident(obj["author"])
                 if "on_author" in obj:

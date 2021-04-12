@@ -286,28 +286,39 @@ def tracker_data():
             for r in mc
         ]
     )
-    update_docs: InputTrackerData = []
     # Prepare input data set
+    update_docs: InputTrackerData = []
     for input_tracker_data in extracted_data:
-        # First check if a td match the input one
-        prev_td = [
-            td
-            for td in mc[input_tracker_data.change_url]["prev_td"]
-            if td.issue_url == input_tracker_data.issue_url
-        ]
-        if len(prev_td) > 1:
-            raise RuntimeError("Multiple td match in previous td")
-        # Remove the previous outdated one if any
-        if prev_td:
-            mc[input_tracker_data.change_url]["prev_td"].remove(prev_td[0])
-        # Add the new one to the list
-        mc[input_tracker_data.change_url]["prev_td"].append(input_tracker_data)
-        update_docs.append(
-            {
-                "_id": mc[input_tracker_data.change_url]["id"],
-                "tracker_data": mc[input_tracker_data.change_url]["prev_td"],
-            }
-        )
+        if input_tracker_data.change_url in mc:
+            # First check if a td match the input one
+            prev_td = [
+                td
+                for td in mc[input_tracker_data.change_url]["prev_td"]
+                if td.issue_url == input_tracker_data.issue_url
+            ]
+            if len(prev_td) > 1:
+                raise RuntimeError("Multiple td match in previous td")
+            # Remove the previous outdated one if any
+            if prev_td:
+                mc[input_tracker_data.change_url]["prev_td"].remove(prev_td[0])
+            # Add the new one to the list
+            mc[input_tracker_data.change_url]["prev_td"].append(input_tracker_data)
+            # TODO(fbo): create type
+            update_docs.append(
+                {
+                    "_id": mc[input_tracker_data.change_url]["id"],
+                    "tracker_data": mc[input_tracker_data.change_url]["prev_td"],
+                }
+            )
+        else:
+            # TODO(fbo): create type
+            update_docs.append(
+                {
+                    "_id": input_tracker_data.issue_url,
+                    "_type": "OrphanTrackerData",
+                    "tracker_data": [input_tracker_data],
+                }
+            )
     # Now insert the data
     err = db.update_tracker_data(source_it=update_docs)
     # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
