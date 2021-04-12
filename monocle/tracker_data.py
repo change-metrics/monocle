@@ -43,13 +43,29 @@ class TaskTrackerCrawler:
     updated_since: datetime
 
 
-def createInputTrackerData(data: List) -> InputTrackerData:
+def createInputTrackerData(data: List, crawler_name: str) -> InputTrackerData:
+    def createTrackerData(td: Dict) -> TrackerData:
+        return TrackerData(
+            crawler_name=crawler_name,
+            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S"),
+            change_url=td["change_url"],
+            issue_type=td["issue_type"],
+            issue_id=td["issue_id"],
+            issue_url=td["issue_url"],
+            issue_title=td["issue_title"],
+            severity=td.get("severity"),
+            priority=td.get("priority"),
+            score=td.get("score"),
+        )
+
+    return [createTrackerData(td) for td in data]
+
+
+def createELTrackerData(data: List) -> InputTrackerData:
     def createTrackerData(td: Dict) -> TrackerData:
         return TrackerData(
             crawler_name=td["crawler_name"],
-            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S")
-            if isinstance(td["updated_at"], str)
-            else td["updated_at"],
+            updated_at=td["updated_at"],
             change_url=td["change_url"],
             issue_type=td["issue_type"],
             issue_id=td["issue_id"],

@@ -267,7 +267,7 @@ tenants:
         )
         self.assertEqual(400, resp.status_code)
         self.assertEqual(
-            "Unable to extract input data due to: 'crawler_name'",
+            "Unable to extract input data due to wrong input format",
             resp.data.decode(),
         )
 
@@ -281,7 +281,6 @@ tenants:
         # Do a first post of tracker_data
         tracker_data = [
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T12:00:00",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
@@ -302,7 +301,6 @@ tenants:
         # Attempt a new post with an updated task
         tracker_data = [
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T13:00:00",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
@@ -311,7 +309,6 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T12:00:00",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
@@ -320,7 +317,6 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T15:00:00",
                 "change_url": "https://tests.com/unit/repomissing/pull/1",
                 "issue_type": "RFE",
@@ -356,7 +352,6 @@ tenants:
         )
         tracker_data = [
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T13:00:00",
                 "change_url": "https://tests.com/unit/repo2/pull/2",
                 "issue_type": "RFE",
@@ -365,7 +360,6 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T12:00:00",
                 "change_url": "https://tests.com/unit/repo2/pull/2",
                 "issue_type": "RFE",
@@ -374,7 +368,6 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T14:00:00",
                 "change_url": "https://tests.com/unit/repo2/pull/3",
                 "issue_type": "RFE",
@@ -383,7 +376,6 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "crawler_name": "myttcrawler",
                 "updated_at": "2021-04-09T16:00:00",
                 "change_url": "https://tests.com/unit/repo2/pull/3",
                 "issue_type": "RFE",

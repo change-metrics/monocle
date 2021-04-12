@@ -40,7 +40,11 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
-from monocle.tracker_data import InputTrackerData, createInputTrackerData
+from monocle.tracker_data import (
+    InputTrackerData,
+    createInputTrackerData,
+    createELTrackerData,
+)
 from monocle import config
 
 
@@ -267,9 +271,9 @@ def tracker_data():
     if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
         return "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT), 400
     try:
-        extracted_data = createInputTrackerData(json_data)
-    except Exception as exc:
-        return "Unable to extract input data due to: %s" % exc, 400
+        extracted_data = createInputTrackerData(json_data, name)
+    except Exception:
+        return "Unable to extract input data due to wrong input format", 400
     # Find changes in EL ids that match urls
     change_urls = [e.change_url for e in extracted_data]
     db = create_db_connection(index)
@@ -280,7 +284,7 @@ def tracker_data():
                 r["url"],
                 {
                     "id": r["id"],
-                    "prev_td": createInputTrackerData(r.get("tracker_data", [])),
+                    "prev_td": createELTrackerData(r.get("tracker_data", [])),
                 },
             )
             for r in mc
