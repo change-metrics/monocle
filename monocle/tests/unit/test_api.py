@@ -400,14 +400,14 @@ tenants:
             "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler"
             % self.index3
         )
-        self.assertEqual(json.loads(resp.data), "2021-04-09T16:00:00")
+        self.assertEqual(json.loads(resp.data), "2021-04-09T16:00:00Z")
         # Now let's call the endpoint with an crawler that never sent data
         # The default updated_since date from the configuration must be returned
         resp = self.client.get(
             "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler2"
             % self.index3
         )
-        self.assertEqual(json.loads(resp.data), "2020-01-01T00:00:00")
+        self.assertEqual(json.loads(resp.data), "2020-01-01T00:00:00Z")
         # Now let's see if the called get 404 in case of unknown crawler
         resp = self.client.get(
             "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler3"

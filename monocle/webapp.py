@@ -228,7 +228,7 @@ def task_tracker_updated_since_date():
     crawler_name = request.args.get("name")
     crawler_config = [
         c
-        for c in globals()["indexes_task_tracker_crawlers"][index]
+        for c in globals()["indexes_task_tracker_crawlers"].get(index, [])
         if c.name == crawler_name
     ]
     if not crawler_config:
@@ -238,7 +238,7 @@ def task_tracker_updated_since_date():
     updated_since = db.get_last_updated_issue_date(crawler_name)
     if not updated_since:
         updated_since = [crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")]
-    return jsonify(updated_since[0])
+    return jsonify(updated_since[0] + "Z")
 
 
 @app.route("/api/0/amend/tracker_data", methods=["POST"])
