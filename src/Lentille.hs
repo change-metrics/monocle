@@ -7,12 +7,8 @@
 module Lentille
   ( module Lentille.Client,
     module Lentille.Worker,
-
-    -- * utils
-    getYesterday,
   )
 where
 
 import Lentille.Client
-import Lentille.Prelude (getYesterday)
 import Lentille.Worker

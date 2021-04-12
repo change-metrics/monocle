@@ -17,11 +17,14 @@ tested-with:         GHC == 8.8.3
 common common-options
   build-depends:       base                       < 5
                      , aeson
+                     , aeson-casing
                      , bugzilla-redhat            < 0.4
+                     , directory
                      , exceptions
                      , http-client
                      , http-client-tls
                      , relude                     > 1.0.0.0
+                     , streaming                  < 0.3
                      , time
 
   ghc-options:         -Wall
@@ -46,7 +49,6 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lentille
                      , Lentille.Client
-                     , Lentille.Prelude
                      , Lentille.Worker
 
 executable lentille
@@ -54,6 +56,7 @@ executable lentille
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       lentille
+                     , optparse-generic
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
@@ -62,7 +65,8 @@ test-suite lentille-test
   import:              common-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  other-modules:       Lentille.Mock
+  other-modules:       Lentille.MonocleMock
+                     , Lentille.BugzillaMock
   main-is:             Spec.hs
   build-depends:       http-mock                  <  0.2
                      , http-types                 < 0.13

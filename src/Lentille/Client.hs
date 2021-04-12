@@ -16,23 +16,24 @@ module Lentille.Client
     withClient,
 
     -- * Data types
-    TasksSummary (..),
+    TrackerData (..),
 
     -- * Query type
     IndexName (..),
     CrawlerName (..),
+    ApiKey (..),
 
     -- * API
     getIndices,
     getUpdatedSince,
-    getTasksSummary,
   )
 where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Aeson (FromJSON (..), Options (fieldLabelModifier, omitNothingFields), defaultOptions, eitherDecode, genericParseJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..), eitherDecode, genericToJSON)
+import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime)
 import Network.HTTP.Client (Manager, httpLbs, newManager, parseUrlThrow, requestHeaders, responseBody, setQueryString)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
@@ -94,6 +95,8 @@ newtype IndexName = IndexName Text
 
 newtype CrawlerName = CrawlerName Text
 
+newtype ApiKey = ApiKey Text
+
 getUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> m UTCTime
 getUpdatedSince client (IndexName index) (CrawlerName crawler) =
   monocleGet (APIPath "api/0/task_tracker/updated_since_date") qs client
@@ -111,19 +114,14 @@ getUpdatedSince client (IndexName index) (CrawlerName crawler) =
     qsBase = [("index", index), ("name", crawler)]
 -}
 
--- TODO: check actual implementation and add TaskTracker type
-data TasksSummary = TasksSummary
-  { ts_url :: Text,
-    ts_last_updated :: Maybe UTCTime
+data TrackerData = TrackerData
+  { tdUpdatedAt :: UTCTime,
+    tdChangeUrl :: Text,
+    tdIssueUrl :: Text,
+    tdIssueTitle :: Text,
+    tdIssueId :: Int
   }
   deriving stock (Show, Eq, Generic)
 
-instance FromJSON TasksSummary where
-  parseJSON = genericParseJSON (defaultOptions {fieldLabelModifier = drop 3, omitNothingFields = True})
-
-getTasksSummary :: (MonadThrow m, MonadIO m) => MonocleClient -> m [TasksSummary]
--- getTasksSummary = monocleGet (APIPath "api/0/query/tasks_summary")
-getTasksSummary _ = do
-  -- mock value
-  now <- liftIO getCurrentTime
-  pure [TasksSummary "https://github.com" (Just now), TasksSummary "https://bugzilla.redhat.com" Nothing]
+instance ToJSON TrackerData where
+  toJSON = genericToJSON $ aesonPrefix snakeCase

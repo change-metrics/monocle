@@ -5,14 +5,13 @@ module Main (main) where
 
 import Lentille.BugzillaMock
 import Lentille.Client
-import Lentille.Mock
-import Lentille.Prelude
+import Lentille.MonocleMock
+import Lentille.Worker (searchExpr)
 import Network.HTTP.Mock (withMockedManager)
+import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Web.Bugzilla.RedHat as BZ
-import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
-import qualified Web.Bugzilla.RedHat.Search as BZS
 
 main :: IO ()
 main = defaultMain (testGroup "Tests" [bzClientTests, monocleClientTests])
@@ -35,15 +34,10 @@ testGetBug = testCase "getBug" go
 testSearchBugs :: TestTree
 testSearchBugs = testCase "searchBugs" go
   where
+    sinceTS = fromMaybe (error "Oops") $ readMaybe "2021-04-01 00:00:00 UTC"
     go = do
       bzSession <- bugzillaMockClient
-      let sinceTS = fromMaybe (error "Oops") $ readMaybe "2021-04-01 00:00:00 UTC"
-          assigned = BZS.StatusField .==. "ASSIGNED"
-          linkId = BZS.isNotEmpty $ BZS.CustomField "ext_bz_bug_map.ext_bz_bug_id"
-          productField = BZS.ProductField .==. "Red Hat OpenStack"
-          since = BZS.changedSince sinceTS
-          searchExpr = since .&&. assigned .&&. linkId .&&. productField
-      bugs <- BZ.searchBugsAll bzSession searchExpr
+      bugs <- BZ.searchBugsAll bzSession (searchExpr sinceTS)
       -- print (length $ bugs)
       -- print (head <$> nonEmpty bugs)
       assertBool "Got bugs" (not . null $ bugs)

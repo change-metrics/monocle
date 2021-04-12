@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
-module Lentille.Mock where
+module Lentille.MonocleMock (monocleMockApplication) where
 
 import Data.Aeson (encode)
 import qualified Data.HashMap.Strict as HM
