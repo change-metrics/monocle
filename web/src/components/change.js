@@ -102,7 +102,8 @@ class ChangeTable extends React.Component {
                   {labels.length !== 0
                     ? <tr key={4}>
                       <td align="center">{labels}</td>
-                    </tr> : null
+                    </tr>
+                    : null
                   }
                   <tr key={5}>
                     <td align="center">{change.tests_included ? <font color="DarkGreen">Has tests</font> : <font color="red">Does not have tests</font>}</td>

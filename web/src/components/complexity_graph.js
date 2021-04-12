@@ -39,7 +39,7 @@ class ComplexityGraph extends React.Component {
   }
 
   xTickToLabel (q) {
-    for (var tick in q.ticks) {
+    for (const tick in q.ticks) {
       q.ticks[tick] = moment.unix(q.ticks[tick]).format('YYYY-MM-DD HH:mm')
     }
   }
@@ -88,7 +88,7 @@ class ComplexityGraph extends React.Component {
         yAxes: [{
           type: 'logarithmic',
           afterTickToLabelConversion: function (q) {
-            for (var tick in q.ticks) {
+            for (const tick in q.ticks) {
               if (q.ticks[tick] !== '') {
                 q.ticks[tick] = parseFloat(q.ticks[tick])
               }

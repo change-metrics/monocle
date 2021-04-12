@@ -102,7 +102,8 @@ class DateFormBox extends React.Component {
               <DatePicker
                 selected={
                   this.props.gte
-                    ? moment(this.props.gte).toDate() : ''}
+                    ? moment(this.props.gte).toDate()
+                    : ''}
                 onChange={v => this.props.handleChange('gte', v)}
                 dateFormat='yyyy-MM-dd'
                 placeholderText='From date'
@@ -113,7 +114,8 @@ class DateFormBox extends React.Component {
               <DatePicker
                 selected={
                   this.props.lte
-                    ? moment(this.props.lte).toDate() : ''}
+                    ? moment(this.props.lte).toDate()
+                    : ''}
                 onChange={v => this.props.handleChange('lte', v)}
                 dateFormat='yyyy-MM-dd'
                 placeholderText='To date'
@@ -358,7 +360,8 @@ class FiltersForm extends React.Component {
                                   placeholder="Approvals"
                                   onChange={v => this.handleChange('approvals', v)}
                                 />
-                              </Form.Group> : null}
+                              </Form.Group>
+                              : null}
                             {this.props.showChangeParams
                               ? <Form.Group controlId='formExcludeApprovalsInput'>
                                 <Form.Control
@@ -367,7 +370,8 @@ class FiltersForm extends React.Component {
                                   placeholder="Exclude Approvals"
                                   onChange={v => this.handleChange('excludeApprovals', v)}
                                 />
-                              </Form.Group> : null}
+                              </Form.Group>
+                              : null}
                           </Col>
                           <Col md={6}>
                             <Form.Group controlId='formRepositoryInput'>
@@ -420,7 +424,8 @@ class FiltersForm extends React.Component {
                                     }
                                   )
                                   }
-                                </DropDownButton></Form.Group> : null}
+                                </DropDownButton></Form.Group>
+                              : null}
                             <Form.Group controlId='formSubmit'>
                               <Button
                                 className='float-right'

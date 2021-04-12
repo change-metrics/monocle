@@ -88,7 +88,7 @@ class ChangeLifeCycleEventsHisto extends React.Component {
     })
     // merge ChangeCommitForcePushedEvent and ChangeCommitPushedEvent together
     const merged = []
-    for (var idx = 0; idx < histos.ChangeCommitForcePushedEvent[0].length; idx++) {
+    for (let idx = 0; idx < histos.ChangeCommitForcePushedEvent[0].length; idx++) {
       const d1 = histos.ChangeCommitForcePushedEvent[0][idx]
       const d2 = histos.ChangeCommitPushedEvent[0][idx]
       merged.push(d1.doc_count + d2.doc_count)
