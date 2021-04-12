@@ -79,3 +79,11 @@ test-suite lentille-test
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
+
+test-suite lentille-adr
+  type:                exitcode-stdio-1.0
+  main-is:             0003-choice-of-design.lhs
+  hs-source-dirs:      doc/adr
+  build-depends:       base, markdown-unlit
+  ghc-options:         -pgmL markdown-unlit
+  build-tool-depends:  markdown-unlit:markdown-unlit
