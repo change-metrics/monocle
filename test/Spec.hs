@@ -3,10 +3,9 @@
 
 module Main (main) where
 
+import Lentille
 import Lentille.BugzillaMock
-import Lentille.Client
 import Lentille.MonocleMock
-import Lentille.Worker (searchExpr)
 import Network.HTTP.Mock (withMockedManager)
 import Relude
 import Test.Tasty
@@ -14,7 +13,20 @@ import Test.Tasty.HUnit
 import qualified Web.Bugzilla.RedHat as BZ
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [bzClientTests, monocleClientTests])
+main = defaultMain (testGroup "Tests" [workerTests, bzClientTests, monocleClientTests])
+
+workerTests :: TestTree
+workerTests =
+  testGroup
+    "Lentille.Worker"
+    [testRun]
+
+testRun :: TestTree
+testRun = testCase "run" go
+  where
+    go = withMockClient $ \client -> do
+      bzSession <- bugzillaMockClient
+      run bzSession client (ApiKey "fake") (IndexName "openstack") (CrawlerName "lentille")
 
 bzClientTests :: TestTree
 bzClientTests =
