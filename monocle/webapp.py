@@ -218,6 +218,29 @@ def indices():
     return jsonify(indices)
 
 
+@app.route("/api/0/task_tracker/updated_since_date", methods=["GET"])
+def task_tracker_updated_since_date():
+    if not request.args.get("index"):
+        abort(make_response(jsonify(errors=["No index provided"]), 404))
+    index = request.args.get("index")
+    if "name" not in request.args:
+        return "No crawler name provided", 400
+    crawler_name = request.args.get("name")
+    crawler_config = [
+        c
+        for c in globals()["indexes_task_tracker_crawlers"][index]
+        if c.name == crawler_name
+    ]
+    if not crawler_config:
+        return "No crawler with this name", 404
+    crawler_config = crawler_config[0]
+    db = create_db_connection(index)
+    updated_since = db.get_last_updated_issue_date(crawler_name)
+    if not updated_since:
+        updated_since = [crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")]
+    return jsonify(updated_since[0])
+
+
 @app.route("/api/0/amend/tracker_data", methods=["POST"])
 def tracker_data():
     if not request.args.get("index"):

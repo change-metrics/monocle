@@ -6,7 +6,7 @@
     "repository_prefix": "unit",
     "repository_fullname": "unit/repo2",
     "repository_shortname": "repo2",
-    "change_id": "unit@repo2@1",
+    "change_id": "unit@repo2@2",
     "url": "https://tests.com/unit/repo2/pull/2",
     "author": {
       "uid": "tests.com/jane",
@@ -61,7 +61,7 @@
     "branch": "feature-2",
     "target_branch": "master",
     "number": 2,
-    "change_id": "unit@repo2@1",
+    "change_id": "unit@repo2@2",
     "url": "https://tests.com/unit/repo2/pull/2",
     "changed_files": [
       {
@@ -154,7 +154,7 @@
     "branch": "feature-2",
     "target_branch": "master",
     "number": 2,
-    "change_id": "unit@repo2@1",
+    "change_id": "unit@repo2@2",
     "url": "https://tests.com/unit/repo2/pull/2",
     "changed_files": [
       {

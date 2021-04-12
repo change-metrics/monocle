@@ -478,6 +478,33 @@ class ELmonocleDB:
             return []
         return [r["_source"] for r in res["hits"]["hits"]]
 
+    def get_last_updated_issue_date(self, crawler_name):
+        params = {
+            "index": self.index,
+            "body": {
+                "sort": [{"tracker_data.updated_at": {"order": "desc"}}],
+                "query": {
+                    "bool": {
+                        "filter": [
+                            {"term": {"type": "Change"}},
+                            {"term": {"tracker_data.crawler_name": crawler_name}},
+                        ]
+                    }
+                },
+            },
+        }
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        ret = [r["_source"] for r in res["hits"]["hits"]]
+        if not ret:
+            return []
+        ret = sorted(
+            [td["updated_at"] for td in ret[0].get("tracker_data", [])], reverse=True
+        )
+        return [ret[0]]
+
     def run_named_query(self, name, *args, **kwargs):
         if name not in queries.public_queries:
             raise UnknownQueryException("Unknown query: %s" % name)
