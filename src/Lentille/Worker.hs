@@ -13,6 +13,8 @@ module Lentille.Worker
     getBugzillaSession,
     searchExpr,
     toTrackerData,
+    getBZData,
+    TrackerDataFetcher (..),
   )
 where
 
@@ -59,35 +61,12 @@ instance MonadLog IO where
 -------------------------------------------------------------------------------
 -- BugZilla system
 -------------------------------------------------------------------------------
-class Monad m => MonadBugZilla m where
-  getBugs :: BugzillaSession -> UTCTime -> Stream (Of BZ.Bug) m ()
-
 searchExpr :: UTCTime -> BZS.SearchExpression
 searchExpr sinceTS = since .&&. linkId .&&. productField
   where
     linkId = BZS.isNotEmpty $ BZS.CustomField "ext_bz_bug_map.ext_bz_bug_id"
     productField = BZS.ProductField .==. "Red Hat OpenStack"
     since = BZS.changedSince sinceTS
-
-instance MonadBugZilla IO where
-  getBugs bzSession sinceTS = do
-    liftIO $ log $ LogGetBugs sinceTS 0 5
-    cacheExist <- liftIO $ doesFileExist ".cache"
-    bugs <-
-      liftIO
-        ( if cacheExist
-            then fromMaybe [] <$> decodeFileStrict ".cache"
-            else BZ.searchBugsAllWithLimit bzSession 5 0 (searchExpr sinceTS)
-        )
-    S.each bugs
-
-getBugzillaSession :: MonadIO m => m BugzillaSession
-getBugzillaSession = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext "bugzilla.redhat.com")
-
--------------------------------------------------------------------------------
--- Worker implementation
--------------------------------------------------------------------------------
-data ProcessResult = Amended | AmenError Text deriving stock (Show)
 
 toTrackerData :: BZ.Bug -> [TrackerData]
 toTrackerData bz = map mkTrackerData ebugs
@@ -109,31 +88,53 @@ toTrackerData bz = map mkTrackerData ebugs
         (BZ.bugSummary bz)
         (BZ.bugId bz)
 
+getBZData :: MonadIO m => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
+getBZData bzSession sinceTS = do
+  liftIO $ log $ LogGetBugs sinceTS 0 5
+  cacheExist <- liftIO $ doesFileExist ".cache"
+  bugs <-
+    liftIO
+      ( if cacheExist
+          then fromMaybe [] <$> decodeFileStrict ".cache"
+          else BZ.searchBugsAllWithLimit bzSession 5 0 (searchExpr sinceTS)
+      )
+  S.each (concatMap toTrackerData bugs)
+
+getBugzillaSession :: MonadIO m => m BugzillaSession
+getBugzillaSession = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext "bugzilla.redhat.com")
+
+newtype TrackerDataFetcher m = TrackerDataFetcher
+  { runFetcher :: UTCTime -> Stream (Of TrackerData) m ()
+  }
+
+-------------------------------------------------------------------------------
+-- Worker implementation
+-------------------------------------------------------------------------------
+data ProcessResult = Amended | AmenError Text deriving stock (Show)
+
 processBatch :: MonadIO m => ApiKey -> [TrackerData] -> m ProcessResult
 processBatch _apiKey bugs = do
   putTextLn $ "Processing: " <> show (length bugs)
   mapM_ print bugs
   pure Amended
 
-process :: (MonadIO m) => ApiKey -> Stream (Of BZ.Bug) m () -> m ()
+process :: (MonadIO m) => ApiKey -> Stream (Of TrackerData) m () -> m ()
 process apiKey =
   S.print
     . S.mapM (processBatch apiKey)
     . S.mapped S.toList --   Convert to list (type is Stream (Of [TrackerData]) m ())
     . S.chunksOf 10 --       Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
-    . S.concat --            Flatten the list of tracker data
-    . S.map toTrackerData -- Convert each bug to list of tracker data
 
 run ::
-  (MonadThrow m, MonadLog m, MonadBugZilla m, MonadIO m) =>
-  BugzillaSession ->
+  (MonadThrow m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
+  TrackerDataFetcher m ->
   m ()
-run bzSession monocleClient apiKey indexName crawlerName = do
+run monocleClient apiKey indexName crawlerName tdf = do
   log LogStarting
   since <- getUpdatedSince monocleClient indexName crawlerName
-  process apiKey (getBugs bzSession since)
+  process apiKey (runFetcher tdf since)
   log LogEnded

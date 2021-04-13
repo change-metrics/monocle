@@ -26,7 +26,12 @@ testRun = testCase "run" go
   where
     go = withMockClient $ \client -> do
       bzSession <- bugzillaMockClient
-      run bzSession client (ApiKey "fake") (IndexName "openstack") (CrawlerName "lentille")
+      run
+        client
+        (ApiKey "fake")
+        (IndexName "openstack")
+        (CrawlerName "lentille")
+        (TrackerDataFetcher (getBZData bzSession))
 
 bzClientTests :: TestTree
 bzClientTests =

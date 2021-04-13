@@ -40,4 +40,9 @@ main = do
       args <- unwrapRecord "Lentille worker"
       withClient (monocleUrl args) Nothing $ \client -> do
         bzSession <- getBugzillaSession
-        run bzSession client (ApiKey . toText $ apiKey) (IndexName . index $ args) (CrawlerName . crawlerName $ args)
+        run
+          client
+          (ApiKey . toText $ apiKey)
+          (IndexName . index $ args)
+          (CrawlerName . crawlerName $ args)
+          (TrackerDataFetcher (getBZData bzSession))
