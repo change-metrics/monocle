@@ -40,6 +40,7 @@ data LogEvent
   = LogStarting
   | LogEnded
   | LogGetBugs UTCTime Int Int
+  | LogPostData Int
 
 logEvent :: MonadIO m => LogEvent -> m ()
 logEvent ev = do
@@ -51,6 +52,7 @@ logEvent ev = do
       LogEnded -> "Update completed"
       LogGetBugs ts offset limit ->
         "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
+      LogPostData count -> "Posting tracker data " <> show count
 
 class Monad m => MonadLog m where
   log :: LogEvent -> m ()
@@ -96,15 +98,21 @@ toTrackerData bz = map mkTrackerData ebugs
 
 getBZData :: MonadIO m => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
 getBZData bzSession sinceTS = do
-  liftIO $ log $ LogGetBugs sinceTS 0 5
   cacheExist <- liftIO $ doesFileExist ".cache"
-  bugs <-
-    liftIO
-      ( if cacheExist
-          then fromMaybe [] <$> decodeFileStrict ".cache"
-          else BZ.searchBugsAllWithLimit bzSession 5 0 (searchExpr sinceTS)
-      )
-  S.each (concatMap toTrackerData bugs)
+  if cacheExist
+    then do
+      liftIO $ log $ LogGetBugs sinceTS 0 0
+      bugs <- fromMaybe [] <$> liftIO (decodeFileStrict ".cache")
+      S.each (concatMap toTrackerData bugs)
+    else go 0
+  where
+    go offset = do
+      liftIO $ log $ LogGetBugs sinceTS offset 100
+      bugs <- liftIO $ BZ.searchBugsAllWithLimit bzSession 100 offset (searchExpr sinceTS)
+      S.each (concatMap toTrackerData bugs)
+      unless
+        (length bugs < 100)
+        (go (offset + length bugs))
 
 getBugzillaSession :: MonadIO m => m BugzillaSession
 getBugzillaSession = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext "bugzilla.redhat.com")
@@ -118,20 +126,20 @@ newtype TrackerDataFetcher m = TrackerDataFetcher
 -------------------------------------------------------------------------------
 data ProcessResult = Amended | AmendError [Text] deriving stock (Show)
 
-processBatch :: MonadIO m => ([TrackerData] -> m [Text]) -> [TrackerData] -> m ProcessResult
+processBatch :: (MonadIO m, MonadLog m) => ([TrackerData] -> m [Text]) -> [TrackerData] -> m ProcessResult
 processBatch postFunc tds = do
-  putTextLn $ "Processing: " <> show (length tds)
+  log $ LogPostData (length tds)
   res <- postFunc tds
   pure $ case res of
     [] -> Amended
     xs -> AmendError xs
 
-process :: (MonadIO m) => ([TrackerData] -> m [Text]) -> Stream (Of TrackerData) m () -> m ()
+process :: (MonadIO m, MonadLog m) => ([TrackerData] -> m [Text]) -> Stream (Of TrackerData) m () -> m ()
 process postFunc =
   S.print
     . S.mapM (processBatch postFunc)
     . S.mapped S.toList --   Convert to list (type is Stream (Of [TrackerData]) m ())
-    . S.chunksOf 10 --       Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
+    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
 
 run ::
   (MonadThrow m, MonadLog m, MonadIO m) =>
