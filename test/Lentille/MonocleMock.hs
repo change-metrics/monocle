@@ -6,6 +6,7 @@ module Lentille.MonocleMock (monocleMockApplication) where
 
 import Data.Aeson (encode)
 import qualified Data.HashMap.Strict as HM
+import Data.List (lookup)
 import Network.HTTP.Types.Status (status200)
 import qualified Network.Wai as Wai
 import Relude
@@ -26,7 +27,10 @@ monocleMockApplication req respond =
   respond $ Wai.responseLBS status200 headers response
   where
     headers = [("Content-Type", "application/json")]
-    response = fromMaybe (error ("unknown path: " <> show requestPath)) responseM
+    response =
+      case lookup "apikey" (Wai.queryString req) of
+        Just (Just "failme") -> "[42]"
+        _ -> fromMaybe (error ("unknown path: " <> show requestPath)) responseM
     requestPath = Wai.rawPathInfo req
     responseM :: Maybe LByteString
     responseM = HM.lookup requestPath monocleMockResponse

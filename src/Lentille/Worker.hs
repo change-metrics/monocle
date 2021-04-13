@@ -77,16 +77,22 @@ toTrackerData bz = map mkTrackerData ebugs
     ebugs = case BZ.bugExternalBugs bz of
       Just xs -> filter isOpenDev xs
       Nothing -> []
+    changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> show (BZ.externalId ebug)
+    bugType =
+      if "FutureFeature" `elem` BZ.bugKeywords bz
+        then "RFE"
+        else "BUG"
     mkTrackerData :: BZ.ExternalBug -> TrackerData
     mkTrackerData ebug =
       TrackerData
-        (BZ.bugLastChangeTime bz)
-        ( BZ.externalTypeUrl (BZ.externalType ebug)
-            <> show (BZ.externalId ebug)
-        )
+        (IsoTime . BZ.bugLastChangeTime $ bz)
+        (changeUrl ebug)
+        bugType
+        (BZ.bugId bz)
         ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz))
         (BZ.bugSummary bz)
-        (BZ.bugId bz)
+        (BZ.bugSeverity bz)
+        (BZ.bugPriority bz)
 
 getBZData :: MonadIO m => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
 getBZData bzSession sinceTS = do
@@ -110,15 +116,17 @@ newtype TrackerDataFetcher m = TrackerDataFetcher
 -------------------------------------------------------------------------------
 -- Worker implementation
 -------------------------------------------------------------------------------
-data ProcessResult = Amended | AmenError Text deriving stock (Show)
+data ProcessResult = Amended | AmendError [Text] deriving stock (Show)
 
-processBatch :: MonadIO m => ([TrackerData] -> m ()) -> [TrackerData] -> m ProcessResult
+processBatch :: MonadIO m => ([TrackerData] -> m [Text]) -> [TrackerData] -> m ProcessResult
 processBatch postFunc tds = do
   putTextLn $ "Processing: " <> show (length tds)
-  postFunc tds
-  pure Amended
+  res <- postFunc tds
+  pure $ case res of
+    [] -> Amended
+    xs -> AmendError xs
 
-process :: (MonadIO m) => ([TrackerData] -> m ()) -> Stream (Of TrackerData) m () -> m ()
+process :: (MonadIO m) => ([TrackerData] -> m [Text]) -> Stream (Of TrackerData) m () -> m ()
 process postFunc =
   S.print
     . S.mapM (processBatch postFunc)

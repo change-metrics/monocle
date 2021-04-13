@@ -80,7 +80,8 @@ monocleClientTests =
     "Lentille.Client"
     [ testGetIndices,
       testGetUpdatedSince,
-      testBugToTrackerData
+      testBugToTrackerData,
+      testPostData
     ]
 
 withMockClient :: (MonocleClient -> IO ()) -> IO ()
@@ -102,3 +103,10 @@ testGetIndices = testCase "getIndices" go
     go = withMockClient $ \client -> do
       indices <- getIndices client
       assertBool "Got indicies" (indices == ["indice1", "indice2"])
+
+testPostData :: TestTree
+testPostData = testCase "postData" go
+  where
+    go = withMockClient $ \client -> do
+      res <- postTrackerData client (IndexName "test") (CrawlerName "test") (ApiKey "failme") []
+      assertEqual "Call failed" ["42"] res

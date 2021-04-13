@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
@@ -17,6 +18,7 @@ module Lentille.Client
 
     -- * Data types
     TrackerData (..),
+    IsoTime (..),
 
     -- * Query type
     IndexName (..),
@@ -31,10 +33,11 @@ module Lentille.Client
 where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, eitherDecode, encode, genericToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), eitherDecode, encode, genericToJSON)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Client
   ( Manager,
     Request,
@@ -122,7 +125,7 @@ monocleReq (Verb verb) bodyM (APIPath path) qs MonocleClient {..} =
 monocleGet :: (MonadIO m, MonadThrow m, FromJSON a) => APIPath -> QS -> MonocleClient -> m a
 monocleGet = monocleReq (Verb "GET") (Nothing :: Maybe Value)
 
-monoclePost :: (MonadIO m, MonadThrow m, ToJSON a) => Maybe a -> APIPath -> QS -> MonocleClient -> m ()
+monoclePost :: (MonadIO m, MonadThrow m, ToJSON a, FromJSON resp) => Maybe a -> APIPath -> QS -> MonocleClient -> m resp
 monoclePost = monocleReq (Verb "POST")
 
 getIndices :: (MonadThrow m, MonadIO m) => MonocleClient -> m [Text]
@@ -144,12 +147,20 @@ getUpdatedSince client (IndexName index) (CrawlerName crawler) =
   where
     qs = mkQs [("index", index), ("name", crawler)]
 
+newtype IsoTime = IsoTime UTCTime deriving stock (Show, Eq)
+
+instance ToJSON IsoTime where
+  toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%T" $ utcTime
+
 data TrackerData = TrackerData
-  { tdUpdatedAt :: UTCTime,
+  { tdUpdatedAt :: IsoTime,
     tdChangeUrl :: Text,
+    tdIssueType :: Text,
+    tdIssueId :: Int,
     tdIssueUrl :: Text,
     tdIssueTitle :: Text,
-    tdIssueId :: Int
+    tdSeverity :: Text,
+    tdPriority :: Text
   }
   deriving stock (Show, Eq, Generic)
 
@@ -157,14 +168,15 @@ instance ToJSON TrackerData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 postTrackerData ::
+  forall m.
   (MonadThrow m, MonadIO m) =>
   MonocleClient ->
   IndexName ->
   CrawlerName ->
   ApiKey ->
   [TrackerData] ->
-  m ()
+  m [Text]
 postTrackerData client (IndexName index) (CrawlerName crawler) (ApiKey apikey) tds = do
-  monoclePost (Just tds) (APIPath "api/0/amend/tracker_data") qs client
+  fmap (decodeUtf8 . encode) <$> (monoclePost (Just tds) (APIPath "api/0/amend/tracker_data") qs client :: m [Value])
   where
     qs = mkQs [("index", index), ("name", crawler), ("apikey", apikey)]
