@@ -112,16 +112,16 @@ newtype TrackerDataFetcher m = TrackerDataFetcher
 -------------------------------------------------------------------------------
 data ProcessResult = Amended | AmenError Text deriving stock (Show)
 
-processBatch :: MonadIO m => ApiKey -> [TrackerData] -> m ProcessResult
-processBatch _apiKey bugs = do
-  putTextLn $ "Processing: " <> show (length bugs)
-  mapM_ print bugs
+processBatch :: MonadIO m => ([TrackerData] -> m ()) -> [TrackerData] -> m ProcessResult
+processBatch postFunc tds = do
+  putTextLn $ "Processing: " <> show (length tds)
+  postFunc tds
   pure Amended
 
-process :: (MonadIO m) => ApiKey -> Stream (Of TrackerData) m () -> m ()
-process apiKey =
+process :: (MonadIO m) => ([TrackerData] -> m ()) -> Stream (Of TrackerData) m () -> m ()
+process postFunc =
   S.print
-    . S.mapM (processBatch apiKey)
+    . S.mapM (processBatch postFunc)
     . S.mapped S.toList --   Convert to list (type is Stream (Of [TrackerData]) m ())
     . S.chunksOf 10 --       Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
 
@@ -136,5 +136,5 @@ run ::
 run monocleClient apiKey indexName crawlerName tdf = do
   log LogStarting
   since <- getUpdatedSince monocleClient indexName crawlerName
-  process apiKey (runFetcher tdf since)
+  process (postTrackerData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
   log LogEnded
