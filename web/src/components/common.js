@@ -98,7 +98,8 @@ function chooseApprovalBadgeStyle (app, idx = 0) {
     }
     return <Badge variant={approvalCat} key={idx}>{app}</Badge>
   } else {
-    const patt = new RegExp('.*-.$')
+    const regex = '.*-.$'
+    const patt = new RegExp(regex)
     let approvalCat = 'success'
     if (patt.test(app)) {
       approvalCat = 'danger'
@@ -266,7 +267,7 @@ class BaseQueryComponent extends React.Component {
   queryBackend (start = 0) {
     const params = (new URL(window.location.href)).searchParams
     this.setState({ state: params.get('state') })
-    var queryParams = {}
+    let queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
     if (this.props.changeIds) {
       queryParams = {

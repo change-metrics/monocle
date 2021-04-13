@@ -29,7 +29,7 @@ class DurationComplexityGraph extends ComplexityGraph {
   }
 
   xTickToLabel (q) {
-    for (var tick in q.ticks) {
+    for (const tick in q.ticks) {
       if (q.ticks[tick] !== '') {
         q.ticks[tick] = moment.duration(parseFloat(q.ticks[tick]), 'seconds').humanize()
       }

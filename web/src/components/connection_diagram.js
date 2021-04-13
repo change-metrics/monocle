@@ -35,7 +35,7 @@ class ConnectionDiagram extends React.Component {
     })
     // Build the matrix from the labels and the hash table
     const matrix = []
-    var line
+    let line
     labels.forEach(a => {
       line = []
       labels.forEach(b => {

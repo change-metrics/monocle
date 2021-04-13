@@ -38,14 +38,14 @@ import { Line } from 'react-chartjs-2'
 
 import moment from 'moment'
 
-function secondsToDhms(seconds) {
+function secondsToDhms (seconds) {
   const d = moment.duration()
   d.add(seconds, 'second')
   return d.humanize()
 }
 
 class ChangeReviewEventsHisto extends React.Component {
-  prepareDataSet(histos) {
+  prepareDataSet (histos) {
     const eventNameMapping = {
       ChangeCommentedEvent: {
         label: 'Commented',
@@ -83,7 +83,7 @@ class ChangeReviewEventsHisto extends React.Component {
     return data
   }
 
-  render() {
+  render () {
     const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
@@ -121,13 +121,13 @@ ChangeReviewEventsHisto.propTypes = {
 }
 
 class ChangesReviewStats extends BaseQueryComponent {
-  constructor(props) {
+  constructor (props) {
     super(props)
     this.state.name = 'changes_review_stats'
     this.state.graph_type = 'changes_review_stats'
   }
 
-  render() {
+  render () {
     if (!this.props.changes_review_stats_loading) {
       if (this.props.changes_review_stats_error) {
         return <ErrorBox

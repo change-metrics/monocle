@@ -65,7 +65,7 @@ class ChangesTable extends React.Component {
         activeClassName={'active'}
       />
     }
-    var ChangeRowStyle = {
+    const ChangeRowStyle = {
       paddingTop: '5px',
       paddingBottom: '5px',
       backgroundColor: '#f7f7f7',
@@ -221,7 +221,7 @@ class AbstractLastChanges extends BaseQueryComponent {
         return <ErrorBox error={this.props[this.state.graph_type + '_error']} />
       }
       const data = this.props[this.state.graph_type + '_result']
-      var graph = <div></div>
+      let graph = <div></div>
       if (this.props.showComplexityGraph && (this.state.state === 'MERGED' || this.state.state === 'CLOSED')) {
         graph = <DurationComplexityGraph
           history={this.props.history}
