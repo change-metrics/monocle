@@ -12,11 +12,13 @@ module Lentille.Worker
   ( run,
     getBugzillaSession,
     searchExpr,
+    toTrackerData,
   )
 where
 
 import Control.Monad.Catch (MonadThrow)
 import Data.Aeson (decodeFileStrict)
+import Data.Text as T (null)
 import Data.Time (UTCTime, getCurrentTime)
 import Lentille.Client
 import Relude
@@ -103,7 +105,10 @@ toTrackerData bz = map mkTrackerData ebugs
         ( BZ.externalTypeUrl (BZ.externalType ebug)
             <> show (BZ.externalId ebug)
         )
-        (BZ.bugUrl bz)
+        ( if T.null (BZ.bugUrl bz)
+            then "https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz)
+            else BZ.bugUrl bz
+        )
         (BZ.bugSummary bz)
         (BZ.bugId bz)
 

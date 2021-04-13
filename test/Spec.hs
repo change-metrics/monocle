@@ -43,6 +43,23 @@ testGetBug = testCase "getBug" go
       -- print bug'
       assertBool "Got bug ids" (isJust $ BZ.bugExternalBugs bug')
 
+testBugToTrackerData :: TestTree
+testBugToTrackerData = testCase "bugToTrackerData" go
+  where
+    go = do
+      bzSession <- bugzillaMockClient
+      Just bug' <- BZ.getBug bzSession 1791815
+      let td = toTrackerData bug'
+      assertBool
+        "Check extracted TrackerData"
+        ( case viaNonEmpty head td of
+            Just td' ->
+              tdIssueId td' == 1791815
+                && tdChangeUrl td' == "https://review.opendev.org/1717044"
+                && tdIssueUrl td' == "https://bugzilla.redhat.com/show_bug.cgi?id=1791815"
+            Nothing -> False
+        )
+
 testSearchBugs :: TestTree
 testSearchBugs = testCase "searchBugs" go
   where
@@ -59,7 +76,8 @@ monocleClientTests =
   testGroup
     "Lentille.Client"
     [ testGetIndices,
-      testGetUpdatedSince
+      testGetUpdatedSince,
+      testBugToTrackerData
     ]
 
 withMockClient :: (MonocleClient -> IO ()) -> IO ()
