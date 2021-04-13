@@ -48,17 +48,15 @@ testBugToTrackerData = testCase "bugToTrackerData" go
   where
     go = do
       bzSession <- bugzillaMockClient
-      Just bug' <- BZ.getBug bzSession 1791815
-      let td = toTrackerData bug'
-      assertBool
-        "Check extracted TrackerData"
-        ( case viaNonEmpty head td of
-            Just td' ->
-              tdIssueId td' == 1791815
-                && tdChangeUrl td' == "https://review.opendev.org/1717044"
-                && tdIssueUrl td' == "https://bugzilla.redhat.com/show_bug.cgi?id=1791815"
-            Nothing -> False
-        )
+      Just bz <- BZ.getBug bzSession 1791815
+      case toTrackerData bz of
+        (td : _tds) ->
+          sequence_
+            [ tdIssueId td @=? 1791815,
+              tdChangeUrl td @=? "https://review.opendev.org/1717044",
+              tdIssueUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815"
+            ]
+        [] -> assertBool "No external bugs found" False
 
 testSearchBugs :: TestTree
 testSearchBugs = testCase "searchBugs" go

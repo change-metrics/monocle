@@ -105,10 +105,7 @@ toTrackerData bz = map mkTrackerData ebugs
         ( BZ.externalTypeUrl (BZ.externalType ebug)
             <> show (BZ.externalId ebug)
         )
-        ( if T.null (BZ.bugUrl bz)
-            then "https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz)
-            else BZ.bugUrl bz
-        )
+        ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz))
         (BZ.bugSummary bz)
         (BZ.bugId bz)
 
