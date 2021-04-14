@@ -31,6 +31,7 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
+from monocle.tracker_data import TrackerDataForEL, OrphanTrackerDataForEL
 
 
 CHANGE_PREFIX = "monocle.changes.1."
@@ -384,18 +385,21 @@ class ELmonocleDB:
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
 
-    def update_tracker_data(self, source_it: List[Dict]) -> Optional[BulkIndexError]:
+    def update_tracker_data(
+        self, source_it: Union[List[TrackerDataForEL], List[OrphanTrackerDataForEL]]
+    ) -> Optional[BulkIndexError]:
         def gen(it):
             for _source in it:
                 d = {}
                 d["_index"] = self.index
                 d["_op_type"] = "update"
-                d["_id"] = _source["_id"]
+                d["_id"] = _source._id
                 d["doc"] = {
-                    "id": _source["_id"],
-                    "type": _source["_type"] if "_type" in _source else "Change",
-                    "tracker_data": [asdict(td) for td in _source["tracker_data"]],
+                    "id": _source._id,
+                    "tracker_data": [asdict(td) for td in _source.tracker_data],
                 }
+                if isinstance(_source, OrphanTrackerDataForEL):
+                    d["doc"]["type"] = "OrphanTrackerData"
                 d["doc_as_upsert"] = True
                 yield d
 

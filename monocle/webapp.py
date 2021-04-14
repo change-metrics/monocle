@@ -44,6 +44,8 @@ from monocle.tracker_data import (
     InputTrackerData,
     createInputTrackerData,
     createELTrackerData,
+    TrackerDataForEL,
+    OrphanTrackerDataForEL,
 )
 from monocle import config
 
@@ -307,21 +309,18 @@ def tracker_data():
                 mc[input_tracker_data.change_url]["prev_td"].remove(prev_td[0])
             # Add the new one to the list
             mc[input_tracker_data.change_url]["prev_td"].append(input_tracker_data)
-            # TODO(fbo): create type
             update_docs.append(
-                {
-                    "_id": mc[input_tracker_data.change_url]["id"],
-                    "tracker_data": mc[input_tracker_data.change_url]["prev_td"],
-                }
+                TrackerDataForEL(
+                    _id=mc[input_tracker_data.change_url]["id"],
+                    tracker_data=mc[input_tracker_data.change_url]["prev_td"],
+                )
             )
         else:
-            # TODO(fbo): create type
             update_docs.append(
-                {
-                    "_id": input_tracker_data.issue_url,
-                    "_type": "OrphanTrackerData",
-                    "tracker_data": [input_tracker_data],
-                }
+                OrphanTrackerDataForEL(
+                    _id=input_tracker_data.issue_url,
+                    tracker_data=[input_tracker_data],
+                )
             )
     # Now insert the data
     err = db.update_tracker_data(source_it=update_docs)

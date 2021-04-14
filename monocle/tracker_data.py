@@ -85,3 +85,14 @@ def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:
         api_key=raw["api_key"],
         updated_since=datetime.strptime(raw["updated_since"], "%Y-%m-%d"),
     )
+
+
+@dataclass
+class TrackerDataForEL:
+    _id: str
+    tracker_data: InputTrackerData
+
+
+@dataclass
+class OrphanTrackerDataForEL(TrackerDataForEL):
+    pass
