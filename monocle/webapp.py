@@ -20,6 +20,8 @@ import sys
 import time
 import yaml
 
+from datetime import datetime
+
 from typing import Dict, List, Optional, Union
 from dataclasses import dataclass
 
@@ -269,15 +271,23 @@ def tracker_data_endpoint_check_input_env(
     return TDEndpointInputEnvCheckSuccess(index, crawler_config)
 
 
-# @app.route("/api/0/tracker_data/commit", methods=["POST"])
-# def tracker_data_commit():
-#     check = tracker_data_endpoint_check_input_env(
-#         request, check_auth=True, check_content_type=True
-#     )
-#     if isinstance(check, TDEndpointInputEnvCheckError):
-#         return check.message, check.code
-#     return
-#     # index, crawler_config = check.index, check.crawler_config
+@app.route("/api/0/tracker_data/commit", methods=["POST"])
+def tracker_data_commit():
+    check = tracker_data_endpoint_check_input_env(
+        request, check_auth=True, check_content_type=True
+    )
+    if isinstance(check, TDEndpointInputEnvCheckError):
+        return check.message, check.code
+    index, crawler_config = check.index, check.crawler_config
+    input_date_str = request.get_json()
+    try:
+        input_date = datetime.strptime(input_date_str, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return "Unable to read input date", 400
+    db = create_db_connection(index)
+    if db.set_tracker_data_commit(crawler_config.name, input_date):
+        return "Unable to commit", 500
+    return "Commited", 200
 
 
 @app.route("/api/0/tracker_data", methods=["POST", "GET"])
@@ -361,10 +371,10 @@ def tracker_data():
             return check.message, check.code
         index, crawler_config = check.index, check.crawler_config
         db = create_db_connection(index)
-        updated_since = db.get_last_updated_issue_date(crawler_config.name)
-        if not updated_since:
-            updated_since = [crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")]
-        return jsonify(updated_since[0] + "Z")
+        commit_date = db.get_tracker_data_commit(crawler_config.name)
+        if commit_date:
+            return jsonify(commit_date + "Z")
+        return "No commit date found", 404
 
 
 def main():

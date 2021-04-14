@@ -20,6 +20,7 @@ import tempfile
 import unittest
 import yaml
 from flask import json
+
 from monocle import webapp
 from monocle import config
 from monocle.db.db import ELmonocleDB
@@ -31,9 +32,7 @@ class TestWebAPI(unittest.TestCase):
     prefix = "monocle.test.1."
     index1 = "monocle-unittest-1"
     index2 = "monocle-unittest-2"
-    index3 = "monocle-unittest-3"
     datasets = ["objects/unit_repo1.json"]
-    datasets2 = ["objects/unit_repo2.json"]
 
     @classmethod
     def setUpClass(cls):
@@ -44,7 +43,7 @@ class TestWebAPI(unittest.TestCase):
         log = logging.getLogger(__name__)
         # log to stderr
         log.addHandler(logging.StreamHandler())
-        for index in (cls.index1, cls.index2, cls.index3):
+        for index in (cls.index1, cls.index2):
             cls.eldb = ELmonocleDB(
                 index=index,
                 prefix=cls.prefix,
@@ -57,13 +56,10 @@ class TestWebAPI(unittest.TestCase):
             if index in (cls.index1, cls.index2):
                 for dataset in cls.datasets:
                     index_dataset(cls.eldb, dataset)
-            if index in (cls.index3,):
-                for dataset in cls.datasets2:
-                    index_dataset(cls.eldb, dataset)
 
     @classmethod
     def tearDownClass(cls):
-        for index in (cls.index1, cls.index2, cls.index3):
+        for index in (cls.index1, cls.index2):
             cls.eldb.es.indices.delete(index=cls.eldb.prefix + index)
 
     def setUp(self):
@@ -89,21 +85,6 @@ class TestWebAPI(unittest.TestCase):
                         }
                     ],
                 },
-                {
-                    "index": self.index3,
-                    "task_tracker_crawlers": [
-                        {
-                            "name": "myttcrawler",
-                            "api_key": self.apikey,
-                            "updated_since": "2020-01-01",
-                        },
-                        {
-                            "name": "myttcrawler2",
-                            "api_key": self.apikey,
-                            "updated_since": "2020-01-01",
-                        },
-                    ],
-                },
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
@@ -120,9 +101,7 @@ class TestWebAPI(unittest.TestCase):
     def test_get_indices(self):
         "Test indices endpoint"
         resp = self.client.get("/api/0/indices")
-        self.assertListEqual(
-            ["monocle-unittest-2", "monocle-unittest-3"], json.loads(resp.data)
-        )
+        self.assertListEqual(["monocle-unittest-2"], json.loads(resp.data))
 
     def test_get_indices_with_acl(self):
         "Test indices endpoint with acl"
@@ -130,7 +109,7 @@ class TestWebAPI(unittest.TestCase):
             sess["username"] = "jane"
         resp = self.client.get("/api/0/indices")
         self.assertListEqual(
-            ["monocle-unittest-1", "monocle-unittest-2", "monocle-unittest-3"],
+            ["monocle-unittest-1", "monocle-unittest-2"],
             json.loads(resp.data),
         )
 
@@ -340,87 +319,28 @@ tenants:
             std,
         )
 
-    def test_task_tracker_data_get(self):
-        "Test get_task_tracker_updated_since_date endpoint"
-        url = "/api/0/tracker_data?index=%s&apikey=%s&name=%s" % (
-            self.index3,
+    def test_task_tracker_commit(self):
+        "Test task_tracker_commit endpoint"
+        posturl = "/api/0/tracker_data/commit?index=%s&apikey=%s&name=%s" % (
+            self.index2,
             self.apikey,
             "myttcrawler",
         )
-        tracker_data = [
-            {
-                "updated_at": "2021-04-09T13:00:00",
-                "change_url": "https://tests.com/unit/repo2/pull/2",
-                "issue_type": "RFE",
-                "issue_id": "1234",
-                "issue_url": "https://issue-tracker.domain.com/1234",
-                "issue_title": "Implement feature XYZ",
-            },
-            {
-                "updated_at": "2021-04-09T12:00:00",
-                "change_url": "https://tests.com/unit/repo2/pull/2",
-                "issue_type": "RFE",
-                "issue_id": "1235",
-                "issue_url": "https://issue-tracker.domain.com/1235",
-                "issue_title": "Implement feature XYZ",
-            },
-            {
-                "updated_at": "2021-04-09T14:00:00",
-                "change_url": "https://tests.com/unit/repo2/pull/3",
-                "issue_type": "RFE",
-                "issue_id": "1236",
-                "issue_url": "https://issue-tracker.domain.com/1236",
-                "issue_title": "Implement feature XYZ",
-            },
-            {
-                "updated_at": "2021-04-09T16:00:00",
-                "change_url": "https://tests.com/unit/repo2/pull/3",
-                "issue_type": "RFE",
-                "issue_id": "1237",
-                "issue_url": "https://issue-tracker.domain.com/1237",
-                "issue_title": "Implement feature XYZ",
-            },
-        ]
-        resp = self.client.post(url, json=tracker_data)
+        geturl = "/api/0/tracker_data?index=%s&name=%s" % (
+            self.index2,
+            "myttcrawler",
+        )
+        input_date = "2020-01-01T00:00:00Z"
+        resp = self.client.post(posturl, json=input_date)
         self.assertEqual(200, resp.status_code)
-        # Ensure we get the most recent date for the updated_at date
-        # of a task tracker task
-        resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=myttcrawler" % self.index3
-        )
-        self.assertEqual(json.loads(resp.data), "2021-04-09T16:00:00Z")
-        # Now let's call the endpoint with an crawler that never sent data
-        # The default updated_since date from the configuration must be returned
-        resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=myttcrawler2" % self.index3
-        )
-        self.assertEqual(json.loads(resp.data), "2020-01-01T00:00:00Z")
-        # Now let's see if the called get 404 in case of unknown crawler
-        resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=myttcrawler3" % self.index3
-        )
-        self.assertEqual(404, resp.status_code)
-        # Finally let's send orphan tracker data (that not belong to a known changes)
-        tracker_data = [
-            {
-                "updated_at": "2021-04-01T01:00:00",
-                "change_url": "https://tests.com/unit/repomissing/pull/2",
-                "issue_type": "RFE",
-                "issue_id": "1238",
-                "issue_url": "https://issue-tracker.domain.com/1238",
-                "issue_title": "Implement feature XYZ",
-            },
-            {
-                "updated_at": "2021-04-14T15:00:00",
-                "change_url": "https://tests.com/unit/repomissing/pull/2",
-                "issue_type": "RFE",
-                "issue_id": "1239",
-                "issue_url": "https://issue-tracker.domain.com/1239",
-                "issue_title": "Implement feature XYZ",
-            },
-        ]
-        resp = self.client.post(url, json=tracker_data)
-        resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=myttcrawler" % self.index3
-        )
-        self.assertEqual(json.loads(resp.data), "2021-04-14T15:00:00Z")
+        resp = self.client.get(geturl)
+        self.assertEqual(200, resp.status_code)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual(commit_date, input_date)
+        # Update the commit date
+        input_date = "2020-01-01T01:00:00Z"
+        resp = self.client.post(posturl, json=input_date)
+        resp = self.client.get(geturl)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(commit_date, input_date)

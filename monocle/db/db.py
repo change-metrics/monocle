@@ -411,6 +411,26 @@ class ELmonocleDB:
         self.es.indices.refresh(index=self.index)
         return ret
 
+    def set_tracker_data_commit(self, name, commit_date):
+        body = {
+            "doc": {"type": "TrackerDataCommit", "updated_at": commit_date},
+            "doc_as_upsert": True,
+        }
+        ret = None
+        try:
+            self.es.update(self.index, name, body=body)
+            self.es.indices.refresh(index=self.index)
+        except Exception as err:
+            ret = err
+        return ret
+
+    def get_tracker_data_commit(self, name):
+        try:
+            ret = self.es.get(self.index, name)
+            return ret["_source"]["updated_at"]
+        except Exception:
+            return False
+
     def delete_index(self):
         self.log.info("Deleting index: %s" % self.index)
         self.ic.delete(index=self.index)
@@ -479,33 +499,6 @@ class ELmonocleDB:
         except Exception:
             return []
         return [r["_source"] for r in res["hits"]["hits"]]
-
-    def get_last_updated_issue_date(self, crawler_name):
-        params = {
-            "index": self.index,
-            "body": {
-                "sort": [{"tracker_data.updated_at": {"order": "desc"}}],
-                "query": {
-                    "bool": {
-                        "filter": [
-                            {"terms": {"type": ["Change", "OrphanTrackerData"]}},
-                            {"term": {"tracker_data.crawler_name": crawler_name}},
-                        ]
-                    }
-                },
-            },
-        }
-        try:
-            res = self.es.search(**params)
-        except Exception:
-            return []
-        ret = [r["_source"] for r in res["hits"]["hits"]]
-        if not ret:
-            return []
-        ret = sorted(
-            [td["updated_at"] for td in ret[0].get("tracker_data", [])], reverse=True
-        )
-        return [ret[0]]
 
     def run_named_query(self, name, *args, **kwargs):
         if name not in queries.public_queries:
