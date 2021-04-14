@@ -20,7 +20,7 @@ import sys
 import time
 import yaml
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from flask import Flask
 from flask import abort
@@ -41,7 +41,6 @@ from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
 from monocle.tracker_data import (
-    InputTrackerData,
     createInputTrackerData,
     createELTrackerData,
     TrackerDataForEL,
@@ -286,35 +285,29 @@ def tracker_data():
                 r["url"],
                 {
                     "id": r["id"],
-                    "prev_td": createELTrackerData(r.get("tracker_data", [])),
+                    "td": createELTrackerData(r.get("tracker_data", [])),
                 },
             )
             for r in mc
         ]
     )
     # Prepare input data set
-    update_docs: InputTrackerData = []
+    update_docs: List[Union[TrackerDataForEL, OrphanTrackerDataForEL]] = []
     for input_tracker_data in extracted_data:
         if input_tracker_data.change_url in mc:
             # First check if a td match the input one
             prev_td = [
                 td
-                for td in mc[input_tracker_data.change_url]["prev_td"]
+                for td in mc[input_tracker_data.change_url]["td"]
                 if td.issue_url == input_tracker_data.issue_url
             ]
             if len(prev_td) > 1:
                 raise RuntimeError("Multiple td match in previous td")
             # Remove the previous outdated one if any
             if prev_td:
-                mc[input_tracker_data.change_url]["prev_td"].remove(prev_td[0])
+                mc[input_tracker_data.change_url]["td"].remove(prev_td[0])
             # Add the new one to the list
-            mc[input_tracker_data.change_url]["prev_td"].append(input_tracker_data)
-            update_docs.append(
-                TrackerDataForEL(
-                    _id=mc[input_tracker_data.change_url]["id"],
-                    tracker_data=mc[input_tracker_data.change_url]["prev_td"],
-                )
-            )
+            mc[input_tracker_data.change_url]["td"].append(input_tracker_data)
         else:
             update_docs.append(
                 OrphanTrackerDataForEL(
@@ -322,6 +315,13 @@ def tracker_data():
                     tracker_data=[input_tracker_data],
                 )
             )
+    for _mc in mc.values():
+        update_docs.append(
+            TrackerDataForEL(
+                _id=_mc["id"],
+                tracker_data=_mc["td"],
+            )
+        )
     # Now insert the data
     err = db.update_tracker_data(source_it=update_docs)
     # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
