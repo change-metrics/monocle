@@ -218,33 +218,30 @@ tenants:
         resp = self.client.get("/api/0/projects?index=%s" % fake_index)
         self.assertEqual(404, resp.status_code)
 
-    def test_tracker_data_amend(self):
-        "Test tracker_data_amend endpoint"
+    def test_tracker_data_post(self):
+        "Test post on tracker_data endpoint"
         # First try some faulty requests
-        resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s" % self.index2, json=""
-        )
-        self.assertEqual(400, resp.status_code)
+        resp = self.client.post("/api/0/tracker_data?index=%s" % self.index2, json="")
+        self.assertEqual(404, resp.status_code)
         self.assertEqual(
-            "No crawler name or/and apikey provided",
+            "No crawler name provided",
             resp.data.decode(),
         )
 
         resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
+            "/api/0/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
         )
-        self.assertEqual(400, resp.status_code)
-        self.assertEqual("No crawler name or/and apikey provided", resp.data.decode())
+        self.assertEqual(404, resp.status_code)
+        self.assertEqual("No crawler name provided", resp.data.decode())
 
         resp = self.client.post(
-            "/api/0/amend/tracker_data?index=%s&apikey=badkey&name=myttcrawler"
-            % self.index2,
+            "/api/0/tracker_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
             json="",
         )
         self.assertEqual(403, resp.status_code)
         self.assertEqual("Not authorized", resp.data.decode())
 
-        url = "/api/0/amend/tracker_data?index=%s&apikey=%s&name=%s" % (
+        url = "/api/0/tracker_data?index=%s&apikey=%s&name=%s" % (
             self.index2,
             self.apikey,
             "myttcrawler",
@@ -343,9 +340,9 @@ tenants:
             std,
         )
 
-    def test_get_task_tracker_updated_since_date(self):
+    def test_task_tracker_data_get(self):
         "Test get_task_tracker_updated_since_date endpoint"
-        url = "/api/0/amend/tracker_data?index=%s&apikey=%s&name=%s" % (
+        url = "/api/0/tracker_data?index=%s&apikey=%s&name=%s" % (
             self.index3,
             self.apikey,
             "myttcrawler",
@@ -389,21 +386,18 @@ tenants:
         # Ensure we get the most recent date for the updated_at date
         # of a task tracker task
         resp = self.client.get(
-            "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler"
-            % self.index3
+            "/api/0/tracker_data?index=%s&name=myttcrawler" % self.index3
         )
         self.assertEqual(json.loads(resp.data), "2021-04-09T16:00:00Z")
         # Now let's call the endpoint with an crawler that never sent data
         # The default updated_since date from the configuration must be returned
         resp = self.client.get(
-            "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler2"
-            % self.index3
+            "/api/0/tracker_data?index=%s&name=myttcrawler2" % self.index3
         )
         self.assertEqual(json.loads(resp.data), "2020-01-01T00:00:00Z")
         # Now let's see if the called get 404 in case of unknown crawler
         resp = self.client.get(
-            "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler3"
-            % self.index3
+            "/api/0/tracker_data?index=%s&name=myttcrawler3" % self.index3
         )
         self.assertEqual(404, resp.status_code)
         # Finally let's send orphan tracker data (that not belong to a known changes)
@@ -427,7 +421,6 @@ tenants:
         ]
         resp = self.client.post(url, json=tracker_data)
         resp = self.client.get(
-            "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler"
-            % self.index3
+            "/api/0/tracker_data?index=%s&name=myttcrawler" % self.index3
         )
         self.assertEqual(json.loads(resp.data), "2021-04-14T15:00:00Z")

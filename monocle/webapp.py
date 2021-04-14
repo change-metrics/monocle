@@ -21,6 +21,7 @@ import time
 import yaml
 
 from typing import Dict, List, Optional, Union
+from dataclasses import dataclass
 
 from flask import Flask
 from flask import abort
@@ -45,6 +46,7 @@ from monocle.tracker_data import (
     createELTrackerData,
     TrackerDataForEL,
     OrphanTrackerDataForEL,
+    TaskTrackerCrawler,
 )
 from monocle import config
 
@@ -223,109 +225,146 @@ def indices():
     return jsonify(indices)
 
 
-@app.route("/api/0/task_tracker/updated_since_date", methods=["GET"])
-def task_tracker_updated_since_date():
-    if not request.args.get("index"):
-        abort(make_response(jsonify(errors=["No index provided"]), 404))
-    index = request.args.get("index")
-    if "name" not in request.args:
-        return "No crawler name provided", 400
-    crawler_name = request.args.get("name")
-    crawler_config = [
-        c
-        for c in globals()["indexes_task_tracker_crawlers"].get(index, [])
-        if c.name == crawler_name
+@dataclass
+class TDEndpointInputEnvCheckSuccess:
+    index: str
+    crawler_config: TaskTrackerCrawler
+
+
+@dataclass
+class TDEndpointInputEnvCheckError:
+    message: str
+    code: int
+
+
+def tracker_data_endpoint_check_input_env(
+    req, check_auth: bool, check_content_type: bool
+) -> Union[TDEndpointInputEnvCheckSuccess, TDEndpointInputEnvCheckError]:
+    if "index" not in req.args or not req.args.get("index"):
+        return TDEndpointInputEnvCheckError("No index provided", 404)
+    index = req.args["index"]
+    if index not in globals()["indexes_task_tracker_crawlers"]:
+        return TDEndpointInputEnvCheckError("No index with this name", 404)
+    if "name" not in req.args or not req.args.get("name"):
+        return TDEndpointInputEnvCheckError("No crawler name provided", 404)
+    name = req.args["name"]
+    match_crawler_config = [
+        c for c in globals()["indexes_task_tracker_crawlers"][index] if c.name == name
     ]
-    if not crawler_config:
-        return "No crawler with this name", 404
-    crawler_config = crawler_config[0]
-    db = create_db_connection(index)
-    updated_since = db.get_last_updated_issue_date(crawler_name)
-    if not updated_since:
-        updated_since = [crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")]
-    return jsonify(updated_since[0] + "Z")
-
-
-@app.route("/api/0/amend/tracker_data", methods=["POST"])
-def tracker_data():
-    if not request.args.get("index"):
-        abort(make_response(jsonify(errors=["No index provided"]), 404))
-    index = request.args.get("index")
-    if "name" not in request.args or "apikey" not in request.args:
-        return "No crawler name or/and apikey provided", 400
-    name = request.args.get("name")
-    # Check authorization
-    if index not in globals()["indexes_task_tracker_crawlers"] or request.args.get(
-        "apikey"
-    ) not in [
-        c.api_key
-        for c in globals()["indexes_task_tracker_crawlers"][index]
-        if c.name == name
-    ]:
-        return "Not authorized", 403
-    # Input data validation
-    if not request.is_json:
-        return "Missing content-type application/json", 400
-    json_data: List = request.get_json()
-    if not isinstance(json_data, list):
-        return "Input data is not a List", 400
-    if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
-        return "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT), 400
-    try:
-        extracted_data = createInputTrackerData(json_data, name)
-    except Exception:
-        return "Unable to extract input data due to wrong input format", 400
-    # Find changes in EL ids that match urls
-    change_urls = [e.change_url for e in extracted_data]
-    db = create_db_connection(index)
-    mc = db.get_changes_by_url(change_urls, INPUT_TRACKER_DATA_LIMIT)
-    mc = dict(
-        [
-            (
-                r["url"],
-                {
-                    "id": r["id"],
-                    "td": createELTrackerData(r.get("tracker_data", [])),
-                },
+    if not match_crawler_config:
+        return TDEndpointInputEnvCheckError("No crawler with this name", 404)
+    crawler_config = match_crawler_config[0]
+    apikey = None
+    if check_auth:
+        if "apikey" not in req.args and not req.args.get("apikey"):
+            return TDEndpointInputEnvCheckError("No crawler apikey provided", 404)
+        apikey = req.args["apikey"]
+        if apikey != crawler_config.api_key:
+            return TDEndpointInputEnvCheckError("Not authorized", 403)
+    if check_content_type:
+        if not req.is_json:
+            return TDEndpointInputEnvCheckError(
+                "Missing content-type application/json", 400
             )
-            for r in mc
-        ]
-    )
-    # Prepare input data set
-    update_docs: List[Union[TrackerDataForEL, OrphanTrackerDataForEL]] = []
-    for input_tracker_data in extracted_data:
-        if input_tracker_data.change_url in mc:
-            # First check if a td match the input one
-            prev_td = [
-                td
-                for td in mc[input_tracker_data.change_url]["td"]
-                if td.issue_url == input_tracker_data.issue_url
+    return TDEndpointInputEnvCheckSuccess(index, crawler_config)
+
+
+# @app.route("/api/0/tracker_data/commit", methods=["POST"])
+# def tracker_data_commit():
+#     check = tracker_data_endpoint_check_input_env(
+#         request, check_auth=True, check_content_type=True
+#     )
+#     if isinstance(check, TDEndpointInputEnvCheckError):
+#         return check.message, check.code
+#     return
+#     # index, crawler_config = check.index, check.crawler_config
+
+
+@app.route("/api/0/tracker_data", methods=["POST", "GET"])
+def tracker_data():
+    if request.method == "POST":
+        check = tracker_data_endpoint_check_input_env(
+            request, check_auth=True, check_content_type=True
+        )
+        if isinstance(check, TDEndpointInputEnvCheckError):
+            return check.message, check.code
+        index, crawler_config = check.index, check.crawler_config
+
+        json_data: List = request.get_json()
+        if not isinstance(json_data, list):
+            return "Input data is not a List", 400
+        if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
+            return (
+                "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT),
+                400,
+            )
+        try:
+            extracted_data = createInputTrackerData(json_data, crawler_config.name)
+        except Exception:
+            return "Unable to extract input data due to wrong input format", 400
+        # Find changes in EL ids that match urls
+        change_urls = [e.change_url for e in extracted_data]
+        db = create_db_connection(index)
+        mc = db.get_changes_by_url(change_urls, INPUT_TRACKER_DATA_LIMIT)
+        mc = dict(
+            [
+                (
+                    r["url"],
+                    {
+                        "id": r["id"],
+                        "td": createELTrackerData(r.get("tracker_data", [])),
+                    },
+                )
+                for r in mc
             ]
-            if len(prev_td) > 1:
-                raise RuntimeError("Multiple td match in previous td")
-            # Remove the previous outdated one if any
-            if prev_td:
-                mc[input_tracker_data.change_url]["td"].remove(prev_td[0])
-            # Add the new one to the list
-            mc[input_tracker_data.change_url]["td"].append(input_tracker_data)
-        else:
+        )
+        # Prepare input data set
+        update_docs: List[Union[TrackerDataForEL, OrphanTrackerDataForEL]] = []
+        for input_tracker_data in extracted_data:
+            if input_tracker_data.change_url in mc:
+                # First check if a td match the input one
+                prev_td = [
+                    td
+                    for td in mc[input_tracker_data.change_url]["td"]
+                    if td.issue_url == input_tracker_data.issue_url
+                ]
+                if len(prev_td) > 1:
+                    raise RuntimeError("Multiple td match in previous td")
+                # Remove the previous outdated one if any
+                if prev_td:
+                    mc[input_tracker_data.change_url]["td"].remove(prev_td[0])
+                # Add the new one to the list
+                mc[input_tracker_data.change_url]["td"].append(input_tracker_data)
+            else:
+                update_docs.append(
+                    OrphanTrackerDataForEL(
+                        _id=input_tracker_data.issue_url,
+                        tracker_data=[input_tracker_data],
+                    )
+                )
+        for _mc in mc.values():
             update_docs.append(
-                OrphanTrackerDataForEL(
-                    _id=input_tracker_data.issue_url,
-                    tracker_data=[input_tracker_data],
+                TrackerDataForEL(
+                    _id=_mc["id"],
+                    tracker_data=_mc["td"],
                 )
             )
-    for _mc in mc.values():
-        update_docs.append(
-            TrackerDataForEL(
-                _id=_mc["id"],
-                tracker_data=_mc["td"],
-            )
+        # Now insert the data
+        err = db.update_tracker_data(source_it=update_docs)
+        # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
+        return jsonify(err.errors if err else [])
+    if request.method == "GET":
+        check = tracker_data_endpoint_check_input_env(
+            request, check_auth=False, check_content_type=False
         )
-    # Now insert the data
-    err = db.update_tracker_data(source_it=update_docs)
-    # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
-    return jsonify(err.errors if err else [])
+        if isinstance(check, TDEndpointInputEnvCheckError):
+            return check.message, check.code
+        index, crawler_config = check.index, check.crawler_config
+        db = create_db_connection(index)
+        updated_since = db.get_last_updated_issue_date(crawler_config.name)
+        if not updated_since:
+            updated_since = [crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")]
+        return jsonify(updated_since[0] + "Z")
 
 
 def main():
