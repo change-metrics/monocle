@@ -10,13 +10,15 @@
 module Main (main) where
 
 import Lentille
+import Lentille.Bugzilla
 import Options.Generic
 import Relude
 
 data LentilleCli w = LentilleCli
   { monocleUrl :: w ::: Text <?> "The monocle API",
     index :: w ::: Text <?> "The index name",
-    crawlerName :: w ::: Text <?> "The name of the crawler"
+    crawlerName :: w ::: Text <?> "The name of the crawler",
+    bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url"
   }
   deriving stock (Generic)
 
@@ -39,7 +41,8 @@ main = do
     go apiKey = do
       args <- unwrapRecord "Lentille worker"
       withClient (monocleUrl args) Nothing $ \client -> do
-        bzSession <- getBugzillaSession
+        let bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
+        bzSession <- getBugzillaSession bzUrl
         run
           client
           (ApiKey . toText $ apiKey)

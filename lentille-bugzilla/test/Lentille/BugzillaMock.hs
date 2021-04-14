@@ -19,10 +19,12 @@ bugzillaMockApplication req respond = do
   -- putTextLn $ "Got bugzilla req: " <> show req
   putTextLn $ "Serving : " <> show (Wai.rawPathInfo req <> Wai.rawQueryString req)
   respData <- case Wai.rawPathInfo req of
-    "/rest/bug/1791815" -> BS.readFile "./test/data/rhbz1791815.json"
-    "/rest/bug" -> BS.readFile "./test/data/rhbzsearch.json"
+    "/rest/bug/1791815" -> BS.readFile (base <> "rhbz1791815.json")
+    "/rest/bug" -> BS.readFile (base <> "rhbzsearch.json")
     x -> error $ "Unknown path: " <> show x
   respond $ Wai.responseLBS status200 mempty (toLazy respData)
+  where
+    base = "./lentille-bugzilla/test/data/"
 
 -- | Lowlevel wai application server
 bugzillaMockServerThread :: QSem.QSem -> Warp.Port -> Socket -> IO ()

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only

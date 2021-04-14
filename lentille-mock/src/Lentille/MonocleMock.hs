@@ -2,14 +2,26 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
-module Lentille.MonocleMock (monocleMockApplication) where
+module Lentille.MonocleMock
+  ( withMockClient,
+    withMockedManager,
+    monocleMockApplication,
+  )
+where
 
 import Data.Aeson (encode)
 import qualified Data.HashMap.Strict as HM
 import Data.List (lookup)
+import Lentille.Client (MonocleClient, withClient)
+import Network.HTTP.Mock (withMockedManager)
 import Network.HTTP.Types.Status (status200)
 import qualified Network.Wai as Wai
 import Relude
+
+withMockClient :: (MonocleClient -> IO ()) -> IO ()
+withMockClient cb = withMockedManager monocleMockApplication go
+  where
+    go manager = withClient "http://localhost" (Just manager) cb
 
 fakeIndices :: [Text]
 fakeIndices = ["indice1", "indice2"]
