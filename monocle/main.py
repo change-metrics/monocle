@@ -217,7 +217,7 @@ def main() -> None:
                     updated_since=crawler_item["updated_since"],
                     loop_delay=tenant["crawler"]["loop_delay"],
                     repository=crawler_item.get("repository"),
-                    base_url=crawler_item["base_url"],
+                    base_url=crawler_item["base_url"].rstrip("/"),
                     token_getter=tg,
                     db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
@@ -268,7 +268,7 @@ def main() -> None:
                     repository=crawler_item["name"],
                     updated_since=crawler_item["updated_since"],
                     loop_delay=tenant["crawler"]["loop_delay"],
-                    base_url=crawler_item["base_url"],
+                    base_url=crawler_item["base_url"].rstrip("/"),
                     insecure=crawler_item.get("insecure", False),
                     login=crawler_item.get("login"),
                     password=crawler_item.get("password"),
