@@ -22,6 +22,7 @@ from datetime import date
 from datetime import timezone
 from datetime import datetime
 from datetime import timedelta
+from urllib.parse import urlparse, urlunparse
 
 from typing import List, Dict
 
@@ -167,6 +168,16 @@ def enhance_changes(changes):
     detector = Detector()
     changes = list(map(detector.enhance, changes))
     return changes
+
+
+def strip_url(url: str) -> str:
+    """
+    Remove extra '/' in an url path
+    Previous version of Monocle did not ensure
+    """
+    p = urlparse(url)
+    np = "/".join(filter(lambda x: x, p.path.split("/")))
+    return urlunparse(p._replace(path=np))
 
 
 def get_events_list() -> List[str]:

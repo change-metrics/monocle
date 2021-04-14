@@ -77,12 +77,12 @@ def string_ident_to_ident(elastic_conn, index) -> None:
         result = client.run_named_query("changes", ".*", params=params)
         changes = result["items"]
         for change in changes:
-            changes_url_lookup[change["change_id"]] = change["url"]
+            changes_url_lookup[change["change_id"]] = utils.strip_url(change["url"])
         print("%s entries in changes_url_lookup" % len(changes_url_lookup))
 
-    def update_ident(obj: Dict) -> Dict:
+    def update_obj(obj: Dict) -> Dict:
 
-        url = obj["url"]
+        url = utils.strip_url(obj["url"])
 
         def update_approval_type(approval):
             if isinstance(approval, str):
@@ -129,6 +129,8 @@ def string_ident_to_ident(elastic_conn, index) -> None:
         # Also fix approval format if needed
         if obj.get("approval"):
             obj["approval"] = update_approval_type(obj["approval"])
+        # Ensure we have the stripped url
+        obj["url"] = url
 
         return obj
 
@@ -142,7 +144,7 @@ def string_ident_to_ident(elastic_conn, index) -> None:
                 else:
                     print("Warning - unable to find change %s" % o["change_id"])
                     o["url"] = "https://undefined"
-        updated = list(map(update_ident, to_update))
+        updated = list(map(update_obj, to_update))
         print("Updating %s objects ..." % len(to_update))
         bulk_update(list(map(dict_to_change_or_event, updated)))
 
