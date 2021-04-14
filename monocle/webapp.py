@@ -372,9 +372,9 @@ def tracker_data():
         index, crawler_config = check.index, check.crawler_config
         db = create_db_connection(index)
         commit_date = db.get_tracker_data_commit(crawler_config.name)
-        if commit_date:
-            return jsonify(commit_date + "Z")
-        return "No commit date found", 404
+        if not commit_date:
+            commit_date = crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")
+        return jsonify(commit_date + "Z")
 
 
 def main():

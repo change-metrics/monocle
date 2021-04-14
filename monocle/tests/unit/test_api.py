@@ -330,15 +330,20 @@ tenants:
             self.index2,
             "myttcrawler",
         )
-        input_date = "2020-01-01T00:00:00Z"
+        # No previous commit data - return the default date
+        resp = self.client.get(geturl)
+        self.assertEqual(200, resp.status_code)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(commit_date, "2020-01-01T00:00:00Z")
+        # Set a commit date and check we can retrieve it
+        input_date = "2020-01-01T00:10:00Z"
         resp = self.client.post(posturl, json=input_date)
         self.assertEqual(200, resp.status_code)
         resp = self.client.get(geturl)
         self.assertEqual(200, resp.status_code)
         commit_date = json.loads(resp.data)
-        self.assertEqual(200, resp.status_code)
         self.assertEqual(commit_date, input_date)
-        # Update the commit date
+        # Set a new commit date and check we can retrieve it
         input_date = "2020-01-01T01:00:00Z"
         resp = self.client.post(posturl, json=input_date)
         resp = self.client.get(geturl)
