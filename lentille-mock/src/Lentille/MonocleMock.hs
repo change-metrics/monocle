@@ -26,12 +26,13 @@ withMockClient cb = withMockedManager monocleMockApplication go
 fakeIndices :: [Text]
 fakeIndices = ["indice1", "indice2"]
 
-monocleMockResponse :: HM.HashMap ByteString LByteString
+monocleMockResponse :: HM.HashMap (ByteString, ByteString) LByteString
 monocleMockResponse =
   fromList
-    [ ("/api/0/indices", encode fakeIndices),
-      ("/api/0/task_tracker/updated_since_date", "\"2021-01-01T00:00:00Z\""),
-      ("/api/0/amend/tracker_data", "[]")
+    [ (("GET", "/api/0/indices"), encode fakeIndices),
+      (("GET", "/api/0/tracker_data"), "\"2021-01-01T00:00:00Z\""),
+      (("POST", "/api/0/tracker_data"), "[]"),
+      (("POST", "/api/0/tracker_data/commit"), "Commited")
     ]
 
 monocleMockApplication :: Wai.Application
@@ -45,4 +46,4 @@ monocleMockApplication req respond =
         _ -> fromMaybe (error ("unknown path: " <> show requestPath)) responseM
     requestPath = Wai.rawPathInfo req
     responseM :: Maybe LByteString
-    responseM = HM.lookup requestPath monocleMockResponse
+    responseM = HM.lookup (Wai.requestMethod req, requestPath) monocleMockResponse

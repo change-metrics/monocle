@@ -29,6 +29,7 @@ module Lentille.Client
     getIndices,
     getUpdatedSince,
     postTrackerData,
+    setUpdatedSince,
   )
 where
 
@@ -105,10 +106,15 @@ monocleReq (Verb verb) bodyM (APIPath path) qs MonocleClient {..} =
                 method = verb
               }
     response <- liftIO $ httpLbs request manager
-    case eitherDecode $ responseBody response of
-      Left err -> error $ "Decoding of " <> show (responseBody response) <> " failed with: " <> show err
-      Right a -> pure a
+    pure $
+      -- Fix non-json response
+      if path == "api/0/tracker_data/commit"
+        then decodeResponse ("\"" <> responseBody response <> "\"")
+        else decodeResponse (responseBody response)
   where
+    decodeResponse body = case eitherDecode body of
+      Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
+      Right a -> a
     withBody :: Request -> Request
     withBody = case bodyM of
       Nothing -> id
@@ -143,14 +149,22 @@ mkQs = fmap . fmap $ Just . encodeUtf8
 
 getUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> m UTCTime
 getUpdatedSince client (IndexName index) (CrawlerName crawler) =
-  monocleGet (APIPath "api/0/task_tracker/updated_since_date") qs client
+  monocleGet (APIPath "api/0/tracker_data") qs client
   where
     qs = mkQs [("index", index), ("name", crawler)]
+
+setUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> ApiKey -> UTCTime -> m Bool
+setUpdatedSince client (IndexName index) (CrawlerName crawler) (ApiKey apikey) ts = do
+  isOk <$> monoclePost (Just . IsoTime $ ts) (APIPath "api/0/tracker_data/commit") qs client
+  where
+    isOk :: Text -> Bool
+    isOk = (==) "Commited"
+    qs = mkQs [("index", index), ("name", crawler), ("apikey", apikey)]
 
 newtype IsoTime = IsoTime UTCTime deriving stock (Show, Eq)
 
 instance ToJSON IsoTime where
-  toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%T" $ utcTime
+  toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
 data TrackerData = TrackerData
   { tdUpdatedAt :: IsoTime,
@@ -177,6 +191,6 @@ postTrackerData ::
   [TrackerData] ->
   m [Text]
 postTrackerData client (IndexName index) (CrawlerName crawler) (ApiKey apikey) tds = do
-  fmap (decodeUtf8 . encode) <$> (monoclePost (Just tds) (APIPath "api/0/amend/tracker_data") qs client :: m [Value])
+  fmap (decodeUtf8 . encode) <$> (monoclePost (Just tds) (APIPath "api/0/tracker_data") qs client :: m [Value])
   where
     qs = mkQs [("index", index), ("name", crawler), ("apikey", apikey)]
