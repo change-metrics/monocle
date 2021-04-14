@@ -249,7 +249,7 @@ Monocle is able to index changes from multiple code review systems. A contributo
 might get different identities across code review systems. Thus Monocle provides
 a configuration section to define aliases for contributors.
 
-Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity. 
+Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
 
 ```YAML
 tenants:

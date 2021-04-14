@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass
 from typing import Dict, List
 from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
@@ -136,6 +137,17 @@ schema = {
                             },
                         },
                     },
+                    "projects": {
+                        "description": "Project definition",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "repositories_regex": {"type": "string"},
+                            },
+                        },
+                    },
                 },
             },
         }
@@ -189,6 +201,9 @@ tenants:
           login: fabien
           password: secure
           prefix: namespace/
+    projects:
+      - name: infra
+        repositories_regex: "^config|infra$|openstack/.*"
 """
 
 
@@ -202,6 +217,12 @@ def validate(data, schema):
 
 class Username(str):
     pass
+
+
+@dataclass
+class ProjectDefinition(str):
+    name: str
+    repositories_regex: str
 
 
 def build_index_acl(config: dict) -> Dict[str, List[Username]]:
@@ -235,3 +256,13 @@ def get_idents_config(config: dict, index_name: str) -> IdentsConfig:
         return list(map(ident_from_config, matches[0].get("idents", [])))
     else:
         return []
+
+
+def build_project_definitions(config: dict) -> Dict[str, List[ProjectDefinition]]:
+    indexes_project_def: Dict[str, List[ProjectDefinition]] = {}
+    for tenant in config["tenants"]:
+        if "projects" not in tenant.keys():
+            indexes_project_def[tenant["index"]] = []
+        else:
+            indexes_project_def[tenant["index"]] = tenant["projects"]
+    return indexes_project_def
