@@ -406,3 +406,28 @@ tenants:
             % self.index3
         )
         self.assertEqual(404, resp.status_code)
+        # Finally let's send orphan tracker data (that not belong to a known changes)
+        tracker_data = [
+            {
+                "updated_at": "2021-04-01T01:00:00",
+                "change_url": "https://tests.com/unit/repomissing/pull/2",
+                "issue_type": "RFE",
+                "issue_id": "1238",
+                "issue_url": "https://issue-tracker.domain.com/1238",
+                "issue_title": "Implement feature XYZ",
+            },
+            {
+                "updated_at": "2021-04-14T15:00:00",
+                "change_url": "https://tests.com/unit/repomissing/pull/2",
+                "issue_type": "RFE",
+                "issue_id": "1239",
+                "issue_url": "https://issue-tracker.domain.com/1239",
+                "issue_title": "Implement feature XYZ",
+            },
+        ]
+        resp = self.client.post(url, json=tracker_data)
+        resp = self.client.get(
+            "/api/0/task_tracker/updated_since_date?index=%s&name=myttcrawler"
+            % self.index3
+        )
+        self.assertEqual(json.loads(resp.data), "2021-04-14T15:00:00Z")

@@ -484,7 +484,7 @@ class ELmonocleDB:
                 "query": {
                     "bool": {
                         "filter": [
-                            {"term": {"type": "Change"}},
+                            {"terms": {"type": ["Change", "OrphanTrackerData"]}},
                             {"term": {"tracker_data.crawler_name": crawler_name}},
                         ]
                     }
