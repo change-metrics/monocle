@@ -52,6 +52,7 @@ library
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , relude                     > 1.0.0.0
+                     , retry                      < 0.9
                      , streaming                  < 0.3
                      , time                       < 1.12
   hs-source-dirs:      src

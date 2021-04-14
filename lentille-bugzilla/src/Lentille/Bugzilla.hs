@@ -11,7 +11,7 @@ module Lentille.Bugzilla (searchExpr, toTrackerData, getBZData, getBugzillaSessi
 
 import Data.Time (UTCTime)
 import Lentille.Client (IsoTime (..), TrackerData (..))
-import Lentille.Worker (LogEvent (LogGetBugs), log)
+import Lentille.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
@@ -56,16 +56,21 @@ toTrackerData bz = map mkTrackerData ebugs
         (BZ.bugSeverity bz)
         (BZ.bugPriority bz)
 
-getBZData :: MonadIO m => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
+getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
 getBZData bzSession sinceTS = go 0
   where
+    doGet :: MonadIO m => Int -> m [BZ.Bug]
+    doGet offset =
+      liftIO $ BZ.searchBugsAllWithLimit bzSession 100 offset (searchExpr sinceTS)
     go offset = do
-      liftIO $ log $ LogGetBugs sinceTS offset 100
-      bugs <- liftIO $ BZ.searchBugsAllWithLimit bzSession 100 offset (searchExpr sinceTS)
+      -- Retrieve rhbz
+      bugs <- lift $ do
+        log $ LogGetBugs sinceTS offset 100
+        retry . doGet $ offset
+      -- Create a flat stream of tracker data
       S.each (concatMap toTrackerData bugs)
-      unless
-        (length bugs < 100)
-        (go (offset + length bugs))
+      -- Keep on retrieving the rest
+      unless (length bugs < 100) (go (offset + length bugs))
 
 getBugzillaSession :: MonadIO m => Text -> m BugzillaSession
 getBugzillaSession host = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext host)

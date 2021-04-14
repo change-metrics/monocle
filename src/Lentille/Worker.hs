@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -13,13 +14,21 @@ module Lentille.Worker
     TrackerDataFetcher (..),
     MonadLog (..),
     LogEvent (..),
+
+    -- * Utility function
+    retry,
+    MonadMask,
   )
 where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (Handler (Handler), MonadMask, MonadThrow)
+import Control.Retry (RetryStatus (..))
+import qualified Control.Retry as Retry
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Lentille.Client
+import Network.HTTP.Client (HttpException (..))
+import qualified Network.HTTP.Client as HTTP
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming as S
@@ -32,6 +41,7 @@ data LogEvent
   = LogStarting
   | LogEnded
   | LogFailed
+  | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
   | LogPostData Int
 
@@ -52,6 +62,7 @@ logEvent ev = do
       LogStarting -> "Starting updates"
       LogEnded -> "Update completed"
       LogFailed -> "Commit failed"
+      LogNetworkFailure msg -> "Network error: " <> msg
       LogGetBugs ts offset limit ->
         "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
       LogPostData count -> "Posting tracker data " <> show count
@@ -63,6 +74,25 @@ class Monad m => MonadLog m where
 instance MonadLog IO where
   log' = logEvent
   log = void . log'
+
+-- Retry 5 times network action, doubling backoff each time
+retry :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
+retry action =
+  Retry.recovering
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries 5)
+    [handler]
+    (const action)
+  where
+    backoff = 500000 -- 500ms
+    -- Log network error
+    handler (RetryStatus num _ _) = Handler $ \case
+      HttpExceptionRequest req ctx -> do
+        let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+            arg = decodeUtf8 $ HTTP.queryString req
+            loc = if num == 0 then url <> arg else url
+        log . LogNetworkFailure $ show num <> "/5 " <> loc <> " failed: " <> show ctx
+        pure True
+      InvalidUrlException _ _ -> pure False
 
 -------------------------------------------------------------------------------
 -- Worker implementation
@@ -89,7 +119,7 @@ process postFunc =
     . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
 
 run ::
-  (MonadThrow m, MonadLog m, MonadIO m) =>
+  (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   ApiKey ->
   IndexName ->
@@ -99,6 +129,6 @@ run ::
 run monocleClient apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- getUpdatedSince monocleClient indexName crawlerName
-  process (postTrackerData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
-  res <- setUpdatedSince monocleClient indexName crawlerName apiKey startTime
+  process (retry . postTrackerData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
+  res <- retry $ setUpdatedSince monocleClient indexName crawlerName apiKey startTime
   log (if res then LogEnded else LogFailed)
