@@ -28,9 +28,9 @@ class TrackerData:
     issue_id: str
     issue_url: str
     issue_title: str
-    severity: Optional[str]
-    priority: Optional[str]
-    score: Optional[int]
+    severity: Optional[str] = None
+    priority: Optional[str] = None
+    score: Optional[int] = None
 
 
 InputTrackerData = List[TrackerData]
@@ -94,5 +94,17 @@ class TrackerDataForEL:
 
 
 @dataclass
-class OrphanTrackerDataForEL(TrackerDataForEL):
-    pass
+class OrphanTrackerDataForEL:
+    _id: str
+    tracker_data: TrackerData
+
+
+@dataclass
+class AdoptedTrackerData:
+    _adopted: bool
+
+
+@dataclass
+class AdoptedTrackerDataForEL:
+    _id: str
+    tracker_data: AdoptedTrackerData

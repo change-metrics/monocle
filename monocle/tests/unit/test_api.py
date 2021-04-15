@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
 import tempfile
 import time
@@ -24,46 +23,26 @@ from flask import json
 
 from monocle import webapp
 from monocle import config
-from monocle.db.db import ELmonocleDB
 
-from .common import index_dataset
+from .common import index_dataset, get_db_cnx
 
 
 class TestWebAPI(unittest.TestCase):
     prefix = "monocle.test.1."
-    index1 = "monocle-unittest-1"
-    index2 = "monocle-unittest-2"
+    index1 = "unittest-1"
+    index2 = "unittest-2"
     datasets = ["objects/unit_repo1.json"]
 
-    @classmethod
-    def setUpClass(cls):
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(name)s - " + "%(levelname)s - %(message)s",
-        )
-        log = logging.getLogger(__name__)
-        # log to stderr
-        log.addHandler(logging.StreamHandler())
-        for index in (cls.index1, cls.index2):
-            cls.eldb = ELmonocleDB(
-                index=index,
-                prefix=cls.prefix,
-                user=os.getenv("ELASTIC_USER", None),
-                password=os.getenv("ELASTIC_PASSWORD", None),
-                use_ssl=os.getenv("ELASTIC_USE_SSL", False),
-                verify_certs=os.getenv("ELASTIC_INSECURE", None),
-                ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
-            )
-            if index in (cls.index1, cls.index2):
-                for dataset in cls.datasets:
-                    index_dataset(cls.eldb, dataset)
-
-    @classmethod
-    def tearDownClass(cls):
-        for index in (cls.index1, cls.index2):
-            cls.eldb.es.indices.delete(index=cls.eldb.prefix + index)
+    def tearDown(self):
+        for index in (self.index1, self.index2):
+            self.eldb.es.indices.delete(index=self.eldb.prefix + index)
 
     def setUp(self):
+        for index in (self.index1, self.index2):
+            self.eldb = get_db_cnx(index, self.prefix)
+            if index in (self.index1, self.index2):
+                for dataset in self.datasets:
+                    index_dataset(self.eldb, dataset)
         webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config["TESTING"] = True
         self.client = webapp.app.test_client()
@@ -102,7 +81,7 @@ class TestWebAPI(unittest.TestCase):
     def test_get_indices(self):
         "Test indices endpoint"
         resp = self.client.get("/api/0/indices")
-        self.assertListEqual(["monocle-unittest-2"], json.loads(resp.data))
+        self.assertListEqual(["unittest-2"], json.loads(resp.data))
 
     def test_get_indices_with_acl(self):
         "Test indices endpoint with acl"
@@ -110,7 +89,7 @@ class TestWebAPI(unittest.TestCase):
             sess["username"] = "jane"
         resp = self.client.get("/api/0/indices")
         self.assertListEqual(
-            ["monocle-unittest-1", "monocle-unittest-2"],
+            ["unittest-1", "unittest-2"],
             json.loads(resp.data),
         )
 

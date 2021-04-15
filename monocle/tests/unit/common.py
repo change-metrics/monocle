@@ -20,10 +20,22 @@ import pprint
 
 from typing import Tuple, Dict, List, Any
 
-from monocle.db.db import dict_to_change_or_event
+from monocle.db.db import dict_to_change_or_event, ELmonocleDB
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "fixtures")
 DATASETS = os.path.join(FIXTURES_DIR, "datasets")
+
+
+def get_db_cnx(index: str, prefix: str) -> ELmonocleDB:
+    return ELmonocleDB(
+        index=index,
+        prefix=prefix,
+        user=os.getenv("ELASTIC_USER", None),
+        password=os.getenv("ELASTIC_PASSWORD", None),
+        use_ssl=os.getenv("ELASTIC_USE_SSL", False),
+        verify_certs=os.getenv("ELASTIC_INSECURE", None),
+        ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
+    )
 
 
 def load_dataset(name: str) -> Any:

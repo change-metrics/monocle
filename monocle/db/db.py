@@ -32,7 +32,12 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
-from monocle.tracker_data import TrackerDataForEL, OrphanTrackerDataForEL
+from monocle.tracker_data import (
+    TrackerDataForEL,
+    OrphanTrackerDataForEL,
+    AdoptedTrackerData,
+    AdoptedTrackerDataForEL,
+)
 
 
 CHANGE_PREFIX = "monocle.changes.1."
@@ -371,6 +376,7 @@ class ELmonocleDB:
                                 "keyword": {"type": "keyword", "ignore_above": 8191}
                             },
                         },
+                        "_adpoted": {"type": "boolean"},
                     }
                 },
             }
@@ -402,7 +408,12 @@ class ELmonocleDB:
         self.es.indices.refresh(index=self.index)
 
     def update_tracker_data(
-        self, source_it: Union[List[TrackerDataForEL], List[OrphanTrackerDataForEL]]
+        self,
+        source_it: Union[
+            List[TrackerDataForEL],
+            List[OrphanTrackerDataForEL],
+            List[AdoptedTrackerDataForEL],
+        ],
     ) -> Optional[BulkIndexError]:
         def gen(it):
             for _source in it:
@@ -410,12 +421,17 @@ class ELmonocleDB:
                 d["_index"] = self.index
                 d["_op_type"] = "update"
                 d["_id"] = _source._id
-                d["doc"] = {
-                    "id": _source._id,
-                    "tracker_data": [asdict(td) for td in _source.tracker_data],
-                }
+                d["doc"] = {}
+                d["doc"].update({"id": _source._id})
+                if isinstance(_source, TrackerDataForEL):
+                    d["doc"].update(
+                        {"tracker_data": [asdict(td) for td in _source.tracker_data]}
+                    )
                 if isinstance(_source, OrphanTrackerDataForEL):
+                    d["doc"].update({"tracker_data": asdict(_source.tracker_data)})
                     d["doc"]["type"] = "OrphanTrackerData"
+                if isinstance(_source, AdoptedTrackerDataForEL):
+                    d["doc"].update({"tracker_data": asdict(_source.tracker_data)})
                 d["doc_as_upsert"] = True
                 yield d
 
@@ -546,6 +562,59 @@ class ELmonocleDB:
         except Exception:
             return []
         return [r["_source"] for r in res["hits"]["hits"]]
+
+    def get_orphan_tds_by_change_urls(self, change_urls):
+        assert len(change_urls) <= 50
+        size = 5000  # Asumming not more that 100 TD data relataed to a change
+        params = {
+            "index": self.index,
+            "body": {
+                "size": size,
+                "query": {
+                    "bool": {
+                        "must_not": {"exists": {"field": "tracker_data._adopted"}},
+                        "filter": [
+                            {"term": {"type": "OrphanTrackerData"}},
+                            {"terms": {"tracker_data.change_url": change_urls}},
+                        ],
+                    }
+                },
+            },
+        }
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        return [r["_source"] for r in res["hits"]["hits"]]
+
+    def get_orphan_tds_and_declare_adpotion(self, changes_url):
+        assert len(changes_url) <= 50
+        tds = self.get_orphan_tds_by_change_urls(changes_url)
+        if tds:
+            adopted_tds = [
+                AdoptedTrackerDataForEL(
+                    _id=td["id"],
+                    tracker_data=AdoptedTrackerData(_adopted=True),
+                )
+                for td in tds
+            ]
+            self.update_tracker_data(adopted_tds)
+        return tds
+
+    def update_changes_with_orphan_tds(self, mapping: Dict[str, str]):
+        change_urls = list(mapping.keys())
+        while change_urls:
+            change_urls_to_process = change_urls[:50]
+            change_urls = change_urls[50:]
+            tds = self.get_orphan_tds_and_declare_adpotion(change_urls_to_process)
+            to_update = [
+                TrackerDataForEL(
+                    _id=mapping[td["tracker_data"]["change_url"]],
+                    tracker_data=td["tracker_data"],
+                )
+                for td in tds
+            ]
+            self.update_tracker_data(to_update)
 
     def run_named_query(self, name, *args, **kwargs):
         if name not in queries.public_queries:

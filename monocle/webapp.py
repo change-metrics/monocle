@@ -335,7 +335,7 @@ def tracker_data():
                 update_docs.append(
                     OrphanTrackerDataForEL(
                         _id=input_tracker_data.issue_url,
-                        tracker_data=[input_tracker_data],
+                        tracker_data=input_tracker_data,
                     )
                 )
         total_orphans_to_update = len(update_docs)
