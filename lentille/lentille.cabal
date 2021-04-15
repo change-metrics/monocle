@@ -17,7 +17,6 @@ copyright:           2021 Monocle authors
 category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
-                     CHANGELOG.md
 tested-with:         GHC == 8.10.4
 
 source-repository head

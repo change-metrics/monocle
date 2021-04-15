@@ -3,10 +3,10 @@
 -- |
 module Main (main) where
 
-import Lentille.Api (monocleApi)
+import Lentille.Api (api)
 import Relude
 import Servant.Reason (generateReasonForAPI)
 
 main :: IO ()
 main = do
-  mapM_ putTextLn $ generateReasonForAPI monocleApi
+  mapM_ putTextLn $ generateReasonForAPI api

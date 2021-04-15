@@ -21,7 +21,8 @@ data LentilleCli w = LentilleCli
     index :: w ::: Text <?> "The index name",
     crawlerName :: w ::: Text <?> "The name of the crawler",
     bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url",
-    since :: w ::: Maybe String <?> "Get bugs since"
+    since :: w ::: Maybe String <?> "Get bugs since",
+    printBugs :: w ::: Bool <?> "Just print bugs, to not amend monocle"
   }
   deriving stock (Generic)
 
@@ -41,39 +42,23 @@ readSince = fmap (fromMaybe (error "Could not parse time") . readMaybe)
 
 main :: IO ()
 main = do
+  args <- unwrapRecord "Lentille worker"
   apiKey <- fromMaybe apiKeyEnvError <$> lookupEnv apiKeyEnv
-  go $! apiKey
+  go args $! ApiKey (toText apiKey)
   where
-    go apiKey = do
-      args <- unwrapRecord "Lentille worker"
-      withClient (monocleUrl args) Nothing $ \client -> do
-        let bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
-        bzSession <- getBugzillaSession bzUrl
-        run
-          client
-          (readSince $ since args)
-          (ApiKey . toText $ apiKey)
-          (IndexName . index $ args)
-          (CrawlerName . crawlerName $ args)
-          (TaskDataFetcher (getBZData bzSession))
-
-{-
-data BZCli w = BZCli
-  { bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url",
-    since :: w ::: String <?> "Get bugs since"
-  }
-  deriving stock (Generic)
-
-instance ParseRecord (BZCli Wrapped) where
-  parseRecord = parseRecordWithModifiers lispCaseModifiers
-
-deriving stock instance Show (BZCli Unwrapped)
-
-main :: IO ()
-main = do
-  args <- unwrapRecord "Lentille BZ worker"
-  let sinceTS = fromMaybe (error "Couldn't parse since") (readMaybe (since args))
-      bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
-  bzSession <- getBugzillaSession bzUrl
-  S.mapM_ print (getBZData bzSession sinceTS)
--}
+    go :: LentilleCli Unwrapped -> ApiKey -> IO ()
+    go args apiKey = do
+      let bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
+          sinceTSM = readSince $ since args
+          sinceTS = fromMaybe (error "Couldn't parse since") sinceTSM
+      bzSession <- getBugzillaSession bzUrl
+      if printBugs args
+        then S.mapM_ print (getBZData bzSession sinceTS)
+        else withClient (monocleUrl args) Nothing $ \client ->
+          run
+            client
+            sinceTSM
+            apiKey
+            (IndexName . index $ args)
+            (CrawlerName . crawlerName $ args)
+            (TaskDataFetcher (getBZData bzSession))

@@ -1,91 +1,57 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lentille.Api (app, TaskApi, monocleApi) where
+module Lentille.Api (MonocleApi, Db, api, server) where
 
-#ifdef USE_OPENAPI
-import Data.OpenApi hiding (server, Server) -- (OpenApi, ((.~)))
-import Servant.OpenApi (toOpenApi)
-import Control.Lens.Operators
-#endif
-import Data.Time (UTCTime, getCurrentTime)
-import Network.Wai (Application)
+import Data.Time (UTCTime)
 import Relude
-import Servant (Handler, Server, serve)
+import Servant (Handler, Server)
 import Servant.API
 
 type ReqIndex = QueryParam "index" Text
 
+-- | The task api defined as a servant type
 type TaskApi =
   "task_data" :> ReqIndex :> Get '[JSON] UTCTime
     :<|> "task_data" :> Capture "index" Text :> Get '[JSON] [UTCTime]
     :<|> "task_data" :> "commit" :> ReqIndex :> QueryParam "date" UTCTime :> Post '[JSON] Text
 
+-- | Another api type
 type ChangeApi = "change_data" :> Get '[JSON] Text
 
+-- | Types can be composed to create the final api
 type MonocleApi = "api" :> "1" :> (TaskApi :<|> ChangeApi)
 
-monocleApi :: Proxy MonocleApi
-monocleApi = Proxy
-
+-- | A dummy database that only store a timestamp
 type Db = IORef UTCTime
 
+-- | The server implementation typecheck the api type
 server :: Db -> Server MonocleApi
-server db = tdApp :<|> changeApp
+server db = taskApp :<|> changeApp
   where
     changeApp = changeGet
 
     changeGet :: Handler Text
     changeGet = pure "a change"
 
-    tdApp = tdGet :<|> tdGet' :<|> tdPost
+    taskApp = taskGet :<|> taskGet' :<|> taskPost
 
-    tdGet' :: Text -> Handler [UTCTime]
-    tdGet' _idx = do
+    taskGet' :: Text -> Handler [UTCTime]
+    taskGet' _idx = do
       d <- readIORef db
       pure [d, d]
 
-    tdGet :: Maybe Text -> Handler UTCTime
-    tdGet (Just _idx) = readIORef db
-    tdGet _ = error "Missing index"
+    taskGet :: Maybe Text -> Handler UTCTime
+    taskGet (Just _idx) = readIORef db
+    taskGet _ = error "Missing index"
 
-    tdPost :: Maybe Text -> Maybe UTCTime -> Handler Text
-    tdPost (Just _idx) (Just ts) = do
+    taskPost :: Maybe Text -> Maybe UTCTime -> Handler Text
+    taskPost (Just _idx) (Just ts) = do
       writeIORef db ts
       pure "Commited"
-    tdPost _ _ = error "Missing arguments"
+    taskPost _ _ = error "Missing arguments"
 
-#ifdef USE_OPENAPI
-type SwaggerAPI = "swagger.json" :> Get '[JSON] OpenApi
-
-type MonocleWithOpenApi = SwaggerAPI :<|> MonocleApi
-
-monocleSwagger :: OpenApi
-monocleSwagger =
-  toOpenApi monocleApi
-  & info.title .~ "Monocle API"
-  & info.version .~ "2"
-  & info.description ?~ "Generated swagger API"
-
-finalApi :: Proxy MonocleWithOpenApi
-finalApi = Proxy
-
-finalServer :: Db -> Server MonocleWithOpenApi
-finalServer db = return monocleSwagger :<|> server db
-#else
-finalApi :: Proxy MonocleApi
-finalApi = monocleApi
-
-finalServer :: Db -> Server MonocleApi
-finalServer = server
-#endif
-
-app :: MonadIO m => m Application
-app = do
-  now <- liftIO getCurrentTime
-  db <- newIORef now
-  putTextLn "Serving api"
-  pure $ serve finalApi (finalServer db)
+api :: Proxy MonocleApi
+api = Proxy

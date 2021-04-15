@@ -53,8 +53,8 @@ common common-options
 
 library
   import:              common-options
-  build-depends:       servant                    < 0.19
-                     , servant-server
+  build-depends:       servant                    > 0.18 && < 0.19
+                     , servant-server             > 0.18 && < 0.19
 --                     , servant-client
                      , relude                     > 1.0.0.0
                      , time
@@ -62,7 +62,9 @@ library
                      , wai                        < 3.3
   hs-source-dirs:      src
   exposed-modules:     Lentille.Api
+                     , Lentille.App
   if flag(with-openapi)
+    exposed-modules:   Lentille.OpenApi
     build-depends:     openapi3, servant-openapi3, lens
     CPP-Options:       -DUSE_OPENAPI
 

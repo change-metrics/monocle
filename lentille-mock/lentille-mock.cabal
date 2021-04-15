@@ -1,23 +1,9 @@
 cabal-version:       2.4
 name:                lentille-mock
 version:             0.1.0.0
-homepage:            https://github.com/change-metrics/lentille#readme
-bug-reports:         https://github.com/change-metrics/lentille/issues
-license:             AGPL-3.0-only
-license-file:        LICENSE
-author:              Monocle authors
-maintainer:          Monocle authors <fboucher@redhat.com>
-copyright:           2021 Monocle authors
-category:            Development
 build-type:          Simple
-extra-doc-files:     README.md
-tested-with:         GHC == 8.10.4
 
-source-repository head
-  type:                git
-  location:            https://github.com/change-metrics/lentille.git
-
-common common-options
+library
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -36,9 +22,6 @@ common common-options
     ghc-options:       -Wunused-packages
 
   default-language:    Haskell2010
-
-library
-  import:              common-options
   build-depends:       base                       < 5
                      , aeson                      < 1.6
                      , http-client                < 0.8
