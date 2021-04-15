@@ -9,6 +9,7 @@
 
 module Main (main) where
 
+import Data.Time.Clock (UTCTime)
 import Lentille
 import Lentille.Bugzilla
 import Options.Generic
@@ -19,7 +20,8 @@ data LentilleCli w = LentilleCli
   { monocleUrl :: w ::: Text <?> "The monocle API",
     index :: w ::: Text <?> "The index name",
     crawlerName :: w ::: Text <?> "The name of the crawler",
-    bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url"
+    bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url",
+    since :: w ::: Maybe String <?> "Get bugs since"
   }
   deriving stock (Generic)
 
@@ -34,6 +36,9 @@ apiKeyEnv = "MONOCLE_API_KEY"
 apiKeyEnvError :: String
 apiKeyEnvError = error $ toText apiKeyEnv <> " environment not found"
 
+readSince :: Maybe String -> Maybe UTCTime
+readSince = fmap (fromMaybe (error "Could not parse time") . readMaybe)
+
 main :: IO ()
 main = do
   apiKey <- fromMaybe apiKeyEnvError <$> lookupEnv apiKeyEnv
@@ -46,6 +51,7 @@ main = do
         bzSession <- getBugzillaSession bzUrl
         run
           client
+          (readSince $ since args)
           (ApiKey . toText $ apiKey)
           (IndexName . index $ args)
           (CrawlerName . crawlerName $ args)

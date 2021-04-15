@@ -37,6 +37,7 @@ testRun = testCase "run" go
     go = withMockClient withClient $ \client -> do
       run
         client
+        Nothing
         (ApiKey "fake")
         (IndexName "openstack")
         (CrawlerName "lentille")

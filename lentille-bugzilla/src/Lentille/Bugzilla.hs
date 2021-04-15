@@ -39,7 +39,7 @@ toTrackerData bz = map mkTrackerData ebugs
     ebugs = case BZ.bugExternalBugs bz of
       Just xs -> filter isOpenDev xs
       Nothing -> []
-    changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> show (BZ.externalId ebug)
+    changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> BZ.externalBugId ebug
     bugType =
       if "FutureFeature" `elem` BZ.bugKeywords bz
         then "RFE"

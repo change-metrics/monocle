@@ -121,14 +121,17 @@ process postFunc =
 run ::
   (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
+  Maybe UTCTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
   TrackerDataFetcher m ->
   m ()
-run monocleClient apiKey indexName crawlerName tdf = do
+run monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
-  since <- getUpdatedSince monocleClient indexName crawlerName
+  since <- case sinceM of
+    Just ts -> pure ts
+    Nothing -> getUpdatedSince monocleClient indexName crawlerName
   process (retry . postTrackerData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
   res <- retry $ setUpdatedSince monocleClient indexName crawlerName apiKey startTime
   log (if res then LogEnded else LogFailed)

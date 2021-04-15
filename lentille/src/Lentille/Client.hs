@@ -106,11 +106,7 @@ monocleReq (Verb verb) bodyM (APIPath path) qs MonocleClient {..} =
                 method = verb
               }
     response <- liftIO $ httpLbs request manager
-    pure $
-      -- Fix non-json response
-      if path == "api/0/tracker_data/commit"
-        then decodeResponse ("\"" <> responseBody response <> "\"")
-        else decodeResponse (responseBody response)
+    pure $ decodeResponse (responseBody response)
   where
     decodeResponse body = case eitherDecode body of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err

@@ -62,6 +62,7 @@ executable lentille-bugzilla
                      , optparse-generic           < 1.5
                      , relude                     > 1.0 && < 1.1
                      , streaming                  < 0.3
+                     , time                       < 1.12
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
