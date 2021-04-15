@@ -34,7 +34,7 @@ fakeTD =
 testRun :: TestTree
 testRun = testCase "run" go
   where
-    go = withMockClient $ \client -> do
+    go = withMockClient withClient $ \client -> do
       run
         client
         (ApiKey "fake")
@@ -54,7 +54,7 @@ monocleClientTests =
 testGetUpdatedSince :: TestTree
 testGetUpdatedSince = testCase "getUpdatedSince" go
   where
-    go = withMockClient $ \client -> do
+    go = withMockClient withClient $ \client -> do
       lastUpdated <- getUpdatedSince client (IndexName "test") (CrawlerName "test")
       putText (show lastUpdated)
       assertBool "Got update" True
@@ -62,13 +62,13 @@ testGetUpdatedSince = testCase "getUpdatedSince" go
 testGetIndices :: TestTree
 testGetIndices = testCase "getIndices" go
   where
-    go = withMockClient $ \client -> do
+    go = withMockClient withClient $ \client -> do
       indices <- getIndices client
       assertBool "Got indicies" (indices == ["indice1", "indice2"])
 
 testPostData :: TestTree
 testPostData = testCase "postData" go
   where
-    go = withMockClient $ \client -> do
+    go = withMockClient withClient $ \client -> do
       res <- postTrackerData client (IndexName "test") (CrawlerName "test") (ApiKey "failme") []
       assertEqual "Call failed" ["42"] res

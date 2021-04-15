@@ -4,22 +4,22 @@
 -- |
 module Lentille.MonocleMock
   ( withMockClient,
-    withMockedManager,
-    monocleMockApplication,
   )
 where
 
 import Data.Aeson (encode)
 import qualified Data.HashMap.Strict as HM
 import Data.List (lookup)
-import Lentille.Client (MonocleClient, withClient)
+import Network.HTTP.Client (Manager)
 import Network.HTTP.Mock (withMockedManager)
 import Network.HTTP.Types.Status (status200)
 import qualified Network.Wai as Wai
 import Relude
 
-withMockClient :: (MonocleClient -> IO ()) -> IO ()
-withMockClient cb = withMockedManager monocleMockApplication go
+type WithClient client = Text -> Maybe Manager -> (client -> IO ()) -> IO ()
+
+withMockClient :: WithClient client -> (client -> IO ()) -> IO ()
+withMockClient withClient cb = withMockedManager monocleMockApplication go
   where
     go manager = withClient "http://localhost" (Just manager) cb
 

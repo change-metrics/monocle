@@ -24,7 +24,7 @@ bugzillaMockApplication req respond = do
     x -> error $ "Unknown path: " <> show x
   respond $ Wai.responseLBS status200 mempty (toLazy respData)
   where
-    base = "./lentille-bugzilla/test/data/"
+    base = "./test/data/"
 
 -- | Lowlevel wai application server
 bugzillaMockServerThread :: QSem.QSem -> Warp.Port -> Socket -> IO ()

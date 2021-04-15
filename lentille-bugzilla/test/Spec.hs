@@ -24,7 +24,7 @@ workerTests =
 testRun :: TestTree
 testRun = testCase "run" go
   where
-    go = withMockClient $ \client -> do
+    go = withMockClient withClient $ \client -> do
       bzSession <- bugzillaMockClient
       run
         client
