@@ -1,0 +1,66 @@
+cabal-version:       2.4
+name:                lentille-api
+version:             0.1.0.0
+synopsis:            Monocle API
+description:
+    Lentille API is a haskell library to implement the Monocle API.
+    .
+homepage:            https://github.com/change-metrics/lentille#readme
+bug-reports:         https://github.com/change-metrics/lentille/issues
+license:             AGPL-3.0-only
+license-file:        LICENSE
+author:              Monocle authors
+maintainer:          Monocle authors <fboucher@redhat.com>
+copyright:           2021 Monocle authors
+category:            Development
+build-type:          Simple
+extra-doc-files:     README.md
+                     CHANGELOG.md
+tested-with:         GHC == 8.10.4
+
+source-repository head
+  type:                git
+  location:            https://github.com/change-metrics/lentille.git
+
+common common-options
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options:       -Wmissing-deriving-strategies
+  if impl(ghc >= 8.10)
+    ghc-options:       -Wunused-packages
+
+  default-language:    Haskell2010
+
+library
+  import:              common-options
+  build-depends:       servant                    < 0.19
+                     , servant-server
+                     , servant-client
+                     , relude                     > 1.0.0.0
+                     , time
+                     , base < 5
+                     , wai                        < 3.3
+  hs-source-dirs:      src
+  exposed-modules:     Lentille.Api
+
+executable lentille-api
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       relude                     > 1.0 && < 1.1
+                     , lentille-api
+                     , warp                       < 3.4
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
