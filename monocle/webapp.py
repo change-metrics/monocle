@@ -22,8 +22,7 @@ import yaml
 
 from datetime import datetime
 
-from typing import Dict, List, Optional, Union
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Union, Tuple
 
 from flask import Flask
 from flask import abort
@@ -100,6 +99,14 @@ else:
         ] = config.build_index_task_tracker_crawlers(rawconfig)
 
 
+def returnAPIError(desc: str, code: int, details: Optional[str] = None):
+    abort(
+        make_response(
+            jsonify({"statusCode": code, "message": desc, "details": details}), code
+        )
+    )
+
+
 @app.route("/api/0/health", methods=["GET"])
 def health():
     data = {
@@ -133,20 +140,20 @@ def authorize():
 @app.route("/api/0/whoami", methods=["GET"])
 def whoami():
     if not os.getenv("CLIENT_ID"):
-        return "Authentication not configured", 503
+        returnAPIError("Authentication not configured", 503)
     username = session.get("username") or request.headers.get("Remote-User")
     return jsonify(username)
 
 
-def _get_index(request):
-    if not request.args.get("index"):
-        abort(make_response(jsonify(errors=["No index provided"]), 404))
-    return request.args.get("index")
+def get_index(req):
+    if "index" not in req.args or not req.args.get("index"):
+        returnAPIError("No index provided", 404)
+    return req.args["index"]
 
 
 @app.route("/api/0/projects", methods=["GET"])
 def get_cfg_project_definition():
-    index = _get_index(request)
+    index = get_index(request)
     projects = project_defs[index] if index in project_defs else []
     if not projects:
         return (
@@ -158,16 +165,14 @@ def get_cfg_project_definition():
 
 @app.route("/api/0/query/<name>", methods=["GET"])
 def query(name):
-
-    index = _get_index(request)
-
+    index = get_index(request)
     if not config.is_public_index(indexes_acl, index):
         user = session.get("username") or request.headers.get("Remote-User")
         if user:
             if user not in config.get_authorized_users(indexes_acl, index):
-                return "Unauthorized to access index %s" % index, 403
+                returnAPIError("Unauthorized to access index %s" % index, 403)
         else:
-            return "Unauthorized to access index %s" % index, 403
+            returnAPIError("Unauthorized to access index %s" % index, 403)
     repository_fullname = request.args.get("repository")
     try:
         ret = do_query(index, repository_fullname, request.args, name)
@@ -176,7 +181,7 @@ def query(name):
             "Unable to process query %s (params: %s)"
             % (name, list(request.args.items()))
         )
-        return (
+        returnAPIError(
             (
                 "The API server was unable to process the query."
                 " Please retry after or modify the filter parameters."
@@ -207,7 +212,7 @@ def do_query(index, repository_fullname, args, name):
     try:
         result = db.run_named_query(name, repository_fullname, params)
     except InvalidIndexError:
-        return "Invalid index: %s" % request.args.get("index"), 404
+        returnAPIError("Invalid index: %s" % request.args.get("index"), 404)
     return jsonify(result)
 
 
@@ -227,91 +232,72 @@ def indices():
     return jsonify(indices)
 
 
-@dataclass
-class TDEndpointInputEnvCheckSuccess:
-    index: str
-    crawler_config: TaskTrackerCrawler
-
-
-@dataclass
-class TDEndpointInputEnvCheckError:
-    message: str
-    code: int
-
-
 def tracker_data_endpoint_check_input_env(
     req, check_auth: bool, check_content_type: bool
-) -> Union[TDEndpointInputEnvCheckSuccess, TDEndpointInputEnvCheckError]:
+) -> Tuple[str, TaskTrackerCrawler]:
     if "index" not in req.args or not req.args.get("index"):
-        return TDEndpointInputEnvCheckError("No index provided", 404)
+        returnAPIError("No index provided", 404)
     index = req.args["index"]
     if index not in globals()["indexes_task_tracker_crawlers"]:
-        return TDEndpointInputEnvCheckError("No index with this name", 404)
+        return returnAPIError("No index with this name", 404)
     if "name" not in req.args or not req.args.get("name"):
-        return TDEndpointInputEnvCheckError("No crawler name provided", 404)
+        return returnAPIError("No crawler name provided", 404)
     name = req.args["name"]
     match_crawler_config = [
         c for c in globals()["indexes_task_tracker_crawlers"][index] if c.name == name
     ]
     if not match_crawler_config:
-        return TDEndpointInputEnvCheckError("No crawler with this name", 404)
+        return returnAPIError("No crawler with this name", 404)
     crawler_config = match_crawler_config[0]
     apikey = None
     if check_auth:
         if "apikey" not in req.args and not req.args.get("apikey"):
-            return TDEndpointInputEnvCheckError("No crawler apikey provided", 404)
+            return returnAPIError("No crawler apikey provided", 404)
         apikey = req.args["apikey"]
         if apikey != crawler_config.api_key:
-            return TDEndpointInputEnvCheckError("Not authorized", 403)
+            return returnAPIError("Not authorized", 403)
     if check_content_type:
         if not req.is_json:
-            return TDEndpointInputEnvCheckError(
-                "Missing content-type application/json", 400
-            )
-    return TDEndpointInputEnvCheckSuccess(index, crawler_config)
+            return returnAPIError("Missing content-type application/json", 400)
+    return index, crawler_config
 
 
 @app.route("/api/0/tracker_data/commit", methods=["POST"])
 def tracker_data_commit():
-    check = tracker_data_endpoint_check_input_env(
+    index, crawler_config = tracker_data_endpoint_check_input_env(
         request, check_auth=True, check_content_type=True
     )
-    if isinstance(check, TDEndpointInputEnvCheckError):
-        return check.message, check.code
-    index, crawler_config = check.index, check.crawler_config
     input_date_str = request.get_json()
     try:
         input_date = datetime.strptime(input_date_str, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
-        return "Unable to read input date", 400
+        returnAPIError("Unable to read input date", 400)
     db = create_db_connection(index)
     if db.set_tracker_data_commit(crawler_config.name, input_date):
-        return "Unable to commit", 500
-    return "Commited", 200
+        returnAPIError("Unable to commit", 500)
+    return jsonify("Commited")
 
 
 @app.route("/api/0/tracker_data", methods=["POST", "GET"])
 def tracker_data():
     if request.method == "POST":
-        check = tracker_data_endpoint_check_input_env(
+        index, crawler_config = tracker_data_endpoint_check_input_env(
             request, check_auth=True, check_content_type=True
         )
-        if isinstance(check, TDEndpointInputEnvCheckError):
-            return check.message, check.code
-        index, crawler_config = check.index, check.crawler_config
-
         json_data: List = request.get_json()
         if not isinstance(json_data, list):
-            return "Input data is not a List", 400
+            returnAPIError("Input data is not a List", 400)
         if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
-            return (
+            returnAPIError(
                 "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT),
                 400,
             )
         try:
             extracted_data = createInputTrackerData(json_data, crawler_config.name)
         except Exception:
-            return "Unable to extract input data due to wrong input format", 400
+            returnAPIError(
+                "Unable to extract input data due to wrong input format", 400
+            )
         # Find changes in EL ids that match urls
         change_urls = [e.change_url for e in extracted_data]
         db = create_db_connection(index)
@@ -362,14 +348,13 @@ def tracker_data():
         # Now insert the data
         err = db.update_tracker_data(source_it=update_docs)
         # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
-        return jsonify(err.errors if err else [])
+        if err:
+            returnAPIError("Unable to update tracker data", 500, str(err))
+        return jsonify([])
     if request.method == "GET":
-        check = tracker_data_endpoint_check_input_env(
+        index, crawler_config = tracker_data_endpoint_check_input_env(
             request, check_auth=False, check_content_type=False
         )
-        if isinstance(check, TDEndpointInputEnvCheckError):
-            return check.message, check.code
-        index, crawler_config = check.index, check.crawler_config
         db = create_db_connection(index)
         commit_date = db.get_tracker_data_commit(crawler_config.name)
         if not commit_date:

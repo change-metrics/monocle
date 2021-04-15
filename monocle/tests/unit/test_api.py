@@ -197,28 +197,29 @@ tenants:
         resp = self.client.get("/api/0/projects?index=%s" % fake_index)
         self.assertEqual(404, resp.status_code)
 
+    def check_APIErr_msg(self, message, resp):
+        err = json.loads(resp.data)
+        self.assertEqual(message, err["message"])
+
     def test_tracker_data_post(self):
         "Test post on tracker_data endpoint"
         # First try some faulty requests
         resp = self.client.post("/api/0/tracker_data?index=%s" % self.index2, json="")
         self.assertEqual(404, resp.status_code)
-        self.assertEqual(
-            "No crawler name provided",
-            resp.data.decode(),
-        )
+        self.check_APIErr_msg("No crawler name provided", resp)
 
         resp = self.client.post(
             "/api/0/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
         )
         self.assertEqual(404, resp.status_code)
-        self.assertEqual("No crawler name provided", resp.data.decode())
+        self.check_APIErr_msg("No crawler name provided", resp)
 
         resp = self.client.post(
             "/api/0/tracker_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
             json="",
         )
         self.assertEqual(403, resp.status_code)
-        self.assertEqual("Not authorized", resp.data.decode())
+        self.check_APIErr_msg("Not authorized", resp)
 
         url = "/api/0/tracker_data?index=%s&apikey=%s&name=%s" % (
             self.index2,
@@ -228,23 +229,23 @@ tenants:
 
         resp = self.client.post(url, json="data")
         self.assertEqual(400, resp.status_code)
-        self.assertEqual("Input data is not a List", resp.data.decode())
+        self.check_APIErr_msg("Input data is not a List", resp)
 
         resp = self.client.post(
             url,
             json=list(range(webapp.INPUT_TRACKER_DATA_LIMIT + 1)),
         )
         self.assertEqual(400, resp.status_code)
-        self.assertTrue(resp.data.decode().startswith("Input data List over limit"))
+        self.check_APIErr_msg("Input data List over limit (500 items)", resp)
 
         resp = self.client.post(
             url,
             json=[{"do": "you", "eat": "that"}],
         )
         self.assertEqual(400, resp.status_code)
-        self.assertEqual(
+        self.check_APIErr_msg(
             "Unable to extract input data due to wrong input format",
-            resp.data.decode(),
+            resp,
         )
 
         # Now test a working workflow
