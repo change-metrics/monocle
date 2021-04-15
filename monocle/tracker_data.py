@@ -24,7 +24,7 @@ class TrackerData:
     crawler_name: str
     updated_at: datetime
     change_url: str
-    issue_type: str
+    issue_type: List[str]
     issue_id: str
     issue_url: str
     issue_title: str
@@ -45,6 +45,9 @@ class TaskTrackerCrawler:
 
 def createInputTrackerData(data: List, crawler_name: str) -> InputTrackerData:
     def createTrackerData(td: Dict) -> TrackerData:
+        # TODO(fbo): we probably need more validation here
+        if not isinstance(td["issue_type"], list):
+            raise ValueError("issue_type must be a list")
         return TrackerData(
             crawler_name=crawler_name,
             updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
