@@ -17,6 +17,7 @@
 import logging
 import socket
 import time
+from datetime import datetime
 
 from typing import List, Optional, Literal, Dict, Union, Tuple
 from dataclasses import dataclass, asdict
@@ -338,6 +339,21 @@ class ELmonocleDB:
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},
+                "crawler_metadata": {
+                    "properties": {
+                        "last_commit_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
+                        },
+                        "last_post_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
+                        },
+                        "total_docs_posted": {"type": "integer"},
+                        "total_changes_updated": {"type": "integer"},
+                        "total_orphans_updated": {"type": "integer"},
+                    }
+                },
                 "tracker_data": {
                     "properties": {
                         "crawler_name": {"type": "keyword"},
@@ -411,25 +427,56 @@ class ELmonocleDB:
         self.es.indices.refresh(index=self.index)
         return ret
 
-    def set_tracker_data_commit(self, name, commit_date):
+    def compute_crawler_id_by_name(self, name, _type):
+        return "crawler/%s/%s" % (_type, name)
+
+    def get_task_tracker_metadata(self, name: str) -> Dict:
+        try:
+            ret = self.es.get(
+                self.index, self.compute_crawler_id_by_name(name, "task_tracker")
+            )
+            return ret["_source"]["crawler_metadata"]
+        except Exception:
+            return {}
+
+    def set_task_tracker_metadata(
+        self, name: str, commit_date: datetime = None, push_infos: Dict = None
+    ):
+        metadata = {}
+        if commit_date:
+            metadata.update({"last_commit_at": commit_date})
+        if push_infos:
+            prev_metadata = self.get_task_tracker_metadata(name)
+            metadata.update(
+                {
+                    "last_post_at": push_infos["last_post_at"],
+                    "total_docs_posted": prev_metadata.get("total_docs_posted", 0)
+                    + push_infos["total_docs_posted"],
+                    "total_changes_updated": prev_metadata.get(
+                        "total_changes_updated", 0
+                    )
+                    + push_infos["total_changes_updated"],
+                    "total_orphans_updated": prev_metadata.get(
+                        "total_orphans_updated", 0
+                    )
+                    + push_infos["total_orphans_updated"],
+                }
+            )
         body = {
-            "doc": {"type": "TrackerDataCommit", "updated_at": commit_date},
+            "doc": {"type": "TrackerDataCommit", "crawler_metadata": metadata},
             "doc_as_upsert": True,
         }
         ret = None
         try:
-            self.es.update(self.index, name, body=body)
+            self.es.update(
+                self.index,
+                self.compute_crawler_id_by_name(name, "task_tracker"),
+                body=body,
+            )
             self.es.indices.refresh(index=self.index)
         except Exception as err:
             ret = err
         return ret
-
-    def get_tracker_data_commit(self, name):
-        try:
-            ret = self.es.get(self.index, name)
-            return ret["_source"]["updated_at"]
-        except Exception:
-            return False
 
     def delete_index(self):
         self.log.info("Deleting index: %s" % self.index)

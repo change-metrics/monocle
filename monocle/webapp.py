@@ -273,7 +273,7 @@ def tracker_data_commit():
     except ValueError:
         returnAPIError("Unable to read input date", 400)
     db = create_db_connection(index)
-    if db.set_tracker_data_commit(crawler_config.name, input_date):
+    if db.set_task_tracker_metadata(crawler_config.name, input_date):
         returnAPIError("Unable to commit", 500)
     return jsonify("Commited")
 
@@ -338,6 +338,7 @@ def tracker_data():
                         tracker_data=[input_tracker_data],
                     )
                 )
+        total_orphans_to_update = len(update_docs)
         for _mc in mc.values():
             update_docs.append(
                 TrackerDataForEL(
@@ -345,20 +346,34 @@ def tracker_data():
                     tracker_data=_mc["td"],
                 )
             )
+        total_changes_to_update = len(update_docs) - total_orphans_to_update
         # Now insert the data
         err = db.update_tracker_data(source_it=update_docs)
         # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
         if err:
             returnAPIError("Unable to update tracker data", 500, str(err))
+        db.set_task_tracker_metadata(
+            crawler_config.name,
+            push_infos={
+                "last_post_at": datetime.utcnow().replace(microsecond=0),
+                "total_docs_posted": len(extracted_data),
+                "total_changes_updated": total_changes_to_update,
+                "total_orphans_updated": total_orphans_to_update,
+            },
+        )
         return jsonify([])
     if request.method == "GET":
         index, crawler_config = tracker_data_endpoint_check_input_env(
             request, check_auth=False, check_content_type=False
         )
         db = create_db_connection(index)
-        commit_date = db.get_tracker_data_commit(crawler_config.name)
-        if not commit_date:
+        metadata = db.get_task_tracker_metadata(crawler_config.name)
+        if "details" in request.args and request.args.get("details") == "true":
+            return jsonify(metadata)
+        if not metadata.get("last_commit_at"):
             commit_date = crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")
+        else:
+            commit_date = metadata["last_commit_at"]
         return jsonify(commit_date + "Z")
 
 

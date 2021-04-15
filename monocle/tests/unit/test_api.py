@@ -17,6 +17,7 @@
 import logging
 import os
 import tempfile
+import time
 import unittest
 import yaml
 from flask import json
@@ -275,6 +276,18 @@ tenants:
         )
         new = json.loads(resp.data)["items"][0]
         self.assertIn("tracker_data", new)
+        # Check if crawler metadata have been updated
+        resp = self.client.get(
+            "/api/0/tracker_data?index=%s&name=%s&details=true"
+            % (self.index2, "myttcrawler")
+        )
+        c_metadata_1 = json.loads(resp.data)
+        self.assertEqual(c_metadata_1["total_docs_posted"], 1)
+        self.assertEqual(c_metadata_1["total_changes_updated"], 1)
+        self.assertEqual(c_metadata_1["total_orphans_updated"], 0)
+        # Sleep 1s to ensure the next post will get and updated last_post_at date
+        # as we have a second granularity
+        time.sleep(1)
         # Attempt a new post with an updated task
         tracker_data = [
             {
@@ -319,6 +332,16 @@ tenants:
             ],
             std,
         )
+        # Check if crawler metadata have been updated
+        resp = self.client.get(
+            "/api/0/tracker_data?index=%s&name=%s&details=true"
+            % (self.index2, "myttcrawler")
+        )
+        c_metadata_2 = json.loads(resp.data)
+        self.assertNotEqual(c_metadata_1["last_post_at"], c_metadata_2["last_post_at"])
+        self.assertEqual(c_metadata_2["total_docs_posted"], 4)
+        self.assertEqual(c_metadata_2["total_changes_updated"], 2)
+        self.assertEqual(c_metadata_2["total_orphans_updated"], 1)
 
     def test_task_tracker_commit(self):
         "Test task_tracker_commit endpoint"
