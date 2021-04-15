@@ -15,11 +15,15 @@ copyright:           2021 Monocle authors
 category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
-                     CHANGELOG.md
 tested-with:         GHC == 8.10.4
 
 flag with-openapi
-  fescription:       Include generated openapi
+  description:       Include generated openapi
+  default:           False
+  manual:            True
+
+flag with-reason
+  description:       Include generated reason client
   default:           False
   manual:            True
 
@@ -69,6 +73,20 @@ executable lentille-api
   build-depends:       relude                     > 1.0 && < 1.1
                      , lentille-api
                      , warp                       < 3.4
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+
+executable lentille-api-reason-codegen
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             ReasonCodegen.hs
+  if flag(with-reason)
+    build-depends:     relude                     > 1.0 && < 1.1
+                     , lentille-api
+                     , servant-reason
+  else
+    buildable:         False
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N

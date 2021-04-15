@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lentille.Api (app) where
+module Lentille.Api (app, TrackerApi, monocleApi) where
 
 #ifdef USE_OPENAPI
 import Data.OpenApi hiding (server, Server) -- (OpenApi, ((.~)))
@@ -21,7 +21,8 @@ type ReqIndex = QueryParam "index" Text
 
 type TrackerApi =
   "tracker_data" :> ReqIndex :> Get '[JSON] UTCTime
-    :<|> "tracker_data" :> "commit" :> ReqIndex :> QueryParam "date" UTCTime :> Post '[PlainText] Text
+    :<|> "tracker_data" :> Capture "index" Text :> Get '[JSON] [UTCTime]
+    :<|> "tracker_data" :> "commit" :> ReqIndex :> QueryParam "date" UTCTime :> Post '[JSON] Text
 
 type ChangeApi = "change_data" :> Get '[JSON] Text
 
@@ -40,7 +41,12 @@ server db = tdApp :<|> changeApp
     changeGet :: Handler Text
     changeGet = pure "a change"
 
-    tdApp = tdGet :<|> tdPost
+    tdApp = tdGet :<|> tdGet' :<|> tdPost
+
+    tdGet' :: Text -> Handler [UTCTime]
+    tdGet' _idx = do
+      d <- readIORef db
+      pure [d, d]
 
     tdGet :: Maybe Text -> Handler UTCTime
     tdGet (Just _idx) = readIORef db
