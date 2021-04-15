@@ -32,13 +32,13 @@ testRun = testCase "run" go
         (ApiKey "fake")
         (IndexName "openstack")
         (CrawlerName "lentille")
-        (TrackerDataFetcher (getBZData bzSession))
+        (TaskDataFetcher (getBZData bzSession))
 
 bzClientTests :: TestTree
 bzClientTests =
   testGroup
     "BugzillaMock"
-    [testSearchBugs, testGetBug, testBugToTrackerData]
+    [testSearchBugs, testGetBug, testBugToTaskData]
 
 testGetBug :: TestTree
 testGetBug = testCase "getBug" go
@@ -49,13 +49,13 @@ testGetBug = testCase "getBug" go
       -- print bug'
       assertBool "Got bug ids" (isJust $ BZ.bugExternalBugs bug')
 
-testBugToTrackerData :: TestTree
-testBugToTrackerData = testCase "bugToTrackerData" go
+testBugToTaskData :: TestTree
+testBugToTaskData = testCase "bugToTaskData" go
   where
     go = do
       bzSession <- bugzillaMockClient
       Just bz <- BZ.getBug bzSession 1791815
-      case toTrackerData bz of
+      case toTaskData bz of
         (td : _tds) ->
           sequence_
             [ tdIssueId td @=? 1791815,

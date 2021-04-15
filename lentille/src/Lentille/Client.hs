@@ -17,7 +17,7 @@ module Lentille.Client
     withClient,
 
     -- * Data types
-    TrackerData (..),
+    TaskData (..),
     IsoTime (..),
 
     -- * Query type
@@ -28,7 +28,7 @@ module Lentille.Client
     -- * API
     getIndices,
     getUpdatedSince,
-    postTrackerData,
+    postTaskData,
     setUpdatedSince,
   )
 where
@@ -145,13 +145,13 @@ mkQs = fmap . fmap $ Just . encodeUtf8
 
 getUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> m UTCTime
 getUpdatedSince client (IndexName index) (CrawlerName crawler) =
-  monocleGet (APIPath "api/0/tracker_data") qs client
+  monocleGet (APIPath "api/0/task_data") qs client
   where
     qs = mkQs [("index", index), ("name", crawler)]
 
 setUpdatedSince :: (MonadThrow m, MonadIO m) => MonocleClient -> IndexName -> CrawlerName -> ApiKey -> UTCTime -> m Bool
 setUpdatedSince client (IndexName index) (CrawlerName crawler) (ApiKey apikey) ts = do
-  isOk <$> monoclePost (Just . IsoTime $ ts) (APIPath "api/0/tracker_data/commit") qs client
+  isOk <$> monoclePost (Just . IsoTime $ ts) (APIPath "api/0/task_data/commit") qs client
   where
     isOk :: Text -> Bool
     isOk = (==) "Commited"
@@ -162,7 +162,7 @@ newtype IsoTime = IsoTime UTCTime deriving stock (Show, Eq)
 instance ToJSON IsoTime where
   toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
-data TrackerData = TrackerData
+data TaskData = TaskData
   { tdUpdatedAt :: IsoTime,
     tdChangeUrl :: Text,
     tdIssueType :: Text,
@@ -174,19 +174,19 @@ data TrackerData = TrackerData
   }
   deriving stock (Show, Eq, Generic)
 
-instance ToJSON TrackerData where
+instance ToJSON TaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-postTrackerData ::
+postTaskData ::
   forall m.
   (MonadThrow m, MonadIO m) =>
   MonocleClient ->
   IndexName ->
   CrawlerName ->
   ApiKey ->
-  [TrackerData] ->
+  [TaskData] ->
   m [Text]
-postTrackerData client (IndexName index) (CrawlerName crawler) (ApiKey apikey) tds = do
-  fmap (decodeUtf8 . encode) <$> (monoclePost (Just tds) (APIPath "api/0/tracker_data") qs client :: m [Value])
+postTaskData client (IndexName index) (CrawlerName crawler) (ApiKey apikey) tds = do
+  fmap (decodeUtf8 . encode) <$> (monoclePost (Just tds) (APIPath "api/0/task_data") qs client :: m [Value])
   where
     qs = mkQs [("index", index), ("name", crawler), ("apikey", apikey)]

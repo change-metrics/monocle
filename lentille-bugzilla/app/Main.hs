@@ -55,7 +55,7 @@ main = do
           (ApiKey . toText $ apiKey)
           (IndexName . index $ args)
           (CrawlerName . crawlerName $ args)
-          (TrackerDataFetcher (getBZData bzSession))
+          (TaskDataFetcher (getBZData bzSession))
 
 {-
 data BZCli w = BZCli

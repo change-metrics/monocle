@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lentille.Api (app, TrackerApi, monocleApi) where
+module Lentille.Api (app, TaskApi, monocleApi) where
 
 #ifdef USE_OPENAPI
 import Data.OpenApi hiding (server, Server) -- (OpenApi, ((.~)))
@@ -19,14 +19,14 @@ import Servant.API
 
 type ReqIndex = QueryParam "index" Text
 
-type TrackerApi =
-  "tracker_data" :> ReqIndex :> Get '[JSON] UTCTime
-    :<|> "tracker_data" :> Capture "index" Text :> Get '[JSON] [UTCTime]
-    :<|> "tracker_data" :> "commit" :> ReqIndex :> QueryParam "date" UTCTime :> Post '[JSON] Text
+type TaskApi =
+  "task_data" :> ReqIndex :> Get '[JSON] UTCTime
+    :<|> "task_data" :> Capture "index" Text :> Get '[JSON] [UTCTime]
+    :<|> "task_data" :> "commit" :> ReqIndex :> QueryParam "date" UTCTime :> Post '[JSON] Text
 
 type ChangeApi = "change_data" :> Get '[JSON] Text
 
-type MonocleApi = "api" :> "1" :> (TrackerApi :<|> ChangeApi)
+type MonocleApi = "api" :> "1" :> (TaskApi :<|> ChangeApi)
 
 monocleApi :: Proxy MonocleApi
 monocleApi = Proxy

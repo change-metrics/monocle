@@ -11,7 +11,7 @@
 -- The Monocle worker
 module Lentille.Worker
   ( run,
-    TrackerDataFetcher (..),
+    TaskDataFetcher (..),
     MonadLog (..),
     LogEvent (..),
 
@@ -97,13 +97,13 @@ retry action =
 -------------------------------------------------------------------------------
 -- Worker implementation
 -------------------------------------------------------------------------------
-newtype TrackerDataFetcher m = TrackerDataFetcher
-  { runFetcher :: UTCTime -> Stream (Of TrackerData) m ()
+newtype TaskDataFetcher m = TaskDataFetcher
+  { runFetcher :: UTCTime -> Stream (Of TaskData) m ()
   }
 
 data ProcessResult = Amended | AmendError [Text] deriving stock (Show)
 
-processBatch :: (MonadIO m, MonadLog m) => ([TrackerData] -> m [Text]) -> [TrackerData] -> m ProcessResult
+processBatch :: (MonadIO m, MonadLog m) => ([TaskData] -> m [Text]) -> [TaskData] -> m ProcessResult
 processBatch postFunc tds = do
   log $ LogPostData (length tds)
   res <- postFunc tds
@@ -111,12 +111,12 @@ processBatch postFunc tds = do
     [] -> Amended
     xs -> AmendError xs
 
-process :: (MonadIO m, MonadLog m) => ([TrackerData] -> m [Text]) -> Stream (Of TrackerData) m () -> m ()
+process :: (MonadIO m, MonadLog m) => ([TaskData] -> m [Text]) -> Stream (Of TaskData) m () -> m ()
 process postFunc =
   S.print
     . S.mapM (processBatch postFunc)
-    . S.mapped S.toList --   Convert to list (type is Stream (Of [TrackerData]) m ())
-    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TrackerData) m) m ())
+    . S.mapped S.toList --   Convert to list (type is Stream (Of [TaskData]) m ())
+    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TaskData) m) m ())
 
 run ::
   (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
@@ -125,13 +125,13 @@ run ::
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  TrackerDataFetcher m ->
+  TaskDataFetcher m ->
   m ()
 run monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- case sinceM of
     Just ts -> pure ts
     Nothing -> getUpdatedSince monocleClient indexName crawlerName
-  process (retry . postTrackerData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
+  process (retry . postTaskData monocleClient indexName crawlerName apiKey) (runFetcher tdf since)
   res <- retry $ setUpdatedSince monocleClient indexName crawlerName apiKey startTime
   log (if res then LogEnded else LogFailed)

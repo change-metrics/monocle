@@ -30,9 +30,9 @@ monocleMockResponse :: HM.HashMap (ByteString, ByteString) LByteString
 monocleMockResponse =
   fromList
     [ (("GET", "/api/0/indices"), encode fakeIndices),
-      (("GET", "/api/0/tracker_data"), "\"2021-01-01T00:00:00Z\""),
-      (("POST", "/api/0/tracker_data"), "[]"),
-      (("POST", "/api/0/tracker_data/commit"), "\"Commited\"")
+      (("GET", "/api/0/task_data"), "\"2021-01-01T00:00:00Z\""),
+      (("POST", "/api/0/task_data"), "[]"),
+      (("POST", "/api/0/task_data/commit"), "\"Commited\"")
     ]
 
 monocleMockApplication :: Wai.Application

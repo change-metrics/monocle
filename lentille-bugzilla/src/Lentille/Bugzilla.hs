@@ -7,10 +7,10 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- BugZilla system
-module Lentille.Bugzilla (searchExpr, toTrackerData, getBZData, getBugzillaSession) where
+module Lentille.Bugzilla (searchExpr, toTaskData, getBZData, getBugzillaSession) where
 
 import Data.Time (UTCTime)
-import Lentille.Client (IsoTime (..), TrackerData (..))
+import Lentille.Client (IsoTime (..), TaskData (..))
 import Lentille.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
 import Relude
 import Streaming (Of, Stream)
@@ -30,8 +30,8 @@ searchExpr sinceTS = since .&&. linkId .&&. productField
     productField = BZS.ProductField .==. "Red Hat OpenStack"
     since = BZS.changedSince sinceTS
 
-toTrackerData :: BZ.Bug -> [TrackerData]
-toTrackerData bz = map mkTrackerData ebugs
+toTaskData :: BZ.Bug -> [TaskData]
+toTaskData bz = map mkTaskData ebugs
   where
     isOpenDev :: BZ.ExternalBug -> Bool
     isOpenDev ebug = BZ.externalBzId ebug == 85
@@ -44,9 +44,9 @@ toTrackerData bz = map mkTrackerData ebugs
       if "FutureFeature" `elem` BZ.bugKeywords bz
         then "RFE"
         else "BUG"
-    mkTrackerData :: BZ.ExternalBug -> TrackerData
-    mkTrackerData ebug =
-      TrackerData
+    mkTaskData :: BZ.ExternalBug -> TaskData
+    mkTaskData ebug =
+      TaskData
         (IsoTime . BZ.bugLastChangeTime $ bz)
         (changeUrl ebug)
         bugType
@@ -56,7 +56,7 @@ toTrackerData bz = map mkTrackerData ebugs
         (BZ.bugSeverity bz)
         (BZ.bugPriority bz)
 
-getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of TrackerData) m ()
+getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of TaskData) m ()
 getBZData bzSession sinceTS = go 0
   where
     doGet :: MonadIO m => Int -> m [BZ.Bug]
@@ -68,7 +68,7 @@ getBZData bzSession sinceTS = go 0
         log $ LogGetBugs sinceTS offset 100
         retry . doGet $ offset
       -- Create a flat stream of tracker data
-      S.each (concatMap toTrackerData bugs)
+      S.each (concatMap toTaskData bugs)
       -- Keep on retrieving the rest
       unless (length bugs < 100) (go (offset + length bugs))
 

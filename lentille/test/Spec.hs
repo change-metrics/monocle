@@ -19,9 +19,9 @@ workerTests =
     "Lentille.Worker"
     [testRun]
 
-fakeTD :: TrackerData
+fakeTD :: TaskData
 fakeTD =
-  TrackerData
+  TaskData
     (IsoTime (fromMaybe (error "Oops") $ readMaybe "2021-04-01 00:00:00 UTC"))
     "changeUrl"
     "type"
@@ -41,7 +41,7 @@ testRun = testCase "run" go
         (ApiKey "fake")
         (IndexName "openstack")
         (CrawlerName "lentille")
-        (TrackerDataFetcher (const $ S.each [fakeTD]))
+        (TaskDataFetcher (const $ S.each [fakeTD]))
 
 monocleClientTests :: TestTree
 monocleClientTests =
@@ -71,5 +71,5 @@ testPostData :: TestTree
 testPostData = testCase "postData" go
   where
     go = withMockClient withClient $ \client -> do
-      res <- postTrackerData client (IndexName "test") (CrawlerName "test") (ApiKey "failme") []
+      res <- postTaskData client (IndexName "test") (CrawlerName "test") (ApiKey "failme") []
       assertEqual "Call failed" ["42"] res
