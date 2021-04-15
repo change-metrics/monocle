@@ -42,18 +42,18 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
-from monocle.tracker_data import (
-    createInputTrackerData,
-    createELTrackerData,
-    TrackerDataForEL,
-    OrphanTrackerDataForEL,
+from monocle.task_data import (
+    createInputTaskData,
+    createELTaskData,
+    TaskDataForEL,
+    OrphanTaskDataForEL,
     TaskTrackerCrawler,
 )
 from monocle import config
 
 
 CACHE_TIMEOUT = 300  # 5 mn cache
-INPUT_TRACKER_DATA_LIMIT = 500
+INPUT_TASK_DATA_LIMIT = 500
 
 cache = Cache(config={"CACHE_TYPE": "simple"})
 app = Flask(__name__)
@@ -232,7 +232,7 @@ def indices():
     return jsonify(indices)
 
 
-def tracker_data_endpoint_check_input_env(
+def task_data_endpoint_check_input_env(
     req, check_auth: bool, check_content_type: bool
 ) -> Tuple[str, TaskTrackerCrawler]:
     if "index" not in req.args or not req.args.get("index"):
@@ -262,9 +262,9 @@ def tracker_data_endpoint_check_input_env(
     return index, crawler_config
 
 
-@app.route("/api/0/tracker_data/commit", methods=["POST"])
-def tracker_data_commit():
-    index, crawler_config = tracker_data_endpoint_check_input_env(
+@app.route("/api/0/task_data/commit", methods=["POST"])
+def task_data_commit():
+    index, crawler_config = task_data_endpoint_check_input_env(
         request, check_auth=True, check_content_type=True
     )
     input_date_str = request.get_json()
@@ -278,22 +278,22 @@ def tracker_data_commit():
     return jsonify("Commited")
 
 
-@app.route("/api/0/tracker_data", methods=["POST", "GET"])
-def tracker_data():
+@app.route("/api/0/task_data", methods=["POST", "GET"])
+def task_data():
     if request.method == "POST":
-        index, crawler_config = tracker_data_endpoint_check_input_env(
+        index, crawler_config = task_data_endpoint_check_input_env(
             request, check_auth=True, check_content_type=True
         )
         json_data: List = request.get_json()
         if not isinstance(json_data, list):
             returnAPIError("Input data is not a List", 400)
-        if len(json_data) > INPUT_TRACKER_DATA_LIMIT:
+        if len(json_data) > INPUT_TASK_DATA_LIMIT:
             returnAPIError(
-                "Input data List over limit (%s items)" % (INPUT_TRACKER_DATA_LIMIT),
+                "Input data List over limit (%s items)" % (INPUT_TASK_DATA_LIMIT),
                 400,
             )
         try:
-            extracted_data = createInputTrackerData(json_data, crawler_config.name)
+            extracted_data = createInputTaskData(json_data, crawler_config.name)
         except Exception:
             returnAPIError(
                 "Unable to extract input data due to wrong input format", 400
@@ -301,54 +301,54 @@ def tracker_data():
         # Find changes in EL ids that match urls
         change_urls = [e.change_url for e in extracted_data]
         db = create_db_connection(index)
-        mc = db.get_changes_by_url(change_urls, INPUT_TRACKER_DATA_LIMIT)
+        mc = db.get_changes_by_url(change_urls, INPUT_TASK_DATA_LIMIT)
         mc = dict(
             [
                 (
                     r["url"],
                     {
                         "id": r["id"],
-                        "td": createELTrackerData(r.get("tracker_data", [])),
+                        "td": createELTaskData(r.get("tracker_data", [])),
                     },
                 )
                 for r in mc
             ]
         )
         # Prepare input data set
-        update_docs: List[Union[TrackerDataForEL, OrphanTrackerDataForEL]] = []
-        for input_tracker_data in extracted_data:
-            if input_tracker_data.change_url in mc:
+        update_docs: List[Union[TaskDataForEL, OrphanTaskDataForEL]] = []
+        for input_task_data in extracted_data:
+            if input_task_data.change_url in mc:
                 # First check if a td match the input one
                 prev_td = [
                     td
-                    for td in mc[input_tracker_data.change_url]["td"]
-                    if td.issue_url == input_tracker_data.issue_url
+                    for td in mc[input_task_data.change_url]["td"]
+                    if td.issue_url == input_task_data.issue_url
                 ]
                 if len(prev_td) > 1:
                     raise RuntimeError("Multiple td match in previous td")
                 # Remove the previous outdated one if any
                 if prev_td:
-                    mc[input_tracker_data.change_url]["td"].remove(prev_td[0])
+                    mc[input_task_data.change_url]["td"].remove(prev_td[0])
                 # Add the new one to the list
-                mc[input_tracker_data.change_url]["td"].append(input_tracker_data)
+                mc[input_task_data.change_url]["td"].append(input_task_data)
             else:
                 update_docs.append(
-                    OrphanTrackerDataForEL(
-                        _id=input_tracker_data.issue_url,
-                        tracker_data=input_tracker_data,
+                    OrphanTaskDataForEL(
+                        _id=input_task_data.issue_url,
+                        tracker_data=input_task_data,
                     )
                 )
         total_orphans_to_update = len(update_docs)
         for _mc in mc.values():
             update_docs.append(
-                TrackerDataForEL(
+                TaskDataForEL(
                     _id=_mc["id"],
                     tracker_data=_mc["td"],
                 )
             )
         total_changes_to_update = len(update_docs) - total_orphans_to_update
         # Now insert the data
-        err = db.update_tracker_data(source_it=update_docs)
+        err = db.update_task_data(source_it=update_docs)
         # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
         if err:
             returnAPIError("Unable to update tracker data", 500, str(err))
@@ -363,7 +363,7 @@ def tracker_data():
         )
         return jsonify([])
     if request.method == "GET":
-        index, crawler_config = tracker_data_endpoint_check_input_env(
+        index, crawler_config = task_data_endpoint_check_input_env(
             request, check_auth=False, check_content_type=False
         )
         db = create_db_connection(index)

@@ -20,7 +20,7 @@ from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
-from monocle.tracker_data import TaskTrackerCrawler, createTaskTrackerCrawler
+from monocle.task_data import TaskTrackerCrawler, createTaskTrackerCrawler
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",

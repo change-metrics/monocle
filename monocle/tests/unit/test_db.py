@@ -19,11 +19,11 @@ from datetime import datetime
 
 from .common import index_dataset, get_db_cnx
 
-from monocle.tracker_data import (
-    OrphanTrackerDataForEL,
-    TrackerData,
-    AdoptedTrackerDataForEL,
-    AdoptedTrackerData,
+from monocle.task_data import (
+    OrphanTaskDataForEL,
+    TaskData,
+    AdoptedTaskDataForEL,
+    AdoptedTaskData,
 )
 
 
@@ -40,9 +40,9 @@ class TestQueries(unittest.TestCase):
         for dataset in self.datasets:
             index_dataset(self.db, dataset)
         self.otds = [
-            OrphanTrackerDataForEL(
+            OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/123",
-                tracker_data=TrackerData(
+                tracker_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -54,9 +54,9 @@ class TestQueries(unittest.TestCase):
                     issue_title="It does not work",
                 ),
             ),
-            OrphanTrackerDataForEL(
+            OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/124",
-                tracker_data=TrackerData(
+                tracker_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-02T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -68,9 +68,9 @@ class TestQueries(unittest.TestCase):
                     issue_title="It does not work",
                 ),
             ),
-            OrphanTrackerDataForEL(
+            OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/125",
-                tracker_data=TrackerData(
+                tracker_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-03T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -89,7 +89,7 @@ class TestQueries(unittest.TestCase):
 
     def test_get_orphan_tds_by_change_url(self):
 
-        self.db.update_tracker_data(self.otds)
+        self.db.update_task_data(self.otds)
         mtds = self.db.get_orphan_tds_by_change_urls(
             [
                 "https://tests.com/unit/repo1/pull/1",
@@ -99,11 +99,11 @@ class TestQueries(unittest.TestCase):
         )
         self.assertEqual(len(mtds), 3)
 
-        self.db.update_tracker_data(
+        self.db.update_task_data(
             [
-                AdoptedTrackerDataForEL(
+                AdoptedTaskDataForEL(
                     _id="https://bugtracker.domain.dom/125",
-                    tracker_data=AdoptedTrackerData(_adopted=True),
+                    tracker_data=AdoptedTaskData(_adopted=True),
                 )
             ]
         )
@@ -117,7 +117,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(len(mtds), 2)
 
     def test_get_orphan_tds_and_declare_adoption(self):
-        self.db.update_tracker_data(self.otds)
+        self.db.update_task_data(self.otds)
         adopted_tds = self.db.get_orphan_tds_and_declare_adpotion(
             [
                 "https://tests.com/unit/repo1/pull/1",
@@ -136,7 +136,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(len(adopted_tds), 0)
 
     # def test_update_changes_with_orphan_tds(self):
-    #     self.db.update_tracker_data(self.otds)
+    #     self.db.update_task_data(self.otds)
     #     self.db.update_changes_with_orphan_tds(
     #         {
     #             "https://tests.com/unit/repo1/pull/1": "c1",

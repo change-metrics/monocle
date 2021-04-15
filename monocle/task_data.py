@@ -20,7 +20,7 @@ from datetime import datetime
 
 
 @dataclass(frozen=True)
-class TrackerData:
+class TaskData:
     crawler_name: str
     updated_at: datetime
     change_url: str
@@ -33,7 +33,7 @@ class TrackerData:
     score: Optional[int] = None
 
 
-InputTrackerData = List[TrackerData]
+InputTaskData = List[TaskData]
 
 
 @dataclass
@@ -43,12 +43,12 @@ class TaskTrackerCrawler:
     updated_since: datetime
 
 
-def createInputTrackerData(data: List, crawler_name: str) -> InputTrackerData:
-    def createTrackerData(td: Dict) -> TrackerData:
+def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
+    def createTaskData(td: Dict) -> TaskData:
         # TODO(fbo): we probably need more validation here
         if not isinstance(td["issue_type"], list):
             raise ValueError("issue_type must be a list")
-        return TrackerData(
+        return TaskData(
             crawler_name=crawler_name,
             updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
             change_url=td["change_url"],
@@ -61,12 +61,12 @@ def createInputTrackerData(data: List, crawler_name: str) -> InputTrackerData:
             score=td.get("score"),
         )
 
-    return [createTrackerData(td) for td in data]
+    return [createTaskData(td) for td in data]
 
 
-def createELTrackerData(data: List) -> InputTrackerData:
-    def createTrackerData(td: Dict) -> TrackerData:
-        return TrackerData(
+def createELTaskData(data: List) -> InputTaskData:
+    def createTaskData(td: Dict) -> TaskData:
+        return TaskData(
             crawler_name=td["crawler_name"],
             updated_at=td["updated_at"],
             change_url=td["change_url"],
@@ -79,7 +79,7 @@ def createELTrackerData(data: List) -> InputTrackerData:
             score=td.get("score"),
         )
 
-    return [createTrackerData(td) for td in data]
+    return [createTaskData(td) for td in data]
 
 
 def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:
@@ -91,23 +91,23 @@ def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:
 
 
 @dataclass
-class TrackerDataForEL:
+class TaskDataForEL:
     _id: str
-    tracker_data: InputTrackerData
+    tracker_data: InputTaskData
 
 
 @dataclass
-class OrphanTrackerDataForEL:
+class OrphanTaskDataForEL:
     _id: str
-    tracker_data: TrackerData
+    tracker_data: TaskData
 
 
 @dataclass
-class AdoptedTrackerData:
+class AdoptedTaskData:
     _adopted: bool
 
 
 @dataclass
-class AdoptedTrackerDataForEL:
+class AdoptedTaskDataForEL:
     _id: str
-    tracker_data: AdoptedTrackerData
+    tracker_data: AdoptedTaskData

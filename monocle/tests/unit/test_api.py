@@ -181,27 +181,27 @@ tenants:
         err = json.loads(resp.data)
         self.assertEqual(message, err["message"])
 
-    def test_tracker_data_post(self):
-        "Test post on tracker_data endpoint"
+    def test_task_data_post(self):
+        "Test post on task_data endpoint"
         # First try some faulty requests
-        resp = self.client.post("/api/0/tracker_data?index=%s" % self.index2, json="")
+        resp = self.client.post("/api/0/task_data?index=%s" % self.index2, json="")
         self.assertEqual(404, resp.status_code)
         self.check_APIErr_msg("No crawler name provided", resp)
 
         resp = self.client.post(
-            "/api/0/tracker_data?index=%s&apikey=badkey" % self.index2, json=""
+            "/api/0/task_data?index=%s&apikey=badkey" % self.index2, json=""
         )
         self.assertEqual(404, resp.status_code)
         self.check_APIErr_msg("No crawler name provided", resp)
 
         resp = self.client.post(
-            "/api/0/tracker_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
+            "/api/0/task_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
             json="",
         )
         self.assertEqual(403, resp.status_code)
         self.check_APIErr_msg("Not authorized", resp)
 
-        url = "/api/0/tracker_data?index=%s&apikey=%s&name=%s" % (
+        url = "/api/0/task_data?index=%s&apikey=%s&name=%s" % (
             self.index2,
             self.apikey,
             "myttcrawler",
@@ -213,7 +213,7 @@ tenants:
 
         resp = self.client.post(
             url,
-            json=list(range(webapp.INPUT_TRACKER_DATA_LIMIT + 1)),
+            json=list(range(webapp.INPUT_TASK_DATA_LIMIT + 1)),
         )
         self.assertEqual(400, resp.status_code)
         self.check_APIErr_msg("Input data List over limit (500 items)", resp)
@@ -234,9 +234,9 @@ tenants:
             % self.index2
         )
         orig = json.loads(resp.data)["items"][0]
-        self.assertNotIn("tracker_data", orig)
-        # Do a first post of tracker_data
-        tracker_data = [
+        self.assertNotIn("task_data", orig)
+        # Do a first post of task_data
+        task_data = [
             {
                 "updated_at": "2021-04-09T12:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
@@ -246,7 +246,7 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             }
         ]
-        resp = self.client.post(url, json=tracker_data)
+        resp = self.client.post(url, json=task_data)
         self.assertEqual(200, resp.status_code)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
@@ -257,7 +257,7 @@ tenants:
         self.assertIn("tracker_data", new)
         # Check if crawler metadata have been updated
         resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=%s&details=true"
+            "/api/0/task_data?index=%s&name=%s&details=true"
             % (self.index2, "myttcrawler")
         )
         c_metadata_1 = json.loads(resp.data)
@@ -268,7 +268,7 @@ tenants:
         # as we have a second granularity
         time.sleep(1)
         # Attempt a new post with an updated task
-        tracker_data = [
+        task_data = [
             {
                 "updated_at": "2021-04-09T13:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
@@ -294,7 +294,7 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
         ]
-        resp = self.client.post(url, json=tracker_data)
+        resp = self.client.post(url, json=task_data)
         self.assertEqual(200, resp.status_code)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
@@ -324,7 +324,7 @@ tenants:
         )
         # Check if crawler metadata have been updated
         resp = self.client.get(
-            "/api/0/tracker_data?index=%s&name=%s&details=true"
+            "/api/0/task_data?index=%s&name=%s&details=true"
             % (self.index2, "myttcrawler")
         )
         c_metadata_2 = json.loads(resp.data)
@@ -333,14 +333,14 @@ tenants:
         self.assertEqual(c_metadata_2["total_changes_updated"], 2)
         self.assertEqual(c_metadata_2["total_orphans_updated"], 1)
 
-    def test_task_tracker_commit(self):
+    def test_task_data_commit(self):
         "Test task_tracker_commit endpoint"
-        posturl = "/api/0/tracker_data/commit?index=%s&apikey=%s&name=%s" % (
+        posturl = "/api/0/task_data/commit?index=%s&apikey=%s&name=%s" % (
             self.index2,
             self.apikey,
             "myttcrawler",
         )
-        geturl = "/api/0/tracker_data?index=%s&name=%s" % (
+        geturl = "/api/0/task_data?index=%s&name=%s" % (
             self.index2,
             "myttcrawler",
         )
