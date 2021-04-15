@@ -257,7 +257,7 @@ tenants:
         # Do a first post of tracker_data
         tracker_data = [
             {
-                "updated_at": "2021-04-09T12:00:00",
+                "updated_at": "2021-04-09T12:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
                 "issue_id": "1234",
@@ -277,7 +277,7 @@ tenants:
         # Attempt a new post with an updated task
         tracker_data = [
             {
-                "updated_at": "2021-04-09T13:00:00",
+                "updated_at": "2021-04-09T13:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
                 "issue_id": "1234",
@@ -285,7 +285,7 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "updated_at": "2021-04-09T12:00:00",
+                "updated_at": "2021-04-09T12:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
                 "issue_type": "RFE",
                 "issue_id": "1235",
@@ -293,7 +293,7 @@ tenants:
                 "issue_title": "Implement feature XYZ",
             },
             {
-                "updated_at": "2021-04-09T15:00:00",
+                "updated_at": "2021-04-09T15:00:00Z",
                 "change_url": "https://tests.com/unit/repomissing/pull/1",
                 "issue_type": "RFE",
                 "issue_id": "1235",

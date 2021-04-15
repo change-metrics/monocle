@@ -47,7 +47,7 @@ def createInputTrackerData(data: List, crawler_name: str) -> InputTrackerData:
     def createTrackerData(td: Dict) -> TrackerData:
         return TrackerData(
             crawler_name=crawler_name,
-            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%S"),
+            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
             change_url=td["change_url"],
             issue_type=td["issue_type"],
             issue_id=td["issue_id"],
