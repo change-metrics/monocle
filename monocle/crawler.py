@@ -118,9 +118,10 @@ class Runner(object):
                 ]
             )
             log.info(
-                "Finding orphan Tracker data for %s change urls" % len(c_url_id_map)
+                "Looking for orphan Task data for %s change urls" % len(c_url_id_map)
             )
             self.db.update_changes_with_orphan_tds(c_url_id_map)
+            log.info("Looking for orphan Task data, done.")
 
 
 class Crawler(Thread, Runner):
