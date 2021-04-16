@@ -18,8 +18,6 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
-import ListGroup from 'react-bootstrap/ListGroup'
-
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -45,17 +43,21 @@ class TopView extends React.Component {
     } else if (this.props.indices.length === 0) {
       element = <ErrorBox error={{ status: 0, data: 'Please create an index.' }}/>
     } else {
-      element = <Container>
-        <h2>Available Indices</h2>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <ListGroup>
-              {this.props.indices.map((elt, idx) => <ListGroup.Item key={idx}><Link to={'/' + elt}>{elt}</Link></ListGroup.Item>)}
-            </ListGroup>
-          </Col>
-        </Row>
-      </Container>
+      element = (
+      <>
+      <Row>
+        <Col>
+          <div className="container-fluid py-5 bg-white mb-4 mt-4">
+            <h2 className="text-center pt-5 pb-5">Available Indices in Monocle:</h2>
+          </div>
+        <Container>
+            <Row className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+              {this.props.indices.map((elt, idx) => <Col className="col-md-6 p-5 px-2 bg-white rounded border" key={idx}><Link to={'/' + elt}><h3><div className="text-center">{elt}</div></h3></Link></Col>)}
+            </Row>
+          </Container>
+        </Col>
+      </Row>
+        </>)
     }
     return element
   }

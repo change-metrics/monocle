@@ -21,9 +21,10 @@ import Nav from 'react-bootstrap/Nav'
 
 class Footer extends React.Component {
   render () {
+    const date = new Date().getFullYear()
     // eslint-disable-next-line react/jsx-no-target-blank
-    const a = <a className="nav-link" href="https://github.com/change-metrics/monocle" target="_blank" rel="noopener">Powered by Monocle</a>
-    return <Navbar bg="light" expand="lg" sticky="bottom" className="fixed-bottom">
+    const a = <span className="text-muted"><a className="nav-link" href="https://github.com/change-metrics/monocle" target="_blank" rel="noopener">Powered by Monocle, {date}</a></span>
+    return <Navbar expand="lg" className="navbar fixed-bottom navbar-light bg-light">
       <Nav className="ml-auto">
         {a}
       </Nav>
