@@ -166,7 +166,7 @@ data TaskData = TaskData
   { tdUpdatedAt :: IsoTime,
     tdChangeUrl :: Text,
     tdIssueType :: Text,
-    tdIssueId :: Int,
+    tdIssueId :: Text,
     tdIssueUrl :: Text,
     tdIssueTitle :: Text,
     tdSeverity :: Text,

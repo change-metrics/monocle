@@ -58,7 +58,7 @@ testBugToTaskData = testCase "bugToTaskData" go
       case toTaskData bz of
         (td : _tds) ->
           sequence_
-            [ tdIssueId td @=? 1791815,
+            [ tdIssueId td @=? "1791815",
               tdChangeUrl td @=? "https://review.opendev.org/764427",
               tdIssueUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815"
             ]

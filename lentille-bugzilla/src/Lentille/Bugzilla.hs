@@ -50,7 +50,7 @@ toTaskData bz = map mkTaskData ebugs
         (IsoTime . BZ.bugLastChangeTime $ bz)
         (changeUrl ebug)
         bugType
-        (BZ.bugId bz)
+        (show $ BZ.bugId bz)
         ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz))
         (BZ.bugSummary bz)
         (BZ.bugSeverity bz)
