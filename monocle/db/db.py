@@ -377,7 +377,7 @@ class ELmonocleDB:
                                 "keyword": {"type": "keyword", "ignore_above": 8191}
                             },
                         },
-                        "_adpoted": {"type": "boolean"},
+                        "_adopted": {"type": "boolean"},
                     }
                 },
             }
