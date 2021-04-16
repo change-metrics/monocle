@@ -37,6 +37,7 @@ from monocle.task_data import (
     OrphanTaskDataForEL,
     AdoptedTaskData,
     AdoptedTaskDataForEL,
+    createELTaskData,
 )
 
 
@@ -607,13 +608,21 @@ class ELmonocleDB:
             change_urls_to_process = change_urls[:50]
             change_urls = change_urls[50:]
             tds = self.get_orphan_tds_and_declare_adpotion(change_urls_to_process)
-            to_update = [
-                TaskDataForEL(
-                    _id=mapping[td["tasks_data"]["change_url"]],
-                    tasks_data=td["tasks_data"],
+            # Group tds in buckets by change_url
+            _map: Dict[str, List] = dict()
+            for td in tds:
+                _map.setdefault(td["tasks_data"]["change_url"], []).append(
+                    td["tasks_data"]
                 )
-                for td in tds
-            ]
+            # Create update docs to attach tds to matching changes
+            to_update = []
+            for change_url, tds in _map.items():
+                to_update.append(
+                    TaskDataForEL(
+                        _id=mapping[change_url],
+                        tasks_data=createELTaskData(tds),
+                    )
+                )
             self.update_task_data(to_update)
 
     def run_named_query(self, name, *args, **kwargs):

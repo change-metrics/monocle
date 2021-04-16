@@ -111,16 +111,16 @@ class Runner(object):
             log.info("%d objects will be updated in the database" % len(objects))
             self.db.update(objects)
             log.info("%d objects have been updated in the database" % len(objects))
-            # c_url_id_map = dict(
-            #     [
-            #         (c.url, c._id)
-            #         for c in filter(lambda o: isinstance(o, db.Change), objects)
-            #     ]
-            # )
-            # log.info(
-            #     "Finding orphan Tracker data for %s change urls" % len(c_url_id_map)
-            # )
-            # self.db.update_changes_with_orphan_tds(c_url_id_map)
+            c_url_id_map = dict(
+                [
+                    (c.url, c._id)
+                    for c in filter(lambda o: isinstance(o, db.Change), objects)
+                ]
+            )
+            log.info(
+                "Finding orphan Tracker data for %s change urls" % len(c_url_id_map)
+            )
+            self.db.update_changes_with_orphan_tds(c_url_id_map)
 
 
 class Crawler(Thread, Runner):
