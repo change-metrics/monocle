@@ -93,13 +93,13 @@ def createTaskCrawler(raw: Dict) -> TaskCrawler:
 @dataclass
 class TaskDataForEL:
     _id: str
-    tracker_data: InputTaskData
+    tasks_data: InputTaskData
 
 
 @dataclass
 class OrphanTaskDataForEL:
     _id: str
-    tracker_data: TaskData
+    task_data: TaskData
 
 
 @dataclass
@@ -110,4 +110,4 @@ class AdoptedTaskData:
 @dataclass
 class AdoptedTaskDataForEL:
     _id: str
-    tracker_data: AdoptedTaskData
+    task_data: AdoptedTaskData

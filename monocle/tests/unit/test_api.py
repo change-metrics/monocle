@@ -252,7 +252,7 @@ tenants:
             % self.index2
         )
         new = json.loads(resp.data)["items"][0]
-        self.assertIn("tracker_data", new)
+        self.assertIn("tasks_data", new)
         # Check if crawler metadata have been updated
         resp = self.client.get(
             "/api/0/task_data?index=%s&name=%s&details=true"
@@ -300,10 +300,10 @@ tenants:
             % self.index2
         )
         new = json.loads(resp.data)["items"][0]
-        self.assertIn("tracker_data", new)
+        self.assertIn("tasks_data", new)
         std = [
             (td["issue_url"], td["updated_at"], td["issue_type"])
-            for td in new["tracker_data"]
+            for td in new["tasks_data"]
         ]
         self.assertListEqual(
             [

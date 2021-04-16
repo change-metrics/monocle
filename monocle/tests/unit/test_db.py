@@ -42,7 +42,7 @@ class TestQueries(unittest.TestCase):
         self.otds = [
             OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/123",
-                tracker_data=TaskData(
+                task_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -56,7 +56,7 @@ class TestQueries(unittest.TestCase):
             ),
             OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/124",
-                tracker_data=TaskData(
+                task_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-02T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -70,7 +70,7 @@ class TestQueries(unittest.TestCase):
             ),
             OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/125",
-                tracker_data=TaskData(
+                task_data=TaskData(
                     crawler_name="mycrawler",
                     updated_at=datetime.strptime(
                         "2020-01-03T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
@@ -103,7 +103,7 @@ class TestQueries(unittest.TestCase):
             [
                 AdoptedTaskDataForEL(
                     _id="https://bugtracker.domain.dom/125",
-                    tracker_data=AdoptedTaskData(_adopted=True),
+                    task_data=AdoptedTaskData(_adopted=True),
                 )
             ]
         )

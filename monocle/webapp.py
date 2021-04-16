@@ -271,7 +271,7 @@ def task_data_commit():
     except ValueError:
         returnAPIError("Unable to read input date", 400)
     db = create_db_connection(index)
-    if db.set_task_tracker_metadata(crawler_config.name, input_date):
+    if db.set_task_crawler_metadata(crawler_config.name, input_date):
         returnAPIError("Unable to commit", 500)
     return jsonify("Commited")
 
@@ -306,7 +306,7 @@ def task_data():
                     r["url"],
                     {
                         "id": r["id"],
-                        "td": createELTaskData(r.get("tracker_data", [])),
+                        "td": createELTaskData(r.get("tasks_data", [])),
                     },
                 )
                 for r in mc
@@ -333,7 +333,7 @@ def task_data():
                 update_docs.append(
                     OrphanTaskDataForEL(
                         _id=input_task_data.issue_url,
-                        tracker_data=input_task_data,
+                        task_data=input_task_data,
                     )
                 )
         total_orphans_to_update = len(update_docs)
@@ -341,7 +341,7 @@ def task_data():
             update_docs.append(
                 TaskDataForEL(
                     _id=_mc["id"],
-                    tracker_data=_mc["td"],
+                    tasks_data=_mc["td"],
                 )
             )
         total_changes_to_update = len(update_docs) - total_orphans_to_update
@@ -349,8 +349,8 @@ def task_data():
         err = db.update_task_data(source_it=update_docs)
         # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
         if err:
-            returnAPIError("Unable to update tracker data", 500, str(err))
-        db.set_task_tracker_metadata(
+            returnAPIError("Unable to update tasks data", 500, str(err))
+        db.set_task_crawler_metadata(
             crawler_config.name,
             push_infos={
                 "last_post_at": datetime.utcnow().replace(microsecond=0),
@@ -365,7 +365,7 @@ def task_data():
             request, check_auth=False, check_content_type=False
         )
         db = create_db_connection(index)
-        metadata = db.get_task_tracker_metadata(crawler_config.name)
+        metadata = db.get_task_crawler_metadata(crawler_config.name)
         if "details" in request.args and request.args.get("details") == "true":
             return jsonify(metadata)
         if not metadata.get("last_commit_at"):

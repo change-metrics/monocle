@@ -359,7 +359,7 @@ class ELmonocleDB:
                         "total_orphans_updated": {"type": "integer"},
                     }
                 },
-                "tracker_data": {
+                "tasks_data": {
                     "properties": {
                         "crawler_name": {"type": "keyword"},
                         "updated_at": {"type": "date", "format": "date_time_no_millis"},
@@ -425,13 +425,13 @@ class ELmonocleDB:
                 d["doc"].update({"id": _source._id})
                 if isinstance(_source, TaskDataForEL):
                     d["doc"].update(
-                        {"tracker_data": [asdict(td) for td in _source.tracker_data]}
+                        {"tasks_data": [asdict(td) for td in _source.tasks_data]}
                     )
                 if isinstance(_source, OrphanTaskDataForEL):
-                    d["doc"].update({"tracker_data": asdict(_source.tracker_data)})
-                    d["doc"]["type"] = "OrphanTrackerData"
+                    d["doc"].update({"tasks_data": asdict(_source.task_data)})
+                    d["doc"]["type"] = "OrphanTaskData"
                 if isinstance(_source, AdoptedTaskDataForEL):
-                    d["doc"].update({"tracker_data": asdict(_source.tracker_data)})
+                    d["doc"].update({"tasks_data": asdict(_source.task_data)})
                 d["doc_as_upsert"] = True
                 yield d
 
@@ -446,23 +446,23 @@ class ELmonocleDB:
     def compute_crawler_id_by_name(self, name, _type):
         return "crawler/%s/%s" % (_type, name)
 
-    def get_task_tracker_metadata(self, name: str) -> Dict:
+    def get_task_crawler_metadata(self, name: str) -> Dict:
         try:
             ret = self.es.get(
-                self.index, self.compute_crawler_id_by_name(name, "task_tracker")
+                self.index, self.compute_crawler_id_by_name(name, "tasks_crawler")
             )
             return ret["_source"]["crawler_metadata"]
         except Exception:
             return {}
 
-    def set_task_tracker_metadata(
+    def set_task_crawler_metadata(
         self, name: str, commit_date: datetime = None, push_infos: Dict = None
     ):
         metadata = {}
         if commit_date:
             metadata.update({"last_commit_at": commit_date})
         if push_infos:
-            prev_metadata = self.get_task_tracker_metadata(name)
+            prev_metadata = self.get_task_crawler_metadata(name)
             metadata.update(
                 {
                     "last_post_at": push_infos["last_post_at"],
@@ -479,14 +479,14 @@ class ELmonocleDB:
                 }
             )
         body = {
-            "doc": {"type": "TrackerDataCommit", "crawler_metadata": metadata},
+            "doc": {"type": "TaskCrawlerDataCommit", "crawler_metadata": metadata},
             "doc_as_upsert": True,
         }
         ret = None
         try:
             self.es.update(
                 self.index,
-                self.compute_crawler_id_by_name(name, "task_tracker"),
+                self.compute_crawler_id_by_name(name, "tasks_crawler"),
                 body=body,
             )
             self.es.indices.refresh(index=self.index)
@@ -572,10 +572,10 @@ class ELmonocleDB:
                 "size": size,
                 "query": {
                     "bool": {
-                        "must_not": {"exists": {"field": "tracker_data._adopted"}},
+                        "must_not": {"exists": {"field": "tasks_data._adopted"}},
                         "filter": [
-                            {"term": {"type": "OrphanTrackerData"}},
-                            {"terms": {"tracker_data.change_url": change_urls}},
+                            {"term": {"type": "OrphanTaskData"}},
+                            {"terms": {"tasks_data.change_url": change_urls}},
                         ],
                     }
                 },
@@ -594,7 +594,7 @@ class ELmonocleDB:
             adopted_tds = [
                 AdoptedTaskDataForEL(
                     _id=td["id"],
-                    tracker_data=AdoptedTaskData(_adopted=True),
+                    task_data=AdoptedTaskData(_adopted=True),
                 )
                 for td in tds
             ]
@@ -609,8 +609,8 @@ class ELmonocleDB:
             tds = self.get_orphan_tds_and_declare_adpotion(change_urls_to_process)
             to_update = [
                 TaskDataForEL(
-                    _id=mapping[td["tracker_data"]["change_url"]],
-                    tracker_data=td["tracker_data"],
+                    _id=mapping[td["tasks_data"]["change_url"]],
+                    tasks_data=td["tasks_data"],
                 )
                 for td in tds
             ]
