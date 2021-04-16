@@ -107,6 +107,12 @@ class Pie extends React.Component {
 
   render() {
     const data = this.prepareDataSet(this.props.data)
+    const options = {
+      responsive: true,
+      legend: {
+        display: false
+      }
+    }
     if (!data) {
       return <ErrorBox error="No data for Pie" />
     } else {
@@ -118,11 +124,7 @@ class Pie extends React.Component {
                 getElementsAtEvent={(elems) => this.handleClick(this, elems)}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 300 : 200}
-                options={{
-                  legend: {
-                    display: false
-                  }
-                }}
+                options={options}
                 data={data}
               />
             </Col>

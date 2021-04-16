@@ -81,6 +81,7 @@ class ComplexityGraph extends React.Component {
     }
 
     const options = {
+      responsive: true,
       tooltips: {
         callbacks: {
           label: (i, d) => this.tooltipLabel(i, this.props.data.items)

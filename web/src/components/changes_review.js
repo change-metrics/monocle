@@ -83,6 +83,9 @@ class ChangeReviewEventsHisto extends React.Component {
 
   render() {
     const data = this.prepareDataSet(this.props.data)
+    const options = {
+      responsive: true
+    }
     return (
       <Row>
         <Col>
@@ -93,13 +96,7 @@ class ChangeReviewEventsHisto extends React.Component {
                 width={100}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 90 : 68}
-                options={{
-                  legend: {
-                    labels: {
-                      boxWidth: 30
-                    }
-                  }
-                }}
+                options={options}
               />
             </Card.Body>
           </Card>
@@ -132,8 +129,8 @@ class ChangesReviewStats extends BaseQueryComponent {
       return (
         <Row>
           <Col>
-            <Card>
-              <Card.Header>
+            <Card className="rounded border-0 border-top">
+              <Card.Header className="bg-white text-center">
                 <Card.Title>Changes review stats</Card.Title>
               </Card.Header>
               <Card.Body>

@@ -50,8 +50,8 @@ class TopEventsTable extends React.Component {
     return (
       <Row>
         <Col>
-          <Card>
-            <Card.Header>
+          <Card className="rounded border">
+            <Card.Header className="bg-white text-center">
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>
@@ -114,8 +114,8 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
       return (
         <Row>
           <Col>
-            <Card>
-              <Card.Header>
+            <Card className="rounded border-0 border-top">
+              <Card.Header className="bg-white text-center">
                 <Card.Title>Most active authors stats</Card.Title>
               </Card.Header>
               <Card.Body>
@@ -123,13 +123,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                   <Col md>
                     <TopEventsTable
                       data={data.ChangeCreatedEvent}
-                      title="By Created Changes"
+                      title="By created changes"
                     />
                   </Col>
                   <Col md>
                     <TopEventsTable
                       data={data.ChangeMergedEvent}
-                      title="By Merged Changes"
+                      title="By merged changes"
                     />
                   </Col>
                 </Row>
@@ -142,13 +142,13 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                   <Col md>
                     <TopEventsTable
                       data={data.ChangeReviewedEvent}
-                      title="By Reviewed Changes"
+                      title="By reviewed changes"
                     />
                   </Col>
                   <Col md>
                     <TopEventsTable
                       data={data.ChangeCommentedEvent}
-                      title="By Commented Changes"
+                      title="By commented changes"
                     />
                   </Col>
                 </Row>
@@ -179,8 +179,8 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
       return (
         <Row>
           <Col>
-            <Card>
-              <Card.Header>
+            <Card className="rounded border-0 border-top">
+              <Card.Header className="bg-white text-center">
                 <Card.Title>Most reviewed authors stats</Card.Title>
               </Card.Header>
               <Card.Body>
@@ -219,8 +219,8 @@ class NewContributorsStats extends BaseQueryComponent {
       return (
         <Row>
           <Col>
-            <Card>
-              <Card.Header>
+            <Card className="rounded border-0 border-top">
+              <Card.Header className="bg-white text-center">
                 <Card.Title>New contributors stats</Card.Title>
               </Card.Header>
               <Card.Body>
@@ -245,8 +245,8 @@ class TopStrengthsTable extends React.Component {
     return (
       <Row>
         <Col>
-          <Card>
-            <Card.Header>
+          <Card className="rounded border-0 border-top">
+            <Card.Header className="bg-white text-center">
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>

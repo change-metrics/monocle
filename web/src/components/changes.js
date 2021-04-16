@@ -76,89 +76,79 @@ class ChangesTable extends React.Component {
       backgroundClip: 'content-box'
     }
     return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              {this.props.graph !== '' ? (
-                <React.Fragment>{this.props.graph}</React.Fragment>
-              ) : null}
-              {paginationElement}
-              {this.props.data.items.map((change, index) => (
-                <Row key={index} style={ChangeRowStyle}>
-                  <Col>
-                    <Row>
-                      <Col md={9}>
-                        <ChangeStatus data={change} /> {' - '}
-                        <a
-                          href={change.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ArrowUpRightSquare />
-                        </a>
-                        {' - '}
-                        <Link
-                          to={addUrlField(
-                            'repository',
-                            change.repository_fullname
-                          )}
-                        >
-                          {change.repository_fullname}
-                        </Link>
-                        {' - '}
-                        {changeUrl(this.props.index, change, change.title)}
-                      </Col>
-                      <Col md={3}>Complexity: {change.complexity}</Col>
-                    </Row>
-                    <Row>
-                      <Col md={9}>
-                        Created {moment(change.created_at).fromNow()} by{' '}
-                        <Link
-                          className="span"
-                          to={addUrlField('authors', change.author.muid)}
-                        >
-                          {change.author.muid}
-                        </Link>
-                        {' - '}
-                        Updated {moment(change.updated_at).fromNow()}
-                      </Col>
-                      {change.state === 'MERGED' ||
-                      change.state === 'CLOSED' ? (
-                        <Col>
-                          Duration:{' '}
-                          {moment
-                            .duration(change.duration, 'seconds')
-                            .humanize()}
-                        </Col>
-                      ) : null}
-                    </Row>
-                    {change.approval.length > 0 ? (
-                      <Row>
-                        <Col>
-                          Review approvals:{' '}
-                          {change.approval.map((app, idx) => {
-                            return (
-                              <span key={idx}>
-                                {chooseApprovalBadgeStyle(app, idx)}{' '}
-                              </span>
-                            )
-                          })}
-                        </Col>
-                      </Row>
-                    ) : (
-                      ''
-                    )}
+      <Card className="rounded border-0 border-top">
+        <Card.Header className="bg-white text-center">
+          <Card.Title>{this.props.title}</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          {this.props.graph !== '' ? (
+            <React.Fragment>{this.props.graph}</React.Fragment>
+          ) : null}
+          {paginationElement}
+          {this.props.data.items.map((change, index) => (
+            <Row key={index} style={ChangeRowStyle}>
+              <Col>
+                <Row>
+                  <Col md={9}>
+                    <ChangeStatus data={change} /> {' - '}
+                    <a
+                      href={change.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ArrowUpRightSquare />
+                    </a>
+                    {' - '}
+                    <Link
+                      to={addUrlField('repository', change.repository_fullname)}
+                    >
+                      {change.repository_fullname}
+                    </Link>
+                    {' - '}
+                    {changeUrl(this.props.index, change, change.title)}
                   </Col>
+                  <Col md={3}>Complexity: {change.complexity}</Col>
                 </Row>
-              ))}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                <Row>
+                  <Col md={9}>
+                    Created {moment(change.created_at).fromNow()} by{' '}
+                    <Link
+                      className="span"
+                      to={addUrlField('authors', change.author.muid)}
+                    >
+                      {change.author.muid}
+                    </Link>
+                    {' - '}
+                    Updated {moment(change.updated_at).fromNow()}
+                  </Col>
+                  {change.state === 'MERGED' || change.state === 'CLOSED' ? (
+                    <Col>
+                      Duration:{' '}
+                      {moment.duration(change.duration, 'seconds').humanize()}
+                    </Col>
+                  ) : null}
+                </Row>
+                {change.approval.length > 0 ? (
+                  <Row>
+                    <Col>
+                      Review approvals:{' '}
+                      {change.approval.map((app, idx) => {
+                        return (
+                          <span key={idx}>
+                            {chooseApprovalBadgeStyle(app, idx)}{' '}
+                          </span>
+                        )
+                      })}
+                    </Col>
+                  </Row>
+                ) : (
+                  ''
+                )}
+              </Col>
+            </Row>
+          ))}
+        </Card.Body>
+      </Card>
     )
   }
 }

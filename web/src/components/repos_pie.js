@@ -49,26 +49,22 @@ class ReposPie extends BaseQueryComponent {
         return <ErrorBox error={{ data: 'No data for ReposPie', status: 0 }} />
       }
       return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Changes per repository</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col>
-                    <Pie
-                      field="repository"
-                      history={this.props.history}
-                      data={this.props.repos_top_result}
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        <Card className="rounded border-0 border-top">
+          <Card.Header className="bg-white text-center">
+            <Card.Title>Changes per repository</Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <Row>
+              <Col>
+                <Pie
+                  field="repository"
+                  history={this.props.history}
+                  data={this.props.repos_top_result}
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
       )
     } else {
       return <LoadingBox />

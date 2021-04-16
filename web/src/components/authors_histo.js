@@ -86,46 +86,39 @@ class AuthorsHisto extends React.Component {
 
   render() {
     const data = this.prepareDataSet(this.props.data)
+    const options = {
+      responsive: true
+    }
     return (
       <Row>
         <Col>
-          <Card>
-            <Card.Body>
-              <Row>
-                <Col md={3}>
-                  <ListGroup>
-                    <ListGroup.Item>
-                      Change authors:{' '}
-                      {this.props.data.ChangeCreatedEvent.total_authors}
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      Review authors:{' '}
-                      {this.props.data.ChangeReviewedEvent.total_authors}
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      Comment authors:{' '}
-                      {this.props.data.ChangeCommentedEvent.total_authors}
-                    </ListGroup.Item>
-                  </ListGroup>
-                </Col>
-                <Col md={9}>
-                  <Line
-                    data={data}
-                    width={100}
-                    // On small screen the legend takes the whole height so detect and adjust
-                    height={hasSmallWidth() ? 90 : 30}
-                    options={{
-                      legend: {
-                        labels: {
-                          boxWidth: 30
-                        }
-                      }
-                    }}
-                  />
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+          <Row>
+            <Col md={3}>
+              <ListGroup>
+                <ListGroup.Item>
+                  Change authors:{' '}
+                  {this.props.data.ChangeCreatedEvent.total_authors}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Review authors:{' '}
+                  {this.props.data.ChangeReviewedEvent.total_authors}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Comment authors:{' '}
+                  {this.props.data.ChangeCommentedEvent.total_authors}
+                </ListGroup.Item>
+              </ListGroup>
+            </Col>
+            <Col md={9}>
+              <Line
+                data={data}
+                width={100}
+                // On small screen the legend takes the whole height so detect and adjust
+                height={hasSmallWidth() ? 90 : 30}
+                options={options}
+              />
+            </Col>
+          </Row>
         </Col>
       </Row>
     )
@@ -154,18 +147,14 @@ class AuthorsHistoStats extends BaseQueryComponent {
       }
       const data = this.props.authors_histo_stats_result
       return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Active authors</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <AuthorsHisto data={data} />
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        <Card className="rounded border-0 border-top">
+          <Card.Header className="bg-white text-center">
+            <Card.Title>Active authors</Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <AuthorsHisto data={data} />
+          </Card.Body>
+        </Card>
       )
     } else {
       return <LoadingBox />

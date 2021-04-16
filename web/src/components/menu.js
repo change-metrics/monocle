@@ -37,7 +37,7 @@ class IndexMenu extends React.Component {
       ? TITLE + '/' + this.props.match.params.index
       : TITLE
     return (
-      <Navbar.Collapse id="basic-navbar-nav">
+      <Navbar.Collapse id="navbar navbar-expand-lg fixed-top">
         <Nav className="mr-auto">
           <Link
             className="nav-link"
@@ -108,7 +108,7 @@ class TopMenu extends React.Component {
     document.title = TITLE
     return (
       <React.Fragment>
-        <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
+        <Navbar className="navbar navbar-expand-md bg-light sticky-top">
           <Navbar.Brand>
             <Link className="navbar-brand" to="/">
               {TITLE}
@@ -122,8 +122,8 @@ class TopMenu extends React.Component {
             <CUserView />
           </Nav>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <SmallSizeWarning />
         </Navbar>
-        <SmallSizeWarning />
       </React.Fragment>
     )
   }

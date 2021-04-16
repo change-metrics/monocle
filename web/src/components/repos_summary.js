@@ -52,8 +52,8 @@ class RepoChangesTable extends React.Component {
     return (
       <Row>
         <Col>
-          <Card>
-            <Card.Header>
+          <Card className="rounded border-0 border-top">
+            <Card.Header className="bg-white text-center">
               <Card.Title>{this.props.title}</Card.Title>
             </Card.Header>
             <Card.Body>

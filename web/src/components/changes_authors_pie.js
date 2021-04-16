@@ -18,8 +18,6 @@ import React from 'react'
 
 import { connect } from 'react-redux'
 
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import { withRouter } from 'react-router-dom'
 
@@ -51,26 +49,18 @@ class ChangesAuthorsPie extends BaseQueryComponent {
         )
       }
       return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Changes per author</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col>
-                    <Pie
-                      field="authors"
-                      history={this.props.history}
-                      data={this.props.authors_top_result}
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+        <Card className="rounded border-0 border-top">
+          <Card.Header className="bg-white text-center">
+            <Card.Title>Changes per author</Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <Pie
+              field="authors"
+              history={this.props.history}
+              data={this.props.authors_top_result}
+            />
+          </Card.Body>
+        </Card>
       )
     } else {
       return <LoadingBox />

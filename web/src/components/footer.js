@@ -16,26 +16,26 @@
 
 import React from 'react'
 
-import Navbar from 'react-bootstrap/Navbar'
-import Nav from 'react-bootstrap/Nav'
-
 class Footer extends React.Component {
   render() {
+    const date = new Date().getFullYear()
     // eslint-disable-next-line react/jsx-no-target-blank
     const a = (
       <a
-        className="nav-link"
+        className="nav-link text-muted"
         href="https://github.com/change-metrics/monocle"
         target="_blank"
         rel="noopener noreferrer"
       >
-        Powered by Monocle
+        Powered by Monocle, {date}
       </a>
     )
     return (
-      <Navbar bg="light" expand="lg" sticky="bottom" className="fixed-bottom">
-        <Nav className="ml-auto">{a}</Nav>
-      </Navbar>
+      <div className="container-fluid pt-3">
+        <footer className="footer fixed-bottom bg-light text-right py-2">
+          {a}
+        </footer>
+      </div>
     )
   }
 }

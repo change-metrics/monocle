@@ -20,7 +20,6 @@ import { Switch, Route } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import PropTypes from 'prop-types'
@@ -45,7 +44,6 @@ import { CChange } from './components/change'
 import CReposPie from './components/repos_pie'
 import CChangesAuthorsPie from './components/changes_authors_pie'
 import TopView from './top_view'
-import Card from 'react-bootstrap/Card'
 
 class RootView extends React.Component {
   render() {
@@ -58,19 +56,10 @@ class RootView extends React.Component {
         </Row>
         <Row>
           <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
             <CChangesLifeCycleStats index={this.props.match.params.index} />
           </Col>
         </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
+        <div className="pb-2 mb-2 border-bottom"></div>
         <Row>
           <Col>
             <CChangesReviewStats index={this.props.match.params.index} />
@@ -251,58 +240,32 @@ class ChangesView extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      open: false
+      open: true
     }
   }
 
   render() {
-    const BoxStyle = {
-      backgroundColor: '#dbecff6b',
-      textAlign: 'center',
-      cursor: 'pointer'
-    }
-    const PStyle = {
-      marginTop: '0rem',
-      marginBottom: '0rem',
-      fontWeight: 'bold'
-    }
     return (
       <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row onClick={() => this.setState({ open: !this.state.open })}>
-          <Col>
-            <Card style={BoxStyle}>
-              <p style={PStyle}>
-                {this.state.open ? 'Collapse stats' : 'Display stats'}
-              </p>
-            </Card>
-          </Col>
-        </Row>
         {this.state.open ? (
           <React.Fragment>
             <Row>
-              <Col>
-                <p></p>
-              </Col>
+              <p></p>
             </Row>
-            <Row>
-              <Col md>
+            <Row className="row row-cols-1 row-cols-md-3 mb-2 text-left">
+              <Col>
                 <CChangesAuthorsPie
                   history={this.props.history}
                   index={this.props.match.params.index}
                 />
               </Col>
-              <Col md>
+              <Col>
                 <CReposPie
                   history={this.props.history}
                   index={this.props.match.params.index}
                 />
               </Col>
-              <Col md>
+              <Col>
                 <CApprovalsPie
                   history={this.props.history}
                   index={this.props.match.params.index}
@@ -311,11 +274,6 @@ class ChangesView extends React.Component {
             </Row>
           </React.Fragment>
         ) : null}
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
         <Row>
           <Col>
             <CLastChangesNG
@@ -398,56 +356,36 @@ class App extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <TopMenu />
-        <Container>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <FiltersFormBox />
-            </Col>
-          </Row>
+        <div className="container-fluid">
+          <TopMenu />
+
           <Switch>
-            <Route exact path="/" component={TopView} />
-            <Route exact path="/login" component={LoginView} />
-            <Route exact path="/user" component={CUserView} />
-            <Route exact path="/:index/people" component={PeopleView} />
-            <Route exact path="/:index/repos" component={ReposView} />
-            <Route exact path="/:index" component={RootView} />
-            <Route path="/:index/changes" component={ChangesView} />
-            <Route path="/:index/hot-changes" component={HotChangesView} />
-            <Route path="/:index/cold-changes" component={ColdChangesView} />
-            <Route path="/:index/change/:change" component={ChangeView} />
+            <Route exact path="/">
+              <TopView />
+            </Route>
           </Switch>
-          <Row>
-            <Col>
-              <p></p>
+
+          <Row className="row">
+            <FiltersFormBox />
+
+            <Col className="col-md-8 border-left mb-5">
+              <Switch>
+                <Route exact path="/login" component={LoginView} />
+                <Route exact path="/user" component={CUserView} />
+                <Route exact path="/:index/people" component={PeopleView} />
+                <Route exact path="/:index/repos" component={ReposView} />
+                <Route exact path="/:index" component={RootView} />
+                <Route path="/:index/changes" component={ChangesView} />
+                <Route path="/:index/hot-changes" component={HotChangesView} />
+                <Route
+                  path="/:index/cold-changes"
+                  component={ColdChangesView}
+                />
+                <Route path="/:index/change/:change" component={ChangeView} />
+              </Switch>
             </Col>
           </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-        </Container>
+        </div>
         <Footer />
       </React.Fragment>
     )
