@@ -40,16 +40,12 @@ toTaskData bz = map mkTaskData ebugs
       Just xs -> filter isOpenDev xs
       Nothing -> []
     changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> BZ.externalBugId ebug
-    bugType =
-      if "FutureFeature" `elem` BZ.bugKeywords bz
-        then "RFE"
-        else "BUG"
     mkTaskData :: BZ.ExternalBug -> TaskData
     mkTaskData ebug =
       TaskData
         (IsoTime . BZ.bugLastChangeTime $ bz)
         (changeUrl ebug)
-        bugType
+        (BZ.bugKeywords bz)
         (show $ BZ.bugId bz)
         ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz))
         (BZ.bugSummary bz)
