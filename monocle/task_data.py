@@ -37,7 +37,7 @@ InputTaskData = List[TaskData]
 
 
 @dataclass
-class TaskTrackerCrawler:
+class TaskCrawler:
     name: str
     api_key: str
     updated_since: datetime
@@ -82,8 +82,8 @@ def createELTaskData(data: List) -> InputTaskData:
     return [createTaskData(td) for td in data]
 
 
-def createTaskTrackerCrawler(raw: Dict) -> TaskTrackerCrawler:
-    return TaskTrackerCrawler(
+def createTaskCrawler(raw: Dict) -> TaskCrawler:
+    return TaskCrawler(
         name=raw["name"],
         api_key=raw["api_key"],
         updated_since=datetime.strptime(raw["updated_since"], "%Y-%m-%d"),

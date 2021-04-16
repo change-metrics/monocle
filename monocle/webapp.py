@@ -47,7 +47,7 @@ from monocle.task_data import (
     createELTaskData,
     TaskDataForEL,
     OrphanTaskDataForEL,
-    TaskTrackerCrawler,
+    TaskCrawler,
 )
 from monocle import config
 
@@ -94,9 +94,7 @@ else:
         rawconfig = yaml.safe_load(open(config_path))
         globals()["indexes_acl"] = config.build_index_acl(rawconfig)
         globals()["project_defs"] = config.build_project_definitions(rawconfig)
-        globals()[
-            "indexes_task_tracker_crawlers"
-        ] = config.build_index_task_tracker_crawlers(rawconfig)
+        globals()["indexes_task_crawlers"] = config.build_index_task_crawlers(rawconfig)
 
 
 def returnAPIError(desc: str, code: int, details: Optional[str] = None):
@@ -234,17 +232,17 @@ def indices():
 
 def task_data_endpoint_check_input_env(
     req, check_auth: bool, check_content_type: bool
-) -> Tuple[str, TaskTrackerCrawler]:
+) -> Tuple[str, TaskCrawler]:
     if "index" not in req.args or not req.args.get("index"):
         returnAPIError("No index provided", 404)
     index = req.args["index"]
-    if index not in globals()["indexes_task_tracker_crawlers"]:
+    if index not in globals()["indexes_task_crawlers"]:
         return returnAPIError("No index with this name", 404)
     if "name" not in req.args or not req.args.get("name"):
         return returnAPIError("No crawler name provided", 404)
     name = req.args["name"]
     match_crawler_config = [
-        c for c in globals()["indexes_task_tracker_crawlers"][index] if c.name == name
+        c for c in globals()["indexes_task_crawlers"][index] if c.name == name
     ]
     if not match_crawler_config:
         return returnAPIError("No crawler with this name", 404)

@@ -20,7 +20,7 @@ from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
-from monocle.task_data import TaskTrackerCrawler, createTaskTrackerCrawler
+from monocle.task_data import TaskCrawler, createTaskCrawler
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -124,7 +124,7 @@ schema = {
                             },
                         },
                     },
-                    "task_tracker_crawlers": {
+                    "task_crawlers": {
                         "description": "Task tracker crawlers authorized to act on that index",
                         "type": "array",
                         "items": {
@@ -172,7 +172,7 @@ config_sample_yaml = """
 ---
 tenants:
   - index: default
-    task_tracker_crawlers:
+    task_crawlers:
       - name: crawler
         updated_since: "2020-01-01"
         api_key: 1a2b3c4d5e
@@ -253,15 +253,14 @@ def build_index_acl(config: dict) -> Dict[str, List[Username]]:
     return indexes_acl
 
 
-def build_index_task_tracker_crawlers(
+def build_index_task_crawlers(
     config: dict,
-) -> Dict[str, List[TaskTrackerCrawler]]:
+) -> Dict[str, List[TaskCrawler]]:
     ret = {}
     for tenant in config["tenants"]:
-        if "task_tracker_crawlers" in tenant.keys():
+        if "task_crawlers" in tenant.keys():
             ret[tenant["index"]] = [
-                createTaskTrackerCrawler(entry)
-                for entry in tenant["task_tracker_crawlers"]
+                createTaskCrawler(entry) for entry in tenant["task_crawlers"]
             ]
     return ret
 

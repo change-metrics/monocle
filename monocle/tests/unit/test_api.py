@@ -57,7 +57,7 @@ class TestWebAPI(unittest.TestCase):
                 {
                     # Public index
                     "index": self.index2,
-                    "task_tracker_crawlers": [
+                    "task_crawlers": [
                         {
                             "name": "myttcrawler",
                             "api_key": self.apikey,
@@ -68,9 +68,7 @@ class TestWebAPI(unittest.TestCase):
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
-        webapp.indexes_task_tracker_crawlers = config.build_index_task_tracker_crawlers(
-            config_data
-        )
+        webapp.indexes_task_crawlers = config.build_index_task_crawlers(config_data)
 
     def test_health(self):
         "Test health endpoint"
@@ -334,7 +332,7 @@ tenants:
         self.assertEqual(c_metadata_2["total_orphans_updated"], 1)
 
     def test_task_data_commit(self):
-        "Test task_tracker_commit endpoint"
+        "Test task_data_commit endpoint"
         posturl = "/api/0/task_data/commit?index=%s&apikey=%s&name=%s" % (
             self.index2,
             self.apikey,
