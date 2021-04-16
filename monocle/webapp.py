@@ -292,9 +292,9 @@ def task_data():
             )
         try:
             extracted_data = createInputTaskData(json_data, crawler_config.name)
-        except Exception:
+        except Exception as exc:
             returnAPIError(
-                "Unable to extract input data due to wrong input format", 400
+                "Unable to extract input data due to wrong input format: %s" % exc, 400
             )
         # Find changes in EL ids that match urls
         change_urls = [e.change_url for e in extracted_data]

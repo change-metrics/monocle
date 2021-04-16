@@ -177,7 +177,7 @@ tenants:
 
     def check_APIErr_msg(self, message, resp):
         err = json.loads(resp.data)
-        self.assertEqual(message, err["message"])
+        self.assertTrue(err["message"].startswith(message))
 
     def test_task_data_post(self):
         "Test post on task_data endpoint"
@@ -222,7 +222,10 @@ tenants:
         )
         self.assertEqual(400, resp.status_code)
         self.check_APIErr_msg(
-            "Unable to extract input data due to wrong input format",
+            (
+                "Unable to extract input data due to wrong input format: "
+                "Missing mandatory field:",
+            ),
             resp,
         )
 

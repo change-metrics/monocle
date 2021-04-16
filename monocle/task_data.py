@@ -44,13 +44,52 @@ class TaskCrawler:
 
 
 def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
+    dtf = "%Y-%m-%dT%H:%M:%SZ"
+
+    def validate(td: Dict) -> None:
+        err = []
+        for m_field in (
+            "updated_at",
+            "change_url",
+            "issue_type",
+            "issue_id",
+            "issue_url",
+            "issue_title",
+        ):
+            if m_field not in td:
+                err.append("Missing mandatory field: %s" % m_field)
+        if err:
+            raise ValueError("\n".join(err))
+        try:
+            datetime.strptime(td["updated_at"], dtf)
+        except Exception as e:
+            err.append("Wrong date format: %s" % e)
+        if not isinstance(td["issue_type"], list) or not all(
+            [isinstance(o, str) for o in td["issue_type"]]
+        ):
+            err.append("issue_type must be a list of str")
+        for str_field in (
+            "change_url",
+            "issue_id",
+            "issue_url",
+            "issue_title",
+            "severity",
+            "priority",
+        ):
+            if str_field in td and (
+                not isinstance(td[str_field], str) or not td[str_field]
+            ):
+                err.append("Field: %s must be Str and not empty" % str_field)
+        if "score" in td and not not isinstance(td["score"], int):
+            err.append("Field: score must be Int")
+        if err:
+            raise ValueError("\n".join(err))
+
     def createTaskData(td: Dict) -> TaskData:
-        # TODO(fbo): we probably need more validation here
-        if not isinstance(td["issue_type"], list):
-            raise ValueError("issue_type must be a list")
+        validate(td)
         return TaskData(
             crawler_name=crawler_name,
-            updated_at=datetime.strptime(td["updated_at"], "%Y-%m-%dT%H:%M:%SZ"),
+            updated_at=datetime.strptime(td["updated_at"], dtf),
             change_url=td["change_url"],
             issue_type=td["issue_type"],
             issue_id=td["issue_id"],
