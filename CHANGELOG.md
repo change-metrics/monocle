@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [dbmanage] Added update-idents option.
 - [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
 - [api] Added 'projects' API endpoint that is listening project definitions from config file
+- [web] - Added project definition dropdown form
 
 ### Changed
 

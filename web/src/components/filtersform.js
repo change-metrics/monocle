@@ -30,6 +30,7 @@ import { withRouter } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import moment from 'moment'
+import { getConfigProjectDefinitions } from '../api'
 
 class DateFormBox extends React.Component {
   constructor (props) {
@@ -181,7 +182,9 @@ class FiltersForm extends React.Component {
       approvals: '',
       excludeApprovals: '',
       state: 'open',
-      selfApproved: false
+      selfApproved: false,
+      selectedProjectDef: '',
+      project_defs: []
     }
   }
 
@@ -190,6 +193,7 @@ class FiltersForm extends React.Component {
     this.unlisten = this.props.history.listen((location, action) => {
       this.fetchQueryParams()
     })
+    this.fetchProjectDefs()
   }
 
   componentWillUnmount () {
@@ -283,10 +287,34 @@ class FiltersForm extends React.Component {
     return resume
   }
 
+  handleProjectDefState = (e) => {
+    const selected = e.target.attributes.value.value
+    this.setState({ selectedProjectDef: selected })
+  }
+
+  fetchProjectDefs = () => {
+    getConfigProjectDefinitions(this.props.history.location.pathname).then((res) =>
+      this.setState({ project_defs: res })
+    )
+  }
+
   render () {
     const resumeStyle = {
       textAlign: 'center'
     }
+    const projectDefs = this.state.project_defs
+      ? (this.state.project_defs.map((response) => (
+          <Dropdown.Item
+            key={response.name}
+            value={response.repositories_regex}
+            active={response.name === this.state.selectedProjectDef}
+            onClick={this.handleProjectDefState}
+          >
+            {response.name}
+          </Dropdown.Item>
+        )))
+      : (<Dropdown.Item key="None">None</Dropdown.Item>)
+
     return (
       <React.Fragment>
         <Row>
@@ -397,6 +425,23 @@ class FiltersForm extends React.Component {
                                 placeholder="Files regexp"
                                 onChange={v => this.handleChange('files', v)}
                               />
+                              </Form.Group>
+                            <Form.Group controlId="formProjectDefinitionInput">
+                              <DropDownButton
+                                title={
+                                  this.state.selectedProjectDef
+                                    ? 'Project definition: ' +
+                                      this.state.selectedProjectDef
+                                    : 'Project definition: '
+                                }
+                                size="sm"
+                                variant="secondary"
+                                onChange={(v) =>
+                                  this.handleChange('repository', v)
+                                }
+                              >
+                                {projectDefs}
+                              </DropDownButton>
                             </Form.Group>
                             {this.props.showChangeParams
                               ? <Form.Group controlId='changeStateInput'>

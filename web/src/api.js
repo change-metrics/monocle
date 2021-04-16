@@ -83,9 +83,22 @@ function getLoggedUser () {
     })
 }
 
+function getConfigProjectDefinitions(pathname) {
+  /* Return json list that include project definitions from config file */
+  const indexname = pathname.replace("/", "");
+  const url = baseurl + "/projects?index=" + indexname;
+  return axios
+    .get(url)
+    .then((response) => response.data)
+    .catch((response) =>
+      console.log(`None object found on doing query: ${url}`)
+    );
+}
+
 export {
   getQueryResults,
   getIndices,
   getLoggedUser,
-  baseurl
+  baseurl,
+  getConfigProjectDefinitions
 }
