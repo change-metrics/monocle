@@ -47,10 +47,10 @@ class TestQueries(unittest.TestCase):
                     "2020-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                 ),
                 change_url="https://tests.com/unit/repo1/pull/1",
-                issue_type=["BUG", "CLIENT_IMPACT"],
-                issue_id="123",
-                issue_url="https://bugtracker.domain.dom/123",
-                issue_title="It does not work",
+                ttype=["BUG", "CLIENT_IMPACT"],
+                tid="123",
+                url="https://bugtracker.domain.dom/123",
+                title="It does not work",
                 priority="HIGH",
             ),
         ),
@@ -62,10 +62,10 @@ class TestQueries(unittest.TestCase):
                     "2020-01-02T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                 ),
                 change_url="https://tests.com/unit/repo1/pull/1",
-                issue_type=["FutureFeature"],
-                issue_id="124",
-                issue_url="https://bugtracker.domain.dom/124",
-                issue_title="It does not work",
+                ttype=["FutureFeature"],
+                tid="124",
+                url="https://bugtracker.domain.dom/124",
+                title="It does not work",
                 priority="MEDIUM",
             ),
         ),
@@ -77,10 +77,10 @@ class TestQueries(unittest.TestCase):
                     "2020-01-03T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                 ),
                 change_url="https://tests.com/unit/repo2/pull/2",
-                issue_type=["BUG", "DOC"],
-                issue_id="125",
-                issue_url="https://bugtracker.domain.dom/125",
-                issue_title="It does not work",
+                ttype=["BUG", "DOC"],
+                tid="125",
+                url="https://bugtracker.domain.dom/125",
+                title="It does not work",
                 priority="LOW",
             ),
         ),
@@ -333,17 +333,15 @@ class TestQueries(unittest.TestCase):
         ret = self.eldb.run_named_query("last_changes", ".*", params)
         self.assertEqual(ret["total"], 2, ret)
 
-        params = set_params({"task_issue_type": "BUG"})
+        params = set_params({"task_type": "BUG"})
         ret = self.eldb.run_named_query("last_changes", ".*", params)
         self.assertEqual(ret["total"], 2, ret)
 
-        params = set_params({"task_issue_type": "BUG,CLIENT_IMPACT"})
+        params = set_params({"task_type": "BUG,CLIENT_IMPACT"})
         ret = self.eldb.run_named_query("last_changes", ".*", params)
         self.assertEqual(ret["total"], 2, ret)
 
-        params = set_params(
-            {"task_priority": "LOW", "task_issue_type": "BUG,CLIENT_IMPACT"}
-        )
+        params = set_params({"task_priority": "LOW", "task_type": "BUG,CLIENT_IMPACT"})
         ret = self.eldb.run_named_query("last_changes", ".*", params)
         self.assertEqual(ret["total"], 1, ret)
 

@@ -241,10 +241,10 @@ tenants:
             {
                 "updated_at": "2021-04-09T12:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
-                "issue_type": ["RFE"],
-                "issue_id": "1234",
-                "issue_url": "https://issue-tracker.domain.com/1234",
-                "issue_title": "Implement feature XYZ",
+                "ttype": ["RFE"],
+                "tid": "1234",
+                "url": "https://issue-tracker.domain.com/1234",
+                "title": "Implement feature XYZ",
             }
         ]
         resp = self.client.post(url, json=task_data)
@@ -273,26 +273,26 @@ tenants:
             {
                 "updated_at": "2021-04-09T13:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
-                "issue_type": ["RFE", "Needed"],
-                "issue_id": "1234",
-                "issue_url": "https://issue-tracker.domain.com/1234",
-                "issue_title": "Implement feature XYZ",
+                "ttype": ["RFE", "Needed"],
+                "tid": "1234",
+                "url": "https://issue-tracker.domain.com/1234",
+                "title": "Implement feature XYZ",
             },
             {
                 "updated_at": "2021-04-09T12:00:00Z",
                 "change_url": "https://tests.com/unit/repo1/pull/1",
-                "issue_type": ["RFE"],
-                "issue_id": "1235",
-                "issue_url": "https://issue-tracker.domain.com/1235",
-                "issue_title": "Implement feature XYZ",
+                "ttype": ["RFE"],
+                "tid": "1235",
+                "url": "https://issue-tracker.domain.com/1235",
+                "title": "Implement feature XYZ",
             },
             {
                 "updated_at": "2021-04-09T15:00:00Z",
                 "change_url": "https://tests.com/unit/repomissing/pull/1",
-                "issue_type": ["RFE"],
-                "issue_id": "1235",
-                "issue_url": "https://issue-tracker.domain.com/421235",
-                "issue_title": "Implement feature XYZ",
+                "ttype": ["RFE"],
+                "tid": "1235",
+                "url": "https://issue-tracker.domain.com/421235",
+                "title": "Implement feature XYZ",
             },
         ]
         resp = self.client.post(url, json=task_data)
@@ -304,10 +304,7 @@ tenants:
         )
         new = json.loads(resp.data)["items"][0]
         self.assertIn("tasks_data", new)
-        std = [
-            (td["issue_url"], td["updated_at"], td["issue_type"])
-            for td in new["tasks_data"]
-        ]
+        std = [(td["url"], td["updated_at"], td["ttype"]) for td in new["tasks_data"]]
         self.assertListEqual(
             [
                 (

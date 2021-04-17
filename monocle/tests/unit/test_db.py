@@ -48,10 +48,10 @@ class TestQueries(unittest.TestCase):
                         "2020-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                     ),
                     change_url="https://tests.com/unit/repo1/pull/1",
-                    issue_type=["BUG"],
-                    issue_id="123",
-                    issue_url="https://bugtracker.domain.dom/123",
-                    issue_title="It does not work",
+                    ttype=["BUG"],
+                    tid="123",
+                    url="https://bugtracker.domain.dom/123",
+                    title="It does not work",
                 ),
             ),
             OrphanTaskDataForEL(
@@ -62,10 +62,10 @@ class TestQueries(unittest.TestCase):
                         "2020-01-02T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                     ),
                     change_url="https://tests.com/unit/repo1/pull/1",
-                    issue_type=["BUG"],
-                    issue_id="124",
-                    issue_url="https://bugtracker.domain.dom/124",
-                    issue_title="It does not work",
+                    ttype=["BUG"],
+                    tid="124",
+                    url="https://bugtracker.domain.dom/124",
+                    title="It does not work",
                 ),
             ),
             OrphanTaskDataForEL(
@@ -76,10 +76,10 @@ class TestQueries(unittest.TestCase):
                         "2020-01-03T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                     ),
                     change_url="https://tests.com/unit/repo2/pull/2",
-                    issue_type=["BUG"],
-                    issue_id="125",
-                    issue_url="https://bugtracker.domain.dom/125",
-                    issue_title="It does not work",
+                    ttype=["BUG"],
+                    tid="125",
+                    url="https://bugtracker.domain.dom/125",
+                    title="It does not work",
                 ),
             ),
         ]
@@ -145,10 +145,10 @@ class TestQueries(unittest.TestCase):
                         "2020-01-04T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
                     ),
                     change_url="https://tests.com/unit/repomissing/pull/1",
-                    issue_type=["BUG"],
-                    issue_id="126",
-                    issue_url="https://bugtracker.domain.dom/126",
-                    issue_title="It does not work",
+                    ttype=["BUG"],
+                    tid="126",
+                    url="https://bugtracker.domain.dom/126",
+                    title="It does not work",
                 ),
             ),
         )

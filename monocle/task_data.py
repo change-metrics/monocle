@@ -24,10 +24,10 @@ class TaskData:
     crawler_name: str
     updated_at: datetime
     change_url: str
-    issue_type: List[str]
-    issue_id: str
-    issue_url: str
-    issue_title: str
+    ttype: List[str]
+    tid: str
+    url: str
+    title: str
     severity: Optional[str] = None
     priority: Optional[str] = None
     score: Optional[int] = None
@@ -51,10 +51,10 @@ def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
         for m_field in (
             "updated_at",
             "change_url",
-            "issue_type",
-            "issue_id",
-            "issue_url",
-            "issue_title",
+            "ttype",
+            "tid",
+            "url",
+            "title",
         ):
             if m_field not in td:
                 err.append("Missing mandatory field: %s" % m_field)
@@ -64,15 +64,15 @@ def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
             datetime.strptime(td["updated_at"], dtf)
         except Exception as e:
             err.append("Wrong date format: %s" % e)
-        if not isinstance(td["issue_type"], list) or not all(
-            [isinstance(o, str) for o in td["issue_type"]]
+        if not isinstance(td["ttype"], list) or not all(
+            [isinstance(o, str) for o in td["ttype"]]
         ):
             err.append("issue_type must be a list of str")
         for str_field in (
             "change_url",
-            "issue_id",
-            "issue_url",
-            "issue_title",
+            "tid",
+            "url",
+            "title",
             "severity",
             "priority",
         ):
@@ -91,10 +91,10 @@ def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
             crawler_name=crawler_name,
             updated_at=datetime.strptime(td["updated_at"], dtf),
             change_url=td["change_url"],
-            issue_type=td["issue_type"],
-            issue_id=td["issue_id"],
-            issue_url=td["issue_url"],
-            issue_title=td["issue_title"],
+            ttype=td["ttype"],
+            tid=td["tid"],
+            url=td["url"],
+            title=td["title"],
             severity=td.get("severity"),
             priority=td.get("priority"),
             score=td.get("score"),
@@ -109,10 +109,10 @@ def createELTaskData(data: List) -> InputTaskData:
             crawler_name=td["crawler_name"],
             updated_at=td["updated_at"],
             change_url=td["change_url"],
-            issue_type=td["issue_type"],
-            issue_id=td["issue_id"],
-            issue_url=td["issue_url"],
-            issue_title=td["issue_title"],
+            ttype=td["ttype"],
+            tid=td["tid"],
+            url=td["url"],
+            title=td["title"],
             severity=td.get("severity"),
             priority=td.get("priority"),
             score=td.get("score"),

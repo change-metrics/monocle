@@ -224,7 +224,7 @@ def set_params(input: Namespace) -> Dict:
         "state",
         "change_ids",
         "target_branch",
-        "task_issue_type",
+        "task_type",
         "task_priority",
         "task_severity",
     ):
@@ -238,7 +238,7 @@ def set_params(input: Namespace) -> Dict:
         "exclude_approvals",
         "task_priority",
         "task_severity",
-        "task_issue_type",
+        "task_type",
     ):
         if params[sp]:
             params[sp] = params[sp].split(",")

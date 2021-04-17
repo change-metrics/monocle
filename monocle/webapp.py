@@ -320,7 +320,7 @@ def task_data():
                 prev_td = [
                     td
                     for td in mc[input_task_data.change_url]["td"]
-                    if td.issue_url == input_task_data.issue_url
+                    if td.url == input_task_data.url
                 ]
                 if len(prev_td) > 1:
                     raise RuntimeError("Multiple td match in previous td")
@@ -332,7 +332,7 @@ def task_data():
             else:
                 update_docs.append(
                     OrphanTaskDataForEL(
-                        _id=input_task_data.issue_url,
+                        _id=input_task_data.url,
                         task_data=input_task_data,
                     )
                 )

@@ -152,7 +152,7 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
     target_branch = params.get("target_branch")
     task_priority = params.get("task_priority")
     task_severity = params.get("task_severity")
-    task_issue_type = params.get("task_issue_type")
+    task_type = params.get("task_type")
     files = params.get("files")
     if gte:
         created_at_range["created_at"]["gte"] = gte
@@ -183,8 +183,8 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
         qfilter.append({"terms": {"tasks_data.priority": task_priority}})
     if task_severity:
         qfilter.append({"terms": {"tasks_data.severity": task_severity}})
-    if task_issue_type:
-        qfilter.append({"terms": {"tasks_data.issue_type": task_issue_type}})
+    if task_type:
+        qfilter.append({"terms": {"tasks_data.ttype": task_type}})
 
     must_not = []
     if exclude_authors:

@@ -362,16 +362,16 @@ class ELmonocleDB:
                 },
                 "tasks_data": {
                     "properties": {
+                        "tid": {"type": "keyword"},
+                        "ttype": {"type": "keyword"},
                         "crawler_name": {"type": "keyword"},
                         "updated_at": {"type": "date", "format": "date_time_no_millis"},
                         "change_url": {"type": "keyword"},
-                        "issue_type": {"type": "keyword"},
                         "severity": {"type": "keyword"},
                         "priority": {"type": "keyword"},
                         "score": {"type": "integer"},
-                        "issue_id": {"type": "keyword"},
-                        "issue_url": {"type": "keyword"},
-                        "issue_title": {
+                        "url": {"type": "keyword"},
+                        "title": {
                             "type": "text",
                             "fields": {
                                 "keyword": {"type": "keyword", "ignore_above": 8191}
