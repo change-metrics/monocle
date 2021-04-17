@@ -179,6 +179,18 @@ def main() -> None:
         help="Scope to changes containing an issue tracker link",
         choices=["generic", "github.com", "altassian.net"],
     )
+    parser_dbquery.add_argument(
+        "--task-priority",
+        help="Scope to changes related to task priorities (comma separated)",
+    )
+    parser_dbquery.add_argument(
+        "--task-severity",
+        help="Scope to changes related to task severities (comma separated)",
+    )
+    parser_dbquery.add_argument(
+        "--task-issue-type",
+        help="Scope to changes related to task type (comma separated)",
+    )
 
     args = parser.parse_args()
 

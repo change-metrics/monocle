@@ -200,32 +200,45 @@ def set_params(input: Namespace) -> Dict:
             return getattr(input, attr, default) or default
 
     params = {}
+
     params["gte"] = date_to_epoch_ml(getter("gte", None))
     params["lte"] = end_of_day_to_epoch_ml(getter("lte", None))
     params["on_cc_gte"] = date_to_epoch_ml(getter("on_cc_gte", None))
     params["on_cc_lte"] = end_of_day_to_epoch_ml(getter("on_cc_gte", None))
-    params["ec_same_date"] = getter("ec_same_date", False)
+
     params["etype"] = getter("type", ",".join(get_events_list())).split(",")
-    params["exclude_authors"] = getter("exclude_authors", None)
-    params["authors"] = getter("authors", None)
-    params["approvals"] = getter("approvals", None)
-    params["exclude_approvals"] = getter("exclude_approvals", None)
+
+    for e in ("ec_same_date", "tests_included", "self_merged"):
+        params[e] = getter(e, False)
+
     params["size"] = int(getter("size", 10))
     params["from"] = int(getter("from", 0))
-    params["files"] = getter("files", None)
-    params["state"] = getter("state", None)
-    params["tests_included"] = getter("tests_included", False)
-    params["self_merged"] = getter("self_merged", False)
-    params["has_issue_tracker_links"] = getter("has_issue_tracker_links", None)
-    params["change_ids"] = getter("change_ids", None)
-    params["target_branch"] = getter("target_branch", None)
-    params["project_definition"] = getter("project_definition", None)
+
+    for e in (
+        "exclude_authors",
+        "authors",
+        "approvals",
+        "has_issue_tracker_links",
+        "exclude_approvals",
+        "files",
+        "state",
+        "change_ids",
+        "target_branch",
+        "task_issue_type",
+        "task_priority",
+        "task_severity",
+    ):
+        params[e] = getter(e, None)
+
     for sp in (
         "change_ids",
         "exclude_authors",
         "authors",
         "approvals",
         "exclude_approvals",
+        "task_priority",
+        "task_severity",
+        "task_issue_type",
     ):
         if params[sp]:
             params[sp] = params[sp].split(",")
