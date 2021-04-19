@@ -36,31 +36,25 @@ const queryReducer = (state = initialState, action) => {
   return newState
 }
 
-function query () {
+function query() {
   return (dispatch) => {
     dispatch({ type: 'indices_loading' })
     return getIndices()
-      .then(response => {
-        dispatch(
-          {
-            type: 'indices',
-            value: response.data
-          }
-        )
+      .then((response) => {
+        dispatch({
+          type: 'indices',
+          value: response.data
+        })
       })
-      .catch(error => {
-        dispatch(
-          {
-            type: 'indices_error',
-            value: error.response
-          }
-        )
+      .catch((error) => {
+        dispatch({
+          type: 'indices_error',
+          value: error.response
+        })
       })
   }
 }
 
 export default queryReducer
 
-export {
-  query
-}
+export { query }

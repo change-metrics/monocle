@@ -32,12 +32,12 @@ import {
 } from './common'
 
 class FilesTreeMap extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'changes_by_file_map'
   }
 
-  getChildren (pair) {
+  getChildren(pair) {
     const res = { name: pair[0] }
     // filename, count
     if (Number.isInteger(pair[1])) {
@@ -45,7 +45,7 @@ class FilesTreeMap extends BaseQueryComponent {
     } else {
       // directory, [assoc(filename, count)]
       const assoc = {}
-      Object.entries(pair[1]).forEach(a => {
+      Object.entries(pair[1]).forEach((a) => {
         const p = a[1]
         // path, count
         const path = p[0].split('/')
@@ -62,12 +62,12 @@ class FilesTreeMap extends BaseQueryComponent {
           }
         }
       })
-      res.children = Object.entries(assoc).map(p => this.getChildren(p))
+      res.children = Object.entries(assoc).map((p) => this.getChildren(p))
     }
     return res
   }
 
-  prepareData (data) {
+  prepareData(data) {
     const proj = {}
     Object.entries(data.changes).forEach((f, v) => {
       const [repo, file] = f[0].split(':', 2)
@@ -79,11 +79,11 @@ class FilesTreeMap extends BaseQueryComponent {
     })
     return {
       name: 'repositories',
-      children: Object.entries(proj).map(pair => this.getChildren(pair))
+      children: Object.entries(proj).map((pair) => this.getChildren(pair))
     }
   }
 
-  renderData (data) {
+  renderData(data) {
     const graphStyle = {
       font: '50% sans-serif'
     }
@@ -105,18 +105,20 @@ FilesTreeMap.propTypes = {
 }
 
 class OpenedFilesTreeMap extends FilesTreeMap {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.graph_type = 'opened_changes_by_file_map'
     this.state.state = 'OPEN'
   }
 
-  render () {
+  render() {
     if (!this.props.opened_changes_by_file_map_loading) {
-      if (this.props.opened_changes_by_file_map_error || !this.props.opened_changes_by_file_map_result || !this.props.opened_changes_by_file_map_result.changes) {
-        return <ErrorBox
-          error={this.props.opened_changes_by_file_map_error}
-        />
+      if (
+        this.props.opened_changes_by_file_map_error ||
+        !this.props.opened_changes_by_file_map_result ||
+        !this.props.opened_changes_by_file_map_result.changes
+      ) {
+        return <ErrorBox error={this.props.opened_changes_by_file_map_error} />
       }
       return this.renderData(this.props.opened_changes_by_file_map_result)
     } else {
@@ -126,18 +128,20 @@ class OpenedFilesTreeMap extends FilesTreeMap {
 }
 
 class MergedFilesTreeMap extends FilesTreeMap {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.graph_type = 'merged_changes_by_file_map'
     this.state.state = 'MERGED'
   }
 
-  render () {
+  render() {
     if (!this.props.merged_changes_by_file_map_loading) {
-      if (this.props.merged_changes_by_file_map_error || !this.props.merged_changes_by_file_map_result || !this.props.merged_changes_by_file_map_result.changes) {
-        return <ErrorBox
-          error={this.props.merged_changes_by_file_map_error}
-        />
+      if (
+        this.props.merged_changes_by_file_map_error ||
+        !this.props.merged_changes_by_file_map_result ||
+        !this.props.merged_changes_by_file_map_result.changes
+      ) {
+        return <ErrorBox error={this.props.merged_changes_by_file_map_error} />
       }
       return this.renderData(this.props.merged_changes_by_file_map_result)
     } else {
@@ -146,13 +150,18 @@ class MergedFilesTreeMap extends FilesTreeMap {
   }
 }
 
-const openedFilesTreeMapMapStateToProps = state => addMap({}, state.QueryReducer, 'opened_changes_by_file_map')
-const mergedFilesTreeMapMapStateToProps = state => addMap({}, state.QueryReducer, 'merged_changes_by_file_map')
+const openedFilesTreeMapMapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'opened_changes_by_file_map')
+const mergedFilesTreeMapMapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'merged_changes_by_file_map')
 
-const COpenedFilesTreeMap = connect(openedFilesTreeMapMapStateToProps, mapDispatchToProps)(OpenedFilesTreeMap)
-const CMergedFilesTreeMap = connect(mergedFilesTreeMapMapStateToProps, mapDispatchToProps)(MergedFilesTreeMap)
+const COpenedFilesTreeMap = connect(
+  openedFilesTreeMapMapStateToProps,
+  mapDispatchToProps
+)(OpenedFilesTreeMap)
+const CMergedFilesTreeMap = connect(
+  mergedFilesTreeMapMapStateToProps,
+  mapDispatchToProps
+)(MergedFilesTreeMap)
 
-export {
-  COpenedFilesTreeMap,
-  CMergedFilesTreeMap
-}
+export { COpenedFilesTreeMap, CMergedFilesTreeMap }

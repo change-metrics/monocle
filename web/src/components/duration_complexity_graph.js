@@ -19,19 +19,21 @@ import moment from 'moment'
 import ComplexityGraph from './complexity_graph'
 
 class DurationComplexityGraph extends ComplexityGraph {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.xScaleType = 'logarithmic'
   }
 
-  getData (func, x) {
+  getData(func, x) {
     return { x: x.duration, y: x.complexity, r: 5 }
   }
 
-  xTickToLabel (q) {
+  xTickToLabel(q) {
     for (const tick in q.ticks) {
       if (q.ticks[tick] !== '') {
-        q.ticks[tick] = moment.duration(parseFloat(q.ticks[tick]), 'seconds').humanize()
+        q.ticks[tick] = moment
+          .duration(parseFloat(q.ticks[tick]), 'seconds')
+          .humanize()
       }
     }
   }

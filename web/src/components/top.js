@@ -37,15 +37,15 @@ import {
 } from './common'
 
 class TopEventsTable extends React.Component {
-  rowStyleFormat (average, value) {
+  rowStyleFormat(average, value) {
     if (value >= average) {
       return { color: 'green' }
     }
   }
 
-  render () {
+  render() {
     if (!this.props.data || !this.props.data.items) {
-      return <ErrorBox error={{ status: 0, data: 'Invalid data' }}/>
+      return <ErrorBox error={{ status: 0, data: 'Invalid data' }} />
     }
     return (
       <Row>
@@ -64,12 +64,22 @@ class TopEventsTable extends React.Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {this.props.data.items.map((x, index) =>
+                  {this.props.data.items.map((x, index) => (
                     <tr key={index}>
-                      <td style={this.rowStyleFormat(this.props.data.count_avg, x.doc_count)}>{index + 1}</td>
-                      <td><Link to={addUrlField('authors', x.key)}>{x.key}</Link></td>
+                      <td
+                        style={this.rowStyleFormat(
+                          this.props.data.count_avg,
+                          x.doc_count
+                        )}
+                      >
+                        {index + 1}
+                      </td>
+                      <td>
+                        <Link to={addUrlField('authors', x.key)}>{x.key}</Link>
+                      </td>
                       <td>{x.doc_count}</td>
-                    </tr>)}
+                    </tr>
+                  ))}
                 </tbody>
               </Table>
             </Card.Body>
@@ -89,18 +99,16 @@ TopEventsTable.propTypes = {
 }
 
 class MostActiveAuthorsStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'most_active_authors_stats'
     this.state.graph_type = 'most_active_authors_stats'
   }
 
-  render () {
+  render() {
     if (!this.props.most_active_authors_stats_loading) {
       if (this.props.most_active_authors_stats_error) {
-        return <ErrorBox
-          error={this.props.most_active_authors_stats_error}
-        />
+        return <ErrorBox error={this.props.most_active_authors_stats_error} />
       }
       const data = this.props.most_active_authors_stats_result
       return (
@@ -125,7 +133,11 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
                     />
                   </Col>
                 </Row>
-                <Row><Col><p></p></Col></Row>
+                <Row>
+                  <Col>
+                    <p></p>
+                  </Col>
+                </Row>
                 <Row>
                   <Col md>
                     <TopEventsTable
@@ -152,18 +164,16 @@ class MostActiveAuthorsStats extends BaseQueryComponent {
 }
 
 class MostReviewedAuthorsStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'most_reviewed_authors_stats'
     this.state.graph_type = 'most_reviewed_authors_stats'
   }
 
-  render () {
+  render() {
     if (!this.props.most_reviewed_authors_stats_loading) {
       if (this.props.most_reviewed_authors_stats_error) {
-        return <ErrorBox
-          error={this.props.most_reviewed_authors_stats_error}
-        />
+        return <ErrorBox error={this.props.most_reviewed_authors_stats_error} />
       }
       const data = this.props.most_reviewed_authors_stats_result
       return (
@@ -176,16 +186,10 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
               <Card.Body>
                 <Row>
                   <Col md>
-                    <TopEventsTable
-                      data={data.reviewed}
-                      title="Reviews"
-                    />
+                    <TopEventsTable data={data.reviewed} title="Reviews" />
                   </Col>
                   <Col md>
-                    <TopEventsTable
-                      data={data.commented}
-                      title="Comments"
-                    />
+                    <TopEventsTable data={data.commented} title="Comments" />
                   </Col>
                 </Row>
               </Card.Body>
@@ -200,18 +204,16 @@ class MostReviewedAuthorsStats extends BaseQueryComponent {
 }
 
 class NewContributorsStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'new_contributors'
     this.state.graph_type = 'new_contributors'
   }
 
-  render () {
+  render() {
     if (!this.props.new_contributors_loading) {
       if (this.props.new_contributors_error) {
-        return <ErrorBox
-          error={this.props.new_contributors_error}
-        />
+        return <ErrorBox error={this.props.new_contributors_error} />
       }
       const data = this.props.new_contributors_result
       return (
@@ -224,10 +226,7 @@ class NewContributorsStats extends BaseQueryComponent {
               <Card.Body>
                 <Row>
                   <Col>
-                    <TopEventsTable
-                      data={data}
-                      title="Active Authors"
-                    />
+                    <TopEventsTable data={data} title="Active Authors" />
                   </Col>
                 </Row>
               </Card.Body>
@@ -242,7 +241,7 @@ class NewContributorsStats extends BaseQueryComponent {
 }
 
 class TopStrengthsTable extends React.Component {
-  render () {
+  render() {
     return (
       <Row>
         <Col>
@@ -253,7 +252,7 @@ class TopStrengthsTable extends React.Component {
             <Card.Body>
               <Row>
                 <Col>
-                  <ConnectionDiagram data={this.props.data}/>
+                  <ConnectionDiagram data={this.props.data} />
                 </Col>
               </Row>
               <Row>
@@ -267,12 +266,22 @@ class TopStrengthsTable extends React.Component {
                       </tr>
                     </thead>
                     <tbody>
-                      {this.props.data.slice(0, 15).map((x, index) =>
+                      {this.props.data.slice(0, 15).map((x, index) => (
                         <tr key={index}>
                           <td>{index + 1}</td>
-                          <td><Link to={addUrlField('authors', x[0][0] + ',' + x[0][1])}>{x[0][0]} and {x[0][1]}</Link></td>
+                          <td>
+                            <Link
+                              to={addUrlField(
+                                'authors',
+                                x[0][0] + ',' + x[0][1]
+                              )}
+                            >
+                              {x[0][0]} and {x[0][1]}
+                            </Link>
+                          </td>
                           <td>{x[1]}</td>
-                        </tr>)}
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 </Col>
@@ -291,33 +300,26 @@ TopStrengthsTable.propTypes = {
 }
 
 class AuthorsPeersStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'peers_exchange_strength'
     this.state.graph_type = 'authors_peers_stats'
   }
 
-  render () {
+  render() {
     if (!this.props.authors_peers_stats_loading) {
       if (this.props.authors_peers_stats_error) {
-        return <ErrorBox
-          error={this.props.authors_peers_stats_error}
-        />
+        return <ErrorBox error={this.props.authors_peers_stats_error} />
       }
       const data = this.props.authors_peers_stats_result
-      return (
-        <TopStrengthsTable
-          data={data}
-          title="Peers strength"
-        />
-      )
+      return <TopStrengthsTable data={data} title="Peers strength" />
     } else {
       return <LoadingBox />
     }
   }
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
   const map = {}
 
   addMap(map, state.QueryReducer, 'new_contributors')
@@ -328,10 +330,18 @@ const mapStateToProps = state => {
   return map
 }
 
-const CMostActiveAuthorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats))
-const CNewContributorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats))
-const CMostReviewedAuthorsStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats))
-const CAuthorsPeersStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats))
+const CMostActiveAuthorsStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats)
+)
+const CNewContributorsStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats)
+)
+const CMostReviewedAuthorsStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats)
+)
+const CAuthorsPeersStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
+)
 
 export {
   CNewContributorsStats,

@@ -20,10 +20,7 @@ import { Provider } from 'react-redux'
 import { createMyStore } from './store'
 import App from './App'
 import { MemoryRouter } from 'react-router-dom'
-import {
-  toBeInTheDocument,
-  toHaveClass
-} from '@testing-library/jest-dom'
+import { toBeInTheDocument, toHaveClass } from '@testing-library/jest-dom'
 
 expect.extend({ toBeInTheDocument, toHaveClass })
 

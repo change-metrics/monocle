@@ -34,18 +34,16 @@ import {
 import Pie from './pie'
 
 class ApprovalsPie extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'approvals_top'
     this.state.graph_type = 'approvals_top'
   }
 
-  render () {
+  render() {
     if (!this.props.approvals_top_loading) {
       if (this.props.approvals_top_error) {
-        return <ErrorBox
-          error={this.props.approvals_top_error}
-        />
+        return <ErrorBox error={this.props.approvals_top_error} />
       }
       const palette = {
         'Code-Review+2': '#00ff9f',
@@ -96,10 +94,11 @@ class ApprovalsPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'approvals_top')
+const mapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'approvals_top')
 
-const CApprovalsPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ApprovalsPie))
+const CApprovalsPie = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ApprovalsPie)
+)
 
-export {
-  CApprovalsPie
-}
+export { CApprovalsPie }

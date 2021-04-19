@@ -34,7 +34,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint -f unix src"
+    "lint": "eslint -f unix src",
+    "format": "eslint --plugin prettier src"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -56,13 +57,16 @@
     "@testing-library/react": "^11.2.6",
     "@testing-library/user-event": "^13.1.2",
     "eslint": "^7.24.0",
+    "eslint-config-prettier": "^8.2.0",
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-react": "^7.23.2",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "eslint-plugin-standard": "^4.1.0"
+    "eslint-plugin-standard": "^4.1.0",
+    "prettier": "^2.2.1"
   }
 }

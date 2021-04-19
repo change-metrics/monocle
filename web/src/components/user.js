@@ -6,14 +6,16 @@ import { withRouter, Link } from 'react-router-dom'
 import { baseurl } from '../api'
 
 class LoginView extends React.Component {
-  render () {
+  render() {
     return (
-      <a className="nav-link" href={baseurl + '/login'}>Sign in with GitHub</a>
+      <a className="nav-link" href={baseurl + '/login'}>
+        Sign in with GitHub
+      </a>
     )
   }
 }
 
-const UserViewMapStateToProps = state => {
+const UserViewMapStateToProps = (state) => {
   return {
     logged_user_loading: state.LoggedUserReducer.logged_user_loading,
     logged_user_result: state.LoggedUserReducer.logged_user_result,
@@ -21,31 +23,39 @@ const UserViewMapStateToProps = state => {
   }
 }
 
-const UserViewDispatchToProps = dispatch => {
+const UserViewDispatchToProps = (dispatch) => {
   return {
     getLoggedUser: () => dispatch(loggedUser())
   }
 }
 
 class UserView extends React.Component {
-  componentDidMount () {
+  componentDidMount() {
     this.props.getLoggedUser()
   }
 
-  render () {
+  render() {
     if (this.props.logged_user_loading) {
       return ''
-    } else if (!this.props.logged_user_loading && this.props.logged_user_error) {
+    } else if (
+      !this.props.logged_user_loading &&
+      this.props.logged_user_error
+    ) {
       // Probably authentication is not configured
       return ''
-    } else if (!this.props.logged_user_loading && this.props.logged_user_result) {
+    } else if (
+      !this.props.logged_user_loading &&
+      this.props.logged_user_result
+    ) {
       return (
-        <Link className="nav-link" to="/">Hello {this.props.logged_user_result}</Link>
+        <Link className="nav-link" to="/">
+          Hello {this.props.logged_user_result}
+        </Link>
       )
     } else {
       // Authentication is activated but endpoint returned null meaning
       // there is not active user session
-      return (<LoginView />)
+      return <LoginView />
     }
   }
 }
@@ -58,9 +68,7 @@ UserView.propTypes = {
 }
 
 const CUserView = withRouter(
-  connect(UserViewMapStateToProps, UserViewDispatchToProps)(UserView))
+  connect(UserViewMapStateToProps, UserViewDispatchToProps)(UserView)
+)
 
-export {
-  CUserView,
-  LoginView
-}
+export { CUserView, LoginView }

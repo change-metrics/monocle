@@ -40,25 +40,27 @@ const TYPE_TO_COLOR = {
 }
 
 class TimelineGraph extends React.Component {
-  getTitle (event) {
+  getTitle(event) {
     return TYPE_TO_NAME[event.type] + ' by ' + event.author.muid
   }
 
-  getDate (event) {
+  getDate(event) {
     return moment(event.created_at).fromNow()
   }
 
-  render () {
-    return <Timeline>
-      {this.props.data.map((event, idx) => <TimelineEvent
-        title={this.getTitle(event)}
-        createdAt={this.getDate(event)}
-        key={idx}
-        iconColor={TYPE_TO_COLOR[event.type]}
-      />
-      )
-      }
-    </Timeline>
+  render() {
+    return (
+      <Timeline>
+        {this.props.data.map((event, idx) => (
+          <TimelineEvent
+            title={this.getTitle(event)}
+            createdAt={this.getDate(event)}
+            key={idx}
+            iconColor={TYPE_TO_COLOR[event.type]}
+          />
+        ))}
+      </Timeline>
+    )
   }
 }
 

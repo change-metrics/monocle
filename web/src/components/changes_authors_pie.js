@@ -34,23 +34,21 @@ import {
 import Pie from './pie'
 
 class ChangesAuthorsPie extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'authors_top'
     this.state.graph_type = 'authors_top'
   }
 
-  render () {
+  render() {
     if (!this.props.authors_top_loading) {
       if (this.props.authors_top_error) {
-        return <ErrorBox
-          error={this.props.authors_top_error}
-        />
+        return <ErrorBox error={this.props.authors_top_error} />
       }
       if (!this.props.authors_top_result) {
-        return <ErrorBox
-          error={{ data: 'No data for authors top', status: 0 }}
-        />
+        return (
+          <ErrorBox error={{ data: 'No data for authors top', status: 0 }} />
+        )
       }
       return (
         <Row>
@@ -80,8 +78,10 @@ class ChangesAuthorsPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'authors_top')
+const mapStateToProps = (state) => addMap({}, state.QueryReducer, 'authors_top')
 
-const CChangesAuthorsPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesAuthorsPie))
+const CChangesAuthorsPie = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ChangesAuthorsPie)
+)
 
 export default CChangesAuthorsPie

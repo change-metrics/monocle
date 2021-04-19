@@ -19,12 +19,12 @@ import PropTypes from 'prop-types'
 import ChordDiagram from 'react-chord-diagram'
 
 class ConnectionDiagram extends React.Component {
-  prepareData (data) {
+  prepareData(data) {
     const labels = []
     const assoc = {}
     const strippedLabels = []
     // Extract the labels and create a hash table for each pair
-    data.forEach(elt => {
+    data.forEach((elt) => {
       if (!labels.includes(elt[0][0])) {
         labels.push(elt[0][0])
       }
@@ -36,9 +36,9 @@ class ConnectionDiagram extends React.Component {
     // Build the matrix from the labels and the hash table
     const matrix = []
     let line
-    labels.forEach(a => {
+    labels.forEach((a) => {
       line = []
-      labels.forEach(b => {
+      labels.forEach((b) => {
         if (a === b) {
           line.push(0)
         } else {
@@ -52,27 +52,37 @@ class ConnectionDiagram extends React.Component {
       })
       matrix.push(line)
     })
-    labels.forEach(label => {
+    labels.forEach((label) => {
       strippedLabels.push(label.substring(0, 12) + '...')
     })
     return { matrix: matrix, labels: strippedLabels }
   }
 
-  render () {
+  render() {
     const data = this.prepareData(this.props.data)
     const graphStyle = {
       font: '50% sans-serif'
     }
-    return <ChordDiagram
-      matrix={data.matrix}
-      componentId={1}
-      groupLabels={data.labels}
-      groupColors={['#003f5c', '#374c80', '#7a5195', '#bc5090', '#ef5675', '#ff764a', '#ffa600']}
-      outerRadius={200}
-      innerRadius={170}
-      style={graphStyle}
-      resizeWithWindow={true}
-    />
+    return (
+      <ChordDiagram
+        matrix={data.matrix}
+        componentId={1}
+        groupLabels={data.labels}
+        groupColors={[
+          '#003f5c',
+          '#374c80',
+          '#7a5195',
+          '#bc5090',
+          '#ef5675',
+          '#ff764a',
+          '#ffa600'
+        ]}
+        outerRadius={200}
+        innerRadius={170}
+        style={graphStyle}
+        resizeWithWindow={true}
+      />
+    )
   }
 }
 
