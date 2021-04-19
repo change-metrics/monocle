@@ -6,20 +6,6 @@
 
 // Missing bindings from re-patternfly
 include Patternfly
-include Layout
-
-module Tooltip = {
-  @react.component @module("@patternfly/react-core")
-  external make: (
-    ~children: 'children,
-    ~position: @string
-    [
-      | @as("top") #Top
-      | @as("bottom") #Bottom
-    ]=?,
-    ~content: string=?,
-  ) => React.element = "Tooltip"
-}
 
 // Bindings for existing javascript
 type axiosResponse<'d> = {data: 'd}
@@ -29,6 +15,21 @@ type axiosGet<'data> = unit => axios<'data>
 @module("../api.js") external apiUrl: string = "baseurl"
 @module("../api.js")
 external getIndices: unit => axios<array<string>> = "getIndices"
+@val @scope(("window", "location"))
+external windowLocationSearch: string = "search"
+
+module URLSearchParams = {
+  // https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams
+  type t
+
+  @new external make: string => t = "URLSearchParams"
+  @send external toString: t => string = "toString"
+  @send external get: (t, string) => Js.Nullable.t<string> = "get"
+  @send external set: (t, string, string) => unit = "set"
+  @send external delete: (t, string) => unit = "delete"
+
+  let current = windowLocationSearch->make
+}
 
 // Network helpers
 
@@ -50,9 +51,50 @@ let useAutoGet = (get: axiosGet<'data>): option<result<'data, string>> => {
 }
 
 // Convenient functions
-let maybeRender = (pred, component) => pred ? component : React.null
+
+let str = React.string
+// Render component if the predicate is true
+let maybeRender = (pred: bool, component: React.element): React.element =>
+  pred ? component : React.null
+// Get an optional value with default
+let fromMaybe = (maybe: option<'a>, default: 'a): 'a => maybe->Belt.Option.getWithDefault(default)
+// Remove empty optional from a list
+let rec catMaybes = (xs: list<option<'a>>): list<'a> =>
+  switch xs {
+  | list{} => list{}
+  | list{None, ...rest} => catMaybes(rest)
+  | list{Some(x), ...rest} => catMaybes(rest)->Belt.List.add(x)
+  }
+// Join a list of string with a separator
+let rec concatSep = (xs: list<string>, sep: string): string =>
+  switch xs {
+  | list{} => ""
+  | list{x} => x
+  | list{x, y, ...rest} => x ++ sep ++ y ++ rest->concatSep(sep)
+  }
 
 // Monocle style:
+// an expandable panel
+module MExpandablePanel = {
+  @react.component
+  let make = (~title, ~children) => {
+    let (show, setShow) = React.useState(_ => false)
+    let toggleProps = {
+      "id": "toggle-button",
+      "aria-label": "Details",
+      "aria-labelledby": "titleId toggle-button",
+      "aria-expanded": !show,
+      "icon": React.null,
+    }
+    <Card isExpanded=show>
+      <CardHeader onExpand={(_, _) => setShow(v => !v)} toggleButtonProps={toggleProps}>
+        <CardTitle> {title->React.string} </CardTitle>
+      </CardHeader>
+      <CardExpandableContent> <CardBody> {children} </CardBody> </CardExpandableContent>
+    </Card>
+  }
+}
+
 // a grid with space between element
 module MGrid = {
   @react.component
