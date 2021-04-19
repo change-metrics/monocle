@@ -44,7 +44,7 @@ import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
 import CReposPie from './components/repos_pie'
 import CChangesAuthorsPie from './components/changes_authors_pie'
-import TopView from './top_view'
+import Indices from './components/Indices.bs.js'
 import Card from 'react-bootstrap/Card'
 
 class RootView extends React.Component {
@@ -411,7 +411,7 @@ class App extends React.Component {
             </Col>
           </Row>
           <Switch>
-            <Route exact path="/" component={TopView} />
+            <Route exact path="/" component={Indices} />
             <Route exact path="/login" component={LoginView} />
             <Route exact path="/user" component={CUserView} />
             <Route exact path="/:index/people" component={PeopleView} />
