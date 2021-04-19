@@ -17,7 +17,7 @@
 # base image
 FROM node:12-alpine
 
-RUN apk --no-cache add bash
+RUN apk --no-cache add bash make g++ python
 
 # set working directory
 WORKDIR /app
@@ -27,6 +27,7 @@ ENV PATH /app/node_modules/.bin:$PATH
 
 # copy files to install js modules
 COPY package.json /app/
+COPY bsconfig.json /app/
 COPY package-lock.json /app/
 
 # install dependencies
