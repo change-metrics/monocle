@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
 import ListGroup from 'react-bootstrap/ListGroup'
@@ -26,6 +25,7 @@ import Col from 'react-bootstrap/Col'
 
 import { connect } from 'react-redux'
 import { query } from './reducers/indices'
+import Indice from './components/Indice.bs.js'
 
 import { ErrorBox, LoadingBox } from './components/common'
 
@@ -57,7 +57,7 @@ class TopView extends React.Component {
               <ListGroup>
                 {this.props.indices.map((elt, idx) => (
                   <ListGroup.Item key={idx}>
-                    <Link to={'/' + elt}>{elt}</Link>
+                    <Indice name={elt} />
                   </ListGroup.Item>
                 ))}
               </ListGroup>

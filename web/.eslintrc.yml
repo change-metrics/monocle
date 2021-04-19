@@ -18,6 +18,7 @@ parserOptions:
 plugins:
   - react
   - prettier
+ignorePatterns: "**/*.bs.js"
 rules:
   prettier/prettier:
     - error

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@rescript/react": "^0.10.2",
     "axios": "^0.21.1",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.1",
@@ -31,11 +32,13 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "build": "npm run re:build && react-scripts build",
+    "test": "npm run re:build && react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "lint": "eslint -f unix src",
-    "format": "eslint --plugin prettier src"
+    "format": "eslint --plugin prettier src",
+    "re:build": "bsb -make-world",
+    "re:watch": "bsb -make-world -w"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -56,6 +59,7 @@
     "@testing-library/jest-dom": "^5.11.10",
     "@testing-library/react": "^11.2.6",
     "@testing-library/user-event": "^13.1.2",
+    "bs-platform": "^9.0.2",
     "eslint": "^7.24.0",
     "eslint-config-prettier": "^8.2.0",
     "eslint-config-standard": "^16.0.2",
