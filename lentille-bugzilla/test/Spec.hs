@@ -58,10 +58,10 @@ testBugToTaskData = testCase "bugToTaskData" go
       case toTaskData bz of
         (td : _tds) ->
           sequence_
-            [ tdIssueId td @=? "1791815",
+            [ tdTid td @=? "1791815",
               tdChangeUrl td @=? "https://review.opendev.org/764427",
-              tdIssueUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
-              tdIssueType td @=? ["FutureFeature"]
+              tdUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
+              tdTtype td @=? ["FutureFeature"]
             ]
         [] -> assertBool "No external bugs found" False
 

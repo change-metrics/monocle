@@ -165,10 +165,10 @@ instance ToJSON IsoTime where
 data TaskData = TaskData
   { tdUpdatedAt :: IsoTime,
     tdChangeUrl :: Text,
-    tdIssueType :: [Text],
-    tdIssueId :: Text,
-    tdIssueUrl :: Text,
-    tdIssueTitle :: Text,
+    tdTtype :: [Text],
+    tdTid :: Text,
+    tdUrl :: Text,
+    tdTitle :: Text,
     tdSeverity :: Text,
     tdPriority :: Text
   }
