@@ -39,9 +39,9 @@ module StatsToggle = {
   @react.component
   let make = (~showPies: bool, ~setShowPies) => {
     let statMessage = showPies ? "Collapse stats" : "Display stats"
-    <Card isCompact=true style=boxStyle onClick={_ => setShowPies(x => !x)}>
-      <CardBody> <p style=pStyle> {statMessage->React.string} </p> </CardBody>
-    </Card>
+    <MSimpleCard style=boxStyle onClick={_ => setShowPies(x => !x)}>
+      <p style=pStyle> {statMessage->React.string} </p>
+    </MSimpleCard>
   }
 }
 
@@ -58,11 +58,11 @@ module Pies = {
 @react.component
 let make = (~index: string) => {
   let (showPies, setShowPies) = React.useState(_ => false)
-  <Stack hasGutter=true>
-    <StackItem> <StatsToggle showPies setShowPies /> </StackItem>
-    {showPies ? <StackItem> <Pies index /> </StackItem> : React.null}
-    <StackItem> <CLastChangesNG index showComplexityGraph={showPies} /> </StackItem>
-  </Stack>
+  <MStack>
+    <MStackItem> <StatsToggle showPies setShowPies /> </MStackItem>
+    {showPies->maybeRender(<MStackItem> <Pies index /> </MStackItem>)}
+    <MStackItem> <CLastChangesNG index showComplexityGraph={showPies} /> </MStackItem>
+  </MStack>
 }
 
 let default = make
