@@ -95,32 +95,26 @@ const queryReducer = (state = initialState, action) => {
   return newState
 }
 
-function query (params) {
+function query(params) {
   return (dispatch) => {
     dispatch({ type: params.graph_type + '_QUERY_LOADING' })
     return getQueryResults(params)
-      .then(response => {
-        dispatch(
-          {
-            type: params.graph_type + '_QUERY_SUCCESS',
-            value: response.data
-          }
-        )
+      .then((response) => {
+        dispatch({
+          type: params.graph_type + '_QUERY_SUCCESS',
+          value: response.data
+        })
       })
-      .catch(error => {
+      .catch((error) => {
         console.log(error)
-        dispatch(
-          {
-            type: params.graph_type + '_QUERY_ERROR',
-            value: error.response
-          }
-        )
+        dispatch({
+          type: params.graph_type + '_QUERY_ERROR',
+          value: error.response
+        })
       })
   }
 }
 
 export default queryReducer
 
-export {
-  query
-}
+export { query }

@@ -27,10 +27,7 @@ import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
 import Footer from './components/footer'
-import {
-  LoginView,
-  CUserView
-} from './components/user'
+import { LoginView, CUserView } from './components/user'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import { CAuthorsHistoStats } from './components/authors_histo'
@@ -40,14 +37,8 @@ import {
   CMostReviewedAuthorsStats,
   CAuthorsPeersStats
 } from './components/top'
-import {
-  CHotChanges,
-  CColdChanges,
-  CLastChangesNG
-} from './components/changes'
-import {
-  CRepoChanges
-} from './components/repos_summary'
+import { CHotChanges, CColdChanges, CLastChangesNG } from './components/changes'
+import { CRepoChanges } from './components/repos_summary'
 import { CApprovalsPie } from './components/approvals'
 import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
@@ -57,22 +48,32 @@ import TopView from './top_view'
 import Card from 'react-bootstrap/Card'
 
 class RootView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CChangesLifeCycleStats
-              index={this.props.match.params.index} />
+            <p></p>
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CChangesReviewStats
-              index={this.props.match.params.index} />
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CChangesLifeCycleStats index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CChangesReviewStats index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -91,43 +92,60 @@ RootView.propTypes = {
 }
 
 class PeopleView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CAuthorsHistoStats
-              index={this.props.match.params.index} />
+            <p></p>
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <CAuthorsHistoStats index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
         <Row>
           <Col>
             <CMostActiveAuthorsStats
               search={this.props.location.search}
-              index={this.props.match.params.index} />
+              index={this.props.match.params.index}
+            />
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CMostReviewedAuthorsStats
-              index={this.props.match.params.index} />
+            <p></p>
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CAuthorsPeersStats
-              index={this.props.match.params.index} />
+            <CMostReviewedAuthorsStats index={this.props.match.params.index} />
           </Col>
         </Row>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CNewContributorsStats
-              index={this.props.match.params.index} />
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CAuthorsPeersStats index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CNewContributorsStats index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -146,14 +164,17 @@ PeopleView.propTypes = {
 }
 
 class ReposView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CRepoChanges
-              index={this.props.match.params.index} />
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CRepoChanges index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -171,14 +192,17 @@ ReposView.propTypes = {
 }
 
 class HotChangesView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CHotChanges
-              index={this.props.match.params.index} />
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CHotChanges index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -196,14 +220,17 @@ HotChangesView.propTypes = {
 }
 
 class ColdChangesView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
         <Row>
           <Col>
-            <CColdChanges
-              index={this.props.match.params.index} />
+            <p></p>
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <CColdChanges index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -221,14 +248,14 @@ ColdChangesView.propTypes = {
 }
 
 class ChangesView extends React.Component {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state = {
       open: false
     }
   }
 
-  render () {
+  render() {
     const BoxStyle = {
       backgroundColor: '#dbecff6b',
       textAlign: 'center',
@@ -241,49 +268,64 @@ class ChangesView extends React.Component {
     }
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
-        <Row
-          onClick={() => this.setState({ open: !this.state.open })}
-        >
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
+        <Row onClick={() => this.setState({ open: !this.state.open })}>
           <Col>
             <Card style={BoxStyle}>
-              <p style={PStyle}>{this.state.open ? 'Collapse stats' : 'Display stats'}</p>
+              <p style={PStyle}>
+                {this.state.open ? 'Collapse stats' : 'Display stats'}
+              </p>
             </Card>
           </Col>
         </Row>
-        {this.state.open
-          ? <React.Fragment>
-            <Row><Col><p></p></Col></Row>
+        {this.state.open ? (
+          <React.Fragment>
+            <Row>
+              <Col>
+                <p></p>
+              </Col>
+            </Row>
             <Row>
               <Col md>
                 <CChangesAuthorsPie
                   history={this.props.history}
-                  index={this.props.match.params.index} />
+                  index={this.props.match.params.index}
+                />
               </Col>
               <Col md>
                 <CReposPie
                   history={this.props.history}
-                  index={this.props.match.params.index} />
+                  index={this.props.match.params.index}
+                />
               </Col>
               <Col md>
                 <CApprovalsPie
                   history={this.props.history}
-                  index={this.props.match.params.index} />
+                  index={this.props.match.params.index}
+                />
               </Col>
             </Row>
           </React.Fragment>
-          : null
-        }
-        <Row><Col><p></p></Col></Row>
+        ) : null}
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
         <Row>
           <Col>
             <CLastChangesNG
               history={this.props.history}
               index={this.props.match.params.index}
-              showComplexityGraph={this.state.open} />
+              showComplexityGraph={this.state.open}
+            />
           </Col>
         </Row>
-      </React.Fragment >
+      </React.Fragment>
     )
   }
 }
@@ -298,10 +340,14 @@ ChangesView.propTypes = {
 }
 
 class ChangeView extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
-        <Row><Col><p></p></Col></Row>
+        <Row>
+          <Col>
+            <p></p>
+          </Col>
+        </Row>
         <Row>
           <Col>
             <CChange
@@ -325,58 +371,82 @@ ChangeView.propTypes = {
 }
 
 class FiltersFormBox extends React.Component {
-  render () {
-    return <Switch>
-      <Route exact path='/' />
-      <Route path='/:index/change/' />
-      <Route path='/:index/repos/'>
-        <CFiltersForm />
-      </Route>
-      <Route path='/:index/changes/'>
-        <CFiltersForm
-          showChangeParams={true}
-        />
-      </Route>
-      <Route path='/:index/hot-changes/'>
-        <CFiltersForm />
-      </Route>
-      <Route path='/:index/cold-changes/'>
-        <CFiltersForm />
-      </Route>
-      <Route path='/' component={CFiltersForm} />
-    </Switch>
+  render() {
+    return (
+      <Switch>
+        <Route exact path="/" />
+        <Route path="/:index/change/" />
+        <Route path="/:index/repos/">
+          <CFiltersForm />
+        </Route>
+        <Route path="/:index/changes/">
+          <CFiltersForm showChangeParams={true} />
+        </Route>
+        <Route path="/:index/hot-changes/">
+          <CFiltersForm />
+        </Route>
+        <Route path="/:index/cold-changes/">
+          <CFiltersForm />
+        </Route>
+        <Route path="/" component={CFiltersForm} />
+      </Switch>
+    )
   }
 }
 
 class App extends React.Component {
-  render () {
+  render() {
     return (
       <React.Fragment>
         <TopMenu />
         <Container>
-          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
           <Row>
             <Col>
               <FiltersFormBox />
             </Col>
           </Row>
           <Switch>
-            <Route exact path='/' component={TopView} />
-            <Route exact path='/login' component={LoginView} />
-            <Route exact path='/user' component={CUserView} />
-            <Route exact path='/:index/people' component={PeopleView} />
-            <Route exact path='/:index/repos' component={ReposView} />
-            <Route exact path='/:index' component={RootView} />
-            <Route path='/:index/changes' component={ChangesView} />
-            <Route path='/:index/hot-changes' component={HotChangesView} />
-            <Route path='/:index/cold-changes' component={ColdChangesView} />
-            <Route path='/:index/change/:change' component={ChangeView} />
+            <Route exact path="/" component={TopView} />
+            <Route exact path="/login" component={LoginView} />
+            <Route exact path="/user" component={CUserView} />
+            <Route exact path="/:index/people" component={PeopleView} />
+            <Route exact path="/:index/repos" component={ReposView} />
+            <Route exact path="/:index" component={RootView} />
+            <Route path="/:index/changes" component={ChangesView} />
+            <Route path="/:index/hot-changes" component={HotChangesView} />
+            <Route path="/:index/cold-changes" component={ColdChangesView} />
+            <Route path="/:index/change/:change" component={ChangeView} />
           </Switch>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
-          <Row><Col><p></p></Col></Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
         </Container>
         <Footer />
       </React.Fragment>

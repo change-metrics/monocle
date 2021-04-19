@@ -38,14 +38,14 @@ import { Line } from 'react-chartjs-2'
 
 import moment from 'moment'
 
-function secondsToDhms (seconds) {
+function secondsToDhms(seconds) {
   const d = moment.duration()
   d.add(seconds, 'second')
   return d.humanize()
 }
 
 class ChangeReviewEventsHisto extends React.Component {
-  prepareDataSet (histos) {
+  prepareDataSet(histos) {
     const eventNameMapping = {
       ChangeCommentedEvent: {
         label: 'Commented',
@@ -64,26 +64,24 @@ class ChangeReviewEventsHisto extends React.Component {
     }
     const _histos = Object.entries(histos)
     const data = {
-      labels: histos.ChangeCommentedEvent[0].map(x => x.key_as_string),
+      labels: histos.ChangeCommentedEvent[0].map((x) => x.key_as_string),
       datasets: []
     }
-    _histos.forEach(histo => {
-      data.datasets.push(
-        {
-          label: eventNameMapping[histo[0]].label,
-          data: histo[1][0].map(x => x.doc_count),
-          lineTension: 0.5,
-          pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
-          pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
-          backgroundColor: eventNameMapping[histo[0]].backgroundColor,
-          borderColor: eventNameMapping[histo[0]].borderColor
-        }
-      )
+    _histos.forEach((histo) => {
+      data.datasets.push({
+        label: eventNameMapping[histo[0]].label,
+        data: histo[1][0].map((x) => x.doc_count),
+        lineTension: 0.5,
+        pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
+        pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
+        backgroundColor: eventNameMapping[histo[0]].backgroundColor,
+        borderColor: eventNameMapping[histo[0]].borderColor
+      })
     })
     return data
   }
 
-  render () {
+  render() {
     const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
@@ -95,15 +93,13 @@ class ChangeReviewEventsHisto extends React.Component {
                 width={100}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 90 : 68}
-                options={
-                  {
-                    legend: {
-                      labels: {
-                        boxWidth: 30
-                      }
+                options={{
+                  legend: {
+                    labels: {
+                      boxWidth: 30
                     }
                   }
-                }
+                }}
               />
             </Card.Body>
           </Card>
@@ -121,18 +117,16 @@ ChangeReviewEventsHisto.propTypes = {
 }
 
 class ChangesReviewStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'changes_review_stats'
     this.state.graph_type = 'changes_review_stats'
   }
 
-  render () {
+  render() {
     if (!this.props.changes_review_stats_loading) {
       if (this.props.changes_review_stats_error) {
-        return <ErrorBox
-          error={this.props.changes_review_stats_error}
-        />
+        return <ErrorBox error={this.props.changes_review_stats_error} />
       }
       const data = this.props.changes_review_stats_result
       return (
@@ -147,25 +141,30 @@ class ChangesReviewStats extends BaseQueryComponent {
                   <Col md={4}>
                     <ListGroup>
                       <ListGroup.Item>
-                        {data.ChangeCommentedEvent.events_count} changes commented by {data.ChangeCommentedEvent.authors_count} authors
+                        {data.ChangeCommentedEvent.events_count} changes
+                        commented by {data.ChangeCommentedEvent.authors_count}{' '}
+                        authors
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ChangeReviewedEvent.events_count} changes reviewed by {data.ChangeReviewedEvent.authors_count} authors
+                        {data.ChangeReviewedEvent.events_count} changes reviewed
+                        by {data.ChangeReviewedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Mean time for the first comment:{' '}
-                        {secondsToDhms(data.first_event_delay.comment.first_event_delay_avg)}
+                        {secondsToDhms(
+                          data.first_event_delay.comment.first_event_delay_avg
+                        )}
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Mean time for the first review:{' '}
-                        {secondsToDhms(data.first_event_delay.review.first_event_delay_avg)}
+                        {secondsToDhms(
+                          data.first_event_delay.review.first_event_delay_avg
+                        )}
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
                   <Col md={8}>
-                    <ChangeReviewEventsHisto
-                      data={data.histos}
-                    />
+                    <ChangeReviewEventsHisto data={data.histos} />
                   </Col>
                 </Row>
               </Card.Body>
@@ -179,10 +178,11 @@ class ChangesReviewStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'changes_review_stats')
+const mapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'changes_review_stats')
 
-const CChangesReviewStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats))
+const CChangesReviewStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats)
+)
 
-export {
-  CChangesReviewStats
-}
+export { CChangesReviewStats }

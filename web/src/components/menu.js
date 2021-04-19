@@ -25,22 +25,66 @@ import PropTypes from 'prop-types'
 import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
 
-const TITLE = (window.TITLE && window.TITLE !== '__TITLE__') ? window.TITLE : (process.env.REACT_APP_TITLE || 'Monocle')
+const TITLE =
+  window.TITLE && window.TITLE !== '__TITLE__'
+    ? window.TITLE
+    : process.env.REACT_APP_TITLE || 'Monocle'
 
 class IndexMenu extends React.Component {
-  render () {
+  render() {
     const search = window.location.search
-    document.title = this.props.match.params.index ? TITLE + '/' + this.props.match.params.index : TITLE
+    document.title = this.props.match.params.index
+      ? TITLE + '/' + this.props.match.params.index
+      : TITLE
     return (
       <Navbar.Collapse id="basic-navbar-nav">
         <Nav className="mr-auto">
-          <Link className="nav-link" to={'/' + this.props.match.params.index + search}>Main</Link>
-          <Link className="nav-link" to={'/' + this.props.match.params.index + '/people' + search}>People</Link>
-          <Link className="nav-link" to={'/' + this.props.match.params.index + '/repos' + search}>Repositories</Link>
+          <Link
+            className="nav-link"
+            to={'/' + this.props.match.params.index + search}
+          >
+            Main
+          </Link>
+          <Link
+            className="nav-link"
+            to={'/' + this.props.match.params.index + '/people' + search}
+          >
+            People
+          </Link>
+          <Link
+            className="nav-link"
+            to={'/' + this.props.match.params.index + '/repos' + search}
+          >
+            Repositories
+          </Link>
           <NavDropdown title="Changes" id="changes-nav-dropdown">
-            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/changes' + search)}>Browse changes</NavDropdown.Item>
-            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/hot-changes' + search)}>Hot changes</NavDropdown.Item>
-            <NavDropdown.Item onClick={() => this.props.history.push('/' + this.props.match.params.index + '/cold-changes' + search)}>Cold changes</NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/changes' + search
+                )
+              }
+            >
+              Browse changes
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/hot-changes' + search
+                )
+              }
+            >
+              Hot changes
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/cold-changes' + search
+                )
+              }
+            >
+              Cold changes
+            </NavDropdown.Item>
           </NavDropdown>
         </Nav>
       </Navbar.Collapse>
@@ -60,17 +104,19 @@ IndexMenu.propTypes = {
 }
 
 class TopMenu extends React.Component {
-  render () {
+  render() {
     document.title = TITLE
     return (
       <React.Fragment>
         <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
           <Navbar.Brand>
-            <Link className="navbar-brand" to="/">{TITLE}</Link>
+            <Link className="navbar-brand" to="/">
+              {TITLE}
+            </Link>
           </Navbar.Brand>
           <Switch>
-            <Route exact path='/' />
-            <Route path='/:index' component={IndexMenu} />
+            <Route exact path="/" />
+            <Route path="/:index" component={IndexMenu} />
           </Switch>
           <Nav className="ml-auto">
             <CUserView />

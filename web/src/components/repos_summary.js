@@ -35,7 +35,7 @@ import {
 } from './common'
 
 class RepoChangesTable extends React.Component {
-  createLink (index, name, type, field) {
+  createLink(index, name, type, field) {
     const search = new URLSearchParams(window.location.search)
     if (type === 'ALL') {
       search.delete('state')
@@ -48,7 +48,7 @@ class RepoChangesTable extends React.Component {
     return <Link to={newurl}>{linkName}</Link>
   }
 
-  render () {
+  render() {
     return (
       <Row>
         <Col>
@@ -68,14 +68,45 @@ class RepoChangesTable extends React.Component {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.keys(this.props.data.summary).map((name, index) =>
+                  {Object.keys(this.props.data.summary).map((name, index) => (
                     <tr key={index}>
-                      <td align="center"><Link to={addUrlField('repository', name)}>{name}</Link></td>
-                      <td align="center">{this.createLink(this.props.index, name, 'ALL', 'changes')}</td>
-                      <td align="center">{this.createLink(this.props.index, name, 'OPEN', 'changes_open')}</td>
-                      <td align="center">{this.createLink(this.props.index, name, 'MERGED', 'changes_merged')}</td>
-                      <td align="center">{this.createLink(this.props.index, name, 'CLOSED', 'changes_abandoned')}</td>
-                    </tr>)}
+                      <td align="center">
+                        <Link to={addUrlField('repository', name)}>{name}</Link>
+                      </td>
+                      <td align="center">
+                        {this.createLink(
+                          this.props.index,
+                          name,
+                          'ALL',
+                          'changes'
+                        )}
+                      </td>
+                      <td align="center">
+                        {this.createLink(
+                          this.props.index,
+                          name,
+                          'OPEN',
+                          'changes_open'
+                        )}
+                      </td>
+                      <td align="center">
+                        {this.createLink(
+                          this.props.index,
+                          name,
+                          'MERGED',
+                          'changes_merged'
+                        )}
+                      </td>
+                      <td align="center">
+                        {this.createLink(
+                          this.props.index,
+                          name,
+                          'CLOSED',
+                          'changes_abandoned'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </Table>
             </Card.Body>
@@ -95,18 +126,16 @@ RepoChangesTable.propTypes = {
 }
 
 class RepoChanges extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'repos_summary'
     this.state.graph_type = 'repos_summary'
   }
 
-  render () {
+  render() {
     if (!this.props.repos_summary_loading) {
       if (this.props.repos_summary_error) {
-        return <ErrorBox
-          error={this.props.repos_summary_error}
-        />
+        return <ErrorBox error={this.props.repos_summary_error} />
       }
       const data = this.props.repos_summary_result
       return (
@@ -122,10 +151,11 @@ class RepoChanges extends BaseQueryComponent {
   }
 }
 
-const reposTopMergedMapStateToProps = state => addMap({}, state.QueryReducer, 'repos_summary')
+const reposTopMergedMapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'repos_summary')
 
-const CRepoChanges = withRouter(connect(reposTopMergedMapStateToProps, mapDispatchToProps)(RepoChanges))
+const CRepoChanges = withRouter(
+  connect(reposTopMergedMapStateToProps, mapDispatchToProps)(RepoChanges)
+)
 
-export {
-  CRepoChanges
-}
+export { CRepoChanges }

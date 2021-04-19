@@ -34,23 +34,19 @@ import {
 import Pie from './pie'
 
 class ReposPie extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'repos_top'
     this.state.graph_type = 'repos_top'
   }
 
-  render () {
+  render() {
     if (!this.props.repos_top_loading) {
       if (this.props.repos_top_error) {
-        return <ErrorBox
-          error={this.props.repos_top_error}
-        />
+        return <ErrorBox error={this.props.repos_top_error} />
       }
       if (!this.props.repos_top_result) {
-        return <ErrorBox
-          error={{ data: 'No data for ReposPie', status: 0 }}
-        />
+        return <ErrorBox error={{ data: 'No data for ReposPie', status: 0 }} />
       }
       return (
         <Row>
@@ -80,8 +76,10 @@ class ReposPie extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'repos_top')
+const mapStateToProps = (state) => addMap({}, state.QueryReducer, 'repos_top')
 
-const CReposPie = withRouter(connect(mapStateToProps, mapDispatchToProps)(ReposPie))
+const CReposPie = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ReposPie)
+)
 
 export default CReposPie

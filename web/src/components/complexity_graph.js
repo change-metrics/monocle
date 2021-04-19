@@ -20,34 +20,40 @@ import { Bubble } from 'react-chartjs-2'
 import moment from 'moment'
 
 class ComplexityGraph extends React.Component {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state = { xScaleType: 'linear' }
     this.handleClick.bind(this)
   }
 
-  tooltipLabel (item, data) {
+  tooltipLabel(item, data) {
     return data[item.index].complexity + ': ' + data[item.index].title
   }
 
-  handleClick (item) {
-    this.props.history.push('/' + this.props.index + '/change/' + item.change_id + window.location.search)
+  handleClick(item) {
+    this.props.history.push(
+      '/' +
+        this.props.index +
+        '/change/' +
+        item.change_id +
+        window.location.search
+    )
   }
 
-  getData (func, x) {
+  getData(func, x) {
     return { x: moment(func(x)).format('X'), y: x.complexity, r: 5 }
   }
 
-  xTickToLabel (q) {
+  xTickToLabel(q) {
     for (const tick in q.ticks) {
       q.ticks[tick] = moment.unix(q.ticks[tick]).format('YYYY-MM-DD HH:mm')
     }
   }
 
-  render () {
-    const data = this.props.data.items.map(
-      x => { return this.getData(this.props.timeFunc, x) }
-    )
+  render() {
+    const data = this.props.data.items.map((x) => {
+      return this.getData(this.props.timeFunc, x)
+    })
     const bubbleData = {
       datasets: [
         {
@@ -81,26 +87,33 @@ class ComplexityGraph extends React.Component {
         }
       },
       scales: {
-        xAxes: [{
-          type: this.state.xScaleType,
-          afterTickToLabelConversion: this.xTickToLabel
-        }],
-        yAxes: [{
-          type: 'logarithmic',
-          afterTickToLabelConversion: function (q) {
-            for (const tick in q.ticks) {
-              if (q.ticks[tick] !== '') {
-                q.ticks[tick] = parseFloat(q.ticks[tick])
+        xAxes: [
+          {
+            type: this.state.xScaleType,
+            afterTickToLabelConversion: this.xTickToLabel
+          }
+        ],
+        yAxes: [
+          {
+            type: 'logarithmic',
+            afterTickToLabelConversion: function (q) {
+              for (const tick in q.ticks) {
+                if (q.ticks[tick] !== '') {
+                  q.ticks[tick] = parseFloat(q.ticks[tick])
+                }
               }
             }
           }
-        }]
+        ]
       }
     }
 
     return (
-      <Bubble data={bubbleData}
-        getElementsAtEvent={(elems) => { this.handleClick(this.props.data.items[elems[0]._index]) }}
+      <Bubble
+        data={bubbleData}
+        getElementsAtEvent={(elems) => {
+          this.handleClick(this.props.data.items[elems[0]._index])
+        }}
         options={options}
       />
     )

@@ -39,7 +39,7 @@ import {
 } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
-  prepareDataSet (histos) {
+  prepareDataSet(histos) {
     const createdColor = '135,255,149'
     const updatedColor = '153,102,102'
     const mergedColor = '169,135,255'
@@ -70,44 +70,44 @@ class ChangeLifeCycleEventsHisto extends React.Component {
 
     const metaData = Object.entries(eventNameMapping)
     const data = {
-      labels: histos.ChangeCreatedEvent[0].map(x => x.key_as_string),
+      labels: histos.ChangeCreatedEvent[0].map((x) => x.key_as_string),
       datasets: []
     }
-    metaData.forEach(desc => {
-      data.datasets.push(
-        {
-          label: desc[1].label,
-          data: histos[desc[0]][0].map(x => x.doc_count),
-          lineTension: 0.5,
-          pointBorderColor: desc[1].pointBorderColor,
-          pointBackgroundColor: desc[1].pointBackgroundColor,
-          backgroundColor: desc[1].backgroundColor,
-          borderColor: desc[1].borderColor
-        }
-      )
+    metaData.forEach((desc) => {
+      data.datasets.push({
+        label: desc[1].label,
+        data: histos[desc[0]][0].map((x) => x.doc_count),
+        lineTension: 0.5,
+        pointBorderColor: desc[1].pointBorderColor,
+        pointBackgroundColor: desc[1].pointBackgroundColor,
+        backgroundColor: desc[1].backgroundColor,
+        borderColor: desc[1].borderColor
+      })
     })
     // merge ChangeCommitForcePushedEvent and ChangeCommitPushedEvent together
     const merged = []
-    for (let idx = 0; idx < histos.ChangeCommitForcePushedEvent[0].length; idx++) {
+    for (
+      let idx = 0;
+      idx < histos.ChangeCommitForcePushedEvent[0].length;
+      idx++
+    ) {
       const d1 = histos.ChangeCommitForcePushedEvent[0][idx]
       const d2 = histos.ChangeCommitPushedEvent[0][idx]
       merged.push(d1.doc_count + d2.doc_count)
     }
-    data.datasets.push(
-      {
-        label: 'Updated',
-        data: merged,
-        lineTension: 0.5,
-        pointBorderColor: 'rgba(' + updatedColor + ',1)',
-        pointBackgroundColor: '#fff',
-        backgroundColor: 'rgba(' + updatedColor + ',0.4)',
-        borderColor: 'rgba(' + updatedColor + ',1)'
-      }
-    )
+    data.datasets.push({
+      label: 'Updated',
+      data: merged,
+      lineTension: 0.5,
+      pointBorderColor: 'rgba(' + updatedColor + ',1)',
+      pointBackgroundColor: '#fff',
+      backgroundColor: 'rgba(' + updatedColor + ',0.4)',
+      borderColor: 'rgba(' + updatedColor + ',1)'
+    })
     return data
   }
 
-  render () {
+  render() {
     const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
@@ -120,15 +120,13 @@ class ChangeLifeCycleEventsHisto extends React.Component {
                 width={100}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 90 : 68}
-                options={
-                  {
-                    legend: {
-                      labels: {
-                        boxWidth: 30
-                      }
+                options={{
+                  legend: {
+                    labels: {
+                      boxWidth: 30
                     }
                   }
-                }
+                }}
               />
             </Card.Body>
           </Card>
@@ -148,24 +146,22 @@ ChangeLifeCycleEventsHisto.propTypes = {
 }
 
 class ChangesLifeCycleStats extends BaseQueryComponent {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state.name = 'changes_lifecycle_stats'
     this.state.graph_type = 'changes_lifecycle_stats'
   }
 
-  getSearchString (state) {
+  getSearchString(state) {
     const search = new URLSearchParams(window.location.search)
     search.set('state', state)
     return '?' + search.toString()
   }
 
-  render () {
+  render() {
     if (!this.props.changes_lifecycle_stats_loading) {
       if (this.props.changes_lifecycle_stats_error) {
-        return <ErrorBox
-          error={this.props.changes_lifecycle_stats_error}
-        />
+        return <ErrorBox error={this.props.changes_lifecycle_stats_error} />
       }
       const data = this.props.changes_lifecycle_stats_result
       return (
@@ -180,44 +176,90 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
                   <Col md={4}>
                     <ListGroup>
                       <ListGroup.Item>
-                        {data.ChangeCreatedEvent.events_count} changes created by {data.ChangeCreatedEvent.authors_count} authors
+                        {data.ChangeCreatedEvent.events_count} changes created
+                        by {data.ChangeCreatedEvent.authors_count} authors
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('OPEN')}>{data.opened} opened changes</Link>
+                        <Link
+                          to={
+                            '/' +
+                            this.props.index +
+                            '/changes' +
+                            this.getSearchString('OPEN')
+                          }
+                        >
+                          {data.opened} opened changes
+                        </Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('CLOSED')}>{data.abandoned} changes abandoned: {data.ratios['abandoned/created']}%</Link>
+                        <Link
+                          to={
+                            '/' +
+                            this.props.index +
+                            '/changes' +
+                            this.getSearchString('CLOSED')
+                          }
+                        >
+                          {data.abandoned} changes abandoned:{' '}
+                          {data.ratios['abandoned/created']}%
+                        </Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('MERGED')}>{data.merged} changes merged: {data.ratios['merged/created']}%</Link>
+                        <Link
+                          to={
+                            '/' +
+                            this.props.index +
+                            '/changes' +
+                            this.getSearchString('MERGED')
+                          }
+                        >
+                          {data.merged} changes merged:{' '}
+                          {data.ratios['merged/created']}%
+                        </Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        <Link to={'/' + this.props.index + '/changes' + this.getSearchString('SELF-MERGED')}>{data.self_merged} changes self merged: {data.ratios['self_merged/created']}%</Link>
+                        <Link
+                          to={
+                            '/' +
+                            this.props.index +
+                            '/changes' +
+                            this.getSearchString('SELF-MERGED')
+                          }
+                        >
+                          {data.self_merged} changes self merged:{' '}
+                          {data.ratios['self_merged/created']}%
+                        </Link>
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Mean Time To Merge: {moment.duration(data.duration, 'seconds').humanize()}
+                        Mean Time To Merge:{' '}
+                        {moment.duration(data.duration, 'seconds').humanize()}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        Median Deviation of TTM: {moment.duration(data.duration_variability, 'seconds').humanize()}
+                        Median Deviation of TTM:{' '}
+                        {moment
+                          .duration(data.duration_variability, 'seconds')
+                          .humanize()}
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ChangeCommitForcePushedEvent.events_count + data.ChangeCommitPushedEvent.events_count} updates of changes
+                        {data.ChangeCommitForcePushedEvent.events_count +
+                          data.ChangeCommitPushedEvent.events_count}{' '}
+                        updates of changes
                       </ListGroup.Item>
                       <ListGroup.Item>
                         Changes with tests: {data.tests}%
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.ratios['iterations/created']} iterations per change
+                        {data.ratios['iterations/created']} iterations per
+                        change
                       </ListGroup.Item>
                       <ListGroup.Item>
-                        {data.commits ? data.commits.toFixed(2) : 'no'} commits per change
+                        {data.commits ? data.commits.toFixed(2) : 'no'} commits
+                        per change
                       </ListGroup.Item>
                     </ListGroup>
                   </Col>
                   <Col md={8}>
-                    <ChangeLifeCycleEventsHisto
-                      data={data.histos}
-                    />
+                    <ChangeLifeCycleEventsHisto data={data.histos} />
                   </Col>
                 </Row>
               </Card.Body>
@@ -231,10 +273,11 @@ class ChangesLifeCycleStats extends BaseQueryComponent {
   }
 }
 
-const mapStateToProps = state => addMap({}, state.QueryReducer, 'changes_lifecycle_stats')
+const mapStateToProps = (state) =>
+  addMap({}, state.QueryReducer, 'changes_lifecycle_stats')
 
-const CChangesLifeCycleStats = withRouter(connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats))
+const CChangesLifeCycleStats = withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats)
+)
 
-export {
-  CChangesLifeCycleStats
-}
+export { CChangesLifeCycleStats }

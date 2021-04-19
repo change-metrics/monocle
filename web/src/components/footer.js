@@ -20,14 +20,23 @@ import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav'
 
 class Footer extends React.Component {
-  render () {
+  render() {
     // eslint-disable-next-line react/jsx-no-target-blank
-    const a = <a className="nav-link" href="https://github.com/change-metrics/monocle" target="_blank" rel="noopener">Powered by Monocle</a>
-    return <Navbar bg="light" expand="lg" sticky="bottom" className="fixed-bottom">
-      <Nav className="ml-auto">
-        {a}
-      </Nav>
-    </Navbar>
+    const a = (
+      <a
+        className="nav-link"
+        href="https://github.com/change-metrics/monocle"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Powered by Monocle
+      </a>
+    )
+    return (
+      <Navbar bg="light" expand="lg" sticky="bottom" className="fixed-bottom">
+        <Nav className="ml-auto">{a}</Nav>
+      </Navbar>
+    )
   }
 }
 

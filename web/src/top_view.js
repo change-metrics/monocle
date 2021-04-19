@@ -27,35 +27,44 @@ import Col from 'react-bootstrap/Col'
 import { connect } from 'react-redux'
 import { query } from './reducers/indices'
 
-import {
-  ErrorBox,
-  LoadingBox
-} from './components/common'
+import { ErrorBox, LoadingBox } from './components/common'
 
 class TopView extends React.Component {
-  componentDidMount () {
+  componentDidMount() {
     this.props.handleQuery()
   }
 
-  render () {
+  render() {
     let element
 
     if (!this.props.indices) {
       element = <LoadingBox />
     } else if (this.props.indices.length === 0) {
-      element = <ErrorBox error={{ status: 0, data: 'Please create an index.' }}/>
+      element = (
+        <ErrorBox error={{ status: 0, data: 'Please create an index.' }} />
+      )
     } else {
-      element = <Container>
-        <h2>Available Indices</h2>
-        <Row><Col><p></p></Col></Row>
-        <Row>
-          <Col>
-            <ListGroup>
-              {this.props.indices.map((elt, idx) => <ListGroup.Item key={idx}><Link to={'/' + elt}>{elt}</Link></ListGroup.Item>)}
-            </ListGroup>
-          </Col>
-        </Row>
-      </Container>
+      element = (
+        <Container>
+          <h2>Available Indices</h2>
+          <Row>
+            <Col>
+              <p></p>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <ListGroup>
+                {this.props.indices.map((elt, idx) => (
+                  <ListGroup.Item key={idx}>
+                    <Link to={'/' + elt}>{elt}</Link>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Col>
+          </Row>
+        </Container>
+      )
     }
     return element
   }
@@ -66,14 +75,14 @@ TopView.propTypes = {
   indices: PropTypes.array
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
   return {
     indices: state.IndicesReducer.indices,
     error: state.IndicesReducer.indices_error
   }
 }
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     handleQuery: () => dispatch(query())
   }

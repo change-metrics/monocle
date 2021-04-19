@@ -5,6 +5,7 @@ env:
 extends:
   - 'plugin:react/recommended'
   - standard
+  - 'plugin:prettier/recommended'
 globals:
   Atomics: readonly
   SharedArrayBuffer: readonly
@@ -16,7 +17,11 @@ parserOptions:
   sourceType: module
 plugins:
   - react
-rules: {}
+  - prettier
+rules:
+  prettier/prettier:
+    - error
+    - usePrettierrc: true
 settings:
   react:
     # Regex for Component Factory to use,

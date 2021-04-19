@@ -105,3 +105,20 @@ jobs:
         run: |
           docker-compose ps web | grep Up
           curl -s http://localhost:3000/
+
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install npm packages
+        run: |
+          cd web ; npm install
+
+      - name: Run npm format
+        run: |
+          cd web && npm run format

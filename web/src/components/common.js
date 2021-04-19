@@ -27,7 +27,7 @@ import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
 
-function getWindowDimensions () {
+function getWindowDimensions() {
   const { innerWidth: width, innerHeight: height } = window
   return {
     width,
@@ -35,20 +35,24 @@ function getWindowDimensions () {
   }
 }
 
-function hasSmallWidth () {
+function hasSmallWidth() {
   const { width } = getWindowDimensions()
 
   return width <= 500
 }
 
-function changeUrl (index, x, name = null) {
+function changeUrl(index, x, name = null) {
   if (!name) {
     name = x.change_id
   }
-  return <Link to={`/${index}/change/${x.change_id}${window.location.search}`}>{name}</Link>
+  return (
+    <Link to={`/${index}/change/${x.change_id}${window.location.search}`}>
+      {name}
+    </Link>
+  )
 }
 
-function addUrlField (field, value) {
+function addUrlField(field, value) {
   const url = new URL(window.location.href)
 
   url.searchParams.set(field, value)
@@ -56,14 +60,14 @@ function addUrlField (field, value) {
   return url.pathname + url.search
 }
 
-function indexUrl (index, dest) {
+function indexUrl(index, dest) {
   const url = new URL(window.location.href)
 
   url.pathname = `/${index}${dest}`
   return url.search ? url.pathname + url.search : url.pathname
 }
 
-function addS (count, s = 's') {
+function addS(count, s = 's') {
   if (count > 1) {
     return s
   } else {
@@ -71,24 +75,28 @@ function addS (count, s = 's') {
   }
 }
 
-function addMap (dict, reducer, name) {
+function addMap(dict, reducer, name) {
   dict[name + '_loading'] = reducer[name + '_loading']
   dict[name + '_result'] = reducer[name + '_result']
   dict[name + '_error'] = reducer[name + '_error']
   return dict
 }
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     handleQuery: (params) => dispatch(query(params))
   }
 }
 
-function chooseApprovalBadgeStyle (app, idx = 0) {
+function chooseApprovalBadgeStyle(app, idx = 0) {
   if (app === null) {
     return ''
   }
-  if (app === 'REVIEW_REQUIRED' || app === 'CHANGES_REQUESTED' || app === 'APPROVED') {
+  if (
+    app === 'REVIEW_REQUIRED' ||
+    app === 'CHANGES_REQUESTED' ||
+    app === 'APPROVED'
+  ) {
     let approvalCat = 'success'
     if (app === 'REVIEW_REQUIRED') {
       approvalCat = 'info'
@@ -96,7 +104,11 @@ function chooseApprovalBadgeStyle (app, idx = 0) {
     if (app === 'CHANGES_REQUESTED') {
       approvalCat = 'danger'
     }
-    return <Badge variant={approvalCat} key={idx}>{app}</Badge>
+    return (
+      <Badge variant={approvalCat} key={idx}>
+        {app}
+      </Badge>
+    )
   } else {
     const regex = '.*-.$'
     const patt = new RegExp(regex)
@@ -107,12 +119,16 @@ function chooseApprovalBadgeStyle (app, idx = 0) {
     if (app.includes('+0')) {
       approvalCat = 'info'
     }
-    return <Badge variant={approvalCat} key={idx}>{app}</Badge>
+    return (
+      <Badge variant={approvalCat} key={idx}>
+        {app}
+      </Badge>
+    )
   }
 }
 
 class MergeableStatusBadge extends React.Component {
-  render () {
+  render() {
     const mergeable = this.props.mergeable.toLowerCase()
     switch (mergeable) {
       case 'mergeable':
@@ -132,7 +148,7 @@ MergeableStatusBadge.propTypes = {
 }
 
 class ChangeStatus extends React.Component {
-  render () {
+  render() {
     if (this.props.data.state === 'OPEN' && this.props.data.draft) {
       return <Badge variant="dark">Draft</Badge>
     }
@@ -159,13 +175,14 @@ ChangeStatus.propTypes = {
 }
 
 class LoadingBox extends React.Component {
-  render () {
+  render() {
     return (
       <Row>
         <Col>
           <Card>
             <Card.Body>
-              <Spinner animation="border" role="status" /> <span>Loading...</span>
+              <Spinner animation="border" role="status" />{' '}
+              <span>Loading...</span>
             </Card.Body>
           </Card>
         </Col>
@@ -175,7 +192,7 @@ class LoadingBox extends React.Component {
 }
 
 class ErrorBox extends React.Component {
-  render () {
+  render() {
     const style = { textAlign: 'center' }
     return (
       <Row>
@@ -183,8 +200,9 @@ class ErrorBox extends React.Component {
           <Card>
             <Card.Body>
               <p style={style}>
-                Error: code: {this.props.error ? this.props.error.status : 'none'},
-                message: {this.props.error ? this.props.error.data : 'none'}
+                Error: code:{' '}
+                {this.props.error ? this.props.error.status : 'none'}, message:{' '}
+                {this.props.error ? this.props.error.data : 'none'}
               </p>
             </Card.Body>
           </Card>
@@ -202,31 +220,29 @@ ErrorBox.propTypes = {
 }
 
 class SmallSizeWarning extends React.Component {
-  render () {
+  render() {
     const { width } = getWindowDimensions()
-    return <React.Fragment>
-      {
-        (width < 1024)
-          ? <Row>
+    return (
+      <React.Fragment>
+        {width < 1024 ? (
+          <Row>
             <Col>
-              <Alert
-                variant='warning'
-                className='text-center'
-              >
-                To get the best experience please use a device
-                with a larger screen or rotate your device.
+              <Alert variant="warning" className="text-center">
+                To get the best experience please use a device with a larger
+                screen or rotate your device.
               </Alert>
             </Col>
           </Row>
-          : ''
-      }
-
-    </React.Fragment>
+        ) : (
+          ''
+        )}
+      </React.Fragment>
+    )
   }
 }
 
 class BaseQueryComponent extends React.Component {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.state = {
       pathname: null,
@@ -241,7 +257,7 @@ class BaseQueryComponent extends React.Component {
     this.queryBackend.bind(this)
   }
 
-  componentDidMount () {
+  componentDidMount() {
     this.setState({ pathname: window.location.pathname })
     this.queryBackend(this.state.selectedPage)
     this.unlisten = this.props.history.listen((location, action) => {
@@ -253,19 +269,19 @@ class BaseQueryComponent extends React.Component {
     })
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     if (this.unlisten) {
       this.unlisten()
     }
   }
 
-  handlePageChange (obj, pageData) {
+  handlePageChange(obj, pageData) {
     obj.setState({ selectedPage: pageData.selected })
     obj.queryBackend(pageData.selected)
   }
 
-  queryBackend (start = 0) {
-    const params = (new URL(window.location.href)).searchParams
+  queryBackend(start = 0) {
+    const params = new URL(window.location.href).searchParams
     this.setState({ state: params.get('state') })
     let queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
@@ -294,14 +310,21 @@ class BaseQueryComponent extends React.Component {
         from: start * this.state.pageSize,
         size: this.state.pageSize
       }
-      if (['last_changes', 'repos_top', 'authors_top', 'approvals_top'].includes(this.state.name)) {
+      if (
+        ['last_changes', 'repos_top', 'authors_top', 'approvals_top'].includes(
+          this.state.name
+        )
+      ) {
         // Merge both associative arrays
         queryParams = {
           ...queryParams,
           ...{
             approvals: params.get('approvals'),
             excludeApprovals: params.get('exclude_approvals'),
-            state: params.get('state') === 'SELF-MERGED' ? 'MERGED' : params.get('state'),
+            state:
+              params.get('state') === 'SELF-MERGED'
+                ? 'MERGED'
+                : params.get('state'),
             selfMerged: params.get('state') === 'SELF-MERGED'
           }
         }

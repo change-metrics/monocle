@@ -20,25 +20,27 @@ import { Timeline, TimelineEvent } from 'react-event-timeline'
 import moment from 'moment'
 
 class CommitsTimelineGraph extends React.Component {
-  getTitle (commit) {
+  getTitle(commit) {
     return commit.title
   }
 
-  getDate (commit) {
+  getDate(commit) {
     return moment(commit.authored_at).fromNow() + ' by ' + commit.author.muid
   }
 
-  render () {
-    return <Timeline>
-      {this.props.data.map((commit, idx) => <TimelineEvent
-        title={this.getTitle(commit)}
-        createdAt={this.getDate(commit)}
-        key={idx}
-        iconColor='green'
-      />
-      )
-      }
-    </Timeline>
+  render() {
+    return (
+      <Timeline>
+        {this.props.data.map((commit, idx) => (
+          <TimelineEvent
+            title={this.getTitle(commit)}
+            createdAt={this.getDate(commit)}
+            key={idx}
+            iconColor="green"
+          />
+        ))}
+      </Timeline>
+    )
   }
 }
 

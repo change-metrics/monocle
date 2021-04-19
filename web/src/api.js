@@ -17,12 +17,15 @@
 import axios from 'axios'
 import moment from 'moment'
 
-const server = window.API_URL !== '__API_URL__' ? window.API_URL : (process.env.REACT_APP_API_URL || 'http://localhost:9876')
+const server =
+  window.API_URL !== '__API_URL__'
+    ? window.API_URL
+    : process.env.REACT_APP_API_URL || 'http://localhost:9876'
 const baseurl = server + '/api/0'
 
 console.log('BaseURL=' + baseurl)
 
-function getQueryResults (queryParams) {
+function getQueryResults(queryParams) {
   const params = { ...queryParams }
   const url = baseurl + '/query/' + params.name
 
@@ -59,33 +62,26 @@ function getQueryResults (queryParams) {
     delete params.excludeApprovals
   }
 
-  return axios.get(
-    url, {
-      params: params,
-      withCredentials: true
-    })
+  return axios.get(url, {
+    params: params,
+    withCredentials: true
+  })
 }
 
-function getIndices () {
+function getIndices() {
   const url = baseurl + '/indices'
   return axios.get(url, {
     withCredentials: true
   })
 }
 
-function getLoggedUser () {
+function getLoggedUser() {
   const url = baseurl + '/whoami'
 
-  return axios.get(
-    url, {
-      params: {},
-      withCredentials: true
-    })
+  return axios.get(url, {
+    params: {},
+    withCredentials: true
+  })
 }
 
-export {
-  getQueryResults,
-  getIndices,
-  getLoggedUser,
-  baseurl
-}
+export { getQueryResults, getIndices, getLoggedUser, baseurl }

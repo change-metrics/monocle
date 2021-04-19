@@ -50,32 +50,26 @@ const LoggedUserReducer = (state = initialState, action) => {
   return newState
 }
 
-function loggedUser () {
+function loggedUser() {
   // console.log(params)
   return (dispatch) => {
     dispatch({ type: 'LOGGED_USER_LOADING' })
     return getLoggedUser()
-      .then(response => {
-        dispatch(
-          {
-            type: 'LOGGED_USER_SUCCESS',
-            value: response.data
-          }
-        )
+      .then((response) => {
+        dispatch({
+          type: 'LOGGED_USER_SUCCESS',
+          value: response.data
+        })
       })
-      .catch(error => {
-        dispatch(
-          {
-            type: 'LOGGED_USER_ERROR',
-            value: error.response
-          }
-        )
+      .catch((error) => {
+        dispatch({
+          type: 'LOGGED_USER_ERROR',
+          value: error.response
+        })
       })
   }
 }
 
 export default LoggedUserReducer
 
-export {
-  loggedUser
-}
+export { loggedUser }
