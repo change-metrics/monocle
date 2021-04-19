@@ -37,15 +37,12 @@ import {
   CMostReviewedAuthorsStats,
   CAuthorsPeersStats
 } from './components/top'
-import { CHotChanges, CColdChanges, CLastChangesNG } from './components/changes'
+import { CHotChanges, CColdChanges } from './components/changes'
 import { CRepoChanges } from './components/repos_summary'
-import { CApprovalsPie } from './components/approvals'
 import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
-import CReposPie from './components/repos_pie'
-import CChangesAuthorsPie from './components/changes_authors_pie'
 import Indices from './components/Indices.bs.js'
-import Card from 'react-bootstrap/Card'
+import ChangesView from './components/ChangesView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -247,91 +244,13 @@ ColdChangesView.propTypes = {
   })
 }
 
-class ChangesView extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      open: false
-    }
-  }
-
+class ChangesViewRoute extends React.Component {
   render() {
-    const BoxStyle = {
-      backgroundColor: '#dbecff6b',
-      textAlign: 'center',
-      cursor: 'pointer'
-    }
-    const PStyle = {
-      marginTop: '0rem',
-      marginBottom: '0rem',
-      fontWeight: 'bold'
-    }
-    return (
-      <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row onClick={() => this.setState({ open: !this.state.open })}>
-          <Col>
-            <Card style={BoxStyle}>
-              <p style={PStyle}>
-                {this.state.open ? 'Collapse stats' : 'Display stats'}
-              </p>
-            </Card>
-          </Col>
-        </Row>
-        {this.state.open ? (
-          <React.Fragment>
-            <Row>
-              <Col>
-                <p></p>
-              </Col>
-            </Row>
-            <Row>
-              <Col md>
-                <CChangesAuthorsPie
-                  history={this.props.history}
-                  index={this.props.match.params.index}
-                />
-              </Col>
-              <Col md>
-                <CReposPie
-                  history={this.props.history}
-                  index={this.props.match.params.index}
-                />
-              </Col>
-              <Col md>
-                <CApprovalsPie
-                  history={this.props.history}
-                  index={this.props.match.params.index}
-                />
-              </Col>
-            </Row>
-          </React.Fragment>
-        ) : null}
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CLastChangesNG
-              history={this.props.history}
-              index={this.props.match.params.index}
-              showComplexityGraph={this.state.open}
-            />
-          </Col>
-        </Row>
-      </React.Fragment>
-    )
+    return <ChangesView index={this.props.match.params.index} />
   }
 }
 
-ChangesView.propTypes = {
-  history: PropTypes.object.isRequired,
+ChangesViewRoute.propTypes = {
   match: PropTypes.shape({
     params: PropTypes.shape({
       index: PropTypes.string
@@ -417,7 +336,7 @@ class App extends React.Component {
             <Route exact path="/:index/people" component={PeopleView} />
             <Route exact path="/:index/repos" component={ReposView} />
             <Route exact path="/:index" component={RootView} />
-            <Route path="/:index/changes" component={ChangesView} />
+            <Route path="/:index/changes" component={ChangesViewRoute} />
             <Route path="/:index/hot-changes" component={HotChangesView} />
             <Route path="/:index/cold-changes" component={ColdChangesView} />
             <Route path="/:index/change/:change" component={ChangeView} />

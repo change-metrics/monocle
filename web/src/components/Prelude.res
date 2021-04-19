@@ -6,6 +6,7 @@
 
 // Missing bindings from re-patternfly
 include Patternfly
+include Layout
 
 module Tooltip = {
   @react.component @module("@patternfly/react-core")
@@ -46,4 +47,20 @@ let useAutoGet = (get: axiosGet<'data>): option<result<'data, string>> => {
     None
   })
   state
+}
+
+// Monocle style:
+
+// a grid with space between element
+module MGrid = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.Grid hasGutter=true> {children} </Patternfly.Layout.Grid>
+}
+
+// a grid element that can fit 3 on medium screen
+module MGridItem = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
