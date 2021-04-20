@@ -296,8 +296,7 @@ to changes based on a match of the `change_url` field.
 
 **POST /api/0/task_data?index=<name>&name=<crawler_name>&api_key=<key>**
 
-This endpoint is protected by an API Key and allow to send a list
-of tasks.
+This endpoint is protected by an API Key and it accepts a list of task data.
 
 ```Shell
 [TASK_DATA]
@@ -321,9 +320,10 @@ This endpoint returns the last commit date of a task crawler.
 
 **POST /api/0/task_data/commit?index=<name>&name=<crawler_name>&api_key=<key>**
 
-str["%Y-%m-%dT%H:%M:%SZ"]
+This endpoint is protected by an API Key and it accepts a timestamp "commit" date
+to help crawler resume work.
 
-This endpoint permits a task crawler to set a commit date.
+str["%Y-%m-%dT%H:%M:%SZ"]
 
 #### Task data crawler configuration
 
