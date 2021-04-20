@@ -18,6 +18,18 @@ external getIndices: unit => axios<array<string>> = "getIndices"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 
+// A temporary module to provide runtime setting
+module Env = {
+  type t = {
+    @as("REACT_APP_RHBZ")
+    rhbz: option<string>,
+  }
+  @val @scope("process") external env: t = "env"
+  let withBZ = env.rhbz->Belt.Option.isSome
+  let bzPriority = list{"HIGH", "MEDIUM", "LOW"}
+  let bzType = list{"FutureFeature", "ZStream", "Triaged"}
+}
+
 module URLSearchParams = {
   // https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams
   type t
@@ -86,7 +98,7 @@ let useToggle = default => {
 module MExpandablePanel = {
   @react.component
   let make = (~title, ~children) => {
-    let (show, setShow) = React.useState(_ => true)
+    let (show, setShow) = React.useState(_ => false)
     let toggleProps = {
       "id": "toggle-button",
       "aria-label": "Details",
@@ -130,15 +142,24 @@ module MStackItem = {
 
 module MSelect = {
   @react.component
-  let make = (~value, ~placeholderText: string, ~options, ~valueChanged) => {
+  let make = (~value: string, ~placeholder: string, ~options, ~valueChanged) => {
     let (isOpen, _, onToggle) = useToggle(false)
     let onSelect = (_, newValue, _) => {
       let nextValue = newValue == value ? "" : newValue
       valueChanged(nextValue)
       onToggle(false)
     }
+    let placeholderText = placeholder
+    let selections = value != "" ? [value] : []
+    let inlineFilterPlaceholderText = value != "" ? placeholder ++ ": " ++ value : ""
     <Patternfly.Select
-      variant=#Single placeholderText selections={[value]} isOpen onSelect onToggle>
+      variant=#Single
+      placeholderText
+      inlineFilterPlaceholderText
+      selections
+      isOpen
+      onSelect
+      onToggle>
       {options
       ->mapWithKey((key, name) => <SelectOption key value={name} />)
       ->Belt.List.toArray

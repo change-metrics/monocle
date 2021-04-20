@@ -3,28 +3,46 @@ open Prelude
 // The definition of a filter:
 module Filter = {
   type kind = Text | Date | Choice(list<string>)
-  type t = {description: string, default: option<string>, kind: kind}
+  type t = {title: string, description: string, default: option<string>, kind: kind}
 
   // helper functions:
-  let make = description => {description: description, default: None, kind: Text}
+  let make = (title, description) => {
+    title: title,
+    description: description,
+    default: None,
+    kind: Text,
+  }
+  let makeChoice = (title, description, choices) => {
+    title: title,
+    description: description,
+    default: None,
+    kind: Choice(choices),
+  }
   let getValue = filter => filter.default->fromMaybe("")
 }
 
 // The definition of filters:
 module Filters = {
   type t = Belt.Map.String.t<Filter.t>
+
   // The list of filters:
   let filters = Belt.Map.String.fromArray([
-    ("authors", Filter.make("Authors")),
-    ("exclude_authors", Filter.make("Exclude Authors")),
-    ("repository", Filter.make("Repositories regexp")),
-    ("branch", Filter.make("Branch regexp")),
-    ("files", Filter.make("Files regexp")),
-    ("gte", {...Filter.make("From date"), kind: Date}),
-    ("lte", {...Filter.make("To date"), kind: Date}),
-    ("approvals", Filter.make("Approvals")),
-    ("exclude_approvals", Filter.make("Exclude Approvals")),
-    ("state", {...Filter.make("Change state"), kind: Choice(list{"OPEN", "CLOSED", "MERGED"})}),
+    ("authors", Filter.make("Authors", "Author names")),
+    ("exclude_authors", Filter.make("Exclude authors", "Author names")),
+    ("repository", Filter.make("Repository", "Repositories regexp")),
+    ("branch", Filter.make("Branch", "Branch regexp")),
+    ("files", Filter.make("Files", "Files regexp")),
+    ("gte", {...Filter.make("From date", "yyyy-MM-dd"), kind: Date}),
+    ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
+    ("approvals", Filter.make("Approvals", "Change approval")),
+    ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
+    (
+      "state",
+      Filter.makeChoice("Change state", "Filter by state", list{"OPEN", "CLOSED", "MERGED"}),
+    ),
+    ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
+    ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
+    ("task_type", Filter.make("Task type", "Filter by task type")),
   ])
   let map = f => filters->Belt.Map.String.keysToArray->Belt.Array.map(f)->ignore
   let mapWithKey = f => filters->Belt.Map.String.toArray->Belt.Array.map(f)
@@ -73,7 +91,7 @@ module Values = {
 
 // A component to manage user input
 module Field = {
-  let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="5px", ())
+  let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
   let make = (~name, ~values) => {
     let filter = Filters.get(name)
@@ -87,27 +105,31 @@ module Field = {
       // We also store the local field value in a react state
       setValue(_ => v)
     }
-    switch filter.kind {
-    | Text =>
-      <TextInput
-        style={fieldStyle} id={name ++ "-input"} placeholder={filter.description} onChange value
-      />
-    | Date =>
+    <FormGroup label={filter.title} fieldId={name ++ "-fg"} hasNoPaddingTop=false>
       <div style={fieldStyle}>
-        <DatePicker id={name ++ "-date"} placeholder={filter.description} onChange value />
+        {switch filter.kind {
+        | Text =>
+          <TextInput id={name ++ "-input"} placeholder={filter.description} onChange value />
+        | Date =>
+          <DatePicker id={name ++ "-date"} placeholder={filter.description} onChange value />
+        | Choice(options) =>
+          <MSelect
+            placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
+          />
+        }}
       </div>
-    | Choice(options) =>
-      <MSelect
-        placeholderText={filter.description} options valueChanged={v => onChange(v, ())} value
-      />
-    }
+    </FormGroup>
   }
 }
 
 module FieldGroup = {
   @react.component
-  let make = (~children, ~label) =>
-    <MGridItem> <FormGroup label fieldId={label ++ "fid"}> {children} </FormGroup> </MGridItem>
+  let make = (~children) => <MGridItem> <MSimpleCard> {children} </MSimpleCard> </MGridItem>
+}
+
+module FieldGroups = {
+  @react.component
+  let make = (~children) => <Form> <MGrid> {children} </MGrid> </Form>
 }
 
 module FilterSummary = {
@@ -146,30 +168,33 @@ let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
   }
   <>
     <MExpandablePanel title="Filter">
-      <Form>
-        <MGrid>
-          <FieldGroup label="Date">
-            <Field name="gte" values /> <Field name="lte" values />
+      <FieldGroups>
+        <FieldGroup> <Field name="gte" values /> <Field name="lte" values /> </FieldGroup>
+        <FieldGroup>
+          <Field name="authors" values /> <Field name="exclude_authors" values />
+        </FieldGroup>
+        <FieldGroup>
+          <Field name="repository" values />
+          <Field name="branch" values />
+          <Field name="files" values />
+        </FieldGroup>
+        {showChangeParams->maybeRender(<>
+          <FieldGroup>
+            <Field name="approvals" values /> <Field name="exclude_approvals" values />
           </FieldGroup>
-          <FieldGroup label="Authors">
-            <Field name="authors" values /> <Field name="exclude_authors" values />
-          </FieldGroup>
-          <FieldGroup label="Projects">
-            <Field name="repository" values />
-            <Field name="branch" values />
-            <Field name="files" values />
-          </FieldGroup>
-          {showChangeParams->maybeRender(<>
-            <FieldGroup label="Approvals">
-              <Field name="approvals" values /> <Field name="exclude_approvals" values />
-            </FieldGroup>
-            <FieldGroup label="Change status"> <Field name="state" values /> </FieldGroup>
-          </>)}
-        </MGrid>
+          <FieldGroup> <Field name="state" values /> </FieldGroup>
+        </>)}
+        {Env.withBZ->maybeRender(
+          <FieldGroup>
+            <Field name="task_priority" values />
+            <Field name="task_severity" values />
+            <Field name="task_type" values />
+          </FieldGroup>,
+        )}
         <ActionGroup>
           <Button variant=#Primary onClick=applyFilters> {"Apply"->React.string} </Button>
         </ActionGroup>
-      </Form>
+      </FieldGroups>
     </MExpandablePanel>
     <FilterSummary values />
   </>
