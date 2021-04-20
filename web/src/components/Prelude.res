@@ -8,7 +8,7 @@
 include Patternfly
 include Layout
 
-module Tooltip = {
+module Tooltip2 = {
   @react.component @module("@patternfly/react-core")
   external make: (
     ~children: 'children,

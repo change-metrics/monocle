@@ -8,9 +8,9 @@ open Prelude
 module Indice = {
   @react.component
   let make = (~name) =>
-    <Tooltip position=#Bottom content={"Click to get the metric"}>
+    <Tooltip2 position=#Bottom content={"Click to get the metric"}>
       <a href="" onClick={_ => RescriptReactRouter.push(name)}> {name->React.string} </a>
-    </Tooltip>
+    </Tooltip2>
 
   let card: string => React.element = name => <MSimpleCard> {make({"name": name})} </MSimpleCard>
 }
