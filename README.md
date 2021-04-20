@@ -294,7 +294,7 @@ to changes based on a match of the `change_url` field.
 
 #### Endpoints available for a crawler
 
-**POST /api/0/task_data?index=<name>&name=<crawler_name>&api_key=<key>**
+**POST /api/0/task_data?index=<name>&name=<crawler_name>&apikey=<key>**
 
 This endpoint is protected by an API Key and it accepts a list of task data.
 
@@ -318,7 +318,7 @@ TASK_DATA: {
 
 This endpoint returns the last commit date of a task crawler.
 
-**POST /api/0/task_data/commit?index=<name>&name=<crawler_name>&api_key=<key>**
+**POST /api/0/task_data/commit?index=<name>&name=<crawler_name>&apikey=<key>**
 
 This endpoint is protected by an API Key and it accepts a timestamp "commit" date
 to help crawler resume work.
