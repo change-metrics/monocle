@@ -22,6 +22,8 @@ module Filters = {
     ("files", Filter.make("Files regexp")),
     ("gte", {...Filter.make("From date"), kind: Date}),
     ("lte", {...Filter.make("To date"), kind: Date}),
+    ("approvals", Filter.make("Approvals")),
+    ("exclude_approvals", Filter.make("Exclude Approvals")),
   ])
   let map = f => filters->Belt.Map.String.keysToArray->Belt.Array.map(f)->ignore
   let mapWithKey = f => filters->Belt.Map.String.toArray->Belt.Array.map(f)
@@ -151,6 +153,11 @@ let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
             <Field name="branch" values />
             <Field name="files" values />
           </FieldGroup>
+          {showChangeParams->maybeRender(
+            <FieldGroup label="Approvals">
+              <Field name="approvals" values /> <Field name="exclude_approvals" values />
+            </FieldGroup>,
+          )}
         </MGrid>
         <ActionGroup>
           <Button variant=#Primary onClick=applyFilters> {"Apply"->React.string} </Button>
