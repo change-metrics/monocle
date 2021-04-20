@@ -40,7 +40,7 @@ module Values = {
 
   // Helper function to load values from the current url query string
   let loads = values => {
-    let searchParams = URLSearchParams.current
+    let searchParams = URLSearchParams.current()
     Filters.map(name =>
       searchParams
       ->URLSearchParams.get(name)
@@ -52,7 +52,7 @@ module Values = {
 
   // Helper function to dump values to an url query string
   let dumps = values => {
-    let searchParams = URLSearchParams.current
+    let searchParams = URLSearchParams.current()
     Filters.map(name =>
       switch values->get(name) {
       | None

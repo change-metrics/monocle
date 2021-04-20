@@ -28,7 +28,7 @@ module URLSearchParams = {
   @send external set: (t, string, string) => unit = "set"
   @send external delete: (t, string) => unit = "delete"
 
-  let current = windowLocationSearch->make
+  let current = () => windowLocationSearch->make
 }
 
 // Network helpers
