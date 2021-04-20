@@ -17,6 +17,7 @@ type axiosGet<'data> = unit => axios<'data>
 external getIndices: unit => axios<array<string>> = "getIndices"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
+let readWindowLocationSearch = () => windowLocationSearch
 
 // A temporary module to provide runtime setting
 module Env = {
@@ -79,11 +80,15 @@ let rec catMaybes = (xs: list<option<'a>>): list<'a> =>
   | list{Some(x), ...rest} => catMaybes(rest)->Belt.List.add(x)
   }
 // Join a list of string with a separator
-let rec concatSep = (xs: list<string>, sep: string): string =>
+let rec prependToAll = (xs, sep): string =>
   switch xs {
   | list{} => ""
-  | list{x} => x
-  | list{x, y, ...rest} => x ++ sep ++ y ++ rest->concatSep(sep)
+  | list{x, ...rest} => sep ++ x ++ rest->prependToAll(sep)
+  }
+let concatSep = (xs: list<string>, sep: string): string =>
+  switch xs {
+  | list{} => ""
+  | list{x, ...rest} => x ++ rest->prependToAll(sep)
   }
 
 let useToggle = default => {

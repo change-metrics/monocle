@@ -5,7 +5,7 @@ module Filter = {
   type kind = Text | Date | Choice(list<string>)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
-  // helper functions:
+  // Helper functions:
   let make = (title, description) => {
     title: title,
     description: description,
@@ -13,79 +13,75 @@ module Filter = {
     kind: Text,
   }
   let makeChoice = (title, description, choices) => {
-    title: title,
-    description: description,
-    default: None,
+    ...make(title, description),
     kind: Choice(choices),
   }
   let getValue = filter => filter.default->fromMaybe("")
 }
 
-// The definition of filters:
+// The definition of filters
 module Filters = {
-  type t = Belt.Map.String.t<Filter.t>
+  // The value type is a tuple of (the filter, it's value, and a setState function)
+  type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit)>
 
   // The list of filters:
-  let filters = Belt.Map.String.fromArray([
-    ("authors", Filter.make("Authors", "Author names")),
-    ("exclude_authors", Filter.make("Exclude authors", "Author names")),
-    ("repository", Filter.make("Repository", "Repositories regexp")),
-    ("branch", Filter.make("Branch", "Branch regexp")),
-    ("files", Filter.make("Files", "Files regexp")),
-    ("gte", {...Filter.make("From date", "yyyy-MM-dd"), kind: Date}),
-    ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
-    ("approvals", Filter.make("Approvals", "Change approval")),
-    ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
-    (
-      "state",
-      Filter.makeChoice("Change state", "Filter by state", list{"OPEN", "CLOSED", "MERGED"}),
-    ),
-    ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
-    ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
-    ("task_type", Filter.make("Task type", "Filter by task type")),
-  ])
-  let map = f => filters->Belt.Map.String.keysToArray->Belt.Array.map(f)->ignore
-  let mapWithKey = f => filters->Belt.Map.String.toArray->Belt.Array.map(f)
-  let get = name => filters->Belt.Map.String.getExn(name)
-}
+  let all =
+    [
+      ("authors", Filter.make("Authors", "Author names")),
+      ("exclude_authors", Filter.make("Exclude authors", "Author names")),
+      ("repository", Filter.make("Repository", "Repositories regexp")),
+      ("branch", Filter.make("Branch", "Branch regexp")),
+      ("files", Filter.make("Files", "Files regexp")),
+      ("gte", {...Filter.make("From date", "yyyy-MM-dd"), kind: Date}),
+      ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
+      ("approvals", Filter.make("Approvals", "Change approval")),
+      ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
+      (
+        "state",
+        Filter.makeChoice("Change state", "Filter by state", list{"OPEN", "CLOSED", "MERGED"}),
+      ),
+      ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
+      ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
+      ("task_type", Filter.make("Task type", "Filter by task type")),
+    ]->Belt.Map.String.fromArray
 
-// A module to manage filters values
-module Values = {
-  type t = Js.Dict.t<string>
+  // Helper functions:
+  let map = (dict, f) => dict->Belt.Map.String.mapWithKey(f)
+  let mapM = (dict, f) => dict->map(f)->ignore
+  let get = (dict, name) => dict->Belt.Map.String.getExn(name)
 
-  let empty: t = Js.Dict.empty()
-  let get = (xs: t, name: string) => xs->Js.Dict.get(name)
-  let set = (xs: t, name: string, value: string) => xs->Js.Dict.set(name, value)
-
-  // Helper function to load values from the current url query string
-  let loads = values => {
-    let searchParams = URLSearchParams.current()
-    Filters.map(name =>
-      searchParams
-      ->URLSearchParams.get(name)
-      ->Js.Nullable.bind((. value) => values->set(name, value))
+  // Loads the values from the url search params
+  let loads = (searchParams, states) =>
+    states->mapM((name, (_, _, set)) =>
+      searchParams->URLSearchParams.get(name)->Js.Nullable.bind((. value) => set(_ => value))
     )
-    Js.log4("Set filters from", windowLocationSearch, "to", values)
-    values
-  }
 
-  // Helper function to dump values to an url query string
-  let dumps = values => {
+  // Dump the values to a query string
+  let dumps = states => {
     let searchParams = URLSearchParams.current()
-    Filters.map(name =>
-      switch values->get(name) {
-      | None
-      | Some("") =>
-        // When a filter is not set or empty, delete the QS
-        searchParams->URLSearchParams.delete(name)
-      | Some(value) =>
-        // Otherwise set the QS
-        searchParams->URLSearchParams.set(name, value)
+    states->mapM((name, (_, value, _)) =>
+      switch value {
+      | "" => searchParams->URLSearchParams.delete(name)
+      | value => searchParams->URLSearchParams.set(name, value)
       }
     )
-    let queryString = searchParams->URLSearchParams.toString
-    Js.log4("Set qs from", values, "to", queryString)
-    queryString
+    searchParams->URLSearchParams.toString
+  }
+
+  // A custom hook to manage filter value:
+  let useFilter = (): t => {
+    // First we create a state hook for each filter
+    let states: t = all->Belt.Map.String.map(x => {
+      let (value, setValue) = React.useState(_ => "")
+      (x, value, setValue)
+    })
+    // Then we load the current value when the url search params change
+    React.useEffect1(() => {
+      Js.log("Loading filter values")
+      URLSearchParams.current()->loads(states)
+      None
+    }, [readWindowLocationSearch()])
+    states
   }
 }
 
@@ -93,18 +89,9 @@ module Values = {
 module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
-  let make = (~name, ~values) => {
-    let filter = Filters.get(name)
-    let (value, setValue) = React.useState(_ =>
-      // Initial value is picked from query string, or filter default
-      values->Js.Dict.get(name)->fromMaybe(filter->Filter.getValue)
-    )
-    let onChange = (v, _) => {
-      // Values is the filter values dictionary
-      values->Js.Dict.set(name, v)
-      // We also store the local field value in a react state
-      setValue(_ => v)
-    }
+  let make = (~name, ~states: Filters.t) => {
+    let (filter, value, setValue) = states->Filters.get(name)
+    let onChange = (v, _) => setValue(_ => v)
     <FormGroup label={filter.title} fieldId={name ++ "-fg"} hasNoPaddingTop=false>
       <div style={fieldStyle}>
         {switch filter.kind {
@@ -134,15 +121,14 @@ module FieldGroups = {
 
 module FilterSummary = {
   @react.component
-  let make = (~values) => {
+  let make = (~states: Filters.t) => {
     let activeList =
-      Filters.mapWithKey(((name, filter)) =>
-        switch values->Values.get(name) {
-        | None
-        | Some("") =>
-          None
-        | Some(value) =>
-          (filter.description->Js.String.toLowerCase ++
+      states
+      ->Filters.map((_, (filter, value, _)) =>
+        switch value {
+        | "" => None
+        | value =>
+          (filter.title->Js.String.toLowerCase ++
             switch filter.kind {
             | Text => " named (" ++ value ++ ")"
             | Date => " " ++ value
@@ -150,6 +136,7 @@ module FilterSummary = {
             })->Some
         }
       )
+      ->Belt.Map.String.valuesToArray
       ->Belt.List.fromArray
       ->catMaybes
     switch activeList {
@@ -161,42 +148,39 @@ module FilterSummary = {
 
 @react.component
 let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
-  // We use a (ref) dictionary to store the current filter values
-  let values = React.useRef(Values.empty->Values.loads).current
-  let applyFilters = _ => {
-    values->Values.dumps->updateFilters
-  }
+  let states = Filters.useFilter()
+  let onClick = _ => states->Filters.dumps->updateFilters
   <>
     <MExpandablePanel title="Filter">
       <FieldGroups>
-        <FieldGroup> <Field name="gte" values /> <Field name="lte" values /> </FieldGroup>
+        <FieldGroup> <Field name="gte" states /> <Field name="lte" states /> </FieldGroup>
         <FieldGroup>
-          <Field name="authors" values /> <Field name="exclude_authors" values />
+          <Field name="authors" states /> <Field name="exclude_authors" states />
         </FieldGroup>
         <FieldGroup>
-          <Field name="repository" values />
-          <Field name="branch" values />
-          <Field name="files" values />
+          <Field name="repository" states />
+          <Field name="branch" states />
+          <Field name="files" states />
         </FieldGroup>
         {showChangeParams->maybeRender(<>
           <FieldGroup>
-            <Field name="approvals" values /> <Field name="exclude_approvals" values />
+            <Field name="approvals" states /> <Field name="exclude_approvals" states />
           </FieldGroup>
-          <FieldGroup> <Field name="state" values /> </FieldGroup>
+          <FieldGroup> <Field name="state" states /> </FieldGroup>
         </>)}
         {Env.withBZ->maybeRender(
           <FieldGroup>
-            <Field name="task_priority" values />
-            <Field name="task_severity" values />
-            <Field name="task_type" values />
+            <Field name="task_priority" states />
+            <Field name="task_severity" states />
+            <Field name="task_type" states />
           </FieldGroup>,
         )}
         <ActionGroup>
-          <Button variant=#Primary onClick=applyFilters> {"Apply"->React.string} </Button>
+          <Button variant=#Primary onClick> {"Apply"->React.string} </Button>
         </ActionGroup>
       </FieldGroups>
     </MExpandablePanel>
-    <FilterSummary values />
+    <FilterSummary states />
   </>
 }
 //
