@@ -58,6 +58,7 @@ let maybeRender = (pred: bool, component: React.element): React.element =>
   pred ? component : React.null
 // Get an optional value with default
 let fromMaybe = (maybe: option<'a>, default: 'a): 'a => maybe->Belt.Option.getWithDefault(default)
+let mapWithKey = (xs, f) => xs->Belt.List.mapWithIndex((index, x) => f(string_of_int(index), x))
 // Remove empty optional from a list
 let rec catMaybes = (xs: list<option<'a>>): list<'a> =>
   switch xs {
@@ -73,12 +74,19 @@ let rec concatSep = (xs: list<string>, sep: string): string =>
   | list{x, y, ...rest} => x ++ sep ++ y ++ rest->concatSep(sep)
   }
 
+let useToggle = default => {
+  let (value, setValue) = React.useState(_ => default)
+  let toggle = () => setValue(x => !x)
+  let set = x => setValue(_ => x)
+  (value, toggle, set)
+}
+
 // Monocle style:
 // an expandable panel
 module MExpandablePanel = {
   @react.component
   let make = (~title, ~children) => {
-    let (show, setShow) = React.useState(_ => false)
+    let (show, setShow) = React.useState(_ => true)
     let toggleProps = {
       "id": "toggle-button",
       "aria-label": "Details",
@@ -118,6 +126,25 @@ module MStack = {
 module MStackItem = {
   @react.component
   let make = (~children) => <Patternfly.Layout.StackItem> {children} </Patternfly.Layout.StackItem>
+}
+
+module MSelect = {
+  @react.component
+  let make = (~value, ~placeholderText: string, ~options, ~valueChanged) => {
+    let (isOpen, _, onToggle) = useToggle(false)
+    let onSelect = (_, newValue, _) => {
+      let nextValue = newValue == value ? "" : newValue
+      valueChanged(nextValue)
+      onToggle(false)
+    }
+    <Patternfly.Select
+      variant=#Single placeholderText selections={[value]} isOpen onSelect onToggle>
+      {options
+      ->mapWithKey((key, name) => <SelectOption key value={name} />)
+      ->Belt.List.toArray
+      ->React.array}
+    </Patternfly.Select>
+  }
 }
 
 let addProp = (props, valueM, mkProp) =>

@@ -2,7 +2,7 @@ open Prelude
 
 // The definition of a filter:
 module Filter = {
-  type kind = Text | Date
+  type kind = Text | Date | Choice(list<string>)
   type t = {description: string, default: option<string>, kind: kind}
 
   // helper functions:
@@ -24,6 +24,7 @@ module Filters = {
     ("lte", {...Filter.make("To date"), kind: Date}),
     ("approvals", Filter.make("Approvals")),
     ("exclude_approvals", Filter.make("Exclude Approvals")),
+    ("state", {...Filter.make("Change state"), kind: Choice(list{"OPEN", "CLOSED", "MERGED"})}),
   ])
   let map = f => filters->Belt.Map.String.keysToArray->Belt.Array.map(f)->ignore
   let mapWithKey = f => filters->Belt.Map.String.toArray->Belt.Array.map(f)
@@ -95,6 +96,10 @@ module Field = {
       <div style={fieldStyle}>
         <DatePicker id={name ++ "-date"} placeholder={filter.description} onChange value />
       </div>
+    | Choice(options) =>
+      <MSelect
+        placeholderText={filter.description} options valueChanged={v => onChange(v, ())} value
+      />
     }
   }
 }
@@ -119,6 +124,7 @@ module FilterSummary = {
             switch filter.kind {
             | Text => " named (" ++ value ++ ")"
             | Date => " " ++ value
+            | Choice(_) => " set to " ++ value
             })->Some
         }
       )
@@ -153,11 +159,12 @@ let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
             <Field name="branch" values />
             <Field name="files" values />
           </FieldGroup>
-          {showChangeParams->maybeRender(
+          {showChangeParams->maybeRender(<>
             <FieldGroup label="Approvals">
               <Field name="approvals" values /> <Field name="exclude_approvals" values />
-            </FieldGroup>,
-          )}
+            </FieldGroup>
+            <FieldGroup label="Change status"> <Field name="state" values /> </FieldGroup>
+          </>)}
         </MGrid>
         <ActionGroup>
           <Button variant=#Primary onClick=applyFilters> {"Apply"->React.string} </Button>
