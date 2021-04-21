@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # base image
-FROM node:12-alpine
+FROM registry.fedoraproject.org/fedora:33
 
-RUN apk --no-cache add bash make g++ python
+RUN dnf update -y && dnf install -y nodejs
 
 # set working directory
 WORKDIR /app
@@ -42,7 +42,9 @@ RUN npm run build
 
 ################################################################################
 
-FROM node:12-alpine
+FROM registry.fedoraproject.org/fedora:33
+
+RUN dnf update -y && dnf install -y nodejs && dnf clean all
 
 # set working directory
 WORKDIR /app
@@ -50,8 +52,6 @@ WORKDIR /app
 # install serve globally
 RUN npm install -g serve
 
-COPY --from=0 /usr/lib/ /usr/lib/
-COPY --from=0 /bin/ /bin/
 COPY --from=0 /app/build /app
 
 # start app
