@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [dbmanage] Added update-idents option.
 - [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
 - [api] Added 'projects' API endpoint that is listening project definitions from config file
+- [api,config] Endpoints to connect task tracker crawlers
+- [api] Support of three new query attributes (task_type, task_priority, task_severity)
 
 ### Changed
 

@@ -140,7 +140,8 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
         ensure_gte_lte(es, index, repository_fullname, params)
     gte = params.get("gte")
     lte = params.get("lte")
-    etype = params.get("etype")
+    # The type is mandatory
+    etype = params["etype"]
     authors = params.get("authors")
     on_authors = params.get("on_authors")
     approvals = params.get("approvals")
@@ -149,6 +150,9 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
     created_at_range = {"created_at": {"format": "epoch_millis"}}
     change_ids = params.get("change_ids")
     target_branch = params.get("target_branch")
+    task_priority = params.get("task_priority")
+    task_severity = params.get("task_severity")
+    task_type = params.get("task_type")
     files = params.get("files")
     if gte:
         created_at_range["created_at"]["gte"] = gte
@@ -175,6 +179,12 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
         qfilter.append({"regexp": {"changed_files.path": files}})
     if approvals:
         qfilter.append({"terms": {"approval": approvals}})
+    if task_priority:
+        qfilter.append({"terms": {"tasks_data.priority": task_priority}})
+    if task_severity:
+        qfilter.append({"terms": {"tasks_data.severity": task_severity}})
+    if task_type:
+        qfilter.append({"terms": {"tasks_data.ttype": task_type}})
 
     must_not = []
     if exclude_authors:
@@ -953,6 +963,8 @@ def changes(es, index, repository_fullname, params):
 
 def new_contributors(es, index, repository_fullname, params):
     params = deepcopy(params)
+    # TODO(fbo): Check again
+    params["etype"] = ("Change",)
     params["size"] = 10000
     new_authors = events_top_authors(es, index, repository_fullname, params)["items"]
     new = set([x["key"] for x in new_authors])

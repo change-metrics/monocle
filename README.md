@@ -286,6 +286,64 @@ docker-compose restart api
 docker-compose start crawler
 ```
 
+### Connect a tasks tracker crawler
+
+The Monocle API provides endpoints for a crawler to send task/issue/RFE
+related data into the Monocle database. Monocle is able to attach tasks
+to changes based on a match of the `change_url` field.
+
+#### Endpoints available for a crawler
+
+**POST /api/0/task_data?index=<name>&name=<crawler_name>&apikey=<key>**
+
+This endpoint is protected by an API Key and it accepts a list of task data.
+
+```Shell
+[TASK_DATA]
+
+TASK_DATA: {
+  updated_at: str(%Y-%m-%dT%H:%M:%SZ)
+  change_url: str
+  ttype: List[str]
+  tid: str
+  url: str
+  title: str
+  severity: str
+  priority: str
+  score: str
+}
+```
+
+**GET /api/0/task_data?index=<name>&name=<crawler_name>**
+
+This endpoint returns the last commit date of a task crawler.
+
+**POST /api/0/task_data/commit?index=<name>&name=<crawler_name>&apikey=<key>**
+
+This endpoint is protected by an API Key and it accepts a timestamp "commit" date
+to help crawler resume work.
+
+str["%Y-%m-%dT%H:%M:%SZ"]
+
+#### Task data crawler configuration
+
+```YAML
+tenants:
+  - index: default
+    task_crawlers:
+      - name: crawler_name
+        updated_since: "2020-01-01"
+        api_key: 1a2b3c4d5e
+```
+
+The `updated_since` date is the initial date the crawler needs to crawl from. Without any prior commit, a `GET` call on `/api/0/task_data` returns
+the initial date.
+
+#### Lentille - a task crawler library
+
+[Lentille](https://github.com/change-metrics/lentille) provides Haskell modules (Worker.hs and Client.hs) to ease the development of a task crawler for Monocle.
+
+
 ### Full configuration file example
 
 ```YAML
@@ -317,6 +375,10 @@ tenants:
         aliases:
           - "review.opendev.org/Fabien Boucher/6889"
           - "review.rdoproject.org/Fabien Boucher/112"
+    task_crawlers:
+      - name: bz-crawler
+        updated_since: "2021-01-01"
+        api_key: 1a2b3c4d5e
     crawler:
       loop_delay: 600
       gerrit_repositories:

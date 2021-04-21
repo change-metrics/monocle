@@ -16,17 +16,18 @@
 
 import logging
 import unittest
-import os
+from datetime import datetime
 
 from deepdiff import DeepDiff
 
 from .common import index_dataset
 from .common import DiffException
+from .common import get_db_cnx
 
-from monocle.db.db import ELmonocleDB
 from monocle.db.db import UnknownQueryException
 from monocle.db import queries
 from monocle.utils import set_params
+from monocle.task_data import OrphanTaskDataForEL, TaskData
 
 
 class TestQueries(unittest.TestCase):
@@ -35,6 +36,54 @@ class TestQueries(unittest.TestCase):
     datasets = [
         "objects/unit_repo1.json",
         "objects/unit_repo2.json",
+    ]
+
+    otds = [
+        OrphanTaskDataForEL(
+            _id="https://bugtracker.domain.dom/123",
+            task_data=TaskData(
+                crawler_name="mycrawler",
+                updated_at=datetime.strptime(
+                    "2020-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                change_url="https://tests.com/unit/repo1/pull/1",
+                ttype=["BUG", "CLIENT_IMPACT"],
+                tid="123",
+                url="https://bugtracker.domain.dom/123",
+                title="It does not work",
+                priority="HIGH",
+            ),
+        ),
+        OrphanTaskDataForEL(
+            _id="https://bugtracker.domain.dom/124",
+            task_data=TaskData(
+                crawler_name="mycrawler",
+                updated_at=datetime.strptime(
+                    "2020-01-02T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                change_url="https://tests.com/unit/repo1/pull/1",
+                ttype=["FutureFeature"],
+                tid="124",
+                url="https://bugtracker.domain.dom/124",
+                title="It does not work",
+                priority="MEDIUM",
+            ),
+        ),
+        OrphanTaskDataForEL(
+            _id="https://bugtracker.domain.dom/125",
+            task_data=TaskData(
+                crawler_name="mycrawler",
+                updated_at=datetime.strptime(
+                    "2020-01-03T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                change_url="https://tests.com/unit/repo2/pull/2",
+                ttype=["BUG", "DOC"],
+                tid="125",
+                url="https://bugtracker.domain.dom/125",
+                title="It does not work",
+                priority="LOW",
+            ),
+        ),
     ]
 
     @classmethod
@@ -46,17 +95,17 @@ class TestQueries(unittest.TestCase):
         log = logging.getLogger(__name__)
         # log to stderr
         log.addHandler(logging.StreamHandler())
-        cls.eldb = ELmonocleDB(
-            index=cls.index,
-            prefix="monocle.test.",
-            user=os.getenv("ELASTIC_USER", None),
-            password=os.getenv("ELASTIC_PASSWORD", None),
-            use_ssl=os.getenv("ELASTIC_USE_SSL", None),
-            verify_certs=os.getenv("ELASTIC_INSECURE", None),
-            ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
-        )
+        cls.eldb = get_db_cnx(cls.index, "monocle.test.")
         for dataset in cls.datasets:
             index_dataset(cls.eldb, dataset)
+        cls.eldb.update_task_data(cls.otds)
+        cls.eldb.update_changes_with_orphan_tds(
+            {
+                "https://tests.com/unit/repo1/pull/1": "c1",
+                "https://tests.com/unit/repo2/pull/2": "c2",
+                "https://tests.com/unit/repo2/pull/3": "c3",
+            }
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -271,6 +320,30 @@ class TestQueries(unittest.TestCase):
         self.assertCountEqual(
             [item["id"] for item in ret["items"]], ["c2", "c2_e4", "c3", "c3_e2"]
         )
+
+    def test_task_params(self):
+        """
+        Test task related params
+        """
+        params = set_params({"task_priority": "HIGH"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
+
+        params = set_params({"task_priority": "HIGH,MEDIUM,LOW"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 2, ret)
+
+        params = set_params({"task_type": "BUG"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 2, ret)
+
+        params = set_params({"task_type": "BUG,CLIENT_IMPACT"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 2, ret)
+
+        params = set_params({"task_priority": "LOW", "task_type": "BUG,CLIENT_IMPACT"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
 
     def test_exclude_approvals_param(self):
         """

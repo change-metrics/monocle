@@ -14,56 +14,39 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
 import tempfile
+import time
 import unittest
 import yaml
 from flask import json
+
 from monocle import webapp
 from monocle import config
-from monocle.db.db import ELmonocleDB
 
-from .common import index_dataset
+from .common import index_dataset, get_db_cnx
 
 
 class TestWebAPI(unittest.TestCase):
     prefix = "monocle.test.1."
-    index1 = "monocle-unittest-1"
-    index2 = "monocle-unittest-2"
+    index1 = "unittest-1"
+    index2 = "unittest-2"
     datasets = ["objects/unit_repo1.json"]
 
-    @classmethod
-    def setUpClass(cls):
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(name)s - " + "%(levelname)s - %(message)s",
-        )
-        log = logging.getLogger(__name__)
-        # log to stderr
-        log.addHandler(logging.StreamHandler())
-        for index in (cls.index1, cls.index2):
-            cls.eldb = ELmonocleDB(
-                index=index,
-                prefix=cls.prefix,
-                user=os.getenv("ELASTIC_USER", None),
-                password=os.getenv("ELASTIC_PASSWORD", None),
-                use_ssl=os.getenv("ELASTIC_USE_SSL", False),
-                verify_certs=os.getenv("ELASTIC_INSECURE", None),
-                ssl_show_warn=os.getenv("ELASTIC_SSL_SHOW_WARN", None),
-            )
-            for dataset in cls.datasets:
-                index_dataset(cls.eldb, dataset)
-
-    @classmethod
-    def tearDownClass(cls):
-        for index in (cls.index1, cls.index2):
-            cls.eldb.es.indices.delete(index=cls.eldb.prefix + index)
+    def tearDown(self):
+        for index in (self.index1, self.index2):
+            self.eldb.es.indices.delete(index=self.eldb.prefix + index)
 
     def setUp(self):
+        for index in (self.index1, self.index2):
+            self.eldb = get_db_cnx(index, self.prefix)
+            if index in (self.index1, self.index2):
+                for dataset in self.datasets:
+                    index_dataset(self.eldb, dataset)
         webapp.CHANGE_PREFIX = self.prefix
         webapp.app.config["TESTING"] = True
         self.client = webapp.app.test_client()
+        self.apikey = "1a2b3c4d5e"
         config_data = {
             "tenants": [
                 {
@@ -73,11 +56,19 @@ class TestWebAPI(unittest.TestCase):
                 },
                 {
                     # Public index
-                    "index": self.index2
+                    "index": self.index2,
+                    "task_crawlers": [
+                        {
+                            "name": "myttcrawler",
+                            "api_key": self.apikey,
+                            "updated_since": "2020-01-01",
+                        }
+                    ],
                 },
             ]
         }
         webapp.indexes_acl = config.build_index_acl(config_data)
+        webapp.indexes_task_crawlers = config.build_index_task_crawlers(config_data)
 
     def test_health(self):
         "Test health endpoint"
@@ -88,7 +79,7 @@ class TestWebAPI(unittest.TestCase):
     def test_get_indices(self):
         "Test indices endpoint"
         resp = self.client.get("/api/0/indices")
-        self.assertListEqual(["monocle-unittest-2"], json.loads(resp.data))
+        self.assertListEqual(["unittest-2"], json.loads(resp.data))
 
     def test_get_indices_with_acl(self):
         "Test indices endpoint with acl"
@@ -96,7 +87,8 @@ class TestWebAPI(unittest.TestCase):
             sess["username"] = "jane"
         resp = self.client.get("/api/0/indices")
         self.assertListEqual(
-            ["monocle-unittest-1", "monocle-unittest-2"], json.loads(resp.data)
+            ["unittest-1", "unittest-2"],
+            json.loads(resp.data),
         )
 
     def test_query(self):
@@ -182,3 +174,190 @@ tenants:
         fake_index = "fake-index"
         resp = self.client.get("/api/0/projects?index=%s" % fake_index)
         self.assertEqual(404, resp.status_code)
+
+    def check_APIErr_msg(self, message, resp):
+        err = json.loads(resp.data)
+        self.assertTrue(err["message"].startswith(message))
+
+    def test_task_data_post(self):
+        "Test post on task_data endpoint"
+        # First try some faulty requests
+        resp = self.client.post("/api/0/task_data?index=%s" % self.index2, json="")
+        self.assertEqual(404, resp.status_code)
+        self.check_APIErr_msg("No crawler name provided", resp)
+
+        resp = self.client.post(
+            "/api/0/task_data?index=%s&apikey=badkey" % self.index2, json=""
+        )
+        self.assertEqual(404, resp.status_code)
+        self.check_APIErr_msg("No crawler name provided", resp)
+
+        resp = self.client.post(
+            "/api/0/task_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
+            json="",
+        )
+        self.assertEqual(403, resp.status_code)
+        self.check_APIErr_msg("Not authorized", resp)
+
+        url = "/api/0/task_data?index=%s&apikey=%s&name=%s" % (
+            self.index2,
+            self.apikey,
+            "myttcrawler",
+        )
+
+        resp = self.client.post(url, json="data")
+        self.assertEqual(400, resp.status_code)
+        self.check_APIErr_msg("Input data is not a List", resp)
+
+        resp = self.client.post(
+            url,
+            json=list(range(webapp.INPUT_TASK_DATA_LIMIT + 1)),
+        )
+        self.assertEqual(400, resp.status_code)
+        self.check_APIErr_msg("Input data List over limit (500 items)", resp)
+
+        resp = self.client.post(
+            url,
+            json=[{"do": "you", "eat": "that"}],
+        )
+        self.assertEqual(400, resp.status_code)
+        self.check_APIErr_msg(
+            (
+                "Unable to extract input data due to wrong input format: "
+                "Missing mandatory field:",
+            ),
+            resp,
+        )
+
+        # Now test a working workflow
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&change_ids=unit@repo1@1"
+            % self.index2
+        )
+        orig = json.loads(resp.data)["items"][0]
+        self.assertNotIn("task_data", orig)
+        # Do a first post of task_data
+        task_data = [
+            {
+                "updated_at": "2021-04-09T12:00:00Z",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "ttype": ["RFE"],
+                "tid": "1234",
+                "url": "https://issue-tracker.domain.com/1234",
+                "title": "Implement feature XYZ",
+            }
+        ]
+        resp = self.client.post(url, json=task_data)
+        self.assertEqual(200, resp.status_code)
+        webapp.cache.delete_memoized(webapp.do_query)
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&change_ids=unit@repo1@1"
+            % self.index2
+        )
+        new = json.loads(resp.data)["items"][0]
+        self.assertIn("tasks_data", new)
+        # Check if crawler metadata have been updated
+        resp = self.client.get(
+            "/api/0/task_data?index=%s&name=%s&details=true"
+            % (self.index2, "myttcrawler")
+        )
+        c_metadata_1 = json.loads(resp.data)
+        self.assertEqual(c_metadata_1["total_docs_posted"], 1)
+        self.assertEqual(c_metadata_1["total_changes_updated"], 1)
+        self.assertEqual(c_metadata_1["total_orphans_updated"], 0)
+        # Sleep 1s to ensure the next post will get and updated last_post_at date
+        # as we have a second granularity
+        time.sleep(1)
+        # Attempt a new post with an updated task
+        task_data = [
+            {
+                "updated_at": "2021-04-09T13:00:00Z",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "ttype": ["RFE", "Needed"],
+                "tid": "1234",
+                "url": "https://issue-tracker.domain.com/1234",
+                "title": "Implement feature XYZ",
+            },
+            {
+                "updated_at": "2021-04-09T12:00:00Z",
+                "change_url": "https://tests.com/unit/repo1/pull/1",
+                "ttype": ["RFE"],
+                "tid": "1235",
+                "url": "https://issue-tracker.domain.com/1235",
+                "title": "Implement feature XYZ",
+            },
+            {
+                "updated_at": "2021-04-09T15:00:00Z",
+                "change_url": "https://tests.com/unit/repomissing/pull/1",
+                "ttype": ["RFE"],
+                "tid": "1235",
+                "url": "https://issue-tracker.domain.com/421235",
+                "title": "Implement feature XYZ",
+            },
+        ]
+        resp = self.client.post(url, json=task_data)
+        self.assertEqual(200, resp.status_code)
+        webapp.cache.delete_memoized(webapp.do_query)
+        resp = self.client.get(
+            "/api/0/query/changes?index=%s&repository=.*&change_ids=unit@repo1@1"
+            % self.index2
+        )
+        new = json.loads(resp.data)["items"][0]
+        self.assertIn("tasks_data", new)
+        std = [(td["url"], td["updated_at"], td["ttype"]) for td in new["tasks_data"]]
+        self.assertListEqual(
+            [
+                (
+                    "https://issue-tracker.domain.com/1234",
+                    "2021-04-09T13:00:00",
+                    ["RFE", "Needed"],
+                ),
+                (
+                    "https://issue-tracker.domain.com/1235",
+                    "2021-04-09T12:00:00",
+                    ["RFE"],
+                ),
+            ],
+            std,
+        )
+        # Check if crawler metadata have been updated
+        resp = self.client.get(
+            "/api/0/task_data?index=%s&name=%s&details=true"
+            % (self.index2, "myttcrawler")
+        )
+        c_metadata_2 = json.loads(resp.data)
+        self.assertNotEqual(c_metadata_1["last_post_at"], c_metadata_2["last_post_at"])
+        self.assertEqual(c_metadata_2["total_docs_posted"], 4)
+        self.assertEqual(c_metadata_2["total_changes_updated"], 2)
+        self.assertEqual(c_metadata_2["total_orphans_updated"], 1)
+
+    def test_task_data_commit(self):
+        "Test task_data_commit endpoint"
+        posturl = "/api/0/task_data/commit?index=%s&apikey=%s&name=%s" % (
+            self.index2,
+            self.apikey,
+            "myttcrawler",
+        )
+        geturl = "/api/0/task_data?index=%s&name=%s" % (
+            self.index2,
+            "myttcrawler",
+        )
+        # No previous commit data - return the default date
+        resp = self.client.get(geturl)
+        self.assertEqual(200, resp.status_code)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(commit_date, "2020-01-01T00:00:00Z")
+        # Set a commit date and check we can retrieve it
+        input_date = "2020-01-01T00:10:00Z"
+        resp = self.client.post(posturl, json=input_date)
+        self.assertEqual(200, resp.status_code)
+        resp = self.client.get(geturl)
+        self.assertEqual(200, resp.status_code)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(commit_date, input_date)
+        # Set a new commit date and check we can retrieve it
+        input_date = "2020-01-01T01:00:00Z"
+        resp = self.client.post(posturl, json=input_date)
+        resp = self.client.get(geturl)
+        commit_date = json.loads(resp.data)
+        self.assertEqual(commit_date, input_date)

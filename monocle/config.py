@@ -20,6 +20,7 @@ from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
+from monocle.task_data import TaskCrawler, createTaskCrawler
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -123,6 +124,19 @@ schema = {
                             },
                         },
                     },
+                    "task_crawlers": {
+                        "description": "Task tracker crawlers authorized to act on that index",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["name", "api_key", "updated_since"],
+                            "properties": {
+                                "name": {"type": "string"},
+                                "updated_since": {"type": "string", "format": "date"},
+                                "api_key": {"type": "string"},
+                            },
+                        },
+                    },
                     "crawler": {
                         "type": "object",
                         "properties": {
@@ -158,6 +172,10 @@ config_sample_yaml = """
 ---
 tenants:
   - index: default
+    task_crawlers:
+      - name: crawler
+        updated_since: "2020-01-01"
+        api_key: 1a2b3c4d5e
     users:
       - john
       - jane
@@ -233,6 +251,18 @@ def build_index_acl(config: dict) -> Dict[str, List[Username]]:
         else:
             indexes_acl[tenant["index"]] = tenant["users"]
     return indexes_acl
+
+
+def build_index_task_crawlers(
+    config: dict,
+) -> Dict[str, List[TaskCrawler]]:
+    ret = {}
+    for tenant in config["tenants"]:
+        if "task_crawlers" in tenant.keys():
+            ret[tenant["index"]] = [
+                createTaskCrawler(entry) for entry in tenant["task_crawlers"]
+            ]
+    return ret
 
 
 def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:

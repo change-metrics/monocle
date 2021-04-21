@@ -483,7 +483,7 @@ if __name__ == "__main__":
         pprint([review[0], objs])
     else:
         basename = "%s-%s-%s" % (
-            args.base_url.replace("/", ("_")).replace(":", ""),
+            utils.strip_url(args.base_url).replace("/", ("_")).replace(":", ""),
             args.repository.replace("/", "_"),
             args.id,
         )
