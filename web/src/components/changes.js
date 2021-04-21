@@ -157,7 +157,11 @@ class ChangesTable extends React.Component {
                     )}
                     {change.tasks_data !== undefined &&
                       change.tasks_data.map((td, idx) => (
-                        <TaskData key={idx} td={td} />
+                        <Row key={idx}>
+                          <Col>
+                            <TaskData td={td} />
+                          </Col>
+                        </Row>
                       ))}
                   </Col>
                 </Row>

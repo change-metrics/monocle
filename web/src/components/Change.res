@@ -12,7 +12,10 @@ module TaskData = {
     url: string,
     ttype: array<string>,
     tid: string,
+    severity: string,
+    priority: string,
   }
+
   module TaskType = {
     @react.component
     let make = (~ttype: string) =>
@@ -22,6 +25,23 @@ module TaskData = {
       | x => <Patternfly.Label> {x->str} </Patternfly.Label>
       }
   }
+
+  module TaskPS = {
+    let getLabelColor = (level: string) =>
+      switch level {
+      | "urgent" => #Purple
+      | "high" => #Red
+      | "medium" => #Orange
+      | "low" => #Green
+      | _ => #Green
+      }
+    @react.component
+    let make = (~ps, ~name) => {
+      let label = name ++ ": " ++ ps
+      <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
+    }
+  }
+
   module TaskLink = {
     @react.component
     let make = (~td) =>
@@ -34,14 +54,16 @@ module TaskData = {
 
   @react.component
   let make = (~td: t) => {
-    <p>
+    <>
       {"Task: "->str}
       <TaskLink td />
+      <TaskPS ps=td.priority name="Priority" />
+      <TaskPS ps=td.severity name="Severity" />
       <Patternfly.LabelGroup>
         <Patternfly.LabelGroup categoryName="Type">
           {td.ttype->Belt.Array.map(x => <TaskType ttype={x} />)}
         </Patternfly.LabelGroup>
       </Patternfly.LabelGroup>
-    </p>
+    </>
   }
 }
