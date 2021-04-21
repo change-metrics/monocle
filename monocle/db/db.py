@@ -17,13 +17,14 @@
 import logging
 import socket
 import time
+from datetime import datetime
 
 from typing import List, Optional, Literal, Dict, Union, Tuple
 from dataclasses import dataclass, asdict
 
 from dacite import from_dict
 
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch.helpers import scan
 from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -31,6 +32,13 @@ from elasticsearch.exceptions import NotFoundError
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
 from monocle.utils import get_events_list
+from monocle.task_data import (
+    TaskDataForEL,
+    OrphanTaskDataForEL,
+    AdoptedTaskData,
+    AdoptedTaskDataForEL,
+    createELTaskData,
+)
 
 
 CHANGE_PREFIX = "monocle.changes.1."
@@ -337,6 +345,41 @@ class ELmonocleDB:
                 "approval": {"type": "keyword"},
                 "draft": {"type": "boolean"},
                 "self_merged": {"type": "boolean"},
+                "crawler_metadata": {
+                    "properties": {
+                        "last_commit_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
+                        },
+                        "last_post_at": {
+                            "type": "date",
+                            "format": "date_time_no_millis",
+                        },
+                        "total_docs_posted": {"type": "integer"},
+                        "total_changes_updated": {"type": "integer"},
+                        "total_orphans_updated": {"type": "integer"},
+                    }
+                },
+                "tasks_data": {
+                    "properties": {
+                        "tid": {"type": "keyword"},
+                        "ttype": {"type": "keyword"},
+                        "crawler_name": {"type": "keyword"},
+                        "updated_at": {"type": "date", "format": "date_time_no_millis"},
+                        "change_url": {"type": "keyword"},
+                        "severity": {"type": "keyword"},
+                        "priority": {"type": "keyword"},
+                        "score": {"type": "integer"},
+                        "url": {"type": "keyword"},
+                        "title": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {"type": "keyword", "ignore_above": 8191}
+                            },
+                        },
+                        "_adopted": {"type": "boolean"},
+                    }
+                },
             }
         }
         settings = {"mappings": self.mapping}
@@ -364,6 +407,93 @@ class ELmonocleDB:
 
         bulk(self.es, gen(source_it))
         self.es.indices.refresh(index=self.index)
+
+    def update_task_data(
+        self,
+        source_it: Union[
+            List[TaskDataForEL],
+            List[OrphanTaskDataForEL],
+            List[AdoptedTaskDataForEL],
+        ],
+    ) -> Optional[BulkIndexError]:
+        def gen(it):
+            for _source in it:
+                d = {}
+                d["_index"] = self.index
+                d["_op_type"] = "update"
+                d["_id"] = _source._id
+                d["doc"] = {}
+                d["doc"].update({"id": _source._id})
+                if isinstance(_source, TaskDataForEL):
+                    d["doc"].update(
+                        {"tasks_data": [asdict(td) for td in _source.tasks_data]}
+                    )
+                if isinstance(_source, OrphanTaskDataForEL):
+                    d["doc"].update({"tasks_data": asdict(_source.task_data)})
+                    d["doc"]["type"] = "OrphanTaskData"
+                if isinstance(_source, AdoptedTaskDataForEL):
+                    d["doc"].update({"tasks_data": asdict(_source.task_data)})
+                d["doc_as_upsert"] = True
+                yield d
+
+        ret = None
+        try:
+            bulk(self.es, gen(source_it))
+        except BulkIndexError as err:
+            ret = err
+        self.es.indices.refresh(index=self.index)
+        return ret
+
+    def compute_crawler_id_by_name(self, name, _type):
+        return "crawler/%s/%s" % (_type, name)
+
+    def get_task_crawler_metadata(self, name: str) -> Dict:
+        try:
+            ret = self.es.get(
+                self.index, self.compute_crawler_id_by_name(name, "tasks_crawler")
+            )
+            return ret["_source"]["crawler_metadata"]
+        except Exception:
+            return {}
+
+    def set_task_crawler_metadata(
+        self, name: str, commit_date: datetime = None, push_infos: Dict = None
+    ):
+        metadata = {}
+        if commit_date:
+            metadata.update({"last_commit_at": commit_date})
+        if push_infos:
+            prev_metadata = self.get_task_crawler_metadata(name)
+            metadata.update(
+                {
+                    "last_post_at": push_infos["last_post_at"],
+                    "total_docs_posted": prev_metadata.get("total_docs_posted", 0)
+                    + push_infos["total_docs_posted"],
+                    "total_changes_updated": prev_metadata.get(
+                        "total_changes_updated", 0
+                    )
+                    + push_infos["total_changes_updated"],
+                    "total_orphans_updated": prev_metadata.get(
+                        "total_orphans_updated", 0
+                    )
+                    + push_infos["total_orphans_updated"],
+                }
+            )
+        body = {
+            "doc": {"type": "TaskCrawlerDataCommit", "crawler_metadata": metadata},
+            "doc_as_upsert": True,
+        }
+        ret = None
+        try:
+            self.es.update(
+                self.index,
+                self.compute_crawler_id_by_name(name, "tasks_crawler"),
+                body=body,
+            )
+            self.es.indices.refresh(index=self.index)
+        except Exception as err:
+            ret = err
+        return ret
 
     def delete_index(self):
         self.log.info("Deleting index: %s" % self.index)
@@ -413,6 +543,88 @@ class ELmonocleDB:
             return []
         return ret[0]
 
+    def get_changes_by_url(self, change_urls, size):
+        params = {
+            "index": self.index,
+            "body": {
+                "size": size,
+                "query": {
+                    "bool": {
+                        "filter": [
+                            {"term": {"type": "Change"}},
+                            {"terms": {"url": change_urls}},
+                        ]
+                    }
+                },
+            },
+        }
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        return [r["_source"] for r in res["hits"]["hits"]]
+
+    def get_orphan_tds_by_change_urls(self, change_urls):
+        assert len(change_urls) <= 50
+        size = 5000  # Asumming not more that 100 TD data relataed to a change
+        params = {
+            "index": self.index,
+            "body": {
+                "size": size,
+                "query": {
+                    "bool": {
+                        "must_not": {"exists": {"field": "tasks_data._adopted"}},
+                        "filter": [
+                            {"term": {"type": "OrphanTaskData"}},
+                            {"terms": {"tasks_data.change_url": change_urls}},
+                        ],
+                    }
+                },
+            },
+        }
+        try:
+            res = self.es.search(**params)
+        except Exception:
+            return []
+        return [r["_source"] for r in res["hits"]["hits"]]
+
+    def get_orphan_tds_and_declare_adpotion(self, changes_url):
+        assert len(changes_url) <= 50
+        tds = self.get_orphan_tds_by_change_urls(changes_url)
+        if tds:
+            adopted_tds = [
+                AdoptedTaskDataForEL(
+                    _id=td["id"],
+                    task_data=AdoptedTaskData(_adopted=True),
+                )
+                for td in tds
+            ]
+            self.update_task_data(adopted_tds)
+        return tds
+
+    def update_changes_with_orphan_tds(self, mapping: Dict[str, str]):
+        change_urls = list(mapping.keys())
+        while change_urls:
+            change_urls_to_process = change_urls[:50]
+            change_urls = change_urls[50:]
+            tds = self.get_orphan_tds_and_declare_adpotion(change_urls_to_process)
+            # Group tds in buckets by change_url
+            _map: Dict[str, List] = dict()
+            for td in tds:
+                _map.setdefault(td["tasks_data"]["change_url"], []).append(
+                    td["tasks_data"]
+                )
+            # Create update docs to attach tds to matching changes
+            to_update = []
+            for change_url, tds in _map.items():
+                to_update.append(
+                    TaskDataForEL(
+                        _id=mapping[change_url],
+                        tasks_data=createELTaskData(tds),
+                    )
+                )
+            self.update_task_data(to_update)
+
     def run_named_query(self, name, *args, **kwargs):
         if name not in queries.public_queries:
             raise UnknownQueryException("Unknown query: %s" % name)
@@ -458,7 +670,7 @@ class ELmonocleDB:
                     for commit in obj["commits"]:
                         commit["author"] = update_ident(commit["author"])
                         commit["committer"] = update_ident(commit["committer"])
-            else:
+            if obj["type"] in get_events_list():
                 if "author" in obj:
                     obj["author"] = update_ident(obj["author"])
                 if "on_author" in obj:

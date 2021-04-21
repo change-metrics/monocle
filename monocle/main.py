@@ -179,6 +179,18 @@ def main() -> None:
         help="Scope to changes containing an issue tracker link",
         choices=["generic", "github.com", "altassian.net"],
     )
+    parser_dbquery.add_argument(
+        "--task-priority",
+        help="Scope to changes related to task priorities (comma separated)",
+    )
+    parser_dbquery.add_argument(
+        "--task-severity",
+        help="Scope to changes related to task severities (comma separated)",
+    )
+    parser_dbquery.add_argument(
+        "--task-issue-type",
+        help="Scope to changes related to task type (comma separated)",
+    )
 
     args = parser.parse_args()
 
@@ -217,7 +229,7 @@ def main() -> None:
                     updated_since=crawler_item["updated_since"],
                     loop_delay=tenant["crawler"]["loop_delay"],
                     repository=crawler_item.get("repository"),
-                    base_url=crawler_item["base_url"],
+                    base_url=utils.strip_url(crawler_item["base_url"]),
                     token_getter=tg,
                     db=ELmonocleDB(
                         elastic_conn=args.elastic_conn,
@@ -268,7 +280,7 @@ def main() -> None:
                     repository=crawler_item["name"],
                     updated_since=crawler_item["updated_since"],
                     loop_delay=tenant["crawler"]["loop_delay"],
-                    base_url=crawler_item["base_url"],
+                    base_url=utils.strip_url(crawler_item["base_url"]),
                     insecure=crawler_item.get("insecure", False),
                     login=crawler_item.get("login"),
                     password=crawler_item.get("password"),
