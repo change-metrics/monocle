@@ -280,6 +280,21 @@ class BaseQueryComponent extends React.Component {
     obj.queryBackend(pageData.selected)
   }
 
+  getFinalChangeState(params) {
+    const state = params.get('state')
+    let ret = state
+    switch (state) {
+      case 'ALL':
+        ret = undefined
+        break
+      case 'SELF-MERGED':
+        ret = 'MERGED'
+        break
+      default:
+    }
+    return ret
+  }
+
   queryBackend(start = 0) {
     const params = new URL(window.location.href).searchParams
     this.setState({ state: params.get('state') })
@@ -324,10 +339,7 @@ class BaseQueryComponent extends React.Component {
           ...{
             approvals: params.get('approvals'),
             excludeApprovals: params.get('exclude_approvals'),
-            state:
-              params.get('state') === 'SELF-MERGED'
-                ? 'MERGED'
-                : params.get('state'),
+            state: this.getFinalChangeState(params),
             selfMerged: params.get('state') === 'SELF-MERGED'
           }
         }

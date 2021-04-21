@@ -25,25 +25,35 @@ module Filters = {
   type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit)>
 
   // The list of filters:
-  let all =
-    [
-      ("authors", Filter.make("Authors", "Author names")),
-      ("exclude_authors", Filter.make("Exclude authors", "Author names")),
-      ("repository", Filter.make("Repository", "Repositories regexp")),
-      ("branch", Filter.make("Branch", "Branch regexp")),
-      ("files", Filter.make("Files", "Files regexp")),
-      ("gte", {...Filter.make("From date", "yyyy-MM-dd"), kind: Date}),
-      ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
-      ("approvals", Filter.make("Approvals", "Change approval")),
-      ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
-      (
-        "state",
-        Filter.makeChoice("Change state", "Filter by state", list{"OPEN", "CLOSED", "MERGED"}),
+  let all = [
+    ("authors", Filter.make("Authors", "Author names")),
+    ("exclude_authors", Filter.make("Exclude authors", "Author names")),
+    ("repository", Filter.make("Repository", "Repositories regexp")),
+    ("branch", Filter.make("Branch", "Branch regexp")),
+    ("files", Filter.make("Files", "Files regexp")),
+    (
+      "gte",
+      {
+        ...Filter.make("From date", "yyyy-MM-dd"),
+        default: Time.getDateMinusMonth(3)->Some,
+        kind: Date,
+      },
+    ),
+    ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
+    ("approvals", Filter.make("Approvals", "Change approval")),
+    ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
+    (
+      "state",
+      Filter.makeChoice(
+        "Change state",
+        "Filter by state",
+        list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"},
       ),
-      ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
-      ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
-      ("task_type", Filter.make("Task type", "Filter by task type")),
-    ]->Belt.Map.String.fromArray
+    ),
+    ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
+    ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
+    ("task_type", Filter.make("Task type", "Filter by task type")),
+  ]->Belt.Map.String.fromArray
 
   // Helper functions:
   let map = (dict, f) => dict->Belt.Map.String.mapWithKey(f)
@@ -72,7 +82,7 @@ module Filters = {
   let useFilter = (): t => {
     // First we create a state hook for each filter
     let states: t = all->Belt.Map.String.map(x => {
-      let (value, setValue) = React.useState(_ => "")
+      let (value, setValue) = React.useState(_ => x->Filter.getValue)
       (x, value, setValue)
     })
     // Then we load the current value when the url search params change
@@ -150,7 +160,7 @@ module FilterSummary = {
 let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
   let states = Filters.useFilter()
   let onClick = _ => states->Filters.dumps->updateFilters
-  <>
+  <MStack>
     <MExpandablePanel title="Filter">
       <FieldGroups>
         <FieldGroup> <Field name="gte" states /> <Field name="lte" states /> </FieldGroup>
@@ -181,7 +191,7 @@ let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
       </FieldGroups>
     </MExpandablePanel>
     <FilterSummary states />
-  </>
+  </MStack>
 }
 //
 let default = make

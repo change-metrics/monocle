@@ -33,10 +33,13 @@ class FiltersFormLegacy extends React.Component {
       }
     }
     return (
-      <FiltersForm
-        updateFilters={updateFilters}
-        showChangeParams={this.props.showChangeParams}
-      />
+      <div>
+        <FiltersForm
+          updateFilters={updateFilters}
+          showChangeParams={this.props.showChangeParams}
+        />
+        <br />
+      </div>
     )
   }
 }

@@ -27,8 +27,26 @@ module Env = {
   }
   @val @scope("process") external env: t = "env"
   let withBZ = env.rhbz->Belt.Option.isSome
-  let bzPriority = list{"HIGH", "MEDIUM", "LOW"}
+  let bzPriority = list{"urgent", "high", "medium", "low"}
   let bzType = list{"FutureFeature", "ZStream", "Triaged"}
+}
+
+module Time = {
+  type t
+
+  let getNow = Js.Date.make
+
+  let getSimpleDate = (d: Js.Date.t): string =>
+    Js.String.split("T", d->Js.Date.toISOString)->Belt.Array.getUnsafe(0)
+
+  let getDateMinusMonth = (mdelta: int): string => {
+    let now = getNow()
+    let curMonth = now->Js.Date.getUTCMonth->Belt.Float.toInt
+    let newMonth = (curMonth - mdelta)->Belt.Float.fromInt
+    // Mutate the date
+    Js.Date.setUTCMonth(now, newMonth)->ignore
+    now->getSimpleDate
+  }
 }
 
 module URLSearchParams = {
@@ -111,7 +129,7 @@ module MExpandablePanel = {
       "aria-expanded": !show,
       "icon": React.null,
     }
-    <Card isExpanded=show>
+    <Card isCompact={true} isExpanded=show>
       <CardHeader onExpand={(_, _) => setShow(v => !v)} toggleButtonProps={toggleProps}>
         <CardTitle> {title->React.string} </CardTitle>
       </CardHeader>
