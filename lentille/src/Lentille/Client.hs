@@ -34,11 +34,12 @@ module Lentille.Client
 where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), eitherDecode, encode, genericToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), eitherDecode, encode, genericParseJSON, genericToJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
+import Data.Aeson.Types (Parser)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Network.HTTP.Client
   ( Manager,
     Request,
@@ -162,6 +163,16 @@ newtype IsoTime = IsoTime UTCTime deriving stock (Show, Eq)
 instance ToJSON IsoTime where
   toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
+instance FromJSON IsoTime where
+  parseJSON = withText "IsoTime" (parse . toString)
+    where
+      -- TODO: use a single date encoding format
+      elkApiFormat = "%FT%T"
+      monocleApiFormat = "%FT%TZ"
+      tryParse f s = parseTimeM False defaultTimeLocale f s
+      parse :: String -> Parser IsoTime
+      parse s = IsoTime <$> (tryParse elkApiFormat s <|> tryParse monocleApiFormat s)
+
 data TaskData = TaskData
   { tdUpdatedAt :: IsoTime,
     tdChangeUrl :: Text,
@@ -176,6 +187,9 @@ data TaskData = TaskData
 
 instance ToJSON TaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON TaskData where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 postTaskData ::
   forall m.
