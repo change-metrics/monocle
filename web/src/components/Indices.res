@@ -3,7 +3,7 @@
 //
 // Render indices
 //
-open Prelude
+open Prelude // 'open' bring module values into scope
 
 module Indice = {
   @react.component

@@ -21,6 +21,7 @@ module Filter = {
 
 // The definition of filters
 module Filters = {
+  // See: https://rescript-lang.org/docs/manual/latest/api/belt/map-string
   // The value type is a tuple of (the filter, it's value, and a setState function)
   type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit)>
 

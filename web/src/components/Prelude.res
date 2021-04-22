@@ -5,16 +5,25 @@
 //
 
 // Missing bindings from re-patternfly
-include Patternfly
+include Patternfly // 'include' export a module value to open scope
 
 // Bindings for existing javascript
-type axiosResponse<'d> = {data: 'd}
+type axiosResponse<'data> = {data: 'data}
 type axios<'data> = Js.Promise.t<axiosResponse<'data>>
-type axiosGet<'data> = unit => axios<'data>
+// axiosGetCallback<string> is a function that goes from unit to axios<string>
+type axiosGetCallback<'data> = unit => axios<'data>
+
+module Project = {
+  type t = {name: string}
+}
+
+// See https://rescript-lang.org/docs/manual/latest/interop-cheatsheet
 
 @module("../api.js") external apiUrl: string = "baseurl"
 @module("../api.js")
 external getIndices: unit => axios<array<string>> = "getIndices"
+@module("../api.js")
+external getProjects: string => axios<array<Project.t>> = "getConfigProjectDefinitions"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
@@ -66,7 +75,7 @@ module URLSearchParams = {
 
 // useAutoGet perform the 'get' effect when the calling component is mounted.
 type result<'a, 'b> = Belt.Result.t<'a, 'b>
-let useAutoGet = (get: axiosGet<'data>): option<result<'data, string>> => {
+let useAutoGet = (get: axiosGetCallback<'data>): option<result<'data, string>> => {
   let (state, set') = React.useState(_ => None)
   let set = x => set'(_ => x->Some)->Js.Promise.resolve
   let handleErr = err => {
