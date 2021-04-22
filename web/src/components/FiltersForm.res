@@ -17,6 +17,11 @@ module Filter = {
     kind: Choice(choices),
   }
   let getValue = filter => filter.default->fromMaybe("")
+  let validate = (filter, value) =>
+    switch filter.kind {
+    | Text | Date => true
+    | Choice(values) => values->elemText(value)
+    }
 }
 
 // The definition of filters
@@ -63,8 +68,10 @@ module Filters = {
 
   // Loads the values from the url search params
   let loads = (searchParams, states) =>
-    states->mapM((name, (_, _, set)) =>
-      searchParams->URLSearchParams.get(name)->Js.Nullable.bind((. value) => set(_ => value))
+    states->mapM((name, (filter, _, set)) =>
+      searchParams
+      ->URLSearchParams.get(name)
+      ->Js.Nullable.bind((. value) => set(_ => filter->Filter.validate(value) ? value : ""))
     )
 
   // Dump the values to a query string

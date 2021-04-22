@@ -99,6 +99,8 @@ let maybeRender = (pred: bool, component: React.element): React.element =>
 // Render component if the list is not empty
 let maybeRenderList = (xs: array<'a>, component) =>
   xs->Belt.Array.length > 0 ? component : React.null
+// Check if a text list contains an element
+let elemText = (xs: list<string>, x: string) => xs->Belt.List.has(x, (a, b) => a == b)
 // Get an optional value with default
 let fromMaybe = (maybe: option<'a>, default: 'a): 'a => maybe->Belt.Option.getWithDefault(default)
 let mapWithKey = (xs, f) => xs->Belt.List.mapWithIndex((index, x) => f(string_of_int(index), x))
