@@ -35,6 +35,7 @@ class FiltersFormLegacy extends React.Component {
     return (
       <div>
         <FiltersForm
+          index={this.props.index}
           updateFilters={updateFilters}
           showChangeParams={this.props.showChangeParams}
         />
@@ -46,6 +47,7 @@ class FiltersFormLegacy extends React.Component {
 
 FiltersFormLegacy.propTypes = {
   history: PropTypes.object.isRequired,
+  index: PropTypes.string,
   showChangeParams: PropTypes.bool
 }
 
