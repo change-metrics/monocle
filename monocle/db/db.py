@@ -624,7 +624,7 @@ class ELmonocleDB:
             self.update_task_data(adopted_tds)
         return tds
 
-    def update_changes_with_orphan_tds(self, mapping: Dict[str, str]):
+    def update_change_and_events_with_orphan_tds(self, mapping: Dict[str, List[str]]):
         change_urls = list(mapping.keys())
         while change_urls:
             change_urls_to_process = change_urls[:50]
@@ -639,12 +639,13 @@ class ELmonocleDB:
             # Create update docs to attach tds to matching changes
             to_update = []
             for change_url, tds in _map.items():
-                to_update.append(
-                    TaskDataForEL(
-                        _id=mapping[change_url],
-                        tasks_data=createELTaskData(tds),
+                for _id in mapping[change_url]:
+                    to_update.append(
+                        TaskDataForEL(
+                            _id=_id,
+                            tasks_data=createELTaskData(tds),
+                        )
                     )
-                )
             self.update_task_data(to_update)
 
     def run_named_query(self, name, *args, **kwargs):
