@@ -96,6 +96,9 @@ let str = React.string
 // Render component if the predicate is true
 let maybeRender = (pred: bool, component: React.element): React.element =>
   pred ? component : React.null
+// Render component if the list is not empty
+let maybeRenderList = (xs: array<'a>, component) =>
+  xs->Belt.Array.length > 0 ? component : React.null
 // Get an optional value with default
 let fromMaybe = (maybe: option<'a>, default: 'a): 'a => maybe->Belt.Option.getWithDefault(default)
 let mapWithKey = (xs, f) => xs->Belt.List.mapWithIndex((index, x) => f(string_of_int(index), x))

@@ -163,8 +163,21 @@ module FilterSummary = {
 
 module FilterBox = {
   @react.component
-  let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
-    let states = Filters.useFilters([])
+  let make = (
+    ~updateFilters: string => unit,
+    ~showChangeParams: bool,
+    ~projects: array<Project.t>,
+  ) => {
+    let states = Filters.useFilters([
+      (
+        "project_definition",
+        Filter.makeChoice(
+          "Projects",
+          "Select a project",
+          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray,
+        ),
+      ),
+    ])
     let onClick = _ => states->Filters.dumps->updateFilters
     <MStack>
       <MExpandablePanel title="Filter">
@@ -174,6 +187,7 @@ module FilterBox = {
             <Field name="authors" states /> <Field name="exclude_authors" states />
           </FieldGroup>
           <FieldGroup>
+            {projects->maybeRenderList(<Field name="project_definition" states />)}
             <Field name="repository" states />
             <Field name="branch" states />
             <Field name="files" states />
@@ -202,7 +216,15 @@ module FilterBox = {
 }
 
 @react.component
-let make = (~updateFilters: string => unit, ~showChangeParams: bool) =>
-  <FilterBox updateFilters showChangeParams />
-//
+let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: string) => {
+  let indices = useAutoGet(() => getProjects(index))
+  switch indices {
+  | None => <Spinner />
+  | Some(Ok(projects)) => <FilterBox updateFilters showChangeParams projects />
+  // We ignore the error right now because the api returns a 404
+  // TODO: make 404 non error?
+  | Some(Error(_error)) => <FilterBox updateFilters showChangeParams projects={[]} />
+  }
+}
+
 let default = make

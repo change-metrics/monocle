@@ -68,6 +68,10 @@ function getQueryResults(queryParams) {
   })
 }
 
+function getConfigProjectDefinitions(indexName) {
+  return axios.get(baseurl + '/projects?index=' + indexName)
+}
+
 function getIndices() {
   const url = baseurl + '/indices'
   return axios.get(url, {
@@ -84,4 +88,10 @@ function getLoggedUser() {
   })
 }
 
-export { getQueryResults, getIndices, getLoggedUser, baseurl }
+export {
+  getQueryResults,
+  getIndices,
+  getLoggedUser,
+  baseurl,
+  getConfigProjectDefinitions
+}
