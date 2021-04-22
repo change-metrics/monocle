@@ -19,6 +19,7 @@ from datetime import datetime
 
 from .common import index_dataset, get_db_cnx
 
+from monocle.utils import get_events_list
 from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskData,
@@ -189,3 +190,17 @@ class TestQueries(unittest.TestCase):
             ]
         )
         self.assertEqual(len(otds), 1)
+
+    def test_get_change_events_by_url(self):
+        objs = self.db.get_change_events_by_url(
+            [
+                "https://tests.com/unit/repo1/pull/1",
+                "https://tests.com/unit/repo2/pull/2",
+            ],
+        )
+        total_match = len(objs)
+        self.assertEqual(9, total_match)
+        self.assertEqual(
+            total_match,
+            len([o["type"] for o in objs if o["type"] in get_events_list()]),
+        )

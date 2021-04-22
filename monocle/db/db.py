@@ -28,6 +28,7 @@ from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch.helpers import scan
 from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch.helpers import scan as scanner
 
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
@@ -357,6 +358,7 @@ class ELmonocleDB:
                         },
                         "total_docs_posted": {"type": "integer"},
                         "total_changes_updated": {"type": "integer"},
+                        "total_change_events_updated": {"type": "integer"},
                         "total_orphans_updated": {"type": "integer"},
                     }
                 },
@@ -473,6 +475,10 @@ class ELmonocleDB:
                         "total_changes_updated", 0
                     )
                     + push_infos["total_changes_updated"],
+                    "total_change_events_updated": prev_metadata.get(
+                        "total_change_events_updated", 0
+                    )
+                    + push_infos["total_change_events_updated"],
                     "total_orphans_updated": prev_metadata.get(
                         "total_orphans_updated", 0
                     )
@@ -563,6 +569,22 @@ class ELmonocleDB:
         except Exception:
             return []
         return [r["_source"] for r in res["hits"]["hits"]]
+
+    def get_change_events_by_url(self, change_urls):
+        qfilter = {
+            "bool": {
+                "filter": [
+                    {"terms": {"type": get_events_list()}},
+                    {"terms": {"url": change_urls}},
+                ]
+            }
+        }
+        body = {
+            "query": qfilter,
+        }
+        scanner_params = {"index": self.index, "query": body}
+        data = scanner(self.es, **scanner_params)
+        return [d["_source"] for d in data]
 
     def get_orphan_tds_by_change_urls(self, change_urls):
         assert len(change_urls) <= 50
