@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.17.0 (HEAD)
+  labels:
+    io.kompose.service: api
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      io.kompose.service: api
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: api
+    spec:
+      containers:
+      - args:
+        - uwsgi
+        - --uid
+        - guest
+        - --gid
+        - nogroup
+        - --http
+        - :9876
+        - --socket
+        - :9877
+        - --manage-script-name
+        - --mount
+        - /app=monocle.webapp:app
+        env:
+        - name: ALLOW_ORIGIN
+          value: ${MONOCLE_URL:-http://localhost:3000}
+        - name: CLIENT_ID
+          value: ${GITHUB_CLIENT_ID:-}
+        - name: CLIENT_SECRET
+          value: ${GITHUB_CLIENT_SECRET:-}
+        - name: CONFIG
+          value: /etc/monocle/config.yaml
+        - name: ELASTIC_CONN
+          value: elastic:9200
+        - name: REDIRECT_URL
+          value: ${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize
+        - name: WEB_URL
+          value: ${MONOCLE_URL:-http://localhost:3000}
+        image: changemetrics/monocle_backend:latest
+        livenessProbe:
+          exec:
+            command:
+            - python -c "import requests,sys; r=requests.get('http://localhost:9876/api/0/health');
+              print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)"
+        name: api
+        ports:
+        - containerPort: 9876
+        - containerPort: 9877
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/monocle
+          name: api-claim0
+      restartPolicy: Always
+      volumes:
+      - name: api-claim0
+        persistentVolumeClaim:
+          claimName: api-claim0
+status: {}

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.17.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: elastic
+  name: elastic
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      io.kompose.service: elastic
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: elastic
+    spec:
+      containers:
+      - env:
+        - name: ES_JAVA_OPTS
+          value: -Xms512m -Xmx512m
+        - name: discovery.type
+          value: single-node
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+        livenessProbe:
+          exec:
+            command:
+            - curl --silent --fail localhost:9200/_cluster/health || exit 1
+        name: elastic
+        resources: {}
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elastic-claim0
+      restartPolicy: Always
+      volumes:
+      - name: elastic-claim0
+        persistentVolumeClaim:
+          claimName: elastic-claim0
+status: {}
