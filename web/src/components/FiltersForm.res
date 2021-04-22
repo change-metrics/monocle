@@ -25,8 +25,8 @@ module Filters = {
   // The value type is a tuple of (the filter, it's value, and a setState function)
   type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit)>
 
-  // The list of filters:
-  let all = [
+  // The list of static filters:
+  let staticFilters = [
     ("authors", Filter.make("Authors", "Author names")),
     ("exclude_authors", Filter.make("Exclude authors", "Author names")),
     ("repository", Filter.make("Repository", "Repositories regexp")),
@@ -54,7 +54,7 @@ module Filters = {
     ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
     ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
     ("task_type", Filter.make("Task type", "Filter by task type")),
-  ]->Belt.Map.String.fromArray
+  ]
 
   // Helper functions:
   let map = (dict, f) => dict->Belt.Map.String.mapWithKey(f)
@@ -80,12 +80,16 @@ module Filters = {
   }
 
   // A custom hook to manage filter value:
-  let useFilter = (): t => {
+  type queryStringName = string
+  let useFilters = (dynamicFilters: array<(queryStringName, Filter.t)>): t => {
     // First we create a state hook for each filter
-    let states: t = all->Belt.Map.String.map(x => {
-      let (value, setValue) = React.useState(_ => x->Filter.getValue)
-      (x, value, setValue)
-    })
+    let states: t =
+      Belt.Array.concat(staticFilters, dynamicFilters)
+      ->Belt.Map.String.fromArray
+      ->Belt.Map.String.map(x => {
+        let (value, setValue) = React.useState(_ => x->Filter.getValue)
+        (x, value, setValue)
+      })
     // Then we load the current value when the url search params change
     React.useEffect1(() => {
       Js.log("Loading filter values")
@@ -157,42 +161,48 @@ module FilterSummary = {
   }
 }
 
-@react.component
-let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
-  let states = Filters.useFilter()
-  let onClick = _ => states->Filters.dumps->updateFilters
-  <MStack>
-    <MExpandablePanel title="Filter">
-      <FieldGroups>
-        <FieldGroup> <Field name="gte" states /> <Field name="lte" states /> </FieldGroup>
-        <FieldGroup>
-          <Field name="authors" states /> <Field name="exclude_authors" states />
-        </FieldGroup>
-        <FieldGroup>
-          <Field name="repository" states />
-          <Field name="branch" states />
-          <Field name="files" states />
-        </FieldGroup>
-        {showChangeParams->maybeRender(<>
+module FilterBox = {
+  @react.component
+  let make = (~updateFilters: string => unit, ~showChangeParams: bool) => {
+    let states = Filters.useFilters([])
+    let onClick = _ => states->Filters.dumps->updateFilters
+    <MStack>
+      <MExpandablePanel title="Filter">
+        <FieldGroups>
+          <FieldGroup> <Field name="gte" states /> <Field name="lte" states /> </FieldGroup>
           <FieldGroup>
-            <Field name="approvals" states /> <Field name="exclude_approvals" states />
+            <Field name="authors" states /> <Field name="exclude_authors" states />
           </FieldGroup>
-          <FieldGroup> <Field name="state" states /> </FieldGroup>
-        </>)}
-        {Env.withBZ->maybeRender(
           <FieldGroup>
-            <Field name="task_priority" states />
-            <Field name="task_severity" states />
-            <Field name="task_type" states />
-          </FieldGroup>,
-        )}
-        <ActionGroup>
-          <Button variant=#Primary onClick> {"Apply"->React.string} </Button>
-        </ActionGroup>
-      </FieldGroups>
-    </MExpandablePanel>
-    <FilterSummary states />
-  </MStack>
+            <Field name="repository" states />
+            <Field name="branch" states />
+            <Field name="files" states />
+          </FieldGroup>
+          {showChangeParams->maybeRender(<>
+            <FieldGroup>
+              <Field name="approvals" states /> <Field name="exclude_approvals" states />
+            </FieldGroup>
+            <FieldGroup> <Field name="state" states /> </FieldGroup>
+          </>)}
+          {Env.withBZ->maybeRender(
+            <FieldGroup>
+              <Field name="task_priority" states />
+              <Field name="task_severity" states />
+              <Field name="task_type" states />
+            </FieldGroup>,
+          )}
+          <ActionGroup>
+            <Button variant=#Primary onClick> {"Apply"->React.string} </Button>
+          </ActionGroup>
+        </FieldGroups>
+      </MExpandablePanel>
+      <FilterSummary states />
+    </MStack>
+  }
 }
+
+@react.component
+let make = (~updateFilters: string => unit, ~showChangeParams: bool) =>
+  <FilterBox updateFilters showChangeParams />
 //
 let default = make
