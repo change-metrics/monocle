@@ -14,16 +14,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-FROM python:3.9.1-alpine
+FROM registry.fedoraproject.org/fedora:33
+RUN dnf update -y && dnf install -y python3-pip python3-devel openssl-devel gcc && dnf clean all
 WORKDIR /code
 COPY requirements.txt requirements.txt
-RUN apk --no-cache add build-base libffi-dev openssl-dev
 RUN pip install -r requirements.txt
 COPY monocle monocle
 COPY setup.py setup.py
-RUN python setup.py install
-
-FROM python:3.9.1-alpine
-RUN mkdir /etc/monocle
-COPY --from=0 /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
-COPY --from=0 /usr/local/bin /usr/local/bin
+RUN mkdir /etc/monocle && python setup.py install
+ENV LANG=C.UTF-8

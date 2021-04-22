@@ -1,6 +1,6 @@
 services:
   api:
-    command: uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
+    command: uwsgi --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app
     depends_on:
       - elastic
     environment:
