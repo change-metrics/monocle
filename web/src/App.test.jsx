@@ -22,8 +22,6 @@ import App from './App'
 import { MemoryRouter } from 'react-router-dom'
 import { toBeInTheDocument, toHaveClass } from '@testing-library/jest-dom'
 
-expect.extend({ toBeInTheDocument, toHaveClass })
-
 test('renders Monocle link', () => {
   const store = createMyStore()
   const { getByText } = render(

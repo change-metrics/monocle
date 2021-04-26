@@ -34,6 +34,7 @@ COPY package-lock.json /app/
 RUN npm install
 
 # copy source files
+COPY build.js /app/
 COPY public /app/public/
 COPY src /app/src/
 

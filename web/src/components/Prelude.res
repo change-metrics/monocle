@@ -22,11 +22,16 @@ let readWindowLocationSearch = () => windowLocationSearch
 // A temporary module to provide runtime setting
 module Env = {
   type t = {
-    @as("REACT_APP_RHBZ")
-    rhbz: option<string>,
+    @as("TD")
+    td: string,
   }
-  @val @scope("process") external env: t = "env"
-  let withBZ = env.rhbz->Belt.Option.isSome
+  type react_env = {
+    @as("REACT_APP_TD")
+    td: option<string>
+  }
+  @val external env: t = "window"
+  @val @scope("process") external react_env: react_env = "env"
+  let withBZ = env.td != "__TD__" || (react_env.td->Belt.Option.getWithDefault("false") != "false")
   let bzPriority = list{"urgent", "high", "medium", "low"}
   let bzType = list{"FutureFeature", "ZStream", "Triaged"}
 }
