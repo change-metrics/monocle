@@ -12,7 +12,8 @@ module Indice = {
       <a href="" onClick={_ => RescriptReactRouter.push(name)}> {name->React.string} </a>
     </Tooltip>
 
-  let card: string => React.element = name => <MSimpleCard> {make({"name": name})} </MSimpleCard>
+  let card: string => React.element = name =>
+    <MSimpleCard key={name}> {make({"name": name})} </MSimpleCard>
 }
 
 module Indices = {
