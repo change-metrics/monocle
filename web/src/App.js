@@ -326,21 +326,27 @@ class FiltersFormBox extends React.Component {
         <Route exact path="/" />
         <Route path="/:index/change/" />
         <Route path="/:index/repos/">
-          <CFiltersForm />
+          <CFiltersForm index={this.props.index} />
         </Route>
         <Route path="/:index/changes/">
-          <CFiltersForm showChangeParams={true} />
+          <CFiltersForm index={this.props.index} showChangeParams={true} />
         </Route>
         <Route path="/:index/hot-changes/">
-          <CFiltersForm />
+          <CFiltersForm index={this.props.index} />
         </Route>
         <Route path="/:index/cold-changes/">
-          <CFiltersForm />
+          <CFiltersForm index={this.props.index} />
         </Route>
-        <Route path="/" component={CFiltersForm} />
+        <Route path="/">
+          <CFiltersForm index={this.props.index} />
+        </Route>
       </Switch>
     )
   }
+}
+
+FiltersFormBox.propTypes = {
+  index: PropTypes.string
 }
 
 class App extends React.Component {

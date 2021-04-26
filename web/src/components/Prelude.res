@@ -71,6 +71,14 @@ module URLSearchParams = {
   let current = () => windowLocationSearch->make
 }
 
+let defaultUpdateFilters = (filters: string) => {
+  let current = URLSearchParams.current()->URLSearchParams.toString
+  switch current == filters {
+  | true => RescriptReactRouter.push("/changes/openstack?" ++ filters)
+  | false => ()
+  }
+}
+
 // Network helpers
 
 // useAutoGet perform the 'get' effect when the calling component is mounted.

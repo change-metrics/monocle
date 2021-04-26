@@ -57,8 +57,10 @@ module Pies = {
 
 @react.component
 let make = (~index: string) => {
+  let updateFilters = defaultUpdateFilters
   let (showPies, setShowPies) = React.useState(_ => false)
   <MStack>
+    <MStackItem> <FiltersForm index updateFilters showChangeParams={true} /> </MStackItem>
     <MStackItem> <StatsToggle showPies setShowPies /> </MStackItem>
     {showPies->maybeRender(<MStackItem> <Pies index /> </MStackItem>)}
     <MStackItem> <CLastChangesNG index showComplexityGraph={showPies} /> </MStackItem>
