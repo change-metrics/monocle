@@ -1,8 +1,58 @@
 open Prelude
 
+module RelativeDate = {
+  type relativeDate = WeeksAgo(int) | MonthsAgo(int) | YearsAgo(int)
+  type t = list<relativeDate>
+  let rdates = list{
+    WeeksAgo(1),
+    WeeksAgo(2),
+    WeeksAgo(3),
+    MonthsAgo(1),
+    MonthsAgo(2),
+    MonthsAgo(3),
+    MonthsAgo(6),
+    YearsAgo(1),
+    YearsAgo(2),
+    YearsAgo(3),
+    YearsAgo(4),
+    YearsAgo(5),
+    YearsAgo(10),
+  }
+  let toString = (rd: relativeDate): string =>
+    switch rd {
+    | WeeksAgo(1) => "1 week ago"
+    | WeeksAgo(v) => v->Belt.Int.toString ++ " weeks ago"
+    | MonthsAgo(1) => "1 month ago"
+    | MonthsAgo(v) => v->Belt.Int.toString ++ " months ago"
+    | YearsAgo(1) => "1 year ago"
+    | YearsAgo(v) => v->Belt.Int.toString ++ " years ago"
+    }
+  let toStringList = rdates->Belt.List.map(toString)
+  let fromString = (s: string): relativeDate => {
+    let get = (s: string): int => s->Belt.Int.fromString->Belt.Option.getWithDefault(1)
+    switch s |> Js.String.split(" ") {
+    | [n, u, "ago"] =>
+      switch u {
+      | "week" | "weeks" => WeeksAgo(n->get)
+      | "month" | "months" => MonthsAgo(n->get)
+      | "year" | "years" => YearsAgo(n->get)
+      | _ => WeeksAgo(1)
+      }
+    | _ => WeeksAgo(1)
+    }
+  }
+  let toDateString = (rd: relativeDate): string =>
+    switch rd {
+    | WeeksAgo(v) => v->Time.getDateMinusWeek
+    | MonthsAgo(v) => v->Time.getDateMinusMonth
+    | YearsAgo(v) => v->Time.getDateMinusYear
+    }
+  let strToDateString = (strRd: string): string => strRd->fromString->toDateString
+}
+
 // The definition of a filter:
 module Filter = {
-  type choiceType = Free(list<string>) | RelativeDate(list<string>)
+  type choiceType = Keywords(list<string>) | RelativeDates(list<string>)
   type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
@@ -21,7 +71,7 @@ module Filter = {
   let validate = (filter, value) =>
     switch filter.kind {
     | Text | Date => true
-    | Choice(Free(values)) => values->elemText(value)
+    | Choice(Keywords(values)) => values->elemText(value)
     | _ => true
     }
 }
@@ -29,7 +79,8 @@ module Filter = {
 // The definition of filters
 module Filters = {
   // See: https://rescript-lang.org/docs/manual/latest/api/belt/map-string
-  // The value type is a tuple of (the filter, it's value, and a setState function)
+  // The value type is a tuple of (the filter, it's value, a value setState function,
+  // a disabled boolean value and a setDisabled function)
   type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit, bool, bool => unit)>
 
   // The list of static filters:
@@ -55,7 +106,7 @@ module Filters = {
       Filter.makeChoice(
         "Change state",
         "Filter by state",
-        Free(list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"}),
+        Keywords(list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"}),
       ),
     ),
     (
@@ -63,16 +114,16 @@ module Filters = {
       Filter.makeChoice(
         "Relative date",
         "Select a relative date",
-        RelativeDate(list{"1 week ago", "2 weeks ago"}),
+        RelativeDates(RelativeDate.toStringList),
       ),
     ),
     (
       "task_priority",
-      Filter.makeChoice("Task priority", "Filter by priority", Free(Env.bzPriority)),
+      Filter.makeChoice("Task priority", "Filter by priority", Keywords(Env.bzPriority)),
     ),
     (
       "task_severity",
-      Filter.makeChoice("Task severity", "Filter by severity", Free(Env.bzPriority)),
+      Filter.makeChoice("Task severity", "Filter by severity", Keywords(Env.bzPriority)),
     ),
     ("task_type", Filter.make("Task type", "Filter by task type")),
   ]
@@ -82,16 +133,10 @@ module Filters = {
   let mapM = (dict, f) => dict->map(f)->ignore
   let get = (dict, name) => dict->Belt.Map.String.getExn(name)
 
-  let getDateFromRelativeDate = (rchoice: string) =>
-    switch rchoice {
-    | "1 week ago" => Time.getDateMinusWeek(1)
-    | "2 weeks ago" => Time.getDateMinusWeek(2)
-    }
-
   let setAbsoluteDateFromRelativeDate = (states, rchoice) => {
     let (_, _, setGte, _, _) = states->get("gte")
     let (_, _, setLte, _, _) = states->get("lte")
-    setGte(_ => rchoice->getDateFromRelativeDate)
+    setGte(_ => rchoice->RelativeDate.strToDateString)
     setLte(_ => "")
   }
 
@@ -180,11 +225,11 @@ module Field = {
           <DatePicker
             id={name ++ "-date"} placeholder={filter.description} onChange value isDisabled
           />
-        | Choice(Free(options)) =>
+        | Choice(Keywords(options)) =>
           <MSelect
             placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
           />
-        | Choice(RelativeDate(options)) =>
+        | Choice(RelativeDates(options)) =>
           <MSelect
             placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
           />
@@ -244,7 +289,7 @@ module FilterBox = {
         Filter.makeChoice(
           "Projects",
           "Select a project",
-          Free(projects->Belt.Array.map(project => project.name)->Belt.List.fromArray),
+          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray->Keywords,
         ),
       ),
     ])

@@ -48,6 +48,15 @@ module Time = {
   let getSimpleDate = (d: Js.Date.t): string =>
     Js.String.split("T", d->Js.Date.toISOString)->Belt.Array.getUnsafe(0)
 
+  let getDateMinusYear = (delta: int): string => {
+    let now = getNow()
+    let curYear = now->Js.Date.getUTCFullYear->Belt.Float.toInt
+    let newYear = (curYear - delta)->Belt.Float.fromInt
+    // Mutate the date
+    Js.Date.setUTCFullYear(now, newYear)->ignore
+    now->getSimpleDate
+  }
+
   let getDateMinusMonth = (delta: int): string => {
     let now = getNow()
     let curMonth = now->Js.Date.getUTCMonth->Belt.Float.toInt
