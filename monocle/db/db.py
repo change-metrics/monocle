@@ -28,6 +28,7 @@ from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch.helpers import scan
 from elasticsearch.client import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch.helpers import scan as scanner
 
 from monocle.db import queries
 from monocle.ident import Ident, IdentsConfig, create_muid
@@ -357,6 +358,7 @@ class ELmonocleDB:
                         },
                         "total_docs_posted": {"type": "integer"},
                         "total_changes_updated": {"type": "integer"},
+                        "total_change_events_updated": {"type": "integer"},
                         "total_orphans_updated": {"type": "integer"},
                     }
                 },
@@ -473,6 +475,10 @@ class ELmonocleDB:
                         "total_changes_updated", 0
                     )
                     + push_infos["total_changes_updated"],
+                    "total_change_events_updated": prev_metadata.get(
+                        "total_change_events_updated", 0
+                    )
+                    + push_infos["total_change_events_updated"],
                     "total_orphans_updated": prev_metadata.get(
                         "total_orphans_updated", 0
                     )
@@ -564,6 +570,22 @@ class ELmonocleDB:
             return []
         return [r["_source"] for r in res["hits"]["hits"]]
 
+    def get_change_events_by_url(self, change_urls):
+        qfilter = {
+            "bool": {
+                "filter": [
+                    {"terms": {"type": get_events_list()}},
+                    {"terms": {"url": change_urls}},
+                ]
+            }
+        }
+        body = {
+            "query": qfilter,
+        }
+        scanner_params = {"index": self.index, "query": body}
+        data = scanner(self.es, **scanner_params)
+        return [d["_source"] for d in data]
+
     def get_orphan_tds_by_change_urls(self, change_urls):
         assert len(change_urls) <= 50
         size = 5000  # Asumming not more that 100 TD data relataed to a change
@@ -602,7 +624,7 @@ class ELmonocleDB:
             self.update_task_data(adopted_tds)
         return tds
 
-    def update_changes_with_orphan_tds(self, mapping: Dict[str, str]):
+    def update_change_and_events_with_orphan_tds(self, mapping: Dict[str, List[str]]):
         change_urls = list(mapping.keys())
         while change_urls:
             change_urls_to_process = change_urls[:50]
@@ -617,12 +639,13 @@ class ELmonocleDB:
             # Create update docs to attach tds to matching changes
             to_update = []
             for change_url, tds in _map.items():
-                to_update.append(
-                    TaskDataForEL(
-                        _id=mapping[change_url],
-                        tasks_data=createELTaskData(tds),
+                for _id in mapping[change_url]:
+                    to_update.append(
+                        TaskDataForEL(
+                            _id=_id,
+                            tasks_data=createELTaskData(tds),
+                        )
                     )
-                )
             self.update_task_data(to_update)
 
     def run_named_query(self, name, *args, **kwargs):
