@@ -7,22 +7,22 @@ open Prelude
 
 // Binding for existing components
 module CChangesAuthorsPie = {
-  @react.component @module("./changes_authors_pie.js")
+  @react.component @module("./changes_authors_pie.jsx")
   external make: (~index: string) => React.element = "default"
 }
 
 module CReposPie = {
-  @react.component @module("./repos_pie.js")
+  @react.component @module("./repos_pie.jsx")
   external make: (~index: string) => React.element = "default"
 }
 
 module CApprovalsPie = {
-  @react.component @module("./approvals.js")
+  @react.component @module("./approvals.jsx")
   external make: (~index: string) => React.element = "CApprovalsPie"
 }
 
 module CLastChangesNG = {
-  @react.component @module("./changes")
+  @react.component @module("./change.jsx")
   external make: (~index: string, ~showComplexityGraph: bool) => React.element = "CLastChangesNG"
 }
 
