@@ -48,12 +48,21 @@ module Time = {
   let getSimpleDate = (d: Js.Date.t): string =>
     Js.String.split("T", d->Js.Date.toISOString)->Belt.Array.getUnsafe(0)
 
-  let getDateMinusMonth = (mdelta: int): string => {
+  let getDateMinusMonth = (delta: int): string => {
     let now = getNow()
     let curMonth = now->Js.Date.getUTCMonth->Belt.Float.toInt
-    let newMonth = (curMonth - mdelta)->Belt.Float.fromInt
+    let newMonth = (curMonth - delta)->Belt.Float.fromInt
     // Mutate the date
     Js.Date.setUTCMonth(now, newMonth)->ignore
+    now->getSimpleDate
+  }
+
+  let getDateMinusWeek = (delta: int): string => {
+    let now = getNow()
+    let curHour = now->Js.Date.getUTCHours->Belt.Float.toInt
+    let newHour = (curHour - delta * 24 * 7)->Belt.Float.fromInt
+    // Mutate the date
+    Js.Date.setUTCHours(now, newHour)->ignore
     now->getSimpleDate
   }
 }
@@ -69,14 +78,6 @@ module URLSearchParams = {
   @send external delete: (t, string) => unit = "delete"
 
   let current = () => windowLocationSearch->make
-}
-
-let defaultUpdateFilters = (filters: string) => {
-  let current = URLSearchParams.current()->URLSearchParams.toString
-  switch current == filters {
-  | true => RescriptReactRouter.push("/changes/openstack?" ++ filters)
-  | false => ()
-  }
 }
 
 // Network helpers

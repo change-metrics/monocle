@@ -2,7 +2,8 @@ open Prelude
 
 // The definition of a filter:
 module Filter = {
-  type kind = Text | Date | Choice(list<string>)
+  type choiceType = Free(list<string>) | RelativeDate(list<string>)
+  type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
   // Helper functions:
@@ -20,7 +21,8 @@ module Filter = {
   let validate = (filter, value) =>
     switch filter.kind {
     | Text | Date => true
-    | Choice(values) => values->elemText(value)
+    | Choice(Free(values)) => values->elemText(value)
+    | _ => true
     }
 }
 
@@ -28,7 +30,7 @@ module Filter = {
 module Filters = {
   // See: https://rescript-lang.org/docs/manual/latest/api/belt/map-string
   // The value type is a tuple of (the filter, it's value, and a setState function)
-  type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit)>
+  type t = Belt.Map.String.t<(Filter.t, string, (string => string) => unit, bool, bool => unit)>
 
   // The list of static filters:
   let staticFilters = [
@@ -53,11 +55,25 @@ module Filters = {
       Filter.makeChoice(
         "Change state",
         "Filter by state",
-        list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"},
+        Free(list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"}),
       ),
     ),
-    ("task_priority", Filter.makeChoice("Task priority", "Filter by priority", Env.bzPriority)),
-    ("task_severity", Filter.makeChoice("Task severity", "Filter by severity", Env.bzPriority)),
+    (
+      "relativedate",
+      Filter.makeChoice(
+        "Relative date",
+        "Select a relative date",
+        RelativeDate(list{"1 week ago", "2 weeks ago"}),
+      ),
+    ),
+    (
+      "task_priority",
+      Filter.makeChoice("Task priority", "Filter by priority", Free(Env.bzPriority)),
+    ),
+    (
+      "task_severity",
+      Filter.makeChoice("Task severity", "Filter by severity", Free(Env.bzPriority)),
+    ),
     ("task_type", Filter.make("Task type", "Filter by task type")),
   ]
 
@@ -66,18 +82,47 @@ module Filters = {
   let mapM = (dict, f) => dict->map(f)->ignore
   let get = (dict, name) => dict->Belt.Map.String.getExn(name)
 
+  let getDateFromRelativeDate = (rchoice: string) =>
+    switch rchoice {
+    | "1 week ago" => Time.getDateMinusWeek(1)
+    | "2 weeks ago" => Time.getDateMinusWeek(2)
+    }
+
+  let setAbsoluteDateFromRelativeDate = (states, rchoice) => {
+    let (_, _, setGte, _, _) = states->get("gte")
+    let (_, _, setLte, _, _) = states->get("lte")
+    setGte(_ => rchoice->getDateFromRelativeDate)
+    setLte(_ => "")
+  }
+
+  let disableAbsoluteDate = (states, disable: bool) => {
+    let (_, _, _, _, setGteIsDisabled) = states->get("gte")
+    let (_, _, _, _, setLteIsDisabled) = states->get("lte")
+    setGteIsDisabled(disable)
+    setLteIsDisabled(disable)
+  }
+
   // Loads the values from the url search params
   let loads = (searchParams, states) =>
-    states->mapM((name, (filter, _, set)) =>
+    states->mapM((name, (filter, _, set, _, _)) =>
       searchParams
       ->URLSearchParams.get(name)
-      ->Js.Nullable.bind((. value) => set(_ => filter->Filter.validate(value) ? value : ""))
+      ->Js.Nullable.bind((. value) => {
+        set(_ => filter->Filter.validate(value) ? value : "")
+        switch name {
+        | "relativedate" => {
+            states->disableAbsoluteDate(true)
+            states->setAbsoluteDateFromRelativeDate(value)
+          }
+        | _ => ()
+        }
+      })
     )
 
   // Dump the values to a query string
   let dumps = states => {
     let searchParams = URLSearchParams.current()
-    states->mapM((name, (_, value, _)) =>
+    states->mapM((name, (_, value, _, _, _)) =>
       switch value {
       | "" => searchParams->URLSearchParams.delete(name)
       | value => searchParams->URLSearchParams.set(name, value)
@@ -95,7 +140,9 @@ module Filters = {
       ->Belt.Map.String.fromArray
       ->Belt.Map.String.map(x => {
         let (value, setValue) = React.useState(_ => x->Filter.getValue)
-        (x, value, setValue)
+        let (isDisabled, _setIsDisabled) = React.useState(_ => false)
+        let setIsDisabled = (val: bool) => _setIsDisabled(_ => val)
+        (x, value, setValue, isDisabled, setIsDisabled)
       })
     // Then we load the current value when the url search params change
     React.useEffect1(() => {
@@ -112,18 +159,34 @@ module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
   let make = (~name, ~states: Filters.t) => {
-    let (filter, value, setValue) = states->Filters.get(name)
+    let (filter, value, setValue, isDisabled, _) = states->Filters.get(name)
     let onChange = (v, _) => setValue(_ => v)
+    let rdOnChange = (v, _) => {
+      setValue(_ => v)
+      switch v {
+      | "" => states->Filters.disableAbsoluteDate(false)
+      | value => {
+          states->Filters.disableAbsoluteDate(true)
+          states->Filters.setAbsoluteDateFromRelativeDate(value)
+        }
+      }
+    }
     <FormGroup label={filter.title} fieldId={name ++ "-fg"} hasNoPaddingTop=false>
       <div style={fieldStyle}>
         {switch filter.kind {
         | Text =>
           <TextInput id={name ++ "-input"} placeholder={filter.description} onChange value />
         | Date =>
-          <DatePicker id={name ++ "-date"} placeholder={filter.description} onChange value />
-        | Choice(options) =>
+          <DatePicker
+            id={name ++ "-date"} placeholder={filter.description} onChange value isDisabled
+          />
+        | Choice(Free(options)) =>
           <MSelect
             placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
+          />
+        | Choice(RelativeDate(options)) =>
+          <MSelect
+            placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
           />
         }}
       </div>
@@ -146,7 +209,7 @@ module FilterSummary = {
   let make = (~states: Filters.t) => {
     let activeList =
       states
-      ->Filters.map((_, (filter, value, _)) =>
+      ->Filters.map((_, (filter, value, _, _, _)) =>
         switch value {
         | "" => None
         | value =>
@@ -181,7 +244,7 @@ module FilterBox = {
         Filter.makeChoice(
           "Projects",
           "Select a project",
-          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray,
+          Free(projects->Belt.Array.map(project => project.name)->Belt.List.fromArray),
         ),
       ),
     ])
@@ -189,7 +252,11 @@ module FilterBox = {
     <MStack>
       <MExpandablePanel title="Filter">
         <FieldGroups>
-          <FieldGroup> <Field name="gte" states /> <Field name="lte" states /> </FieldGroup>
+          <FieldGroup>
+            <Field name="relativedate" states />
+            <Field name="gte" states />
+            <Field name="lte" states />
+          </FieldGroup>
           <FieldGroup>
             <Field name="authors" states /> <Field name="exclude_authors" states />
           </FieldGroup>
