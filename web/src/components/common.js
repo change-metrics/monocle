@@ -26,6 +26,7 @@ import Spinner from 'react-bootstrap/Spinner'
 import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
+import { RelativeDate } from './FiltersForm.bs.js'
 
 function getWindowDimensions() {
   const { innerWidth: width, innerHeight: height } = window
@@ -300,6 +301,12 @@ class BaseQueryComponent extends React.Component {
     this.setState({ state: params.get('state') })
     let queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
+    let gte = params.get('gte')
+    let lte = params.get('lte')
+    if (params.get('relativedate')) {
+      gte = RelativeDate.strToDateString(params.get('relativedate'))
+      lte = undefined
+    }
     if (this.props.changeIds) {
       queryParams = {
         index: this.props.index,
@@ -307,7 +314,7 @@ class BaseQueryComponent extends React.Component {
         graph_type: this.state.graph_type,
         repository: params.get('repository') || '.*',
         branch: params.get('branch'),
-        gte: params.get('gte'),
+        gte: gte,
         changeIds: this.props.changeIds
       }
     } else {
@@ -317,8 +324,8 @@ class BaseQueryComponent extends React.Component {
         repository: params.get('repository') || '.*',
         branch: params.get('branch'),
         files: params.get('files'),
-        gte: params.get('gte'),
-        lte: params.get('lte'),
+        gte: gte,
+        lte: lte,
         excludeAuthors: params.get('exclude_authors'),
         task_priority: params.get('task_priority'),
         task_severity: params.get('task_severity'),
