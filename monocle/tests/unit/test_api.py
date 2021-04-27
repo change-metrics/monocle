@@ -264,6 +264,7 @@ tenants:
         c_metadata_1 = json.loads(resp.data)
         self.assertEqual(c_metadata_1["total_docs_posted"], 1)
         self.assertEqual(c_metadata_1["total_changes_updated"], 1)
+        self.assertEqual(c_metadata_1["total_change_events_updated"], 5)
         self.assertEqual(c_metadata_1["total_orphans_updated"], 0)
         # Sleep 1s to ensure the next post will get and updated last_post_at date
         # as we have a second granularity
@@ -299,27 +300,31 @@ tenants:
         self.assertEqual(200, resp.status_code)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
-            "/api/0/query/changes?index=%s&repository=.*&change_ids=unit@repo1@1"
+            "/api/0/query/changes_and_events?index=%s&repository=.*&change_ids=unit@repo1@1"
             % self.index2
         )
-        new = json.loads(resp.data)["items"][0]
-        self.assertIn("tasks_data", new)
-        std = [(td["url"], td["updated_at"], td["ttype"]) for td in new["tasks_data"]]
-        self.assertListEqual(
-            [
-                (
-                    "https://issue-tracker.domain.com/1234",
-                    "2021-04-09T13:00:00",
-                    ["RFE", "Needed"],
-                ),
-                (
-                    "https://issue-tracker.domain.com/1235",
-                    "2021-04-09T12:00:00",
-                    ["RFE"],
-                ),
-            ],
-            std,
-        )
+        new_objs = json.loads(resp.data)["items"]
+        for new_obj in new_objs:
+            self.assertIn("tasks_data", new_obj)
+            std = [
+                (td["url"], td["updated_at"], td["ttype"])
+                for td in new_obj["tasks_data"]
+            ]
+            self.assertListEqual(
+                [
+                    (
+                        "https://issue-tracker.domain.com/1234",
+                        "2021-04-09T13:00:00",
+                        ["RFE", "Needed"],
+                    ),
+                    (
+                        "https://issue-tracker.domain.com/1235",
+                        "2021-04-09T12:00:00",
+                        ["RFE"],
+                    ),
+                ],
+                std,
+            )
         # Check if crawler metadata have been updated
         resp = self.client.get(
             "/api/0/task_data?index=%s&name=%s&details=true"
@@ -329,6 +334,7 @@ tenants:
         self.assertNotEqual(c_metadata_1["last_post_at"], c_metadata_2["last_post_at"])
         self.assertEqual(c_metadata_2["total_docs_posted"], 4)
         self.assertEqual(c_metadata_2["total_changes_updated"], 2)
+        self.assertEqual(c_metadata_2["total_change_events_updated"], 10)
         self.assertEqual(c_metadata_2["total_orphans_updated"], 1)
 
     def test_task_data_commit(self):
