@@ -96,7 +96,7 @@ tenants:
           base_url: https://github.com
 ```
 
-To crawl the full tektoncd GitHub organization then remove the *repository* entry from the file.
+To crawl the full tektoncd GitHub organization then remove the _repository_ entry from the file.
 A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
@@ -243,6 +243,30 @@ To let Monocle crawl and index privates repositories, either you must use a
 [GitHub Application](#github-application) or you must generate a Personal Access Token
 with the "repo" scope.
 
+### Projects definition
+
+Projects could be defined within an index configuration. A project is identified by a name
+and a repositories regexp.
+
+```YAML
+tenants:
+  - index: example
+    crawler:
+      loop_delay: 300
+      gerrit_repositories:
+        - name: ^openstack/.*
+          updated_since: "2000-01-01"
+          base_url: https://review.opendev.org
+    projects:
+      - name: compute
+        repositories_regex: ".*nova.*"
+      - name: deployment
+        repositories_regex: ".*tripleo.*|.*puppet.*|.*ansible.*"
+```
+
+The monocle API endpoint `api/0/projects?index=<indexname>` can be queried to
+retrieved the list of projects for a given index.
+
 ### Identity Management
 
 Monocle is able to index changes from multiple code review systems. A contributor
@@ -342,7 +366,6 @@ the initial date.
 #### Lentille - a task crawler library
 
 [Lentille](https://github.com/change-metrics/lentille) provides Haskell modules (Worker.hs and Client.hs) to ease the development of a task crawler for Monocle.
-
 
 ### Full configuration file example
 

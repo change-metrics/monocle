@@ -136,44 +136,39 @@ class TestWebAPI(unittest.TestCase):
         self.assertEqual("jane", json.loads(resp.data))
 
     def test_config_project_def(self):
-        "Test we can get project definitions from config file"
+        "Test get project definitions"
         config_example = """
 ---
 tenants:
-  - index: %s
-    crawler:
-      loop_delay: 600
-      gerrit_repositories:
-        - name: "^openstack/.*"
-          updated_since: "2021-01-01"
-          base_url: https://review.opendev.org/
+  - index: testindex
+    crawler: []
     projects:
-      - name: %s
+      - name: projectdef1
         repositories_regex: "test1/somerepo1"
-      - name: %s
+      - name: projectdef2
         repositories_regex: "test2/test"
-        """ % (
-            self.index2,
-            self.index2,
-            self.index2,
-        )
+  - index: testindex2
+    crawler: []
+        """
         with tempfile.NamedTemporaryFile() as fp:
             with open(fp.name, "w") as f:
                 f.write(config_example)
             webapp.project_defs = config.build_project_definitions(
                 yaml.safe_load(open(fp.name))
             )
-            resp = self.client.get("/api/0/projects?index=%s" % self.index2)
+            # First try with a non existing index
+            resp = self.client.get("/api/0/projects?index=missingindex")
+            self.assertEqual(404, resp.status_code)
+            # Now fetch projects definition of testindex
+            resp = self.client.get("/api/0/projects?index=testindex")
+            self.assertEqual(200, resp.status_code)
             self.assertEqual(2, len(json.loads(resp.data)))
-
-    def test_config_project_def_no_cfg_provided(self):
-        "Test we can get project definitions without config file"
-        # NOTE: previous tests were changing the configuration file,
-        # so if the index2 name is last set, Monocle will return HTTP conde
-        # 200, instead of 404.
-        fake_index = "fake-index"
-        resp = self.client.get("/api/0/projects?index=%s" % fake_index)
-        self.assertEqual(404, resp.status_code)
+            p_names = [p["name"] for p in json.loads(resp.data)]
+            self.assertListEqual(p_names, ["projectdef1", "projectdef2"])
+            # Now fetch projects definition of testindex
+            resp = self.client.get("/api/0/projects?index=testindex2")
+            self.assertEqual(200, resp.status_code)
+            self.assertEqual(0, len(json.loads(resp.data)))
 
     def check_APIErr_msg(self, message, resp):
         err = json.loads(resp.data)

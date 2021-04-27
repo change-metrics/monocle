@@ -150,15 +150,11 @@ def get_index(req):
 
 
 @app.route("/api/0/projects", methods=["GET"])
-def get_cfg_project_definition():
+def get_project_definition():
     index = get_index(request)
-    projects = project_defs[index] if index in project_defs else []
-    if not projects:
-        return (
-            "There are no project definion set in " "config file for index %s" % index,
-            404,
-        )
-    return jsonify(projects)
+    if index not in project_defs:
+        return returnAPIError("No index with this name", 404)
+    return jsonify(project_defs[index])
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])
