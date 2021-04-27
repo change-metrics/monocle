@@ -24,3 +24,7 @@ yarn-error.log*
 
 lib/
 *.bs.js
+
+# rescript
+.bsb.lock
+.merlin

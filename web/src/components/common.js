@@ -26,6 +26,7 @@ import Spinner from 'react-bootstrap/Spinner'
 import PropTypes from 'prop-types'
 
 import { query } from '../reducers/query'
+import { RelativeDate } from './FiltersForm.bs.js'
 
 function getWindowDimensions() {
   const { innerWidth: width, innerHeight: height } = window
@@ -280,11 +281,32 @@ class BaseQueryComponent extends React.Component {
     obj.queryBackend(pageData.selected)
   }
 
+  getFinalChangeState(params) {
+    const state = params.get('state')
+    let ret = state
+    switch (state) {
+      case 'ALL':
+        ret = undefined
+        break
+      case 'SELF-MERGED':
+        ret = 'MERGED'
+        break
+      default:
+    }
+    return ret
+  }
+
   queryBackend(start = 0) {
     const params = new URL(window.location.href).searchParams
     this.setState({ state: params.get('state') })
     let queryParams = {}
     // if we have a changeIds, don't pass other non mandatory filters
+    let gte = params.get('gte')
+    let lte = params.get('lte')
+    if (params.get('relativedate')) {
+      gte = RelativeDate.strToDateString(params.get('relativedate'))
+      lte = undefined
+    }
     if (this.props.changeIds) {
       queryParams = {
         index: this.props.index,
@@ -292,7 +314,7 @@ class BaseQueryComponent extends React.Component {
         graph_type: this.state.graph_type,
         repository: params.get('repository') || '.*',
         branch: params.get('branch'),
-        gte: params.get('gte'),
+        gte: gte,
         changeIds: this.props.changeIds
       }
     } else {
@@ -302,9 +324,13 @@ class BaseQueryComponent extends React.Component {
         repository: params.get('repository') || '.*',
         branch: params.get('branch'),
         files: params.get('files'),
-        gte: params.get('gte'),
-        lte: params.get('lte'),
+        gte: gte,
+        lte: lte,
         excludeAuthors: params.get('exclude_authors'),
+        task_priority: params.get('task_priority'),
+        task_severity: params.get('task_severity'),
+        task_type: params.get('task_type'),
+        project_definition: params.get('project_definition'),
         authors: this.state.forceAllAuthors ? null : params.get('authors'),
         graph_type: this.state.graph_type,
         from: start * this.state.pageSize,
@@ -321,10 +347,7 @@ class BaseQueryComponent extends React.Component {
           ...{
             approvals: params.get('approvals'),
             excludeApprovals: params.get('exclude_approvals'),
-            state:
-              params.get('state') === 'SELF-MERGED'
-                ? 'MERGED'
-                : params.get('state'),
+            state: this.getFinalChangeState(params),
             selfMerged: params.get('state') === 'SELF-MERGED'
           }
         }

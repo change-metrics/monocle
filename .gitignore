@@ -10,3 +10,4 @@ etc
 .env
 docker-compose.yml
 dump
+.vscode
