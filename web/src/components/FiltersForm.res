@@ -1,8 +1,7 @@
 open Prelude
 
 module RelativeDate = {
-  type relativeDate = WeeksAgo(int) | MonthsAgo(int) | YearsAgo(int)
-  type t = list<relativeDate>
+  type t = WeeksAgo(int) | MonthsAgo(int) | YearsAgo(int)
   let rdates = list{
     WeeksAgo(1),
     WeeksAgo(2),
@@ -18,7 +17,7 @@ module RelativeDate = {
     YearsAgo(5),
     YearsAgo(10),
   }
-  let toString = (rd: relativeDate): string =>
+  let toString = (rd: t): string =>
     switch rd {
     | WeeksAgo(1) => "1 week ago"
     | WeeksAgo(v) => v->Belt.Int.toString ++ " weeks ago"
@@ -27,8 +26,8 @@ module RelativeDate = {
     | YearsAgo(1) => "1 year ago"
     | YearsAgo(v) => v->Belt.Int.toString ++ " years ago"
     }
-  let toStringList = rdates->Belt.List.map(toString)
-  let fromString = (s: string): relativeDate => {
+  let toStringList = (rds: list<t>) => rds->Belt.List.map(toString)
+  let fromString = (s: string): t => {
     let get = (s: string): int => s->Belt.Int.fromString->Belt.Option.getWithDefault(1)
     switch s |> Js.String.split(" ") {
     | [n, u, "ago"] =>
@@ -41,7 +40,7 @@ module RelativeDate = {
     | _ => WeeksAgo(1)
     }
   }
-  let toDateString = (rd: relativeDate): string =>
+  let toDateString = (rd: t): string =>
     switch rd {
     | WeeksAgo(v) => v->Time.getDateMinusWeek
     | MonthsAgo(v) => v->Time.getDateMinusMonth
@@ -52,7 +51,7 @@ module RelativeDate = {
 
 // The definition of a filter:
 module Filter = {
-  type choiceType = Keywords(list<string>) | RelativeDates(list<string>)
+  type choiceType = Keywords(list<string>) | RelativeDates(list<RelativeDate.t>)
   type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
@@ -114,7 +113,7 @@ module Filters = {
       Filter.makeChoice(
         "Relative date",
         "Select a relative date",
-        RelativeDates(RelativeDate.toStringList),
+        RelativeDates(RelativeDate.rdates),
       ),
     ),
     (
@@ -229,10 +228,12 @@ module Field = {
           <MSelect
             placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
           />
-        | Choice(RelativeDates(options)) =>
-          <MSelect
-            placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
-          />
+        | Choice(RelativeDates(options)) => {
+            let options = options->RelativeDate.toStringList
+            <MSelect
+              placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
+            />
+          }
         }}
       </div>
     </FormGroup>
