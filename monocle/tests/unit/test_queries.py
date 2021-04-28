@@ -27,6 +27,7 @@ from .common import get_db_cnx
 from monocle.db.db import UnknownQueryException
 from monocle.db import queries
 from monocle.utils import set_params
+from monocle.config import ProjectDefinition
 from monocle.task_data import OrphanTaskDataForEL, TaskData
 
 
@@ -286,6 +287,22 @@ class TestQueries(unittest.TestCase):
         ddiff = DeepDiff(ret, expected)
         if ddiff:
             raise DiffException(ddiff)
+
+    def test_project_param(self):
+        """
+        Test project param: last_changes
+        """
+        params = set_params({"project": "mytestproject"})
+        params["_project_defs"] = [
+            ProjectDefinition(
+                name="mytestproject",
+                repository_regex=None,
+                branch_regex=None,
+                file_regex=r".*backend.py",
+            )
+        ]
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
 
     def test_files_param(self):
         """

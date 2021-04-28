@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
@@ -158,7 +158,9 @@ schema = {
                             "type": "object",
                             "properties": {
                                 "name": {"type": "string"},
-                                "repositories_regex": {"type": "string"},
+                                "repository_regex": {"type": "string"},
+                                "branch_regex": {"type": "string"},
+                                "file_regex": {"type": "string"},
                             },
                         },
                     },
@@ -221,7 +223,12 @@ tenants:
           prefix: namespace/
     projects:
       - name: infra
-        repositories_regex: "^config|infra$|openstack/.*"
+        repository_regex: "config|infra|openstack/.*"
+        branch_regex: "master|devel"
+      - name: infra-doc
+        repository_regex: "config|infra|openstack/.*"
+        branch_regex: "master|devel"
+        file_regex: "doc[s]/.*"
 """
 
 
@@ -238,9 +245,21 @@ class Username(str):
 
 
 @dataclass
-class ProjectDefinition(str):
+class ProjectDefinition:
     name: str
-    repositories_regex: str
+    repository_regex: Optional[str]
+    branch_regex: Optional[str]
+    file_regex: Optional[str]
+
+
+def get_project_by_name(
+    name: str, lp: List[ProjectDefinition]
+) -> Optional[ProjectDefinition]:
+    projects = [p for p in lp if p.name == name]
+    if projects:
+        return projects[0]
+    else:
+        return None
 
 
 def build_index_acl(config: dict) -> Dict[str, List[Username]]:
@@ -294,5 +313,13 @@ def build_project_definitions(config: dict) -> Dict[str, List[ProjectDefinition]
         if "projects" not in tenant.keys():
             indexes_project_def[tenant["index"]] = []
         else:
-            indexes_project_def[tenant["index"]] = tenant["projects"]
+            indexes_project_def[tenant["index"]] = [
+                ProjectDefinition(
+                    name=p["name"],
+                    repository_regex=p.get("repository_regex"),
+                    branch_regex=p.get("branch_regex"),
+                    file_regex=p.get("file_regex"),
+                )
+                for p in tenant["projects"]
+            ]
     return indexes_project_def
