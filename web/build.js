@@ -14,8 +14,8 @@ const esbuildOptions = {
   entryPoints: ['./src/index.jsx'],
   outfile: './build/dist/bundle.js',
   bundle: true,
+  sourcemap: true,
   minify: isProd,
-  sourcemap: isProd,
   watch: process.argv.slice(2)[0] == 'watch',
   target: ['firefox87'],
   define: {

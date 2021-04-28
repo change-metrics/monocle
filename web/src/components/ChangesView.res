@@ -22,7 +22,7 @@ module CApprovalsPie = {
 }
 
 module CLastChangesNG = {
-  @react.component @module("./change.jsx")
+  @react.component @module("./changes.jsx")
   external make: (~index: string, ~showComplexityGraph: bool) => React.element = "CLastChangesNG"
 }
 
