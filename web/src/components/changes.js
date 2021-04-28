@@ -25,6 +25,7 @@ import ReactPaginate from 'react-paginate'
 import PropTypes from 'prop-types'
 import { withRouter, Link } from 'react-router-dom'
 import { ArrowUpRightSquare } from 'react-bootstrap-icons'
+import Change from './Change.bs.js'
 
 import moment from 'moment'
 
@@ -41,6 +42,8 @@ import {
 } from './common'
 
 import DurationComplexityGraph from './duration_complexity_graph'
+
+const TaskData = Change.TaskData.make
 
 class ChangesTable extends React.Component {
   render() {
@@ -152,6 +155,14 @@ class ChangesTable extends React.Component {
                     ) : (
                       ''
                     )}
+                    {change.tasks_data !== undefined &&
+                      change.tasks_data.map((td, idx) => (
+                        <Row key={idx}>
+                          <Col>
+                            <TaskData td={td} />
+                          </Col>
+                        </Row>
+                      ))}
                   </Col>
                 </Row>
               ))}

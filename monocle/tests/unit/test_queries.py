@@ -27,6 +27,7 @@ from .common import get_db_cnx
 from monocle.db.db import UnknownQueryException
 from monocle.db import queries
 from monocle.utils import set_params
+from monocle.config import ProjectDefinition
 from monocle.task_data import OrphanTaskDataForEL, TaskData
 
 
@@ -99,11 +100,11 @@ class TestQueries(unittest.TestCase):
         for dataset in cls.datasets:
             index_dataset(cls.eldb, dataset)
         cls.eldb.update_task_data(cls.otds)
-        cls.eldb.update_changes_with_orphan_tds(
+        cls.eldb.update_change_and_events_with_orphan_tds(
             {
-                "https://tests.com/unit/repo1/pull/1": "c1",
-                "https://tests.com/unit/repo2/pull/2": "c2",
-                "https://tests.com/unit/repo2/pull/3": "c3",
+                "https://tests.com/unit/repo1/pull/1": ["c1", "c1_e2"],
+                "https://tests.com/unit/repo2/pull/2": ["c2"],
+                "https://tests.com/unit/repo2/pull/3": ["c3"],
             }
         )
 
@@ -287,6 +288,22 @@ class TestQueries(unittest.TestCase):
         if ddiff:
             raise DiffException(ddiff)
 
+    def test_project_param(self):
+        """
+        Test project param: last_changes
+        """
+        params = set_params({"project": "mytestproject"})
+        params["_project_defs"] = [
+            ProjectDefinition(
+                name="mytestproject",
+                repository_regex=None,
+                branch_regex=None,
+                file_regex=r".*backend.py",
+            )
+        ]
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
+
     def test_files_param(self):
         """
         Test files param: last_changes
@@ -344,6 +361,11 @@ class TestQueries(unittest.TestCase):
         params = set_params({"task_priority": "LOW", "task_type": "BUG,CLIENT_IMPACT"})
         ret = self.eldb.run_named_query("last_changes", ".*", params)
         self.assertEqual(ret["total"], 1, ret)
+
+        params = set_params({"task_priority": "HIGH"})
+        ret = self.eldb.run_named_query("changes_and_events", ".*", params)
+        self.assertEqual(ret["total"], 2, ret)
+        self.assertListEqual([o["id"] for o in ret["items"]], ["c1", "c1_e2"])
 
     def test_exclude_approvals_param(self):
         """

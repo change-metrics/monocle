@@ -3,7 +3,7 @@
 //
 // Render indices
 //
-open Prelude
+open Prelude // 'open' bring module values into scope
 
 module Indice = {
   @react.component
@@ -12,7 +12,8 @@ module Indice = {
       <a href="" onClick={_ => RescriptReactRouter.push(name)}> {name->React.string} </a>
     </Tooltip>
 
-  let card: string => React.element = name => <MSimpleCard> {make({"name": name})} </MSimpleCard>
+  let card: string => React.element = name =>
+    <MSimpleCard key={name}> {make({"name": name})} </MSimpleCard>
 }
 
 module Indices = {

@@ -19,6 +19,7 @@ from datetime import datetime
 
 from .common import index_dataset, get_db_cnx
 
+from monocle.utils import get_events_list
 from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskData,
@@ -135,7 +136,7 @@ class TestQueries(unittest.TestCase):
         )
         self.assertEqual(len(adopted_tds), 0)
 
-    def test_update_changes_with_orphan_tds(self):
+    def test_update_change_and_events_with_orphan_tds(self):
         self.otds.append(
             OrphanTaskDataForEL(
                 _id="https://bugtracker.domain.dom/126",
@@ -153,11 +154,11 @@ class TestQueries(unittest.TestCase):
             ),
         )
         self.db.update_task_data(self.otds)
-        self.db.update_changes_with_orphan_tds(
+        self.db.update_change_and_events_with_orphan_tds(
             {
-                "https://tests.com/unit/repo1/pull/1": "c1",
-                "https://tests.com/unit/repo2/pull/2": "c2",
-                "https://tests.com/unit/repo2/pull/3": "c3",
+                "https://tests.com/unit/repo1/pull/1": ["c1", "c1_e2"],
+                "https://tests.com/unit/repo2/pull/2": ["c2"],
+                "https://tests.com/unit/repo2/pull/3": ["c3"],
             }
         )
         changes = self.db.get_changes_by_url(
@@ -179,6 +180,17 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(len(r2p2["tasks_data"]), 1)
         self.assertEqual(len(r2p3.get("tasks_data", [])), 0)
 
+        events = self.db.get_change_events_by_url(
+            ["https://tests.com/unit/repo1/pull/1"]
+        )
+        events_with_td = [e for e in events if "tasks_data" in e]
+        self.assertEqual(len(events_with_td), 1)
+        self.assertEqual(events_with_td[0]["id"], "c1_e2")
+        self.assertListEqual(
+            sorted([td["tid"] for td in events_with_td[0]["tasks_data"]]),
+            sorted(["123", "124"]),
+        )
+
         # Ensure no more orphan Task remain in the DB
         otds = self.db.get_orphan_tds_by_change_urls(
             [
@@ -189,3 +201,17 @@ class TestQueries(unittest.TestCase):
             ]
         )
         self.assertEqual(len(otds), 1)
+
+    def test_get_change_events_by_url(self):
+        objs = self.db.get_change_events_by_url(
+            [
+                "https://tests.com/unit/repo1/pull/1",
+                "https://tests.com/unit/repo2/pull/2",
+            ],
+        )
+        total_match = len(objs)
+        self.assertEqual(9, total_match)
+        self.assertEqual(
+            total_match,
+            len([o["type"] for o in objs if o["type"] in get_events_list()]),
+        )

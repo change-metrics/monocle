@@ -25,6 +25,7 @@ from monocle.utils import enhance_changes
 from monocle.utils import Detector
 from monocle.utils import utcnow
 from monocle.utils import get_events_list
+from monocle.config import get_project_by_name
 
 from elasticsearch.helpers import scan as scanner
 from elasticsearch.exceptions import NotFoundError
@@ -154,6 +155,14 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
     task_severity = params.get("task_severity")
     task_type = params.get("task_type")
     files = params.get("files")
+    project = params.get("project")
+    project_defs = params.get("_project_defs")
+    if project and project_defs:
+        project_def = get_project_by_name(project, project_defs)
+        if project_def:
+            repository_fullname = project_def.repository_regex or repository_fullname
+            target_branch = project_def.branch_regex or target_branch
+            files = project_def.file_regex or files
     if gte:
         created_at_range["created_at"]["gte"] = gte
     if lte:

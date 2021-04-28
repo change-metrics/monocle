@@ -23,6 +23,7 @@ import yaml
 from datetime import datetime
 
 from typing import Dict, List, Optional, Union, Tuple
+from dataclasses import asdict
 
 from flask import Flask
 from flask import abort
@@ -150,15 +151,9 @@ def get_index(req):
 
 
 @app.route("/api/0/projects", methods=["GET"])
-def get_cfg_project_definition():
+def get_project_definition():
     index = get_index(request)
-    projects = project_defs[index] if index in project_defs else []
-    if not projects:
-        return (
-            "There are no project definion set in " "config file for index %s" % index,
-            404,
-        )
-    return jsonify(projects)
+    return jsonify([asdict(p) for p in project_defs.get(index, [])])
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])
@@ -206,6 +201,7 @@ def create_db_connection(index: Optional[str]) -> ELmonocleDB:
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def do_query(index, repository_fullname, args, name):
     params = utils.set_params(args)
+    params["_project_defs"] = project_defs.get(index)
     db = create_db_connection(index)
     try:
         result = db.run_named_query(name, repository_fullname, params)
@@ -300,6 +296,7 @@ def task_data():
         change_urls = [e.change_url for e in extracted_data]
         db = create_db_connection(index)
         mc = db.get_changes_by_url(change_urls, INPUT_TASK_DATA_LIMIT)
+        me = db.get_change_events_by_url(change_urls)
         mc = dict(
             [
                 (
@@ -345,6 +342,13 @@ def task_data():
                 )
             )
         total_changes_to_update = len(update_docs) - total_orphans_to_update
+        for _me in me:
+            update_docs.append(
+                TaskDataForEL(_id=_me["id"], tasks_data=mc[_me["url"]]["td"])
+            )
+        total_change_events_to_update = (
+            len(update_docs) - total_orphans_to_update - total_changes_to_update
+        )
         # Now insert the data
         err = db.update_task_data(source_it=update_docs)
         # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
@@ -356,6 +360,7 @@ def task_data():
                 "last_post_at": datetime.utcnow().replace(microsecond=0),
                 "total_docs_posted": len(extracted_data),
                 "total_changes_updated": total_changes_to_update,
+                "total_change_events_updated": total_change_events_to_update,
                 "total_orphans_updated": total_orphans_to_update,
             },
         )

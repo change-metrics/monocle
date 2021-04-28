@@ -20,6 +20,8 @@ plugins:
   - prettier
 ignorePatterns: "**/*.bs.js"
 rules:
+  # See: https://github.com/facebook/react/issues/15227
+  react-hooks/rules-of-hooks: 0
   prettier/prettier:
     - error
     - usePrettierrc: true

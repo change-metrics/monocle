@@ -13,7 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   across code review systems.
 - [dbmanage] Added update-idents option.
 - [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
-- [api] Added 'projects' API endpoint that is listening project definitions from config file
+- [api] Added the `api/0/projects` endpoint (list defined project for an index).
+- [api] Added the query parameter `project` to query metrics for a given project.
+- [web] Add a project filter selection in the Filter Box.
 - [api,config] Endpoints to connect task tracker crawlers
 - [api] Support of three new query attributes (task_type, task_priority, task_severity)
 
@@ -22,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] change terminology from "average to" to "mean time to".
 
 ### Removed
+
 ### Fixed
 
 - [config] Add missing validation for `prefix` option of the Gerrit crawler.
@@ -61,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [database] bump Elasticsearch to 7.10.1.
 
 ### Removed
+
 ### Fixed
 
 - [api] Ensure the gte and lte date filters are set after all other params are set.
@@ -69,7 +73,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - [db] added the run-migrate option to dbmanage to run migration scripts.
 - [readme] migration instructions for the new self_merged field has added.
-
 
 ## [0.7.0] - 2020-08-28
 
@@ -88,6 +91,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web]: improve relative date selector.
 
 ### Removed
+
 ### Fixed
 
 - [web] pie charts invisible when legend is too large.
@@ -128,7 +132,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [api] fix change_lifecycle_stats return null values when authors is set
 - [web] fix wrong backend query on the change page (gte missing)
 
-
 ## [0.5] - 2020-06-04
 
 ### Added
@@ -152,7 +155,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] better look and feel on small device like smartphone.
 - [api] limit first_comment|review_on_changes to 10000 objects to avoid performance issue.
 
-##  [0.4] - 2020-05-11
+## [0.4] - 2020-05-11
 
 ### Added
 
@@ -207,7 +210,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] sync between exclude_authors search param and filter field.
 - [web] passing `REACT_APP_API_URL` in container image mode.
 
-##  [0.3] - 2020-05-01
+## [0.3] - 2020-05-01
 
 ### Added
 

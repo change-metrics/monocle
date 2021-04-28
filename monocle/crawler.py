@@ -20,7 +20,7 @@ import os
 import tempfile
 from time import sleep
 from threading import Thread
-from typing import Union
+from typing import Union, Dict, List
 
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github import pullrequest
@@ -111,16 +111,13 @@ class Runner(object):
             log.info("%d objects will be updated in the database" % len(objects))
             self.db.update(objects)
             log.info("%d objects have been updated in the database" % len(objects))
-            c_url_id_map = dict(
-                [
-                    (c.url, c._id)
-                    for c in filter(lambda o: isinstance(o, db.Change), objects)
-                ]
-            )
+            c_url_id_map: Dict[str, List[str]] = dict()
+            for obj in objects:
+                c_url_id_map.setdefault(obj.url, []).append(obj._id)
             log.info(
                 "Looking for orphan Task data for %s change urls" % len(c_url_id_map)
             )
-            self.db.update_changes_with_orphan_tds(c_url_id_map)
+            self.db.update_change_and_events_with_orphan_tds(c_url_id_map)
             log.info("Looking for orphan Task data, done.")
 
 

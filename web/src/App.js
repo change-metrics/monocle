@@ -50,6 +50,11 @@ class RootView extends React.Component {
       <React.Fragment>
         <Row>
           <Col>
+            <CFiltersForm index={this.props.match.params.index} />
+          </Col>
+        </Row>
+        <Row>
+          <Col>
             <p></p>
           </Col>
         </Row>
@@ -92,6 +97,11 @@ class PeopleView extends React.Component {
   render() {
     return (
       <React.Fragment>
+        <Row>
+          <Col>
+            <CFiltersForm index={this.props.match.params.index} />
+          </Col>
+        </Row>
         <Row>
           <Col>
             <p></p>
@@ -164,16 +174,8 @@ class ReposView extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CRepoChanges index={this.props.match.params.index} />
-          </Col>
-        </Row>
+        <CFiltersForm index={this.props.match.params.index} />
+        <CRepoChanges index={this.props.match.params.index} />
       </React.Fragment>
     )
   }
@@ -192,16 +194,8 @@ class HotChangesView extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CHotChanges index={this.props.match.params.index} />
-          </Col>
-        </Row>
+        <CFiltersForm index={this.props.match.params.index} />
+        <CHotChanges index={this.props.match.params.index} />
       </React.Fragment>
     )
   }
@@ -220,16 +214,8 @@ class ColdChangesView extends React.Component {
   render() {
     return (
       <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CColdChanges index={this.props.match.params.index} />
-          </Col>
-        </Row>
+        <CFiltersForm index={this.props.match.params.index} />
+        <CColdChanges index={this.props.match.params.index} />
       </React.Fragment>
     )
   }
@@ -246,7 +232,15 @@ ColdChangesView.propTypes = {
 
 class ChangesViewRoute extends React.Component {
   render() {
-    return <ChangesView index={this.props.match.params.index} />
+    return (
+      <>
+        <CFiltersForm
+          index={this.props.match.params.index}
+          showChangeParams={true}
+        />
+        <ChangesView index={this.props.match.params.index} />
+      </>
+    )
   }
 }
 
@@ -261,21 +255,10 @@ ChangesViewRoute.propTypes = {
 class ChangeView extends React.Component {
   render() {
     return (
-      <React.Fragment>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CChange
-              index={this.props.match.params.index}
-              changeIds={this.props.match.params.change}
-            />
-          </Col>
-        </Row>
-      </React.Fragment>
+      <CChange
+        index={this.props.match.params.index}
+        changeIds={this.props.match.params.change}
+      />
     )
   }
 }
@@ -289,30 +272,6 @@ ChangeView.propTypes = {
   })
 }
 
-class FiltersFormBox extends React.Component {
-  render() {
-    return (
-      <Switch>
-        <Route exact path="/" />
-        <Route path="/:index/change/" />
-        <Route path="/:index/repos/">
-          <CFiltersForm />
-        </Route>
-        <Route path="/:index/changes/">
-          <CFiltersForm showChangeParams={true} />
-        </Route>
-        <Route path="/:index/hot-changes/">
-          <CFiltersForm />
-        </Route>
-        <Route path="/:index/cold-changes/">
-          <CFiltersForm />
-        </Route>
-        <Route path="/" component={CFiltersForm} />
-      </Switch>
-    )
-  }
-}
-
 class App extends React.Component {
   render() {
     return (
@@ -322,11 +281,6 @@ class App extends React.Component {
           <Row>
             <Col>
               <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <FiltersFormBox />
             </Col>
           </Row>
           <Switch>
