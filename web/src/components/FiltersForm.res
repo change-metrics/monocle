@@ -86,9 +86,9 @@ module Filters = {
   let staticFilters = [
     ("authors", Filter.make("Authors", "Author names")),
     ("exclude_authors", Filter.make("Exclude authors", "Author names")),
-    ("repository", Filter.make("Repository", "Repositories regexp")),
+    ("repository", Filter.make("Repository", "Repository regexp")),
     ("branch", Filter.make("Branch", "Branch regexp")),
-    ("files", Filter.make("Files", "Files regexp")),
+    ("files", Filter.make("Files", "File regexp")),
     (
       "gte",
       {
@@ -286,7 +286,7 @@ module FilterBox = {
   ) => {
     let states = Filters.useFilters([
       (
-        "project_definition",
+        "project",
         Filter.makeChoice(
           "Projects",
           "Select a project",
@@ -307,7 +307,7 @@ module FilterBox = {
             <Field name="authors" states /> <Field name="exclude_authors" states />
           </FieldGroup>
           <FieldGroup>
-            {projects->maybeRenderList(<Field name="project_definition" states />)}
+            {projects->maybeRenderList(<Field name="project" states />)}
             <Field name="repository" states />
             <Field name="branch" states />
             <Field name="files" states />
