@@ -65,9 +65,6 @@ jobs:
         run: |
           chmod o+w data
 
-      - name: Start containers
-        run: docker-compose up -d
-
       - name: Create a config.yaml file
         run: |
           cat > etc/config.yaml << EOL
@@ -84,11 +81,14 @@ jobs:
                     base_url: https://github.com
           EOL
 
+      - name: Start containers
+        run: docker-compose up -d
+
       - name: Wait for services to start
         run: sleep 15
 
       - name: Display docker-compose ps
-        run: docker-compose ps
+        run: docker-compose ps; docker logs monocle_api_1; docker logs monocle_crawler_1
 
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up

@@ -82,7 +82,7 @@ let createApiService =
               , depends_on = Some [ "elastic" ]
               , command = Some
                   ( Compose.StringOrList.String
-                      "uwsgi --uid guest --gid nogroup --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app"
+                      "uwsgi --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app"
                   )
               , volumes = Some [ "./etc:/etc/monocle:z" ]
               , environment = Some

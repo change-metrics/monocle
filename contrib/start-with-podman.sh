@@ -41,13 +41,12 @@ export PUBLIC_ADDRESS=localhost
 
 if [ "$1" == "build" ]; then
     podman build -t monocle_web -f web/Dockerfile web
-    podman build -t monocle_crawler -f Dockerfile .
-    podman build -t monocle_api -f Dockerfile .
+    podman build -t monocle_backend -f Dockerfile .
 fi
 
 if [ "$1" == "create" ]; then
 
-    podman pod create -p 9200:9200 -p 9876:9876 -p 3000:3000 -n monocle 
+    podman pod create -p 9200:9200 -p 9876:9876 -p 3000:3000 -n monocle
 
     podman create --name=monocle_elastic \
                --pod monocle \
@@ -65,19 +64,19 @@ if [ "$1" == "create" ]; then
                -e WEB_URL=http://$PUBLIC_ADDRESS:3000 \
                --add-host monocle_elastic:127.0.0.1 \
                -v $PWD/etc:/etc/monocle:Z \
-               -v $PWD/monocle:/usr/local/lib/python3.9/site-packages/monocle:Z \
+               -v $PWD/monocle:/code/monocle:Z \
                -it \
-               monocle_api sh -c 'uwsgi --uid guest --gid nogroup --http :9876 --manage-script-name --mount /app=monocle.webapp:app'
-    
+               monocle_backend uwsgi --http :9876 --manage-script-name --mount /app=monocle.webapp:app
+
     podman create --name=monocle_crawler \
                --pod monocle \
                --add-host monocle_elastic:127.0.0.1 \
                -v $PWD/etc:/etc/monocle:Z \
                -v $PWD/dump:/var/lib/crawler:Z \
                -it \
-               -v $PWD/monocle:/usr/local/lib/python3.9/site-packages/monocle:Z \
-               monocle_crawler sh -c 'monocle --elastic-conn monocle_elastic:9200 crawler --config /etc/monocle/config.yaml'
-    
+               -v $PWD/monocle:/code/monocle:Z \
+               monocle_backend monocle --elastic-conn monocle_elastic:9200 crawler --config /etc/monocle/config.yaml
+
     podman create --name=monocle_web \
                --pod monocle \
                --add-host monocle_api:127.0.0.1 \
@@ -113,7 +112,7 @@ if [ "$1" == "start-web-dev" ]; then
                -v $PWD/etc:/etc/monocle:Z \
                -v $PWD/monocle:/usr/local/lib/python3.9/site-packages/monocle:Z \
                -it \
-               monocle_api sh -c 'uwsgi --uid guest --gid nogroup --http :9876 --manage-script-name --mount /app=monocle.webapp:app'
+               monocle_backend uwsgi --http :9876 --manage-script-name --mount /app=monocle.webapp:app
     podman start monocle_api
     cd web && npm install && PORT=3001 npm start
 fi
