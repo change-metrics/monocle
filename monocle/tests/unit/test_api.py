@@ -159,36 +159,35 @@ tenants:
                 yaml.safe_load(open(fp.name))
             )
             # First try with a non existing index
-            resp = self.client.get("/api/0/projects?index=missingindex")
+            resp = self.client.post("/api/0/get_projects", json=dict(index="missing"))
             self.assertEqual(200, resp.status_code)
             # Now fetch projects definition of testindex
-            resp = self.client.get("/api/0/projects?index=testindex")
+            resp = self.client.post("/api/0/get_projects", json=dict(index="testindex"))
             self.assertEqual(200, resp.status_code)
-            projects = json.loads(resp.data)
+            projects = json.loads(resp.data)["projects"]
             self.assertEqual(2, len(projects))
             self.assertListEqual(
                 projects,
                 [
                     {
                         "branch_regex": "master",
-                        "file_regex": None,
                         "name": "projectdef1",
                         "repository_regex": "test1/somerepo1",
                     },
                     {
-                        "branch_regex": None,
-                        "file_regex": None,
                         "name": "projectdef2",
                         "repository_regex": "test2/test",
                     },
                 ],
             )
-            p_names = [p["name"] for p in json.loads(resp.data)]
+            p_names = [p["name"] for p in json.loads(resp.data)["projects"]]
             self.assertListEqual(p_names, ["projectdef1", "projectdef2"])
             # Now fetch projects definition of testindex
-            resp = self.client.get("/api/0/projects?index=testindex2")
+            resp = self.client.post(
+                "/api/0/get_projects", json=dict(index="testindex2")
+            )
             self.assertEqual(200, resp.status_code)
-            self.assertEqual(0, len(json.loads(resp.data)))
+            self.assertEqual(0, len(json.loads(resp.data).get("projects", [])))
 
     def check_APIErr_msg(self, message, resp):
         err = json.loads(resp.data)

@@ -13,25 +13,25 @@ type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 // axiosGetCallback<string> is a function that goes from unit to axios<string>
 type axiosGetCallback<'data> = unit => axios<'data>
 
-module Project = {
-  type t = {
-    name: string,
-    repository_regex: Js.Nullable.t<string>,
-    branch_regex: Js.Nullable.t<string>,
-    file_regex: Js.Nullable.t<string>,
-  }
-}
-
 // See https://rescript-lang.org/docs/manual/latest/interop-cheatsheet
-
 @module("../api.js") external apiUrl: string = "baseurl"
 @module("../api.js")
 external getIndices: unit => axios<array<string>> = "getIndices"
 @module("../api.js")
-external getProjects: string => axios<array<Project.t>> = "getProjects"
+external getProjectsRaw: 'a => axios<'b> = "getProjects"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
+
+let getProjects = (request: ConfigTypes.get_projects_request): axios<
+  ConfigTypes.get_projects_response,
+> =>
+  request->Config.encode_get_projects_request->getProjectsRaw
+    |> Js.Promise.then_(resp =>
+      {
+        data: resp.data->Config.decode_get_projects_response,
+      }->Js.Promise.resolve
+    )
 
 // A temporary module to provide runtime setting
 module Env = {
@@ -120,8 +120,14 @@ let str = React.string
 let maybeRender = (pred: bool, component: React.element): React.element =>
   pred ? component : React.null
 // Render component if the list is not empty
-let maybeRenderList = (xs: array<'a>, component) =>
+let maybeRenderArray = (xs: array<'a>, component) =>
   xs->Belt.Array.length > 0 ? component : React.null
+let maybeRenderList = (xs: list<'a>, component) =>
+  switch xs {
+  | list{} => React.null
+  | _ => component
+  }
+
 // Check if a text list contains an element
 let elemText = (xs: list<string>, x: string) => xs->Belt.List.has(x, (a, b) => a == b)
 // Get an optional value with default

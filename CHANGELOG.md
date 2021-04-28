@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   across code review systems.
 - [dbmanage] Added update-idents option.
 - [api,web,crawler] - added secure communication (SSL) and user authentication with Elasticsearch
-- [api] Added the `api/0/projects` endpoint (list defined project for an index).
+- [api] Added the `api/1/get_projects` endpoint (list defined project for an index).
 - [api] Added the query parameter `project` to query metrics for a given project.
 - [web] Add a project filter selection in the Filter Box.
 - [api,config] Endpoints to connect task tracker crawlers

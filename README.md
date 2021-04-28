@@ -273,7 +273,7 @@ tenants:
         branch_regex: "master"
 ```
 
-The monocle API endpoint `api/0/projects?index=<indexname>` can be queried to
+The monocle API endpoint `api/1/get_projects` can be queried to
 retrieved the list defined projects for a given index.
 
 The monocle query endpoint handles the query parameter: `project`.

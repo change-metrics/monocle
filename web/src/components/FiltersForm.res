@@ -204,7 +204,7 @@ module Filters = {
 module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
-  let make = (~name, ~states: Filters.t, ~projects: option<array<Project.t>>=?) => {
+  let make = (~name, ~states: Filters.t, ~projects: option<list<ConfigTypes.project_definition>>=?) => {
     let (filter, value, setValue, isDisabled, _) = states->Filters.get(name)
     let onChange = (v, _) => setValue(_ => v)
     let rdOnChange = (v, _) => {
@@ -223,13 +223,9 @@ module Field = {
         let (_, _, _, _, setIsDisabled) = states->Filters.get(fname)
         setIsDisabled(disable)
       }
-      let disableFieldIfNeeded = (field: Js.Nullable.t<string>, fname: string): option<string> => {
-        field
-        ->Js.Nullable.toOption
-        ->Belt.Option.flatMap(_ => {
-          fname->disableEnableField(true)
-          Some("")
-        })
+      let disableFieldIfNeeded = (field: string, fname: string): unit => switch field {
+        | "" => ()
+        | _ => fname->disableEnableField(true)
       }
       let enableFields = () => {
         "branch"->disableEnableField(false)
@@ -243,11 +239,11 @@ module Field = {
           projects
           ->Belt.Option.flatMap(mps =>
             mps
-            ->Belt.Array.getBy(p => p.name == v)
+            ->Belt.List.getBy(p => p.name == v)
             ->Belt.Option.flatMap(sp => {
               sp.branch_regex->disableFieldIfNeeded("branch")->ignore
               sp.file_regex->disableFieldIfNeeded("files")->ignore
-              sp.repository_regex->disableFieldIfNeeded("repository")
+              sp.repository_regex->disableFieldIfNeeded("repository")->Some
             })
           )
           ->ignore
@@ -330,7 +326,7 @@ module FilterBox = {
   let make = (
     ~updateFilters: string => unit,
     ~showChangeParams: bool,
-    ~projects: array<Project.t>,
+    ~projects: list<ConfigTypes.project_definition>,
   ) => {
     let states = Filters.useFilters([
       (
@@ -338,7 +334,7 @@ module FilterBox = {
         Filter.makeChoice(
           "Projects",
           "Select a project",
-          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray->Projects,
+          projects->Belt.List.map(project => project.name)->Projects,
         ),
       ),
     ])
@@ -385,10 +381,10 @@ module FilterBox = {
 
 @react.component
 let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: string) => {
-  let indices = useAutoGet(() => getProjects(index))
+  let indices = useAutoGet(() => getProjects({index: index}))
   switch indices {
   | None => <Spinner />
-  | Some(Ok(projects)) => <FilterBox updateFilters showChangeParams projects />
+  | Some(Ok({projects})) => <FilterBox updateFilters showChangeParams projects />
   | Some(Error(_error)) => <Alert title={_error} variant=#Danger />
   }
 }

@@ -21,7 +21,9 @@ import time
 from datetime import datetime
 
 from typing import List, Optional, Union, Tuple
-from dataclasses import asdict
+
+# https://googleapis.dev/python/protobuf/latest/google/protobuf/json_format.html
+from google.protobuf import json_format as pbjson
 
 from flask import Flask
 from flask import abort
@@ -48,6 +50,7 @@ from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskCrawler,
 )
+from monocle.messages.config_pb2 import GetProjectsResponse, GetProjectsRequest
 from monocle import config
 from monocle import env
 
@@ -132,10 +135,19 @@ def get_index(req):
     return req.args["index"]
 
 
-@app.route("/api/0/projects", methods=["GET"])
-def get_project_definition():
-    index = get_index(request)
-    return jsonify([asdict(p) for p in env.project_defs.get(index, [])])
+def get_projects(request: GetProjectsRequest) -> GetProjectsResponse:
+    return GetProjectsResponse(projects=env.project_defs.get(request.index, []))
+
+
+# GET or POST are identical, POST is required for web browser based implementations
+# TODO(tristanC): implement codegen for the stubs too.
+@app.route("/api/0/get_projects", methods=["GET", "POST"])
+def get_project_definition_stub():
+    input_request = pbjson.Parse(request.get_data(), GetProjectsRequest)
+    resp = pbjson.MessageToJson(
+        get_projects(input_request), preserving_proto_field_name=True
+    )
+    return app.response_class(response=resp, status=200, mimetype="application/json")
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])

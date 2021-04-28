@@ -68,8 +68,8 @@ function getQueryResults(queryParams) {
   })
 }
 
-function getProjects(indexName) {
-  return axios.get(baseurl + '/projects?index=' + indexName)
+function getProjects(request) {
+  return axios.post(baseurl + '/get_projects', request)
 }
 
 function getIndices() {
