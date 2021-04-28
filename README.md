@@ -245,8 +245,13 @@ with the "repo" scope.
 
 ### Projects definition
 
-Projects could be defined within an index configuration. A project is identified by a name
-and a repositories regexp.
+Projects could be defined within an index configuration. A project is identified by a name and allows to set the following filter attributes:
+
+- repository_regex
+- branch_regex
+- file_regex
+
+Here is an example of configuration.
 
 ```YAML
 tenants:
@@ -259,13 +264,19 @@ tenants:
           base_url: https://review.opendev.org
     projects:
       - name: compute
-        repositories_regex: ".*nova.*"
+        repository_regex: ".*nova.*"
+      - name: compute-tests
+        file_regex: "test[s]/.*"
+        repository_regex: ".*nova.*"
       - name: deployment
-        repositories_regex: ".*tripleo.*|.*puppet.*|.*ansible.*"
+        repository_regex: ".*tripleo.*|.*puppet.*|.*ansible.*"
+        branch_regex: "master"
 ```
 
 The monocle API endpoint `api/0/projects?index=<indexname>` can be queried to
-retrieved the list of projects for a given index.
+retrieved the list defined projects for a given index.
+
+The monocle query endpoint handles the query parameter: `project`.
 
 ### Identity Management
 

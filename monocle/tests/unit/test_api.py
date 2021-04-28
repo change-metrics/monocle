@@ -144,9 +144,10 @@ tenants:
     crawler: []
     projects:
       - name: projectdef1
-        repositories_regex: "test1/somerepo1"
+        repository_regex: "test1/somerepo1"
+        branch_regex: "master"
       - name: projectdef2
-        repositories_regex: "test2/test"
+        repository_regex: "test2/test"
   - index: testindex2
     crawler: []
         """
@@ -162,7 +163,25 @@ tenants:
             # Now fetch projects definition of testindex
             resp = self.client.get("/api/0/projects?index=testindex")
             self.assertEqual(200, resp.status_code)
-            self.assertEqual(2, len(json.loads(resp.data)))
+            projects = json.loads(resp.data)
+            self.assertEqual(2, len(projects))
+            self.assertListEqual(
+                projects,
+                [
+                    {
+                        "branch_regex": "master",
+                        "file_regex": None,
+                        "name": "projectdef1",
+                        "repository_regex": "test1/somerepo1",
+                    },
+                    {
+                        "branch_regex": None,
+                        "file_regex": None,
+                        "name": "projectdef2",
+                        "repository_regex": "test2/test",
+                    },
+                ],
+            )
             p_names = [p["name"] for p in json.loads(resp.data)]
             self.assertListEqual(p_names, ["projectdef1", "projectdef2"])
             # Now fetch projects definition of testindex

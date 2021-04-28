@@ -23,6 +23,7 @@ import yaml
 from datetime import datetime
 
 from typing import Dict, List, Optional, Union, Tuple
+from dataclasses import asdict
 
 from flask import Flask
 from flask import abort
@@ -154,7 +155,7 @@ def get_project_definition():
     index = get_index(request)
     if index not in project_defs:
         return returnAPIError("No index with this name", 404)
-    return jsonify(project_defs[index])
+    return jsonify([asdict(p) for p in project_defs[index]])
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])
@@ -202,6 +203,7 @@ def create_db_connection(index: Optional[str]) -> ELmonocleDB:
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def do_query(index, repository_fullname, args, name):
     params = utils.set_params(args)
+    params["_project_defs"] = project_defs.get(index)
     db = create_db_connection(index)
     try:
         result = db.run_named_query(name, repository_fullname, params)

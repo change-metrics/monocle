@@ -227,6 +227,7 @@ def set_params(input: Namespace) -> Dict:
         "task_type",
         "task_priority",
         "task_severity",
+        "project",
     ):
         params[e] = getter(e, None)
 
