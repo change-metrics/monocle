@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 FROM registry.fedoraproject.org/fedora:33
-RUN dnf update -y && dnf install -y python3-pip python3-devel openssl-devel gcc && dnf clean all
+RUN dnf update -y && dnf install -y python3-pip python3-devel python-unversioned-command openssl-devel gcc && dnf clean all
 WORKDIR /code
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
