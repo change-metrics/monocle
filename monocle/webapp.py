@@ -153,9 +153,7 @@ def get_index(req):
 @app.route("/api/0/projects", methods=["GET"])
 def get_project_definition():
     index = get_index(request)
-    if index not in project_defs:
-        return returnAPIError("No index with this name", 404)
-    return jsonify([asdict(p) for p in project_defs[index]])
+    return jsonify([asdict(p) for p in project_defs.get(index, [])])
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])

@@ -159,7 +159,7 @@ tenants:
             )
             # First try with a non existing index
             resp = self.client.get("/api/0/projects?index=missingindex")
-            self.assertEqual(404, resp.status_code)
+            self.assertEqual(200, resp.status_code)
             # Now fetch projects definition of testindex
             resp = self.client.get("/api/0/projects?index=testindex")
             self.assertEqual(200, resp.status_code)
