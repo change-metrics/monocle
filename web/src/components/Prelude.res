@@ -14,7 +14,12 @@ type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 type axiosGetCallback<'data> = unit => axios<'data>
 
 module Project = {
-  type t = {name: string}
+  type t = {
+    name: string,
+    repository_regex: Js.Nullable.t<string>,
+    branch_regex: Js.Nullable.t<string>,
+    file_regex: Js.Nullable.t<string>,
+  }
 }
 
 // See https://rescript-lang.org/docs/manual/latest/interop-cheatsheet
@@ -23,7 +28,7 @@ module Project = {
 @module("../api.js")
 external getIndices: unit => axios<array<string>> = "getIndices"
 @module("../api.js")
-external getProjects: string => axios<array<Project.t>> = "getConfigProjectDefinitions"
+external getProjects: string => axios<array<Project.t>> = "getProjects"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch

@@ -51,7 +51,8 @@ module RelativeDate = {
 
 // The definition of a filter:
 module Filter = {
-  type choiceType = Keywords(list<string>) | RelativeDates(list<RelativeDate.t>)
+  type choiceType =
+    Keywords(list<string>) | RelativeDates(list<RelativeDate.t>) | Projects(list<string>)
   type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
@@ -153,6 +154,7 @@ module Filters = {
       ->URLSearchParams.get(name)
       ->Js.Nullable.bind((. value) => {
         set(_ => filter->Filter.validate(value) ? value : "")
+        // TODO(fbo) disable related fields when project parameter is set
         switch name {
         | "relativedate" => {
             states->disableAbsoluteDate(true)
@@ -202,7 +204,7 @@ module Filters = {
 module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
-  let make = (~name, ~states: Filters.t) => {
+  let make = (~name, ~states: Filters.t, ~projects: option<array<Project.t>>=?) => {
     let (filter, value, setValue, isDisabled, _) = states->Filters.get(name)
     let onChange = (v, _) => setValue(_ => v)
     let rdOnChange = (v, _) => {
@@ -215,11 +217,50 @@ module Field = {
         }
       }
     }
+    let projectOnChange = (v, _) => {
+      setValue(_ => v)
+      let disableEnableField = (fname: string, disable: bool) => {
+        let (_, _, _, _, setIsDisabled) = states->Filters.get(fname)
+        setIsDisabled(disable)
+      }
+      let disableFieldIfNeeded = (field: Js.Nullable.t<string>, fname: string): option<string> => {
+        field
+        ->Js.Nullable.toOption
+        ->Belt.Option.flatMap(_ => {
+          fname->disableEnableField(true)
+          Some("")
+        })
+      }
+      let enableFields = () => {
+        "branch"->disableEnableField(false)
+        "files"->disableEnableField(false)
+        "repository"->disableEnableField(false)
+      }
+      switch v {
+      | "" => enableFields()
+      | _ => {
+          enableFields()
+          projects
+          ->Belt.Option.flatMap(mps =>
+            mps
+            ->Belt.Array.getBy(p => p.name == v)
+            ->Belt.Option.flatMap(sp => {
+              sp.branch_regex->disableFieldIfNeeded("branch")->ignore
+              sp.file_regex->disableFieldIfNeeded("files")->ignore
+              sp.repository_regex->disableFieldIfNeeded("repository")
+            })
+          )
+          ->ignore
+        }
+      }
+    }
     <FormGroup label={filter.title} fieldId={name ++ "-fg"} hasNoPaddingTop=false>
       <div style={fieldStyle}>
         {switch filter.kind {
         | Text =>
-          <TextInput id={name ++ "-input"} placeholder={filter.description} onChange value />
+          <TextInput
+            id={name ++ "-input"} placeholder={filter.description} onChange value isDisabled
+          />
         | Date =>
           <DatePicker
             id={name ++ "-date"} placeholder={filter.description} onChange value isDisabled
@@ -234,6 +275,13 @@ module Field = {
               placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
             />
           }
+        | Choice(Projects(options)) =>
+          <MSelect
+            placeholder={filter.description}
+            options
+            valueChanged={v => projectOnChange(v, ())}
+            value
+          />
         }}
       </div>
     </FormGroup>
@@ -290,7 +338,7 @@ module FilterBox = {
         Filter.makeChoice(
           "Projects",
           "Select a project",
-          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray->Keywords,
+          projects->Belt.Array.map(project => project.name)->Belt.List.fromArray->Projects,
         ),
       ),
     ])
@@ -307,7 +355,7 @@ module FilterBox = {
             <Field name="authors" states /> <Field name="exclude_authors" states />
           </FieldGroup>
           <FieldGroup>
-            {projects->maybeRenderList(<Field name="project" states />)}
+            {projects->maybeRenderList(<Field name="project" states projects />)}
             <Field name="repository" states />
             <Field name="branch" states />
             <Field name="files" states />
@@ -341,9 +389,7 @@ let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: str
   switch indices {
   | None => <Spinner />
   | Some(Ok(projects)) => <FilterBox updateFilters showChangeParams projects />
-  // We ignore the error right now because the api returns a 404
-  // TODO: make 404 non error?
-  | Some(Error(_error)) => <FilterBox updateFilters showChangeParams projects={[]} />
+  | Some(Error(_error)) => <Alert title={_error} variant=#Danger />
   }
 }
 
