@@ -1,1 +1,2 @@
 /monocle/messages/*.py linguist-generated=true
+/web/src/messages/*.res linguist-generated=true
