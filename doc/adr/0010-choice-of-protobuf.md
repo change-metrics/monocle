@@ -1,5 +1,5 @@
-* Status:
-* Deciders:
+* Status: accepted
+* Deciders: Fabien Boucher
 * Date: 2021-04-22
 * Issue: https://github.com/change-metrics/monocle/issues/346
 
