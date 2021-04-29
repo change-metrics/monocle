@@ -11,12 +11,23 @@ option go_package = "monocle/http";
 import "google/api/annotations.proto";
 
 import "monocle/config.proto";
+import "monocle/task_data.proto";
 
 service Config {
   // Return the list of projects
   rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
     option (google.api.http) = {
       post: "/api/1/get_projects"
+      body: "*"
+    };
+  }
+}
+
+service TaskData {
+  // Commit the last updated timestamp
+  rpc Commit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
+    option (google.api.http) = {
+      post: "/api/1/task_data_commit"
       body: "*"
     };
   }

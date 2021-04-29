@@ -1,0 +1,27 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_task_data;
+option go_package = "monocle/task_data";
+
+message TaskDataCommitRequest {
+  string index = 1;
+  string crawler = 2;
+  string apikey = 3;
+  string timestamp = 4;
+}
+
+enum TaskDataCommitError {
+  UnknownIndex = 0;
+  UnknownCrawler = 1;
+  UnknownApiKey = 2;
+  CommitDateInferiorThanPrevious = 3;
+}
+
+ message TaskDataCommitResponse {
+  oneof result {
+    TaskDataCommitError error = 1;
+    string timestamp = 2;
+  }
+ }
