@@ -1,10 +1,7 @@
 # Monocle codegen
 
-This tool provides a simple codegen process to convert service defined
-in protobuf into api stubs to manage json encoding/decoding for:
-
-- Python Flask
-- ReScript Axios
+This tool provides a simple codegen process to create data types
+from protobuf to python and rescript.
 
 To build the tool:
 

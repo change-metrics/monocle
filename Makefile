@@ -1,5 +1,5 @@
 # TODO: use a container
-all: codegen-python codegen-javascript codegen-stubs
+codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi
 
 codegen-stubs:
 	mkdir -p srcgen/
@@ -25,3 +25,6 @@ codegen-javascript:
 	./web/node_modules/.bin/bsc -format ./srcgen/task_data_types.ml > web/src/messages/TaskDataTypes.res
 	sed -e 's/Task_data_types/TaskDataTypes/g' -i web/src/messages/TaskData.res
 	rm -Rf srcgen/
+
+codegen-openapi:
+	protoc -I=./protos/ -I../../googleapis/googleapis/ --openapi_out=./doc/ monocle/http.proto
