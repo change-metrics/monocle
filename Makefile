@@ -1,5 +1,9 @@
 # TODO: use a container
-all: codegen-python codegen-javascript
+all: codegen-python codegen-javascript codegen-stubs
+
+codegen-stubs:
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../monocle/webapi.py ../web/src/components/WebApi.res.raw)
+	black ./monocle/webapi.py
 
 codegen-python:
 	protoc -I=./protos/ --python_out=./monocle/messages monocle/config.proto monocle/task_data.proto

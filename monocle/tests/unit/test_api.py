@@ -159,10 +159,10 @@ tenants:
                 yaml.safe_load(open(fp.name))
             )
             # First try with a non existing index
-            resp = self.client.post("/api/0/get_projects", json=dict(index="missing"))
+            resp = self.client.post("/api/1/get_projects", json=dict(index="missing"))
             self.assertEqual(200, resp.status_code)
             # Now fetch projects definition of testindex
-            resp = self.client.post("/api/0/get_projects", json=dict(index="testindex"))
+            resp = self.client.post("/api/1/get_projects", json=dict(index="testindex"))
             self.assertEqual(200, resp.status_code)
             projects = json.loads(resp.data)["projects"]
             self.assertEqual(2, len(projects))
@@ -184,7 +184,7 @@ tenants:
             self.assertListEqual(p_names, ["projectdef1", "projectdef2"])
             # Now fetch projects definition of testindex
             resp = self.client.post(
-                "/api/0/get_projects", json=dict(index="testindex2")
+                "/api/1/get_projects", json=dict(index="testindex2")
             )
             self.assertEqual(200, resp.status_code)
             self.assertEqual(0, len(json.loads(resp.data).get("projects", [])))

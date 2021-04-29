@@ -22,9 +22,6 @@ from datetime import datetime
 
 from typing import List, Optional, Union, Tuple
 
-# https://googleapis.dev/python/protobuf/latest/google/protobuf/json_format.html
-from google.protobuf import json_format as pbjson
-
 from flask import Flask
 from flask import abort
 from flask import jsonify
@@ -50,7 +47,7 @@ from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskCrawler,
 )
-from monocle.messages.config_pb2 import GetProjectsResponse, GetProjectsRequest
+from monocle.webapi import config_service
 from monocle import config
 from monocle import env
 
@@ -65,7 +62,7 @@ cache.init_app(app)
 app.secret_key = os.urandom(16)
 CORS(
     app,
-    resources={r"/api/0/*": {"origins": os.getenv("ALLOW_ORIGIN", "*")}},
+    resources={r"/api/*": {"origins": os.getenv("ALLOW_ORIGIN", "*")}},
     supports_credentials=True,
 )
 oauth = OAuth(app)
@@ -133,21 +130,6 @@ def get_index(req):
     if "index" not in req.args or not req.args.get("index"):
         returnAPIError("No index provided", 404)
     return req.args["index"]
-
-
-def get_projects(request: GetProjectsRequest) -> GetProjectsResponse:
-    return GetProjectsResponse(projects=env.project_defs.get(request.index, []))
-
-
-# GET or POST are identical, POST is required for web browser based implementations
-# TODO(tristanC): implement codegen for the stubs too.
-@app.route("/api/0/get_projects", methods=["GET", "POST"])
-def get_project_definition_stub():
-    input_request = pbjson.Parse(request.get_data(), GetProjectsRequest)
-    resp = pbjson.MessageToJson(
-        get_projects(input_request), preserving_proto_field_name=True
-    )
-    return app.response_class(response=resp, status=200, mimetype="application/json")
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])
@@ -372,6 +354,9 @@ def task_data():
         else:
             commit_date = metadata["last_commit_at"]
         return jsonify(commit_date + "Z")
+
+
+config_service(app)
 
 
 def main():
