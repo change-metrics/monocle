@@ -16,13 +16,11 @@
 
 import os
 import socket
-import sys
 import time
-import yaml
 
 from datetime import datetime
 
-from typing import Dict, List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple
 from dataclasses import asdict
 
 from flask import Flask
@@ -51,6 +49,7 @@ from monocle.task_data import (
     TaskCrawler,
 )
 from monocle import config
+from monocle import env
 
 
 CACHE_TIMEOUT = 300  # 5 mn cache
@@ -79,23 +78,6 @@ oauth.register(
     api_base_url="https://api.github.com/",
     client_kwargs={"scope": "user:email"},
 )
-
-indexes_acl: Dict[str, List[config.Username]] = {}
-project_defs: Dict[str, List[config.ProjectDefinition]] = {}
-
-
-config_path = os.getenv("CONFIG", None)
-if not config_path:
-    print("CONFIG env is missing.", file=sys.stderr)
-else:
-    if not os.path.isfile(config_path):
-        print("Unable to access %s." % config_path, file=sys.stderr)
-        sys.exit(1)
-    else:
-        rawconfig = yaml.safe_load(open(config_path))
-        globals()["indexes_acl"] = config.build_index_acl(rawconfig)
-        globals()["project_defs"] = config.build_project_definitions(rawconfig)
-        globals()["indexes_task_crawlers"] = config.build_index_task_crawlers(rawconfig)
 
 
 def returnAPIError(desc: str, code: int, details: Optional[str] = None):
@@ -153,16 +135,16 @@ def get_index(req):
 @app.route("/api/0/projects", methods=["GET"])
 def get_project_definition():
     index = get_index(request)
-    return jsonify([asdict(p) for p in project_defs.get(index, [])])
+    return jsonify([asdict(p) for p in env.project_defs.get(index, [])])
 
 
 @app.route("/api/0/query/<name>", methods=["GET"])
 def query(name):
     index = get_index(request)
-    if not config.is_public_index(indexes_acl, index):
+    if not config.is_public_index(env.indexes_acl, index):
         user = session.get("username") or request.headers.get("Remote-User")
         if user:
-            if user not in config.get_authorized_users(indexes_acl, index):
+            if user not in config.get_authorized_users(env.indexes_acl, index):
                 returnAPIError("Unauthorized to access index %s" % index, 403)
         else:
             returnAPIError("Unauthorized to access index %s" % index, 403)
@@ -201,7 +183,7 @@ def create_db_connection(index: Optional[str]) -> ELmonocleDB:
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def do_query(index, repository_fullname, args, name):
     params = utils.set_params(args)
-    params["_project_defs"] = project_defs.get(index)
+    params["_project_defs"] = env.project_defs.get(index)
     db = create_db_connection(index)
     try:
         result = db.run_named_query(name, repository_fullname, params)
@@ -216,12 +198,12 @@ def indices():
     _indices = db.get_indices()
     indices = []
     for indice in _indices:
-        if config.is_public_index(indexes_acl, indice):
+        if config.is_public_index(env.indexes_acl, indice):
             indices.append(indice)
         else:
             user = session.get("username")
             if user:
-                if user in config.get_authorized_users(indexes_acl, indice):
+                if user in config.get_authorized_users(env.indexes_acl, indice):
                     indices.append(indice)
     return jsonify(indices)
 
@@ -232,13 +214,13 @@ def task_data_endpoint_check_input_env(
     if "index" not in req.args or not req.args.get("index"):
         returnAPIError("No index provided", 404)
     index = req.args["index"]
-    if index not in globals()["indexes_task_crawlers"]:
+    if index not in env.indexes_task_crawlers:
         return returnAPIError("No index with this name", 404)
     if "name" not in req.args or not req.args.get("name"):
         return returnAPIError("No crawler name provided", 404)
     name = req.args["name"]
     match_crawler_config = [
-        c for c in globals()["indexes_task_crawlers"][index] if c.name == name
+        c for c in env.indexes_task_crawlers[index] if c.name == name
     ]
     if not match_crawler_config:
         return returnAPIError("No crawler with this name", 404)

@@ -21,6 +21,7 @@ import unittest
 import yaml
 from flask import json
 
+from monocle import env
 from monocle import webapp
 from monocle import config
 
@@ -67,8 +68,8 @@ class TestWebAPI(unittest.TestCase):
                 },
             ]
         }
-        webapp.indexes_acl = config.build_index_acl(config_data)
-        webapp.indexes_task_crawlers = config.build_index_task_crawlers(config_data)
+        env.indexes_acl = config.build_index_acl(config_data)
+        env.indexes_task_crawlers = config.build_index_task_crawlers(config_data)
 
     def test_health(self):
         "Test health endpoint"
@@ -154,7 +155,7 @@ tenants:
         with tempfile.NamedTemporaryFile() as fp:
             with open(fp.name, "w") as f:
                 f.write(config_example)
-            webapp.project_defs = config.build_project_definitions(
+            env.project_defs = config.build_project_definitions(
                 yaml.safe_load(open(fp.name))
             )
             # First try with a non existing index
