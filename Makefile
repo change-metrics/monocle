@@ -2,8 +2,11 @@
 all: codegen-python codegen-javascript codegen-stubs
 
 codegen-stubs:
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../monocle/webapi.py ../web/src/components/WebApi.res.raw)
+	mkdir -p srcgen/
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../monocle/webapi.py ../srcgen/WebApi.res)
 	black ./monocle/webapi.py
+	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
+	rm -Rf srcgen/
 
 codegen-python:
 	protoc -I=./protos/ --python_out=./monocle/messages monocle/config.proto monocle/task_data.proto

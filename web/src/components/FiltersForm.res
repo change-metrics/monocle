@@ -381,7 +381,7 @@ module FilterBox = {
 
 @react.component
 let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: string) => {
-  let indices = useAutoGet(() => getProjects({index: index}))
+  let indices = useAutoGet(() => WebApi.Config.getProjects({index: index}))
   switch indices {
   | None => <Spinner />
   | Some(Ok({projects})) => <FilterBox updateFilters showChangeParams projects />

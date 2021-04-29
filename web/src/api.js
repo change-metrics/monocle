@@ -88,4 +88,11 @@ function getLoggedUser() {
   })
 }
 
-export { getQueryResults, getIndices, getLoggedUser, baseurl, getProjects }
+export {
+  getQueryResults,
+  getIndices,
+  getLoggedUser,
+  baseurl,
+  getProjects,
+  server
+}

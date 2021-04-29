@@ -6,10 +6,8 @@
 
 // Missing bindings from re-patternfly
 include Patternfly // 'include' export a module value to open scope
+open WebApi
 
-// Bindings for existing javascript
-type axiosResponse<'data> = {data: 'data}
-type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 // axiosGetCallback<string> is a function that goes from unit to axios<string>
 type axiosGetCallback<'data> = unit => axios<'data>
 
@@ -17,21 +15,9 @@ type axiosGetCallback<'data> = unit => axios<'data>
 @module("../api.js") external apiUrl: string = "baseurl"
 @module("../api.js")
 external getIndices: unit => axios<array<string>> = "getIndices"
-@module("../api.js")
-external getProjectsRaw: 'a => axios<'b> = "getProjects"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
-
-let getProjects = (request: ConfigTypes.get_projects_request): axios<
-  ConfigTypes.get_projects_response,
-> =>
-  request->Config.encode_get_projects_request->getProjectsRaw
-    |> Js.Promise.then_(resp =>
-      {
-        data: resp.data->Config.decode_get_projects_response,
-      }->Js.Promise.resolve
-    )
 
 // A temporary module to provide runtime setting
 module Env = {
