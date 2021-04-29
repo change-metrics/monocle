@@ -27,9 +27,6 @@ jobs:
         run: |
           chmod o+w data
 
-      - name: Start containers
-        run: docker-compose up -d
-
       - name: Create a config.yaml file
         run: |
           cat > etc/config.yaml << EOL
@@ -45,6 +42,9 @@ jobs:
                     token: "fake token"
                     base_url: https://github.com
           EOL
+
+      - name: Start containers
+        run: docker-compose up -d
 
       - name: Wait for services to start
         run: sleep 15
