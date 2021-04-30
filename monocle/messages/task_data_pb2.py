@@ -18,6 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="monocle_task_data",
     syntax="proto3",
     serialized_options=b"Z\021monocle/task_data",
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x17monocle/task_data.proto\x12\x11monocle_task_data"Z\n\x15TaskDataCommitRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12\x11\n\ttimestamp\x18\x04 \x01(\t"p\n\x16TaskDataCommitResponse\x12\x37\n\x05\x65rror\x18\x01 \x01(\x0e\x32&.monocle_task_data.TaskDataCommitErrorH\x00\x12\x13\n\ttimestamp\x18\x02 \x01(\tH\x00\x42\x08\n\x06result*r\n\x13TaskDataCommitError\x12\x10\n\x0cUnknownIndex\x10\x00\x12\x12\n\x0eUnknownCrawler\x10\x01\x12\x11\n\rUnknownApiKey\x10\x02\x12"\n\x1e\x43ommitDateInferiorThanPrevious\x10\x03\x42\x13Z\x11monocle/task_datab\x06proto3',
 )
 
@@ -26,15 +27,31 @@ _TASKDATACOMMITERROR = _descriptor.EnumDescriptor(
     full_name="monocle_task_data.TaskDataCommitError",
     filename=None,
     file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
     values=[
         _descriptor.EnumValueDescriptor(
-            name="UnknownIndex", index=0, number=0, serialized_options=None, type=None
+            name="UnknownIndex",
+            index=0,
+            number=0,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="UnknownCrawler", index=1, number=1, serialized_options=None, type=None
+            name="UnknownCrawler",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
-            name="UnknownApiKey", index=2, number=2, serialized_options=None, type=None
+            name="UnknownApiKey",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.EnumValueDescriptor(
             name="CommitDateInferiorThanPrevious",
@@ -42,6 +59,7 @@ _TASKDATACOMMITERROR = _descriptor.EnumDescriptor(
             number=3,
             serialized_options=None,
             type=None,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     containing_type=None,
@@ -64,6 +82,7 @@ _TASKDATACOMMITREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="index",
@@ -82,6 +101,7 @@ _TASKDATACOMMITREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="crawler",
@@ -100,6 +120,7 @@ _TASKDATACOMMITREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="apikey",
@@ -118,6 +139,7 @@ _TASKDATACOMMITREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="timestamp",
@@ -136,6 +158,7 @@ _TASKDATACOMMITREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -157,6 +180,7 @@ _TASKDATACOMMITRESPONSE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="error",
@@ -175,6 +199,7 @@ _TASKDATACOMMITRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="timestamp",
@@ -193,6 +218,7 @@ _TASKDATACOMMITRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -208,6 +234,7 @@ _TASKDATACOMMITRESPONSE = _descriptor.Descriptor(
             full_name="monocle_task_data.TaskDataCommitResponse.result",
             index=0,
             containing_type=None,
+            create_key=_descriptor._internal_create_key,
             fields=[],
         ),
     ],

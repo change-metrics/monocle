@@ -136,6 +136,7 @@ protoToReScript = fromProto headers mkService
     mkMethod moduleName (name, input, output, path) =
       [ "@module(\"axios\")",
         "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
+        "",
         methodDef <> "=>",
         requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
       ]
@@ -143,10 +144,10 @@ protoToReScript = fromProto headers mkService
         methodDef = "let " <> camel name <> " = (" <> methodInput <> "): " <> methodOutput
         methodInput = "request: " <> msgName moduleName input
         methodOutput = "axios<" <> msgName moduleName output <> ">"
-        requestEncode = "request->" <> moduleName <> ".encode_" <> snake (attrName input)
+        requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake (attrName input)
         requestCall = camel name <> "Raw(serverUrl ++ \"" <> path <> "\")"
         promiseDecode = "Js.Promise.then_(resp => { data: " <> decodeResponse <> "}->Js.Promise.resolve)"
-        decodeResponse = "resp.data-> " <> moduleName <> ".decode_" <> snake (attrName output)
+        decodeResponse = "resp.data-> " <> moduleName <> "Bs.decode_" <> snake (attrName output)
 
 main :: IO ()
 main = do

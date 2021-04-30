@@ -1,4 +1,8 @@
-# TODO: use a container
+# Copyright (C) 2021 Monocle authors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+MESSAGES = monocle/config.proto monocle/task_data.proto
+
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi
 
 codegen-stubs:
@@ -9,22 +13,20 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-python:
-	protoc -I=./protos/ --python_out=./monocle/messages --mypy_out=./monocle/messages monocle/config.proto monocle/task_data.proto
+	protoc -I=./protos/ --python_out=./monocle/messages --mypy_out=./monocle/messages $(MESSAGES)
 	mv monocle/messages/monocle/* monocle/messages/
 	black monocle/messages/*.py*
 	rm -Rf monocle/messages/monocle
 
 codegen-javascript:
-	mkdir -p srcgen/
-	ocaml-protoc -bs -ml_out srcgen/ protos/monocle/config.proto
-	./web/node_modules/.bin/bsc -format ./srcgen/config_bs.ml > web/src/messages/Config.res
-	./web/node_modules/.bin/bsc -format ./srcgen/config_types.ml > web/src/messages/ConfigTypes.res
-	sed -e 's/Config_types/ConfigTypes/g' -i web/src/messages/Config.res
-	ocaml-protoc -bs -ml_out srcgen/ protos/monocle/task_data.proto
-	./web/node_modules/.bin/bsc -format ./srcgen/task_data_bs.ml > web/src/messages/TaskData.res
-	./web/node_modules/.bin/bsc -format ./srcgen/task_data_types.ml > web/src/messages/TaskDataTypes.res
-	sed -e 's/Task_data_types/TaskDataTypes/g' -i web/src/messages/TaskData.res
-	rm -Rf srcgen/
+	rm -f web/src/messages/*
+	sh -c 'for pb in $(MESSAGES); do ocaml-protoc -bs -ml_out web/src/messages/ protos/$${pb}; done'
+	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 
 codegen-openapi:
-	protoc -I=./protos/ -I../../googleapis/googleapis/ --openapi_out=./doc/ monocle/http.proto
+	protoc -I=./protos/ -I/usr/src/ -I../../googleapis/googleapis/ --openapi_out=./doc/ monocle/http.proto
+	@echo Created doc/openapi.yaml
+
+codegen-with-container:
+	podman run -it -v $(shell pwd):/data:z --rm changemetrics/monocle_codegen make
+	@echo Success.

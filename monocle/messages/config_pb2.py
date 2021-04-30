@@ -17,6 +17,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     package="monocle_config",
     syntax="proto3",
     serialized_options=b"Z\016monocle/config",
+    create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x14monocle/config.proto\x12\x0emonocle_config"e\n\x11ProjectDefinition\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x18\n\x10repository_regex\x18\x02 \x01(\t\x12\x14\n\x0c\x62ranch_regex\x18\x03 \x01(\t\x12\x12\n\nfile_regex\x18\x04 \x01(\t"#\n\x12GetProjectsRequest\x12\r\n\x05index\x18\x01 \x01(\t"J\n\x13GetProjectsResponse\x12\x33\n\x08projects\x18\x01 \x03(\x0b\x32!.monocle_config.ProjectDefinitionB\x10Z\x0emonocle/configb\x06proto3',
 )
 
@@ -27,6 +28,7 @@ _PROJECTDEFINITION = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="name",
@@ -45,6 +47,7 @@ _PROJECTDEFINITION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="repository_regex",
@@ -63,6 +66,7 @@ _PROJECTDEFINITION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="branch_regex",
@@ -81,6 +85,7 @@ _PROJECTDEFINITION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
             name="file_regex",
@@ -99,6 +104,7 @@ _PROJECTDEFINITION = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -120,6 +126,7 @@ _GETPROJECTSREQUEST = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="index",
@@ -138,6 +145,7 @@ _GETPROJECTSREQUEST = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],
@@ -159,6 +167,7 @@ _GETPROJECTSRESPONSE = _descriptor.Descriptor(
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
+    create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
             name="projects",
@@ -177,6 +186,7 @@ _GETPROJECTSRESPONSE = _descriptor.Descriptor(
             extension_scope=None,
             serialized_options=None,
             file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
         ),
     ],
     extensions=[],

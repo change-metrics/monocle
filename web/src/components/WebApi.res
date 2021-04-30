@@ -10,25 +10,27 @@ type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 module Config = {
   @module("axios")
   external getProjectsRaw: (string, 'a) => axios<'b> = "post"
+
   let getProjects = (request: ConfigTypes.get_projects_request): axios<
     ConfigTypes.get_projects_response,
   > =>
-    request->Config.encode_get_projects_request
+    request->ConfigBs.encode_get_projects_request
     |> getProjectsRaw(serverUrl ++ "/api/1/get_projects")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->Config.decode_get_projects_response}->Js.Promise.resolve
+      {data: resp.data->ConfigBs.decode_get_projects_response}->Js.Promise.resolve
     )
 }
 
 module TaskData = {
   @module("axios")
   external commitRaw: (string, 'a) => axios<'b> = "post"
+
   let commit = (request: TaskDataTypes.task_data_commit_request): axios<
     TaskDataTypes.task_data_commit_response,
   > =>
-    request->TaskData.encode_task_data_commit_request
+    request->TaskDataBs.encode_task_data_commit_request
     |> commitRaw(serverUrl ++ "/api/1/task_data_commit")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->TaskData.decode_task_data_commit_response}->Js.Promise.resolve
+      {data: resp.data->TaskDataBs.decode_task_data_commit_response}->Js.Promise.resolve
     )
 }
