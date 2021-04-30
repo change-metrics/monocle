@@ -63,18 +63,18 @@ if [ "$1" == "create" ]; then
                -e ALLOW_ORIGIN=http://$PUBLIC_ADDRESS:3000 \
                -e WEB_URL=http://$PUBLIC_ADDRESS:3000 \
                --add-host monocle_elastic:127.0.0.1 \
-               -v $PWD/etc:/etc/monocle:Z \
-               -v $PWD/monocle:/code/monocle:Z \
+               -v $PWD/etc:/etc/monocle:z \
+               -v $PWD/monocle:/code/monocle:z \
                -it \
                monocle_backend uwsgi --http :9876 --manage-script-name --mount /app=monocle.webapp:app
 
     podman create --name=monocle_crawler \
                --pod monocle \
                --add-host monocle_elastic:127.0.0.1 \
-               -v $PWD/etc:/etc/monocle:Z \
+               -v $PWD/etc:/etc/monocle:z \
                -v $PWD/dump:/var/lib/crawler:Z \
                -it \
-               -v $PWD/monocle:/code/monocle:Z \
+               -v $PWD/monocle:/code/monocle:z \
                monocle_backend monocle --elastic-conn monocle_elastic:9200 crawler --config /etc/monocle/config.yaml
 
     podman create --name=monocle_web \
