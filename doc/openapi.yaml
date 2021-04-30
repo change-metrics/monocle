@@ -1,0 +1,82 @@
+# Generated with protoc-gen-openapi
+# https://github.com/googleapis/gnostic/tree/master/apps/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Monocle
+    description: The monocle HTTP API
+    version: 0.0.1
+paths:
+    /api/1/get_projects:
+        post:
+            summary: Return the list of projects
+            operationId: Config_GetProjects
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetProjectsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetProjectsResponse'
+    /api/1/task_data_commit:
+        post:
+            summary: Commit the last updated timestamp
+            operationId: TaskData_Commit
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskDataCommitRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDataCommitResponse'
+components:
+    schemas:
+        GetProjectsRequest:
+            properties:
+                index:
+                    type: string
+        GetProjectsResponse:
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ProjectDefinition'
+        ProjectDefinition:
+            properties:
+                name:
+                    type: string
+                repository_regex:
+                    type: string
+                branch_regex:
+                    type: string
+                file_regex:
+                    type: string
+        TaskDataCommitRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                timestamp:
+                    type: string
+        TaskDataCommitResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string

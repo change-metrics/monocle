@@ -1,0 +1,40 @@
+# Monocle.
+# Copyright (C) 2021 Monocle authors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+FROM registry.fedoraproject.org/fedora:33
+RUN dnf update -y && dnf install -y ghc cabal-install black nodejs protobuf-compiler python3-pip golang-bin ocaml opam make && dnf clean all
+
+# Install haskell tools
+RUN cabal update && cabal install --lib casing relude language-protobuf
+
+# Install python tool
+RUN python3 -mpip install mypy-protobuf
+
+# Install javascript tool
+RUN opam init --yes --disable-sandboxing && eval `opam config env` && opam install --yes ocaml-protoc
+
+# Install openapi tool
+RUN mkdir -p ~/go && go get github.com/google/gnostic && go get google.golang.org/genproto/googleapis/api/annotations && go install github.com/google/gnostic/apps/protoc-gen-openapi
+
+# Fetch protobuf
+RUN mkdir -p /usr/src/google/api /usr/src/google/protobuf && \
+    curl -o /usr/src/google/api/http.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/http.proto && \
+    curl -o /usr/src/google/api/annotations.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/annotations.proto && \
+    curl -o /usr/src/google/protobuf/descriptor.proto -L https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/descriptor.proto
+
+ENV LANG=C.UTF-8
+ENV PATH=/root/.local/bin:/root/.opam/default/bin:/root/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WORKDIR /data

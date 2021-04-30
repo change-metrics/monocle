@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
 from typing import Dict, List, Optional
 from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
 from monocle.task_data import TaskCrawler, createTaskCrawler
+from monocle.messages.config_pb2 import ProjectDefinition
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -242,14 +242,6 @@ def validate(data, schema):
 
 class Username(str):
     pass
-
-
-@dataclass
-class ProjectDefinition:
-    name: str
-    repository_regex: Optional[str]
-    branch_regex: Optional[str]
-    file_regex: Optional[str]
 
 
 def get_project_by_name(

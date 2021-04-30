@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
 # Monocle.
-# Copyright (C) 2019-2020 Monocle authors
+# Copyright (C) 2019-2021 Monocle authors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -16,20 +14,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from setuptools import setup
-
-setup(
-    name="monocle",
-    version="0.8.1",
-    packages=[
-        "monocle",
-        "monocle.db",
-        "monocle.gerrit",
-        "monocle.github",
-        "monocle.messages",
-        "monocle.migrate",
-    ],
-    entry_points={
-        "console_scripts": ["monocle=monocle.main:main", "webapi=monocle.webapp:main"]
-    },
+from monocle.messages.config_pb2 import (
+    GetProjectsRequest,
+    GetProjectsResponse,
 )
+from monocle import env
+
+
+def config_get_projects(request: GetProjectsRequest) -> GetProjectsResponse:
+    project_defs = env.project_defs
+    return GetProjectsResponse(projects=project_defs.get(request.index, []))

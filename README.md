@@ -52,6 +52,8 @@ To summarize we have the following components in Monocle:
 3. a crawler service.
 4. a web UI.
 
+OpenAPI definitions are availables: [Monocle OpenAPI][monocle-openapi].
+
 ## Installation
 
 Monocle is in an early phase of development. Feedback is highly welcome.
@@ -273,8 +275,9 @@ tenants:
         branch_regex: "master"
 ```
 
-The monocle API endpoint `api/0/projects?index=<indexname>` can be queried to
-retrieved the list defined projects for a given index.
+The monocle API endpoint `api/1/get_projects` can be queried to
+retrieved the list defined projects for a given index. See the
+[Monocle OpenAPI][monocle-openapi].
 
 The monocle query endpoint handles the query parameter: `project`.
 
@@ -477,3 +480,5 @@ curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
 ## Contributing
 
 Follow [our contributing guide](CONTRIBUTING.md).
+
+[monocle-openapi]: ./doc/openapi.yaml
