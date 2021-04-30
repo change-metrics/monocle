@@ -3,7 +3,7 @@
   "reason": {
     "react-jsx": 3
   },
-  "sources": ["src/components"],
+  "sources": ["src/components", "src/messages"],
   "bsc-flags": ["-bs-super-errors", "-bs-no-version-header"],
   "package-specs": [
     {
@@ -12,7 +12,7 @@
     }
   ],
   "suffix": ".bs.js",
-  "bs-dependencies": ["@rescript/react", "@softwarefactory-project/re-patternfly"],
+  "bs-dependencies": ["@rescript/react", "@softwarefactory-project/re-patternfly", "bs-ocaml-protoc-json"],
   "bs-dev-dependencies": [],
   "namespace": true,
   "refmt": 3

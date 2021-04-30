@@ -1,0 +1,21 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_config;
+option go_package = "monocle/config";
+
+message ProjectDefinition {
+  string name = 1;
+  string repository_regex = 2;
+  string branch_regex = 3;
+  string file_regex = 4;
+}
+
+message GetProjectsRequest {
+  string index = 1;
+}
+
+message GetProjectsResponse {
+  repeated ProjectDefinition projects = 1;
+}

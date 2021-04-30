@@ -1,0 +1,38 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+// This file define an empty service to force the openapi generator
+// to set the right title and description in the generate openapi.yaml file.
+
+syntax = "proto3";
+package monocle_web;
+option go_package = "monocle/http";
+
+import "google/api/annotations.proto";
+
+import "monocle/config.proto";
+import "monocle/task_data.proto";
+
+service Config {
+  // Return the list of projects
+  rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
+    option (google.api.http) = {
+      post: "/api/1/get_projects"
+      body: "*"
+    };
+  }
+}
+
+service TaskData {
+  // Commit the last updated timestamp
+  rpc Commit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
+    option (google.api.http) = {
+      post: "/api/1/task_data_commit"
+      body: "*"
+    };
+  }
+}
+
+// The monocle HTTP API
+service Monocle {
+}

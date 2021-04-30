@@ -31,6 +31,16 @@ Then the tests can be executed using:
 $ tox
 ```
 
+## To update the API
+
+The new APIs are defined using protobuf. To change them, first you need to update the
+protobuf definitions present in the [./protos/ folder](./protos). Then you need to update
+the api and web client by running the protoc command using the Makefile:
+
+```ShellSession
+$ make codegen
+```
+
 ## Reloading code
 
 This section explains how you can hack the Monocle code. The idea is to use
