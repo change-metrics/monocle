@@ -101,8 +101,8 @@ def health():
 @app.route("/api/0/login", methods=["GET"])
 def login():
     github = oauth.create_client("github")
-    redirect_uri = os.getenv("REDIRECT_URL")
-    return github.authorize_redirect(redirect_uri)
+    redirect_uri = os.getenv("PUBLIC_URL", "")
+    return github.authorize_redirect(redirect_uri + "/api/0/authorize")
 
 
 @app.route("/api/0/authorize", methods=["GET"])
@@ -115,7 +115,7 @@ def authorize():
     # do something with the token and profile
     session["username"] = profile.get("login")
     # return jsonify(profile)
-    return redirect(os.getenv("WEB_URL"))
+    return redirect("/")
 
 
 @app.route("/api/0/whoami", methods=["GET"])

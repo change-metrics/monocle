@@ -4,19 +4,18 @@ services:
     depends_on:
       - elastic
     environment:
-      ALLOW_ORIGIN: "${MONOCLE_URL:-http://localhost:3000}"
       CLIENT_ID: "${GITHUB_CLIENT_ID:-}"
       CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
-      REDIRECT_URL: "${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize"
-      WEB_URL: "${MONOCLE_URL:-http://localhost:3000}"
+      PUBLIC_URL: "${MONOCLE_PUBLIC_URL}"
     healthcheck:
+      retries: 6
       test: "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+      timeout: "60s"
     image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     ports:
-      - "${MONOCLE_API_ADDR:-0.0.0.0}:9876:9876"
-      - "${MONOCLE_API_ADDR:-0.0.0.0}:9877:9877"
+      - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9876}:9876"
     restart: unless-stopped
     volumes:
       - "./etc:/etc/monocle:z"
@@ -39,7 +38,9 @@ services:
     expose:
       - 9200
     healthcheck:
+      retries: 6
       test: "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+      timeout: "60s"
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     restart: unless-stopped
     ulimits:
@@ -52,10 +53,12 @@ services:
     depends_on:
       - api
     environment:
-      REACT_APP_API_URL: "${MONOCLE_API_URL:-http://localhost:9876}"
-      REACT_APP_TITLE: "${MONOCLE_TITLE:-}"
+      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL}"
+      REACT_APP_TITLE: "${MONOCLE_TITLE}"
     image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
     ports:
-      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
+      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:${MONOCLE_WEB_PORT:-8080}:8080"
     restart: unless-stopped
+    volumes:
+      - "./web/conf:/etc/nginx/conf.d:z"
 version: '3'

@@ -36,7 +36,7 @@
   },
   "scripts": {
     "start": "concurrently --names www,res -c green.bold,red.bold,blue.bold npm:react-scripts-start npm:re:watch 1:rs",
-    "react-scripts-start": "react-scripts start",
+    "react-scripts-start": "REACT_APP_API_URL=${MONOCLE_API_URL:-http://localhost:9876} react-scripts start",
     "build": "npm run re:build && env DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "npm run re:build && react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
