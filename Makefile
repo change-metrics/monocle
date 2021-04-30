@@ -9,9 +9,9 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-python:
-	protoc -I=./protos/ --python_out=./monocle/messages monocle/config.proto monocle/task_data.proto
+	protoc -I=./protos/ --python_out=./monocle/messages --mypy_out=./monocle/messages monocle/config.proto monocle/task_data.proto
 	mv monocle/messages/monocle/* monocle/messages/
-	black monocle/messages/*.py
+	black monocle/messages/*.py*
 	rm -Rf monocle/messages/monocle
 
 codegen-javascript:

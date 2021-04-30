@@ -2,5 +2,5 @@
 /monocle/webapi.py linguist-generated=true
 /web/src/components/WebApi.res linguist-generated=true
 # Protobuf messages
-/monocle/messages/*.py linguist-generated=true
+/monocle/messages/*.py* linguist-generated=true
 /web/src/messages/*.res linguist-generated=true
