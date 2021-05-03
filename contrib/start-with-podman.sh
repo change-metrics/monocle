@@ -38,10 +38,8 @@
 
 set -x
 
-export PUBLIC_ADDRESS=/
-
 if [ "$1" == "build" ]; then
-    podman build -t monocle_web -f web/Dockerfile web
+    podman build -t monocle_web -f Dockerfile-web web
     podman build -t monocle_backend -f Dockerfile .
 fi
 
@@ -80,7 +78,7 @@ if [ "$1" == "create" ]; then
                --pod monocle \
                --add-host monocle_api:127.0.0.1 \
                --add-host monocle_elastic:127.0.0.1 \
-               -e REACT_APP_TITLE="Monocle Dev Podman deployment"
+               -e REACT_APP_TITLE="Monocle Dev Podman deployment" \
                monocle_web
 fi
 
