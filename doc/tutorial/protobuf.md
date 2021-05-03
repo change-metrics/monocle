@@ -2,11 +2,11 @@ How to update the Monocle API defined with Protobuf
 ===================================================
 
 This tutorial teachs you how to use the protobuf definition to create a new API named `GetInfo`
-You can read the [Choice of Protobuf Decision Record](../doc/0010-choice-of-protobuf.md) to learn more about the design.
+You can read the [Choice of Protobuf Decision Record](../adr/0010-choice-of-protobuf.md) to learn more about the design.
 
-In Monocle, we use protobuf *messages* to define the API inputs and outputs.
-Then we use the protobuf *JSON* encoding to exchange those messages over HTTP.
-Finally, we use protobuf *services* along with the `google.api.http` package to define the API path location.
+- In Monocle, we use protobuf *messages* to define the API inputs and outputs.
+- Then we use the protobuf *JSON* encoding to exchange those messages over HTTP.
+- Finally, we use protobuf *services* along with the `google.api.http` package to define the API path location.
 
 We'll do each step by hand and we'll see how it works in practice for Monocle.
 
