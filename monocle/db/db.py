@@ -231,8 +231,6 @@ class ELmonocleDB:
         self.es = Elasticsearch(elastic_conn)
         self.log.info(self.es.info())
 
-        self.schema_version = 1
-
         if previous_schema:
             self.prefix = PREV_CHANGE_PREFIX
         else:
@@ -247,7 +245,6 @@ class ELmonocleDB:
         self.index = "{}{}".format(self.prefix, index)
         self.log.info("Using ES index %s" % self.index)
         self.new_fields = {
-            "_schema_version": {"type": "integer"},
             "crawler_metadata": {
                 "properties": {
                     "last_commit_at": {
@@ -412,15 +409,6 @@ class ELmonocleDB:
                 if new_field_name not in current_index_properties:
                     body = {"properties": {new_field_name: new_field_props}}
                     self.ic.put_mapping(index=self.index, body=body)
-            # Set schema version
-            self.es.update(
-                index=self.index,
-                id="_monocle_schema_version_uuid",
-                body={
-                    "doc": {"_schema_version": self.schema_version},
-                    "doc_as_upsert": True,
-                },
-            )
 
     def update(self, source_it: List[Union[Change, Event]]) -> None:
         def gen(it):
