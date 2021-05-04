@@ -31,6 +31,14 @@ service TaskData {
       body: "*"
     };
   }
+  // Commit the last updated timestamp
+  rpc GetLastUpdated(monocle_task_data.TaskDataGetLastUpdatedRequest)
+      returns (monocle_task_data.TaskDataGetLastUpdatedResponse) {
+    option (google.api.http) = {
+      post: "/api/1/task_data_get_last_updated"
+      body: "*"
+    };
+  }
 }
 
 // The monocle HTTP API

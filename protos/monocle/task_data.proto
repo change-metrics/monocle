@@ -21,9 +21,26 @@ enum TaskDataCommitError {
   CommitDateInferiorThanPrevious = 3;
 }
 
- message TaskDataCommitResponse {
+message TaskDataCommitResponse {
   oneof result {
     TaskDataCommitError error = 1;
+    google.protobuf.Timestamp timestamp = 2;
+  }
+ }
+
+enum TaskDataGetLastUpdatedError {
+  GetUnknownIndex = 0;
+  GetUnknownCrawler = 1;
+}
+
+message TaskDataGetLastUpdatedRequest {
+  string index = 1;
+  string crawler = 2;
+}
+
+message TaskDataGetLastUpdatedResponse {
+  oneof result {
+    TaskDataGetLastUpdatedError error = 1;
     google.protobuf.Timestamp timestamp = 2;
   }
  }

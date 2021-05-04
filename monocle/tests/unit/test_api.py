@@ -359,28 +359,29 @@ tenants:
             apikey=self.apikey,
             crawler="myttcrawler",
         )
-        geturl = "/api/0/task_data?index=%s&name=%s" % (
-            self.index2,
-            "myttcrawler",
+        geturl = "/api/1/task_data_get_last_updated"
+        getdata = dict(
+            index=self.index2,
+            crawler="myttcrawler",
         )
         # No previous commit data - return the default date
-        resp = self.client.get(geturl)
+        resp = self.client.post(geturl, json=getdata)
         self.assertEqual(200, resp.status_code)
-        commit_date = json.loads(resp.data)
+        commit_date = json.loads(resp.data)["timestamp"]
         self.assertEqual(commit_date, "2020-01-01T00:00:00Z")
         # Set a commit date and check we can retrieve it
         input_date = "2020-01-01T00:10:00Z"
         postdata["timestamp"] = input_date
         resp = self.client.post(posturl, json=postdata)
         self.assertEqual(200, resp.status_code)
-        resp = self.client.get(geturl)
+        resp = self.client.post(geturl, json=getdata)
         self.assertEqual(200, resp.status_code)
-        commit_date = json.loads(resp.data)
+        commit_date = json.loads(resp.data)["timestamp"]
         self.assertEqual(commit_date, input_date)
         # Set a new commit date and check we can retrieve it
         new_date = "2020-01-01T01:00:00Z"
         postdata["timestamp"] = new_date
         resp = self.client.post(posturl, json=postdata)
-        resp = self.client.get(geturl)
-        commit_date = json.loads(resp.data)
+        resp = self.client.post(geturl, json=getdata)
+        commit_date = json.loads(resp.data)["timestamp"]
         self.assertEqual(commit_date, new_date)

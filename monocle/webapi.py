@@ -26,9 +26,11 @@ def config_service(app):
 
 
 def task_data_service(app):
-    from monocle.api import task_data_commit
+    from monocle.api import task_data_commit, task_data_get_last_updated
     from monocle.messages.task_data_pb2 import TaskDataCommitRequest
     from monocle.messages.task_data_pb2 import TaskDataCommitResponse
+    from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedRequest
+    from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedResponse
 
     def commit_stub() -> None:
         input_request: TaskDataCommitRequest = pbjson.Parse(request.get_data(), TaskDataCommitRequest())  # type: ignore
@@ -39,3 +41,20 @@ def task_data_service(app):
         )
 
     app.add_url_rule("/api/1/task_data_commit", "Commit", commit_stub, methods=["POST"])
+
+    def get_last_updated_stub() -> None:
+        input_request: TaskDataGetLastUpdatedRequest = pbjson.Parse(request.get_data(), TaskDataGetLastUpdatedRequest())  # type: ignore
+        output_resp: TaskDataGetLastUpdatedResponse = task_data_get_last_updated(
+            input_request
+        )
+        json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
+        return app.response_class(
+            response=json_resp, status=200, mimetype="application/json"
+        )
+
+    app.add_url_rule(
+        "/api/1/task_data_get_last_updated",
+        "GetLastUpdated",
+        get_last_updated_stub,
+        methods=["POST"],
+    )
