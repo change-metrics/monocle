@@ -5,7 +5,7 @@ type task_data_commit_request = {
   index : string;
   crawler : string;
   apikey : string;
-  timestamp : string;
+  timestamp : TimestampTypes.timestamp option;
 }
 
 type task_data_commit_error =
@@ -16,13 +16,13 @@ type task_data_commit_error =
 
 type task_data_commit_response =
   | Error of task_data_commit_error
-  | Timestamp of string
+  | Timestamp of TimestampTypes.timestamp
 
 let rec default_task_data_commit_request 
   ?index:((index:string) = "")
   ?crawler:((crawler:string) = "")
   ?apikey:((apikey:string) = "")
-  ?timestamp:((timestamp:string) = "")
+  ?timestamp:((timestamp:TimestampTypes.timestamp option) = None)
   () : task_data_commit_request  = {
   index;
   crawler;

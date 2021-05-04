@@ -8,7 +8,7 @@ type task_data_commit_request = {
   index : string;
   crawler : string;
   apikey : string;
-  timestamp : string;
+  timestamp : TimestampTypes.timestamp option;
 }
 
 type task_data_commit_error =
@@ -19,7 +19,7 @@ type task_data_commit_error =
 
 type task_data_commit_response =
   | Error of task_data_commit_error
-  | Timestamp of string
+  | Timestamp of TimestampTypes.timestamp
 
 
 (** {2 Default values} *)
@@ -28,7 +28,7 @@ val default_task_data_commit_request :
   ?index:string ->
   ?crawler:string ->
   ?apikey:string ->
-  ?timestamp:string ->
+  ?timestamp:TimestampTypes.timestamp option ->
   unit ->
   task_data_commit_request
 (** [default_task_data_commit_request ()] is the default value for type [task_data_commit_request] *)

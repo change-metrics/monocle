@@ -4,14 +4,14 @@ type task_data_commit_request_mutable = {
   mutable index : string;
   mutable crawler : string;
   mutable apikey : string;
-  mutable timestamp : string;
+  mutable timestamp : TimestampTypes.timestamp option;
 }
 
 let default_task_data_commit_request_mutable () : task_data_commit_request_mutable = {
   index = "";
   crawler = "";
   apikey = "";
-  timestamp = "";
+  timestamp = None;
 }
 
 
@@ -32,7 +32,7 @@ let rec decode_task_data_commit_request json =
       v.apikey <- Pbrt_bs.string json "task_data_commit_request" "apikey"
     | "timestamp" -> 
       let json = Js.Dict.unsafeGet json "timestamp" in
-      v.timestamp <- Pbrt_bs.string json "task_data_commit_request" "timestamp"
+      v.timestamp <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "task_data_commit_request" "timestamp")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -63,7 +63,7 @@ let rec decode_task_data_commit_response json =
         (TaskDataTypes.Error ((decode_task_data_commit_error json)) : TaskDataTypes.task_data_commit_response)
       | "timestamp" -> 
         let json = Js.Dict.unsafeGet json "timestamp" in
-        (TaskDataTypes.Timestamp (Pbrt_bs.string json "task_data_commit_response" "Timestamp") : TaskDataTypes.task_data_commit_response)
+        (TaskDataTypes.Timestamp ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "task_data_commit_response" "Timestamp"))) : TaskDataTypes.task_data_commit_response)
       
       | _ -> loop (i - 1)
       end
@@ -75,7 +75,14 @@ let rec encode_task_data_commit_request (v:TaskDataTypes.task_data_commit_reques
   Js.Dict.set json "index" (Js.Json.string v.TaskDataTypes.index);
   Js.Dict.set json "crawler" (Js.Json.string v.TaskDataTypes.crawler);
   Js.Dict.set json "apikey" (Js.Json.string v.TaskDataTypes.apikey);
-  Js.Dict.set json "timestamp" (Js.Json.string v.TaskDataTypes.timestamp);
+  begin match v.TaskDataTypes.timestamp with
+  | None -> ()
+  | Some v ->
+    begin (* timestamp field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "timestamp" (Js.Json.object_ json');
+    end;
+  end;
   json
 
 let rec encode_task_data_commit_error (v:TaskDataTypes.task_data_commit_error) : string = 
@@ -91,6 +98,9 @@ let rec encode_task_data_commit_response (v:TaskDataTypes.task_data_commit_respo
   | TaskDataTypes.Error v ->
     Js.Dict.set json "error" (Js.Json.string (encode_task_data_commit_error v));
   | TaskDataTypes.Timestamp v ->
-    Js.Dict.set json "timestamp" (Js.Json.string v);
+    begin (* timestamp field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "timestamp" (Js.Json.object_ json');
+    end;
   end;
   json

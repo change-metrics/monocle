@@ -6,6 +6,7 @@ import builtins
 import google.protobuf.descriptor
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import google.protobuf.timestamp_pb2
 import typing
 import typing_extensions
 
@@ -40,15 +41,19 @@ class TaskDataCommitRequest(google.protobuf.message.Message):
     index: typing.Text = ...
     crawler: typing.Text = ...
     apikey: typing.Text = ...
-    timestamp: typing.Text = ...
+    @property
+    def timestamp(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
         index: typing.Text = ...,
         crawler: typing.Text = ...,
         apikey: typing.Text = ...,
-        timestamp: typing.Text = ...,
+        timestamp: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["timestamp", b"timestamp"]
+    ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
@@ -70,12 +75,13 @@ class TaskDataCommitResponse(google.protobuf.message.Message):
     ERROR_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_NUMBER: builtins.int
     error: global___TaskDataCommitError.V = ...
-    timestamp: typing.Text = ...
+    @property
+    def timestamp(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
         error: global___TaskDataCommitError.V = ...,
-        timestamp: typing.Text = ...,
+        timestamp: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
     def HasField(
         self,

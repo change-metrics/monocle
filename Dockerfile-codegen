@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 FROM registry.fedoraproject.org/fedora:33
-RUN dnf update -y && dnf install -y ghc cabal-install black nodejs protobuf-compiler python3-pip golang-bin ocaml opam make && dnf clean all
+RUN dnf update -y && dnf install -y ghc cabal-install black nodejs protobuf-compiler protobuf-devel python3-pip golang-bin ocaml opam make && dnf clean all
 
 # Install haskell tools
 RUN cabal update && cabal install --lib casing relude language-protobuf
@@ -30,10 +30,9 @@ RUN opam init --yes --disable-sandboxing && eval `opam config env` && opam insta
 RUN mkdir -p ~/go && go get github.com/google/gnostic && go get google.golang.org/genproto/googleapis/api/annotations && go install github.com/google/gnostic/apps/protoc-gen-openapi
 
 # Fetch protobuf
-RUN mkdir -p /usr/src/google/api /usr/src/google/protobuf && \
-    curl -o /usr/src/google/api/http.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/http.proto && \
-    curl -o /usr/src/google/api/annotations.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/annotations.proto && \
-    curl -o /usr/src/google/protobuf/descriptor.proto -L https://raw.githubusercontent.com/protocolbuffers/protobuf/master/src/google/protobuf/descriptor.proto
+RUN mkdir -p /usr/include/google/api && \
+    curl -o /usr/include/google/api/http.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/http.proto && \
+    curl -o /usr/include/google/api/annotations.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/annotations.proto
 
 ENV LANG=C.UTF-8
 ENV PATH=/root/.local/bin:/root/.opam/default/bin:/root/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

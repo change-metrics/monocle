@@ -73,6 +73,7 @@ components:
                     type: string
                 timestamp:
                     type: string
+                    format: RFC3339
         TaskDataCommitResponse:
             properties:
                 error:
@@ -80,3 +81,4 @@ components:
                     format: enum
                 timestamp:
                     type: string
+                    format: RFC3339
