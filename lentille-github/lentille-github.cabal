@@ -1,0 +1,94 @@
+cabal-version:       2.4
+name:                lentille-github
+version:             0.1.0.0
+synopsis:            Github integration for monocle
+description:
+    lentille-github is a haskell library for Monocle.
+    .
+    Use this library to get task metadata from github.
+    .
+homepage:            https://github.com/change-metrics/lentille#readme
+bug-reports:         https://github.com/change-metrics/lentille/issues
+license:             AGPL-3.0-only
+license-file:        LICENSE
+author:              Monocle authors
+maintainer:          Monocle authors <fboucher@redhat.com>
+copyright:           2021 Monocle authors
+category:            Development
+build-type:          Simple
+extra-doc-files:     README.md
+tested-with:         GHC == 8.10.4
+
+source-repository head
+  type:                git
+  location:            https://github.com/change-metrics/lentille.git
+
+common common-options
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+  if impl(ghc >= 8.0)
+    ghc-options:       -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options:       -fhide-source-paths
+  if impl(ghc >= 8.4)
+    ghc-options:       -Wmissing-export-lists
+                       -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options:       -Wmissing-deriving-strategies
+  if impl(ghc >= 8.10)
+    ghc-options:       -Wunused-packages
+
+  default-language:    Haskell2010
+
+library
+  import:              common-options
+  hs-source-dirs:      src
+  build-depends:       lentille
+                     , aeson                      < 1.6
+                     , http-client                < 0.8
+                     , http-client-tls            < 0.4
+                     , http-types                 < 0.12.4
+                     , exceptions                 < 0.10.5
+                     , relude                     > 1.0 && < 1.1
+                     , streaming                  < 0.3
+                     , time                       < 1.12
+  exposed-modules:     Lentille.Github
+
+executable lentille-github
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       lentille-github
+                     , lentille
+                     , optparse-generic           < 1.5
+                     , relude                     > 1.0 && < 1.1
+                     , streaming                  < 0.3
+                     , time                       < 1.12
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+
+-- test-suite lentille-github-test
+--   import:              common-options
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      test
+--   other-modules:       Lentille.GithubMock
+--   main-is:             Spec.hs
+--   build-depends:       base                       < 5
+--                      , github-redhat            < 0.4
+--                      , http-types                 < 0.13
+--                      , lentille
+--                      , lentille-github
+--                      , lentille-mock
+--                      , network                    < 4
+--                      , relude                     > 1.0 && < 1.1
+--                      , tasty                      < 1.5
+--                      , tasty-hunit                < 0.11
+--                      , wai                        < 3.3
+--                      , warp                       < 3.4
+--   ghc-options:         -threaded
+--                        -rtsopts
+--                        -with-rtsopts=-N
