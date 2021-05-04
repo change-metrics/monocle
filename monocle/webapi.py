@@ -13,7 +13,7 @@ def config_service(app):
     from monocle.messages.config_pb2 import GetProjectsResponse
 
     def get_projects_stub() -> None:
-        input_request: GetProjectsRequest = pbjson.Parse(request.get_data(), GetProjectsRequest)  # type: ignore
+        input_request: GetProjectsRequest = pbjson.Parse(request.get_data(), GetProjectsRequest())  # type: ignore
         output_resp: GetProjectsResponse = config_get_projects(input_request)
         json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
         return app.response_class(
@@ -31,7 +31,7 @@ def task_data_service(app):
     from monocle.messages.task_data_pb2 import TaskDataCommitResponse
 
     def commit_stub() -> None:
-        input_request: TaskDataCommitRequest = pbjson.Parse(request.get_data(), TaskDataCommitRequest)  # type: ignore
+        input_request: TaskDataCommitRequest = pbjson.Parse(request.get_data(), TaskDataCommitRequest())  # type: ignore
         output_resp: TaskDataCommitResponse = task_data_commit(input_request)
         json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
         return app.response_class(
