@@ -33,30 +33,30 @@ data GitHubGraphClient = GitHubGraphClient
   }
 
 newGithubGraphClient :: MonadIO m => Text -> m GitHubGraphClient
-newGithubGraphClient url = do
-  manager <- liftIO $ HTTP.newManager tlsManagerSettings
-  token <-
+newGithubGraphClient url' = do
+  manager' <- liftIO $ HTTP.newManager tlsManagerSettings
+  token' <-
     toText
       . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")
       <$> liftIO (lookupEnv "GITHUB_GRAPH_TOKEN")
-  pure $ GitHubGraphClient manager url token
+  pure $ GitHubGraphClient manager' url' token'
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
 runGithubGraphRequest :: MonadIO m => GitHubGraphClient -> LBS.ByteString -> m LBS.ByteString
-runGithubGraphRequest (GitHubGraphClient manager url token) jsonBody = do
+runGithubGraphRequest (GitHubGraphClient manager' url' token') jsonBody = do
   -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
-  let initRequest = HTTP.parseRequest_ (toString url)
+  let initRequest = HTTP.parseRequest_ (toString url')
       request =
         initRequest
           { HTTP.method = "POST",
             HTTP.requestHeaders =
-              [ ("Authorization", "token " <> encodeUtf8 token),
+              [ ("Authorization", "token " <> encodeUtf8 token'),
                 ("User-Agent", "change-metrics/lentille-morpheus")
               ],
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
-  response <- liftIO $ HTTP.httpLbs request manager
+  response <- liftIO $ HTTP.httpLbs request manager'
   -- print response
   pure (HTTP.responseBody response)
 
@@ -79,17 +79,17 @@ streamFetch ::
   Stream (Of b) m ()
 streamFetch client mkArgs transformResponse = go Nothing
   where
-    logStatus (PageInfo hasNextPage _ totalCount) (RateLimit used remaining resetAt) =
+    logStatus (PageInfo hasNextPage' _ totalCount') (RateLimit used' remaining' resetAt') =
       putTextLn $
         "[github-graphql] got "
-          <> show totalCount
-          <> (if hasNextPage then " hasNextPage " else "")
+          <> show totalCount'
+          <> (if hasNextPage' then " hasNextPage " else "")
           <> " ratelimit "
-          <> show used
+          <> show used'
           <> "/"
-          <> show remaining
+          <> show remaining'
           <> " reset at: "
-          <> resetAt
+          <> resetAt'
     go pageInfoM = do
       respE <-
         fetch

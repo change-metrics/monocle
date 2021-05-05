@@ -4,6 +4,10 @@ version:             0.1.0.0
 build-type:          Simple
 tested-with:         GHC == 8.10.4
 
+source-repository head
+  type:                git
+  location:            https://github.com/change-metrics/lentille.git
+
 common common-options
   ghc-options:         -Wall
                        -Wcompat
@@ -37,3 +41,17 @@ library
   exposed-modules:     Lentille.GitHub
                      , Lentille.GitHub.Favorites
                      , Lentille.GitHub.Issues
+
+executable lentille-github
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       lentille-github
+                     , lentille
+                     , optparse-generic           < 1.5
+                     , relude                     > 1.0 && < 1.1
+                     , streaming                  < 0.3
+                     , time                       < 1.12
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
