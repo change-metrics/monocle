@@ -71,7 +71,8 @@ module Filter = {
   let validate = (filter, value) =>
     switch filter.kind {
     | Text | Date => true
-    | Choice(Keywords(values)) => values->elemText(value)
+    | Choice(Keywords(values)) =>
+      Js.String.split(",", value)->Belt.Array.every(v => values->elemText(v))
     | _ => true
     }
 }
@@ -272,7 +273,11 @@ module Field = {
         | Choice(RelativeDates(options)) => {
             let options = options->RelativeDate.toStringList
             <MSelect
-              placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
+              multi={false}
+              placeholder={filter.description}
+              options
+              valueChanged={v => rdOnChange(v, ())}
+              value
             />
           }
         | Choice(Projects(options)) =>

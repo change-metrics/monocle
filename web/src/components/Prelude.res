@@ -194,23 +194,44 @@ module MStackItem = {
 
 module MSelect = {
   @react.component
-  let make = (~value: string, ~placeholder: string, ~options, ~valueChanged) => {
+  let make = (
+    ~value: string,
+    ~placeholder: string,
+    ~multi: bool=true,
+    ~isCreatable: bool=false,
+    ~options,
+    ~valueChanged,
+  ) => {
     let (isOpen, _, onToggle) = useToggle(false)
+    let selections = value != "" ? Js.String.split(",", value) : []
     let onSelect = (_, newValue, _) => {
-      let nextValue = newValue == value ? "" : newValue
-      valueChanged(nextValue)
+      let nextValues =
+        selections->Js.Array2.includes(newValue)
+          ? selections->Js.Array2.filter(v => v != newValue)
+          : selections->Js.Array2.concat([newValue])
+      nextValues->Js.Array2.joinWith(",")->valueChanged
+      onToggle(false)
+    }
+    let onClear = _ => {
+      valueChanged("")
+    }
+    let onCreateOption = v => {
+      selections->Js.Array2.concat([v])->Js.Array2.joinWith(",")->valueChanged
       onToggle(false)
     }
     let placeholderText = placeholder
-    let selections = value != "" ? [value] : []
+    let variant = multi ? #Typeaheadmulti : #Single
     let inlineFilterPlaceholderText = value != "" ? placeholder ++ ": " ++ value : ""
     <Patternfly.Select
-      variant=#Single
+      variant
       placeholderText
       inlineFilterPlaceholderText
       selections
       isOpen
+      onClear
       onSelect
+      onCreateOption
+      isCreatable
       onToggle>
       {options
       ->mapWithKey((key, name) => <SelectOption key value={name} />)
