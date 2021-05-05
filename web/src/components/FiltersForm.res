@@ -52,7 +52,10 @@ module RelativeDate = {
 // The definition of a filter:
 module Filter = {
   type choiceType =
-    Keywords(list<string>) | RelativeDates(list<RelativeDate.t>) | Projects(list<string>)
+    | Suggestions(list<string>)
+    | Keywords(list<string>)
+    | RelativeDates(list<RelativeDate.t>)
+    | Projects(list<string>)
   type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
@@ -86,8 +89,6 @@ module Filters = {
 
   // The list of static filters:
   let staticFilters = [
-    ("authors", Filter.make("Authors", "Author names")),
-    ("exclude_authors", Filter.make("Exclude authors", "Author names")),
     ("repository", Filter.make("Repository", "Repository regexp")),
     ("branch", Filter.make("Branch", "Branch regexp")),
     ("files", Filter.make("Files", "File regexp")),
@@ -270,6 +271,14 @@ module Field = {
           <MSelect
             placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
           />
+        | Choice(Suggestions(options)) =>
+          <MSelect
+            isCreatable={true}
+            placeholder={filter.description}
+            options
+            valueChanged={v => onChange(v, ())}
+            value
+          />
         | Choice(RelativeDates(options)) => {
             let options = options->RelativeDate.toStringList
             <MSelect
@@ -350,6 +359,11 @@ module FilterBox = {
       (
         "task_type",
         Filter.makeChoice("Task type", "Filter by task type", suggestions.task_types->Keywords),
+      ),
+      ("authors", Filter.makeChoice("Authors", "Author names", suggestions.authors->Suggestions)),
+      (
+        "exclude_authors",
+        Filter.makeChoice("Exclude authors", "Author names", suggestions.authors->Suggestions),
       ),
     ])
     let onClick = _ => states->Filters.dumps->updateFilters
