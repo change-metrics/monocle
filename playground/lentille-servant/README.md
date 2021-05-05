@@ -1,4 +1,4 @@
-# WIP: lentille-api
+# WIP: lentille-servant
 
 Run api:
 

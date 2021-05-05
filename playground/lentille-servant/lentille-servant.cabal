@@ -1,5 +1,5 @@
 cabal-version:       2.4
-name:                lentille-api
+name:                lentille-servant
 version:             0.1.0.0
 synopsis:            Monocle API
 description:
@@ -73,7 +73,7 @@ executable lentille-api
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       relude                     > 1.0 && < 1.1
-                     , lentille-api
+                     , lentille-servant
                      , warp                       < 3.4
   ghc-options:         -threaded
                        -rtsopts
@@ -85,7 +85,7 @@ executable lentille-api-reason-codegen
   main-is:             ReasonCodegen.hs
   if flag(with-reason)
     build-depends:     relude                     > 1.0 && < 1.1
-                     , lentille-api
+                     , lentille-servant
                      , servant-reason
   else
     buildable:         False
