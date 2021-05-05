@@ -14,10 +14,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import random
 from google.protobuf.timestamp_pb2 import Timestamp
 from monocle.messages.config_pb2 import (
     GetProjectsRequest,
     GetProjectsResponse,
+)
+from monocle.messages.search_pb2 import (
+    SearchSuggestionsRequest,
+    SearchSuggestionsResponse,
 )
 from monocle.messages.task_data_pb2 import (
     TaskDataCommitRequest,
@@ -81,3 +86,24 @@ def task_data_get_last_updated(
     else:
         timestamp.FromJsonString(metadata["last_commit_at"] + "Z")
     return TaskDataGetLastUpdatedResponse(timestamp=timestamp)
+
+
+def gen_names():
+    words = open("/usr/share/dict/words").readlines()
+    random.shuffle(words)
+    first_names = words[:500]
+    random.shuffle(words)
+    last_names = words[:500]
+    return list(
+        map(
+            lambda tup: tup[0][0].upper() + tup[0][1:].strip() + " " + tup[1].strip(),
+            zip(first_names, last_names),
+        )
+    )
+
+
+def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsResponse:
+    # TODO: implement the actual elastic aggregate query, using empty list for unknown index
+    task_types = ["FutureFeature", "Triaged"]
+    authors = gen_names()
+    return SearchSuggestionsResponse(task_types=task_types, authors=authors)

@@ -125,7 +125,6 @@ module Filters = {
       "task_severity",
       Filter.makeChoice("Task severity", "Filter by severity", Keywords(Env.bzPriority)),
     ),
-    ("task_type", Filter.make("Task type", "Filter by task type")),
   ]
 
   // Helper functions:
@@ -332,6 +331,7 @@ module FilterBox = {
     ~updateFilters: string => unit,
     ~showChangeParams: bool,
     ~projects: list<ConfigTypes.project_definition>,
+    ~suggestions: SearchTypes.search_suggestions_response,
   ) => {
     let states = Filters.useFilters([
       (
@@ -341,6 +341,10 @@ module FilterBox = {
           "Select a project",
           projects->Belt.List.map(project => project.name)->Projects,
         ),
+      ),
+      (
+        "task_type",
+        Filter.makeChoice("Task type", "Filter by task type", suggestions.task_types->Keywords),
       ),
     ])
     let onClick = _ => states->Filters.dumps->updateFilters
@@ -386,11 +390,15 @@ module FilterBox = {
 
 @react.component
 let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: string) => {
+  let suggestions = useAutoGet(() => WebApi.Search.suggestions({index: index}))
   let indices = useAutoGet(() => WebApi.Config.getProjects({index: index}))
-  switch indices {
-  | None => <Spinner />
-  | Some(Ok({projects})) => <FilterBox updateFilters showChangeParams projects />
-  | Some(Error(_error)) => <Alert title={_error} variant=#Danger />
+  switch (indices, suggestions) {
+  | (Some(Ok({projects})), Some(Ok(suggestions))) =>
+    <FilterBox updateFilters showChangeParams projects suggestions />
+  | (Some(Error(_error)), _)
+  | (_, Some(Error(_error))) =>
+    <Alert title={_error} variant=#Danger />
+  | _ => <Spinner />
   }
 }
 
