@@ -204,7 +204,11 @@ module Filters = {
 module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
-  let make = (~name, ~states: Filters.t, ~projects: option<list<ConfigTypes.project_definition>>=?) => {
+  let make = (
+    ~name,
+    ~states: Filters.t,
+    ~projects: option<list<ConfigTypes.project_definition>>=?,
+  ) => {
     let (filter, value, setValue, isDisabled, _) = states->Filters.get(name)
     let onChange = (v, _) => setValue(_ => v)
     let rdOnChange = (v, _) => {
@@ -223,10 +227,11 @@ module Field = {
         let (_, _, _, _, setIsDisabled) = states->Filters.get(fname)
         setIsDisabled(disable)
       }
-      let disableFieldIfNeeded = (field: string, fname: string): unit => switch field {
+      let disableFieldIfNeeded = (field: string, fname: string): unit =>
+        switch field {
         | "" => ()
         | _ => fname->disableEnableField(true)
-      }
+        }
       let enableFields = () => {
         "branch"->disableEnableField(false)
         "files"->disableEnableField(false)
