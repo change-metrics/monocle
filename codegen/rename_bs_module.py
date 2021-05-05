@@ -31,7 +31,7 @@ def fix_module(filepath):
         newTypeName = pascalCases(typeName)
         # TODO(tristanC): figure out a better solution
         # We are using snake case attribute encoding, patch the decoder:
-        content = content.replace("Regex", "_regex")
+        content = content.replace("Regex", "_regex").replace("taskTypes", "task_types")
         print("Replaced", typeName, newTypeName)
         content = content.replace(typeName, newTypeName)
     newFile.write_text(content)
