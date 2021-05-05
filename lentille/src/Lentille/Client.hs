@@ -19,6 +19,7 @@ module Lentille.Client
     -- * Data types
     TaskData (..),
     IsoTime (..),
+    tryParse,
 
     -- * Query type
     IndexName (..),
@@ -39,7 +40,7 @@ import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Aeson.Types (Parser)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
+import Data.Time.Format (ParseTime, defaultTimeLocale, formatTime, parseTimeM)
 import Network.HTTP.Client
   ( Manager,
     Request,
@@ -160,6 +161,9 @@ setUpdatedSince client (IndexName index) (CrawlerName crawler) (ApiKey apikey) t
 
 newtype IsoTime = IsoTime UTCTime deriving stock (Show, Eq)
 
+tryParse :: (MonadFail m, ParseTime t) => String -> String -> m t
+tryParse f s = parseTimeM False defaultTimeLocale f s
+
 instance ToJSON IsoTime where
   toJSON (IsoTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
@@ -169,7 +173,6 @@ instance FromJSON IsoTime where
       -- TODO: use a single date encoding format
       elkApiFormat = "%FT%T"
       monocleApiFormat = "%FT%TZ"
-      tryParse f s = parseTimeM False defaultTimeLocale f s
       parse :: String -> Parser IsoTime
       parse s = IsoTime <$> (tryParse elkApiFormat s <|> tryParse monocleApiFormat s)
 

@@ -76,18 +76,17 @@ getFavoritesStream client username = streamFetch client mkArgs transformResponse
     mkArgs cursor' = GetFavoritesArgs (toString username) (toString cursor')
     transformResponse :: GetFavorites -> (PageInfo, RateLimit, [UserFavorite])
     transformResponse resp = case resp of
-      ( GetFavorites
-          (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
-          ( Just
-              ( UserUser
-                  ( UserStarredRepositoriesStarredRepositoryConnection
-                      totalCount'
-                      (UserStarredRepositoriesPageInfoPageInfo hasNextPage' endCursor')
-                      (Just xs)
-                    )
-                )
-            )
-        ) ->
+      GetFavorites
+        (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
+        ( Just
+            ( UserUser
+                ( UserStarredRepositoriesStarredRepositoryConnection
+                    totalCount'
+                    (UserStarredRepositoriesPageInfoPageInfo hasNextPage' endCursor')
+                    (Just xs)
+                  )
+              )
+          ) ->
           ( PageInfo hasNextPage' endCursor' totalCount',
             RateLimit used' remaining' resetAt',
             map getNode $ catMaybes xs
