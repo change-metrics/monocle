@@ -99,7 +99,7 @@ protoToPython = fromProto headers mkService
         ""
       ]
       where
-        input_req = " = pbjson.Parse(request.get_data()," <> attrName input <> ")"
+        input_req = " = pbjson.Parse(request.get_data()," <> attrName input <> "())"
         resp_args = ["response=json_resp", "status=200", "mimetype=\"application/json\""]
         route_args =
           [ "\"" <> path <> "\"",

@@ -41,6 +41,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataCommitResponse'
+    /api/1/task_data_get_last_updated:
+        post:
+            summary: Commit the last updated timestamp
+            operationId: TaskData_GetLastUpdated
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskDataGetLastUpdatedRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
 components:
     schemas:
         GetProjectsRequest:
@@ -73,6 +90,7 @@ components:
                     type: string
                 timestamp:
                     type: string
+                    format: RFC3339
         TaskDataCommitResponse:
             properties:
                 error:
@@ -80,3 +98,18 @@ components:
                     format: enum
                 timestamp:
                     type: string
+                    format: RFC3339
+        TaskDataGetLastUpdatedRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+        TaskDataGetLastUpdatedResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string
+                    format: RFC3339

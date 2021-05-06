@@ -6,6 +6,7 @@ import builtins
 import google.protobuf.descriptor
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import google.protobuf.timestamp_pb2
 import typing
 import typing_extensions
 
@@ -31,6 +32,24 @@ UnknownCrawler = TaskDataCommitError.V(1)
 UnknownApiKey = TaskDataCommitError.V(2)
 CommitDateInferiorThanPrevious = TaskDataCommitError.V(3)
 
+global___TaskDataGetLastUpdatedError = TaskDataGetLastUpdatedError
+
+class _TaskDataGetLastUpdatedError(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
+        TaskDataGetLastUpdatedError.V
+    ],
+    builtins.type,
+):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
+    GetUnknownIndex = TaskDataGetLastUpdatedError.V(0)
+    GetUnknownCrawler = TaskDataGetLastUpdatedError.V(1)
+
+class TaskDataGetLastUpdatedError(metaclass=_TaskDataGetLastUpdatedError):
+    V = typing.NewType("V", builtins.int)
+
+GetUnknownIndex = TaskDataGetLastUpdatedError.V(0)
+GetUnknownCrawler = TaskDataGetLastUpdatedError.V(1)
+
 class TaskDataCommitRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     INDEX_FIELD_NUMBER: builtins.int
@@ -40,15 +59,19 @@ class TaskDataCommitRequest(google.protobuf.message.Message):
     index: typing.Text = ...
     crawler: typing.Text = ...
     apikey: typing.Text = ...
-    timestamp: typing.Text = ...
+    @property
+    def timestamp(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
         index: typing.Text = ...,
         crawler: typing.Text = ...,
         apikey: typing.Text = ...,
-        timestamp: typing.Text = ...,
+        timestamp: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["timestamp", b"timestamp"]
+    ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
@@ -70,12 +93,13 @@ class TaskDataCommitResponse(google.protobuf.message.Message):
     ERROR_FIELD_NUMBER: builtins.int
     TIMESTAMP_FIELD_NUMBER: builtins.int
     error: global___TaskDataCommitError.V = ...
-    timestamp: typing.Text = ...
+    @property
+    def timestamp(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
         error: global___TaskDataCommitError.V = ...,
-        timestamp: typing.Text = ...,
+        timestamp: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -94,3 +118,53 @@ class TaskDataCommitResponse(google.protobuf.message.Message):
     ) -> typing_extensions.Literal["error", "timestamp"]: ...
 
 global___TaskDataCommitResponse = TaskDataCommitResponse
+
+class TaskDataGetLastUpdatedRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    INDEX_FIELD_NUMBER: builtins.int
+    CRAWLER_FIELD_NUMBER: builtins.int
+    index: typing.Text = ...
+    crawler: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        index: typing.Text = ...,
+        crawler: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal["crawler", b"crawler", "index", b"index"],
+    ) -> None: ...
+
+global___TaskDataGetLastUpdatedRequest = TaskDataGetLastUpdatedRequest
+
+class TaskDataGetLastUpdatedResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ERROR_FIELD_NUMBER: builtins.int
+    TIMESTAMP_FIELD_NUMBER: builtins.int
+    error: global___TaskDataGetLastUpdatedError.V = ...
+    @property
+    def timestamp(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        error: global___TaskDataGetLastUpdatedError.V = ...,
+        timestamp: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "result", b"result", "timestamp", b"timestamp"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "result", b"result", "timestamp", b"timestamp"
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["result", b"result"]
+    ) -> typing_extensions.Literal["error", "timestamp"]: ...
+
+global___TaskDataGetLastUpdatedResponse = TaskDataGetLastUpdatedResponse

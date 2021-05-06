@@ -91,8 +91,8 @@ With the python REPL:
 >>> open("info_message.json", "w").write(_)
 
 # Decode
->>> pbjson.Parse('{"version":"0.9"}', info_pb2.Info)
-<class 'monocle.info_pb2.Info'>
+>>> pbjson.Parse('{"version":"0.9"}', info_pb2.Info())
+version: "0.9"
 ```
 
 With the javascript REPL:

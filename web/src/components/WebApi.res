@@ -33,4 +33,15 @@ module TaskData = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->TaskDataBs.decode_task_data_commit_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external getLastUpdatedRaw: (string, 'a) => axios<'b> = "post"
+
+  let getLastUpdated = (request: TaskDataTypes.task_data_get_last_updated_request): axios<
+    TaskDataTypes.task_data_get_last_updated_response,
+  > =>
+    request->TaskDataBs.encode_task_data_get_last_updated_request
+    |> getLastUpdatedRaw(serverUrl ++ "/api/1/task_data_get_last_updated")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->TaskDataBs.decode_task_data_get_last_updated_response}->Js.Promise.resolve
+    )
 }
