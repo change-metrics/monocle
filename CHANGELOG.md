@@ -18,12 +18,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [web] Add a project filter selection in the Filter Box.
 - [api,config] Endpoints to connect task tracker crawlers
 - [api] Support of three new query attributes (task_type, task_priority, task_severity)
+- [compose] Added ADDR and PORT variables to enable multiple service deployment on a single host
+- [compose] Simplified deployment by using a single MONOCLE_PUBLIC_URL for both monocle-web and monocle-api using nginx proxy pass.
 
 ### Changed
 
 - [web] change terminology from "average to" to "mean time to".
+- [compose] Renamed MONOCLE_URL into MONOCLE_PUBLIC_URL
+- [compose] Replaced the node http serve with nginx
 
 ### Removed
+
+- [compose] Replaced MONOCLE_API_URL with MONOCLE_API_ADDR and MONOCLE_API_PORT
 
 ### Fixed
 

@@ -88,7 +88,7 @@ jobs:
         run: sleep 15
 
       - name: Display docker-compose ps
-        run: docker-compose ps; docker logs monocle_api_1; docker logs monocle_crawler_1
+        run: docker-compose ps; docker logs monocle_api_1; docker logs monocle_crawler_1; docker logs monocle_web_1
 
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up
@@ -104,7 +104,7 @@ jobs:
       - name: Check web service
         run: |
           docker-compose ps web | grep Up
-          curl -s http://localhost:3000/
+          curl -s http://localhost:8080/
 
   prettier:
     runs-on: ubuntu-latest

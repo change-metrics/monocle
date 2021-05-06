@@ -244,156 +244,171 @@ class ELmonocleDB:
 
         self.index = "{}{}".format(self.prefix, index)
         self.log.info("Using ES index %s" % self.index)
-        self.mapping = {
-            "properties": {
-                "id": {"type": "keyword"},
-                "type": {"type": "keyword"},
-                "number": {"type": "keyword"},
-                "change_id": {"type": "keyword"},
-                "title": {
-                    "type": "text",
-                    "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
-                },
-                "text": {
-                    "type": "text",
-                    "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
-                },
-                "url": {"type": "keyword"},
-                "commit_count": {"type": "integer"},
-                "additions": {"type": "integer"},
-                "deletions": {"type": "integer"},
-                "changed_files_count": {"type": "integer"},
-                "changed_files": {
-                    "properties": {
-                        "additions": {"type": "integer"},
-                        "deletions": {"type": "integer"},
-                        "path": {"type": "keyword"},
-                    }
-                },
-                "commits": {
-                    "properties": {
-                        "sha": {"type": "keyword"},
-                        "author": {
-                            "properties": {
-                                "uid": {"type": "keyword"},
-                                "muid": {"type": "keyword"},
-                            }
-                        },
-                        "committer": {
-                            "properties": {
-                                "uid": {"type": "keyword"},
-                                "muid": {"type": "keyword"},
-                            }
-                        },
-                        "authored_at": {
-                            "type": "date",
-                            "format": "date_time_no_millis",
-                        },
-                        "committed_at": {
-                            "type": "date",
-                            "format": "date_time_no_millis",
-                        },
-                        "additions": {"type": "integer"},
-                        "deletions": {"type": "integer"},
-                        "title": {"type": "text"},
-                    }
-                },
-                "repository_prefix": {"type": "keyword"},
-                "repository_fullname": {"type": "keyword"},
-                "repository_shortname": {"type": "keyword"},
-                "author": {
-                    "properties": {
-                        "uid": {"type": "keyword"},
-                        "muid": {"type": "keyword"},
-                    }
-                },
-                "on_author": {
-                    "properties": {
-                        "uid": {"type": "keyword"},
-                        "muid": {"type": "keyword"},
-                    }
-                },
-                "committer": {
-                    "properties": {
-                        "uid": {"type": "keyword"},
-                        "muid": {"type": "keyword"},
-                    }
-                },
-                "merged_by": {
-                    "properties": {
-                        "uid": {"type": "keyword"},
-                        "muid": {"type": "keyword"},
-                    }
-                },
-                "branch": {"type": "keyword"},
-                "target_branch": {"type": "keyword"},
-                "created_at": {"type": "date", "format": "date_time_no_millis"},
-                "on_created_at": {"type": "date", "format": "date_time_no_millis"},
-                "merged_at": {"type": "date", "format": "date_time_no_millis"},
-                "updated_at": {"type": "date", "format": "date_time_no_millis"},
-                "closed_at": {"type": "date", "format": "date_time_no_millis"},
-                "state": {"type": "keyword"},
-                "duration": {"type": "integer"},
-                "mergeable": {"type": "keyword"},
-                "labels": {"type": "keyword"},
-                "assignees": {
-                    "type": "nested",
-                    "properties": {
-                        "uid": {"type": "keyword"},
-                        "muid": {"type": "keyword"},
+        self.new_fields = {
+            "crawler_metadata": {
+                "properties": {
+                    "last_commit_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis",
                     },
-                },
-                "approval": {"type": "keyword"},
-                "draft": {"type": "boolean"},
-                "self_merged": {"type": "boolean"},
-                "crawler_metadata": {
-                    "properties": {
-                        "last_commit_at": {
-                            "type": "date",
-                            "format": "date_time_no_millis",
+                    "last_post_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis",
+                    },
+                    "total_docs_posted": {"type": "integer"},
+                    "total_changes_updated": {"type": "integer"},
+                    "total_change_events_updated": {"type": "integer"},
+                    "total_orphans_updated": {"type": "integer"},
+                }
+            },
+            "tasks_data": {
+                "properties": {
+                    "tid": {"type": "keyword"},
+                    "ttype": {"type": "keyword"},
+                    "crawler_name": {"type": "keyword"},
+                    "updated_at": {"type": "date", "format": "date_time_no_millis"},
+                    "change_url": {"type": "keyword"},
+                    "severity": {"type": "keyword"},
+                    "priority": {"type": "keyword"},
+                    "score": {"type": "integer"},
+                    "url": {"type": "keyword"},
+                    "title": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": {"type": "keyword", "ignore_above": 8191}
                         },
-                        "last_post_at": {
-                            "type": "date",
-                            "format": "date_time_no_millis",
-                        },
-                        "total_docs_posted": {"type": "integer"},
-                        "total_changes_updated": {"type": "integer"},
-                        "total_change_events_updated": {"type": "integer"},
-                        "total_orphans_updated": {"type": "integer"},
-                    }
-                },
-                "tasks_data": {
-                    "properties": {
-                        "tid": {"type": "keyword"},
-                        "ttype": {"type": "keyword"},
-                        "crawler_name": {"type": "keyword"},
-                        "updated_at": {"type": "date", "format": "date_time_no_millis"},
-                        "change_url": {"type": "keyword"},
-                        "severity": {"type": "keyword"},
-                        "priority": {"type": "keyword"},
-                        "score": {"type": "integer"},
-                        "url": {"type": "keyword"},
-                        "title": {
-                            "type": "text",
-                            "fields": {
-                                "keyword": {"type": "keyword", "ignore_above": 8191}
-                            },
-                        },
-                        "_adopted": {"type": "boolean"},
-                    }
-                },
-            }
+                    },
+                    "_adopted": {"type": "boolean"},
+                }
+            },
         }
-        settings = {"mappings": self.mapping}
+        self.mapping = {
+            "id": {"type": "keyword"},
+            "type": {"type": "keyword"},
+            "number": {"type": "keyword"},
+            "change_id": {"type": "keyword"},
+            "title": {
+                "type": "text",
+                "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
+            },
+            "text": {
+                "type": "text",
+                "fields": {"keyword": {"type": "keyword", "ignore_above": 8191}},
+            },
+            "url": {"type": "keyword"},
+            "commit_count": {"type": "integer"},
+            "additions": {"type": "integer"},
+            "deletions": {"type": "integer"},
+            "changed_files_count": {"type": "integer"},
+            "changed_files": {
+                "properties": {
+                    "additions": {"type": "integer"},
+                    "deletions": {"type": "integer"},
+                    "path": {"type": "keyword"},
+                }
+            },
+            "commits": {
+                "properties": {
+                    "sha": {"type": "keyword"},
+                    "author": {
+                        "properties": {
+                            "uid": {"type": "keyword"},
+                            "muid": {"type": "keyword"},
+                        }
+                    },
+                    "committer": {
+                        "properties": {
+                            "uid": {"type": "keyword"},
+                            "muid": {"type": "keyword"},
+                        }
+                    },
+                    "authored_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis",
+                    },
+                    "committed_at": {
+                        "type": "date",
+                        "format": "date_time_no_millis",
+                    },
+                    "additions": {"type": "integer"},
+                    "deletions": {"type": "integer"},
+                    "title": {"type": "text"},
+                }
+            },
+            "repository_prefix": {"type": "keyword"},
+            "repository_fullname": {"type": "keyword"},
+            "repository_shortname": {"type": "keyword"},
+            "author": {
+                "properties": {
+                    "uid": {"type": "keyword"},
+                    "muid": {"type": "keyword"},
+                }
+            },
+            "on_author": {
+                "properties": {
+                    "uid": {"type": "keyword"},
+                    "muid": {"type": "keyword"},
+                }
+            },
+            "committer": {
+                "properties": {
+                    "uid": {"type": "keyword"},
+                    "muid": {"type": "keyword"},
+                }
+            },
+            "merged_by": {
+                "properties": {
+                    "uid": {"type": "keyword"},
+                    "muid": {"type": "keyword"},
+                }
+            },
+            "branch": {"type": "keyword"},
+            "target_branch": {"type": "keyword"},
+            "created_at": {"type": "date", "format": "date_time_no_millis"},
+            "on_created_at": {"type": "date", "format": "date_time_no_millis"},
+            "merged_at": {"type": "date", "format": "date_time_no_millis"},
+            "updated_at": {"type": "date", "format": "date_time_no_millis"},
+            "closed_at": {"type": "date", "format": "date_time_no_millis"},
+            "state": {"type": "keyword"},
+            "duration": {"type": "integer"},
+            "mergeable": {"type": "keyword"},
+            "labels": {"type": "keyword"},
+            "assignees": {
+                "type": "nested",
+                "properties": {
+                    "uid": {"type": "keyword"},
+                    "muid": {"type": "keyword"},
+                },
+            },
+            "approval": {"type": "keyword"},
+            "draft": {"type": "boolean"},
+            "self_merged": {"type": "boolean"},
+        }
+        self.mapping.update(self.new_fields)
+        settings = {"mappings": {"properties": self.mapping}}
         self.ic = self.es.indices
         if create:
-            self.ic.create(index=self.index, ignore=400, body=settings)
-        # The authors_histo is failing on some context with this error when the
-        # time slice is large: Must be less than or equal to: [10000] but was [10001]. ()This limit can be
-        # set by changing the [search.max_buckets] cluster level)
-        # This is an attempt to mitigate the issue
-        cluster_settings = {"transient": {"search.max_buckets": 100000}}
-        self.es.cluster.put_settings(body=cluster_settings)
+            try:
+                self.ic.get(index=self.index)
+            except NotFoundError:
+                self.ic.create(index=self.index, body=settings)
+            # The authors_histo is failing on some context with this error when the
+            # time slice is large: Must be less than or equal to: [10000] but was [10001]. ()This limit can be
+            # set by changing the [search.max_buckets] cluster level)
+            # This is an attempt to mitigate the issue
+            cluster_settings = {"transient": {"search.max_buckets": 100000}}
+            self.es.cluster.put_settings(body=cluster_settings)
+            # Check current index properties and add new filed index properties
+            current_index_properties = (
+                self.ic.get_mapping(index=self.index)
+                .get(self.index, {})
+                .get("mappings", {})
+                .get("properties", {})
+            )
+            for new_field_name, new_field_props in self.new_fields.items():
+                if new_field_name not in current_index_properties:
+                    body = {"properties": {new_field_name: new_field_props}}
+                    self.ic.put_mapping(index=self.index, body=body)
 
     def update(self, source_it: List[Union[Change, Event]]) -> None:
         def gen(it):
