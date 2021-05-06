@@ -201,6 +201,8 @@ module MStackItem = {
 }
 
 module MSelect = {
+  let maxCount = 20
+
   @react.component
   let make = (
     ~value: string,
@@ -210,7 +212,6 @@ module MSelect = {
     ~options,
     ~valueChanged,
   ) => {
-    let (currentInput, setCurrentInput) = React.useState(_ => "")
     let (isOpen, _, onToggle) = useToggle(false)
     let selections = value != "" ? Js.String.split(",", value) : []
     let onSelect = (_, newValue, _) => {
@@ -231,13 +232,15 @@ module MSelect = {
     let placeholderText = placeholder
     let variant = multi ? #Typeaheadmulti : #Single
     let inlineFilterPlaceholderText = value != "" ? placeholder ++ ": " ++ value : ""
-    let onTypeaheadInputChanged = value => {
-      setCurrentInput(_ => value)
+    let onFilter = (_, currentInput) => {
+      switch currentInput {
+      | "" => options
+      | _ => options->Belt.List.keep(opt => currentInput->lower->Js.String.startsWith(opt->lower))
+      }
+      ->take(maxCount)
+      ->Belt.List.map(s => <SelectOption key={s} value={s} />)
+      ->Belt.List.toArray
     }
-    let optionsToDisplay = switch currentInput {
-    | "" => options
-    | _ => options->Belt.List.filter(opt => currentInput->lower->Js.String.startsWith(opt->lower))
-    }->take(20)
 
     <Patternfly.Select
       variant
@@ -248,10 +251,11 @@ module MSelect = {
       onClear
       onSelect
       onCreateOption
-      onTypeaheadInputChanged
-      isCreatable
-      onToggle>
-      {optionsToDisplay
+      onFilter
+      onToggle
+      isCreatable>
+      {options
+      ->take(maxCount)
       ->mapWithKey((key, name) => <SelectOption key value={name} />)
       ->Belt.List.toArray
       ->React.array}
