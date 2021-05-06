@@ -31,6 +31,10 @@ def fix_field_name(content):
         lambda acc, field: acc.replace(field, '"' + snake_case(field[1:])),
         re.findall('"[a-z]+[A-Z][^"]', content),
         content,
+    ).replace(
+        # Fix timestamp message encoding which is a rfc3339 string, not an object
+        'timestamp" (Js.Json.object_',
+        'timestamp" (Js.Json.string',
     )
 
 

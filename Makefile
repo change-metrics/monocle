@@ -14,7 +14,6 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	~/.cabal/bin/compile-proto-file --includeDir /usr/include --includeDir protos/ --proto google/protobuf/timestamp.proto --out haskell/src/
 	sh -c 'for pb in $(MESSAGES); do ~/.cabal/bin/compile-proto-file --includeDir /usr/include --includeDir protos/ --proto $${pb} --out src/; done'
 	find haskell/ -type f -name "*.hs" -exec ~/.cabal/bin/ormolu -i {} \;
 
@@ -26,7 +25,6 @@ codegen-python:
 
 codegen-javascript:
 	rm -f web/src/messages/*
-	ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages /usr/include/google/protobuf/timestamp.proto
 	sh -c 'for pb in $(MESSAGES); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ protos/$${pb}; done'
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 

@@ -135,7 +135,7 @@ let rec encode_task_data_commit_request (v:TaskDataTypes.task_data_commit_reques
   | Some v ->
     begin (* timestamp field *)
       let json' = TimestampBs.encode_timestamp v in
-      Js.Dict.set json "timestamp" (Js.Json.object_ json');
+      Js.Dict.set json "timestamp" (Js.Json.string json');
     end;
   end;
   json
@@ -155,7 +155,7 @@ let rec encode_task_data_commit_response (v:TaskDataTypes.task_data_commit_respo
   | TaskDataTypes.Timestamp v ->
     begin (* timestamp field *)
       let json' = TimestampBs.encode_timestamp v in
-      Js.Dict.set json "timestamp" (Js.Json.object_ json');
+      Js.Dict.set json "timestamp" (Js.Json.string json');
     end;
   end;
   json
@@ -179,7 +179,7 @@ let rec encode_task_data_get_last_updated_response (v:TaskDataTypes.task_data_ge
   | TaskDataTypes.Timestamp v ->
     begin (* timestamp field *)
       let json' = TimestampBs.encode_timestamp v in
-      Js.Dict.set json "timestamp" (Js.Json.object_ json');
+      Js.Dict.set json "timestamp" (Js.Json.string json');
     end;
   end;
   json
