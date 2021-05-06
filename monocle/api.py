@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import random
+from typing import List
+
 from google.protobuf.timestamp_pb2 import Timestamp
 from monocle.messages.config_pb2 import (
     GetProjectsRequest,
@@ -34,6 +35,8 @@ import monocle.messages.task_data_pb2 as TD
 from monocle import env
 
 from monocle.webapp import create_db_connection
+
+from elasticsearch.exceptions import NotFoundError
 
 
 def config_get_projects(request: GetProjectsRequest) -> GetProjectsResponse:
@@ -88,22 +91,28 @@ def task_data_get_last_updated(
     return TaskDataGetLastUpdatedResponse(timestamp=timestamp)
 
 
-def gen_names():
-    words = open("/usr/share/dict/words").readlines()
-    random.shuffle(words)
-    first_names = words[:500]
-    random.shuffle(words)
-    last_names = words[:500]
-    return list(
-        map(
-            lambda tup: tup[0][0].upper() + tup[0][1:].strip() + " " + tup[1].strip(),
-            zip(first_names, last_names),
-        )
-    )
+def get_top_terms(db, field: str) -> List[str]:
+    body = {
+        "size": 0,
+        "aggs": {
+            "top_terms": {
+                "terms": {"field": field, "size": 100, "order": {"_key": "asc"}}
+            }
+        },
+        "query": {"bool": {"filter": [{"term": {"type": "Change"}}]}},
+    }
+
+    search_params = {"index": db.index, "body": body}
+    try:
+        res = db.es.search(**search_params)
+    except NotFoundError:
+        return []
+    return [b["key"] for b in res["aggregations"]["top_terms"]["buckets"]]
 
 
 def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsResponse:
-    # TODO: implement the actual elastic aggregate query, using empty list for unknown index
-    task_types = ["FutureFeature", "Triaged"]
-    authors = gen_names()
-    return SearchSuggestionsResponse(task_types=task_types, authors=authors)
+    db = create_db_connection(request.index)
+    return SearchSuggestionsResponse(
+        task_types=get_top_terms(db, "tasks_data.ttype"),
+        authors=get_top_terms(db, "author.muid"),
+    )
