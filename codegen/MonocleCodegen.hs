@@ -91,6 +91,7 @@ protoToPython = fromProto headers mkService
 
     mkMethod serviceName (name, input, output, path) =
       [ "  def " <> snake name <> "_stub() -> None:",
+        "    input_data: bytes = request.get_data() or b\"{}\"",
         "    input_request: " <> attrName input <> input_req <> "  # type: ignore",
         "    output_resp: " <> attrName output <> " = " <> snake (serviceName <> name) <> "(input_request)",
         "    json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)",
@@ -99,13 +100,13 @@ protoToPython = fromProto headers mkService
         ""
       ]
       where
-        input_req = " = pbjson.Parse(request.get_data()," <> attrName input <> "())"
+        input_req = " = pbjson.Parse(input_data," <> attrName input <> "())"
         resp_args = ["response=json_resp", "status=200", "mimetype=\"application/json\""]
         route_args =
           [ "\"" <> path <> "\"",
             "\"" <> name <> "\"",
             snake name <> "_stub",
-            "methods=[\"POST\"]"
+            "methods=[\"GET\", \"POST\"]"
           ]
 
 -- | Create rescript modules from a protobuf definition

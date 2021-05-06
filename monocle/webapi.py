@@ -13,7 +13,8 @@ def config_service(app):
     from monocle.messages.config_pb2 import GetProjectsResponse
 
     def get_projects_stub() -> None:
-        input_request: GetProjectsRequest = pbjson.Parse(request.get_data(), GetProjectsRequest())  # type: ignore
+        input_data: bytes = request.get_data() or b"{}"
+        input_request: GetProjectsRequest = pbjson.Parse(input_data, GetProjectsRequest())  # type: ignore
         output_resp: GetProjectsResponse = config_get_projects(input_request)
         json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
         return app.response_class(
@@ -21,7 +22,7 @@ def config_service(app):
         )
 
     app.add_url_rule(
-        "/api/1/get_projects", "GetProjects", get_projects_stub, methods=["POST"]
+        "/api/1/get_projects", "GetProjects", get_projects_stub, methods=["GET", "POST"]
     )
 
 
@@ -33,17 +34,21 @@ def task_data_service(app):
     from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedResponse
 
     def commit_stub() -> None:
-        input_request: TaskDataCommitRequest = pbjson.Parse(request.get_data(), TaskDataCommitRequest())  # type: ignore
+        input_data: bytes = request.get_data() or b"{}"
+        input_request: TaskDataCommitRequest = pbjson.Parse(input_data, TaskDataCommitRequest())  # type: ignore
         output_resp: TaskDataCommitResponse = task_data_commit(input_request)
         json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
         return app.response_class(
             response=json_resp, status=200, mimetype="application/json"
         )
 
-    app.add_url_rule("/api/1/task_data_commit", "Commit", commit_stub, methods=["POST"])
+    app.add_url_rule(
+        "/api/1/task_data_commit", "Commit", commit_stub, methods=["GET", "POST"]
+    )
 
     def get_last_updated_stub() -> None:
-        input_request: TaskDataGetLastUpdatedRequest = pbjson.Parse(request.get_data(), TaskDataGetLastUpdatedRequest())  # type: ignore
+        input_data: bytes = request.get_data() or b"{}"
+        input_request: TaskDataGetLastUpdatedRequest = pbjson.Parse(input_data, TaskDataGetLastUpdatedRequest())  # type: ignore
         output_resp: TaskDataGetLastUpdatedResponse = task_data_get_last_updated(
             input_request
         )
@@ -56,5 +61,5 @@ def task_data_service(app):
         "/api/1/task_data_get_last_updated",
         "GetLastUpdated",
         get_last_updated_stub,
-        methods=["POST"],
+        methods=["GET", "POST"],
     )
