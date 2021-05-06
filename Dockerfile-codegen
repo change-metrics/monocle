@@ -18,7 +18,7 @@ FROM registry.fedoraproject.org/fedora:33
 RUN dnf update -y && dnf install -y ghc cabal-install black nodejs protobuf-compiler protobuf-devel python3-pip golang-bin ocaml opam make && dnf clean all
 
 # Install haskell tools
-RUN cabal update && cabal install --lib casing relude language-protobuf
+RUN cabal update && cabal install --lib casing relude language-protobuf && cabal install proto3-suite ormolu
 
 # Install python tool
 RUN python3 -mpip install mypy-protobuf

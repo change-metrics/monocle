@@ -4,7 +4,7 @@
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
-codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi
+codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell
 
 codegen-stubs:
 	mkdir -p srcgen/
@@ -12,6 +12,11 @@ codegen-stubs:
 	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
+
+codegen-haskell:
+	~/.cabal/bin/compile-proto-file --includeDir /usr/include --includeDir protos/ --proto google/protobuf/timestamp.proto --out haskell/src/
+	sh -c 'for pb in $(MESSAGES); do ~/.cabal/bin/compile-proto-file --includeDir /usr/include --includeDir protos/ --proto $${pb} --out src/; done'
+	find haskell/ -type f -name "*.hs" -exec ~/.cabal/bin/ormolu -i {} \;
 
 codegen-python:
 	protoc $(PINCLUDE) --python_out=./monocle/messages --mypy_out=./monocle/messages $(MESSAGES)
