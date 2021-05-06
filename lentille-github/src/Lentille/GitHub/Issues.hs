@@ -113,6 +113,7 @@ transformResponse searchResult =
         (title issue)
         "low"
         "low"
+        0
       where
         getIssueURL :: SearchNodesSearchResultItem -> Text
         getIssueURL (SearchNodesIssue _ _ _ changeURL _ _) = show changeURL

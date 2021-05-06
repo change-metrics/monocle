@@ -30,6 +30,7 @@ fakeTD =
     "issueTitle"
     "sev"
     "pri"
+    42
 
 testRun :: TestTree
 testRun = testCase "run" go

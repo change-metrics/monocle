@@ -54,14 +54,15 @@ testBugToTaskData = testCase "bugToTaskData" go
   where
     go = do
       bzSession <- bugzillaMockClient
-      Just bz <- BZ.getBug bzSession 1791815
+      bz <- getBugWithScore bzSession 1791815
       case toTaskData bz of
         (td : _tds) ->
           sequence_
             [ tdTid td @=? "1791815",
               tdChangeUrl td @=? "https://review.opendev.org/764427",
               tdUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
-              tdTtype td @=? ["FutureFeature"]
+              tdTtype td @=? ["FutureFeature"],
+              tdScore td @=? 9001
             ]
         [] -> assertBool "No external bugs found" False
 

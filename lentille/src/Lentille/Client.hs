@@ -184,7 +184,8 @@ data TaskData = TaskData
     tdUrl :: Text,
     tdTitle :: Text,
     tdSeverity :: Text,
-    tdPriority :: Text
+    tdPriority :: Text,
+    tdScore :: Int
   }
   deriving stock (Show, Eq, Generic)
 

@@ -207,7 +207,8 @@
       "is_confirmed": true,
       "target_milestone": "---",
       "product": "Red Hat OpenStack",
-      "cf_release_notes": ""
+      "cf_release_notes": "",
+      "cf_pm_score": "9001"
     }
   ],
   "faults": []

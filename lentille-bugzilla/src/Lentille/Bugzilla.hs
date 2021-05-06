@@ -7,8 +7,18 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- BugZilla system
-module Lentille.Bugzilla (searchExpr, toTaskData, getBZData, getBugzillaSession) where
+module Lentille.Bugzilla
+  ( searchExpr,
+    toTaskData,
+    getBZData,
+    getBugzillaSession,
+    getBugWithScore,
+    getBugsWithScore,
+    BugWithScore,
+  )
+where
 
+import Data.Aeson
 import Data.Time (UTCTime)
 import Lentille.Client (IsoTime (..), TaskData (..))
 import Lentille.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
@@ -30,43 +40,132 @@ searchExpr sinceTS = since .&&. linkId .&&. productField
     productField = BZS.ProductField .==. "Red Hat OpenStack"
     since = BZS.changedSince sinceTS
 
-toTaskData :: BZ.Bug -> [TaskData]
+-- | The data type containing the included fields
+data BugWithScore = BugWithScore
+  { bugId :: Int,
+    bugLastChangeTime :: UTCTime,
+    bugKeywords :: [Text],
+    bugSummary :: Text,
+    bugPriority :: Text,
+    bugSeverity :: Text,
+    bugExternalBugs :: [BZ.ExternalBug],
+    bugPmScore :: Int
+  }
+  deriving (Show, Eq)
+
+instance FromJSON BugWithScore where
+  parseJSON (Object v) =
+    do
+      -- default the pm_score value to 0 when it is not set
+      pmScoreM <- v .:? "cf_pm_score"
+      let pmScore = case pmScoreM of
+            Just str -> fromMaybe (error $ "score is not a number: " <> show str) $ readMaybe str
+            Nothing -> 0
+      BugWithScore
+        <$> v .: "id"
+        <*> v .: "last_change_time"
+        <*> v .: "keywords"
+        <*> v .: "summary"
+        <*> v .: "priority"
+        <*> v .: "severity"
+        <*> v .: "external_bugs"
+        <*> pure pmScore
+  parseJSON _ = mzero
+
+-- | The http query to get the BugWithScore shape
+bugWithScoreIncludeFieldQuery :: [(Text, Maybe Text)]
+bugWithScoreIncludeFieldQuery = [("include_fields", Just . toText $ intercalate "," fields)]
+  where
+    fields =
+      [ "id",
+        "last_change_time",
+        "keywords",
+        "summary",
+        "priority",
+        "severity",
+        "external_bugs",
+        "cf_pm_score"
+      ]
+
+-- | A newtype wrapper to handle the {"bugs": []} layer of json the reponse
+newtype BugsWithScore = BugsWithScore [BugWithScore] deriving (Eq, Show)
+
+instance FromJSON BugsWithScore where
+  parseJSON (Object v) = do
+    bugs <- v .: "bugs"
+    pure $ BugsWithScore bugs
+  parseJSON _ = mzero
+
+-- getBugs unwraps the 'BugsWithScore' newtype wrapper
+getBugs :: (MonadIO m) => BugzillaSession -> BZ.Request -> m [BugWithScore]
+getBugs bzSession request = do
+  BugsWithScore bugs <- liftIO $ BZ.sendBzRequest bzSession request
+  pure bugs
+
+getBugWithScore :: (MonadIO m) => BugzillaSession -> BZ.BugId -> m BugWithScore
+getBugWithScore bzSession bugId' = do
+  bugs <- getBugs bzSession request
+  case bugs of
+    [x] -> pure x
+    xs -> error $ "Got more or less than one bug " <> show xs
+  where
+    request = BZ.newBzRequest bzSession ["bug", show bugId'] bugWithScoreIncludeFieldQuery
+
+getBugsWithScore ::
+  (MonadIO m) =>
+  BugzillaSession ->
+  -- | The last changed date
+  UTCTime ->
+  -- | The limit
+  Int ->
+  -- | The offset
+  Int ->
+  m [BugWithScore]
+getBugsWithScore bzSession sinceTS limit offset = getBugs bzSession request
+  where
+    request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
+    page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
+    searchQuery = BZS.evalSearchExpr $ searchExpr sinceTS
+
+-- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
+toTaskData :: BugWithScore -> [TaskData]
 toTaskData bz = map mkTaskData ebugs
   where
     isOpenDev :: BZ.ExternalBug -> Bool
     isOpenDev ebug = BZ.externalBzId ebug == 85
     ebugs :: [BZ.ExternalBug]
-    ebugs = case BZ.bugExternalBugs bz of
-      Just xs -> filter isOpenDev xs
-      Nothing -> []
+    ebugs = filter isOpenDev (bugExternalBugs bz)
     changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> BZ.externalBugId ebug
     mkTaskData :: BZ.ExternalBug -> TaskData
     mkTaskData ebug =
       TaskData
-        (IsoTime . BZ.bugLastChangeTime $ bz)
+        (IsoTime . bugLastChangeTime $ bz)
         (changeUrl ebug)
-        (BZ.bugKeywords bz)
-        (show $ BZ.bugId bz)
-        ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (BZ.bugId bz))
-        (BZ.bugSummary bz)
-        (BZ.bugSeverity bz)
-        (BZ.bugPriority bz)
+        (bugKeywords bz)
+        (show $ bugId bz)
+        ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (bugId bz))
+        (bugSummary bz)
+        (bugSeverity bz)
+        (bugPriority bz)
+        (bugPmScore bz)
 
+-- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of TaskData) m ()
 getBZData bzSession sinceTS = go 0
   where
-    doGet :: MonadIO m => Int -> m [BZ.Bug]
+    limit = 100
+    doGet :: MonadIO m => Int -> m [BugWithScore]
     doGet offset =
-      liftIO $ BZ.searchBugsAllWithLimit bzSession 100 offset (searchExpr sinceTS)
+      liftIO $ getBugsWithScore bzSession sinceTS limit offset
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do
-        log $ LogGetBugs sinceTS offset 100
+        log $ LogGetBugs sinceTS offset limit
         retry . doGet $ offset
       -- Create a flat stream of tracker data
       S.each (concatMap toTaskData bugs)
       -- Keep on retrieving the rest
-      unless (length bugs < 100) (go (offset + length bugs))
+      unless (length bugs < limit) (go (offset + length bugs))
 
 getBugzillaSession :: MonadIO m => Text -> m BugzillaSession
 getBugzillaSession host = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext host)
