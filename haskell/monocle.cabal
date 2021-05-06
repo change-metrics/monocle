@@ -52,7 +52,28 @@ library
                      , time                       < 1.10
                      , vector                     < 0.13
   hs-source-dirs:      src
-  exposed-modules:     Monocle.TaskData
+  exposed-modules:     Google.Protobuf.Timestamp
                      , Monocle.Client
+                     , Monocle.Config
+                     , Monocle.Search
+                     , Monocle.TaskData
                      , Monocle.WebApi
-                     , Google.Protobuf.Timestamp
+
+test-suite monocle-test
+  import:              common-options
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base                       < 5
+                     , http-client                < 0.8
+                     , http-mock                  < 0.2
+                     , http-types                 < 0.13
+                     , monocle
+                     , relude                     > 1.0 && < 1.1
+                     , tasty                      < 1.5
+                     , tasty-hunit                < 0.11
+                     , wai                        < 3.3
+  other-modules:       Monocle.Mock
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
