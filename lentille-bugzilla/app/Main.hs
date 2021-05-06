@@ -37,6 +37,9 @@ apiKeyEnv = "MONOCLE_API_KEY"
 apiKeyEnvError :: String
 apiKeyEnvError = error $ toText apiKeyEnv <> " environment not found"
 
+bzKeyEnv :: String
+bzKeyEnv = "MONOCLE_API_KEY"
+
 readSince :: Maybe String -> Maybe UTCTime
 readSince = fmap (fromMaybe (error "Could not parse time") . readMaybe)
 
@@ -44,14 +47,15 @@ main :: IO ()
 main = do
   args <- unwrapRecord "Lentille worker"
   apiKey <- fromMaybe apiKeyEnvError <$> lookupEnv apiKeyEnv
-  go args $! ApiKey (toText apiKey)
+  bzKeyM <- fmap (BugzillaApikey . toText) <$> lookupEnv bzKeyEnv
+  go args bzKeyM $! ApiKey (toText apiKey)
   where
-    go :: LentilleCli Unwrapped -> ApiKey -> IO ()
-    go args apiKey = do
+    go :: LentilleCli Unwrapped -> Maybe BugzillaApikey -> ApiKey -> IO ()
+    go args bzKeyM apiKey = do
       let bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
           sinceTSM = readSince $ since args
           sinceTS = fromMaybe (error "Couldn't parse since") sinceTSM
-      bzSession <- getBugzillaSession bzUrl
+      bzSession <- getBugzillaSession bzUrl bzKeyM
       if printBugs args
         then S.mapM_ print (getBZData bzSession sinceTS)
         else withClient (monocleUrl args) Nothing $ \client ->
