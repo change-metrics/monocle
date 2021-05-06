@@ -115,6 +115,13 @@ let maybeRenderList = (xs: list<'a>, component) =>
   }
 let lower = s => s->Js.String.toLowerCase
 
+// the take from haskell prelude
+let rec take: (list<'a>, int) => list<'a> = (xs, count) =>
+  switch xs {
+  | list{x, ...tail} if count > 0 => tail->take(count - 1)->Belt.List.add(x)
+  | _ => list{}
+  }
+
 // Check if a text list contains an element
 let elemText = (xs: list<string>, x: string) => xs->Belt.List.has(x, (a, b) => a == b)
 // Get an optional value with default
@@ -227,13 +234,11 @@ module MSelect = {
     let onTypeaheadInputChanged = value => {
       setCurrentInput(_ => value)
     }
-    let optionsToDisplay =
-      switch currentInput {
-      | "" => options
-      | filter => options->Belt.List.keep(opt => filter->lower->Js.String.startsWith(opt->lower))
-      }
-      ->Belt.List.take(20)
-      ->Belt.Option.getWithDefault(list{})
+    let optionsToDisplay = switch currentInput {
+    | "" => options
+    | _ => options->Belt.List.filter(opt => currentInput->lower->Js.String.startsWith(opt->lower))
+    }->take(20)
+
     <Patternfly.Select
       variant
       placeholderText
