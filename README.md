@@ -116,7 +116,7 @@ $ docker-compose ps
 monocle_api_1       uwsgi --uid guest --gid no ...   Up      0.0.0.0:9876->9876/tcp, 0.0.0.0:9877->9877/tcp
 monocle_crawler_1   monocle --elastic-conn ela ...   Up
 monocle_elastic_1   /usr/local/bin/docker-entr ...   Up      0.0.0.0:9200->9200/tcp, 9300/tcp
-monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:3000->3000/tcp
+monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:8080->8080/tcp
 ```
 
 You might need to check the crawler logs to ensure the crawler started to fetch changes:
@@ -125,7 +125,7 @@ You might need to check the crawler logs to ensure the crawler started to fetch 
 $ docker-compose logs -f crawler
 ```
 
-You should be able to access the web UI at <http://localhost:3000>.
+You should be able to access the web UI at <http://localhost:8080>.
 
 After a change in the configuration file, the api and crawler services need to be restarted:
 
@@ -177,10 +177,9 @@ For a local deployment, default settings are fine.
 
 The following settings are available in the `.env` file:
 
-- `MONOCLE_URL=<host or ip>` to configure the URL serving the Web UI
-  (default `http://localhost:3000`).
-- `MONOCLE_API_URL=<host or ip>` to configure the URL serving the API
-  (default `http://localhost:9876`).
+- `MONOCLE_PUBLIC_URL=<url>` to configure the
+  public URL to access the UI and API. This is required for the github
+  oauth redirection.
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it
   uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By
@@ -189,9 +188,12 @@ The following settings are available in the `.env` file:
   512m.
 - `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
   listening to (default `0.0.0.0`).
+- `MONOCLE_API_PORT=<port>` to change the port of the API (default `9876)`
 - `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
   listening to (default `0.0.0.0`).
+- `MONOCLE_WEB_PORT=<port>` to change the port of the WEB (default `8080`)
 - `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
+- `MONOCLE_ELASTIC_PORT=<port>` to change the port of the ELK (default `9200`)
   ElasticSearch service is listening to (default `0.0.0.0`). This is
   only exposed in the development version of the docker-compose
   (`docker-compose.yml.dev`).

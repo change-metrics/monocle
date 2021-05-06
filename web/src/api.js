@@ -17,10 +17,14 @@
 import axios from 'axios'
 import moment from 'moment'
 
+// The api server is defined by:
+// - window.API_URL value set by container runtime
+// - REACT_APP_API_URL set by development environment
+// - otherwise we assume the api is served by the proxy, on the same url as the static files.
 const server =
   window.API_URL !== '__API_URL__'
     ? window.API_URL
-    : process.env.REACT_APP_API_URL || 'http://localhost:9876'
+    : process.env.REACT_APP_API_URL || ''
 const baseurl = server + '/api/0'
 
 console.log('BaseURL=' + baseurl)

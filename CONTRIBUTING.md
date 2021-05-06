@@ -115,7 +115,7 @@ The helper script `contrib/start-with-podman.sh` can be used:
 contrib/start-with-podman.sh build
 contrib/start-with-podman.sh create
 contrib/start-with-podman.sh start
-firefox http://localhost:3000
+firefox http://localhost:8080
 ```
 
 See the `usage` section in the script.

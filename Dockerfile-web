@@ -41,18 +41,12 @@ COPY src /app/src/
 RUN npm run build
 
 ################################################################################
-
 FROM registry.fedoraproject.org/fedora:33
 
-RUN dnf update -y && dnf install -y nodejs && dnf clean all
-
-# set working directory
-WORKDIR /app
-
-# install serve globally
-RUN npm install -g serve
+RUN dnf update -y && dnf install -y nginx && dnf clean all
 
 COPY --from=0 /app/build /app
+COPY conf/start.sh /bin/
+COPY conf/nginx.conf /etc/nginx/conf.d/monocle.conf
 
-# start app
-CMD bash -c "set -x; test -z \"$REACT_APP_API_URL\" || sed -i -e \"s@__API_URL__@$REACT_APP_API_URL@\" /app/index.html; test -z \"$REACT_APP_TITLE\" || sed -i -e \"s@__TITLE__@$REACT_APP_TITLE@\" /app/index.html; serve -s /app -l 3000"
+CMD /bin/start.sh

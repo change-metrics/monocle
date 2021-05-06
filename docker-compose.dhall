@@ -20,6 +20,24 @@ let monocleImage = "changemetrics/monocle_backend:\${MONOCLE_VERSION:-latest}"
 
 let monocleWebImage = "changemetrics/monocle_web:\${MONOCLE_VERSION:-latest}"
 
+let mkEnvDefault =
+      \(env-var-name : Text) ->
+      \(default-value : Text) ->
+        "\${" ++ env-var-name ++ ":-" ++ default-value ++ "}"
+
+let mkPort =
+      \(env-var-prefix : Text) ->
+      \(default-port : Natural) ->
+      \(container-port : Natural) ->
+        Compose.StringOrNumber.String
+          (     mkEnvDefault "MONOCLE_${env-var-prefix}_ADDR" "0.0.0.0"
+            ++  ":"
+            ++  mkEnvDefault
+                  "MONOCLE_${env-var-prefix}_PORT"
+                  (Natural/show default-port)
+            ++  ":${Natural/show container-port}"
+          )
+
 let createElasticService =
       \(dev : Bool) ->
         let service =
@@ -30,6 +48,8 @@ let createElasticService =
                     ( Compose.StringOrList.String
                         "curl --silent --fail localhost:9200/_cluster/health || exit 1"
                     )
+                , retries = Some 6
+                , timeout = Some "60s"
                 }
               , ulimits = Some
                   ( toMap
@@ -51,9 +71,7 @@ let createElasticService =
         in  if    dev
             then  Compose.Service::(     service
                                      //  { ports = Some
-                                           [ Compose.StringOrNumber.String
-                                               "\${MONOCLE_ELASTIC_ADDR:-0.0.0.0}:9200:9200"
-                                           ]
+                                           [ mkPort "ELASTIC" 9200 9200 ]
                                          }
                                    )
             else  Compose.Service::(     service
@@ -67,17 +85,14 @@ let createElasticService =
 let createApiService =
       \(dev : Bool) ->
         let service =
-              { ports = Some
-                [ Compose.StringOrNumber.String
-                    "\${MONOCLE_API_ADDR:-0.0.0.0}:9876:9876"
-                , Compose.StringOrNumber.String
-                    "\${MONOCLE_API_ADDR:-0.0.0.0}:9877:9877"
-                ]
+              { ports = Some [ mkPort "API" 9876 9876 ]
               , healthcheck = Some Compose.Healthcheck::{
                 , test = Some
                     ( Compose.StringOrList.String
                         "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
                     )
+                , retries = Some 6
+                , timeout = Some "60s"
                 }
               , depends_on = Some [ "elastic" ]
               , command = Some
@@ -91,21 +106,14 @@ let createApiService =
                         , mapValue = "/etc/monocle/config.yaml"
                         }
                       , { mapKey = "ELASTIC_CONN", mapValue = "elastic:9200" }
-                      , { mapKey = "ALLOW_ORIGIN"
-                        , mapValue = "\${MONOCLE_URL:-http://localhost:3000}"
-                        }
                       , { mapKey = "CLIENT_ID"
                         , mapValue = "\${GITHUB_CLIENT_ID:-}"
                         }
                       , { mapKey = "CLIENT_SECRET"
                         , mapValue = "\${GITHUB_CLIENT_SECRET:-}"
                         }
-                      , { mapKey = "REDIRECT_URL"
-                        , mapValue =
-                            "\${MONOCLE_API_URL:-http://localhost:9876}/api/0/authorize"
-                        }
-                      , { mapKey = "WEB_URL"
-                        , mapValue = "\${MONOCLE_URL:-http://localhost:3000}"
+                      , { mapKey = "PUBLIC_URL"
+                        , mapValue = "\${MONOCLE_PUBLIC_URL}"
                         }
                       ]
                   )
@@ -160,27 +168,38 @@ let createWebService =
       \(dev : Bool) ->
         let service =
               { depends_on = Some [ "api" ]
-              , ports = Some
-                [ Compose.StringOrNumber.String
-                    "\${MONOCLE_WEB_ADDR:-0.0.0.0}:3000:3000"
-                ]
+              , ports = Some [ mkPort "WEB" 8080 8080 ]
+              , volumes = Some [ "./web/conf:/etc/nginx/conf.d:z" ]
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "REACT_APP_API_URL"
-                        , mapValue =
-                            "\${MONOCLE_API_URL:-http://localhost:9876}"
+                        , mapValue = "\${MONOCLE_PUBLIC_URL}"
                         }
                       , { mapKey = "REACT_APP_TITLE"
-                        , mapValue = "\${MONOCLE_TITLE:-}"
+                        , mapValue = "\${MONOCLE_TITLE}"
                         }
                       ]
                   )
               }
 
+        let -- podman v3.1.0 doesn't seem to work with build directory
+            -- adding a build context and a dockerfile next to the compose file is a working combo
+            build =
+              { context = "web"
+              , dockerfile = "Dockerfile-web"
+              , args =
+                  let -- todo: add default upstream
+                      default =
+                        Compose.ListOrDict.Dict
+                          ([] : List { mapKey : Text, mapValue : Text })
+
+                  in  default
+              }
+
         in  if    dev
             then  Compose.Service::(     service
                                      //  { build = Some
-                                             (Compose.Build.String "web")
+                                             (Compose.Build.Object build)
                                          }
                                    )
             else  Compose.Service::(     service

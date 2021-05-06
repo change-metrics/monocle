@@ -75,7 +75,7 @@ jobs:
       - name: Check web service
         run: |
           docker-compose ps web | grep Up
-          curl -s http://localhost:3000/
+          curl -s http://localhost:8080/
 
       - name: Publish images to docker-hub
         env:
