@@ -101,8 +101,6 @@ module Filters = {
       },
     ),
     ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
-    ("approvals", Filter.make("Approvals", "Change approval")),
-    ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
     (
       "state",
       Filter.makeChoice(
@@ -364,6 +362,18 @@ module FilterBox = {
       (
         "exclude_authors",
         Filter.makeChoice("Exclude authors", "Author names", suggestions.authors->Suggestions),
+      ),
+      (
+        "approvals",
+        Filter.makeChoice("Approvals", "Change approvals", suggestions.approvals->Suggestions),
+      ),
+      (
+        "exclude_approvals",
+        Filter.makeChoice(
+          "Exclude Approvals",
+          "Change approval",
+          suggestions.approvals->Suggestions,
+        ),
       ),
     ])
     let onClick = _ => states->Filters.dumps->updateFilters
