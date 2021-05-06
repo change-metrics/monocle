@@ -1,0 +1,29 @@
+jobs:
+  integration-job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions/checkout@v2.1.0"
+      - name: "Configure sysctl limits"
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: "Runs elasticsearch version 7.7.1"
+        uses: "elastic/elastic-github-actions/elasticsearch@master"
+        with:
+          stack-version: "7.7.1"
+      - name: "Setup Python 3.7"
+        uses: "actions/setup-python@v1"
+        with:
+          python-version: "3.7"
+      - name: "Install dependencies"
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install tox
+      - name: "Test with tox"
+        run: tox
+name: "Monocle CI"
+on:
+  pull_request: {}
+  push: {}
