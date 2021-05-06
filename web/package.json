@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@patternfly/react-core": "^4.106.2",
+    "@patternfly/react-core": "^4.115.2",
     "@rescript/react": "^0.10.2",
-    "@softwarefactory-project/re-patternfly": "^2.0.3",
+    "@softwarefactory-project/re-patternfly": "^2.1.0",
     "axios": "^0.21.1",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.1",

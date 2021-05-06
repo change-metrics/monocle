@@ -113,6 +113,7 @@ let maybeRenderList = (xs: list<'a>, component) =>
   | list{} => React.null
   | _ => component
   }
+let lower = s => s->Js.String.toLowerCase
 
 // Check if a text list contains an element
 let elemText = (xs: list<string>, x: string) => xs->Belt.List.has(x, (a, b) => a == b)
@@ -202,6 +203,7 @@ module MSelect = {
     ~options,
     ~valueChanged,
   ) => {
+    let (currentInput, setCurrentInput) = React.useState(_ => "")
     let (isOpen, _, onToggle) = useToggle(false)
     let selections = value != "" ? Js.String.split(",", value) : []
     let onSelect = (_, newValue, _) => {
@@ -222,6 +224,16 @@ module MSelect = {
     let placeholderText = placeholder
     let variant = multi ? #Typeaheadmulti : #Single
     let inlineFilterPlaceholderText = value != "" ? placeholder ++ ": " ++ value : ""
+    let onTypeaheadInputChanged = value => {
+      setCurrentInput(_ => value)
+    }
+    let optionsToDisplay =
+      switch currentInput {
+      | "" => options
+      | filter => options->Belt.List.keep(opt => filter->lower->Js.String.startsWith(opt->lower))
+      }
+      ->Belt.List.take(20)
+      ->Belt.Option.getWithDefault(list{})
     <Patternfly.Select
       variant
       placeholderText
@@ -231,9 +243,10 @@ module MSelect = {
       onClear
       onSelect
       onCreateOption
+      onTypeaheadInputChanged
       isCreatable
       onToggle>
-      {options
+      {optionsToDisplay
       ->mapWithKey((key, name) => <SelectOption key value={name} />)
       ->Belt.List.toArray
       ->React.array}
