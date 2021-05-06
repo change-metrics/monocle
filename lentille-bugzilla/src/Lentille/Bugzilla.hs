@@ -21,8 +21,10 @@ where
 
 import Data.Aeson
 import Data.Time (UTCTime)
-import Lentille.Client (IsoTime (..), TaskData (..))
-import Lentille.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
+import qualified Data.Vector as V
+import Google.Protobuf.Timestamp as Timestamp
+import Monocle.TaskData
+import Monocle.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
@@ -129,7 +131,7 @@ getBugsWithScore bzSession sinceTS limit offset = getBugs bzSession request
     searchQuery = BZS.evalSearchExpr $ searchExpr sinceTS
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
-toTaskData :: BugWithScore -> [TaskData]
+toTaskData :: BugWithScore -> [NewTaskData]
 toTaskData bz = map mkTaskData ebugs
   where
     isOpenDev :: BZ.ExternalBug -> Bool
@@ -137,21 +139,21 @@ toTaskData bz = map mkTaskData ebugs
     ebugs :: [BZ.ExternalBug]
     ebugs = filter isOpenDev (bugExternalBugs bz)
     changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> BZ.externalBugId ebug
-    mkTaskData :: BZ.ExternalBug -> TaskData
+    mkTaskData :: BZ.ExternalBug -> NewTaskData
     mkTaskData ebug =
-      TaskData
-        (IsoTime . bugLastChangeTime $ bz)
-        (changeUrl ebug)
-        (bugKeywords bz)
+      NewTaskData
+        (Just . Timestamp.fromUtcTime . bugLastChangeTime $ bz)
+        (toLazy . changeUrl $ ebug)
+        (toLazy <$> (V.fromList . bugKeywords $ bz))
         (show $ bugId bz)
-        ("https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (bugId bz))
-        (bugSummary bz)
-        (bugSeverity bz)
-        (bugPriority bz)
-        (bugPmScore bz)
+        (toLazy $ "https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (bugId bz))
+        (toLazy $ bugSummary bz)
+        (toLazy $ bugSeverity bz)
+        (toLazy $ bugPriority bz)
+        (fromInteger . toInteger . bugPmScore $ bz)
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of TaskData) m ()
+getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of NewTaskData) m ()
 getBZData bzSession sinceTS = go 0
   where
     limit = 100

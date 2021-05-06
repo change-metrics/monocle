@@ -10,8 +10,9 @@
 module Main (main) where
 
 import Data.Time.Clock (UTCTime)
-import Lentille
 import Lentille.Bugzilla
+import Monocle.Client
+import Monocle.Worker
 import Options.Generic
 import Relude
 import qualified Streaming.Prelude as S
@@ -38,7 +39,7 @@ apiKeyEnvError :: String
 apiKeyEnvError = error $ toText apiKeyEnv <> " environment not found"
 
 bzKeyEnv :: String
-bzKeyEnv = "MONOCLE_API_KEY"
+bzKeyEnv = "BZ_API_KEY"
 
 readSince :: Maybe String -> Maybe UTCTime
 readSince = fmap (fromMaybe (error "Could not parse time") . readMaybe)
@@ -48,9 +49,9 @@ main = do
   args <- unwrapRecord "Lentille worker"
   apiKey <- fromMaybe apiKeyEnvError <$> lookupEnv apiKeyEnv
   bzKeyM <- fmap (BugzillaApikey . toText) <$> lookupEnv bzKeyEnv
-  go args bzKeyM $! ApiKey (toText apiKey)
+  go args bzKeyM $! (toText apiKey)
   where
-    go :: LentilleCli Unwrapped -> Maybe BugzillaApikey -> ApiKey -> IO ()
+    go :: LentilleCli Unwrapped -> Maybe BugzillaApikey -> Text -> IO ()
     go args bzKeyM apiKey = do
       let bzUrl = fromMaybe "bugzilla.redhat.com" (bugzillaUrl args)
           sinceTSM = readSince $ since args
@@ -63,6 +64,6 @@ main = do
             client
             sinceTSM
             apiKey
-            (IndexName . index $ args)
-            (CrawlerName . crawlerName $ args)
+            (index $ args)
+            (crawlerName $ args)
             (TaskDataFetcher (getBZData bzSession))

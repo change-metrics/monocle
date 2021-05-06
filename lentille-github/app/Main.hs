@@ -11,9 +11,11 @@ module Main (main) where
 
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Lentille
 import Lentille.GitHub
 import Lentille.GitHub.Issues
+import Monocle.Client
+import Monocle.TaskData
+import Monocle.Worker
 import Options.Generic
 import Relude
 import Streaming (Of, Stream)
@@ -48,9 +50,9 @@ main :: IO ()
 main = do
   args <- unwrapRecord "Lentille GitHub Issue worker"
   apiKey <- fromMaybe apiKeyEnvError <$> lookupEnv apiKeyEnv
-  go args $! ApiKey (toText apiKey)
+  go args $! (toText apiKey)
   where
-    go :: LentilleCli Unwrapped -> ApiKey -> IO ()
+    go :: LentilleCli Unwrapped -> Text -> IO ()
     go args apiKey = do
       ghClient <- newGithubGraphClient ghUrl
       if printBugs args
@@ -60,11 +62,11 @@ main = do
             client
             sinceTSM
             apiKey
-            (IndexName . index $ args)
-            (CrawlerName . crawlerName $ args)
+            (index $ args)
+            (crawlerName $ args)
             (TaskDataFetcher (ghTDF ghClient))
       where
-        ghTDF :: MonadIO m => GitHubGraphClient -> UTCTime -> Stream (Of TaskData) m ()
+        ghTDF :: MonadIO m => GitHubGraphClient -> UTCTime -> Stream (Of NewTaskData) m ()
         ghTDF ghClient since' = streamLinkedIssue ghClient (buildSearchQuery (repo args) since')
         buildSearchQuery :: Text -> UTCTime -> String
         buildSearchQuery repo' utctime =

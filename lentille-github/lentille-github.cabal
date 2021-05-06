@@ -29,14 +29,15 @@ common common-options
 library
   import:              common-options
   hs-source-dirs:      src
-  build-depends:       lentille
-                     , base                       < 5
+  build-depends:       base                       < 5
                      , relude                     > 1.0 && < 1.1
                      , aeson                      < 1.6
+                     , monocle
                      , streaming                  < 0.3
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , time                       < 1.12
+                     , vector
                      , morpheus-graphql-client    ^>= 0.17
   exposed-modules:     Lentille.GitHub
                      , Lentille.GitHub.Favorites
@@ -47,7 +48,7 @@ executable lentille-github
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       lentille-github
-                     , lentille
+                     , monocle
                      , optparse-generic           < 1.5
                      , relude                     > 1.0 && < 1.1
                      , streaming                  < 0.3

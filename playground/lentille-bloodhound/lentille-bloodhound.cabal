@@ -28,7 +28,6 @@ library
                      , bloodhound                 >= 0.16.0.0
                      , http-client                < 0.8
                      , http-types                 < 0.13
-                     , lentille
                      , relude                     > 1.0 && < 1.1
                      , vector                     < 0.13
   hs-source-dirs:      src

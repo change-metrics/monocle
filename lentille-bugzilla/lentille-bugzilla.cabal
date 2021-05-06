@@ -45,11 +45,13 @@ library
   import:              common-options
   hs-source-dirs:      src
   build-depends:       bugzilla-redhat            < 0.4
+                     , base                       < 5
                      , aeson                      < 1.6
-                     , lentille
+                     , monocle
                      , relude                     > 1.0 && < 1.1
                      , streaming                  < 0.3
                      , time                       < 1.12
+                     , vector                     < 0.13
   exposed-modules:     Lentille.Bugzilla
 
 executable lentille-bugzilla
@@ -57,8 +59,8 @@ executable lentille-bugzilla
   hs-source-dirs:      app
   main-is:             Main.hs
   build-depends:       lentille-bugzilla
-                     , lentille
                      , optparse-generic           < 1.5
+                     , monocle
                      , relude                     > 1.0 && < 1.1
                      , streaming                  < 0.3
                      , time                       < 1.12
@@ -75,13 +77,13 @@ test-suite lentille-bugzilla-test
   build-depends:       base                       < 5
                      , bugzilla-redhat            < 0.4
                      , http-types                 < 0.13
-                     , lentille
                      , lentille-bugzilla
-                     , lentille-mock
+                     , monocle
                      , network                    < 4
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
+                     , vector                     < 0.13
                      , wai                        < 3.3
                      , warp                       < 3.4
   ghc-options:         -threaded

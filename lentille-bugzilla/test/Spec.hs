@@ -3,36 +3,17 @@
 
 module Main (main) where
 
-import Lentille
+import qualified Data.Vector as V
 import Lentille.Bugzilla
 import Lentille.BugzillaMock
-import Lentille.MonocleMock
+import Monocle.TaskData
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Web.Bugzilla.RedHat as BZ
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [workerTests, bzClientTests])
-
-workerTests :: TestTree
-workerTests =
-  testGroup
-    "Lentille.Worker"
-    [testRun]
-
-testRun :: TestTree
-testRun = testCase "run" go
-  where
-    go = withMockClient withClient $ \client -> do
-      bzSession <- bugzillaMockClient
-      run
-        client
-        Nothing
-        (ApiKey "fake")
-        (IndexName "openstack")
-        (CrawlerName "lentille")
-        (TaskDataFetcher (getBZData bzSession))
+main = defaultMain (testGroup "Tests" [bzClientTests])
 
 bzClientTests :: TestTree
 bzClientTests =
@@ -58,11 +39,11 @@ testBugToTaskData = testCase "bugToTaskData" go
       case toTaskData bz of
         (td : _tds) ->
           sequence_
-            [ tdTid td @=? "1791815",
-              tdChangeUrl td @=? "https://review.opendev.org/764427",
-              tdUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
-              tdTtype td @=? ["FutureFeature"],
-              tdScore td @=? 9001
+            [ newTaskDataTid td @=? "1791815",
+              newTaskDataChangeUrl td @=? "https://review.opendev.org/764427",
+              newTaskDataUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
+              newTaskDataTtype td @=? V.fromList ["FutureFeature"],
+              newTaskDataScore td @=? 9001
             ]
         [] -> assertBool "No external bugs found" False
 
