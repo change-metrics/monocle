@@ -13,9 +13,7 @@
 module Monocle.Client
   ( MonocleClient,
     withClient,
-
-    -- * API
-    getLastUpdated,
+    monocleReq,
   )
 where
 
@@ -65,15 +63,13 @@ withClient url managerM callBack =
   where
     baseUrl = T.dropWhileEnd (== '/') url <> "/"
 
-newtype APIPath = APIPath Text
-
 monocleReq ::
   (MonadIO m, MonadThrow m, Show body, ToJSONPB body, FromJSONPB a) =>
+  Text ->
   MonocleClient ->
-  APIPath ->
   body ->
   m a
-monocleReq MonocleClient {..} (APIPath path) body =
+monocleReq path MonocleClient {..} body =
   do
     initRequest <- parseUrlThrow (T.unpack $ baseUrl <> path)
     let request =
@@ -88,11 +84,3 @@ monocleReq MonocleClient {..} (APIPath path) body =
     decodeResponse body' = case JSONPB.eitherDecode body' of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
-
-getLastUpdated ::
-  (MonadThrow m, MonadIO m) =>
-  MonocleClient ->
-  TaskDataGetLastUpdatedRequest ->
-  m TaskDataGetLastUpdatedResponse
-getLastUpdated client req =
-  monocleReq client (APIPath "api/1/task_data_get_last_updated") req

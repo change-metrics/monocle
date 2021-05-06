@@ -54,4 +54,5 @@ library
   hs-source-dirs:      src
   exposed-modules:     Monocle.TaskData
                      , Monocle.Client
+                     , Monocle.WebApi
                      , Google.Protobuf.Timestamp

@@ -8,7 +8,8 @@ codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../monocle/webapi.py ../srcgen/WebApi.res)
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/WebApi.hs ../monocle/webapi.py ../srcgen/WebApi.res)
+	~/.cabal/bin/ormolu -i ./haskell/src/Monocle/WebApi.hs
 	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
