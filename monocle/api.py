@@ -115,4 +115,5 @@ def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsRe
     return SearchSuggestionsResponse(
         task_types=get_top_terms(db, "tasks_data.ttype"),
         authors=get_top_terms(db, "author.muid"),
+        approvals=get_top_terms(db, "approval"),
     )

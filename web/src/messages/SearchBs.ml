@@ -11,11 +11,13 @@ let default_search_suggestions_request_mutable () : search_suggestions_request_m
 type search_suggestions_response_mutable = {
   mutable task_types : string list;
   mutable authors : string list;
+  mutable approvals : string list;
 }
 
 let default_search_suggestions_response_mutable () : search_suggestions_response_mutable = {
   task_types = [];
   authors = [];
+  approvals = [];
 }
 
 
@@ -59,12 +61,22 @@ let rec decode_search_suggestions_response json =
         Pbrt_bs.string json "search_suggestions_response" "authors"
       ) a |> Array.to_list;
     end
+    | "approvals" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "approvals" in 
+        Pbrt_bs.array_ a "search_suggestions_response" "approvals"
+      in
+      v.approvals <- Array.map (fun json -> 
+        Pbrt_bs.string json "search_suggestions_response" "approvals"
+      ) a |> Array.to_list;
+    end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.task_types = v.task_types;
     SearchTypes.authors = v.authors;
+    SearchTypes.approvals = v.approvals;
   } : SearchTypes.search_suggestions_response)
 
 let rec encode_search_suggestions_request (v:SearchTypes.search_suggestions_request) = 
@@ -78,4 +90,6 @@ let rec encode_search_suggestions_response (v:SearchTypes.search_suggestions_res
   Js.Dict.set json "task_types" (Js.Json.array a);
   let a = v.SearchTypes.authors |> Array.of_list |> Array.map Js.Json.string in
   Js.Dict.set json "authors" (Js.Json.array a);
+  let a = v.SearchTypes.approvals |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "approvals" (Js.Json.array a);
   json

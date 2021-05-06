@@ -30,10 +30,14 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     TASK_TYPES_FIELD_NUMBER: builtins.int
     AUTHORS_FIELD_NUMBER: builtins.int
+    APPROVALS_FIELD_NUMBER: builtins.int
     task_types: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
     authors: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    approvals: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
     def __init__(
@@ -41,11 +45,17 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
         *,
         task_types: typing.Optional[typing.Iterable[typing.Text]] = ...,
         authors: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        approvals: typing.Optional[typing.Iterable[typing.Text]] = ...,
     ) -> None: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "authors", b"authors", "task_types", b"task_types"
+            "approvals",
+            b"approvals",
+            "authors",
+            b"authors",
+            "task_types",
+            b"task_types",
         ],
     ) -> None: ...
 

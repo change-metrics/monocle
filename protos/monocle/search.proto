@@ -12,4 +12,5 @@ message SearchSuggestionsRequest {
 message SearchSuggestionsResponse {
   repeated string task_types = 1;
   repeated string authors = 2;
+  repeated string approvals = 3;
 }
