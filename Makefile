@@ -30,3 +30,15 @@ codegen-openapi:
 codegen-with-container:
 	podman run -it -v $(shell pwd):/data:z --rm changemetrics/monocle_codegen make
 	@echo Success.
+
+codegen-compose:
+	@dhall-to-yaml  <<< "(./docker-compose.dhall).dev" > ./docker-compose.yml.dev
+	@dhall-to-yaml  <<< "(./docker-compose.dhall).img" > ./docker-compose.yml.img
+
+compose-down:
+	docker-compose down
+
+compose-up:
+	docker-compose up
+
+compose-restart: compose-down codegen-compose compose-up

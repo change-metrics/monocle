@@ -3,7 +3,7 @@
 -- To use relude we need to disable the default standard library using NoImplicitPrelude
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | A prototype to generate python dataclass from protobuf definition
+-- | A prototype to generate json encoder stubs from protobuf definition
 module Main (main) where
 
 import Data.List (lookup)
@@ -58,7 +58,7 @@ attrName :: [Text] -> Text
 attrName [_, name] = name
 attrName x = error ("Invalid attr name: " <> show x)
 
--- | Create a python module from a protobuf definition
+-- | Create python modules from a protobuf definition
 protoToPython :: PB.ProtoBuf -> String
 protoToPython = fromProto headers mkService
   where
@@ -108,7 +108,7 @@ protoToPython = fromProto headers mkService
             "methods=[\"POST\"]"
           ]
 
--- | Create a rescript module from a protobuf definition
+-- | Create rescript modules from a protobuf definition
 protoToReScript :: PB.ProtoBuf -> String
 protoToReScript = fromProto headers mkService
   where
