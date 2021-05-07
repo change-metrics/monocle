@@ -25,6 +25,24 @@ def config_service(app):
     )
 
 
+def search_service(app):
+    from monocle.api import search_suggestions
+    from monocle.messages.search_pb2 import SearchSuggestionsRequest
+    from monocle.messages.search_pb2 import SearchSuggestionsResponse
+
+    def suggestions_stub() -> None:
+        input_request: SearchSuggestionsRequest = pbjson.Parse(request.get_data(), SearchSuggestionsRequest())  # type: ignore
+        output_resp: SearchSuggestionsResponse = search_suggestions(input_request)
+        json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
+        return app.response_class(
+            response=json_resp, status=200, mimetype="application/json"
+        )
+
+    app.add_url_rule(
+        "/api/1/suggestions", "Suggestions", suggestions_stub, methods=["POST"]
+    )
+
+
 def task_data_service(app):
     from monocle.api import task_data_commit, task_data_get_last_updated
     from monocle.messages.task_data_pb2 import TaskDataCommitRequest

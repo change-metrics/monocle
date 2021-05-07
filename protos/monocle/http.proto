@@ -11,6 +11,7 @@ option go_package = "monocle/http";
 import "google/api/annotations.proto";
 
 import "monocle/config.proto";
+import "monocle/search.proto";
 import "monocle/task_data.proto";
 
 service Config {
@@ -18,6 +19,16 @@ service Config {
   rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
     option (google.api.http) = {
       post: "/api/1/get_projects"
+      body: "*"
+    };
+  }
+}
+
+service Search {
+  rpc Suggestions(monocle_search.SearchSuggestionsRequest)
+      returns (monocle_search.SearchSuggestionsResponse) {
+    option (google.api.http) = {
+      post: "/api/1/suggestions"
       body: "*"
     };
   }

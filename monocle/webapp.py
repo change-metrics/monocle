@@ -47,7 +47,7 @@ from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskCrawler,
 )
-from monocle.webapi import config_service, task_data_service
+from monocle.webapi import config_service, search_service, task_data_service
 from monocle import config
 from monocle import env
 
@@ -341,6 +341,7 @@ def task_data():
 
 
 config_service(app)
+search_service(app)
 task_data_service(app)
 
 

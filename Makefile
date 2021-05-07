@@ -1,7 +1,7 @@
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-MESSAGES = monocle/config.proto monocle/task_data.proto
+MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
 PINCLUDE = -I ./protos/ -I /usr/include
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi

@@ -24,6 +24,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetProjectsResponse'
+    /api/1/suggestions:
+        post:
+            operationId: Search_Suggestions
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchSuggestionsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchSuggestionsResponse'
     /api/1/task_data_commit:
         post:
             summary: Commit the last updated timestamp
@@ -80,6 +96,24 @@ components:
                     type: string
                 file_regex:
                     type: string
+        SearchSuggestionsRequest:
+            properties:
+                index:
+                    type: string
+        SearchSuggestionsResponse:
+            properties:
+                task_types:
+                    type: array
+                    items:
+                        type: string
+                authors:
+                    type: array
+                    items:
+                        type: string
+                approvals:
+                    type: array
+                    items:
+                        type: string
         TaskDataCommitRequest:
             properties:
                 index:
