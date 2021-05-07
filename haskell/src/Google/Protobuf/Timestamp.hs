@@ -104,6 +104,11 @@ instance HsProtobuf.Message Timestamp where
 rfc3339Format :: Hs.String
 rfc3339Format = "%FT%TZ"
 
+fromUtcTime :: Time.UTCTime -> Timestamp
+fromUtcTime utc = Timestamp sec (Hs.fromInteger (Hs.toInteger nano))
+  where
+    Time.MkSystemTime sec nano = Time.utcToSystemTime utc
+
 toUtcTime :: Timestamp -> Time.UTCTime
 toUtcTime (Timestamp sec nano) = Time.systemToUTCTime (Time.MkSystemTime sec (Hs.fromInteger (Hs.toInteger nano)))
 

@@ -18,9 +18,7 @@ import os
 import socket
 import time
 
-from datetime import datetime
-
-from typing import List, Optional, Union, Tuple
+from typing import Optional, Tuple
 
 from flask import Flask
 from flask import abort
@@ -40,13 +38,7 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
-from monocle.task_data import (
-    createInputTaskData,
-    createELTaskData,
-    TaskDataForEL,
-    OrphanTaskDataForEL,
-    TaskCrawler,
-)
+from monocle.task_data import TaskCrawler
 from monocle.webapi import config_service, search_service, task_data_service
 from monocle import config
 from monocle import env
@@ -232,99 +224,8 @@ def task_data_endpoint_check_input_env(
     return index, crawler_config
 
 
-@app.route("/api/0/task_data", methods=["POST", "GET"])
+@app.route("/api/0/task_data", methods=["GET"])
 def task_data():
-    if request.method == "POST":
-        index, crawler_config = task_data_endpoint_check_input_env(
-            request, check_auth=True, check_content_type=True
-        )
-        json_data: List = request.get_json()
-        if not isinstance(json_data, list):
-            returnAPIError("Input data is not a List", 400)
-        if len(json_data) > INPUT_TASK_DATA_LIMIT:
-            returnAPIError(
-                "Input data List over limit (%s items)" % (INPUT_TASK_DATA_LIMIT),
-                400,
-            )
-        try:
-            extracted_data = createInputTaskData(json_data, crawler_config.name)
-        except Exception as exc:
-            returnAPIError(
-                "Unable to extract input data due to wrong input format: %s" % exc, 400
-            )
-        # Find changes in EL ids that match urls
-        change_urls = [e.change_url for e in extracted_data]
-        db = create_db_connection(index)
-        mc = db.get_changes_by_url(change_urls, INPUT_TASK_DATA_LIMIT)
-        me = db.get_change_events_by_url(change_urls)
-        mc = dict(
-            [
-                (
-                    r["url"],
-                    {
-                        "id": r["id"],
-                        "td": createELTaskData(r.get("tasks_data", [])),
-                    },
-                )
-                for r in mc
-            ]
-        )
-        # Prepare input data set
-        update_docs: List[Union[TaskDataForEL, OrphanTaskDataForEL]] = []
-        for input_task_data in extracted_data:
-            if input_task_data.change_url in mc:
-                # First check if a td match the input one
-                prev_td = [
-                    td
-                    for td in mc[input_task_data.change_url]["td"]
-                    if td.url == input_task_data.url
-                ]
-                if len(prev_td) > 1:
-                    raise RuntimeError("Multiple td match in previous td")
-                # Remove the previous outdated one if any
-                if prev_td:
-                    mc[input_task_data.change_url]["td"].remove(prev_td[0])
-                # Add the new one to the list
-                mc[input_task_data.change_url]["td"].append(input_task_data)
-            else:
-                update_docs.append(
-                    OrphanTaskDataForEL(
-                        _id=input_task_data.url,
-                        task_data=input_task_data,
-                    )
-                )
-        total_orphans_to_update = len(update_docs)
-        for _mc in mc.values():
-            update_docs.append(
-                TaskDataForEL(
-                    _id=_mc["id"],
-                    tasks_data=_mc["td"],
-                )
-            )
-        total_changes_to_update = len(update_docs) - total_orphans_to_update
-        for _me in me:
-            update_docs.append(
-                TaskDataForEL(_id=_me["id"], tasks_data=mc[_me["url"]]["td"])
-            )
-        total_change_events_to_update = (
-            len(update_docs) - total_orphans_to_update - total_changes_to_update
-        )
-        # Now insert the data
-        err = db.update_task_data(source_it=update_docs)
-        # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
-        if err:
-            returnAPIError("Unable to update tasks data", 500, str(err))
-        db.set_task_crawler_metadata(
-            crawler_config.name,
-            push_infos={
-                "last_post_at": datetime.utcnow().replace(microsecond=0),
-                "total_docs_posted": len(extracted_data),
-                "total_changes_updated": total_changes_to_update,
-                "total_change_events_updated": total_change_events_to_update,
-                "total_orphans_updated": total_orphans_to_update,
-            },
-        )
-        return jsonify([])
     if request.method == "GET":
         index, crawler_config = task_data_endpoint_check_input_env(
             request, check_auth=False, check_content_type=False

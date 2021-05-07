@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
@@ -27,12 +28,13 @@ import qualified Control.Retry as Retry
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
-import Google.Protobuf.Timestamp
+import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Client
 import Monocle.TaskData
 import Monocle.WebApi
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
+import Proto3.Suite.Types (Enumerated (..))
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming as S
@@ -105,17 +107,22 @@ newtype TaskDataFetcher m = TaskDataFetcher
   { runFetcher :: UTCTime -> Stream (Of NewTaskData) m ()
   }
 
-data ProcessResult = Amended | AmendError [Text] deriving stock (Show)
+data ProcessResult = Amended | AmendError Text deriving stock (Show)
+
+pattern AddSuccess :: AddResponse
+pattern AddSuccess = AddResponse Nothing
+
+pattern AddError :: Enumerated TaskDataCommitError -> AddResponse
+pattern AddError err = AddResponse (Just (AddResponseResultError err))
 
 processBatch :: (MonadIO m, MonadLog m) => ([NewTaskData] -> m AddResponse) -> [NewTaskData] -> m ProcessResult
 processBatch postFunc tds = do
   log $ LogPostData (length tds)
-  _res <- postFunc tds
-  pure Amended
-    -- TODO: define add response
-    -- $ case res of
-    --    [] -> Amended
-    --    xs -> AmendError (map show xs)
+  resp <- postFunc tds
+  pure $ case resp of
+    (AddSuccess) -> Amended
+    (AddError err) -> AmendError (show err)
+    _ -> AmendError "Unknown error"
 
 process :: (MonadIO m, MonadLog m) => ([NewTaskData] -> m AddResponse) -> Stream (Of NewTaskData) m () -> m ()
 process postFunc =
@@ -130,6 +137,13 @@ type IndexName = Text
 
 type CrawlerName = Text
 
+pattern CommitError err = TaskDataCommitResponse (Just (TaskDataCommitResponseResultError err))
+
+pattern CommitSuccess <- TaskDataCommitResponse (Just (TaskDataCommitResponseResultTimestamp _ts))
+
+pattern GetLastUpdatedSuccess ts =
+  TaskDataGetLastUpdatedResponse (Just (TaskDataGetLastUpdatedResponseResultTimestamp ts))
+
 run ::
   (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
@@ -140,18 +154,35 @@ run ::
   TaskDataFetcher m ->
   m ()
 run monocleClient sinceM apiKey indexName crawlerName tdf = do
-  _startTime <- log' LogStarting
+  startTime <- log' LogStarting
   since <- case sinceM of
     Just ts -> pure ts
     Nothing -> getTimestampFromApi
   process (retry . taskDataAdd monocleClient . mkRequest) (runFetcher tdf since)
-  res <- pure True
-  -- TODO: define commit request
-  -- retry $ setUpdatedSince monocleClient indexName crawlerName apiKey startTime
+  res <- retry $ commitTimestamp startTime
   log (if res then LogEnded else LogFailed)
   where
+    commitTimestamp startTime = do
+      -- setUpdatedSince monocleClient indexName crawlerName apiKey startTime
+      commitResp <-
+        taskDataCommit
+          monocleClient
+          ( TaskDataCommitRequest
+              (toLazy indexName)
+              (toLazy crawlerName)
+              (toLazy apiKey)
+              (Just $ Timestamp.fromUtcTime startTime)
+          )
+      case commitResp of
+        CommitSuccess -> pure True
+        CommitError err -> do
+          putTextLn ("Commit failed: " <> show err)
+          pure False
+        _ -> do
+          putTextLn ("Empty commit response")
+          pure False
     getTimestampFromApi = do
-      TaskDataGetLastUpdatedResponse resp <-
+      resp <-
         taskDataGetLastUpdated
           monocleClient
           ( TaskDataGetLastUpdatedRequest
@@ -159,9 +190,12 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
               (toLazy crawlerName)
           )
       case resp of
-        Just (TaskDataGetLastUpdatedResponseResultTimestamp ts) -> pure $ toUtcTime ts
+        GetLastUpdatedSuccess ts -> pure $ toUtcTime ts
         _ -> error $ "Could not got initial timesamp: " <> show resp
     mkRequest :: [NewTaskData] -> AddRequest
     mkRequest =
       AddRequest
-        (toLazy indexName) (toLazy crawlerName) (toLazy apiKey) . V.fromList
+        (toLazy indexName)
+        (toLazy crawlerName)
+        (toLazy apiKey)
+        . V.fromList

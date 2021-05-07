@@ -23,6 +23,7 @@ common common-options
                        -Widentities
                        -Wincomplete-uni-patterns
                        -Wincomplete-record-updates
+                       -Wno-missing-pattern-synonym-signatures
                        -- Needed until https://github.com/awakesecurity/proto3-suite/pull/149
                        -fno-warn-missing-export-lists
   if impl(ghc >= 8.0)

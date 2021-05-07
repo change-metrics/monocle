@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import List
+from datetime import datetime
+from typing import Any, List
 
 from google.protobuf.timestamp_pb2 import Timestamp
 from monocle.messages.config_pb2 import (
@@ -36,7 +37,13 @@ from monocle.messages.task_data_pb2 import (
 import monocle.messages.task_data_pb2 as TD
 from monocle import env
 
-from monocle.webapp import create_db_connection
+from monocle.webapp import create_db_connection, INPUT_TASK_DATA_LIMIT
+from monocle.task_data import (
+    createELTaskData,
+    TaskDataForEL,
+    OrphanTaskDataForEL,
+    toTaskData,
+)
 
 from elasticsearch.exceptions import NotFoundError
 
@@ -94,7 +101,86 @@ def task_data_get_last_updated(
 
 
 def task_data_add(request: AddRequest) -> AddResponse:
-    # TODO
+    (error, result) = check_crawler_request(
+        request.index, request.crawler, request.apikey
+    )
+    if error:
+        return AddResponse(error=result)
+    if not (0 < len(request.items) <= INPUT_TASK_DATA_LIMIT):
+        return AddResponse(error=TD.AddFailed)
+    extracted_data = request.items
+    crawler_config = result
+    index = request.index
+    # Find changes in EL ids that match urls
+    change_urls = [e.change_url for e in extracted_data]
+    db = create_db_connection(index)
+    mc = db.get_changes_by_url(change_urls, INPUT_TASK_DATA_LIMIT)
+    me = db.get_change_events_by_url(change_urls)
+    mc = dict(
+        [
+            (
+                r["url"],
+                {
+                    "id": r["id"],
+                    "td": createELTaskData(r.get("tasks_data", [])),
+                },
+            )
+            for r in mc
+        ]
+    )
+    # Prepare input data set
+    update_docs: Any = []
+    for input_task_data in extracted_data:
+        td = toTaskData(request.crawler, input_task_data)
+        if input_task_data.change_url in mc:
+            # First check if a td match the input one
+            prev_td = [
+                td
+                for td in mc[input_task_data.change_url]["td"]
+                if td.url == input_task_data.url
+            ]
+            if len(prev_td) > 1:
+                raise RuntimeError("Multiple td match in previous td")
+            # Remove the previous outdated one if any
+            if prev_td:
+                mc[input_task_data.change_url]["td"].remove(prev_td[0])
+            # Add the new one to the list
+            mc[input_task_data.change_url]["td"].append(td)
+        else:
+            update_docs.append(
+                OrphanTaskDataForEL(_id=input_task_data.url, task_data=td)
+            )
+    total_orphans_to_update = len(update_docs)
+    for _mc in mc.values():
+        update_docs.append(
+            TaskDataForEL(
+                _id=_mc["id"],
+                tasks_data=_mc["td"],
+            )
+        )
+    total_changes_to_update = len(update_docs) - total_orphans_to_update
+    for _me in me:
+        update_docs.append(
+            TaskDataForEL(_id=_me["id"], tasks_data=mc[_me["url"]]["td"])
+        )
+    total_change_events_to_update = (
+        len(update_docs) - total_orphans_to_update - total_changes_to_update
+    )
+    # Now insert the data
+    err = db.update_task_data(source_it=update_docs)
+    # https://github.com/elastic/elasticsearch-py/blob/f4447bf996bdee47a0eb4c736bd39dea20a4486e/elasticsearch/helpers/actions.py#L177
+    if err:
+        return AddResponse(error=TD.AddFailed)
+    db.set_task_crawler_metadata(
+        crawler_config.name,
+        push_infos={
+            "last_post_at": datetime.utcnow().replace(microsecond=0),
+            "total_docs_posted": len(extracted_data),
+            "total_changes_updated": total_changes_to_update,
+            "total_change_events_updated": total_change_events_to_update,
+            "total_orphans_updated": total_orphans_to_update,
+        },
+    )
     return AddResponse()
 
 
