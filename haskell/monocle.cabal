@@ -49,6 +49,8 @@ library
                      , proto3-suite               >= 0.4
                      , proto3-wire                >= 1.2.0
                      , relude                     > 1.0.0.0
+                     , retry                      < 0.9
+                     , streaming                  < 0.3
                      , time                       < 1.10
                      , vector                     < 0.13
   hs-source-dirs:      src
@@ -58,6 +60,7 @@ library
                      , Monocle.Search
                      , Monocle.TaskData
                      , Monocle.WebApi
+                     , Monocle.Worker
 
 test-suite monocle-test
   import:              common-options
