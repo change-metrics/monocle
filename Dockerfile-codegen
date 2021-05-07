@@ -35,5 +35,5 @@ RUN mkdir -p /usr/include/google/api && \
     curl -o /usr/include/google/api/annotations.proto -L https://raw.githubusercontent.com/googleapis/googleapis/7cde5d0df08801e00fc45df1546942aa2692d5c3/google/api/annotations.proto
 
 ENV LANG=C.UTF-8
-ENV PATH=/root/.local/bin:/root/.opam/default/bin:/root/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/root/.local/bin:/root/.opam/default/bin:/root/.cabal/bin:/root/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WORKDIR /data
