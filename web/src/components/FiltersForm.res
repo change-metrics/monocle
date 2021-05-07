@@ -106,7 +106,7 @@ module Filters = {
       Filter.makeChoice(
         "Change state",
         "Filter by state",
-        Keywords(list{"ALL", "OPEN", "MERGED", "SELF-MERGED", "CLOSED"}),
+        Keywords(list{"OPEN", "MERGED", "SELF-MERGED", "CLOSED"}),
       ),
     ),
     (
