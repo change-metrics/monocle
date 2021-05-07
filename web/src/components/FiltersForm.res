@@ -52,7 +52,10 @@ module RelativeDate = {
 // The definition of a filter:
 module Filter = {
   type choiceType =
-    Keywords(list<string>) | RelativeDates(list<RelativeDate.t>) | Projects(list<string>)
+    | Suggestions(list<string>)
+    | Keywords(list<string>)
+    | RelativeDates(list<RelativeDate.t>)
+    | Projects(list<string>)
   type kind = Text | Date | Choice(choiceType)
   type t = {title: string, description: string, default: option<string>, kind: kind}
 
@@ -71,7 +74,8 @@ module Filter = {
   let validate = (filter, value) =>
     switch filter.kind {
     | Text | Date => true
-    | Choice(Keywords(values)) => values->elemText(value)
+    | Choice(Keywords(values)) =>
+      Js.String.split(",", value)->Belt.Array.every(v => values->elemText(v))
     | _ => true
     }
 }
@@ -85,8 +89,6 @@ module Filters = {
 
   // The list of static filters:
   let staticFilters = [
-    ("authors", Filter.make("Authors", "Author names")),
-    ("exclude_authors", Filter.make("Exclude authors", "Author names")),
     ("repository", Filter.make("Repository", "Repository regexp")),
     ("branch", Filter.make("Branch", "Branch regexp")),
     ("files", Filter.make("Files", "File regexp")),
@@ -99,8 +101,6 @@ module Filters = {
       },
     ),
     ("lte", {...Filter.make("To date", "yyyy-MM-dd"), kind: Date}),
-    ("approvals", Filter.make("Approvals", "Change approval")),
-    ("exclude_approvals", Filter.make("Exclude Approvals", "Change approval")),
     (
       "state",
       Filter.makeChoice(
@@ -125,7 +125,6 @@ module Filters = {
       "task_severity",
       Filter.makeChoice("Task severity", "Filter by severity", Keywords(Env.bzPriority)),
     ),
-    ("task_type", Filter.make("Task type", "Filter by task type")),
   ]
 
   // Helper functions:
@@ -204,7 +203,11 @@ module Filters = {
 module Field = {
   let fieldStyle = ReactDOM.Style.make(~marginTop="5px", ~marginBottom="15px", ())
   @react.component
-  let make = (~name, ~states: Filters.t, ~projects: option<list<ConfigTypes.project_definition>>=?) => {
+  let make = (
+    ~name,
+    ~states: Filters.t,
+    ~projects: option<list<ConfigTypes.project_definition>>=?,
+  ) => {
     let (filter, value, setValue, isDisabled, _) = states->Filters.get(name)
     let onChange = (v, _) => setValue(_ => v)
     let rdOnChange = (v, _) => {
@@ -223,10 +226,11 @@ module Field = {
         let (_, _, _, _, setIsDisabled) = states->Filters.get(fname)
         setIsDisabled(disable)
       }
-      let disableFieldIfNeeded = (field: string, fname: string): unit => switch field {
+      let disableFieldIfNeeded = (field: string, fname: string): unit =>
+        switch field {
         | "" => ()
         | _ => fname->disableEnableField(true)
-      }
+        }
       let enableFields = () => {
         "branch"->disableEnableField(false)
         "files"->disableEnableField(false)
@@ -265,10 +269,22 @@ module Field = {
           <MSelect
             placeholder={filter.description} options valueChanged={v => onChange(v, ())} value
           />
+        | Choice(Suggestions(options)) =>
+          <MSelect
+            isCreatable={true}
+            placeholder={filter.description}
+            options
+            valueChanged={v => onChange(v, ())}
+            value
+          />
         | Choice(RelativeDates(options)) => {
             let options = options->RelativeDate.toStringList
             <MSelect
-              placeholder={filter.description} options valueChanged={v => rdOnChange(v, ())} value
+              multi={false}
+              placeholder={filter.description}
+              options
+              valueChanged={v => rdOnChange(v, ())}
+              value
             />
           }
         | Choice(Projects(options)) =>
@@ -327,6 +343,7 @@ module FilterBox = {
     ~updateFilters: string => unit,
     ~showChangeParams: bool,
     ~projects: list<ConfigTypes.project_definition>,
+    ~suggestions: SearchTypes.search_suggestions_response,
   ) => {
     let states = Filters.useFilters([
       (
@@ -335,6 +352,27 @@ module FilterBox = {
           "Projects",
           "Select a project",
           projects->Belt.List.map(project => project.name)->Projects,
+        ),
+      ),
+      (
+        "task_type",
+        Filter.makeChoice("Task type", "Filter by task type", suggestions.task_types->Keywords),
+      ),
+      ("authors", Filter.makeChoice("Authors", "Author names", suggestions.authors->Suggestions)),
+      (
+        "exclude_authors",
+        Filter.makeChoice("Exclude authors", "Author names", suggestions.authors->Suggestions),
+      ),
+      (
+        "approvals",
+        Filter.makeChoice("Approvals", "Change approvals", suggestions.approvals->Suggestions),
+      ),
+      (
+        "exclude_approvals",
+        Filter.makeChoice(
+          "Exclude Approvals",
+          "Change approval",
+          suggestions.approvals->Suggestions,
         ),
       ),
     ])
@@ -381,11 +419,15 @@ module FilterBox = {
 
 @react.component
 let make = (~updateFilters: string => unit, ~showChangeParams: bool, ~index: string) => {
+  let suggestions = useAutoGet(() => WebApi.Search.suggestions({index: index}))
   let indices = useAutoGet(() => WebApi.Config.getProjects({index: index}))
-  switch indices {
-  | None => <Spinner />
-  | Some(Ok({projects})) => <FilterBox updateFilters showChangeParams projects />
-  | Some(Error(_error)) => <Alert title={_error} variant=#Danger />
+  switch (indices, suggestions) {
+  | (Some(Ok({projects})), Some(Ok(suggestions))) =>
+    <FilterBox updateFilters showChangeParams projects suggestions />
+  | (Some(Error(_error)), _)
+  | (_, Some(Error(_error))) =>
+    <Alert title={_error} variant=#Danger />
+  | _ => <Spinner />
   }
 }
 

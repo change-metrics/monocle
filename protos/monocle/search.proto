@@ -1,0 +1,16 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_search;
+option go_package = "monocle/search";
+
+message SearchSuggestionsRequest {
+  string index = 1;
+}
+
+message SearchSuggestionsResponse {
+  repeated string task_types = 1;
+  repeated string authors = 2;
+  repeated string approvals = 3;
+}

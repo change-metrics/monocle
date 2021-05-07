@@ -11,6 +11,7 @@ option go_package = "monocle/http";
 import "google/api/annotations.proto";
 
 import "monocle/config.proto";
+import "monocle/search.proto";
 import "monocle/task_data.proto";
 
 service Config {
@@ -23,11 +24,29 @@ service Config {
   }
 }
 
+service Search {
+  rpc Suggestions(monocle_search.SearchSuggestionsRequest)
+      returns (monocle_search.SearchSuggestionsResponse) {
+    option (google.api.http) = {
+      post: "/api/1/suggestions"
+      body: "*"
+    };
+  }
+}
+
 service TaskData {
   // Commit the last updated timestamp
   rpc Commit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
     option (google.api.http) = {
       post: "/api/1/task_data_commit"
+      body: "*"
+    };
+  }
+  // Commit the last updated timestamp
+  rpc GetLastUpdated(monocle_task_data.TaskDataGetLastUpdatedRequest)
+      returns (monocle_task_data.TaskDataGetLastUpdatedResponse) {
+    option (google.api.http) = {
+      post: "/api/1/task_data_get_last_updated"
       body: "*"
     };
   }

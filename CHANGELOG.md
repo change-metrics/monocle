@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [api] Support of three new query attributes (task_type, task_priority, task_severity)
 - [compose] Added ADDR and PORT variables to enable multiple service deployment on a single host
 - [compose] Simplified deployment by using a single MONOCLE_PUBLIC_URL for both monocle-web and monocle-api using nginx proxy pass.
+- [web] Added suggestion in filter box for approval, authors and task data type fields
 
 ### Changed
 

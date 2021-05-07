@@ -21,6 +21,20 @@ module Config = {
     )
 }
 
+module Search = {
+  @module("axios")
+  external suggestionsRaw: (string, 'a) => axios<'b> = "post"
+
+  let suggestions = (request: SearchTypes.search_suggestions_request): axios<
+    SearchTypes.search_suggestions_response,
+  > =>
+    request->SearchBs.encode_search_suggestions_request
+    |> suggestionsRaw(serverUrl ++ "/api/1/suggestions")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_search_suggestions_response}->Js.Promise.resolve
+    )
+}
+
 module TaskData = {
   @module("axios")
   external commitRaw: (string, 'a) => axios<'b> = "post"
@@ -32,5 +46,16 @@ module TaskData = {
     |> commitRaw(serverUrl ++ "/api/1/task_data_commit")
     |> Js.Promise.then_(resp =>
       {data: resp.data->TaskDataBs.decode_task_data_commit_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external getLastUpdatedRaw: (string, 'a) => axios<'b> = "post"
+
+  let getLastUpdated = (request: TaskDataTypes.task_data_get_last_updated_request): axios<
+    TaskDataTypes.task_data_get_last_updated_response,
+  > =>
+    request->TaskDataBs.encode_task_data_get_last_updated_request
+    |> getLastUpdatedRaw(serverUrl ++ "/api/1/task_data_get_last_updated")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->TaskDataBs.decode_task_data_get_last_updated_response}->Js.Promise.resolve
     )
 }

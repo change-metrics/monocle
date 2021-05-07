@@ -354,16 +354,7 @@ TASK_DATA: {
 }
 ```
 
-**GET /api/0/task_data?index=<name>&name=<crawler_name>**
-
-This endpoint returns the last commit date of a task crawler.
-
-**POST /api/0/task_data/commit?index=<name>&name=<crawler_name>&apikey=<key>**
-
-This endpoint is protected by an API Key and it accepts a timestamp "commit" date
-to help crawler resume work.
-
-str["%Y-%m-%dT%H:%M:%SZ"]
+Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocle-openapi].
 
 #### Task data crawler configuration
 

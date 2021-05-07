@@ -24,6 +24,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetProjectsResponse'
+    /api/1/suggestions:
+        post:
+            operationId: Search_Suggestions
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchSuggestionsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchSuggestionsResponse'
     /api/1/task_data_commit:
         post:
             summary: Commit the last updated timestamp
@@ -41,6 +57,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataCommitResponse'
+    /api/1/task_data_get_last_updated:
+        post:
+            summary: Commit the last updated timestamp
+            operationId: TaskData_GetLastUpdated
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskDataGetLastUpdatedRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
 components:
     schemas:
         GetProjectsRequest:
@@ -63,6 +96,24 @@ components:
                     type: string
                 file_regex:
                     type: string
+        SearchSuggestionsRequest:
+            properties:
+                index:
+                    type: string
+        SearchSuggestionsResponse:
+            properties:
+                task_types:
+                    type: array
+                    items:
+                        type: string
+                authors:
+                    type: array
+                    items:
+                        type: string
+                approvals:
+                    type: array
+                    items:
+                        type: string
         TaskDataCommitRequest:
             properties:
                 index:
@@ -73,6 +124,7 @@ components:
                     type: string
                 timestamp:
                     type: string
+                    format: RFC3339
         TaskDataCommitResponse:
             properties:
                 error:
@@ -80,3 +132,18 @@ components:
                     format: enum
                 timestamp:
                     type: string
+                    format: RFC3339
+        TaskDataGetLastUpdatedRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+        TaskDataGetLastUpdatedResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string
+                    format: RFC3339

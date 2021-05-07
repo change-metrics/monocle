@@ -47,7 +47,7 @@ from monocle.task_data import (
     OrphanTaskDataForEL,
     TaskCrawler,
 )
-from monocle.webapi import config_service
+from monocle.webapi import config_service, search_service, task_data_service
 from monocle import config
 from monocle import env
 
@@ -232,22 +232,6 @@ def task_data_endpoint_check_input_env(
     return index, crawler_config
 
 
-@app.route("/api/0/task_data/commit", methods=["POST"])
-def task_data_commit():
-    index, crawler_config = task_data_endpoint_check_input_env(
-        request, check_auth=True, check_content_type=True
-    )
-    input_date_str = request.get_json()
-    try:
-        input_date = datetime.strptime(input_date_str, "%Y-%m-%dT%H:%M:%SZ")
-    except ValueError:
-        returnAPIError("Unable to read input date", 400)
-    db = create_db_connection(index)
-    if db.set_task_crawler_metadata(crawler_config.name, input_date):
-        returnAPIError("Unable to commit", 500)
-    return jsonify("Commited")
-
-
 @app.route("/api/0/task_data", methods=["POST", "GET"])
 def task_data():
     if request.method == "POST":
@@ -357,6 +341,8 @@ def task_data():
 
 
 config_service(app)
+search_service(app)
+task_data_service(app)
 
 
 def main():
