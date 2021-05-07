@@ -142,8 +142,7 @@ def main() -> None:
     )
     parser_dbquery.add_argument(
         "--state",
-        help="Scope to changes having this state",
-        choices=["OPEN", "CLOSED", "MERGED"],
+        help="Scope to changes with state (comma separated)",
     )
     parser_dbquery.add_argument(
         "--change-ids", help="Scope to change ids (comma separated)"

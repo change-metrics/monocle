@@ -24,7 +24,7 @@ from datetime import datetime
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse
 
-from typing import List, Dict
+from typing import List, Dict, Union
 
 
 def utcnow():
@@ -192,7 +192,7 @@ def get_events_list() -> List[str]:
     ]
 
 
-def set_params(input: Namespace) -> Dict:
+def set_params(input: Union[Dict, Namespace]) -> Dict:
     def getter(attr, default):
         if isinstance(input, dict):
             return input.get(attr, default)
@@ -232,6 +232,7 @@ def set_params(input: Namespace) -> Dict:
         params[e] = getter(e, None)
 
     for sp in (
+        "state",
         "change_ids",
         "exclude_authors",
         "authors",
@@ -241,6 +242,6 @@ def set_params(input: Namespace) -> Dict:
         "task_severity",
         "task_type",
     ):
-        if params[sp]:
+        if params.get(sp):
             params[sp] = params[sp].split(",")
     return params

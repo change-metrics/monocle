@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- [web] Change state filter becomes a multi-term field
 - [web] change terminology from "average to" to "mean time to".
 - [compose] Renamed MONOCLE_URL into MONOCLE_PUBLIC_URL
 - [compose] Replaced the node http serve with nginx

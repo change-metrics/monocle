@@ -37,7 +37,7 @@ import {
 class RepoChangesTable extends React.Component {
   createLink(index, name, type, field) {
     const search = new URLSearchParams(window.location.search)
-    if (type === 'ALL') {
+    if (type === undefined) {
       search.delete('state')
     } else {
       search.set('state', type)
@@ -77,7 +77,7 @@ class RepoChangesTable extends React.Component {
                         {this.createLink(
                           this.props.index,
                           name,
-                          'ALL',
+                          undefined,
                           'changes'
                         )}
                       </td>
