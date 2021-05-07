@@ -20,6 +20,7 @@ import qualified Control.DeepSeq as Hs
 import qualified Control.Monad as Hs
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding as Aeson
+import qualified Data.Aeson.Types as Aeson
 import qualified Data.ByteString as Hs
 import qualified Data.Coerce as Hs
 import qualified Data.Int as Hs (Int16, Int32, Int64)
@@ -28,6 +29,7 @@ import qualified Data.Map as Hs (Map, mapKeysMonotonic)
 import qualified Data.Proxy as Proxy
 import qualified Data.String as Hs (fromString)
 import qualified Data.Text.Lazy as Hs (Text)
+import qualified Data.Text.Lazy as Text
 import qualified Data.Time.Clock as Time
 import qualified Data.Time.Clock.System as Time
 import qualified Data.Time.Format as Time
@@ -112,6 +114,13 @@ fromUtcTime utc = Timestamp sec (Hs.fromInteger (Hs.toInteger nano))
 toUtcTime :: Timestamp -> Time.UTCTime
 toUtcTime (Timestamp sec nano) = Time.systemToUTCTime (Time.MkSystemTime sec (Hs.fromInteger (Hs.toInteger nano)))
 
+fromText :: R.Text -> Hs.Maybe Timestamp
+fromText txt = do
+  Time.MkSystemTime sec nano <-
+    Time.utcToSystemTime
+      <$> Time.parseTimeM Hs.False Time.defaultTimeLocale rfc3339Format (R.toString txt)
+  Hs.pure (Timestamp sec (Hs.fromInteger (Hs.toInteger nano)))
+
 encodeRFC3339 :: Timestamp -> Hs.String
 encodeRFC3339 ts = Time.formatTime Time.defaultTimeLocale rfc3339Format (toUtcTime ts)
 
@@ -119,14 +128,12 @@ instance HsJSONPB.ToJSONPB Timestamp where
   toJSONPB ts _opt = HsJSONPB.String (R.toText (encodeRFC3339 ts))
 
 instance HsJSONPB.FromJSONPB Timestamp where
-  parseJSONPB = Aeson.withText "Timestamp" parseRFC3339
+  parseJSONPB = Aeson.withText "Timestamp" tryParse
     where
-      parseRFC3339 txt = do
-        Time.MkSystemTime sec nano <-
-          Time.utcToSystemTime
-            <$> Time.parseTimeM Hs.False Time.defaultTimeLocale rfc3339Format (R.toString txt)
-
-        Hs.pure (Timestamp sec (Hs.fromInteger (Hs.toInteger nano)))
+      tryParse :: R.Text -> Aeson.Parser Timestamp
+      tryParse txt = case fromText txt of
+        Hs.Just ts -> Hs.pure ts
+        Hs.Nothing -> Hs.mzero
 
 instance HsJSONPB.ToJSON Timestamp where
   toJSON = HsJSONPB.toAesonValue
