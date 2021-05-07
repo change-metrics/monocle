@@ -22,11 +22,16 @@ let readWindowLocationSearch = () => windowLocationSearch
 // A temporary module to provide runtime setting
 module Env = {
   type t = {
-    @as("REACT_APP_RHBZ")
-    rhbz: option<string>,
+    @as("TD")
+    td: string,
   }
-  @val @scope("process") external env: t = "env"
-  let withBZ = env.rhbz->Belt.Option.isSome
+  type react_env = {
+    @as("REACT_APP_TD")
+    td: option<string>
+  }
+  @val external env: t = "window"
+  @val @scope("process") external react_env: react_env = "env"
+  let withBZ = env.td != "__TD__" || (react_env.td->Belt.Option.getWithDefault("false") != "false")
   let bzPriority = list{"urgent", "high", "medium", "low"}
   let bzType = list{"FutureFeature", "ZStream", "Triaged"}
 }
@@ -113,6 +118,14 @@ let maybeRenderList = (xs: list<'a>, component) =>
   | list{} => React.null
   | _ => component
   }
+let lower = s => s->Js.String.toLowerCase
+
+// the take from haskell prelude
+let rec take: (list<'a>, int) => list<'a> = (xs, count) =>
+  switch xs {
+  | list{x, ...tail} if count > 0 => tail->take(count - 1)->Belt.List.add(x)
+  | _ => list{}
+  }
 
 // Check if a text list contains an element
 let elemText = (xs: list<string>, x: string) => xs->Belt.List.has(x, (a, b) => a == b)
@@ -193,26 +206,61 @@ module MStackItem = {
 }
 
 module MSelect = {
+  let maxCount = 20
+
   @react.component
-  let make = (~value: string, ~placeholder: string, ~options, ~valueChanged) => {
+  let make = (
+    ~value: string,
+    ~placeholder: string,
+    ~multi: bool=true,
+    ~isCreatable: bool=false,
+    ~options,
+    ~valueChanged,
+  ) => {
     let (isOpen, _, onToggle) = useToggle(false)
+    let selections = value != "" ? Js.String.split(",", value) : []
     let onSelect = (_, newValue, _) => {
-      let nextValue = newValue == value ? "" : newValue
-      valueChanged(nextValue)
+      let nextValues =
+        selections->Js.Array2.includes(newValue)
+          ? selections->Js.Array2.filter(v => v != newValue)
+          : selections->Js.Array2.concat([newValue])
+      nextValues->Js.Array2.joinWith(",")->valueChanged
+      onToggle(false)
+    }
+    let onClear = _ => {
+      valueChanged("")
+    }
+    let onCreateOption = v => {
+      selections->Js.Array2.concat([v])->Js.Array2.joinWith(",")->valueChanged
       onToggle(false)
     }
     let placeholderText = placeholder
-    let selections = value != "" ? [value] : []
+    let variant = multi ? #Typeaheadmulti : #Single
     let inlineFilterPlaceholderText = value != "" ? placeholder ++ ": " ++ value : ""
+    let onFilter = (_, currentInput) => {
+      switch currentInput {
+      | "" => options
+      | _ => options->Belt.List.keep(opt => currentInput->lower->Js.String.startsWith(opt->lower))
+      }
+      ->take(maxCount)
+      ->Belt.List.map(s => <SelectOption key={s} value={s} />)
+      ->Belt.List.toArray
+    }
+
     <Patternfly.Select
-      variant=#Single
+      variant
       placeholderText
       inlineFilterPlaceholderText
       selections
       isOpen
+      onClear
       onSelect
-      onToggle>
+      onCreateOption
+      onFilter
+      onToggle
+      isCreatable>
       {options
+      ->take(maxCount)
       ->mapWithKey((key, name) => <SelectOption key value={name} />)
       ->Belt.List.toArray
       ->React.array}

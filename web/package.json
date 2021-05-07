@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@patternfly/react-core": "^4.106.2",
+    "@patternfly/react-core": "^4.115.2",
     "@rescript/react": "^0.10.2",
-    "@softwarefactory-project/re-patternfly": "^2.0.2",
+    "@softwarefactory-project/re-patternfly": "^2.1.0",
     "axios": "^0.21.1",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.1",
@@ -29,31 +29,37 @@
     "react-redux": "^7.2.3",
     "react-router": "^5.2.0",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^4.0.3",
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",
     "yargs-parser": "^20.2.7"
   },
   "scripts": {
-    "start": "concurrently --names www,res -c green.bold,red.bold,blue.bold npm:react-scripts-start npm:re:watch 1:rs",
-    "react-scripts-start": "react-scripts start",
-    "build": "npm run re:build && env DISABLE_ESLINT_PLUGIN=true react-scripts build",
-    "test": "npm run re:build && react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
+    "start": "mkdir -p build && npm run build && npm run live",
+    "live": "concurrently --names www,res,esb -c green.bold,red.bold,blue.bold npm:dev-server npm:re:watch npm:es:watch",
+    "clean": "npm run re:clean && npm run es:clean",
+    "build": "npm run clean && mkdir -p build && npm run re:build && NODE_ENV='\"production\"' npm run es:build",
+    "test": "npm run re:build && npm run js:test",
     "lint": "eslint -f unix src",
     "format": "eslint --plugin prettier src",
+    "dev-server": "live-server --entry-file=index.html --host=localhost --port=3000 --quiet ./build/",
+    "js:test": "jest --env=jsdom",
+    "es:build": "./build.js",
+    "es:clean": "rm -Rf ./build/",
+    "es:watch": "./build.js watch",
     "re:build": "bsb -make-world",
+    "re:clean": "bsb -clean-world",
     "re:watch": "NINJA_ANSI_FORCED=1 bsb -make-world -w"
   },
   "eslintConfig": {
     "extends": "react-app"
   },
+  "jest": {
+    "moduleNameMapper": {
+      "\\.(css|less|svg)$": "<rootDir>/tests/styleMock.js"
+    }
+  },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
+    "production": [">0.2%", "not dead", "not op_mini all"],
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
@@ -61,10 +67,15 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.13.15",
+    "@babel/preset-react": "^7.13.13",
     "@testing-library/jest-dom": "^5.11.10",
     "@testing-library/react": "^11.2.6",
     "@testing-library/user-event": "^13.1.2",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^26.6.3",
     "bs-platform": "^9.0.2",
+    "esbuild": "^0.11.15",
     "eslint": "^7.24.0",
     "eslint-config-prettier": "^8.2.0",
     "eslint-config-standard": "^16.0.2",
@@ -75,6 +86,8 @@
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-react": "^7.23.2",
     "eslint-plugin-standard": "^4.1.0",
+    "jest": "^26.6.3",
+    "live-server": "^1.2.1",
     "prettier": "^2.2.1"
   }
 }

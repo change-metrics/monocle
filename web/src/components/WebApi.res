@@ -21,6 +21,20 @@ module Config = {
     )
 }
 
+module Search = {
+  @module("axios")
+  external suggestionsRaw: (string, 'a) => axios<'b> = "post"
+
+  let suggestions = (request: SearchTypes.search_suggestions_request): axios<
+    SearchTypes.search_suggestions_response,
+  > =>
+    request->SearchBs.encode_search_suggestions_request
+    |> suggestionsRaw(serverUrl ++ "/api/1/suggestions")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_search_suggestions_response}->Js.Promise.resolve
+    )
+}
+
 module TaskData = {
   @module("axios")
   external commitRaw: (string, 'a) => axios<'b> = "post"

@@ -1,8 +1,8 @@
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-MESSAGES = monocle/config.proto monocle/task_data.proto
-PINCLUDE = -I ./protos/ -I /usr/include
+MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
+PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi
 
@@ -26,7 +26,7 @@ codegen-javascript:
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 
 codegen-openapi:
-	protoc $(PINCLUDE) -I../../googleapis/googleapis/ --openapi_out=./doc/ monocle/http.proto
+	protoc $(PINCLUDE) --openapi_out=./doc/ monocle/http.proto
 	@echo Created doc/openapi.yaml
 
 codegen-with-container:

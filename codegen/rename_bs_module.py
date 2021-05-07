@@ -6,6 +6,8 @@
 
 import sys
 import os
+import re
+import functools
 from pathlib import Path
 
 
@@ -15,6 +17,21 @@ def pascalCase(name):
 
 def pascalCases(name):
     return "".join(map(pascalCase, name.split("_")))
+
+
+def snake_case(name):
+    return "".join([(c if c.islower() else "_" + c.lower()) for c in name])
+
+
+def fix_field_name(content):
+    # the generated encoder/decoder for field names are using camelCase
+    # while python/haskell are using snake_case.
+    # This function fix that:
+    return functools.reduce(
+        lambda acc, field: acc.replace(field, '"' + snake_case(field[1:])),
+        re.findall('"[a-z]+[A-Z][^"]', content),
+        content,
+    )
 
 
 def fix_module(filepath):
@@ -29,12 +46,8 @@ def fix_module(filepath):
     if filepath.name.split(".")[0].endswith("_bs"):
         typeName = pascalCase(filepath.name.split("_bs")[0] + "_types")
         newTypeName = pascalCases(typeName)
-        # TODO(tristanC): figure out a better solution
-        # We are using snake case attribute encoding, patch the decoder:
-        content = content.replace("Regex", "_regex")
-        print("Replaced", typeName, newTypeName)
         content = content.replace(typeName, newTypeName)
-    newFile.write_text(content)
+    newFile.write_text(fix_field_name(content))
 
 
 def fixable_file(filename):

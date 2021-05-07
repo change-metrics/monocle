@@ -114,7 +114,7 @@ def generate_changes_filter(params, qfilter):
     self_merged = params.get("self_merged")
     has_issue_tracker_links = params.get("has_issue_tracker_links")
     if state:
-        qfilter.append({"term": {"state": state}})
+        qfilter.append({"terms": {"state": state}})
     if tests_included:
         qfilter.append(
             {"regexp": {"changed_files.path": {"value": Detector.tests_regexp}}}
@@ -509,7 +509,7 @@ def peers_exchange_strength(es, index, repository_fullname, params):
 def change_merged_count_by_duration(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     body = {
         "aggs": {
             "agg1": {
@@ -535,7 +535,7 @@ def change_merged_count_by_duration(es, index, repository_fullname, params):
 def change_merged_stats_duration(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     body = {
         "aggs": {
             "avg": {"avg": {"field": "duration"}},
@@ -555,7 +555,7 @@ def change_merged_stats_duration(es, index, repository_fullname, params):
 def change_merged_avg_commits(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     body = {
         "aggs": {"agg1": {"avg": {"field": "commit_count"}}},
         "size": 0,
@@ -580,14 +580,14 @@ def changes_with_tests_ratio(es, index, repository_fullname, params):
 def count_opened_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "OPEN"
+    params["state"] = ("OPEN",)
     return count_events(es, index, repository_fullname, params)
 
 
 def count_merged_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     return count_events(es, index, repository_fullname, params)
 
 
@@ -600,7 +600,7 @@ def count_self_merged_changes(es, index, repository_fullname, params):
 def count_abandoned_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "CLOSED"
+    params["state"] = ("CLOSED",)
     return count_events(es, index, repository_fullname, params)
 
 
@@ -724,7 +724,7 @@ def cold_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     size = params.get("size")
     params["etype"] = ("Change",)
-    params["state"] = "OPEN"
+    params["state"] = ("OPEN",)
     changes = _scan(es, index, repository_fullname, params)
     _changes_ids = set([change["change_id"] for change in changes])
     params["etype"] = ("ChangeCommentedEvent", "ChangeReviewedEvent")
@@ -764,7 +764,7 @@ def hot_changes(es, index, repository_fullname, params):
         return {"items": []}
     _params = {
         "etype": ("Change",),
-        "state": "OPEN",
+        "state": ("OPEN",),
         "change_ids": change_ids,
     }
     changes = _scan(es, index, repository_fullname, _params)
@@ -874,7 +874,7 @@ def most_active_authors_stats(es, index, repository_fullname, params):
         params["etype"] = (etype,)
         ret[etype] = events_top_authors(es, index, repository_fullname, params)
     params["etype"] = ("Change",)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     ret["ChangeMergedEvent"] = events_top_authors(
         es, index, repository_fullname, params
     )
@@ -905,13 +905,13 @@ def last_changes(es, index, repository_fullname, params):
 
 def last_merged_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
-    params["state"] = "MERGED"
+    params["state"] = ("MERGED",)
     return last_changes(es, index, repository_fullname, params)
 
 
 def last_opened_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
-    params["state"] = "OPEN"
+    params["state"] = ("OPEN",)
     return last_changes(es, index, repository_fullname, params)
 
 
@@ -925,7 +925,7 @@ def last_state_changed_changes(es, index, repository_fullname, params):
 def oldest_open_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
-    params["state"] = "OPEN"
+    params["state"] = ("OPEN",)
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
         "size": params["size"],

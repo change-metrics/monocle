@@ -385,12 +385,12 @@ class ELmonocleDB:
             "self_merged": {"type": "boolean"},
         }
         self.mapping.update(self.new_fields)
-        settings = {"mappings": {"properties": self.mapping}}
         self.ic = self.es.indices
         if create:
             try:
                 self.ic.get(index=self.index)
             except NotFoundError:
+                settings = {"mappings": {"properties": self.mapping}}
                 self.ic.create(index=self.index, body=settings)
             # The authors_histo is failing on some context with this error when the
             # time slice is large: Must be less than or equal to: [10000] but was [10001]. ()This limit can be

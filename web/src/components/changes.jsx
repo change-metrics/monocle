@@ -323,7 +323,7 @@ class LastChangesNG extends AbstractLastChanges {
     this.state.title = 'Changes'
   }
 
-  extractTime = (x) => x.created_at
+  extractTime(x) { return x.created_at; }
 }
 
 const lastChangesNGMapStateToProps = (state) =>

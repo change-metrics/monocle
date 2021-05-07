@@ -285,9 +285,6 @@ class BaseQueryComponent extends React.Component {
     const state = params.get('state')
     let ret = state
     switch (state) {
-      case 'ALL':
-        ret = undefined
-        break
       case 'SELF-MERGED':
         ret = 'MERGED'
         break

@@ -25,10 +25,7 @@ import PropTypes from 'prop-types'
 import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
 
-const TITLE =
-  window.TITLE && window.TITLE !== '__TITLE__'
-    ? window.TITLE
-    : process.env.REACT_APP_TITLE || 'Monocle'
+const TITLE = window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
 
 class IndexMenu extends React.Component {
   render() {
