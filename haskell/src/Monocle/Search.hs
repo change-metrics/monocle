@@ -4,7 +4,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
@@ -128,6 +127,8 @@ data SearchSuggestionsResponse = SearchSuggestionsResponse
   { searchSuggestionsResponseTaskTypes ::
       Hs.Vector Hs.Text,
     searchSuggestionsResponseAuthors ::
+      Hs.Vector Hs.Text,
+    searchSuggestionsResponseApprovals ::
       Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -144,7 +145,9 @@ instance HsProtobuf.Message SearchSuggestionsResponse where
       { searchSuggestionsResponseTaskTypes =
           searchSuggestionsResponseTaskTypes,
         searchSuggestionsResponseAuthors =
-          searchSuggestionsResponseAuthors
+          searchSuggestionsResponseAuthors,
+        searchSuggestionsResponseApprovals =
+          searchSuggestionsResponseApprovals
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -157,6 +160,12 @@ instance HsProtobuf.Message SearchSuggestionsResponse where
                 (HsProtobuf.FieldNumber 2)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
                     searchSuggestionsResponseAuthors
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    searchSuggestionsResponseApprovals
                 )
             )
           ]
@@ -177,6 +186,13 @@ instance HsProtobuf.Message SearchSuggestionsResponse where
                   (HsProtobuf.FieldNumber 2)
               )
           )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -191,14 +207,25 @@ instance HsProtobuf.Message SearchSuggestionsResponse where
           (HsProtobuf.Single "authors")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "approvals")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB SearchSuggestionsResponse where
-  toJSONPB (SearchSuggestionsResponse f1 f2) =
-    (HsJSONPB.object ["task_types" .= f1, "authors" .= f2])
-  toEncodingPB (SearchSuggestionsResponse f1 f2) =
-    (HsJSONPB.pairs ["task_types" .= f1, "authors" .= f2])
+  toJSONPB (SearchSuggestionsResponse f1 f2 f3) =
+    ( HsJSONPB.object
+        ["task_types" .= f1, "authors" .= f2, "approvals" .= f3]
+    )
+  toEncodingPB (SearchSuggestionsResponse f1 f2 f3) =
+    ( HsJSONPB.pairs
+        ["task_types" .= f1, "authors" .= f2, "approvals" .= f3]
+    )
 
 instance HsJSONPB.FromJSONPB SearchSuggestionsResponse where
   parseJSONPB =
@@ -207,6 +234,7 @@ instance HsJSONPB.FromJSONPB SearchSuggestionsResponse where
         ( \obj ->
             (Hs.pure SearchSuggestionsResponse) <*> obj .: "task_types"
               <*> obj .: "authors"
+              <*> obj .: "approvals"
         )
     )
 
@@ -226,10 +254,13 @@ instance HsJSONPB.ToSchema SearchSuggestionsResponse where
           Proxy.Proxy
       let declare_authors = HsJSONPB.declareSchemaRef
       searchSuggestionsResponseAuthors <- declare_authors Proxy.Proxy
+      let declare_approvals = HsJSONPB.declareSchemaRef
+      searchSuggestionsResponseApprovals <- declare_approvals Proxy.Proxy
       let _ =
             Hs.pure SearchSuggestionsResponse
               <*> HsJSONPB.asProxy declare_task_types
               <*> HsJSONPB.asProxy declare_authors
+              <*> HsJSONPB.asProxy declare_approvals
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -248,6 +279,9 @@ instance HsJSONPB.ToSchema SearchSuggestionsResponse where
                           ),
                           ( "authors",
                             searchSuggestionsResponseAuthors
+                          ),
+                          ( "approvals",
+                            searchSuggestionsResponseApprovals
                           )
                         ]
                   }

@@ -19,6 +19,7 @@ enum TaskDataCommitError {
   UnknownCrawler = 1;
   UnknownApiKey = 2;
   CommitDateInferiorThanPrevious = 3;
+  AddFailed = 4;
 }
 
 message TaskDataCommitResponse {
@@ -44,3 +45,30 @@ message TaskDataGetLastUpdatedResponse {
     google.protobuf.Timestamp timestamp = 2;
   }
  }
+
+message NewTaskData {
+  google.protobuf.Timestamp updated_at = 1;
+  string change_url = 2;
+  repeated string ttype = 3;
+  string tid = 4;
+  string url = 5;
+  string title = 6;
+  string severity = 7;
+  string priority = 8;
+  int32 score = 9;
+}
+
+message AddRequest {
+  string index = 1;
+  string crawler = 2;
+  string apikey = 3;
+  repeated NewTaskData items = 4;
+}
+
+message AddResponse {
+  oneof result {
+    // TODO: define a header message with generic error
+    // then do not re-use the commit error enum.
+    TaskDataCommitError error = 1;
+  }
+}

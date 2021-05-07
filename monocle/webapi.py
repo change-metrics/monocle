@@ -46,11 +46,13 @@ def search_service(app):
 
 
 def task_data_service(app):
-    from monocle.api import task_data_commit, task_data_get_last_updated
+    from monocle.api import task_data_commit, task_data_get_last_updated, task_data_add
     from monocle.messages.task_data_pb2 import TaskDataCommitRequest
     from monocle.messages.task_data_pb2 import TaskDataCommitResponse
     from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedRequest
     from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedResponse
+    from monocle.messages.task_data_pb2 import AddRequest
+    from monocle.messages.task_data_pb2 import AddResponse
 
     def commit_stub() -> None:
         input_data: bytes = request.get_data() or b"{}"
@@ -82,3 +84,14 @@ def task_data_service(app):
         get_last_updated_stub,
         methods=["GET", "POST"],
     )
+
+    def add_stub() -> None:
+        input_data: bytes = request.get_data() or b"{}"
+        input_request: AddRequest = pbjson.Parse(input_data, AddRequest())  # type: ignore
+        output_resp: AddResponse = task_data_add(input_request)
+        json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
+        return app.response_class(
+            response=json_resp, status=200, mimetype="application/json"
+        )
+
+    app.add_url_rule("/api/1/task_data_add", "Add", add_stub, methods=["GET", "POST"])

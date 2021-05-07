@@ -26,3 +26,6 @@ taskDataCommit = monocleReq "api/1/task_data_commit"
 
 taskDataGetLastUpdated :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataGetLastUpdatedRequest -> m TaskDataGetLastUpdatedResponse
 taskDataGetLastUpdated = monocleReq "api/1/task_data_get_last_updated"
+
+taskDataAdd :: (MonadThrow m, MonadIO m) => MonocleClient -> AddRequest -> m AddResponse
+taskDataAdd = monocleReq "api/1/task_data_add"

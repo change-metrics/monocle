@@ -31,10 +31,20 @@ def fix_field_name(content):
         lambda acc, field: acc.replace(field, '"' + snake_case(field[1:])),
         re.findall('"[a-z]+[A-Z][^"]', content),
         content,
-    ).replace(
-        # Fix timestamp message encoding which is a rfc3339 string, not an object
-        'timestamp" (Js.Json.object_',
-        'timestamp" (Js.Json.string',
+    )
+
+
+def fix_timestamp(content):
+    # Fix timestamp message encoding which is a rfc3339 string, not an object
+    return functools.reduce(
+        lambda acc, field: acc.replace(
+            field + '" (Js.Json.object_', field + '" (Js.Json.string'
+        ),
+        # TODO: add new timestamp field to this list, e.g. when this error happens:
+        #   Js.Dict.set json "updated_at" (Js.Json.object_ json');
+        # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
+        ["timestamp", "updated_at", "created_at", "changed_at"],
+        content,
     )
 
 
@@ -51,7 +61,7 @@ def fix_module(filepath):
         typeName = pascalCase(filepath.name.split("_bs")[0] + "_types")
         newTypeName = pascalCases(typeName)
         content = content.replace(typeName, newTypeName)
-    newFile.write_text(fix_field_name(content))
+    newFile.write_text(fix_timestamp(fix_field_name(content)))
 
 
 def fixable_file(filename):

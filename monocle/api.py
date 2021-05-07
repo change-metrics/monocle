@@ -30,6 +30,8 @@ from monocle.messages.task_data_pb2 import (
     TaskDataCommitResponse,
     TaskDataGetLastUpdatedRequest,
     TaskDataGetLastUpdatedResponse,
+    AddRequest,
+    AddResponse,
 )
 import monocle.messages.task_data_pb2 as TD
 from monocle import env
@@ -89,6 +91,11 @@ def task_data_get_last_updated(
     else:
         timestamp.FromJsonString(metadata["last_commit_at"] + "Z")
     return TaskDataGetLastUpdatedResponse(timestamp=timestamp)
+
+
+def task_data_add(request: AddRequest) -> AddResponse:
+    # TODO
+    return AddResponse()
 
 
 def get_top_terms(db, field: str) -> List[str]:
