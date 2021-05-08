@@ -40,6 +40,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/SearchSuggestionsResponse'
+    /api/1/task_data_add:
+        post:
+            summary: Add task data
+            operationId: TaskData_Add
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddResponse'
     /api/1/task_data_commit:
         post:
             summary: Commit the last updated timestamp
@@ -76,6 +93,24 @@ paths:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
 components:
     schemas:
+        AddRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/NewTaskData'
+        AddResponse:
+            properties:
+                error:
+                    type: integer
+                    description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
+                    format: enum
         GetProjectsRequest:
             properties:
                 index:
@@ -86,6 +121,30 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ProjectDefinition'
+        NewTaskData:
+            properties:
+                updated_at:
+                    type: string
+                    format: RFC3339
+                change_url:
+                    type: string
+                ttype:
+                    type: array
+                    items:
+                        type: string
+                tid:
+                    type: string
+                url:
+                    type: string
+                title:
+                    type: string
+                severity:
+                    type: string
+                priority:
+                    type: string
+                score:
+                    type: integer
+                    format: int32
         ProjectDefinition:
             properties:
                 name:

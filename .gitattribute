@@ -4,3 +4,7 @@
 # Protobuf messages
 /monocle/messages/*.py* linguist-generated=true
 /web/src/messages/* linguist-generated=true
+/haskell/src/Monocle/Config.hs linguist-generated=true
+/haskell/src/Monocle/Search.hs linguist-generated=true
+/haskell/src/Monocle/TaskData.hs linguist-generated=true
+/haskell/src/Google/Protobuf/* linguist-generated=true

@@ -58,4 +58,13 @@ module TaskData = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->TaskDataBs.decode_task_data_get_last_updated_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external addRaw: (string, 'a) => axios<'b> = "post"
+
+  let add = (request: TaskDataTypes.add_request): axios<TaskDataTypes.add_response> =>
+    request->TaskDataBs.encode_add_request
+    |> addRaw(serverUrl ++ "/api/1/task_data_add")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->TaskDataBs.decode_add_response}->Js.Promise.resolve
+    )
 }

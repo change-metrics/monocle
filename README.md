@@ -334,26 +334,6 @@ to changes based on a match of the `change_url` field.
 
 #### Endpoints available for a crawler
 
-**POST /api/0/task_data?index=<name>&name=<crawler_name>&apikey=<key>**
-
-This endpoint is protected by an API Key and it accepts a list of task data.
-
-```Shell
-[TASK_DATA]
-
-TASK_DATA: {
-  updated_at: str(%Y-%m-%dT%H:%M:%SZ)
-  change_url: str
-  ttype: List[str]
-  tid: str
-  url: str
-  title: str
-  severity: str
-  priority: str
-  score: str
-}
-```
-
 Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocle-openapi].
 
 #### Task data crawler configuration

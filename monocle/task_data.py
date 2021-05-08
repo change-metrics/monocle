@@ -17,6 +17,7 @@
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
+from monocle.messages.task_data_pb2 import NewTaskData
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,21 @@ class TaskData:
     severity: Optional[str] = None
     priority: Optional[str] = None
     score: Optional[int] = None
+
+
+def toTaskData(crawler: str, ntd: NewTaskData) -> TaskData:
+    return TaskData(
+        crawler,
+        ntd.updated_at.ToDatetime(),
+        ntd.change_url,
+        list(ntd.ttype),
+        ntd.tid,
+        ntd.url,
+        ntd.title,
+        ntd.severity,
+        ntd.priority,
+        ntd.score,
+    )
 
 
 InputTaskData = List[TaskData]

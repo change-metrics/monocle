@@ -4,6 +4,7 @@ isort:skip_file
 """
 import builtins
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
@@ -23,6 +24,7 @@ class _TaskDataCommitError(
     UnknownCrawler = TaskDataCommitError.V(1)
     UnknownApiKey = TaskDataCommitError.V(2)
     CommitDateInferiorThanPrevious = TaskDataCommitError.V(3)
+    AddFailed = TaskDataCommitError.V(4)
 
 class TaskDataCommitError(metaclass=_TaskDataCommitError):
     V = typing.NewType("V", builtins.int)
@@ -31,6 +33,7 @@ UnknownIndex = TaskDataCommitError.V(0)
 UnknownCrawler = TaskDataCommitError.V(1)
 UnknownApiKey = TaskDataCommitError.V(2)
 CommitDateInferiorThanPrevious = TaskDataCommitError.V(3)
+AddFailed = TaskDataCommitError.V(4)
 
 global___TaskDataGetLastUpdatedError = TaskDataGetLastUpdatedError
 
@@ -168,3 +171,130 @@ class TaskDataGetLastUpdatedResponse(google.protobuf.message.Message):
     ) -> typing_extensions.Literal["error", "timestamp"]: ...
 
 global___TaskDataGetLastUpdatedResponse = TaskDataGetLastUpdatedResponse
+
+class NewTaskData(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    UPDATED_AT_FIELD_NUMBER: builtins.int
+    CHANGE_URL_FIELD_NUMBER: builtins.int
+    TTYPE_FIELD_NUMBER: builtins.int
+    TID_FIELD_NUMBER: builtins.int
+    URL_FIELD_NUMBER: builtins.int
+    TITLE_FIELD_NUMBER: builtins.int
+    SEVERITY_FIELD_NUMBER: builtins.int
+    PRIORITY_FIELD_NUMBER: builtins.int
+    SCORE_FIELD_NUMBER: builtins.int
+    change_url: typing.Text = ...
+    ttype: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    tid: typing.Text = ...
+    url: typing.Text = ...
+    title: typing.Text = ...
+    severity: typing.Text = ...
+    priority: typing.Text = ...
+    score: builtins.int = ...
+    @property
+    def updated_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        updated_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        change_url: typing.Text = ...,
+        ttype: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        tid: typing.Text = ...,
+        url: typing.Text = ...,
+        title: typing.Text = ...,
+        severity: typing.Text = ...,
+        priority: typing.Text = ...,
+        score: builtins.int = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["updated_at", b"updated_at"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "change_url",
+            b"change_url",
+            "priority",
+            b"priority",
+            "score",
+            b"score",
+            "severity",
+            b"severity",
+            "tid",
+            b"tid",
+            "title",
+            b"title",
+            "ttype",
+            b"ttype",
+            "updated_at",
+            b"updated_at",
+            "url",
+            b"url",
+        ],
+    ) -> None: ...
+
+global___NewTaskData = NewTaskData
+
+class AddRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    INDEX_FIELD_NUMBER: builtins.int
+    CRAWLER_FIELD_NUMBER: builtins.int
+    APIKEY_FIELD_NUMBER: builtins.int
+    ITEMS_FIELD_NUMBER: builtins.int
+    index: typing.Text = ...
+    crawler: typing.Text = ...
+    apikey: typing.Text = ...
+    @property
+    def items(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___NewTaskData
+    ]: ...
+    def __init__(
+        self,
+        *,
+        index: typing.Text = ...,
+        crawler: typing.Text = ...,
+        apikey: typing.Text = ...,
+        items: typing.Optional[typing.Iterable[global___NewTaskData]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "apikey",
+            b"apikey",
+            "crawler",
+            b"crawler",
+            "index",
+            b"index",
+            "items",
+            b"items",
+        ],
+    ) -> None: ...
+
+global___AddRequest = AddRequest
+
+class AddResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ERROR_FIELD_NUMBER: builtins.int
+    error: global___TaskDataCommitError.V = ...
+    def __init__(
+        self,
+        *,
+        error: global___TaskDataCommitError.V = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal["error", b"error", "result", b"result"],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal["error", b"error", "result", b"result"],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["result", b"result"]
+    ) -> typing_extensions.Literal["error"]: ...
+
+global___AddResponse = AddResponse
