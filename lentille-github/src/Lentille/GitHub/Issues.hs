@@ -12,6 +12,7 @@
 
 module Lentille.GitHub.Issues where
 
+import Data.Aeson (decode)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Calendar
@@ -118,7 +119,7 @@ transformResponse searchResult =
         0
       where
         getIssueURL :: SearchNodesSearchResultItem -> Text
-        getIssueURL (SearchNodesIssue _ _ _ changeURL _ _) = show changeURL
+        getIssueURL (SearchNodesIssue _ _ _ issueURI _ _) = decodeURI issueURI
         getIssueID :: SearchNodesSearchResultItem -> Text
         getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
     getUpdatedAt :: SearchNodesSearchResultItem -> Timestamp
@@ -159,7 +160,11 @@ transformResponse searchResult =
     extractUrl item = case item of
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
-            (SearchNodesTimelineItemsNodesSubjectPullRequest (url))
-          ) -> show url
+            (SearchNodesTimelineItemsNodesSubjectPullRequest changeURI)
+          ) -> decodeURI changeURI
       -- We are requesting Issue with connected PR we cannot get Nothing
       Nothing -> error ("Missing PR URI in SearchNodesTimelineItemsNodesSubjectPullRequest")
+    decodeURI :: URI -> Text
+    decodeURI (URI uri) = case (decode (show uri) :: Maybe Text) of
+      Just uri' -> uri'
+      Nothing -> error "Unable to decode URI: " <> show uri
