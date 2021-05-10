@@ -45,7 +45,11 @@ fi
 
 if [ "$1" == "create" ]; then
 
-    podman pod create -p 9200:9200 -p 9876:9876 -p 8080:8080 -n monocle
+    [ -n "WITH_KIBANA" ] && {
+        KIBANA_PORT="-p 5601:5601"
+    }
+
+    podman pod create -p 9200:9200 -p 9876:9876 -p 8080:8080 $KIBANA_PORT -n monocle
 
     podman create --name=elastic \
                --pod monocle \
@@ -54,6 +58,15 @@ if [ "$1" == "create" ]; then
                --ulimit nofile=65535:65535 \
                -v ./data:/usr/share/elasticsearch/data:Z \
                docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+
+    [ -n "WITH_KIBANA" ] && {
+        podman create --name=kibana \
+                   --pod monocle \
+                   --add-host elastic:127.0.0.1 \
+                   -e ES_JAVA_OPTS="-Xms512m -Xmx512m" \
+                   -e ELASTICSEARCH_HOSTS="http://elastic:9200" \
+                   docker.elastic.co/kibana/kibana:7.10.1
+    }
 
     podman create --name=api \
                --pod monocle \
