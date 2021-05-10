@@ -35,6 +35,12 @@ newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
+-- The query muste use the filter "linked:pr" filter. steamLinkedIssue ensures this.
+-- CONNECTED_EVENT happens when a LINK is performed manually though the GH UI.
+-- CROSS_CONNECTED_EVENT happens when a PR reference an issue in some way
+--  Most of the time this is used by developers to reference an issue in
+--  the PR description or in a commit messages.
+-- See GH documentation https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue
 defineByDocumentFile
   schemaLocation
   [gql|
@@ -58,12 +64,18 @@ defineByDocumentFile
                 name
               }
             }
-            timelineItems(first: 100, itemTypes: [CONNECTED_EVENT]) {
+            timelineItems(first: 100, itemTypes: [CONNECTED_EVENT, CROSS_REFERENCED_EVENT]) {
               nodes {
+                __typename
+                ... on CrossReferencedEvent {
+                   source {
+                      ... on PullRequest {url}
+                   }
+                }
                 ... on ConnectedEvent {
-                  subject {
-                    ... on PullRequest {url}
-                  }
+                   subject {
+                     ... on PullRequest {url}
+                   }
                 }
               }
             }
@@ -80,7 +92,7 @@ streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> Stream (Of NewT
 streamLinkedIssue client searchText =
   streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor = GetLinkedIssuesArgs searchText $ toCursorM cursor
+    mkArgs cursor = GetLinkedIssuesArgs (searchText <> " linked:pr") $ toCursorM cursor
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
@@ -160,11 +172,13 @@ transformResponse searchResult =
     extractUrl item = case item of
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
-            (SearchNodesTimelineItemsNodesSubjectPullRequest changeURI)
-          ) -> decodeURI changeURI
+            "ConnectedEvent"
+            (SearchNodesTimelineItemsNodesSubjectPullRequest (url))
+          ) -> show url
+      Just
+        ( SearchNodesTimelineItemsNodesCrossReferencedEvent
+            "CrossReferencedEvent"
+            (SearchNodesTimelineItemsNodesSourcePullRequest (url))
+          ) -> show url
       -- We are requesting Issue with connected PR we cannot get Nothing
-      Nothing -> error ("Missing PR URI in SearchNodesTimelineItemsNodesSubjectPullRequest")
-    decodeURI :: URI -> Text
-    decodeURI (URI uri) = case (decode (show uri) :: Maybe Text) of
-      Just uri' -> uri'
-      Nothing -> error "Unable to decode URI: " <> show uri
+      _ -> error ("Missing PR URI")

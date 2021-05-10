@@ -73,7 +73,6 @@ main = do
           toString $
             unwords
               [ "repo:" <> repo',
-                "linked:pr",
                 "updated:>=" <> toSimpleDate utctime
               ]
         toSimpleDate :: UTCTime -> Text
