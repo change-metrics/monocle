@@ -4,14 +4,19 @@
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
-codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi
+codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../monocle/webapi.py ../srcgen/WebApi.res)
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/WebApi.hs ../monocle/webapi.py ../srcgen/WebApi.res)
+	ormolu -i ./haskell/src/Monocle/WebApi.hs
 	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
+
+codegen-haskell:
+	sh -c 'for pb in $(MESSAGES); do compile-proto-file --includeDir /usr/include --includeDir protos/ --proto $${pb} --out haskell/src/; done'
+	find haskell/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
 	protoc $(PINCLUDE) --python_out=./monocle/messages --mypy_out=./monocle/messages $(MESSAGES)
@@ -21,7 +26,6 @@ codegen-python:
 
 codegen-javascript:
 	rm -f web/src/messages/*
-	ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages /usr/include/google/protobuf/timestamp.proto
 	sh -c 'for pb in $(MESSAGES); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ protos/$${pb}; done'
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 

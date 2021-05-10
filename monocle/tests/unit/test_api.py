@@ -196,52 +196,33 @@ tenants:
     def test_task_data_post(self):
         "Test post on task_data endpoint"
         # First try some faulty requests
-        resp = self.client.post("/api/0/task_data?index=%s" % self.index2, json="")
-        self.assertEqual(404, resp.status_code)
-        self.check_APIErr_msg("No crawler name provided", resp)
+        posturl = "/api/1/task_data_add"
+        postdata = dict(index=self.index2)
 
-        resp = self.client.post(
-            "/api/0/task_data?index=%s&apikey=badkey" % self.index2, json=""
-        )
-        self.assertEqual(404, resp.status_code)
-        self.check_APIErr_msg("No crawler name provided", resp)
+        def _post(body):
+            return json.loads(self.client.post(posturl, json=body).data)
 
-        resp = self.client.post(
-            "/api/0/task_data?index=%s&apikey=badkey&name=myttcrawler" % self.index2,
-            json="",
-        )
-        self.assertEqual(403, resp.status_code)
-        self.check_APIErr_msg("Not authorized", resp)
+        resp = _post(dict(index=self.index2))
+        self.assertEqual("UnknownCrawler", resp.get("error"))
 
-        url = "/api/0/task_data?index=%s&apikey=%s&name=%s" % (
-            self.index2,
-            self.apikey,
-            "myttcrawler",
-        )
+        resp = _post(dict(index=self.index2, crawler="myttcrawler", apikey="badkey"))
+        self.assertEqual("UnknownApiKey", resp.get("error"))
 
-        resp = self.client.post(url, json="data")
-        self.assertEqual(400, resp.status_code)
-        self.check_APIErr_msg("Input data is not a List", resp)
+        postdata = dict(index=self.index2, apikey=self.apikey, crawler="myttcrawler")
+        resp = _post(postdata)
+        self.assertEqual("AddFailed", resp.get("error"))
 
-        resp = self.client.post(
-            url,
-            json=list(range(webapp.INPUT_TASK_DATA_LIMIT + 1)),
-        )
-        self.assertEqual(400, resp.status_code)
-        self.check_APIErr_msg("Input data List over limit (500 items)", resp)
+        # TODO: handle parse error in webapi
+        # postdata.update(dict(
+        #    items=list(range(webapp.INPUT_TASK_DATA_LIMIT + 1)),
+        # ))
+        # resp = _post(postdata)
+        # self.assertEqual("AddFailed", resp.get("error"))
 
-        resp = self.client.post(
-            url,
-            json=[{"do": "you", "eat": "that"}],
-        )
-        self.assertEqual(400, resp.status_code)
-        self.check_APIErr_msg(
-            (
-                "Unable to extract input data due to wrong input format: "
-                "Missing mandatory field:",
-            ),
-            resp,
-        )
+        # postdata.update(dict(
+        #     items=[{"do": "you", "eat": "that"}]
+        # ))
+        # resp = _post(postdata)
 
         # Now test a working workflow
         resp = self.client.get(
@@ -261,8 +242,9 @@ tenants:
                 "title": "Implement feature XYZ",
             }
         ]
-        resp = self.client.post(url, json=task_data)
-        self.assertEqual(200, resp.status_code)
+        postdata.update(dict(items=task_data))
+        resp = _post(postdata)
+        print("HERE", resp)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
             "/api/0/query/changes?index=%s&repository=.*&change_ids=unit@repo1@1"
@@ -310,8 +292,8 @@ tenants:
                 "title": "Implement feature XYZ",
             },
         ]
-        resp = self.client.post(url, json=task_data)
-        self.assertEqual(200, resp.status_code)
+        postdata.update(dict(items=task_data))
+        resp = _post(postdata)
         webapp.cache.delete_memoized(webapp.do_query)
         resp = self.client.get(
             "/api/0/query/changes_and_events?index=%s&repository=.*&change_ids=unit@repo1@1"

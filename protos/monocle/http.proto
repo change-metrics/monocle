@@ -50,6 +50,14 @@ service TaskData {
       body: "*"
     };
   }
+
+  // Add task data
+  rpc Add(monocle_task_data.AddRequest) returns (monocle_task_data.AddResponse) {
+    option (google.api.http) = {
+      post: "/api/1/task_data_add"
+      body: "*"
+    };
+  }
 }
 
 // The monocle HTTP API

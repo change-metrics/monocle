@@ -20,9 +20,21 @@ let
   ];
 
   # define the haskell toolchain
-  hsPkgs = pkgs.haskellPackages;
+  grpc-haskell-src = pkgs.fetchFromGitHub {
+    owner = "awakesecurity";
+    repo = "gRPC-haskell";
+    rev = "d821e58c2b72f127ce5b74b69dac8cf3d7f558ad";
+    sha256 = "1ms6v58rznkqk4807n9yr888lf0bbn7p7a9mjwmbdckc1pa1gxdv";
+  };
+  grpc-overlay = (import "${grpc-haskell-src}/release.nix").overlay;
+  grpc-nixpkgs = (import "${grpc-haskell-src}/nixpkgs.nix");
+  grpc-pkgs = grpc-nixpkgs {
+    overlays = [ grpc-overlay ];
+    config = { allowBroken = true; };
+  };
+  hsPkgs = grpc-pkgs.haskellPackages;
   ghc = hsPkgs.ghcWithPackages (p: [ p.language-protobuf p.relude ]);
-  hs-req = [ ghc hsPkgs.cabal-install ];
+  hs-req = [ ghc hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite ];
 
   # define python requirements
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
