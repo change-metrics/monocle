@@ -7,7 +7,7 @@ const isProd = process.env.NODE_ENV === '"production"'
 // Build time options:
 const optionDefault = (option, defaultValue) => typeof option !== 'undefined' ? ('"' + option + '"') : defaultValue
 const title = optionDefault(process.env.REACT_APP_TITLE, '"Monocle"')
-const api_url = optionDefault(process.env.REACT_APP_API_URL, '"http://localhost:9876"')
+const api_url = optionDefault(process.env.REACT_APP_API_URL, '""')
 const td = optionDefault(process.env.REACT_APP_TD, '"false"')
 
 const esbuildOptions = {
