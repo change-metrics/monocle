@@ -281,6 +281,7 @@ module Field = {
           }
         | Choice(Projects(options)) =>
           <MSelect
+            multi={false}
             placeholder={filter.description}
             options
             valueChanged={v => projectOnChange(v, ())}
