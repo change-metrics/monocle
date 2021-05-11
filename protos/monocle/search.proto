@@ -13,4 +13,6 @@ message SearchSuggestionsResponse {
   repeated string task_types = 1;
   repeated string authors = 2;
   repeated string approvals = 3;
+  repeated string priorities = 4;
+  repeated string severities = 5;
 }

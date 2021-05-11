@@ -173,6 +173,14 @@ components:
                     type: array
                     items:
                         type: string
+                priorities:
+                    type: array
+                    items:
+                        type: string
+                severities:
+                    type: array
+                    items:
+                        type: string
         TaskDataCommitRequest:
             properties:
                 index:
