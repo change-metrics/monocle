@@ -27,11 +27,10 @@ module Env = {
   }
   type react_env = {
     @as("REACT_APP_TD")
-    td: option<string>
+    td: option<string>,
   }
   @val external env: t = "window"
   @val @scope("process") external react_env: react_env = "env"
-  let withBZ = env.td != "__TD__" || (react_env.td->Belt.Option.getWithDefault("false") != "false")
   let bzPriority = list{"urgent", "high", "medium", "low"}
   let bzType = list{"FutureFeature", "ZStream", "Triaged"}
 }

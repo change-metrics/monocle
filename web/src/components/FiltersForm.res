@@ -400,7 +400,7 @@ module FilterBox = {
             </FieldGroup>
             <FieldGroup> <Field name="state" states /> </FieldGroup>
           </>)}
-          {Env.withBZ->maybeRender(
+          {suggestions.task_types->maybeRenderList(
             <FieldGroup>
               <Field name="task_priority" states />
               <Field name="task_severity" states />
