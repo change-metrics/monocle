@@ -20,18 +20,18 @@ external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
 // A temporary module to provide runtime setting
-module Env = {
-  type t = {
-    @as("TD")
-    td: string,
-  }
-  type react_env = {
-    @as("REACT_APP_TD")
-    td: option<string>,
-  }
-  @val external env: t = "window"
-  @val @scope("process") external react_env: react_env = "env"
-}
+// module Env = {
+//   type t = {
+//     @as("TD")
+//     td: string,
+//   }
+//   type react_env = {
+//     @as("REACT_APP_TD")
+//     td: option<string>,
+//   }
+//   @val external env: t = "window"
+//   @val @scope("process") external react_env: react_env = "env"
+// }
 
 module Time = {
   type t

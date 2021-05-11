@@ -8,7 +8,6 @@ const isProd = process.env.NODE_ENV === '"production"'
 const optionDefault = (option, defaultValue) => typeof option !== 'undefined' ? ('"' + option + '"') : defaultValue
 const title = optionDefault(process.env.REACT_APP_TITLE, '"Monocle"')
 const api_url = optionDefault(process.env.REACT_APP_API_URL, '""')
-const td = optionDefault(process.env.REACT_APP_TD, '"false"')
 
 const esbuildOptions = {
   entryPoints: ['./src/index.jsx'],
@@ -22,7 +21,6 @@ const esbuildOptions = {
     'process.env.NODE_ENV': isProd ? '"production"' : '"development"',
     'process.env.REACT_APP_TITLE': title,
     'process.env.REACT_APP_API_URL': api_url,
-    'process.env.REACT_APP_TD': td,
     global: 'window'
   },
   loader: {
