@@ -31,8 +31,6 @@ module Env = {
   }
   @val external env: t = "window"
   @val @scope("process") external react_env: react_env = "env"
-  let bzPriority = list{"urgent", "high", "medium", "low"}
-  let bzType = list{"FutureFeature", "ZStream", "Triaged"}
 }
 
 module Time = {

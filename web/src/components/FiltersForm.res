@@ -117,14 +117,6 @@ module Filters = {
         RelativeDates(RelativeDate.rdates),
       ),
     ),
-    (
-      "task_priority",
-      Filter.makeChoice("Task priority", "Filter by priority", Keywords(Env.bzPriority)),
-    ),
-    (
-      "task_severity",
-      Filter.makeChoice("Task severity", "Filter by severity", Keywords(Env.bzPriority)),
-    ),
   ]
 
   // Helper functions:
@@ -356,7 +348,23 @@ module FilterBox = {
       ),
       (
         "task_type",
-        Filter.makeChoice("Task type", "Filter by task type", suggestions.task_types->Keywords),
+        Filter.makeChoice("Task type", "Filter by task type", suggestions.task_types->Suggestions),
+      ),
+      (
+        "task_priority",
+        Filter.makeChoice(
+          "Task priority",
+          "Filter by priority",
+          suggestions.priorities->Suggestions,
+        ),
+      ),
+      (
+        "task_severity",
+        Filter.makeChoice(
+          "Task severity",
+          "Filter by severity",
+          suggestions.severities->Suggestions,
+        ),
       ),
       ("authors", Filter.makeChoice("Authors", "Author names", suggestions.authors->Suggestions)),
       (
