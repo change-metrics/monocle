@@ -53,7 +53,7 @@ testSearchBugs = testCase "searchBugs" go
     sinceTS = fromMaybe (error "Oops") $ readMaybe "2021-04-01 00:00:00 UTC"
     go = do
       bzSession <- bugzillaMockClient
-      bugs <- BZ.searchBugsAll bzSession (searchExpr sinceTS)
+      bugs <- BZ.searchBugsAll bzSession (searchExpr sinceTS "")
       -- print (length $ bugs)
       -- print (head <$> nonEmpty bugs)
       assertBool "Got bugs" (not . null $ bugs)

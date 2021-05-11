@@ -22,6 +22,7 @@ data LentilleCli w = LentilleCli
     index :: w ::: Text <?> "The index name",
     crawlerName :: w ::: Text <?> "The name of the crawler",
     bugzillaUrl :: w ::: Maybe Text <?> "The bugzilla url",
+    bugzillaProduct :: w ::: Text <?> "The bugzilla product name",
     since :: w ::: Maybe String <?> "Get bugs since",
     printBugs :: w ::: Bool <?> "Just print bugs, to not amend monocle"
   }
@@ -58,7 +59,7 @@ main = do
           sinceTS = fromMaybe (error "Couldn't parse since") sinceTSM
       bzSession <- getBugzillaSession bzUrl bzKeyM
       if printBugs args
-        then S.mapM_ print (getBZData bzSession sinceTS)
+        then S.mapM_ print (getBZData bzSession (bugzillaProduct args) sinceTS)
         else withClient (monocleUrl args) Nothing $ \client ->
           run
             client
@@ -66,4 +67,4 @@ main = do
             apiKey
             (index $ args)
             (crawlerName $ args)
-            (TaskDataFetcher (getBZData bzSession))
+            (TaskDataFetcher (getBZData bzSession (bugzillaProduct args)))

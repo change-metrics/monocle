@@ -36,11 +36,11 @@ import qualified Web.Bugzilla.RedHat.Search as BZS
 -------------------------------------------------------------------------------
 -- BugZilla system
 -------------------------------------------------------------------------------
-searchExpr :: UTCTime -> BZS.SearchExpression
-searchExpr sinceTS = since .&&. linkId .&&. productField
+searchExpr :: UTCTime -> Text -> BZS.SearchExpression
+searchExpr sinceTS product' = since .&&. linkId .&&. productField
   where
     linkId = BZS.isNotEmpty $ BZS.CustomField "ext_bz_bug_map.ext_bz_bug_id"
-    productField = BZS.ProductField .==. "Red Hat OpenStack"
+    productField = BZS.ProductField .==. product'
     since = BZS.changedSince sinceTS
 
 -- | The data type containing the included fields
@@ -119,16 +119,18 @@ getBugsWithScore ::
   BugzillaSession ->
   -- | The last changed date
   UTCTime ->
+  -- | The product name
+  Text ->
   -- | The limit
   Int ->
   -- | The offset
   Int ->
   m [BugWithScore]
-getBugsWithScore bzSession sinceTS limit offset = getBugs bzSession request
+getBugsWithScore bzSession sinceTS product'' limit offset = getBugs bzSession request
   where
     request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
     page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
-    searchQuery = BZS.evalSearchExpr $ searchExpr sinceTS
+    searchQuery = BZS.evalSearchExpr $ (searchExpr sinceTS product'')
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
 toTaskData :: BugWithScore -> [NewTaskData]
@@ -153,13 +155,14 @@ toTaskData bz = map mkTaskData ebugs
         (fromInteger . toInteger . bugPmScore $ bz)
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> UTCTime -> Stream (Of NewTaskData) m ()
-getBZData bzSession sinceTS = go 0
+getBZData ::
+  (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> Text -> UTCTime -> Stream (Of NewTaskData) m ()
+getBZData bzSession product''' sinceTS = go 0
   where
     limit = 100
     doGet :: MonadIO m => Int -> m [BugWithScore]
     doGet offset =
-      liftIO $ getBugsWithScore bzSession sinceTS limit offset
+      liftIO $ getBugsWithScore bzSession sinceTS product''' limit offset
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do
