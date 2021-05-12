@@ -14,6 +14,7 @@ module TaskData = {
     tid: string,
     severity: string,
     priority: string,
+    score: string,
   }
 
   module TaskType = {
@@ -42,6 +43,14 @@ module TaskData = {
     }
   }
 
+  module TaskScore = {
+    @react.component
+    let make = (~score) => {
+      let label = "Score: " ++ score
+      <Patternfly.Label> {label} </Patternfly.Label>
+    }
+  }
+
   module TaskLink = {
     @react.component
     let make = (~td) =>
@@ -59,6 +68,7 @@ module TaskData = {
       <TaskLink td />
       <TaskPS ps=td.priority name="Priority" />
       <TaskPS ps=td.severity name="Severity" />
+      <TaskScore score=td.score />
       <Patternfly.LabelGroup>
         <Patternfly.LabelGroup categoryName="Type">
           {td.ttype->Belt.Array.map(x => <TaskType ttype={x} />)}
