@@ -191,6 +191,11 @@ def main() -> None:
         help="Scope to changes related to task type (comma separated)",
     )
 
+    parser_dbquery.add_argument(
+        "--task-score",
+        help="Scope to changes related to task score '<op>: <val>'",
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(

@@ -153,6 +153,7 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
     target_branch = params.get("target_branch")
     task_priority = params.get("task_priority")
     task_severity = params.get("task_severity")
+    task_score = params.get("task_score")
     task_type = params.get("task_type")
     files = params.get("files")
     project = params.get("project")
@@ -194,6 +195,22 @@ def generate_filter(es, index, repository_fullname, params, ensure_time_range=Tr
         qfilter.append({"terms": {"tasks_data.severity": task_severity}})
     if task_type:
         qfilter.append({"terms": {"tasks_data.ttype": task_type}})
+    if task_score:
+        if task_score[0] == "==":
+            qfilter.append(
+                {
+                    "range": {
+                        "tasks_data.score": {
+                            "gte": task_score[1],
+                            "lte": task_score[1],
+                        }
+                    }
+                }
+            )
+        else:
+            qfilter.append(
+                {"range": {"tasks_data.score": {task_score[0]: task_score[1]}}}
+            )
 
     must_not = []
     if exclude_authors:

@@ -53,6 +53,7 @@ class TestQueries(unittest.TestCase):
                 url="https://bugtracker.domain.dom/123",
                 title="It does not work",
                 priority="HIGH",
+                score=50,
             ),
         ),
         OrphanTaskDataForEL(
@@ -83,6 +84,7 @@ class TestQueries(unittest.TestCase):
                 url="https://bugtracker.domain.dom/125",
                 title="It does not work",
                 priority="LOW",
+                score=10,
             ),
         ),
     ]
@@ -366,6 +368,26 @@ class TestQueries(unittest.TestCase):
         ret = self.eldb.run_named_query("changes_and_events", ".*", params)
         self.assertEqual(ret["total"], 2, ret)
         self.assertListEqual([o["id"] for o in ret["items"]], ["c1", "c1_e2"])
+
+        params = set_params({"task_score": "> 10"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
+
+        params = set_params({"task_score": ">= 10"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 2, ret)
+
+        params = set_params({"task_score": "< 10"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 0, ret)
+
+        params = set_params({"task_score": "== 50"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 1, ret)
+
+        params = set_params({"task_score": "== 51"})
+        ret = self.eldb.run_named_query("last_changes", ".*", params)
+        self.assertEqual(ret["total"], 0, ret)
 
     def test_exclude_approvals_param(self):
         """

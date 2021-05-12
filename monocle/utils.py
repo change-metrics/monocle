@@ -24,7 +24,9 @@ from datetime import datetime
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
+
+score_m_re = re.compile(r"^(?P<op>==|\>|\>=|\<|\<=)\s*(?P<val>\d+)$")
 
 
 def utcnow():
@@ -192,6 +194,28 @@ def get_events_list() -> List[str]:
     ]
 
 
+class ParseScoreQSInputError(Exception):
+    pass
+
+
+def parse_score(input_value: str) -> Tuple[str, int]:
+    _input_value = input_value.strip()
+    m = score_m_re.match(_input_value)
+    if not m:
+        raise ParseScoreQSInputError(_input_value)
+    d = m.groupdict()
+    op = "gte"
+    if d["op"] == ">":
+        op = "gt"
+    if d["op"] == "<":
+        op = "lt"
+    if d["op"] == "<=":
+        op = "lte"
+    if d["op"] == "==":
+        op = "=="
+    return (op, int(d["val"]))
+
+
 def set_params(input: Union[Dict, Namespace]) -> Dict:
     def getter(attr, default):
         if isinstance(input, dict):
@@ -227,6 +251,7 @@ def set_params(input: Union[Dict, Namespace]) -> Dict:
         "task_type",
         "task_priority",
         "task_severity",
+        "task_score",
         "project",
     ):
         params[e] = getter(e, None)
@@ -244,4 +269,11 @@ def set_params(input: Union[Dict, Namespace]) -> Dict:
     ):
         if params.get(sp):
             params[sp] = params[sp].split(",")
+
+    if params.get("task_score"):
+        try:
+            params["task_score"] = parse_score(params["task_score"])
+        except ParseScoreQSInputError:
+            params["task_score"] = None
+
     return params
