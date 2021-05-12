@@ -19,12 +19,7 @@ module TaskData = {
 
   module TaskType = {
     @react.component
-    let make = (~ttype: string) =>
-      switch ttype {
-      | "FutureFeature" =>
-        <Patternfly.Label icon={<Patternfly.Icons.Enhancement />}> {"RFE"->str} </Patternfly.Label>
-      | x => <Patternfly.Label> {x->str} </Patternfly.Label>
-      }
+    let make = (~ttype: string) => <Patternfly.Label> {ttype->str} </Patternfly.Label>
   }
 
   module TaskPS = {
