@@ -206,7 +206,9 @@ def get_top_terms(db, field: str) -> List[str]:
 def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsResponse:
     db = create_db_connection(request.index)
     return SearchSuggestionsResponse(
-        task_types=get_top_terms(db, "tasks_data.ttype"),
         authors=get_top_terms(db, "author.muid"),
         approvals=get_top_terms(db, "approval"),
+        task_types=get_top_terms(db, "tasks_data.ttype"),
+        severities=get_top_terms(db, "tasks_data.severity"),
+        priorities=get_top_terms(db, "tasks_data.priority"),
     )

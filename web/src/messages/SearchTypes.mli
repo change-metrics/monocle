@@ -12,6 +12,8 @@ type search_suggestions_response = {
   task_types : string list;
   authors : string list;
   approvals : string list;
+  priorities : string list;
+  severities : string list;
 }
 
 
@@ -27,6 +29,8 @@ val default_search_suggestions_response :
   ?task_types:string list ->
   ?authors:string list ->
   ?approvals:string list ->
+  ?priorities:string list ->
+  ?severities:string list ->
   unit ->
   search_suggestions_response
 (** [default_search_suggestions_response ()] is the default value for type [search_suggestions_response] *)

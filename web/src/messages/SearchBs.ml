@@ -12,12 +12,16 @@ type search_suggestions_response_mutable = {
   mutable task_types : string list;
   mutable authors : string list;
   mutable approvals : string list;
+  mutable priorities : string list;
+  mutable severities : string list;
 }
 
 let default_search_suggestions_response_mutable () : search_suggestions_response_mutable = {
   task_types = [];
   authors = [];
   approvals = [];
+  priorities = [];
+  severities = [];
 }
 
 
@@ -70,6 +74,24 @@ let rec decode_search_suggestions_response json =
         Pbrt_bs.string json "search_suggestions_response" "approvals"
       ) a |> Array.to_list;
     end
+    | "priorities" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "priorities" in 
+        Pbrt_bs.array_ a "search_suggestions_response" "priorities"
+      in
+      v.priorities <- Array.map (fun json -> 
+        Pbrt_bs.string json "search_suggestions_response" "priorities"
+      ) a |> Array.to_list;
+    end
+    | "severities" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "severities" in 
+        Pbrt_bs.array_ a "search_suggestions_response" "severities"
+      in
+      v.severities <- Array.map (fun json -> 
+        Pbrt_bs.string json "search_suggestions_response" "severities"
+      ) a |> Array.to_list;
+    end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -77,6 +99,8 @@ let rec decode_search_suggestions_response json =
     SearchTypes.task_types = v.task_types;
     SearchTypes.authors = v.authors;
     SearchTypes.approvals = v.approvals;
+    SearchTypes.priorities = v.priorities;
+    SearchTypes.severities = v.severities;
   } : SearchTypes.search_suggestions_response)
 
 let rec encode_search_suggestions_request (v:SearchTypes.search_suggestions_request) = 
@@ -92,4 +116,8 @@ let rec encode_search_suggestions_response (v:SearchTypes.search_suggestions_res
   Js.Dict.set json "authors" (Js.Json.array a);
   let a = v.SearchTypes.approvals |> Array.of_list |> Array.map Js.Json.string in
   Js.Dict.set json "approvals" (Js.Json.array a);
+  let a = v.SearchTypes.priorities |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "priorities" (Js.Json.array a);
+  let a = v.SearchTypes.severities |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "severities" (Js.Json.array a);
   json
