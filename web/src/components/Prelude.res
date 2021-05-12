@@ -159,8 +159,11 @@ let useToggle = default => {
 // an expandable panel
 module MExpandablePanel = {
   @react.component
-  let make = (~title, ~children) => {
-    let (show, setShow) = React.useState(_ => false)
+  let make = (~title, ~children, ~stateControler: option<(bool, (bool => bool) => unit)>=?) => {
+    let (show, setShow) = switch stateControler {
+    | Some(s, st) => (s, st)
+    | None => React.useState(_ => false)
+    }
     let toggleProps = {
       "id": "toggle-button",
       "aria-label": "Details",

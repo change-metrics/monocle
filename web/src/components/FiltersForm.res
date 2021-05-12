@@ -386,9 +386,13 @@ module FilterBox = {
         ),
       ),
     ])
-    let onClick = _ => states->Filters.dumps->updateFilters
+    let (show, setShow) = React.useState(_ => false)
+    let onClick = _ => {
+      states->Filters.dumps->updateFilters
+      setShow(show => !show)
+    }
     <MStack>
-      <MExpandablePanel title="Filter">
+      <MExpandablePanel title="Filter" stateControler=(show, setShow)>
         <FieldGroups>
           <FieldGroup>
             <Field name="relativedate" states />
