@@ -14,16 +14,12 @@ module TaskData = {
     tid: string,
     severity: string,
     priority: string,
+    score: string,
   }
 
   module TaskType = {
     @react.component
-    let make = (~ttype: string) =>
-      switch ttype {
-      | "FutureFeature" =>
-        <Patternfly.Label icon={<Patternfly.Icons.Enhancement />}> {"RFE"->str} </Patternfly.Label>
-      | x => <Patternfly.Label> {x->str} </Patternfly.Label>
-      }
+    let make = (~ttype: string) => <Patternfly.Label> {ttype->str} </Patternfly.Label>
   }
 
   module TaskPS = {
@@ -39,6 +35,14 @@ module TaskData = {
     let make = (~ps, ~name) => {
       let label = name ++ ": " ++ ps
       <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
+    }
+  }
+
+  module TaskScore = {
+    @react.component
+    let make = (~score) => {
+      let label = "Score: " ++ score
+      <Patternfly.Label> {label} </Patternfly.Label>
     }
   }
 
@@ -59,6 +63,7 @@ module TaskData = {
       <TaskLink td />
       <TaskPS ps=td.priority name="Priority" />
       <TaskPS ps=td.severity name="Severity" />
+      <TaskScore score=td.score />
       <Patternfly.LabelGroup>
         <Patternfly.LabelGroup categoryName="Type">
           {td.ttype->Belt.Array.map(x => <TaskType ttype={x} />)}

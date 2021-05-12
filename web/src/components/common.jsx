@@ -327,6 +327,7 @@ class BaseQueryComponent extends React.Component {
         task_priority: params.get('task_priority'),
         task_severity: params.get('task_severity'),
         task_type: params.get('task_type'),
+        task_score: params.get('task_score'),
         project: params.get('project'),
         authors: this.state.forceAllAuthors ? null : params.get('authors'),
         graph_type: this.state.graph_type,

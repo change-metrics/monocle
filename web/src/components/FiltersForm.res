@@ -92,6 +92,7 @@ module Filters = {
     ("repository", Filter.make("Repository", "Repository regexp")),
     ("branch", Filter.make("Branch", "Branch regexp")),
     ("files", Filter.make("Files", "File regexp")),
+    ("task_score", Filter.make("Task score", "Filter by task score")),
     (
       "gte",
       {
@@ -385,9 +386,13 @@ module FilterBox = {
         ),
       ),
     ])
-    let onClick = _ => states->Filters.dumps->updateFilters
+    let (show, setShow) = React.useState(_ => false)
+    let onClick = _ => {
+      states->Filters.dumps->updateFilters
+      setShow(show => !show)
+    }
     <MStack>
-      <MExpandablePanel title="Filter">
+      <MExpandablePanel title="Filter" stateControler=(show, setShow)>
         <FieldGroups>
           <FieldGroup>
             <Field name="relativedate" states />
@@ -411,9 +416,10 @@ module FilterBox = {
           </>)}
           {suggestions.task_types->maybeRenderList(
             <FieldGroup>
+              <Field name="task_type" states />
               <Field name="task_priority" states />
               <Field name="task_severity" states />
-              <Field name="task_type" states />
+              <Field name="task_score" states />
             </FieldGroup>,
           )}
           <ActionGroup>
