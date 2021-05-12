@@ -92,6 +92,7 @@ module Filters = {
     ("repository", Filter.make("Repository", "Repository regexp")),
     ("branch", Filter.make("Branch", "Branch regexp")),
     ("files", Filter.make("Files", "File regexp")),
+    ("task_score", Filter.make("Task score", "Filter by task score")),
     (
       "gte",
       {
@@ -411,9 +412,10 @@ module FilterBox = {
           </>)}
           {suggestions.task_types->maybeRenderList(
             <FieldGroup>
+              <Field name="task_type" states />
               <Field name="task_priority" states />
               <Field name="task_severity" states />
-              <Field name="task_type" states />
+              <Field name="task_score" states />
             </FieldGroup>,
           )}
           <ActionGroup>
