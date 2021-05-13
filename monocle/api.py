@@ -187,11 +187,7 @@ def task_data_add(request: AddRequest) -> AddResponse:
 def get_top_terms(db, field: str) -> List[str]:
     body = {
         "size": 0,
-        "aggs": {
-            "top_terms": {
-                "terms": {"field": field, "size": 100, "order": {"_key": "asc"}}
-            }
-        },
+        "aggs": {"top_terms": {"terms": {"field": field, "size": 1000}}},
         "query": {"bool": {"filter": [{"term": {"type": "Change"}}]}},
     }
 
