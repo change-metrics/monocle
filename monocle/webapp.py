@@ -107,7 +107,8 @@ def authorize():
     # do something with the token and profile
     session["username"] = profile.get("login")
     # return jsonify(profile)
-    return redirect("/")
+    redirect_uri = os.getenv("PUBLIC_URL", "/")
+    return redirect(redirect_uri)
 
 
 @app.route("/api/0/whoami", methods=["GET"])
