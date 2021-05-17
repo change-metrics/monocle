@@ -3,11 +3,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
+{-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports #-}
 
 module Lentille.GitHub.Issues where
@@ -97,6 +99,8 @@ streamLinkedIssue client searchText =
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
 
+pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
+
 transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [NewTaskData])
 transformResponse searchResult =
   case searchResult of
@@ -142,13 +146,7 @@ transformResponse searchResult =
     getLabels :: SearchNodesSearchResultItem -> [Text]
     getLabels issue =
       case issue of
-        SearchNodesIssue
-          _
-          _
-          _
-          _
-          (Just (SearchNodesLabelsLabelConnection (Just nodesLabel)))
-          _ -> map getLabelFromNode nodesLabel
+        IssueLabels nodesLabel -> map getLabelFromNode nodesLabel
         respOther -> error ("Invalid response: " <> show respOther)
     getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Text
     getLabelFromNode nodeLabelM = case nodeLabelM of
