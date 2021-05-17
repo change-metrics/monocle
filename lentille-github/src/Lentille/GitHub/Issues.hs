@@ -135,7 +135,7 @@ transformResponse searchResult =
         0
       where
         getIssueURL :: SearchNodesSearchResultItem -> Text
-        getIssueURL (SearchNodesIssue _ _ _ issueURI _ _) = decodeURI issueURI
+        getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _) = changeURL
         getIssueID :: SearchNodesSearchResultItem -> Text
         getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
     getUpdatedAt :: SearchNodesSearchResultItem -> Timestamp
@@ -164,19 +164,19 @@ transformResponse searchResult =
           _
           ( SearchNodesTimelineItemsIssueTimelineItemsConnection
               (Just urls)
-            ) -> map extractUrl urls
+            ) -> mapMaybe extractUrl urls
         respOther -> error ("Invalid response: " <> show respOther)
-    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Text
+    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
     extractUrl item = case item of
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
             "ConnectedEvent"
-            (SearchNodesTimelineItemsNodesSubjectPullRequest (url))
-          ) -> show url
+            (SearchNodesTimelineItemsNodesSubjectPullRequest (Just (URI url')))
+          ) -> Just url'
       Just
         ( SearchNodesTimelineItemsNodesCrossReferencedEvent
             "CrossReferencedEvent"
-            (SearchNodesTimelineItemsNodesSourcePullRequest (url))
-          ) -> show url
+            (SearchNodesTimelineItemsNodesSourcePullRequest (Just (URI url')))
+          ) -> Just url'
       -- We are requesting Issue with connected PR we cannot get Nothing
-      _ -> error ("Missing PR URI")
+      _ -> Nothing -- error ("Missing PR URI")

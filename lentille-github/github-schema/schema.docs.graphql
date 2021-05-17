@@ -24032,7 +24032,7 @@ type PullRequest implements Assignable & Closable & Comment & Labelable & Lockab
   """
   The HTTP URL for this pull request.
   """
-  url: URI!
+  url: URI
 
   """
   A list of edits to this content.
@@ -37625,7 +37625,7 @@ interface UniformResourceLocatable {
   """
   The URL to this resource.
   """
-  url: URI!
+  url: URI
 }
 
 """
