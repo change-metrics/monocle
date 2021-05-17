@@ -101,7 +101,7 @@ streamLinkedIssue client searchText =
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
-transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [NewTaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [NewTaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
@@ -111,49 +111,62 @@ transformResponse searchResult =
           (SearchPageInfoPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
-        ( PageInfo hasNextPage' endCursor' issueCount,
-          RateLimit used' remaining' resetAt',
-          (concatMap mkNewTaskData issues)
-        )
+        let newTaskDataE = concatMap mkNewTaskData issues
+         in ( PageInfo hasNextPage' endCursor' issueCount,
+              RateLimit used' remaining' resetAt',
+              lefts newTaskDataE,
+              rights newTaskDataE
+            )
     respOther -> error ("Invalid response: " <> show respOther)
   where
-    mkNewTaskData :: Maybe SearchNodesSearchResultItem -> [NewTaskData]
+    mkNewTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text NewTaskData]
     mkNewTaskData issueM = case issueM of
-      Just issue -> map (toNewTaskData issue) (getTDChangeUrls issue)
+      Just issue ->
+        -- (fmap . join . fmap $ toNewTaskData issue) (getTDChangeUrls issue)
+        let tdChangeUrlsE :: [Either Text Text]
+            tdChangeUrlsE = getTDChangeUrls issue
+            newTaskDataEE :: [Either Text (Either Text NewTaskData)]
+            newTaskDataEE = (fmap . fmap $ toNewTaskData issue) tdChangeUrlsE
+            newTaskDataE = fmap join newTaskDataEE
+         in newTaskDataE
       Nothing -> []
-    toNewTaskData :: SearchNodesSearchResultItem -> Text -> NewTaskData
+    toNewTaskData :: SearchNodesSearchResultItem -> Text -> Either Text NewTaskData
     toNewTaskData issue curl =
       NewTaskData
-        (Just $ getUpdatedAt issue)
-        (toLazy curl)
-        (toLazy <$> V.fromList (getLabels issue))
-        (toLazy $ getIssueID issue)
-        (toLazy $ getIssueURL issue)
-        (toLazy $ title issue)
-        "low"
-        "low"
-        0
+        <$> (Just <$> getUpdatedAt issue)
+        <*> pure (toLazy curl)
+        <*> (V.fromList <$> labels)
+        <*> pure (toLazy $ getIssueID issue)
+        <*> pure (toLazy $ getIssueURL issue)
+        <*> pure (toLazy $ title issue)
+        <*> pure "low"
+        <*> pure "low"
+        <*> pure 0
       where
+        -- labels :: Either Text [Text]
+        labels = case partitionEithers (getLabels issue) of
+          (labels', []) -> Right (fmap toLazy labels')
+          (_, errors) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
         getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _) = changeURL
         getIssueID :: SearchNodesSearchResultItem -> Text
         getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
-    getUpdatedAt :: SearchNodesSearchResultItem -> Timestamp
+    getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
     getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt) _ _ _) =
-      fromMaybe
-        (error "Unable to decode updatedAt format")
-        (Timestamp.fromText updatedAt)
-    getLabels :: SearchNodesSearchResultItem -> [Text]
+      case Timestamp.fromText updatedAt of
+        Just ts -> Right ts
+        Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt
+    getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
     getLabels issue =
       case issue of
-        IssueLabels nodesLabel -> map getLabelFromNode nodesLabel
-        respOther -> error ("Invalid response: " <> show respOther)
-    getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Text
+        IssueLabels nodesLabel -> fmap getLabelFromNode nodesLabel
+        respOther -> [Left ("Invalid response: " <> show respOther)]
+    getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Either Text Text
     getLabelFromNode nodeLabelM = case nodeLabelM of
       Just
-        (SearchNodesLabelsNodesLabel (label)) -> label
-      Nothing -> error ("Missing Label in SearchNodesLabelsNodesLabel")
-    getTDChangeUrls :: SearchNodesSearchResultItem -> [Text]
+        (SearchNodesLabelsNodesLabel label) -> Right label
+      Nothing -> Left "Missing Label in SearchNodesLabelsNodesLabel"
+    getTDChangeUrls :: SearchNodesSearchResultItem -> [Either Text Text]
     getTDChangeUrls issue =
       case issue of
         SearchNodesIssue
@@ -164,19 +177,19 @@ transformResponse searchResult =
           _
           ( SearchNodesTimelineItemsIssueTimelineItemsConnection
               (Just urls)
-            ) -> mapMaybe extractUrl urls
-        respOther -> error ("Invalid response: " <> show respOther)
-    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
+            ) -> map extractUrl urls
+        respOther -> [Left ("Invalid response: " <> show respOther)]
+    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Either Text Text
     extractUrl item = case item of
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
             "ConnectedEvent"
             (SearchNodesTimelineItemsNodesSubjectPullRequest (Just (URI url')))
-          ) -> Just url'
+          ) -> Right url'
       Just
         ( SearchNodesTimelineItemsNodesCrossReferencedEvent
             "CrossReferencedEvent"
             (SearchNodesTimelineItemsNodesSourcePullRequest (Just (URI url')))
-          ) -> Just url'
+          ) -> Right url'
       -- We are requesting Issue with connected PR we cannot get Nothing
-      _ -> Nothing -- error ("Missing PR URI")
+      _ -> Left "Missing PR URI"

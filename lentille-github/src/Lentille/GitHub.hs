@@ -75,7 +75,7 @@ streamFetch ::
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
   -- | query result adapter
-  (a -> (PageInfo, RateLimit, [b])) ->
+  (a -> (PageInfo, RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
 streamFetch client mkArgs transformResponse = go Nothing
   where
@@ -95,9 +95,11 @@ streamFetch client mkArgs transformResponse = go Nothing
         fetch
           (runGithubGraphRequest client)
           (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
-      let (pageInfo, rateLimit, xs) = case respE of
+      let (pageInfo, rateLimit, decodingErrors, xs) = case respE of
             Left err -> error (toText err)
             Right resp -> transformResponse resp
+      -- TODO: report decoding error
+      error ("Decoding failed: " <> show decodingErrors)
       logStatus pageInfo rateLimit
       S.each xs
       -- TODO: implement throttle

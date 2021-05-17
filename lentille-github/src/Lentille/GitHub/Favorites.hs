@@ -74,7 +74,7 @@ getFavoritesStream ::
 getFavoritesStream client username = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' = GetFavoritesArgs (toString username) (toString cursor')
-    transformResponse :: GetFavorites -> (PageInfo, RateLimit, [UserFavorite])
+    transformResponse :: GetFavorites -> (PageInfo, RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites
         (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
@@ -89,6 +89,7 @@ getFavoritesStream client username = streamFetch client mkArgs transformResponse
           ) ->
           ( PageInfo hasNextPage' endCursor' totalCount',
             RateLimit used' remaining' resetAt',
+            [],
             map getNode $ catMaybes xs
           )
       respOther -> error ("Invalid response: " <> show respOther)
