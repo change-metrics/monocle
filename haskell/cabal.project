@@ -1,0 +1,7 @@
+source-repository-package
+  type: git
+  location: https://github.com/bitemyapp/bloodhound
+  tag: 4775ebb759fe1b7cb5f880e4a41044b2363d98af
+  -- Pull in version bump that needs a new release
+
+packages: .

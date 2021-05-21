@@ -41,6 +41,7 @@ library
   import:              common-options
   build-depends:       base                       < 5
                      , aeson
+                     , bloodhound                 >= 0.16.0.0
                      , containers                 < 0.7
                      , deepseq                    < 1.5
                      , exceptions                 < 0.11
@@ -68,12 +69,20 @@ library
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
+                     , Monocle.Search.CLI
                      , Monocle.Search.Lexer
+                     , Monocle.Search.Query
                      , Monocle.Search.Syntax
                      , Monocle.Search.Parser
                      , Monocle.TaskData
                      , Monocle.WebApi
                      , Monocle.Worker
+
+executable monocle-search
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Search.hs
+  build-depends:       base, monocle
 
 executable monocle-api
   import:              common-options
