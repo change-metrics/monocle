@@ -113,7 +113,8 @@ let createApiService =
                         , mapValue = "\${GITHUB_CLIENT_SECRET:-}"
                         }
                       , { mapKey = "PUBLIC_URL"
-                        , mapValue = "\${MONOCLE_PUBLIC_URL}"
+                        , mapValue =
+                            "\${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
                         }
                       ]
                   )
@@ -173,7 +174,8 @@ let createWebService =
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "REACT_APP_API_URL"
-                        , mapValue = "\${MONOCLE_PUBLIC_URL}"
+                        , mapValue =
+                            "\${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
                         }
                       , { mapKey = "REACT_APP_TITLE"
                         , mapValue = "\${MONOCLE_TITLE}"
