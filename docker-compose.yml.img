@@ -8,7 +8,7 @@ services:
       CLIENT_SECRET: "${GITHUB_CLIENT_SECRET:-}"
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
-      PUBLIC_URL: "${MONOCLE_PUBLIC_URL}"
+      PUBLIC_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
     healthcheck:
       retries: 6
       test: "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
@@ -53,7 +53,7 @@ services:
     depends_on:
       - api
     environment:
-      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL}"
+      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
       REACT_APP_TITLE: "${MONOCLE_TITLE}"
     image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
     ports:
