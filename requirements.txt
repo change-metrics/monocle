@@ -1,15 +1,14 @@
-requests
-elasticsearch>=7.0.0,<8.0.0
+Flask-Caching
+authlib
+cryptography<=3.3.2
+dacite==1.6.0
+elasticsearch==7.12.1
 flask
 flask_cors
-jsonschema
-pyyaml
-tenacity
-authlib
-Flask-Caching
-uwsgi
 iso8601
-dacite
-# https://github.com/pyca/cryptography/issues/5799
-cryptography<=3.3.2
+jsonschema
 protobuf
+pyyaml
+requests==2.25.1
+tenacity==7.0.0
+uwsgi
