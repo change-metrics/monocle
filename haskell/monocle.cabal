@@ -57,6 +57,7 @@ library
                      , servant                    ^>= 0.18.2
                      , servant-server             ^>= 0.18.2
                      , wai                        ^>= 3.2.3
+                     , wai-logger                 ^>= 2.3
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src
