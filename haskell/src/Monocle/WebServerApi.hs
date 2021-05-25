@@ -1,17 +1,20 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Monocle.WebServerApi where
 
 import Data.Aeson
 import GHC.Generics
+import qualified Monocle.Api.Config as Config
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
+import Relude
 import Servant
 
 type MonocleAPI =
-  "indices" :> Get '[JSON] [Indice]
+  "indices" :> Get '[JSON] [Text]
     :<|> "infos" :> Get '[JSON] Info
     :<|> "query" :> ReqBody '[JSON] SimpleQueryInput :> Post '[JSON] SimpleQueryResponse
 
@@ -48,15 +51,9 @@ instance ToJSON SimpleQueryResponse
 info :: Info
 info = Info "1.0.0"
 
-indices :: [Indice]
-indices =
-  [ Indice "OpenStack" "The OpenStack index",
-    Indice "OpenShift" "The OpenShift index"
-  ]
-
-server :: Server MonocleAPI
-server =
-  return indices
+server :: [Config.Tenant] -> Server MonocleAPI
+server tenants =
+  return (map Config.unTenant tenants)
     :<|> return info
     :<|> simpleQuery
   where
@@ -67,8 +64,10 @@ server =
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
-app :: Application
-app = serve monocleAPI server
+app :: [Config.Tenant] -> Application
+app tenants = serve monocleAPI (server tenants)
 
-main :: IO ()
-main = run 8081 app
+main :: MonadIO m => Int -> FilePath -> m ()
+main port configFile = do
+  tenants <- Config.loadConfig configFile
+  liftIO $ run port (app tenants)
