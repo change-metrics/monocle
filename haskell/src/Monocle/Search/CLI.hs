@@ -18,7 +18,7 @@ parseQuery code = either id decodeUtf8 query
   where
     query = do
       expr <- P.parse code
-      Aeson.encode <$> Q.query expr
+      Aeson.encode . Q.queryBH <$> Q.queryWithMods expr
 
 -- | Helper search func that can be replaced by a scanSearch
 simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
@@ -29,15 +29,26 @@ simpleSearch indexName search = do
     Left e -> error (show e)
     Right x -> pure (BH.hits (BH.searchHits x))
 
-runQuery :: MonadIO m => BH.BHEnv -> Text -> BH.Query -> m [Change]
+runQuery :: MonadIO m => BH.BHEnv -> Text -> Q.Query -> m [Change]
 runQuery bhEnv index queryBase =
   liftIO $
     BH.runBH bhEnv $ do
       resp <- fmap BH.hitSource <$> simpleSearch (BH.IndexName index) search
       pure $ catMaybes resp
   where
-    query = BH.QueryBoolQuery $ BH.mkBoolQuery [BH.TermQuery (BH.Term "type" "Change") Nothing, queryBase] [] [] []
-    search = (BH.mkSearch (Just query) Nothing) {BH.size = BH.Size 1000}
+    query =
+      BH.QueryBoolQuery $
+        BH.mkBoolQuery [BH.TermQuery (BH.Term "type" "Change") Nothing, (Q.queryBH queryBase)] [] [] []
+    search =
+      (BH.mkSearch (Just query) Nothing)
+        { BH.size = BH.Size (Q.queryLimit queryBase),
+          BH.sortBody = toSortBody <$> Q.queryOrder queryBase
+        }
+    toSortBody field =
+      [ BH.DefaultSortSpec
+          ( BH.DefaultSort (BH.FieldName field) BH.Descending Nothing Nothing Nothing Nothing
+          )
+      ]
 
 searchMain :: MonadIO m => m ()
 searchMain = do
@@ -45,7 +56,7 @@ searchMain = do
   case args of
     ["--parse", query] -> putTextLn $ parseQuery query
     [elkUrl, index, code] -> do
-      let query = case P.parse code >>= Q.query of
+      let query = case P.parse code >>= Q.queryWithMods of
             Left err -> error $ "Invalid query: " <> err
             Right q -> q
       bhEnv <- Q.mkEnv elkUrl

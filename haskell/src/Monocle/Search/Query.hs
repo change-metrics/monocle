@@ -3,7 +3,7 @@
 
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (query, mkEnv) where
+module Monocle.Search.Query (Query (..), queryWithMods, query, mkEnv) where
 
 import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
@@ -115,6 +115,16 @@ query expr = case expr of
   e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr _ _ -> Left "Limit must be global"
   OrderByExpr _ _ -> Left "Order by must be global"
+
+data Query = Query {queryOrder :: Maybe Field, queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
+
+queryWithMods :: Expr -> Either Text Query
+queryWithMods baseExpr = Query order limit <$> query expr
+  where
+    (order, limit, expr) = case baseExpr of
+      OrderByExpr order' (LimitExpr limit' expr') -> (Just order', limit', expr')
+      LimitExpr limit' expr' -> (Nothing, limit', expr')
+      _ -> (Nothing, 100, baseExpr)
 
 mkEnv :: MonadIO m => Text -> m BH.BHEnv
 mkEnv server = do

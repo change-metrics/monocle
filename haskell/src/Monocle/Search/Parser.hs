@@ -21,7 +21,7 @@ type Parser = Megaparsec.Parsec Void [Token]
 -- >>> Megaparsec.parse exprParser "" [Literal "status", Equal, Literal "open"]
 -- Right (EqExpr "status" "open")
 exprParser :: Parser Expr
-exprParser = Combinators.choice [Megaparsec.try boolExpr, searchExpr]
+exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
   where
     -- 'boolExpr' combines multiple expression
     boolExpr = do
@@ -35,13 +35,7 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, searchExpr]
         Or -> OrExpr leftExpr <$> exprParser
         _ -> error "this should not happen, see the expression before the case statement"
 
-    -- 'searchExpr' is a single expression (e.g. `a:b`) with optional modifiers (e.g. `order by x`)
-    searchExpr = do
-      expr <- closedExpr
-      modifiers <- Combinators.many modExpr
-      pure $ foldr (\modifier acc -> modifier acc) expr modifiers
-
-    -- 'closedExpr' is a single expression without modifiers
+    -- 'closedExpr' is a single expression
     closedExpr = Combinators.choice [notExpr, fieldExpr, parenExpr]
 
     -- 'notExpr' is a negated expression, we run 'closedExpr' so that 'boolExpr' keeps the priority.
@@ -65,6 +59,12 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, searchExpr]
       -- Here it is safe to run 'exprParser' because 'parenExpr' first parses an 'OpenParenthesis'
       Combinators.between (token OpenParenthesis) (token CloseParenthesis) exprParser
 
+exprParserWithMods :: Parser Expr
+exprParserWithMods = do
+  expr <- exprParser
+  modifiers <- Combinators.many modExpr
+  pure $ foldr (\modifier acc -> modifier acc) expr modifiers
+  where
     -- 'modExpr' is a trailing expression modifiers
     modExpr = do
       operatorToken <- tokens [OrderBy, Limit]
@@ -104,6 +104,6 @@ tokens = Combinators.choice . map token
 parse :: Text -> Either Text Expr
 parse code = do
   tokens' <- lex code
-  case Megaparsec.parse (exprParser <* Megaparsec.eof) "<input>" tokens' of
+  case Megaparsec.parse (exprParserWithMods <* Megaparsec.eof) "<input>" tokens' of
     Left err -> Left $ show err
     Right expr -> Right expr
