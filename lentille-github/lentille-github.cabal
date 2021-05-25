@@ -3,6 +3,7 @@ name:                lentille-github
 version:             0.1.0.0
 build-type:          Simple
 tested-with:         GHC == 8.10.4
+extra-source-files:  ./github-schema/schema.docs.graphql
 
 source-repository head
   type:                git
