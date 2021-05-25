@@ -54,6 +54,9 @@ library
                      , streaming                  < 0.3
                      , time                       < 1.10
                      , vector                     < 0.13
+                     , servant-server             ^>= 0.18.2
+                     , wai                        ^>= 3.2.3
+                     , warp                       ^>= 3.3.15
   hs-source-dirs:      src
   exposed-modules:     Google.Protobuf.Timestamp
                      , Monocle.Client
@@ -62,6 +65,7 @@ library
                      , Monocle.TaskData
                      , Monocle.WebApi
                      , Monocle.Worker
+                     , Monocle.WebServerApi
 
 test-suite monocle-test
   import:              common-options
