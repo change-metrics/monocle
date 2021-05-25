@@ -1,4 +1,5 @@
 .git
+.gitignore
 web
 data
 docker-compose.yml
@@ -6,3 +7,11 @@ contrib
 dump
 etc
 doc
+
+# docker
+.dockerignore
+Dockerfile
+
+# cabal-install
+dist-newstyle/
+.ghc.environment*

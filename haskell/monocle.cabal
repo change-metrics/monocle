@@ -47,7 +47,7 @@ library
                      , exceptions                 < 0.11
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
-                     , proto3-suite               >= 0.4
+                     , proto3-suite               >= 0.4.2
                      , proto3-wire                >= 1.2.0
                      , relude                     > 1.0.0.0
                      , retry                      < 0.9
@@ -58,14 +58,19 @@ library
                      , wai                        ^>= 3.2.3
                      , warp                       ^>= 3.3.15
   hs-source-dirs:      src
-  exposed-modules:     Google.Protobuf.Timestamp
-                     , Monocle.Client
+  exposed-modules:     Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
                      , Monocle.TaskData
                      , Monocle.WebApi
-                     , Monocle.Worker
                      , Monocle.WebServerApi
+                     , Monocle.Worker
+
+executable monocle-api
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Api.hs
+  build-depends:       base, monocle
 
 test-suite monocle-test
   import:              common-options
@@ -77,6 +82,7 @@ test-suite monocle-test
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
                      , monocle
+                     , proto3-suite               >= 0.4.2
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
