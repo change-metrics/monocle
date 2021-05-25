@@ -14,14 +14,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# Update the builder image with:
+#  TMPDIR=/tmp/ podman build -f Dockerfile-build -t quay.io/change-metrics/builder .
+#  podman push quay.io/change-metrics/builder
+
 # base image
-FROM quay.io/change-metrics/builder
-
-# Build project
-COPY haskell/ /build
-RUN cabal v2-install -v1 exe:monocle-api
-
-################################################################################
 FROM registry.fedoraproject.org/fedora:33
+ENV LANG=C.UTF-8
+WORKDIR /build
 
-COPY --from=0 /root/.cabal/bin/monocle-api /bin
+# Install haskell toolchain
+RUN dnf update -y && dnf install -y git ghc cabal-install
+RUN cabal v2-update
+
+# Install proto3-suite and servant-server first, that pulls in most dependencies
+RUN cabal v2-install proto3-suite servant-server --constraint='proto3-suite ^>=0.4.2' --constraint='servant ^>=0.18.2'
+
+# Install project dependencies
+COPY haskell/monocle.cabal /build/
+RUN cabal v2-build -v1 --dependencies-only all
