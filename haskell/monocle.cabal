@@ -64,18 +64,19 @@ library
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src
-  exposed-modules:     Monocle.Api.Config
+  exposed-modules:     Monocle.Api.CLI
+                     , Monocle.Api.Config
                      , Monocle.Api.HTTP
-                     , Monocle.Api.CLI
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
-                     , Monocle.Search.Change
                      , Monocle.Search.CLI
+                     , Monocle.Search.Change
                      , Monocle.Search.Lexer
+                     , Monocle.Search.Parser
+                     , Monocle.Search.Queries
                      , Monocle.Search.Query
                      , Monocle.Search.Syntax
-                     , Monocle.Search.Parser
                      , Monocle.TaskData
                      , Monocle.WebApi
                      , Monocle.Worker
