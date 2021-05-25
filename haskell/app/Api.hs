@@ -5,7 +5,7 @@
 module Main (main) where
 
 import Data.Text.IO (hPutStrLn)
-import qualified Monocle.WebServerApi
+import qualified Monocle.Api.CLI
 import Relude
 
 main :: IO ()
@@ -15,5 +15,5 @@ main = do
   case args of
     ["--port", portStr] ->
       let port = fromMaybe (error $ "Could not read port: " <> toText portStr) $ readMaybe portStr
-       in Monocle.WebServerApi.main port config
+       in Monocle.Api.CLI.run port config
     _ -> hPutStrLn stderr "usage: monocle-api --port PORT"

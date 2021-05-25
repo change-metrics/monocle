@@ -54,18 +54,20 @@ library
                      , streaming                  < 0.3
                      , time                       < 1.10
                      , vector                     < 0.13
+                     , servant                    ^>= 0.18.2
                      , servant-server             ^>= 0.18.2
                      , wai                        ^>= 3.2.3
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src
   exposed-modules:     Monocle.Api.Config
+                     , Monocle.Api.HTTP
+                     , Monocle.Api.CLI
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
                      , Monocle.TaskData
                      , Monocle.WebApi
-                     , Monocle.WebServerApi
                      , Monocle.Worker
 
 executable monocle-api
