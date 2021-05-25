@@ -59,6 +59,7 @@ le = "<="
 
 ; search operator
 order-by = "order by" / "ORDER BY"
+order-by-sort = "asc" / "ASC" / "desc" / "DESC"
 limit = "limit" / "LIMIT"
 
 expression =
@@ -75,6 +76,7 @@ expression =
     / field whsp le whsp value
 
     ; search operator
+    / expression whsp1 order-by whsp1 field whsp1 order-by-sort
     / expression whsp1 order-by whsp1 field
     / expression whsp1 limit whsp1 1*digit
 

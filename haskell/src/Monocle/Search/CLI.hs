@@ -11,6 +11,7 @@ import qualified Database.Bloodhound as BH
 import Monocle.Search.Change (Change (..))
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (SortOrder (..))
 import Relude
 
 parseQuery :: Text -> Text
@@ -44,11 +45,14 @@ runQuery bhEnv index queryBase =
         { BH.size = BH.Size (Q.queryLimit queryBase),
           BH.sortBody = toSortBody <$> Q.queryOrder queryBase
         }
-    toSortBody field =
+    toSortBody (field, order) =
       [ BH.DefaultSortSpec
-          ( BH.DefaultSort (BH.FieldName field) BH.Descending Nothing Nothing Nothing Nothing
+          ( BH.DefaultSort (BH.FieldName field) (sortOrder order) Nothing Nothing Nothing Nothing
           )
       ]
+    sortOrder order = case order of
+      Asc -> BH.Ascending
+      Desc -> BH.Descending
 
 searchMain :: MonadIO m => m ()
 searchMain = do

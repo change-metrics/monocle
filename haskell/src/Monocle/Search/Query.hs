@@ -9,7 +9,7 @@ import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
-import Monocle.Search.Syntax (Expr (..))
+import Monocle.Search.Syntax (Expr (..), SortOrder (..))
 import qualified Network.HTTP.Client as HTTP
 import Relude
 
@@ -114,15 +114,15 @@ query expr = case expr of
   e@(LtExpr field value) -> mkRangeQuery e field value
   e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr _ _ -> Left "Limit must be global"
-  OrderByExpr _ _ -> Left "Order by must be global"
+  OrderByExpr _ _ _ -> Left "Order by must be global"
 
-data Query = Query {queryOrder :: Maybe Field, queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
+data Query = Query {queryOrder :: Maybe (Field, SortOrder), queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
 
 queryWithMods :: Expr -> Either Text Query
 queryWithMods baseExpr = Query order limit <$> query expr
   where
     (order, limit, expr) = case baseExpr of
-      OrderByExpr order' (LimitExpr limit' expr') -> (Just order', limit', expr')
+      OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')
       _ -> (Nothing, 100, baseExpr)
 

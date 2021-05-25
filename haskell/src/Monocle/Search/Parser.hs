@@ -9,7 +9,7 @@ module Monocle.Search.Parser (parse) where
 import qualified Control.Monad.Combinators as Combinators
 import qualified Data.Set as Set
 import Monocle.Search.Lexer (Token (..), lex)
-import Monocle.Search.Syntax (Expr (..))
+import Monocle.Search.Syntax (Expr (..), SortOrder (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 
@@ -69,8 +69,15 @@ exprParserWithMods = do
     modExpr = do
       operatorToken <- tokens [OrderBy, Limit]
       case operatorToken of
-        OrderBy -> OrderByExpr <$> literal
+        OrderBy -> OrderByExpr <$> literal <*> orderSort
         Limit -> LimitExpr <$> intLiteral
+        _ -> error "this should not happen, see the expression before the case statement"
+
+    orderSort = do
+      sortToken <- Combinators.optional $ tokens [SortAsc, SortDesc]
+      pure $ case fromMaybe SortAsc sortToken of
+        SortAsc -> Asc
+        SortDesc -> Desc
         _ -> error "this should not happen, see the expression before the case statement"
 
 -- | 'intLiteral' parses a number

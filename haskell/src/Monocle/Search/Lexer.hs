@@ -30,6 +30,8 @@ data Token
   | LowerEqual
   | -- search operator
     OrderBy
+  | SortAsc
+  | SortDesc
   | Limit
   | -- piority operator
     OpenParenthesis
@@ -50,6 +52,8 @@ tokenParser =
       Not <$ keyword ["not", "NOT"] ["¬", "!"],
       Equal <$ keyword [] [":", "=", "=="],
       OrderBy <$ keyword ["order by", "ORDER BY"] [],
+      SortAsc <$ keyword ["asc", "ASC"] [],
+      SortDesc <$ keyword ["desc", "DESC"] [],
       Limit <$ keyword ["limit", "LIMIT"] [],
       Greater <$ symbol ">",
       GreaterEqual <$ symbol ">=",

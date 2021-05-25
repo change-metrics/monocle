@@ -59,7 +59,13 @@ monocleSearchLanguage =
         "Parser order by"
         ( parseMatch
             "state:open order by review_date"
-            (S.OrderByExpr "review_date" (S.EqExpr "state" "open"))
+            (S.OrderByExpr "review_date" S.Asc (S.EqExpr "state" "open"))
+        ),
+      testCase
+        "Parser order by sort"
+        ( parseMatch
+            "state:open order by review_date desc"
+            (S.OrderByExpr "review_date" S.Desc (S.EqExpr "state" "open"))
         )
     ]
   where
