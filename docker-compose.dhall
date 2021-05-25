@@ -16,9 +16,22 @@
 let Compose =
       https://raw.githubusercontent.com/sbdchd/dhall-docker-compose/master/compose/v3/package.dhall
 
-let monocleImage = "changemetrics/monocle_backend:\${MONOCLE_VERSION:-latest}"
+let monocleImage =
+      \(name : Text) ->
+        "changemetrics/monocle_${name}:\${MONOCLE_VERSION:-latest}"
 
-let monocleWebImage = "changemetrics/monocle_web:\${MONOCLE_VERSION:-latest}"
+let buildContext =
+      \(name : Text) ->
+        { context = "."
+        , dockerfile = "Dockerfile-${name}"
+        , args =
+            let -- todo: add default upstream
+                default =
+                  Compose.ListOrDict.Dict
+                    ([] : List { mapKey : Text, mapValue : Text })
+
+            in  default
+        }
 
 let mkEnvDefault =
       \(env-var-name : Text) ->
@@ -127,7 +140,46 @@ let createApiService =
                                          }
                                    )
             else  Compose.Service::(     service
-                                     //  { image = Some monocleImage
+                                     //  { image = Some (monocleImage "backend")
+                                         , restart = Some "unless-stopped"
+                                         }
+                                   )
+
+let createApiNgService =
+      \(dev : Bool) ->
+        let service =
+              { ports = Some [ mkPort "API" 9898 9898 ]
+              , healthcheck = Some Compose.Healthcheck::{
+                , test = Some
+                    ( Compose.StringOrList.String
+                        "python -c \"import requests,sys; r=requests.get('http://localhost:9877/api/2/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+                    )
+                , retries = Some 6
+                , timeout = Some "60s"
+                }
+              , command = Some
+                  (Compose.StringOrList.String "monocle-api --port 9898")
+              , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , environment = Some
+                  ( Compose.ListOrDict.Dict
+                      [ { mapKey = "CONFIG"
+                        , mapValue = "/etc/monocle/config.yaml"
+                        }
+                      , { mapKey = "ELASTIC_CONN", mapValue = "elastic:9200" }
+                      ]
+                  )
+              }
+
+        in  if    dev
+            then  Compose.Service::(     service
+                                     //  { build = Some
+                                             ( Compose.Build.Object
+                                                 (buildContext "api")
+                                             )
+                                         }
+                                   )
+            else  Compose.Service::(     service
+                                     //  { image = Some (monocleImage "api")
                                          , restart = Some "unless-stopped"
                                          }
                                    )
@@ -160,7 +212,7 @@ let createCrawlerService =
                                          }
                                    )
             else  Compose.Service::(     service
-                                     //  { image = Some monocleImage
+                                     //  { image = Some (monocleImage "backend")
                                          , restart = Some "unless-stopped"
                                          }
                                    )
@@ -187,16 +239,7 @@ let createWebService =
         let -- podman v3.1.0 doesn't seem to work with build directory
             -- adding a build context and a dockerfile next to the compose file is a working combo
             build =
-              { context = "web"
-              , dockerfile = "Dockerfile-web"
-              , args =
-                  let -- todo: add default upstream
-                      default =
-                        Compose.ListOrDict.Dict
-                          ([] : List { mapKey : Text, mapValue : Text })
-
-                  in  default
-              }
+              buildContext "web" // { context = "web" }
 
         in  if    dev
             then  Compose.Service::(     service
@@ -205,7 +248,7 @@ let createWebService =
                                          }
                                    )
             else  Compose.Service::(     service
-                                     //  { image = Some monocleWebImage
+                                     //  { image = Some (monocleImage "web")
                                          , restart = Some "unless-stopped"
                                          }
                                    )
@@ -214,6 +257,7 @@ let createServices =
       \(dev : Bool) ->
         toMap
           { api = createApiService dev
+          , api-ng = createApiNgService dev
           , web = createWebService dev
           , crawler = createCrawlerService dev
           , elastic = createElasticService dev

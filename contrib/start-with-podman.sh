@@ -40,6 +40,7 @@ set -x
 
 if [ "$1" == "build" ]; then
     podman build -t monocle_web -f Dockerfile-web web
+    podman build -t monocle_api -f Dockerfile-api .
     podman build -t monocle_backend -f Dockerfile .
 fi
 
@@ -78,6 +79,14 @@ if [ "$1" == "create" ]; then
                -it \
                monocle_backend uwsgi --http :9876 --manage-script-name --mount /app=monocle.webapp:app
 
+    podman create --name=api-ng \
+               --pod monocle \
+               -e CONFIG=/etc/monocle/config.yaml \
+               -e ELASTIC_CONN=elastic:9200 \
+               --add-host elastic:127.0.0.1 \
+               -v $PWD/etc:/etc/monocle:z \
+               -it monocle_api monocle-api --port 9898
+
     podman create --name=crawler \
                --pod monocle \
                --add-host elastic:127.0.0.1 \
@@ -90,6 +99,7 @@ if [ "$1" == "create" ]; then
     podman create --name=web \
                --pod monocle \
                --add-host api:127.0.0.1 \
+               --add-host api-ng:127.0.0.1 \
                -e REACT_APP_TITLE="Monocle Podman deployment" \
                monocle_web
 fi
