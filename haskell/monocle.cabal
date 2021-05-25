@@ -41,6 +41,7 @@ library
   import:              common-options
   build-depends:       base                       < 5
                      , aeson
+                     , aeson-casing
                      , bloodhound                 >= 0.16.0.0
                      , containers                 < 0.7
                      , deepseq                    < 1.5
@@ -69,6 +70,7 @@ library
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
+                     , Monocle.Search.Change
                      , Monocle.Search.CLI
                      , Monocle.Search.Lexer
                      , Monocle.Search.Query

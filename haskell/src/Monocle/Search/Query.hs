@@ -3,13 +3,14 @@
 
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (query) where
+module Monocle.Search.Query (query, mkEnv) where
 
 import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
 import Monocle.Search.Syntax (Expr (..))
+import qualified Network.HTTP.Client as HTTP
 import Relude
 
 data FieldType = FieldDate | FieldNumber | FieldText
@@ -114,3 +115,8 @@ query expr = case expr of
   e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr _ _ -> Left "Limit must be global"
   OrderByExpr _ _ -> Left "Order by must be global"
+
+mkEnv :: MonadIO m => Text -> m BH.BHEnv
+mkEnv server = do
+  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
+  pure $ BH.mkBHEnv (BH.Server server) manager
