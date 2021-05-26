@@ -144,7 +144,7 @@ toTaskData bz = map mkTaskData ebugs
     mkTaskData :: BZ.ExternalBug -> NewTaskData
     mkTaskData ebug =
       NewTaskData
-        (Just . Timestamp.fromUtcTime . bugLastChangeTime $ bz)
+        (Just . Timestamp.fromUTCTime . bugLastChangeTime $ bz)
         (toLazy . changeUrl $ ebug)
         (toLazy <$> (V.fromList . bugKeywords $ bz))
         (show $ bugId bz)

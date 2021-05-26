@@ -153,7 +153,7 @@ transformResponse searchResult =
         getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
     getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
     getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt) _ _ _) =
-      case Timestamp.fromText updatedAt of
+      case Timestamp.fromRFC3339 $ toLazy updatedAt of
         Just ts -> Right ts
         Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt
     getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
