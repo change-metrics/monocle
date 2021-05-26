@@ -31,8 +31,7 @@ common common-options
   if impl(ghc >= 8.2)
     ghc-options:       -fhide-source-paths
   if impl(ghc >= 8.4)
-    ghc-options:       -Wmissing-export-lists
-                       -Wpartial-fields
+    ghc-options:       -Wpartial-fields
   if impl(ghc >= 8.10)
     ghc-options:       -Wunused-packages
 
@@ -42,6 +41,8 @@ library
   import:              common-options
   build-depends:       base                       < 5
                      , aeson
+                     , aeson-casing
+                     , bloodhound                 >= 0.16.0.0
                      , containers                 < 0.7
                      , deepseq                    < 1.5
                      , exceptions                 < 0.11
@@ -49,6 +50,8 @@ library
                      , http-client-tls            < 0.4
                      , proto3-suite               >= 0.4.2
                      , proto3-wire                >= 1.2.0
+                     , megaparsec                 < 10
+                     , parser-combinators         < 1.3
                      , relude                     > 1.0.0.0
                      , retry                      < 0.9
                      , streaming                  < 0.3
@@ -61,16 +64,29 @@ library
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src
-  exposed-modules:     Monocle.Api.Config
+  exposed-modules:     Monocle.Api.CLI
+                     , Monocle.Api.Config
                      , Monocle.Api.HTTP
-                     , Monocle.Api.CLI
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
+                     , Monocle.Search.CLI
+                     , Monocle.Search.Change
+                     , Monocle.Search.Lexer
+                     , Monocle.Search.Parser
+                     , Monocle.Search.Queries
+                     , Monocle.Search.Query
+                     , Monocle.Search.Syntax
                      , Monocle.TaskData
                      , Monocle.WebApi
                      , Monocle.Worker
   reexported-modules:  Google.Protobuf.Timestamp
+
+executable monocle-search
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Search.hs
+  build-depends:       base, monocle
 
 executable monocle-api
   import:              common-options
