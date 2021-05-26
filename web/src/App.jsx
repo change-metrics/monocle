@@ -43,6 +43,7 @@ import CFiltersForm from './components/filtersform'
 import { CChange } from './components/change'
 import Indices from './components/Indices.bs.js'
 import ChangesView from './components/ChangesView.bs.js'
+import Board from './components/Board.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -272,6 +273,23 @@ ChangeView.propTypes = {
   })
 }
 
+class BoardView extends React.Component {
+  render() {
+    return (
+      <Board index={this.props.match.params.index} />
+    )
+  }
+}
+
+BoardView.propTypes = {
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      index: PropTypes.string
+    })
+  })
+}
+
+
 class App extends React.Component {
   render() {
     return (
@@ -294,6 +312,7 @@ class App extends React.Component {
             <Route path="/:index/hot-changes" component={HotChangesView} />
             <Route path="/:index/cold-changes" component={ColdChangesView} />
             <Route path="/:index/change/:change" component={ChangeView} />
+            <Route path="/:index/board" component={BoardView} />
           </Switch>
           <Row>
             <Col>
