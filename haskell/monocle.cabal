@@ -70,6 +70,7 @@ library
                      , Monocle.TaskData
                      , Monocle.WebApi
                      , Monocle.Worker
+  reexported-modules:  Google.Protobuf.Timestamp
 
 executable monocle-api
   import:              common-options
