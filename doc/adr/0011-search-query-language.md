@@ -1,6 +1,9 @@
 # 11. Search query language
 
+* Status: accepted
 * Date: 2021-05-19
+* Deciders: Fabien Boucher
+* Issue: https://github.com/change-metrics/monocle/issues/372
 
 ## Context and Problem Statement
 
