@@ -171,7 +171,7 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
               (toLazy indexName)
               (toLazy crawlerName)
               (toLazy apiKey)
-              (Just $ Timestamp.fromUtcTime startTime)
+              (Just $ Timestamp.fromUTCTime startTime)
           )
       case commitResp of
         CommitSuccess -> pure True
@@ -190,7 +190,7 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
               (toLazy crawlerName)
           )
       case resp of
-        GetLastUpdatedSuccess ts -> pure $ toUtcTime ts
+        GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
         _ -> error $ "Could not got initial timesamp: " <> show resp
     mkRequest :: [NewTaskData] -> AddRequest
     mkRequest =

@@ -87,3 +87,5 @@ jobs:
           docker push changemetrics/monocle_web:$TAG_NAME
           docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
           docker push changemetrics/monocle_backend:$TAG_NAME
+          docker tag monocle_api-ng:latest changemetrics/monocle_api:$TAG_NAME
+          docker push changemetrics/monocle_api:$TAG_NAME
