@@ -45,6 +45,9 @@ def fix_timestamp(content):
         # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
         ["timestamp", "updated_at", "created_at", "changed_at"],
         content,
+    ).replace(
+        "TimestampBs.decode_timestamp (Pbrt_bs.object_",
+        "TimestampBs.decode_timestamp (Pbrt_bs.string",
     )
 
 

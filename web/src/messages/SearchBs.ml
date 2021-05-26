@@ -197,7 +197,7 @@ let rec decode_change json =
       v.url <- Pbrt_bs.string json "change" "url"
     | "created_at" -> 
       let json = Js.Dict.unsafeGet json "created_at" in
-      v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "change" "created_at")))
+      v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "created_at")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;

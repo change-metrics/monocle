@@ -80,7 +80,7 @@ let rec decode_task_data_commit_request json =
       v.apikey <- Pbrt_bs.string json "task_data_commit_request" "apikey"
     | "timestamp" -> 
       let json = Js.Dict.unsafeGet json "timestamp" in
-      v.timestamp <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "task_data_commit_request" "timestamp")))
+      v.timestamp <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "task_data_commit_request" "timestamp")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -112,7 +112,7 @@ let rec decode_task_data_commit_response json =
         (TaskDataTypes.Error ((decode_task_data_commit_error json)) : TaskDataTypes.task_data_commit_response)
       | "timestamp" -> 
         let json = Js.Dict.unsafeGet json "timestamp" in
-        (TaskDataTypes.Timestamp ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "task_data_commit_response" "Timestamp"))) : TaskDataTypes.task_data_commit_response)
+        (TaskDataTypes.Timestamp ((TimestampBs.decode_timestamp (Pbrt_bs.string json "task_data_commit_response" "Timestamp"))) : TaskDataTypes.task_data_commit_response)
       
       | _ -> loop (i - 1)
       end
@@ -157,7 +157,7 @@ let rec decode_task_data_get_last_updated_response json =
         (TaskDataTypes.Error ((decode_task_data_get_last_updated_error json)) : TaskDataTypes.task_data_get_last_updated_response)
       | "timestamp" -> 
         let json = Js.Dict.unsafeGet json "timestamp" in
-        (TaskDataTypes.Timestamp ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "task_data_get_last_updated_response" "Timestamp"))) : TaskDataTypes.task_data_get_last_updated_response)
+        (TaskDataTypes.Timestamp ((TimestampBs.decode_timestamp (Pbrt_bs.string json "task_data_get_last_updated_response" "Timestamp"))) : TaskDataTypes.task_data_get_last_updated_response)
       
       | _ -> loop (i - 1)
       end
@@ -172,7 +172,7 @@ let rec decode_new_task_data json =
     match Array.unsafe_get keys i with
     | "updated_at" -> 
       let json = Js.Dict.unsafeGet json "updated_at" in
-      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.object_ json "new_task_data" "updated_at")))
+      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "new_task_data" "updated_at")))
     | "change_url" -> 
       let json = Js.Dict.unsafeGet json "change_url" in
       v.change_url <- Pbrt_bs.string json "new_task_data" "change_url"
