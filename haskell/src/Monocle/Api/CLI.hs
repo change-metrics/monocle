@@ -11,6 +11,8 @@ import qualified Monocle.Search.Queries as Q
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
+import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
+import Network.Wai.Middleware.Servant.Options (provideOptions)
 import Relude
 import Servant (serve)
 
@@ -29,4 +31,11 @@ run port elkUrl configFile = do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
       putTextLn $
         "Serving " <> show (length tenants) <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> elkUrl
-      Warp.runSettings settings (app tenants bhEnv)
+      Warp.runSettings
+        settings
+        . cors (const $ Just policy)
+        . provideOptions monocleAPI
+        $ app tenants bhEnv
+  where
+    policy =
+      simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
