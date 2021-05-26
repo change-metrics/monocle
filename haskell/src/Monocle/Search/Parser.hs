@@ -9,12 +9,13 @@ module Monocle.Search.Parser (parse) where
 import qualified Control.Monad.Combinators as Combinators
 import qualified Data.Set as Set
 import Monocle.Search.Lexer (Token (..), lex)
+import qualified Monocle.Search.Lexer as L
 import Monocle.Search.Syntax (Expr (..), SortOrder (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 
 -- | Short-hand type synonym used by parsing utilities
-type Parser = Megaparsec.Parsec Void [Token]
+type Parser = Megaparsec.Parsec Void [L.LocatedToken]
 
 -- | 'exprParser' parses an expression
 --
@@ -92,14 +93,14 @@ intLiteral = do
 literal :: Parser Text
 literal = Megaparsec.token isLiteral Set.empty
   where
-    isLiteral (Literal v) = Just v
+    isLiteral (L.LocatedToken _ (Literal v) _) = Just v
     isLiteral _ = Nothing
 
 -- | 'token' parses a single token
 token :: Token -> Parser Token
 token token' = Megaparsec.token isToken Set.empty
   where
-    isToken v
+    isToken (L.LocatedToken _ v _)
       | v == token' = Just token'
       | otherwise = Nothing
 
@@ -112,5 +113,12 @@ parse :: Text -> Either Text Expr
 parse code = do
   tokens' <- lex code
   case Megaparsec.parse (exprParserWithMods <* Megaparsec.eof) "<input>" tokens' of
-    Left err -> Left $ show err
+    Left err -> Left (mkErr err)
     Right expr -> Right expr
+  where
+    mkErr :: Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> Text
+    mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
+      let (startOffset, endOffset) = case be of
+            Megaparsec.TrivialError _ (Just (Megaparsec.Tokens (L.LocatedToken start _ end :| _))) _ -> (start, end)
+            x -> error $ "Unknown parsec error: " <> show x
+       in "Invalid syntax at: " <> show endOffset <> " starting from: " <> show startOffset

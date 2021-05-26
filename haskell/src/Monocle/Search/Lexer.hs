@@ -4,7 +4,7 @@
 -- | Monocle search language lexer
 -- The goal of this module is to transform a 'Text'
 -- into a list of 'Token'.
-module Monocle.Search.Lexer (Token (..), lex) where
+module Monocle.Search.Lexer (Token (..), LocatedToken (..), lex) where
 
 import qualified Control.Monad.Combinators as Combinators
 import Relude
@@ -38,6 +38,9 @@ data Token
   | CloseParenthesis
   deriving (Show, Eq, Ord)
 
+data LocatedToken = LocatedToken {start :: Int, token :: Token, end :: Int}
+  deriving (Show, Eq, Ord)
+
 -- | 'tokenParser' parses a single token
 --
 -- >>> Megaparsec.parse tokenParser "" "and"
@@ -64,6 +67,9 @@ tokenParser =
       Literal <$> literal
     ]
 
+locatedTokenParser :: Parser LocatedToken
+locatedTokenParser = LocatedToken <$> Megaparsec.getOffset <*> tokenParser <*> Megaparsec.getOffset
+
 -- | 'literal' parses a literal field or value
 literal :: Parser Text
 literal = Lexer.lexeme Megaparsec.Char.space $ Megaparsec.takeWhile1P Nothing isLiteral
@@ -88,11 +94,17 @@ keyword names symbols =
   Megaparsec.try $ Combinators.choice (map name names <|> map symbol symbols)
 
 -- | 'tokenParser' parses all the token until the end of file
-tokensParser :: Parser [Token]
-tokensParser = Megaparsec.Char.space *> many tokenParser <* Megaparsec.eof
+tokensParser :: Parser [LocatedToken]
+tokensParser = Megaparsec.Char.space *> many locatedTokenParser <* Megaparsec.eof
 
 -- | 'lex' parses the code into a list of 'Token'
-lex :: Text -> Either Text [Token]
+lex :: Text -> Either Text [LocatedToken]
 lex code = case Megaparsec.parse tokensParser "<input>" code of
-  Left err -> Left $ show err
+  Left err -> Left (mkErr err)
   Right tokens -> Right tokens
+  where
+    mkErr (Megaparsec.ParseErrorBundle (be :| _) (Megaparsec.PosState _ startOffset _ _ _)) =
+      let endOffset = case be of
+            Megaparsec.TrivialError x _ _ -> x
+            Megaparsec.FancyError x _ -> x
+       in "Invalid token at: " <> show endOffset <> " starting from: " <> show startOffset

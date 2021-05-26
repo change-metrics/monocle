@@ -69,7 +69,7 @@ monocleSearchLanguage =
         )
     ]
   where
-    lexMatch code tokens = assertEqual "match" (Right tokens) (L.lex code)
+    lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
 
 monocleWebApiTests :: TestTree
