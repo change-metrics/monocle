@@ -5,6 +5,8 @@ syntax = "proto3";
 package monocle_search;
 option go_package = "monocle/search";
 
+import "google/protobuf/timestamp.proto";
+
 message SearchSuggestionsRequest {
   string index = 1;
 }
@@ -15,4 +17,31 @@ message SearchSuggestionsResponse {
   repeated string approvals = 3;
   repeated string priorities = 4;
   repeated string severities = 5;
+}
+
+message QueryError {
+  string message = 1;
+  uint32 position = 2;
+}
+
+message ChangesQueryRequest {
+  string index = 1;
+  string query = 2;
+}
+
+message Change {
+  string title = 1;
+  string url = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message Changes {
+  repeated Change changes = 1;
+}
+
+message ChangesQueryResponse {
+  oneof result {
+    QueryError error = 1;
+    Changes items = 2;
+  }
 }

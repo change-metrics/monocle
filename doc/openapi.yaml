@@ -91,6 +91,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
+    /api/2/search/changes:
+        post:
+            operationId: Search_ChangesQuery
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChangesQueryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChangesQueryResponse'
 components:
     schemas:
         AddRequest:
@@ -111,6 +127,33 @@ components:
                     type: integer
                     description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
                     format: enum
+        Change:
+            properties:
+                title:
+                    type: string
+                url:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+        Changes:
+            properties:
+                changes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Change'
+        ChangesQueryRequest:
+            properties:
+                index:
+                    type: string
+                query:
+                    type: string
+        ChangesQueryResponse:
+            properties:
+                error:
+                    $ref: '#/components/schemas/QueryError'
+                items:
+                    $ref: '#/components/schemas/Changes'
         GetProjectsRequest:
             properties:
                 index:
@@ -155,6 +198,13 @@ components:
                     type: string
                 file_regex:
                     type: string
+        QueryError:
+            properties:
+                message:
+                    type: string
+                position:
+                    type: integer
+                    format: uint32
         SearchSuggestionsRequest:
             properties:
                 index:

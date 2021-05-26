@@ -70,43 +70,43 @@ instance ToJSON TaskData where
 instance FromJSON TaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data Change = Change
-  { changeNumber :: Int,
-    changeChangeId :: Text,
-    changeTitle :: Text,
-    changeText :: Text,
-    changeUrl :: Text,
-    changeCommitCount :: Int,
-    changeAdditions :: Int,
-    changeDeletions :: Int,
-    changeChangedFilesCount :: Int,
-    changeChangedFiles :: [File],
-    changeCommits :: [Commit],
-    changeRepositoryPrefix :: Text,
-    changeRepositoryShortname :: Text,
-    changeRepositoryFullname :: Text,
-    changeAuthor :: Author,
-    changeCommitter :: Maybe Author,
-    changeMergedBy :: Maybe Author,
-    changeBranch :: Text,
-    changeCreatedAt :: UTCTime,
-    changeMergedAt :: Maybe UTCTime,
-    changeUpdatedAt :: UTCTime,
-    changeClosedAt :: Maybe UTCTime,
-    changeState :: Text,
-    changeDuration :: Maybe Int,
-    changeMergeable :: Text,
-    changeLabels :: [Text],
-    changeAssignees :: [Author],
-    changeApproval :: Maybe [Text],
-    changeDraft :: Bool,
-    changeSelfMerged :: Maybe Bool,
-    changeTasksData :: Maybe [TaskData]
+data ELKChange = ELKChange
+  { elkchangeNumber :: Int,
+    elkchangeChangeId :: Text,
+    elkchangeTitle :: Text,
+    elkchangeText :: Text,
+    elkchangeUrl :: Text,
+    elkchangeCommitCount :: Int,
+    elkchangeAdditions :: Int,
+    elkchangeDeletions :: Int,
+    elkchangeChangedFilesCount :: Int,
+    elkchangeChangedFiles :: [File],
+    elkchangeCommits :: [Commit],
+    elkchangeRepositoryPrefix :: Text,
+    elkchangeRepositoryShortname :: Text,
+    elkchangeRepositoryFullname :: Text,
+    elkchangeAuthor :: Author,
+    elkchangeCommitter :: Maybe Author,
+    elkchangeMergedBy :: Maybe Author,
+    elkchangeBranch :: Text,
+    elkchangeCreatedAt :: UTCTime,
+    elkchangeMergedAt :: Maybe UTCTime,
+    elkchangeUpdatedAt :: UTCTime,
+    elkchangeClosedAt :: Maybe UTCTime,
+    elkchangeState :: Text,
+    elkchangeDuration :: Maybe Int,
+    elkchangeMergeable :: Text,
+    elkchangeLabels :: [Text],
+    elkchangeAssignees :: [Author],
+    elkchangeApproval :: Maybe [Text],
+    elkchangeDraft :: Bool,
+    elkchangeSelfMerged :: Maybe Bool,
+    elkchangeTasksData :: Maybe [TaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON Change where
+instance ToJSON ELKChange where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON Change where
+instance FromJSON ELKChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase

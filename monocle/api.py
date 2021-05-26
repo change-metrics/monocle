@@ -208,3 +208,7 @@ def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsRe
         severities=get_top_terms(db, "tasks_data.severity"),
         priorities=get_top_terms(db, "tasks_data.priority"),
     )
+
+
+def search_changes_query(request):
+    raise NotImplementedError("Another service implement this endpoint")

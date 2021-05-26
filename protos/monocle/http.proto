@@ -32,6 +32,13 @@ service Search {
       body: "*"
     };
   }
+  rpc ChangesQuery(monocle_search.ChangesQueryRequest)
+      returns (monocle_search.ChangesQueryResponse) {
+    option (google.api.http) = {
+      post: "/api/2/search/changes"
+      body: "*"
+    };
+  }
 }
 
 service TaskData {

@@ -13,6 +13,30 @@ type search_suggestions_response = {
   severities : string list;
 }
 
+type query_error = {
+  message : string;
+  position : int32;
+}
+
+type changes_query_request = {
+  index : string;
+  query : string;
+}
+
+type change = {
+  title : string;
+  url : string;
+  created_at : TimestampTypes.timestamp option;
+}
+
+type changes = {
+  changes : change list;
+}
+
+type changes_query_response =
+  | Error of query_error
+  | Items of changes
+
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
   () : search_suggestions_request  = {
@@ -32,3 +56,37 @@ let rec default_search_suggestions_response
   priorities;
   severities;
 }
+
+let rec default_query_error 
+  ?message:((message:string) = "")
+  ?position:((position:int32) = 0l)
+  () : query_error  = {
+  message;
+  position;
+}
+
+let rec default_changes_query_request 
+  ?index:((index:string) = "")
+  ?query:((query:string) = "")
+  () : changes_query_request  = {
+  index;
+  query;
+}
+
+let rec default_change 
+  ?title:((title:string) = "")
+  ?url:((url:string) = "")
+  ?created_at:((created_at:TimestampTypes.timestamp option) = None)
+  () : change  = {
+  title;
+  url;
+  created_at;
+}
+
+let rec default_changes 
+  ?changes:((changes:change list) = [])
+  () : changes  = {
+  changes;
+}
+
+let rec default_changes_query_response () : changes_query_response = Error (default_query_error ())

@@ -6,6 +6,7 @@ import builtins
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
+import google.protobuf.timestamp_pb2
 import typing
 import typing_extensions
 
@@ -74,3 +75,123 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
     ) -> None: ...
 
 global___SearchSuggestionsResponse = SearchSuggestionsResponse
+
+class QueryError(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    MESSAGE_FIELD_NUMBER: builtins.int
+    POSITION_FIELD_NUMBER: builtins.int
+    message: typing.Text = ...
+    position: builtins.int = ...
+    def __init__(
+        self,
+        *,
+        message: typing.Text = ...,
+        position: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "message", b"message", "position", b"position"
+        ],
+    ) -> None: ...
+
+global___QueryError = QueryError
+
+class ChangesQueryRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    INDEX_FIELD_NUMBER: builtins.int
+    QUERY_FIELD_NUMBER: builtins.int
+    index: typing.Text = ...
+    query: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        index: typing.Text = ...,
+        query: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal["index", b"index", "query", b"query"],
+    ) -> None: ...
+
+global___ChangesQueryRequest = ChangesQueryRequest
+
+class Change(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    TITLE_FIELD_NUMBER: builtins.int
+    URL_FIELD_NUMBER: builtins.int
+    CREATED_AT_FIELD_NUMBER: builtins.int
+    title: typing.Text = ...
+    url: typing.Text = ...
+    @property
+    def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        title: typing.Text = ...,
+        url: typing.Text = ...,
+        created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["created_at", b"created_at"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "created_at", b"created_at", "title", b"title", "url", b"url"
+        ],
+    ) -> None: ...
+
+global___Change = Change
+
+class Changes(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    CHANGES_FIELD_NUMBER: builtins.int
+    @property
+    def changes(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Change
+    ]: ...
+    def __init__(
+        self,
+        *,
+        changes: typing.Optional[typing.Iterable[global___Change]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["changes", b"changes"]
+    ) -> None: ...
+
+global___Changes = Changes
+
+class ChangesQueryResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ERROR_FIELD_NUMBER: builtins.int
+    ITEMS_FIELD_NUMBER: builtins.int
+    @property
+    def error(self) -> global___QueryError: ...
+    @property
+    def items(self) -> global___Changes: ...
+    def __init__(
+        self,
+        *,
+        error: typing.Optional[global___QueryError] = ...,
+        items: typing.Optional[global___Changes] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "items", b"items", "result", b"result"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "items", b"items", "result", b"result"
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["result", b"result"]
+    ) -> typing_extensions.Literal["error", "items"]: ...
+
+global___ChangesQueryResponse = ChangesQueryResponse

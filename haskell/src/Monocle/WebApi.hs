@@ -21,6 +21,9 @@ configGetProjects = monocleReq "api/1/get_projects"
 searchSuggestions :: (MonadThrow m, MonadIO m) => MonocleClient -> SearchSuggestionsRequest -> m SearchSuggestionsResponse
 searchSuggestions = monocleReq "api/1/suggestions"
 
+searchChangesQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> ChangesQueryRequest -> m ChangesQueryResponse
+searchChangesQuery = monocleReq "api/2/search/changes"
+
 taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
 taskDataCommit = monocleReq "api/1/task_data_commit"
 

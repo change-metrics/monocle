@@ -33,6 +33,17 @@ module Search = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->SearchBs.decode_search_suggestions_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external changesQueryRaw: (string, 'a) => axios<'b> = "post"
+
+  let changesQuery = (request: SearchTypes.changes_query_request): axios<
+    SearchTypes.changes_query_response,
+  > =>
+    request->SearchBs.encode_changes_query_request
+    |> changesQueryRaw(serverUrl ++ "/api/2/search/changes")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_changes_query_response}->Js.Promise.resolve
+    )
 }
 
 module TaskData = {

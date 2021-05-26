@@ -67,6 +67,7 @@ library
   exposed-modules:     Monocle.Api.CLI
                      , Monocle.Api.Config
                      , Monocle.Api.HTTP
+                     , Monocle.Api.Server
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
