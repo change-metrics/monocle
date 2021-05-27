@@ -7,6 +7,7 @@
 module Monocle.Search.Lexer (Token (..), LocatedToken (..), lex) where
 
 import qualified Control.Monad.Combinators as Combinators
+import Monocle.Search.Syntax (ParseError (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec.Char
@@ -98,13 +99,13 @@ tokensParser :: Parser [LocatedToken]
 tokensParser = Megaparsec.Char.space *> many locatedTokenParser <* Megaparsec.eof
 
 -- | 'lex' parses the code into a list of 'Token'
-lex :: Text -> Either Text [LocatedToken]
+lex :: Text -> Either ParseError [LocatedToken]
 lex code = case Megaparsec.parse tokensParser "<input>" code of
   Left err -> Left (mkErr err)
   Right tokens -> Right tokens
   where
-    mkErr (Megaparsec.ParseErrorBundle (be :| _) (Megaparsec.PosState _ startOffset _ _ _)) =
-      let endOffset = case be of
+    mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
+      let offset = case be of
             Megaparsec.TrivialError x _ _ -> x
             Megaparsec.FancyError x _ -> x
-       in "Invalid token at: " <> show endOffset <> " starting from: " <> show startOffset
+       in ParseError "Invalid token" offset

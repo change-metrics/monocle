@@ -9,7 +9,7 @@ import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
-import Monocle.Search.Syntax (Expr (..), SortOrder (..))
+import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 
 data FieldType = FieldDate | FieldNumber | FieldText
@@ -70,21 +70,26 @@ mkRangeValue op field fieldType value = do
     FieldNumber -> toRangeValue op <$> parseNumber value
     _ -> Left $ "Field " <> field <> " does not support range operator"
 
-mkRangeQuery :: Expr -> Field -> Text -> Either Text BH.Query
+toParseError :: Either Text a -> Either ParseError a
+toParseError e = case e of
+  Left msg -> Left (ParseError msg 0)
+  Right x -> Right x
+
+mkRangeQuery :: Expr -> Field -> Text -> Either ParseError BH.Query
 mkRangeQuery expr field value = do
-  (fieldType, fieldName) <- lookupField field
+  (fieldType, fieldName) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> mkRangeValue (toRangeOp expr) field fieldType value
+    <$> (toParseError $ mkRangeValue (toRangeOp expr) field fieldType value)
 
-mkEqQuery :: Field -> Text -> Either Text BH.Query
+mkEqQuery :: Field -> Text -> Either ParseError BH.Query
 mkEqQuery field value = do
-  (_fieldType, fieldName) <- lookupField field
+  (_fieldType, fieldName) <- toParseError $ lookupField field
   Right $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 
-mkBoolQuery :: BoolOp -> Expr -> Expr -> Either Text BH.Query
+mkBoolQuery :: BoolOp -> Expr -> Expr -> Either ParseError BH.Query
 mkBoolQuery op e1 e2 = do
   q1 <- query e1
   q2 <- query e2
@@ -93,7 +98,7 @@ mkBoolQuery op e1 e2 = do
         Or -> ([], [q1, q2])
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
-mkNotQuery :: Expr -> Either Text BH.Query
+mkNotQuery :: Expr -> Either ParseError BH.Query
 mkNotQuery e1 = do
   q1 <- query e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
@@ -102,7 +107,7 @@ mkNotQuery e1 = do
 --
 -- >>> let Right q = (Parser.parse "state:open" >>= query) in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- {"term":{"state":{"value":"open"}}}
-query :: Expr -> Either Text BH.Query
+query :: Expr -> Either ParseError BH.Query
 query expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery And e1 e2
   OrExpr e1 e2 -> mkBoolQuery Or e1 e2
@@ -112,12 +117,12 @@ query expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery e field value
   e@(LtExpr field value) -> mkRangeQuery e field value
   e@(LtEqExpr field value) -> mkRangeQuery e field value
-  LimitExpr _ _ -> Left "Limit must be global"
-  OrderByExpr _ _ _ -> Left "Order by must be global"
+  LimitExpr _ _ -> Left (ParseError "Limit must be global" 0)
+  OrderByExpr _ _ _ -> Left (ParseError "Order by must be global" 0)
 
 data Query = Query {queryOrder :: Maybe (Field, SortOrder), queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
 
-queryWithMods :: Expr -> Either Text Query
+queryWithMods :: Expr -> Either ParseError Query
 queryWithMods baseExpr = Query order limit <$> query expr
   where
     (order, limit, expr) = case baseExpr of

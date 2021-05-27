@@ -31,7 +31,8 @@ let make = (~index: string) => {
     <MStackItem>
       {switch result {
       | None => React.null
-      | Some(SearchTypes.Error(err)) => <Alert title={err.message} />
+      | Some(SearchTypes.Error(err)) =>
+        <Alert title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} />
       | Some(SearchTypes.Items(items)) =>
         <Patternfly.DataList isCompact={true}>
           {items.changes->Belt.List.map(renderChange)->Belt.List.toArray->React.array}

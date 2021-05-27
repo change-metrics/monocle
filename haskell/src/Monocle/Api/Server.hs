@@ -14,6 +14,7 @@ import Monocle.Search.Change (ELKChange (..))
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (ParseError (..))
 import Relude
 import Servant (Handler)
 
@@ -23,7 +24,11 @@ searchChangeQuery bhEnv request = SearchPB.ChangesQueryResponse . Just <$> respo
     queryText = toStrict $ SearchPB.changesQueryRequestQuery request
     index = "monocle.changes.1." <> toStrict (SearchPB.changesQueryRequestIndex request)
     response = case P.parse queryText >>= Q.queryWithMods of
-      Left err -> pure $ SearchPB.ChangesQueryResponseResultError $ SearchPB.QueryError (toLazy err) 0
+      Left (ParseError msg offset) ->
+        pure
+          . SearchPB.ChangesQueryResponseResultError
+          . SearchPB.QueryError (toLazy (msg))
+          $ (fromInteger . toInteger $ offset)
       Right query ->
         SearchPB.ChangesQueryResponseResultItems
           . SearchPB.Changes
