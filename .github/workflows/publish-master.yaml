@@ -68,17 +68,6 @@ jobs:
           docker-compose ps web | grep Up
           curl -s http://localhost:8080/
 
-      - name: Publish images to docker-hub
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          set -x
-          docker tag monocle_web:latest changemetrics/monocle_web:latest
-          docker push changemetrics/monocle_web:latest
-          docker tag monocle_api:latest changemetrics/monocle_backend:latest
-          docker push changemetrics/monocle_backend:latest
-          docker tag monocle_api-ng:latest changemetrics/monocle_api:latest
-          docker push changemetrics/monocle_api:latest
-
       - name: Publish images to quay.io
         run: |
           docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io

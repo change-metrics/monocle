@@ -81,11 +81,11 @@ jobs:
         env:
           TAG_NAME: ${{ steps.tagName.outputs.tag }}
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io
           set -x
-          docker tag monocle_web:latest changemetrics/monocle_web:$TAG_NAME
-          docker push changemetrics/monocle_web:$TAG_NAME
-          docker tag monocle_api:latest changemetrics/monocle_backend:$TAG_NAME
-          docker push changemetrics/monocle_backend:$TAG_NAME
-          docker tag monocle_api-ng:latest changemetrics/monocle_api:$TAG_NAME
-          docker push changemetrics/monocle_api:$TAG_NAME
+          docker tag monocle_web:latest quay.io/change-metrics/monocle_web:$TAG_NAME
+          docker push quay.io/change-metrics/monocle_web:$TAG_NAME
+          docker tag monocle_api:latest quay.io/change-metrics/monocle_backend:$TAG_NAME
+          docker push quay.io/change-metrics/monocle_backend:$TAG_NAME
+          docker tag monocle_api-ng:latest quay.io/change-metrics/monocle_api:$TAG_NAME
+          docker push quay.io/change-metrics/monocle_api:$TAG_NAME

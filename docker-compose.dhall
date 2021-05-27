@@ -18,7 +18,7 @@ let Compose =
 
 let monocleImage =
       \(name : Text) ->
-        "changemetrics/monocle_${name}:\${MONOCLE_VERSION:-latest}"
+        "quay.io/change-metrics/monocle_${name}:\${MONOCLE_VERSION:-latest}"
 
 let buildContext =
       \(name : Text) ->

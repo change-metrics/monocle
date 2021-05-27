@@ -13,7 +13,7 @@ services:
       retries: 6
       test: "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
       timeout: "60s"
-    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    image: "quay.io/change-metrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     ports:
       - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9876}:9876"
     restart: unless-stopped
@@ -28,7 +28,7 @@ services:
       retries: 6
       test: "python -c \"import requests,sys; r=requests.get('http://localhost:9877/api/2/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
       timeout: "60s"
-    image: "changemetrics/monocle_api:${MONOCLE_VERSION:-latest}"
+    image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
     ports:
       - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9898}:9898"
     restart: unless-stopped
@@ -41,7 +41,7 @@ services:
     environment:
       APP_ID: "${GITHUB_APP_ID:-}"
       APP_KEY_PATH: "${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}"
-    image: "changemetrics/monocle_backend:${MONOCLE_VERSION:-latest}"
+    image: "quay.io/change-metrics/monocle_backend:${MONOCLE_VERSION:-latest}"
     restart: unless-stopped
     volumes:
       - "./etc:/etc/monocle:z"
@@ -70,7 +70,7 @@ services:
     environment:
       REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
       REACT_APP_TITLE: "${MONOCLE_TITLE}"
-    image: "changemetrics/monocle_web:${MONOCLE_VERSION:-latest}"
+    image: "quay.io/change-metrics/monocle_web:${MONOCLE_VERSION:-latest}"
     ports:
       - "${MONOCLE_WEB_ADDR:-0.0.0.0}:${MONOCLE_WEB_PORT:-8080}:8080"
     restart: unless-stopped
