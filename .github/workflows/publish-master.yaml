@@ -20,7 +20,7 @@ jobs:
 
       - name: Build builder image
         run: |
-          docker build -f Dockerfile-builder -t quay.io/change-metrics/builder
+          docker build -f Dockerfile-builder -t quay.io/change-metrics/builder .
 
       - name: Build docker images
         run: |
