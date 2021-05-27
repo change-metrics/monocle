@@ -31,5 +31,5 @@ RUN cabal v2-update
 RUN cabal v2-install proto3-suite servant-server --constraint='proto3-suite ^>=0.4.2' --constraint='servant ^>=0.18.2'
 
 # Install project dependencies
-COPY haskell/monocle.cabal /build/
+COPY haskell/cabal.project haskell/monocle.cabal /build/
 RUN cabal v2-build -v1 --dependencies-only all
