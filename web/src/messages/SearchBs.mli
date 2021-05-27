@@ -9,6 +9,15 @@ val encode_search_suggestions_request : SearchTypes.search_suggestions_request -
 val encode_search_suggestions_response : SearchTypes.search_suggestions_response -> Js.Json.t Js.Dict.t
 (** [encode_search_suggestions_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_fields_request : SearchTypes.fields_request -> Js.Json.t Js.Dict.t
+(** [encode_fields_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_field : SearchTypes.field -> Js.Json.t Js.Dict.t
+(** [encode_field v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_fields_response : SearchTypes.fields_response -> Js.Json.t Js.Dict.t
+(** [encode_fields_response v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_query_error : SearchTypes.query_error -> Js.Json.t Js.Dict.t
 (** [encode_query_error v dict] encodes [v] int the given JSON [dict] *)
 
@@ -32,6 +41,15 @@ val decode_search_suggestions_request : Js.Json.t Js.Dict.t -> SearchTypes.searc
 
 val decode_search_suggestions_response : Js.Json.t Js.Dict.t -> SearchTypes.search_suggestions_response
 (** [decode_search_suggestions_response decoder] decodes a [search_suggestions_response] value from [decoder] *)
+
+val decode_fields_request : Js.Json.t Js.Dict.t -> SearchTypes.fields_request
+(** [decode_fields_request decoder] decodes a [fields_request] value from [decoder] *)
+
+val decode_field : Js.Json.t Js.Dict.t -> SearchTypes.field
+(** [decode_field decoder] decodes a [field] value from [decoder] *)
+
+val decode_fields_response : Js.Json.t Js.Dict.t -> SearchTypes.fields_response
+(** [decode_fields_response decoder] decodes a [fields_response] value from [decoder] *)
 
 val decode_query_error : Js.Json.t Js.Dict.t -> SearchTypes.query_error
 (** [decode_query_error decoder] decodes a [query_error] value from [decoder] *)

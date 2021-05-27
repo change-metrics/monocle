@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\016monocle/search",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"3\n\x13\x43hangesQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t"T\n\x06\x43hange\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12.\n\ncreated_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"w\n\x14\x43hangesQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12(\n\x05items\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x42\x08\n\x06resultB\x10Z\x0emonocle/searchb\x06proto3',
+    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"*\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"3\n\x13\x43hangesQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t"T\n\x06\x43hange\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12.\n\ncreated_at\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"w\n\x14\x43hangesQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12(\n\x05items\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x42\x08\n\x06resultB\x10Z\x0emonocle/searchb\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
     ],
@@ -186,6 +186,148 @@ _SEARCHSUGGESTIONSRESPONSE = _descriptor.Descriptor(
 )
 
 
+_FIELDSREQUEST = _descriptor.Descriptor(
+    name="FieldsRequest",
+    full_name="monocle_search.FieldsRequest",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="version",
+            full_name="monocle_search.FieldsRequest.version",
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=241,
+    serialized_end=273,
+)
+
+
+_FIELD = _descriptor.Descriptor(
+    name="Field",
+    full_name="monocle_search.Field",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="name",
+            full_name="monocle_search.Field.name",
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="description",
+            full_name="monocle_search.Field.description",
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=275,
+    serialized_end=317,
+)
+
+
+_FIELDSRESPONSE = _descriptor.Descriptor(
+    name="FieldsResponse",
+    full_name="monocle_search.FieldsResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="fields",
+            full_name="monocle_search.FieldsResponse.fields",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=319,
+    serialized_end=374,
+)
+
+
 _QUERYERROR = _descriptor.Descriptor(
     name="QueryError",
     full_name="monocle_search.QueryError",
@@ -241,8 +383,8 @@ _QUERYERROR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=241,
-    serialized_end=288,
+    serialized_start=376,
+    serialized_end=423,
 )
 
 
@@ -301,8 +443,8 @@ _CHANGESQUERYREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=290,
-    serialized_end=341,
+    serialized_start=425,
+    serialized_end=476,
 )
 
 
@@ -380,8 +522,8 @@ _CHANGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=343,
-    serialized_end=427,
+    serialized_start=478,
+    serialized_end=562,
 )
 
 
@@ -421,8 +563,8 @@ _CHANGES = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=429,
-    serialized_end=479,
+    serialized_start=564,
+    serialized_end=614,
 )
 
 
@@ -490,10 +632,11 @@ _CHANGESQUERYRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=481,
-    serialized_end=600,
+    serialized_start=616,
+    serialized_end=735,
 )
 
+_FIELDSRESPONSE.fields_by_name["fields"].message_type = _FIELD
 _CHANGE.fields_by_name[
     "created_at"
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
@@ -516,6 +659,9 @@ DESCRIPTOR.message_types_by_name["SearchSuggestionsRequest"] = _SEARCHSUGGESTION
 DESCRIPTOR.message_types_by_name[
     "SearchSuggestionsResponse"
 ] = _SEARCHSUGGESTIONSRESPONSE
+DESCRIPTOR.message_types_by_name["FieldsRequest"] = _FIELDSREQUEST
+DESCRIPTOR.message_types_by_name["Field"] = _FIELD
+DESCRIPTOR.message_types_by_name["FieldsResponse"] = _FIELDSRESPONSE
 DESCRIPTOR.message_types_by_name["QueryError"] = _QUERYERROR
 DESCRIPTOR.message_types_by_name["ChangesQueryRequest"] = _CHANGESQUERYREQUEST
 DESCRIPTOR.message_types_by_name["Change"] = _CHANGE
@@ -544,6 +690,39 @@ SearchSuggestionsResponse = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(SearchSuggestionsResponse)
+
+FieldsRequest = _reflection.GeneratedProtocolMessageType(
+    "FieldsRequest",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _FIELDSREQUEST,
+        "__module__": "monocle.search_pb2"
+        # @@protoc_insertion_point(class_scope:monocle_search.FieldsRequest)
+    },
+)
+_sym_db.RegisterMessage(FieldsRequest)
+
+Field = _reflection.GeneratedProtocolMessageType(
+    "Field",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _FIELD,
+        "__module__": "monocle.search_pb2"
+        # @@protoc_insertion_point(class_scope:monocle_search.Field)
+    },
+)
+_sym_db.RegisterMessage(Field)
+
+FieldsResponse = _reflection.GeneratedProtocolMessageType(
+    "FieldsResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _FIELDSRESPONSE,
+        "__module__": "monocle.search_pb2"
+        # @@protoc_insertion_point(class_scope:monocle_search.FieldsResponse)
+    },
+)
+_sym_db.RegisterMessage(FieldsResponse)
 
 QueryError = _reflection.GeneratedProtocolMessageType(
     "QueryError",

@@ -24,6 +24,32 @@ let default_search_suggestions_response_mutable () : search_suggestions_response
   severities = [];
 }
 
+type fields_request_mutable = {
+  mutable version : string;
+}
+
+let default_fields_request_mutable () : fields_request_mutable = {
+  version = "";
+}
+
+type field_mutable = {
+  mutable name : string;
+  mutable description : string;
+}
+
+let default_field_mutable () : field_mutable = {
+  name = "";
+  description = "";
+}
+
+type fields_response_mutable = {
+  mutable fields : SearchTypes.field list;
+}
+
+let default_fields_response_mutable () : fields_response_mutable = {
+  fields = [];
+}
+
 type query_error_mutable = {
   mutable message : string;
   mutable position : int32;
@@ -142,6 +168,64 @@ let rec decode_search_suggestions_response json =
     SearchTypes.priorities = v.priorities;
     SearchTypes.severities = v.severities;
   } : SearchTypes.search_suggestions_response)
+
+let rec decode_fields_request json =
+  let v = default_fields_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "version" -> 
+      let json = Js.Dict.unsafeGet json "version" in
+      v.version <- Pbrt_bs.string json "fields_request" "version"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.version = v.version;
+  } : SearchTypes.fields_request)
+
+let rec decode_field json =
+  let v = default_field_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "name" -> 
+      let json = Js.Dict.unsafeGet json "name" in
+      v.name <- Pbrt_bs.string json "field" "name"
+    | "description" -> 
+      let json = Js.Dict.unsafeGet json "description" in
+      v.description <- Pbrt_bs.string json "field" "description"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.name = v.name;
+    SearchTypes.description = v.description;
+  } : SearchTypes.field)
+
+let rec decode_fields_response json =
+  let v = default_fields_response_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "fields" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "fields" in 
+        Pbrt_bs.array_ a "fields_response" "fields"
+      in
+      v.fields <- Array.map (fun json -> 
+        (decode_field (Pbrt_bs.object_ json "fields_response" "fields"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.fields = v.fields;
+  } : SearchTypes.fields_response)
 
 let rec decode_query_error json =
   let v = default_query_error_mutable () in
@@ -264,6 +348,32 @@ let rec encode_search_suggestions_response (v:SearchTypes.search_suggestions_res
   Js.Dict.set json "priorities" (Js.Json.array a);
   let a = v.SearchTypes.severities |> Array.of_list |> Array.map Js.Json.string in
   Js.Dict.set json "severities" (Js.Json.array a);
+  json
+
+let rec encode_fields_request (v:SearchTypes.fields_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "version" (Js.Json.string v.SearchTypes.version);
+  json
+
+let rec encode_field (v:SearchTypes.field) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "name" (Js.Json.string v.SearchTypes.name);
+  Js.Dict.set json "description" (Js.Json.string v.SearchTypes.description);
+  json
+
+let rec encode_fields_response (v:SearchTypes.fields_response) = 
+  let json = Js.Dict.empty () in
+  begin (* fields field *)
+    let (fields':Js.Json.t) =
+      v.SearchTypes.fields
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_field |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "fields" fields';
+  end;
   json
 
 let rec encode_query_error (v:SearchTypes.query_error) = 

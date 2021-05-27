@@ -19,6 +19,19 @@ message SearchSuggestionsResponse {
   repeated string severities = 5;
 }
 
+message FieldsRequest {
+  string version = 1;
+}
+
+message Field {
+  string name = 1;
+  string description = 2;
+}
+
+message FieldsResponse {
+  repeated Field fields = 1;
+}
+
 message QueryError {
   string message = 1;
   uint32 position = 2;

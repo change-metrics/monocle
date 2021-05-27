@@ -13,6 +13,19 @@ type search_suggestions_response = {
   severities : string list;
 }
 
+type fields_request = {
+  version : string;
+}
+
+type field = {
+  name : string;
+  description : string;
+}
+
+type fields_response = {
+  fields : field list;
+}
+
 type query_error = {
   message : string;
   position : int32;
@@ -55,6 +68,26 @@ let rec default_search_suggestions_response
   approvals;
   priorities;
   severities;
+}
+
+let rec default_fields_request 
+  ?version:((version:string) = "")
+  () : fields_request  = {
+  version;
+}
+
+let rec default_field 
+  ?name:((name:string) = "")
+  ?description:((description:string) = "")
+  () : field  = {
+  name;
+  description;
+}
+
+let rec default_fields_response 
+  ?fields:((fields:field list) = [])
+  () : fields_response  = {
+  fields;
 }
 
 let rec default_query_error 

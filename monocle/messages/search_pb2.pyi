@@ -76,6 +76,62 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
 
 global___SearchSuggestionsResponse = SearchSuggestionsResponse
 
+class FieldsRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    VERSION_FIELD_NUMBER: builtins.int
+    version: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        version: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["version", b"version"]
+    ) -> None: ...
+
+global___FieldsRequest = FieldsRequest
+
+class Field(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    NAME_FIELD_NUMBER: builtins.int
+    DESCRIPTION_FIELD_NUMBER: builtins.int
+    name: typing.Text = ...
+    description: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        name: typing.Text = ...,
+        description: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "description", b"description", "name", b"name"
+        ],
+    ) -> None: ...
+
+global___Field = Field
+
+class FieldsResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    FIELDS_FIELD_NUMBER: builtins.int
+    @property
+    def fields(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Field
+    ]: ...
+    def __init__(
+        self,
+        *,
+        fields: typing.Optional[typing.Iterable[global___Field]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["fields", b"fields"]
+    ) -> None: ...
+
+global___FieldsResponse = FieldsResponse
+
 class QueryError(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     MESSAGE_FIELD_NUMBER: builtins.int

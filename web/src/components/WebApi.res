@@ -34,6 +34,15 @@ module Search = {
       {data: resp.data->SearchBs.decode_search_suggestions_response}->Js.Promise.resolve
     )
   @module("axios")
+  external fieldsRaw: (string, 'a) => axios<'b> = "post"
+
+  let fields = (request: SearchTypes.fields_request): axios<SearchTypes.fields_response> =>
+    request->SearchBs.encode_fields_request
+    |> fieldsRaw(serverUrl ++ "/api/2/search_fields")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_fields_response}->Js.Promise.resolve
+    )
+  @module("axios")
   external changesQueryRaw: (string, 'a) => axios<'b> = "post"
 
   let changesQuery = (request: SearchTypes.changes_query_request): axios<

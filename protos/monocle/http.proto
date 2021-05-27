@@ -32,6 +32,13 @@ service Search {
       body: "*"
     };
   }
+  rpc Fields(monocle_search.FieldsRequest)
+      returns (monocle_search.FieldsResponse) {
+    option (google.api.http) = {
+      post: "/api/2/search_fields"
+      body: "*"
+    };
+  }
   rpc ChangesQuery(monocle_search.ChangesQueryRequest)
       returns (monocle_search.ChangesQueryResponse) {
     option (google.api.http) = {

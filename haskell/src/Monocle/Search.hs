@@ -365,6 +365,280 @@ instance HsJSONPB.ToSchema SearchSuggestionsResponse where
             }
         )
 
+newtype FieldsRequest = FieldsRequest
+  { fieldsRequestVersion ::
+      Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named FieldsRequest where
+  nameOf _ = (Hs.fromString "FieldsRequest")
+
+instance HsProtobuf.HasDefault FieldsRequest
+
+instance HsProtobuf.Message FieldsRequest where
+  encodeMessage
+    _
+    FieldsRequest {fieldsRequestVersion = fieldsRequestVersion} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                fieldsRequestVersion
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure FieldsRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "version")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB FieldsRequest where
+  toJSONPB (FieldsRequest f1) = (HsJSONPB.object ["version" .= f1])
+  toEncodingPB (FieldsRequest f1) =
+    (HsJSONPB.pairs ["version" .= f1])
+
+instance HsJSONPB.FromJSONPB FieldsRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "FieldsRequest"
+        (\obj -> (Hs.pure FieldsRequest) <*> obj .: "version")
+    )
+
+instance HsJSONPB.ToJSON FieldsRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON FieldsRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema FieldsRequest where
+  declareNamedSchema _ =
+    do
+      let declare_version = HsJSONPB.declareSchemaRef
+      fieldsRequestVersion <- declare_version Proxy.Proxy
+      let _ = Hs.pure FieldsRequest <*> HsJSONPB.asProxy declare_version
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "FieldsRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("version", fieldsRequestVersion)]
+                  }
+            }
+        )
+
+data Field = Field
+  { fieldName :: Hs.Text,
+    fieldDescription :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Field where
+  nameOf _ = (Hs.fromString "Field")
+
+instance HsProtobuf.HasDefault Field
+
+instance HsProtobuf.Message Field where
+  encodeMessage
+    _
+    Field {fieldName = fieldName, fieldDescription = fieldDescription} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                fieldName
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                fieldDescription
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure Field)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "description")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Field where
+  toJSONPB (Field f1 f2) =
+    (HsJSONPB.object ["name" .= f1, "description" .= f2])
+  toEncodingPB (Field f1 f2) =
+    (HsJSONPB.pairs ["name" .= f1, "description" .= f2])
+
+instance HsJSONPB.FromJSONPB Field where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Field"
+        ( \obj ->
+            (Hs.pure Field) <*> obj .: "name" <*> obj .: "description"
+        )
+    )
+
+instance HsJSONPB.ToJSON Field where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Field where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Field where
+  declareNamedSchema _ =
+    do
+      let declare_name = HsJSONPB.declareSchemaRef
+      fieldName <- declare_name Proxy.Proxy
+      let declare_description = HsJSONPB.declareSchemaRef
+      fieldDescription <- declare_description Proxy.Proxy
+      let _ =
+            Hs.pure Field <*> HsJSONPB.asProxy declare_name
+              <*> HsJSONPB.asProxy declare_description
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Field",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("name", fieldName),
+                          ("description", fieldDescription)
+                        ]
+                  }
+            }
+        )
+
+newtype FieldsResponse = FieldsResponse
+  { fieldsResponseFields ::
+      Hs.Vector Monocle.Search.Field
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named FieldsResponse where
+  nameOf _ = (Hs.fromString "FieldsResponse")
+
+instance HsProtobuf.HasDefault FieldsResponse
+
+instance HsProtobuf.Message FieldsResponse where
+  encodeMessage
+    _
+    FieldsResponse {fieldsResponseFields = fieldsResponseFields} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Field)
+                    @(HsProtobuf.NestedVec Monocle.Search.Field)
+                    fieldsResponseFields
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure FieldsResponse)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Field))
+              @(_ (Hs.Vector Monocle.Search.Field))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Field"))
+          )
+          (HsProtobuf.Single "fields")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB FieldsResponse where
+  toJSONPB (FieldsResponse f1) = (HsJSONPB.object ["fields" .= f1])
+  toEncodingPB (FieldsResponse f1) =
+    (HsJSONPB.pairs ["fields" .= f1])
+
+instance HsJSONPB.FromJSONPB FieldsResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "FieldsResponse"
+        (\obj -> (Hs.pure FieldsResponse) <*> obj .: "fields")
+    )
+
+instance HsJSONPB.ToJSON FieldsResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON FieldsResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema FieldsResponse where
+  declareNamedSchema _ =
+    do
+      let declare_fields = HsJSONPB.declareSchemaRef
+      fieldsResponseFields <- declare_fields Proxy.Proxy
+      let _ = Hs.pure FieldsResponse <*> HsJSONPB.asProxy declare_fields
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "FieldsResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("fields", fieldsResponseFields)]
+                  }
+            }
+        )
+
 data QueryError = QueryError
   { queryErrorMessage :: Hs.Text,
     queryErrorPosition :: Hs.Word32

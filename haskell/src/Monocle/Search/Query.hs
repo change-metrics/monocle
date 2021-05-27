@@ -3,7 +3,7 @@
 
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (Query (..), queryWithMods, query) where
+module Monocle.Search.Query (Query (..), queryWithMods, query, fields) where
 
 import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
@@ -17,16 +17,16 @@ data FieldType = FieldDate | FieldNumber | FieldText
 type Field = Text
 
 -- | 'fields' specifies how to handle field value
-fields :: [(Field, (FieldType, Field))]
+fields :: [(Field, (FieldType, Field, Text))]
 fields =
-  [ ("updated_at", (FieldDate, "updated_at")),
-    ("score", (FieldNumber, "tasks_data.score")),
-    ("repo", (FieldText, "repository_fullname")),
-    ("author", (FieldText, "author.muid"))
+  [ ("updated_at", (FieldDate, "updated_at", "Updated at date")),
+    ("score", (FieldNumber, "tasks_data.score", "Change pm score")),
+    ("repo", (FieldText, "repository_fullname", "Repository name")),
+    ("author", (FieldText, "author.muid", "Author name"))
   ]
 
 -- | 'lookupField' return a field type and actual field name
-lookupField :: Field -> Either Text (FieldType, Field)
+lookupField :: Field -> Either Text (FieldType, Field, Text)
 lookupField name = maybe (Left $ "Unknown field: " <> name) Right (lookup name fields)
 
 parseDateValue :: Text -> Either Text UTCTime
@@ -77,14 +77,14 @@ toParseError e = case e of
 
 mkRangeQuery :: Expr -> Field -> Text -> Either ParseError BH.Query
 mkRangeQuery expr field value = do
-  (fieldType, fieldName) <- toParseError $ lookupField field
+  (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
     <$> (toParseError $ mkRangeValue (toRangeOp expr) field fieldType value)
 
 mkEqQuery :: Field -> Text -> Either ParseError BH.Query
 mkEqQuery field value = do
-  (_fieldType, fieldName) <- toParseError $ lookupField field
+  (_fieldType, fieldName, _desc) <- toParseError $ lookupField field
   Right $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or

@@ -16,6 +16,19 @@ type search_suggestions_response = {
   severities : string list;
 }
 
+type fields_request = {
+  version : string;
+}
+
+type field = {
+  name : string;
+  description : string;
+}
+
+type fields_response = {
+  fields : field list;
+}
+
 type query_error = {
   message : string;
   position : int32;
@@ -58,6 +71,25 @@ val default_search_suggestions_response :
   unit ->
   search_suggestions_response
 (** [default_search_suggestions_response ()] is the default value for type [search_suggestions_response] *)
+
+val default_fields_request : 
+  ?version:string ->
+  unit ->
+  fields_request
+(** [default_fields_request ()] is the default value for type [fields_request] *)
+
+val default_field : 
+  ?name:string ->
+  ?description:string ->
+  unit ->
+  field
+(** [default_field ()] is the default value for type [field] *)
+
+val default_fields_response : 
+  ?fields:field list ->
+  unit ->
+  fields_response
+(** [default_fields_response ()] is the default value for type [fields_response] *)
 
 val default_query_error : 
   ?message:string ->

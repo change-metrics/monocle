@@ -107,6 +107,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ChangesQueryResponse'
+    /api/2/search_fields:
+        post:
+            operationId: Search_Fields
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FieldsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/FieldsResponse'
 components:
     schemas:
         AddRequest:
@@ -154,6 +170,22 @@ components:
                     $ref: '#/components/schemas/QueryError'
                 items:
                     $ref: '#/components/schemas/Changes'
+        Field:
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+        FieldsRequest:
+            properties:
+                version:
+                    type: string
+        FieldsResponse:
+            properties:
+                fields:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Field'
         GetProjectsRequest:
             properties:
                 index:

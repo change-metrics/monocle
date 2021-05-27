@@ -212,3 +212,7 @@ def search_suggestions(request: SearchSuggestionsRequest) -> SearchSuggestionsRe
 
 def search_changes_query(request):
     raise NotImplementedError("Another service implement this endpoint")
+
+
+def search_fields(request):
+    raise NotImplementedError("Another service implement this endpoint")

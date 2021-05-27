@@ -27,9 +27,11 @@ def config_service(app):
 
 
 def search_service(app):
-    from monocle.api import search_suggestions, search_changes_query
+    from monocle.api import search_suggestions, search_fields, search_changes_query
     from monocle.messages.search_pb2 import SearchSuggestionsRequest
     from monocle.messages.search_pb2 import SearchSuggestionsResponse
+    from monocle.messages.search_pb2 import FieldsRequest
+    from monocle.messages.search_pb2 import FieldsResponse
     from monocle.messages.search_pb2 import ChangesQueryRequest
     from monocle.messages.search_pb2 import ChangesQueryResponse
 
@@ -44,6 +46,19 @@ def search_service(app):
 
     app.add_url_rule(
         "/api/1/suggestions", "Suggestions", suggestions_stub, methods=["GET", "POST"]
+    )
+
+    def fields_stub() -> None:
+        input_data: bytes = request.get_data() or b"{}"
+        input_request: FieldsRequest = pbjson.Parse(input_data, FieldsRequest())  # type: ignore
+        output_resp: FieldsResponse = search_fields(input_request)
+        json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
+        return app.response_class(
+            response=json_resp, status=200, mimetype="application/json"
+        )
+
+    app.add_url_rule(
+        "/api/2/search_fields", "Fields", fields_stub, methods=["GET", "POST"]
     )
 
     def changes_query_stub() -> None:
