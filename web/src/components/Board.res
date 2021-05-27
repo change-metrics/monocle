@@ -5,21 +5,34 @@
 //
 open Prelude
 
+let loadFromUrl = () =>
+  URLSearchParams.current()
+  ->URLSearchParams.get("q")
+  ->Js.Nullable.toOption
+  ->Belt.Option.getWithDefault("")
+
+let saveToUrl = value => setLocationSearch("q", value)
+
 @react.component
 let make = (~index: string) => {
   let fields = useAutoGet(() => WebApi.Search.fields({version: "1"}))
   // The actual search bar content state
-  let (searchText, setSearchText) = React.useState(_ => "")
+  let (searchText, setSearchText) = React.useState(loadFromUrl)
   // The search result from the api
   let (result, setResult) = React.useState(_ => None)
   let handleOk = (resp: WebApi.axiosResponse<SearchTypes.changes_query_response>) =>
     setResult(_ => resp.data->Some)->Js.Promise.resolve
-  let onSearch = queryM =>
-    switch queryM {
+  let onSearch = v => setSearchText(_ => v)
+  React.useEffect1(() => {
+    switch searchText {
     | "" => ignore()
     | query =>
+      // searchText->saveToUrl
       ignore(WebApi.Search.changesQuery({index: index, query: query}) |> Js.Promise.then_(handleOk))
     }
+    None
+  }, [searchText])
+
   let renderChange = (change: SearchTypes.change) =>
     <Prelude.DataListItemRow key={change.url}>
       <Prelude.DataListCell> <span> {change.title->str} </span> </Prelude.DataListCell>
@@ -28,8 +41,7 @@ let make = (~index: string) => {
   <MStack>
     <MStackItem>
       {switch fields {
-      | Some(Ok({fields})) =>
-        <SearchBar fields value={searchText} onChange={(v, _) => setSearchText(_ => v)} onSearch />
+      | Some(Ok({fields})) => <SearchBar initialValue={searchText} fields onSearch />
       | _ => React.null
       }}
     </MStackItem>
@@ -37,11 +49,20 @@ let make = (~index: string) => {
       {switch result {
       | None => React.null
       | Some(SearchTypes.Error(err)) =>
-        <Alert title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} />
-      | Some(SearchTypes.Items(items)) =>
-        <Patternfly.DataList isCompact={true}>
-          {items.changes->Belt.List.map(renderChange)->Belt.List.toArray->React.array}
-        </Patternfly.DataList>
+        <Alert
+          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+        />
+      | Some(SearchTypes.Items(items)) => {
+          saveToUrl(searchText)
+          let changes = items.changes->Belt.List.toArray
+          switch changes->Belt.Array.length {
+          | 0 => <p> {"No changes matched"->str} </p>
+          | _ =>
+            <Patternfly.DataList isCompact={true}>
+              {changes->Belt.Array.map(renderChange)->React.array}
+            </Patternfly.DataList>
+          }
+        }
       }}
     </MStackItem>
   </MStack>

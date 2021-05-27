@@ -19,6 +19,14 @@ external getIndices: unit => axios<array<string>> = "getIndices"
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
+let setLocationSearch = %raw(`
+  function(q, v) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('q', v);
+    window.history.replaceState(null, null, url);
+  }
+`)
+
 // A temporary module to provide runtime setting
 module Env = {
   type t = {

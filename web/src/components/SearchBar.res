@@ -6,13 +6,9 @@
 open Prelude
 
 @react.component
-let make = (~value: string, ~fields: list<SearchTypes.field>, ~onChange, ~onSearch) => {
-  // Debounce update
-  React.useEffect1(() => {
-    let handler = Js.Global.setTimeout(() => onSearch(value), 500)
-    Some(() => Js.Global.clearTimeout(handler))
-  }, [value])
-
+let make = (~initialValue: string, ~fields: list<SearchTypes.field>, ~onSearch) => {
+  let (value, setValue) = React.useState(_ => initialValue)
+  let onChange = (v, _) => setValue(_ => v)
   // Help
   let renderFieldType = (ft: SearchTypes.field_type) =>
     switch ft {
@@ -43,14 +39,20 @@ let make = (~value: string, ~fields: list<SearchTypes.field>, ~onChange, ~onSear
       <ul> {"field:value"->li} {"date_field>YYYY-MM-DD"->li} {"number_field>42"->li} </ul>
     </div>
 
-  <span style={ReactDOM.Style.make(~display="flex", ())}>
-    <Patternfly.TextInput id="fri-search" value _type=#Text iconVariant=#Search onChange />
-    <span>
-      <Patternfly.Tooltip position=#Bottom content>
-        <Patternfly.Icons.OutlinedQuestionCircle />
-      </Patternfly.Tooltip>
+  <form
+    onSubmit={e => {
+      e->ReactEvent.Form.preventDefault
+      value->onSearch
+    }}>
+    <span style={ReactDOM.Style.make(~display="flex", ())}>
+      <span>
+        <Patternfly.Tooltip position=#Bottom content>
+          <Patternfly.Icons.OutlinedQuestionCircle />
+        </Patternfly.Tooltip>
+      </span>
+      <Patternfly.TextInput id="fri-search" value _type=#Text iconVariant=#Search onChange />
     </span>
-  </span>
+  </form>
 }
 
 let default = make
