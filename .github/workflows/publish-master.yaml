@@ -78,3 +78,15 @@ jobs:
           docker push changemetrics/monocle_backend:latest
           docker tag monocle_api-ng:latest changemetrics/monocle_api:latest
           docker push changemetrics/monocle_api:latest
+
+      - name: Publish images to quay.io
+        run: |
+          docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io
+          docker push quay.io/change-metrics/lentille:latest
+          set -x
+          docker tag monocle_web:latest quay.io/change-metrics/monocle_web:latest
+          docker push quay.io/change-metrics/monocle_web:latest
+          docker tag monocle_api:latest quay.io/change-metrics/monocle_backend:latest
+          docker push quay.io/change-metrics/monocle_backend:latest
+          docker tag monocle_api-ng:latest quay.io/change-metrics/monocle_api:latest
+          docker push quay.io/change-metrics/monocle_api:latest
