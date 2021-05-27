@@ -5,6 +5,7 @@ isort:skip_file
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import typing
@@ -93,20 +94,37 @@ global___FieldsRequest = FieldsRequest
 
 class Field(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class _Type(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Type.V],
+        builtins.type,
+    ):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
+        FIELD_DATE = Field.Type.V(0)
+        FIELD_NUMBER = Field.Type.V(1)
+        FIELD_TEXT = Field.Type.V(2)
+    class Type(metaclass=_Type):
+        V = typing.NewType("V", builtins.int)
+    FIELD_DATE = Field.Type.V(0)
+    FIELD_NUMBER = Field.Type.V(1)
+    FIELD_TEXT = Field.Type.V(2)
+
     NAME_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
+    TYPE_FIELD_NUMBER: builtins.int
     name: typing.Text = ...
     description: typing.Text = ...
+    type: global___Field.Type.V = ...
     def __init__(
         self,
         *,
         name: typing.Text = ...,
         description: typing.Text = ...,
+        type: global___Field.Type.V = ...,
     ) -> None: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "description", b"description", "name", b"name"
+            "description", b"description", "name", b"name", "type", b"type"
         ],
     ) -> None: ...
 

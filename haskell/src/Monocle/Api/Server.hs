@@ -15,6 +15,7 @@ import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
+import Proto3.Suite (Enumerated (..))
 import Relude
 import Servant (Handler)
 
@@ -47,7 +48,8 @@ searchFields = const $ pure response
   where
     response :: FieldsResponse
     response = FieldsResponse . V.fromList . map toResult $ Q.fields
-    toResult (name, (_type, _realname, desc)) =
+    toResult (name, (fieldType', _realname, desc)) =
       let fieldName = toLazy name
           fieldDescription = toLazy desc
+          fieldType = Enumerated . Right $ fieldType'
        in SearchPB.Field {..}

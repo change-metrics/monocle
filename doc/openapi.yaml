@@ -176,6 +176,9 @@ components:
                     type: string
                 description:
                     type: string
+                type:
+                    type: integer
+                    format: enum
         FieldsRequest:
             properties:
                 version:

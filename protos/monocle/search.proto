@@ -26,6 +26,12 @@ message FieldsRequest {
 message Field {
   string name = 1;
   string description = 2;
+  enum Type {
+    FIELD_DATE = 0;
+    FIELD_NUMBER = 1;
+    FIELD_TEXT = 2;
+  }
+  Type type = 3;
 }
 
 message FieldsResponse {

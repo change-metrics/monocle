@@ -448,7 +448,8 @@ instance HsJSONPB.ToSchema FieldsRequest where
 
 data Field = Field
   { fieldName :: Hs.Text,
-    fieldDescription :: Hs.Text
+    fieldDescription :: Hs.Text,
+    fieldType :: HsProtobuf.Enumerated Monocle.Search.Field_Type
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -460,7 +461,11 @@ instance HsProtobuf.HasDefault Field
 instance HsProtobuf.Message Field where
   encodeMessage
     _
-    Field {fieldName = fieldName, fieldDescription = fieldDescription} =
+    Field
+      { fieldName = fieldName,
+        fieldDescription = fieldDescription,
+        fieldType = fieldType
+      } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
@@ -469,6 +474,10 @@ instance HsProtobuf.Message Field where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 fieldDescription
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                fieldType
             )
           ]
       )
@@ -481,6 +490,10 @@ instance HsProtobuf.Message Field where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -496,14 +509,25 @@ instance HsProtobuf.Message Field where
           (HsProtobuf.Single "description")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Type")))
+          (HsProtobuf.Single "type")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB Field where
-  toJSONPB (Field f1 f2) =
-    (HsJSONPB.object ["name" .= f1, "description" .= f2])
-  toEncodingPB (Field f1 f2) =
-    (HsJSONPB.pairs ["name" .= f1, "description" .= f2])
+  toJSONPB (Field f1 f2 f3) =
+    ( HsJSONPB.object
+        ["name" .= f1, "description" .= f2, "type" .= f3]
+    )
+  toEncodingPB (Field f1 f2 f3) =
+    ( HsJSONPB.pairs
+        ["name" .= f1, "description" .= f2, "type" .= f3]
+    )
 
 instance HsJSONPB.FromJSONPB Field where
   parseJSONPB =
@@ -511,6 +535,7 @@ instance HsJSONPB.FromJSONPB Field where
         "Field"
         ( \obj ->
             (Hs.pure Field) <*> obj .: "name" <*> obj .: "description"
+              <*> obj .: "type"
         )
     )
 
@@ -528,9 +553,12 @@ instance HsJSONPB.ToSchema Field where
       fieldName <- declare_name Proxy.Proxy
       let declare_description = HsJSONPB.declareSchemaRef
       fieldDescription <- declare_description Proxy.Proxy
+      let declare_type = HsJSONPB.declareSchemaRef
+      fieldType <- declare_type Proxy.Proxy
       let _ =
             Hs.pure Field <*> HsJSONPB.asProxy declare_name
               <*> HsJSONPB.asProxy declare_description
+              <*> HsJSONPB.asProxy declare_type
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName = Hs.Just "Field",
@@ -544,11 +572,64 @@ instance HsJSONPB.ToSchema Field where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("name", fieldName),
-                          ("description", fieldDescription)
+                          ("description", fieldDescription),
+                          ("type", fieldType)
                         ]
                   }
             }
         )
+
+data Field_Type
+  = Field_TypeFIELD_DATE
+  | Field_TypeFIELD_NUMBER
+  | Field_TypeFIELD_TEXT
+  deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Field_Type where
+  nameOf _ = (Hs.fromString "Field_Type")
+
+instance HsProtobuf.HasDefault Field_Type
+
+instance Hs.Bounded Field_Type where
+  minBound = Field_TypeFIELD_DATE
+  maxBound = Field_TypeFIELD_TEXT
+
+instance Hs.Ord Field_Type where
+  compare x y =
+    Hs.compare
+      (HsProtobuf.fromProtoEnum x)
+      (HsProtobuf.fromProtoEnum y)
+
+instance HsProtobuf.ProtoEnum Field_Type where
+  toProtoEnumMay 0 = Hs.Just Field_TypeFIELD_DATE
+  toProtoEnumMay 1 = Hs.Just Field_TypeFIELD_NUMBER
+  toProtoEnumMay 2 = Hs.Just Field_TypeFIELD_TEXT
+  toProtoEnumMay _ = Hs.Nothing
+  fromProtoEnum (Field_TypeFIELD_DATE) = 0
+  fromProtoEnum (Field_TypeFIELD_NUMBER) = 1
+  fromProtoEnum (Field_TypeFIELD_TEXT) = 2
+
+instance HsJSONPB.ToJSONPB Field_Type where
+  toJSONPB x _ = HsJSONPB.enumFieldString x
+  toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
+
+instance HsJSONPB.FromJSONPB Field_Type where
+  parseJSONPB (HsJSONPB.String "FIELD_DATE") =
+    Hs.pure Field_TypeFIELD_DATE
+  parseJSONPB (HsJSONPB.String "FIELD_NUMBER") =
+    Hs.pure Field_TypeFIELD_NUMBER
+  parseJSONPB (HsJSONPB.String "FIELD_TEXT") =
+    Hs.pure Field_TypeFIELD_TEXT
+  parseJSONPB v = (HsJSONPB.typeMismatch "Field_Type" v)
+
+instance HsJSONPB.ToJSON Field_Type where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Field_Type where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsProtobuf.Finite Field_Type
 
 newtype FieldsResponse = FieldsResponse
   { fieldsResponseFields ::

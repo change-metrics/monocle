@@ -20,9 +20,15 @@ type fields_request = {
   version : string;
 }
 
+type field_type =
+  | Field_date 
+  | Field_number 
+  | Field_text 
+
 type field = {
   name : string;
   description : string;
+  type_ : field_type;
 }
 
 type fields_response = {
@@ -78,9 +84,13 @@ val default_fields_request :
   fields_request
 (** [default_fields_request ()] is the default value for type [fields_request] *)
 
+val default_field_type : unit -> field_type
+(** [default_field_type ()] is the default value for type [field_type] *)
+
 val default_field : 
   ?name:string ->
   ?description:string ->
+  ?type_:field_type ->
   unit ->
   field
 (** [default_field ()] is the default value for type [field] *)

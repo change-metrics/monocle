@@ -9,20 +9,26 @@ import Data.List (lookup)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
+import Monocle.Search (Field_Type (..))
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 
-data FieldType = FieldDate | FieldNumber | FieldText
-
 type Field = Text
+
+type FieldType = Field_Type
+
+fieldDate, fieldNumber, fieldText :: FieldType
+fieldDate = Field_TypeFIELD_DATE
+fieldNumber = Field_TypeFIELD_NUMBER
+fieldText = Field_TypeFIELD_TEXT
 
 -- | 'fields' specifies how to handle field value
 fields :: [(Field, (FieldType, Field, Text))]
 fields =
-  [ ("updated_at", (FieldDate, "updated_at", "Updated at date")),
-    ("score", (FieldNumber, "tasks_data.score", "Change pm score")),
-    ("repo", (FieldText, "repository_fullname", "Repository name")),
-    ("author", (FieldText, "author.muid", "Author name"))
+  [ ("updated_at", (fieldDate, "updated_at", "Last update")),
+    ("score", (fieldNumber, "tasks_data.score", "PM score")),
+    ("repo", (fieldText, "repository_fullname", "Repository name")),
+    ("author", (fieldText, "author.muid", "Author name"))
   ]
 
 -- | 'lookupField' return a field type and actual field name
@@ -66,8 +72,8 @@ toRangeValue op = case op of
 mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Either Text BH.RangeValue
 mkRangeValue op field fieldType value = do
   case fieldType of
-    FieldDate -> toRangeValueD op <$> parseDateValue value
-    FieldNumber -> toRangeValue op <$> parseNumber value
+    Field_TypeFIELD_DATE -> toRangeValueD op <$> parseDateValue value
+    Field_TypeFIELD_NUMBER -> toRangeValue op <$> parseNumber value
     _ -> Left $ "Field " <> field <> " does not support range operator"
 
 toParseError :: Either Text a -> Either ParseError a

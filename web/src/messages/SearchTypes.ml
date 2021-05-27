@@ -17,9 +17,15 @@ type fields_request = {
   version : string;
 }
 
+type field_type =
+  | Field_date 
+  | Field_number 
+  | Field_text 
+
 type field = {
   name : string;
   description : string;
+  type_ : field_type;
 }
 
 type fields_response = {
@@ -76,12 +82,16 @@ let rec default_fields_request
   version;
 }
 
+let rec default_field_type () = (Field_date:field_type)
+
 let rec default_field 
   ?name:((name:string) = "")
   ?description:((description:string) = "")
+  ?type_:((type_:field_type) = default_field_type ())
   () : field  = {
   name;
   description;
+  type_;
 }
 
 let rec default_fields_response 

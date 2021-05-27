@@ -12,6 +12,9 @@ val encode_search_suggestions_response : SearchTypes.search_suggestions_response
 val encode_fields_request : SearchTypes.fields_request -> Js.Json.t Js.Dict.t
 (** [encode_fields_request v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_field_type : SearchTypes.field_type -> string
+(** [encode_field_type v] returns JSON string*)
+
 val encode_field : SearchTypes.field -> Js.Json.t Js.Dict.t
 (** [encode_field v dict] encodes [v] int the given JSON [dict] *)
 
@@ -44,6 +47,9 @@ val decode_search_suggestions_response : Js.Json.t Js.Dict.t -> SearchTypes.sear
 
 val decode_fields_request : Js.Json.t Js.Dict.t -> SearchTypes.fields_request
 (** [decode_fields_request decoder] decodes a [fields_request] value from [decoder] *)
+
+val decode_field_type : Js.Json.t -> SearchTypes.field_type
+(** [decode_field_type value] decodes a [field_type] from a Json value*)
 
 val decode_field : Js.Json.t Js.Dict.t -> SearchTypes.field
 (** [decode_field decoder] decodes a [field] value from [decoder] *)

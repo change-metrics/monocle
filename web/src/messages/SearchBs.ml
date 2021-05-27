@@ -35,11 +35,13 @@ let default_fields_request_mutable () : fields_request_mutable = {
 type field_mutable = {
   mutable name : string;
   mutable description : string;
+  mutable type_ : SearchTypes.field_type;
 }
 
 let default_field_mutable () : field_mutable = {
   name = "";
   description = "";
+  type_ = SearchTypes.default_field_type ();
 }
 
 type fields_response_mutable = {
@@ -185,6 +187,14 @@ let rec decode_fields_request json =
     SearchTypes.version = v.version;
   } : SearchTypes.fields_request)
 
+let rec decode_field_type (json:Js.Json.t) =
+  match Pbrt_bs.string json "field_type" "value" with
+  | "FIELD_DATE" -> (SearchTypes.Field_date : SearchTypes.field_type)
+  | "FIELD_NUMBER" -> (SearchTypes.Field_number : SearchTypes.field_type)
+  | "FIELD_TEXT" -> (SearchTypes.Field_text : SearchTypes.field_type)
+  | "" -> SearchTypes.Field_date
+  | _ -> Pbrt_bs.E.malformed_variant "field_type"
+
 let rec decode_field json =
   let v = default_field_mutable () in
   let keys = Js.Dict.keys json in
@@ -197,12 +207,16 @@ let rec decode_field json =
     | "description" -> 
       let json = Js.Dict.unsafeGet json "description" in
       v.description <- Pbrt_bs.string json "field" "description"
+    | "type" -> 
+      let json = Js.Dict.unsafeGet json "type" in
+      v.type_ <- (decode_field_type json)
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.name = v.name;
     SearchTypes.description = v.description;
+    SearchTypes.type_ = v.type_;
   } : SearchTypes.field)
 
 let rec decode_fields_response json =
@@ -355,10 +369,17 @@ let rec encode_fields_request (v:SearchTypes.fields_request) =
   Js.Dict.set json "version" (Js.Json.string v.SearchTypes.version);
   json
 
+let rec encode_field_type (v:SearchTypes.field_type) : string = 
+  match v with
+  | SearchTypes.Field_date -> "FIELD_DATE"
+  | SearchTypes.Field_number -> "FIELD_NUMBER"
+  | SearchTypes.Field_text -> "FIELD_TEXT"
+
 let rec encode_field (v:SearchTypes.field) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "name" (Js.Json.string v.SearchTypes.name);
   Js.Dict.set json "description" (Js.Json.string v.SearchTypes.description);
+  Js.Dict.set json "type" (Js.Json.string (encode_field_type v.SearchTypes.type_));
   json
 
 let rec encode_fields_response (v:SearchTypes.fields_response) = 

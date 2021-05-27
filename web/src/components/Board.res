@@ -8,7 +8,6 @@ open Prelude
 @react.component
 let make = (~index: string) => {
   let fields = useAutoGet(() => WebApi.Search.fields({version: "1"}))
-  Js.log2("HERE", fields)
   // The actual search bar content state
   let (searchText, setSearchText) = React.useState(_ => "")
   // The search result from the api
