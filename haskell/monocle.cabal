@@ -105,6 +105,7 @@ test-suite monocle-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base                       < 5
+                     , aeson
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
