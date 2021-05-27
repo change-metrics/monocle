@@ -26,9 +26,15 @@ fieldText = Field_TypeFIELD_TEXT
 fields :: [(Field, (FieldType, Field, Text))]
 fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
-    ("score", (fieldNumber, "tasks_data.score", "PM score")),
+    ("created_at", (fieldDate, "created_at", "Change creation")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
-    ("author", (fieldText, "author.muid", "Author name"))
+    ("author", (fieldText, "author.muid", "Author name")),
+    ("branch", (fieldText, "target_branch", "Branch name")),
+    ("approval", (fieldText, "approval", "Approval name")),
+    ("priority", (fieldText, "tasks_data.priority", "Task priority")),
+    ("severity", (fieldText, "tasks_data.severity", "Task severity")),
+    ("task", (fieldText, "tasks_data.ttype", "Task type")),
+    ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
 
 -- | 'lookupField' return a field type and actual field name
