@@ -36,6 +36,8 @@ Here is the graph of the complexity versus time to merge changes:
 
 ![Complexity Graph](https://user-images.githubusercontent.com/529708/80858379-45d84200-8c59-11ea-854e-9548be7968ff.png)
 
+We have a Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
+
 ## Components
 
 Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
