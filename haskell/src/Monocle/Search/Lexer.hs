@@ -73,8 +73,11 @@ locatedTokenParser = LocatedToken <$> Megaparsec.getOffset <*> tokenParser <*> M
 
 -- | 'literal' parses a literal field or value
 literal :: Parser Text
-literal = Lexer.lexeme Megaparsec.Char.space $ Megaparsec.takeWhile1P Nothing isLiteral
+literal = Lexer.lexeme Megaparsec.Char.space $ Combinators.choice [direct, quoted]
   where
+    direct = Megaparsec.takeWhile1P Nothing isLiteral
+    quoted = "\"" *> Megaparsec.takeWhile1P Nothing isQuotedLiteral <* "\""
+    isQuotedLiteral x = isLiteral x || x == ' '
     isLiteral x = upper x || lower x || digit x || sep x
     upper c = 'A' <= c && c <= 'Z'
     lower c = 'a' <= c && c <= 'z'

@@ -217,7 +217,6 @@ The example query is converted to:
 The language may be extended with the following features:
 
 - `field in [x, xs..]`
-- quoted value, e.g.: `user:"Foo Bar"`
 - inline range, e.g.: `count:0..10`
 - relative date, e.g.: `now-3weeks`
 - unicode value

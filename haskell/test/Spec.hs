@@ -51,6 +51,9 @@ monocleSearchLanguage =
             ]
         ),
       testCase
+        "Lexer quoted"
+        (lexMatch "field:\"A value\"" [L.Literal "field", L.Equal, L.Literal "A value"]),
+      testCase
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
