@@ -8,7 +8,7 @@ module Monocle.Api.Server where
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse)
+import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Change (ELKChange (..))
 import qualified Monocle.Search.Parser as P
@@ -41,3 +41,13 @@ searchChangeQuery bhEnv request = SearchPB.ChangesQueryResponse . Just <$> respo
           changeUrl = (toLazy $ elkchangeUrl change)
           changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
        in SearchPB.Change {..}
+
+searchFields :: FieldsRequest -> Handler FieldsResponse
+searchFields = const $ pure response
+  where
+    response :: FieldsResponse
+    response = FieldsResponse . V.fromList . map toResult $ Q.fields
+    toResult (name, (_type, _realname, desc)) =
+      let fieldName = toLazy name
+          fieldDescription = toLazy desc
+       in SearchPB.Field {..}
