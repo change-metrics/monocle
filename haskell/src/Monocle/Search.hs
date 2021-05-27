@@ -583,6 +583,8 @@ data Field_Type
   = Field_TypeFIELD_DATE
   | Field_TypeFIELD_NUMBER
   | Field_TypeFIELD_TEXT
+  | Field_TypeFIELD_BOOL
+  | Field_TypeFIELD_REGEX
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named Field_Type where
@@ -592,7 +594,7 @@ instance HsProtobuf.HasDefault Field_Type
 
 instance Hs.Bounded Field_Type where
   minBound = Field_TypeFIELD_DATE
-  maxBound = Field_TypeFIELD_TEXT
+  maxBound = Field_TypeFIELD_REGEX
 
 instance Hs.Ord Field_Type where
   compare x y =
@@ -604,10 +606,14 @@ instance HsProtobuf.ProtoEnum Field_Type where
   toProtoEnumMay 0 = Hs.Just Field_TypeFIELD_DATE
   toProtoEnumMay 1 = Hs.Just Field_TypeFIELD_NUMBER
   toProtoEnumMay 2 = Hs.Just Field_TypeFIELD_TEXT
+  toProtoEnumMay 3 = Hs.Just Field_TypeFIELD_BOOL
+  toProtoEnumMay 4 = Hs.Just Field_TypeFIELD_REGEX
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (Field_TypeFIELD_DATE) = 0
   fromProtoEnum (Field_TypeFIELD_NUMBER) = 1
   fromProtoEnum (Field_TypeFIELD_TEXT) = 2
+  fromProtoEnum (Field_TypeFIELD_BOOL) = 3
+  fromProtoEnum (Field_TypeFIELD_REGEX) = 4
 
 instance HsJSONPB.ToJSONPB Field_Type where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -620,6 +626,10 @@ instance HsJSONPB.FromJSONPB Field_Type where
     Hs.pure Field_TypeFIELD_NUMBER
   parseJSONPB (HsJSONPB.String "FIELD_TEXT") =
     Hs.pure Field_TypeFIELD_TEXT
+  parseJSONPB (HsJSONPB.String "FIELD_BOOL") =
+    Hs.pure Field_TypeFIELD_BOOL
+  parseJSONPB (HsJSONPB.String "FIELD_REGEX") =
+    Hs.pure Field_TypeFIELD_REGEX
   parseJSONPB v = (HsJSONPB.typeMismatch "Field_Type" v)
 
 instance HsJSONPB.ToJSON Field_Type where

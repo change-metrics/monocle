@@ -38,8 +38,8 @@ digit = %x30-39
 ; ASCII letter or "_"
 label-char = ascii / "_"
 
-; label-char or ASCII digit or "-"
-value-char = label-char / digit / "-" / "/"
+; label-char or ASCII digit or extra
+value-char = label-char / digit / "-" / "/" / "." / "*"
 
 ; Field and value
 field = 1*label-char

@@ -17,10 +17,12 @@ type Field = Text
 
 type FieldType = Field_Type
 
-fieldDate, fieldNumber, fieldText :: FieldType
+fieldDate, fieldNumber, fieldText, fieldBoolean, fieldRegex :: FieldType
 fieldDate = Field_TypeFIELD_DATE
 fieldNumber = Field_TypeFIELD_NUMBER
 fieldText = Field_TypeFIELD_TEXT
+fieldBoolean = Field_TypeFIELD_BOOL
+fieldRegex = Field_TypeFIELD_REGEX
 
 -- | 'fields' specifies how to handle field value
 fields :: [(Field, (FieldType, Field, Text))]
@@ -28,13 +30,16 @@ fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
     ("created_at", (fieldDate, "created_at", "Change creation")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
+    ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
     ("author", (fieldText, "author.muid", "Author name")),
+    ("author_regex", (fieldRegex, "author.muid", "Author regex")),
     ("branch", (fieldText, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
     ("severity", (fieldText, "tasks_data.severity", "Task severity")),
     ("task", (fieldText, "tasks_data.ttype", "Task type")),
-    ("score", (fieldNumber, "tasks_data.score", "PM score"))
+    ("score", (fieldNumber, "tasks_data.score", "PM score")),
+    ("self_merged", (fieldBoolean, "self_merged", "Change merged by the author"))
   ]
 
 -- | 'lookupField' return a field type and actual field name
@@ -50,6 +55,12 @@ parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (toString txt) of
   Just value -> pure value
   Nothing -> Left $ "Invalid number: " <> txt
+
+parseBoolean :: Text -> Either Text Text
+parseBoolean txt = case txt of
+  "true" -> pure "true"
+  "false" -> pure "false"
+  _ -> Left $ "Invalid booolean: " <> txt
 
 data RangeOp = Gt | Gte | Lt | Lte
 
@@ -96,8 +107,14 @@ mkRangeQuery expr field value = do
 
 mkEqQuery :: Field -> Text -> Either ParseError BH.Query
 mkEqQuery field value = do
-  (_fieldType, fieldName, _desc) <- toParseError $ lookupField field
-  Right $ BH.TermQuery (BH.Term fieldName value) Nothing
+  (fieldType, fieldName, _desc) <- toParseError $ lookupField field
+  case fieldType of
+    Field_TypeFIELD_BOOL -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
+    Field_TypeFIELD_REGEX ->
+      Right
+        . BH.QueryRegexpQuery
+        $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
+    _ -> Right $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 

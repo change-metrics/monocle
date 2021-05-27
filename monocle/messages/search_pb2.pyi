@@ -102,11 +102,15 @@ class Field(google.protobuf.message.Message):
         FIELD_DATE = Field.Type.V(0)
         FIELD_NUMBER = Field.Type.V(1)
         FIELD_TEXT = Field.Type.V(2)
+        FIELD_BOOL = Field.Type.V(3)
+        FIELD_REGEX = Field.Type.V(4)
     class Type(metaclass=_Type):
         V = typing.NewType("V", builtins.int)
     FIELD_DATE = Field.Type.V(0)
     FIELD_NUMBER = Field.Type.V(1)
     FIELD_TEXT = Field.Type.V(2)
+    FIELD_BOOL = Field.Type.V(3)
+    FIELD_REGEX = Field.Type.V(4)
 
     NAME_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int

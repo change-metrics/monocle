@@ -30,6 +30,8 @@ message Field {
     FIELD_DATE = 0;
     FIELD_NUMBER = 1;
     FIELD_TEXT = 2;
+    FIELD_BOOL = 3;
+    FIELD_REGEX = 4;
   }
   Type type = 3;
 }

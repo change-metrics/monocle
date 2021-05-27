@@ -192,6 +192,8 @@ let rec decode_field_type (json:Js.Json.t) =
   | "FIELD_DATE" -> (SearchTypes.Field_date : SearchTypes.field_type)
   | "FIELD_NUMBER" -> (SearchTypes.Field_number : SearchTypes.field_type)
   | "FIELD_TEXT" -> (SearchTypes.Field_text : SearchTypes.field_type)
+  | "FIELD_BOOL" -> (SearchTypes.Field_bool : SearchTypes.field_type)
+  | "FIELD_REGEX" -> (SearchTypes.Field_regex : SearchTypes.field_type)
   | "" -> SearchTypes.Field_date
   | _ -> Pbrt_bs.E.malformed_variant "field_type"
 
@@ -374,6 +376,8 @@ let rec encode_field_type (v:SearchTypes.field_type) : string =
   | SearchTypes.Field_date -> "FIELD_DATE"
   | SearchTypes.Field_number -> "FIELD_NUMBER"
   | SearchTypes.Field_text -> "FIELD_TEXT"
+  | SearchTypes.Field_bool -> "FIELD_BOOL"
+  | SearchTypes.Field_regex -> "FIELD_REGEX"
 
 let rec encode_field (v:SearchTypes.field) = 
   let json = Js.Dict.empty () in

@@ -79,7 +79,7 @@ literal = Lexer.lexeme Megaparsec.Char.space $ Megaparsec.takeWhile1P Nothing is
     upper c = 'A' <= c && c <= 'Z'
     lower c = 'a' <= c && c <= 'z'
     digit c = '0' <= c && c <= '9'
-    sep c = c `elem` ['-', '_', '/']
+    sep c = c `elem` ['-', '_', '/', '.', '*']
 
 -- | 'symbol' parses a known symbol
 symbol :: Text -> Parser Text

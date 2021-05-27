@@ -19,6 +19,8 @@ let make = (~value: string, ~fields: list<SearchTypes.field>, ~onChange, ~onSear
     | SearchTypes.Field_date => "date"
     | SearchTypes.Field_number => "number"
     | SearchTypes.Field_text => "text"
+    | SearchTypes.Field_bool => "boolean"
+    | SearchTypes.Field_regex => "regex"
     }
   let renderField = (f: SearchTypes.field) =>
     <li key={f.name}>

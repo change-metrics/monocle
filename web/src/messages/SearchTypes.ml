@@ -21,6 +21,8 @@ type field_type =
   | Field_date 
   | Field_number 
   | Field_text 
+  | Field_bool 
+  | Field_regex 
 
 type field = {
   name : string;

@@ -80,6 +80,18 @@ monocleSearchLanguage =
         ( queryMatch
             "score>200"
             "{\"range\":{\"tasks_data.score\":{\"gt\":200,\"boost\":1}}}"
+        ),
+      testCase
+        "Query boolean"
+        ( queryMatch
+            "self_merged:false"
+            "{\"term\":{\"self_merged\":{\"value\":\"false\"}}}"
+        ),
+      testCase
+        "Query regex"
+        ( queryMatch
+            "repo_regex:openstack/.*nova.*"
+            "{\"regexp\":{\"repo_regex\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
         )
     ]
   where
