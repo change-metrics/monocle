@@ -79,6 +79,7 @@ type change_mutable = {
   mutable state : string;
   mutable branch : string;
   mutable created_at : TimestampTypes.timestamp option;
+  mutable task_data : TaskDataTypes.new_task_data list;
 }
 
 let default_change_mutable () : change_mutable = {
@@ -88,6 +89,7 @@ let default_change_mutable () : change_mutable = {
   state = "";
   branch = "";
   created_at = None;
+  task_data = [];
 }
 
 type changes_mutable = {
@@ -313,6 +315,15 @@ let rec decode_change json =
     | "created_at" -> 
       let json = Js.Dict.unsafeGet json "created_at" in
       v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "created_at")))
+    | "task_data" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "task_data" in 
+        Pbrt_bs.array_ a "change" "task_data"
+      in
+      v.task_data <- Array.map (fun json -> 
+        (TaskDataBs.decode_new_task_data (Pbrt_bs.object_ json "change" "task_data"))
+      ) a |> Array.to_list;
+    end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -323,6 +334,7 @@ let rec decode_change json =
     SearchTypes.state = v.state;
     SearchTypes.branch = v.branch;
     SearchTypes.created_at = v.created_at;
+    SearchTypes.task_data = v.task_data;
   } : SearchTypes.change)
 
 let rec decode_changes json =
@@ -445,6 +457,17 @@ let rec encode_change (v:SearchTypes.change) =
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "created_at" (Js.Json.string json');
     end;
+  end;
+  begin (* taskData field *)
+    let (task_data':Js.Json.t) =
+      v.SearchTypes.task_data
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> TaskDataBs.encode_new_task_data |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "task_data" task_data';
   end;
   json
 

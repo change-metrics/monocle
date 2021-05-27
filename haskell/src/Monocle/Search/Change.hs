@@ -51,10 +51,12 @@ instance ToJSON Commit where
 instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+-- TODO: Replace by the existing Monocle.TaskData.NewTaskData
 data TaskData = TaskData
   { tdTid :: Text,
-    tdTtype :: Text,
-    tdUpdatedAt :: UTCTime,
+    tdTtype :: [Text],
+    -- TODO: Handle `2021-05-18T04:31:18` (without the trailing Z)
+    -- tdUpdatedAt :: UTCTime,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,

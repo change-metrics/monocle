@@ -7,6 +7,8 @@ option go_package = "monocle/search";
 
 import "google/protobuf/timestamp.proto";
 
+import "monocle/task_data.proto";
+
 message SearchSuggestionsRequest {
   string index = 1;
 }
@@ -57,6 +59,7 @@ message Change {
   string state = 4;
   string branch = 5;
   google.protobuf.Timestamp created_at = 6;
+  repeated monocle_task_data.NewTaskData task_data = 7;
 }
 
 message Changes {

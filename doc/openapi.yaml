@@ -158,6 +158,10 @@ components:
                 created_at:
                     type: string
                     format: RFC3339
+                task_data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/NewTaskData'
         Changes:
             properties:
                 changes:

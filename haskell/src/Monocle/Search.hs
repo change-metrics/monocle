@@ -28,6 +28,7 @@ import qualified Data.Word as Hs (Word16, Word32, Word64)
 import qualified GHC.Enum as Hs
 import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
+import qualified Monocle.TaskData
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
@@ -956,7 +957,8 @@ data Change = Change
     changeRepositoryFullname :: Hs.Text,
     changeState :: Hs.Text,
     changeBranch :: Hs.Text,
-    changeCreatedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp
+    changeCreatedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeTaskData :: Hs.Vector Monocle.TaskData.NewTaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -974,7 +976,8 @@ instance HsProtobuf.Message Change where
         changeRepositoryFullname = changeRepositoryFullname,
         changeState = changeState,
         changeBranch = changeBranch,
-        changeCreatedAt = changeCreatedAt
+        changeCreatedAt = changeCreatedAt,
+        changeTaskData = changeTaskData
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -1002,6 +1005,13 @@ instance HsProtobuf.Message Change where
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                     changeCreatedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 7)
+                ( Hs.coerce @(Hs.Vector Monocle.TaskData.NewTaskData)
+                    @(HsProtobuf.NestedVec Monocle.TaskData.NewTaskData)
+                    changeTaskData
                 )
             )
           ]
@@ -1034,6 +1044,13 @@ instance HsProtobuf.Message Change where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 6)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.NewTaskData))
+              @(_ (Hs.Vector Monocle.TaskData.NewTaskData))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 7)
               )
           )
   dotProto _ =
@@ -1084,28 +1101,43 @@ instance HsProtobuf.Message Change where
           (HsProtobuf.Single "created_at")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 7)
+          ( HsProtobuf.Repeated
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_task_data" Hs.:| ["NewTaskData"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "task_data")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB Change where
-  toJSONPB (Change f1 f2 f3 f4 f5 f6) =
+  toJSONPB (Change f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.object
         [ "title" .= f1,
           "url" .= f2,
           "repository_fullname" .= f3,
           "state" .= f4,
           "branch" .= f5,
-          "created_at" .= f6
+          "created_at" .= f6,
+          "task_data" .= f7
         ]
     )
-  toEncodingPB (Change f1 f2 f3 f4 f5 f6) =
+  toEncodingPB (Change f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.pairs
         [ "title" .= f1,
           "url" .= f2,
           "repository_fullname" .= f3,
           "state" .= f4,
           "branch" .= f5,
-          "created_at" .= f6
+          "created_at" .= f6,
+          "task_data" .= f7
         ]
     )
 
@@ -1119,6 +1151,7 @@ instance HsJSONPB.FromJSONPB Change where
               <*> obj .: "state"
               <*> obj .: "branch"
               <*> obj .: "created_at"
+              <*> obj .: "task_data"
         )
     )
 
@@ -1144,6 +1177,8 @@ instance HsJSONPB.ToSchema Change where
       changeBranch <- declare_branch Proxy.Proxy
       let declare_created_at = HsJSONPB.declareSchemaRef
       changeCreatedAt <- declare_created_at Proxy.Proxy
+      let declare_task_data = HsJSONPB.declareSchemaRef
+      changeTaskData <- declare_task_data Proxy.Proxy
       let _ =
             Hs.pure Change <*> HsJSONPB.asProxy declare_title
               <*> HsJSONPB.asProxy declare_url
@@ -1151,6 +1186,7 @@ instance HsJSONPB.ToSchema Change where
               <*> HsJSONPB.asProxy declare_state
               <*> HsJSONPB.asProxy declare_branch
               <*> HsJSONPB.asProxy declare_created_at
+              <*> HsJSONPB.asProxy declare_task_data
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName = Hs.Just "Change",
@@ -1170,7 +1206,8 @@ instance HsJSONPB.ToSchema Change where
                           ),
                           ("state", changeState),
                           ("branch", changeBranch),
-                          ("created_at", changeCreatedAt)
+                          ("created_at", changeCreatedAt),
+                          ("task_data", changeTaskData)
                         ]
                   }
             }

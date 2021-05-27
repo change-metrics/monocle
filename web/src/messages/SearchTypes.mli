@@ -54,6 +54,7 @@ type change = {
   state : string;
   branch : string;
   created_at : TimestampTypes.timestamp option;
+  task_data : TaskDataTypes.new_task_data list;
 }
 
 type changes = {
@@ -127,6 +128,7 @@ val default_change :
   ?state:string ->
   ?branch:string ->
   ?created_at:TimestampTypes.timestamp option ->
+  ?task_data:TaskDataTypes.new_task_data list ->
   unit ->
   change
 (** [default_change ()] is the default value for type [change] *)

@@ -13,6 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
+from monocle import task_data_pb2 as monocle_dot_task__data__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -21,9 +22,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\016monocle/search",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"3\n\x13\x43hangesQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t"\x90\x01\n\x06\x43hange\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x03 \x01(\t\x12\r\n\x05state\x18\x04 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x05 \x01(\t\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"w\n\x14\x43hangesQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12(\n\x05items\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x42\x08\n\x06resultB\x10Z\x0emonocle/searchb\x06proto3',
+    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17monocle/task_data.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"3\n\x13\x43hangesQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t"\xc3\x01\n\x06\x43hange\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x03 \x01(\t\x12\r\n\x05state\x18\x04 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x05 \x01(\t\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x31\n\ttask_data\x18\x07 \x03(\x0b\x32\x1e.monocle_task_data.NewTaskData"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"w\n\x14\x43hangesQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12(\n\x05items\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x42\x08\n\x06resultB\x10Z\x0emonocle/searchb\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
+        monocle_dot_task__data__pb2.DESCRIPTOR,
     ],
 )
 
@@ -78,8 +80,8 @@ _FIELD_TYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=362,
-    serialized_end=451,
+    serialized_start=387,
+    serialized_end=476,
 )
 _sym_db.RegisterEnumDescriptor(_FIELD_TYPE)
 
@@ -120,8 +122,8 @@ _SEARCHSUGGESTIONSREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=73,
-    serialized_end=114,
+    serialized_start=98,
+    serialized_end=139,
 )
 
 
@@ -237,8 +239,8 @@ _SEARCHSUGGESTIONSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=116,
-    serialized_end=239,
+    serialized_start=141,
+    serialized_end=264,
 )
 
 
@@ -278,8 +280,8 @@ _FIELDSREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=241,
-    serialized_end=273,
+    serialized_start=266,
+    serialized_end=298,
 )
 
 
@@ -359,8 +361,8 @@ _FIELD = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=276,
-    serialized_end=451,
+    serialized_start=301,
+    serialized_end=476,
 )
 
 
@@ -400,8 +402,8 @@ _FIELDSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=453,
-    serialized_end=508,
+    serialized_start=478,
+    serialized_end=533,
 )
 
 
@@ -460,8 +462,8 @@ _QUERYERROR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=510,
-    serialized_end=557,
+    serialized_start=535,
+    serialized_end=582,
 )
 
 
@@ -520,8 +522,8 @@ _CHANGESQUERYREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=559,
-    serialized_end=610,
+    serialized_start=584,
+    serialized_end=635,
 )
 
 
@@ -647,6 +649,25 @@ _CHANGE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="task_data",
+            full_name="monocle_search.Change.task_data",
+            index=6,
+            number=7,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -656,8 +677,8 @@ _CHANGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=613,
-    serialized_end=757,
+    serialized_start=638,
+    serialized_end=833,
 )
 
 
@@ -697,8 +718,8 @@ _CHANGES = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=759,
-    serialized_end=809,
+    serialized_start=835,
+    serialized_end=885,
 )
 
 
@@ -766,8 +787,8 @@ _CHANGESQUERYRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=811,
-    serialized_end=930,
+    serialized_start=887,
+    serialized_end=1006,
 )
 
 _FIELD.fields_by_name["type"].enum_type = _FIELD_TYPE
@@ -776,6 +797,9 @@ _FIELDSRESPONSE.fields_by_name["fields"].message_type = _FIELD
 _CHANGE.fields_by_name[
     "created_at"
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+_CHANGE.fields_by_name[
+    "task_data"
+].message_type = monocle_dot_task__data__pb2._NEWTASKDATA
 _CHANGES.fields_by_name["changes"].message_type = _CHANGE
 _CHANGESQUERYRESPONSE.fields_by_name["error"].message_type = _QUERYERROR
 _CHANGESQUERYRESPONSE.fields_by_name["items"].message_type = _CHANGES

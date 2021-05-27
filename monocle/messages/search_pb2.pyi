@@ -8,6 +8,7 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
+import monocle.task_data_pb2
 import typing
 import typing_extensions
 
@@ -202,6 +203,7 @@ class Change(google.protobuf.message.Message):
     STATE_FIELD_NUMBER: builtins.int
     BRANCH_FIELD_NUMBER: builtins.int
     CREATED_AT_FIELD_NUMBER: builtins.int
+    TASK_DATA_FIELD_NUMBER: builtins.int
     title: typing.Text = ...
     url: typing.Text = ...
     repository_fullname: typing.Text = ...
@@ -209,6 +211,12 @@ class Change(google.protobuf.message.Message):
     branch: typing.Text = ...
     @property
     def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def task_data(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        monocle.task_data_pb2.NewTaskData
+    ]: ...
     def __init__(
         self,
         *,
@@ -218,6 +226,9 @@ class Change(google.protobuf.message.Message):
         state: typing.Text = ...,
         branch: typing.Text = ...,
         created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        task_data: typing.Optional[
+            typing.Iterable[monocle.task_data_pb2.NewTaskData]
+        ] = ...,
     ) -> None: ...
     def HasField(
         self, field_name: typing_extensions.Literal["created_at", b"created_at"]
@@ -233,6 +244,8 @@ class Change(google.protobuf.message.Message):
             b"repository_fullname",
             "state",
             b"state",
+            "task_data",
+            b"task_data",
             "title",
             b"title",
             "url",

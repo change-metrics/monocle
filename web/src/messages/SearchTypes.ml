@@ -51,6 +51,7 @@ type change = {
   state : string;
   branch : string;
   created_at : TimestampTypes.timestamp option;
+  task_data : TaskDataTypes.new_task_data list;
 }
 
 type changes = {
@@ -128,6 +129,7 @@ let rec default_change
   ?state:((state:string) = "")
   ?branch:((branch:string) = "")
   ?created_at:((created_at:TimestampTypes.timestamp option) = None)
+  ?task_data:((task_data:TaskDataTypes.new_task_data list) = [])
   () : change  = {
   title;
   url;
@@ -135,6 +137,7 @@ let rec default_change
   state;
   branch;
   created_at;
+  task_data;
 }
 
 let rec default_changes 
