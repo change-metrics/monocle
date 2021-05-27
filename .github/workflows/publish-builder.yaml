@@ -1,0 +1,16 @@
+jobs:
+  publish-builder:
+    if: github.repository_owner == 'change-metrics'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build builder image
+        run: |
+          docker build -f Dockerfile-builder -t quay.io/change-metrics/builder .
+
+      - name: Publish images to quay.io
+        run: |
+          docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io
+          docker push quay.io/change-metrics/builder:latest
