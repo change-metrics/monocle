@@ -149,6 +149,12 @@ components:
                     type: string
                 url:
                     type: string
+                repository_fullname:
+                    type: string
+                state:
+                    type: string
+                branch:
+                    type: string
                 created_at:
                     type: string
                     format: RFC3339

@@ -198,9 +198,15 @@ class Change(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     TITLE_FIELD_NUMBER: builtins.int
     URL_FIELD_NUMBER: builtins.int
+    REPOSITORY_FULLNAME_FIELD_NUMBER: builtins.int
+    STATE_FIELD_NUMBER: builtins.int
+    BRANCH_FIELD_NUMBER: builtins.int
     CREATED_AT_FIELD_NUMBER: builtins.int
     title: typing.Text = ...
     url: typing.Text = ...
+    repository_fullname: typing.Text = ...
+    state: typing.Text = ...
+    branch: typing.Text = ...
     @property
     def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
@@ -208,6 +214,9 @@ class Change(google.protobuf.message.Message):
         *,
         title: typing.Text = ...,
         url: typing.Text = ...,
+        repository_fullname: typing.Text = ...,
+        state: typing.Text = ...,
+        branch: typing.Text = ...,
         created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
     def HasField(
@@ -216,7 +225,18 @@ class Change(google.protobuf.message.Message):
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "created_at", b"created_at", "title", b"title", "url", b"url"
+            "branch",
+            b"branch",
+            "created_at",
+            b"created_at",
+            "repository_fullname",
+            b"repository_fullname",
+            "state",
+            b"state",
+            "title",
+            b"title",
+            "url",
+            b"url",
         ],
     ) -> None: ...
 

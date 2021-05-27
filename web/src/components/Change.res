@@ -72,3 +72,30 @@ module TaskData = {
     </>
   }
 }
+
+module Search = {
+  module Info = {
+    @react.component
+    let make = (~name, ~value) =>
+      <DescriptionListGroup>
+        <DescriptionListTerm> {name->str} </DescriptionListTerm>
+        <DescriptionListDescription> {value->str} </DescriptionListDescription>
+      </DescriptionListGroup>
+  }
+  @react.component
+  let make = (~change: SearchTypes.change) =>
+    <DataListItemRow key={change.url}>
+      <DataListCell>
+        <Card>
+          <CardHeader> <Label> {change.state->str} </Label> {change.title->str} </CardHeader>
+          <CardBody>
+            <DescriptionList isHorizontal={true}>
+              <Info name="Repository" value={change.repository_fullname} />
+              <Info name="Branch" value={change.branch} />
+              <Info name="URL" value={change.url} />
+            </DescriptionList>
+          </CardBody>
+        </Card>
+      </DataListCell>
+    </DataListItemRow>
+}

@@ -47,6 +47,9 @@ type changes_query_request = {
 type change = {
   title : string;
   url : string;
+  repository_fullname : string;
+  state : string;
+  branch : string;
   created_at : TimestampTypes.timestamp option;
 }
 
@@ -121,10 +124,16 @@ let rec default_changes_query_request
 let rec default_change 
   ?title:((title:string) = "")
   ?url:((url:string) = "")
+  ?repository_fullname:((repository_fullname:string) = "")
+  ?state:((state:string) = "")
+  ?branch:((branch:string) = "")
   ?created_at:((created_at:TimestampTypes.timestamp option) = None)
   () : change  = {
   title;
   url;
+  repository_fullname;
+  state;
+  branch;
   created_at;
 }
 

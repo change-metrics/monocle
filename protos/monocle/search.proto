@@ -53,7 +53,10 @@ message ChangesQueryRequest {
 message Change {
   string title = 1;
   string url = 2;
-  google.protobuf.Timestamp created_at = 3;
+  string repository_fullname = 3;
+  string state = 4;
+  string branch = 5;
+  google.protobuf.Timestamp created_at = 6;
 }
 
 message Changes {

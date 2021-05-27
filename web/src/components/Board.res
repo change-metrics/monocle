@@ -33,11 +33,6 @@ let make = (~index: string) => {
     None
   }, [searchText])
 
-  let renderChange = (change: SearchTypes.change) =>
-    <Prelude.DataListItemRow key={change.url}>
-      <Prelude.DataListCell> <span> {change.title->str} </span> </Prelude.DataListCell>
-    </Prelude.DataListItemRow>
-
   <MStack>
     <MStackItem>
       {switch fields {
@@ -59,7 +54,7 @@ let make = (~index: string) => {
           | 0 => <p> {"No changes matched"->str} </p>
           | _ =>
             <Patternfly.DataList isCompact={true}>
-              {changes->Belt.Array.map(renderChange)->React.array}
+              {changes->Belt.Array.map(change => <Change.Search change={change} />)->React.array}
             </Patternfly.DataList>
           }
         }

@@ -75,12 +75,18 @@ let default_changes_query_request_mutable () : changes_query_request_mutable = {
 type change_mutable = {
   mutable title : string;
   mutable url : string;
+  mutable repository_fullname : string;
+  mutable state : string;
+  mutable branch : string;
   mutable created_at : TimestampTypes.timestamp option;
 }
 
 let default_change_mutable () : change_mutable = {
   title = "";
   url = "";
+  repository_fullname = "";
+  state = "";
+  branch = "";
   created_at = None;
 }
 
@@ -295,6 +301,15 @@ let rec decode_change json =
     | "url" -> 
       let json = Js.Dict.unsafeGet json "url" in
       v.url <- Pbrt_bs.string json "change" "url"
+    | "repository_fullname" -> 
+      let json = Js.Dict.unsafeGet json "repository_fullname" in
+      v.repository_fullname <- Pbrt_bs.string json "change" "repository_fullname"
+    | "state" -> 
+      let json = Js.Dict.unsafeGet json "state" in
+      v.state <- Pbrt_bs.string json "change" "state"
+    | "branch" -> 
+      let json = Js.Dict.unsafeGet json "branch" in
+      v.branch <- Pbrt_bs.string json "change" "branch"
     | "created_at" -> 
       let json = Js.Dict.unsafeGet json "created_at" in
       v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "created_at")))
@@ -304,6 +319,9 @@ let rec decode_change json =
   ({
     SearchTypes.title = v.title;
     SearchTypes.url = v.url;
+    SearchTypes.repository_fullname = v.repository_fullname;
+    SearchTypes.state = v.state;
+    SearchTypes.branch = v.branch;
     SearchTypes.created_at = v.created_at;
   } : SearchTypes.change)
 
@@ -417,6 +435,9 @@ let rec encode_change (v:SearchTypes.change) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "title" (Js.Json.string v.SearchTypes.title);
   Js.Dict.set json "url" (Js.Json.string v.SearchTypes.url);
+  Js.Dict.set json "repository_fullname" (Js.Json.string v.SearchTypes.repository_fullname);
+  Js.Dict.set json "state" (Js.Json.string v.SearchTypes.state);
+  Js.Dict.set json "branch" (Js.Json.string v.SearchTypes.branch);
   begin match v.SearchTypes.created_at with
   | None -> ()
   | Some v ->

@@ -41,6 +41,9 @@ searchChangeQuery bhEnv request = SearchPB.ChangesQueryResponse . Just <$> respo
       let changeTitle = (toLazy $ elkchangeTitle change)
           changeUrl = (toLazy $ elkchangeUrl change)
           changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
+          changeRepositoryFullname = (toLazy $ elkchangeRepositoryFullname change)
+          changeState = (toLazy $ elkchangeState change)
+          changeBranch = (toLazy $ elkchangeBranch change)
        in SearchPB.Change {..}
 
 searchFields :: FieldsRequest -> Handler FieldsResponse

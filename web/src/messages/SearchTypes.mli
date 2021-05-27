@@ -50,6 +50,9 @@ type changes_query_request = {
 type change = {
   title : string;
   url : string;
+  repository_fullname : string;
+  state : string;
+  branch : string;
   created_at : TimestampTypes.timestamp option;
 }
 
@@ -120,6 +123,9 @@ val default_changes_query_request :
 val default_change : 
   ?title:string ->
   ?url:string ->
+  ?repository_fullname:string ->
+  ?state:string ->
+  ?branch:string ->
   ?created_at:TimestampTypes.timestamp option ->
   unit ->
   change
