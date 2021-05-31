@@ -6,9 +6,9 @@
 module Monocle.Search.Queries where
 
 import Control.Monad.Catch (MonadThrow)
-import Data.Aeson (FromJSON (..))
+import qualified Data.Aeson as Aeson
 import qualified Database.Bloodhound as BH
-import Monocle.Search.Change (Change (..))
+import Monocle.Search.Change (ELKChange (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (SortOrder (..))
 import qualified Network.HTTP.Client as HTTP
@@ -20,15 +20,16 @@ mkEnv server = do
   pure $ BH.mkBHEnv (BH.Server server) manager
 
 -- | Helper search func that can be replaced by a scanSearch
-simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
+simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = do
+  -- putTextLn . decodeUtf8 . Aeson.encode $ search
   rawResp <- BH.searchByIndex indexName search
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left e -> error (show e)
     Right x -> pure (BH.hits (BH.searchHits x))
 
-runQuery :: MonadIO m => Text -> BH.BHEnv -> Text -> Q.Query -> m [Change]
+runQuery :: MonadIO m => Text -> BH.BHEnv -> Text -> Q.Query -> m [ELKChange]
 runQuery documentType bhEnv index queryBase =
   liftIO $
     BH.runBH bhEnv $ do
@@ -52,5 +53,5 @@ runQuery documentType bhEnv index queryBase =
       Asc -> BH.Ascending
       Desc -> BH.Descending
 
-changes :: MonadIO m => BH.BHEnv -> Text -> Q.Query -> m [Change]
+changes :: MonadIO m => BH.BHEnv -> Text -> Q.Query -> m [ELKChange]
 changes = runQuery "Change"

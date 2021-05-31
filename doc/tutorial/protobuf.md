@@ -43,9 +43,7 @@ Then you generate python bindings with this command:
 
 ```ShellSession
 $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
-    protoc -I=./protos/ \
-      --python_out=./monocle/messages \
-      --mypy_out=./monocle/messages \
+    protoc -I=./protos/ --python_out=./monocle --mypy_out=./monocle \
       monocle/info.proto
 ```
 
@@ -53,7 +51,7 @@ $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
 
 ```ShellSession
 $ ./.tox/py3/bin/python
->>> import monocle.messages.monocle.info_pb2 as info_pb2
+>>> import monocle.monocle.info_pb2 as info_pb2
 >>> info_message = info_pb2.Info(version="0.9", title="My Monocle")
 >>> info_message
 version: "0.9"

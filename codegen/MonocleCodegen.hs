@@ -116,8 +116,8 @@ protoToPython = fromProto headers mkService
       where
         getName (methodName, _, _, _) = name <> "_" <> methodName
         typeImport (_, input, output, _) =
-          [ "  from monocle.messages." <> moduleName input <> "_pb2 import " <> attrName input,
-            "  from monocle.messages." <> moduleName output <> "_pb2 import " <> attrName output
+          [ "  from monocle." <> moduleName input <> "_pb2 import " <> attrName input,
+            "  from monocle." <> moduleName output <> "_pb2 import " <> attrName output
           ]
         moduleName [package, _] = Text.drop (Text.length "monocle_") package
         moduleName x = error ("Invalid module name: " <> show x)

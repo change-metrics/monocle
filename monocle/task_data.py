@@ -17,7 +17,7 @@
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
-from monocle.messages.task_data_pb2 import NewTaskData
+from monocle.task_data_pb2 import NewTaskData
 
 
 @dataclass(frozen=True)

@@ -38,8 +38,8 @@ digit = %x30-39
 ; ASCII letter or "_"
 label-char = ascii / "_"
 
-; label-char or ASCII digit or "-"
-value-char = label-char / digit / "-" / "/"
+; label-char or ASCII digit or extra
+value-char = label-char / digit / "-" / "/" / "." / "*"
 
 ; Field and value
 field = 1*label-char
@@ -217,7 +217,6 @@ The example query is converted to:
 The language may be extended with the following features:
 
 - `field in [x, xs..]`
-- quoted value, e.g.: `user:"Foo Bar"`
 - inline range, e.g.: `count:0..10`
 - relative date, e.g.: `now-3weeks`
 - unicode value

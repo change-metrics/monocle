@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The Monocle Search Language Syntax
-module Monocle.Search.Syntax (Expr (..), SortOrder (..)) where
+module Monocle.Search.Syntax (Expr (..), SortOrder (..), ParseError (..)) where
 
 import Relude
 
@@ -24,4 +24,7 @@ data Expr
   | -- Search operator
     OrderByExpr Field SortOrder Expr
   | LimitExpr Int Expr
+  deriving (Show, Eq)
+
+data ParseError = ParseError Text Int
   deriving (Show, Eq)

@@ -3,11 +3,13 @@
 
 module Main (main) where
 
+import qualified Data.Aeson as Aeson
 import Google.Protobuf.Timestamp
 import Monocle.Client
 import Monocle.Mock
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
+import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
 import Monocle.TaskData
 import Monocle.WebApi
@@ -49,6 +51,9 @@ monocleSearchLanguage =
             ]
         ),
       testCase
+        "Lexer quoted"
+        (lexMatch "field:\"A value\"" [L.Literal "field", L.Equal, L.Literal "A value"]),
+      testCase
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
@@ -66,11 +71,40 @@ monocleSearchLanguage =
         ( parseMatch
             "state:open order by review_date desc"
             (S.OrderByExpr "review_date" S.Desc (S.EqExpr "state" "open"))
+        ),
+      testCase
+        "Query date"
+        ( queryMatch
+            "updated_at>2021-05-27"
+            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-27T00:00:00Z\",\"boost\":1}}}"
+        ),
+      testCase
+        "Query number"
+        ( queryMatch
+            "score>200"
+            "{\"range\":{\"tasks_data.score\":{\"gt\":200,\"boost\":1}}}"
+        ),
+      testCase
+        "Query boolean"
+        ( queryMatch
+            "self_merged:false"
+            "{\"term\":{\"self_merged\":{\"value\":\"false\"}}}"
+        ),
+      testCase
+        "Query regex"
+        ( queryMatch
+            "repo_regex:openstack/.*nova.*"
+            "{\"regexp\":{\"repo_regex\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
         )
     ]
   where
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
+    queryMatch code query =
+      assertEqual
+        "match"
+        (Right query)
+        (P.parse code >>= Q.queryWithMods >>= pure . Aeson.encode . Q.queryBH)
 
 monocleWebApiTests :: TestTree
 monocleWebApiTests =

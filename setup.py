@@ -26,7 +26,6 @@ setup(
         "monocle.db",
         "monocle.gerrit",
         "monocle.github",
-        "monocle.messages",
         "monocle.migrate",
     ],
     entry_points={

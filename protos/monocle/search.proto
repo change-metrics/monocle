@@ -5,6 +5,10 @@ syntax = "proto3";
 package monocle_search;
 option go_package = "monocle/search";
 
+import "google/protobuf/timestamp.proto";
+
+import "monocle/task_data.proto";
+
 message SearchSuggestionsRequest {
   string index = 1;
 }
@@ -15,4 +19,56 @@ message SearchSuggestionsResponse {
   repeated string approvals = 3;
   repeated string priorities = 4;
   repeated string severities = 5;
+}
+
+message FieldsRequest {
+  string version = 1;
+}
+
+message Field {
+  string name = 1;
+  string description = 2;
+  enum Type {
+    FIELD_DATE = 0;
+    FIELD_NUMBER = 1;
+    FIELD_TEXT = 2;
+    FIELD_BOOL = 3;
+    FIELD_REGEX = 4;
+  }
+  Type type = 3;
+}
+
+message FieldsResponse {
+  repeated Field fields = 1;
+}
+
+message QueryError {
+  string message = 1;
+  uint32 position = 2;
+}
+
+message ChangesQueryRequest {
+  string index = 1;
+  string query = 2;
+}
+
+message Change {
+  string title = 1;
+  string url = 2;
+  string repository_fullname = 3;
+  string state = 4;
+  string branch = 5;
+  google.protobuf.Timestamp created_at = 6;
+  repeated monocle_task_data.NewTaskData task_data = 7;
+}
+
+message Changes {
+  repeated Change changes = 1;
+}
+
+message ChangesQueryResponse {
+  oneof result {
+    QueryError error = 1;
+    Changes items = 2;
+  }
 }

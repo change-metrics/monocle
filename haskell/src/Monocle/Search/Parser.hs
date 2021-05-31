@@ -8,9 +8,10 @@ module Monocle.Search.Parser (parse) where
 
 import qualified Control.Monad.Combinators as Combinators
 import qualified Data.Set as Set
+import qualified Data.Text as T
 import Monocle.Search.Lexer (Token (..), lex)
 import qualified Monocle.Search.Lexer as L
-import Monocle.Search.Syntax (Expr (..), SortOrder (..))
+import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 
@@ -109,16 +110,17 @@ tokens :: [Token] -> Parser Token
 tokens = Combinators.choice . map token
 
 -- | 'parse' parses the code into an 'Expr'
-parse :: Text -> Either Text Expr
+parse :: Text -> Either ParseError Expr
 parse code = do
   tokens' <- lex code
   case Megaparsec.parse (exprParserWithMods <* Megaparsec.eof) "<input>" tokens' of
     Left err -> Left (mkErr err)
     Right expr -> Right expr
   where
-    mkErr :: Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> Text
+    mkErr :: Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> ParseError
     mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
-      let (startOffset, endOffset) = case be of
-            Megaparsec.TrivialError _ (Just (Megaparsec.Tokens (L.LocatedToken start _ end :| _))) _ -> (start, end)
+      let (offset, message) = case be of
+            Megaparsec.TrivialError _ (Just (Megaparsec.Tokens (L.LocatedToken start _ _end :| _))) _ -> (start, "Unexpected token")
+            Megaparsec.TrivialError _ (Just Megaparsec.EndOfInput) _ -> (T.length code, "Unexpected end of input")
             x -> error $ "Unknown parsec error: " <> show x
-       in "Invalid syntax at: " <> show endOffset <> " starting from: " <> show startOffset
+       in ParseError ("Invalid syntax: " <> message) offset

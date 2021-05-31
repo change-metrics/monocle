@@ -27,10 +27,14 @@ def fix_field_name(content):
     # the generated encoder/decoder for field names are using camelCase
     # while python/haskell are using snake_case.
     # This function fix that:
-    return functools.reduce(
-        lambda acc, field: acc.replace(field, '"' + snake_case(field[1:])),
-        re.findall('"[a-z]+[A-Z][^"]', content),
-        content,
+    return (
+        functools.reduce(
+            lambda acc, field: acc.replace(field, '"' + snake_case(field[1:])),
+            re.findall('"[a-z]+[A-Z][^"]', content),
+            content,
+        )
+        .replace("Task_data_types", "TaskDataTypes")
+        .replace("Task_data_bs", "TaskDataBs")
     )
 
 
@@ -45,6 +49,9 @@ def fix_timestamp(content):
         # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
         ["timestamp", "updated_at", "created_at", "changed_at"],
         content,
+    ).replace(
+        "TimestampBs.decode_timestamp (Pbrt_bs.object_",
+        "TimestampBs.decode_timestamp (Pbrt_bs.string",
     )
 
 

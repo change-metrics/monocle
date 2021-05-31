@@ -42,6 +42,7 @@ library
   build-depends:       base                       < 5
                      , aeson
                      , aeson-casing
+                     , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , containers                 < 0.7
                      , deepseq                    < 1.5
@@ -59,14 +60,18 @@ library
                      , vector                     < 0.13
                      , servant                    ^>= 0.18.2
                      , servant-server             ^>= 0.18.2
+                     , servant-options            ^>= 0.1
                      , wai                        ^>= 3.2.3
                      , wai-logger                 ^>= 2.3
+                     , wai-cors                   ^>= 0.2
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src
   exposed-modules:     Monocle.Api.CLI
                      , Monocle.Api.Config
                      , Monocle.Api.HTTP
+                     , Monocle.Api.PBJSON
+                     , Monocle.Api.Server
                      , Monocle.Client
                      , Monocle.Config
                      , Monocle.Search
@@ -100,6 +105,7 @@ test-suite monocle-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base                       < 5
+                     , aeson
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13

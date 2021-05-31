@@ -11,7 +11,7 @@ import qualified Monocle.Search.Query as Q
 import Relude
 
 parseQuery :: Text -> Text
-parseQuery code = either id decodeUtf8 query
+parseQuery code = either show decodeUtf8 query
   where
     query = do
       expr <- P.parse code
@@ -25,7 +25,7 @@ printQuery elkUrl index code = do
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where
     query = case P.parse code >>= Q.queryWithMods of
-      Left err -> error $ "Invalid query: " <> err
+      Left err -> error $ "Invalid query: " <> show err
       Right q -> q
 
 searchMain :: MonadIO m => m ()
