@@ -19,10 +19,16 @@ external getIndices: unit => axios<array<string>> = "getIndices"
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
+let resetLocationSearch = %raw(`
+  function() {
+    window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+  }
+`)
+
 let setLocationSearch = %raw(`
   function(q, v) {
     const url = new URL(window.location.href);
-    url.searchParams.set('q', v);
+    url.searchParams.set(q, v);
     window.history.replaceState(null, null, url);
   }
 `)
@@ -228,10 +234,11 @@ module MSelect = {
     let (isOpen, _, onToggle) = useToggle(false)
     let selections = value != "" ? Js.String.split(",", value) : []
     let onSelect = (_, newValue, _) => {
-      let nextValues =
-        selections->Js.Array2.includes(newValue)
-          ? selections->Js.Array2.filter(v => v != newValue)
-          : selections->Js.Array2.concat([newValue])
+      let nextValues = multi
+        ? selections->Js.Array2.includes(newValue)
+            ? selections->Js.Array2.filter(v => v != newValue)
+            : selections->Js.Array2.concat([newValue])
+        : [newValue]
       nextValues->Js.Array2.joinWith(",")->valueChanged
       onToggle(false)
     }
