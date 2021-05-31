@@ -9,8 +9,8 @@ from google.protobuf import json_format as pbjson
 
 def config_service(app):
     from monocle.api import config_get_projects
-    from monocle.messages.config_pb2 import GetProjectsRequest
-    from monocle.messages.config_pb2 import GetProjectsResponse
+    from monocle.config_pb2 import GetProjectsRequest
+    from monocle.config_pb2 import GetProjectsResponse
 
     def get_projects_stub() -> None:
         input_data: bytes = request.get_data() or b"{}"
@@ -28,12 +28,12 @@ def config_service(app):
 
 def search_service(app):
     from monocle.api import search_suggestions, search_fields, search_changes_query
-    from monocle.messages.search_pb2 import SearchSuggestionsRequest
-    from monocle.messages.search_pb2 import SearchSuggestionsResponse
-    from monocle.messages.search_pb2 import FieldsRequest
-    from monocle.messages.search_pb2 import FieldsResponse
-    from monocle.messages.search_pb2 import ChangesQueryRequest
-    from monocle.messages.search_pb2 import ChangesQueryResponse
+    from monocle.search_pb2 import SearchSuggestionsRequest
+    from monocle.search_pb2 import SearchSuggestionsResponse
+    from monocle.search_pb2 import FieldsRequest
+    from monocle.search_pb2 import FieldsResponse
+    from monocle.search_pb2 import ChangesQueryRequest
+    from monocle.search_pb2 import ChangesQueryResponse
 
     def suggestions_stub() -> None:
         input_data: bytes = request.get_data() or b"{}"
@@ -80,12 +80,12 @@ def search_service(app):
 
 def task_data_service(app):
     from monocle.api import task_data_commit, task_data_get_last_updated, task_data_add
-    from monocle.messages.task_data_pb2 import TaskDataCommitRequest
-    from monocle.messages.task_data_pb2 import TaskDataCommitResponse
-    from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedRequest
-    from monocle.messages.task_data_pb2 import TaskDataGetLastUpdatedResponse
-    from monocle.messages.task_data_pb2 import AddRequest
-    from monocle.messages.task_data_pb2 import AddResponse
+    from monocle.task_data_pb2 import TaskDataCommitRequest
+    from monocle.task_data_pb2 import TaskDataCommitResponse
+    from monocle.task_data_pb2 import TaskDataGetLastUpdatedRequest
+    from monocle.task_data_pb2 import TaskDataGetLastUpdatedResponse
+    from monocle.task_data_pb2 import AddRequest
+    from monocle.task_data_pb2 import AddResponse
 
     def commit_stub() -> None:
         input_data: bytes = request.get_data() or b"{}"

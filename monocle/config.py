@@ -20,7 +20,7 @@ from jsonschema import draft7_format_checker
 
 from monocle.ident import IdentsConfig, ident_from_config
 from monocle.task_data import TaskCrawler, createTaskCrawler
-from monocle.messages.config_pb2 import ProjectDefinition
+from monocle.config_pb2 import ProjectDefinition
 
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",

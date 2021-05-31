@@ -18,15 +18,15 @@ from datetime import datetime
 from typing import Any, List
 
 from google.protobuf.timestamp_pb2 import Timestamp
-from monocle.messages.config_pb2 import (
+from monocle.config_pb2 import (
     GetProjectsRequest,
     GetProjectsResponse,
 )
-from monocle.messages.search_pb2 import (
+from monocle.search_pb2 import (
     SearchSuggestionsRequest,
     SearchSuggestionsResponse,
 )
-from monocle.messages.task_data_pb2 import (
+from monocle.task_data_pb2 import (
     TaskDataCommitRequest,
     TaskDataCommitResponse,
     TaskDataGetLastUpdatedRequest,
@@ -34,7 +34,7 @@ from monocle.messages.task_data_pb2 import (
     AddRequest,
     AddResponse,
 )
-import monocle.messages.task_data_pb2 as TD
+import monocle.task_data_pb2 as TD
 from monocle import env
 
 from monocle.webapp import create_db_connection, INPUT_TASK_DATA_LIMIT

@@ -19,10 +19,8 @@ codegen-haskell:
 	find haskell/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
-	protoc $(PINCLUDE) --python_out=./monocle/messages --mypy_out=./monocle/messages $(MESSAGES)
-	mv monocle/messages/monocle/* monocle/messages/
-	black monocle/messages/*.py*
-	rm -Rf monocle/messages/monocle
+	protoc $(PINCLUDE) --python_out=./ --mypy_out=./ $(MESSAGES)
+	black monocle/*.py*
 
 codegen-javascript:
 	rm -f web/src/messages/*
