@@ -5,6 +5,7 @@
 -- |
 module Monocle.Api.Server where
 
+import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
@@ -21,11 +22,13 @@ import Relude
 import Servant (Handler)
 
 searchChangeQuery :: BH.BHEnv -> ChangesQueryRequest -> Handler ChangesQueryResponse
-searchChangeQuery bhEnv request = SearchPB.ChangesQueryResponse . Just <$> response
+searchChangeQuery bhEnv request = do
+  now <- liftIO getCurrentTime
+  SearchPB.ChangesQueryResponse . Just <$> response now
   where
     queryText = toStrict $ SearchPB.changesQueryRequestQuery request
     index = "monocle.changes.1." <> toStrict (SearchPB.changesQueryRequestIndex request)
-    response = case P.parse queryText >>= Q.queryWithMods of
+    response now = case P.parse queryText >>= Q.queryWithMods now of
       Left (ParseError msg offset) ->
         pure
           . SearchPB.ChangesQueryResponseResultError
