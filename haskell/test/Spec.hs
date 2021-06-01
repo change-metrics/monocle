@@ -101,6 +101,12 @@ monocleSearchLanguage =
         ( queryMatch
             "state: abandoned"
             "{\"term\":{\"state\":{\"value\":\"CLOSED\"}}}"
+        ),
+      testCase
+        "Query date"
+        ( queryMatch
+            "updated_at > 2021 and updated_at < 2021-05"
+            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"gt\":\"2021-01-01T00:00:00Z\",\"boost\":1}}},{\"range\":{\"updated_at\":{\"lt\":\"2021-05-01T00:00:00Z\",\"boost\":1}}}]}}"
         )
     ]
   where
