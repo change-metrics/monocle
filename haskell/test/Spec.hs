@@ -94,17 +94,36 @@ monocleSearchLanguage =
         "Query regex"
         ( queryMatch
             "repo_regex:openstack/.*nova.*"
-            "{\"regexp\":{\"repo_regex\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
+            "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
+        ),
+      testCase
+        "Query state"
+        ( queryMatch
+            "state: abandoned"
+            "{\"term\":{\"state\":{\"value\":\"CLOSED\"}}}"
+        ),
+      testCase
+        "Query date"
+        ( queryMatch
+            "updated_at > 2021 and updated_at < 2021-05"
+            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"gt\":\"2021-01-01T00:00:00Z\",\"boost\":1}}},{\"range\":{\"updated_at\":{\"lt\":\"2021-05-01T00:00:00Z\",\"boost\":1}}}]}}"
+        ),
+      testCase
+        "Query relative date"
+        ( queryMatch
+            "updated_at > now-3weeks"
+            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
         )
     ]
   where
+    date = fromMaybe (error "nop") (readMaybe "2021-05-31 00:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
     queryMatch code query =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods >>= pure . Aeson.encode . Q.queryBH)
+        (P.parse code >>= Q.queryWithMods date >>= pure . Aeson.encode . Q.queryBH)
 
 monocleWebApiTests :: TestTree
 monocleWebApiTests =
