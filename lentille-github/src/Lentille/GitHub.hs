@@ -99,7 +99,7 @@ streamFetch client mkArgs transformResponse = go Nothing
             Left err -> error (toText err)
             Right resp -> transformResponse resp
       -- TODO: report decoding error
-      error ("Decoding failed: " <> show decodingErrors)
+      unless (null decodingErrors) (error ("Decoding failed: " <> show decodingErrors))
       logStatus pageInfo rateLimit
       S.each xs
       -- TODO: implement throttle
