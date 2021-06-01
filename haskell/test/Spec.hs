@@ -94,7 +94,13 @@ monocleSearchLanguage =
         "Query regex"
         ( queryMatch
             "repo_regex:openstack/.*nova.*"
-            "{\"regexp\":{\"repo_regex\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
+            "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
+        ),
+      testCase
+        "Query state"
+        ( queryMatch
+            "state: abandoned"
+            "{\"term\":{\"state\":{\"value\":\"CLOSED\"}}}"
         )
     ]
   where

@@ -29,6 +29,7 @@ fields :: [(Field, (FieldType, Field, Text))]
 fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
     ("created_at", (fieldDate, "created_at", "Change creation")),
+    ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
     ("author", (fieldText, "author.muid", "Author name")),
@@ -108,9 +109,20 @@ mkRangeQuery expr field value = do
 mkEqQuery :: Field -> Text -> Either ParseError BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
-  case fieldType of
-    Field_TypeFIELD_BOOL -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
-    Field_TypeFIELD_REGEX ->
+  case (field, fieldType) of
+    ("state", _) -> do
+      (field', value') <-
+        toParseError
+          ( case value of
+              "open" -> Right ("state", "OPEN")
+              "merged" -> Right ("state", "MERGED")
+              "self_merged" -> Right ("self_merged", "true")
+              "abandoned" -> Right ("state", "CLOSED")
+              _ -> Left $ "Invalid value for state: " <> value
+          )
+      pure $ BH.TermQuery (BH.Term field' value') Nothing
+    (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
+    (_, Field_TypeFIELD_REGEX) ->
       Right
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
