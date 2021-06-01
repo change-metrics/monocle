@@ -13,6 +13,7 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (SortOrder (..))
 import qualified Network.HTTP.Client as HTTP
 import Relude
+import Say
 
 mkEnv :: MonadIO m => Text -> m BH.BHEnv
 mkEnv server = do
@@ -22,12 +23,16 @@ mkEnv server = do
 -- | Helper search func that can be replaced by a scanSearch
 simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = do
-  -- putTextLn . decodeUtf8 . Aeson.encode $ search
+  -- say . decodeUtf8 . Aeson.encode $ search
   rawResp <- BH.searchByIndex indexName search
   resp <- BH.parseEsResponse rawResp
   case resp of
-    Left e -> error (show e)
+    Left _e -> handleError rawResp
     Right x -> pure (BH.hits (BH.searchHits x))
+  where
+    handleError resp = do
+      sayErr (show resp)
+      error "Elastic response failed"
 
 runQuery :: MonadIO m => Text -> BH.BHEnv -> Text -> Q.Query -> m [ELKChange]
 runQuery documentType bhEnv index queryBase =

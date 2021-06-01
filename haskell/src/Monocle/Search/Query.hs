@@ -8,7 +8,7 @@ module Monocle.Search.Query (Query (..), queryWithMods, query, fields) where
 import Data.Char (isDigit)
 import Data.List (lookup)
 import qualified Data.Text as Text
-import Data.Time.Clock (UTCTime, addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
 import Monocle.Search (Field_Type (..))
@@ -104,12 +104,17 @@ toRangeOp expr = case expr of
   LtEqExpr _ _ -> Lte
   _ -> error "Unsupported range expression"
 
+-- | dropTime ensures the encoded date does not have millisecond.
+-- This actually discard hour differences
+dropTime :: UTCTime -> UTCTime
+dropTime (UTCTime day _sec) = UTCTime day 0
+
 toRangeValueD :: RangeOp -> (UTCTime -> BH.RangeValue)
 toRangeValueD op = case op of
-  Gt -> BH.RangeDateGt . BH.GreaterThanD
-  Gte -> BH.RangeDateGte . BH.GreaterThanEqD
-  Lt -> BH.RangeDateLt . BH.LessThanD
-  Lte -> BH.RangeDateLte . BH.LessThanEqD
+  Gt -> BH.RangeDateGt . BH.GreaterThanD . dropTime
+  Gte -> BH.RangeDateGte . BH.GreaterThanEqD . dropTime
+  Lt -> BH.RangeDateLt . BH.LessThanD . dropTime
+  Lte -> BH.RangeDateLte . BH.LessThanEqD . dropTime
 
 toRangeValue :: RangeOp -> (Double -> BH.RangeValue)
 toRangeValue op = case op of
