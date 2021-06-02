@@ -58,6 +58,7 @@ library
                      , streaming                  < 0.3
                      , time                       < 1.10
                      , vector                     < 0.13
+                     , say                        ^>= 0.1
                      , servant                    ^>= 0.18.2
                      , servant-server             ^>= 0.18.2
                      , servant-options            ^>= 0.1

@@ -116,7 +116,7 @@ monocleSearchLanguage =
         )
     ]
   where
-    date = fromMaybe (error "nop") (readMaybe "2021-05-31 00:00:00 Z")
+    date = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
     queryMatch code query =
