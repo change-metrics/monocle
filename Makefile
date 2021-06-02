@@ -15,7 +15,7 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES); do compile-proto-file --includeDir /usr/include --includeDir protos/ --proto $${pb} --out haskell/src/; done'
+	sh -c 'for pb in $(MESSAGES); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/src/; done'
 	find haskell/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
