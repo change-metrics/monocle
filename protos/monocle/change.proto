@@ -1,0 +1,229 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_change;
+option go_package = "monocle/change";
+
+import "google/protobuf/timestamp.proto";
+
+message Ident {
+  string uid = 1;
+  string muid = 2;
+}
+
+message ChangedFile {
+  int32 additions = 1;
+  int32 deletions = 2;
+  string path = 3;
+}
+
+message ChangedFilePath {
+  string path = 1;
+}
+
+message Commit {
+  string sha = 1;
+  Ident author = 2;
+  Ident committer = 3;
+  google.protobuf.Timestamp authored_at = 4;
+  google.protobuf.Timestamp committed_at = 5;
+  int32 additions = 6;
+  int32 deletions = 7;
+  string title = 8;
+}
+
+message Change {
+  string id = 1;
+  int32 number = 2;
+  string change_id = 3;
+  string title = 4;
+  string text = 5;
+  string url = 6;
+  int32 commit_count = 7;
+  int32 additions = 8;
+  int32 deletions = 9;
+  int32 changed_files_count = 10;
+  repeated ChangedFile changed_files = 11;
+  repeated Commit commits = 12;
+  string repository_prefix = 13;
+  string repository_fullname = 14;
+  string repository_shortname = 15;
+  Ident author = 16;
+  oneof optional_merged_by {
+    Ident merged_by = 17;
+  }
+  string branch = 18;
+  string target_branch = 19;
+  google.protobuf.Timestamp created_at = 20;
+  oneof optional_merged_at {
+    google.protobuf.Timestamp merged_at = 21;
+  }
+  google.protobuf.Timestamp updated_at = 22;
+  oneof optional_closed_at {
+    google.protobuf.Timestamp closed_at = 23;
+  }
+  string state = 24;
+  oneof optional_duration {
+    int32 duration = 25;
+  }
+  string mergeable = 26;
+  repeated string labels = 27;
+  repeated Ident assignees = 28;
+  repeated string approvals = 29;
+  bool draft = 30;
+  oneof optional_self_merged {
+    bool self_merged = 31;
+  }
+}
+
+message ChangeCreatedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+message ChangeCommentedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+message ChangeAbandonedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+message ChangeReviewedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+  repeated string approvals = 15;
+}
+
+message ChangeForcePushedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+message ChangePushedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+message ChangeMergedEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+  string branch = 7;
+  string target_branch = 8;
+  int32 number = 9;
+  string change_id = 10;
+  string url = 11;
+  Ident on_author = 12;
+  google.protobuf.Timestamp on_created_at = 13;
+  repeated ChangedFilePath changed_files = 14;
+}
+
+enum InputData {
+  Change = 0;
+  ChangeCreatedEvent = 1;
+  ChangeCommentedEvent = 2;
+  ChangeAbandonedEvent = 3;
+  ChangeReviewedEvent = 4;
+  ChangeForcePushedEvent = 5;
+  ChangePushedEvent = 6;
+  ChangeMergedEvent = 7;
+}
+
+message AddRequest {
+  string index = 1;
+  string crawler = 2;
+  string apikey = 3;
+  repeated InputData items = 4;
+}
+
+enum AddError {
+  UnknownIndex = 0;
+  UnknownCrawler = 1;
+  UnknownApiKey = 2;
+  AddFailed = 3;
+}
+
+message AddResponse {
+  oneof result {
+    AddError error = 1;
+  }
+}
