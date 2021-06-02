@@ -283,9 +283,13 @@ let make = (~index: string) => {
     </Patternfly.Layout.Split>
 
   <MStack>
-    <MStackItem> {editor} </MStackItem>
     <MStackItem>
-      <span style={ReactDOM.Style.make(~overflowX="scroll", ~width="2000px", ())}> {board} </span>
+      <Patternfly.Layout.Bullseye>
+        <div style={ReactDOM.Style.make(~overflowX="width", ~width="800px", ())}> {editor} </div>
+      </Patternfly.Layout.Bullseye>
+    </MStackItem>
+    <MStackItem>
+      <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
     </MStackItem>
   </MStack>
 }
