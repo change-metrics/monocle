@@ -54,6 +54,12 @@ monocleSearchLanguage =
         "Lexer quoted"
         (lexMatch "field:\"A value\"" [L.Literal "field", L.Equal, L.Literal "A value"]),
       testCase
+        "Lexer unicode"
+        (lexMatch "!field:λr🌈bow" [L.Not, L.Literal "field", L.Equal, L.Literal "λr🌈bow"]),
+      testCase
+        "Lexer quoted unicode"
+        (lexMatch "\"Zuul ▲ user\"" [L.Literal "Zuul ▲ user"]),
+      testCase
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
