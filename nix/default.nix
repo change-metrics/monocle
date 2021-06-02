@@ -75,6 +75,7 @@ in rec {
     buildInputs = all-req;
     shellHook = ''
       export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
+      export PROTOBUF_SRC=${protobuf-src}/src
       eval $(egrep ^export ${ghc}/bin/ghc)
     '';
   };
