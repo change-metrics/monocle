@@ -11,8 +11,10 @@ let startWithFieldModalOpen = false
 module Column = {
   type t = {name: string, query: string}
 
+  let addGlExpr = (query, glExpr) => glExpr != "" ? "(" ++ query ++ ") and " ++ glExpr : query
+
   @react.component
-  let make = (~index, ~column) => {
+  let make = (~index, ~column, ~glExpr: string) => {
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.changes_query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
@@ -21,11 +23,14 @@ module Column = {
       | "" => ignore()
       | query =>
         ignore(
-          WebApi.Search.changesQuery({index: index, query: query}) |> Js.Promise.then_(handleOk),
+          WebApi.Search.changesQuery({
+            index: index,
+            query: addGlExpr(query, glExpr),
+          }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [column.query])
+    }, [column.query ++ glExpr])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -66,7 +71,7 @@ module ColumnEditor = {
     ~queryRef: ref<string>,
     ~onRemove: int => unit,
     ~fields,
-    ~suggestions,
+    ~suggestionsM,
   ) => {
     let (_, doRender) = React.useState(_ => "")
     let setAndRender = (r, v) => {
@@ -84,7 +89,7 @@ module ColumnEditor = {
         onChange={setName}
         _type=#Text
       />
-      <Search.Bar value={queryRef.contents} setValue={v => setQuery(v, ())} fields suggestions />
+      <Search.Bar value={queryRef.contents} setValue={v => setQuery(v, ())} fields suggestionsM />
       {maybeRender(
         count > 1,
         <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
@@ -171,7 +176,7 @@ module Board = {
       ~onAdd,
       ~onRemove,
       ~onSave,
-      ~suggestions,
+      ~suggestionsM,
       ~fields,
     ) => {
       let (showColumnEditor, setShowColumnEditor) = React.useState(_ => startWithEditorOpen)
@@ -236,7 +241,7 @@ module Board = {
                 onRemove
                 count={columnsCount}
                 fields
-                suggestions
+                suggestionsM
               />
             )
             ->React.array}
@@ -253,7 +258,11 @@ module Board = {
 let make = (~index: string) => {
   // Fetch search info from api
   let fieldsM = useAutoGet(() => WebApi.Search.fields({version: "1"}))
-  let suggestions = useAutoGet(() => WebApi.Search.suggestions({index: index}))
+  let suggestionsM = useAutoGet(() => WebApi.Search.suggestions({index: index}))
+
+  // Global search state
+  let (glExpr, setGlExpr) = React.useState(_ => "")
+  Js.log2("GL expr", glExpr)
 
   // Load from url and store the column state
   let (board, setBoard) = React.useState(Board.loadFromUrl)
@@ -267,8 +276,8 @@ let make = (~index: string) => {
     setBoard(Board.saveRefs(title, columnsRefs))
 
   let editor = switch fieldsM {
-  | Some(Ok({fields})) => <Board.Editor columns board onAdd onRemove onSave fields suggestions />
-  | _ => React.null
+  | Some(Ok({fields})) => <Board.Editor columns board onAdd onRemove onSave fields suggestionsM />
+  | _ => <Spinner />
   }
 
   let board =
@@ -276,7 +285,7 @@ let make = (~index: string) => {
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column index column />
+          <Column index column glExpr />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
@@ -284,8 +293,11 @@ let make = (~index: string) => {
 
   <MStack>
     <MStackItem>
+      <Search.Top value={glExpr} setValue={v => setGlExpr(_ => v)} fieldsM suggestionsM />
+    </MStackItem>
+    <MStackItem>
       <Patternfly.Layout.Bullseye>
-        <div style={ReactDOM.Style.make(~overflowX="width", ~width="800px", ())}> {editor} </div>
+        <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>
       </Patternfly.Layout.Bullseye>
     </MStackItem>
     <MStackItem>

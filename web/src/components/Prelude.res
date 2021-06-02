@@ -100,6 +100,7 @@ module URLSearchParams = {
 
 // useAutoGet perform the 'get' effect when the calling component is mounted.
 type result<'a, 'b> = Belt.Result.t<'a, 'b>
+type auto<'data> = option<result<'data, string>>
 let useAutoGet = (get: axiosGetCallback<'data>): option<result<'data, string>> => {
   let (state, set') = React.useState(_ => None)
   let set = x => set'(_ => x->Some)->Js.Promise.resolve

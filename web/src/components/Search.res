@@ -9,7 +9,6 @@ open Prelude
 let startWithFieldModalOpen = false
 
 module FieldSelectorModal = {
-  type res<'data> = option<result<'data, string>>
   module FieldSelector = {
     @react.component
     let make = (
@@ -64,11 +63,12 @@ module FieldSelectorModal = {
       </>
     }
   }
+
   @react.component
   let make = (
     ~isOpen,
     ~onClose: option<(string, string)> => unit,
-    ~suggestions: res<SearchTypes.search_suggestions_response>,
+    ~suggestionsM: auto<SearchTypes.search_suggestions_response>,
     ~fields,
   ) => {
     let (fieldName, setFieldName) = React.useState(_ => "")
@@ -89,7 +89,7 @@ module FieldSelectorModal = {
         </Patternfly.Button>,
       ]>
       <div style={ReactDOM.Style.make(~height="400px", ())}>
-        {switch suggestions {
+        {switch suggestionsM {
         | Some(Ok(suggestions)) =>
           <FieldSelector suggestions fields fieldName setFieldName fieldValue setFieldValue />
         | _ => <Spinner />
@@ -103,7 +103,12 @@ module Bar = {
   let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
 
   @react.component
-  let make = (~value: string, ~setValue: string => unit, ~fields, ~suggestions) => {
+  let make = (
+    ~value: string,
+    ~setValue: string => unit,
+    ~fields: list<SearchTypes.field>,
+    ~suggestionsM: auto<SearchTypes.search_suggestions_response>,
+  ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
     let appendField = v => {
       switch v {
@@ -122,7 +127,7 @@ module Bar = {
       setShowFieldSelector(_ => false)
     }
     <>
-      <FieldSelectorModal isOpen={showFieldSelector} onClose={appendField} fields suggestions />
+      <FieldSelectorModal isOpen={showFieldSelector} onClose={appendField} fields suggestionsM />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
         {"Add field"->str}
       </Patternfly.Button>
@@ -135,4 +140,23 @@ module Bar = {
       />
     </>
   }
+}
+
+module Top = {
+  @react.component
+  let make = (
+    ~value: string,
+    ~setValue: string => unit,
+    ~fieldsM: auto<SearchTypes.fields_response>,
+    ~suggestionsM: auto<SearchTypes.search_suggestions_response>,
+  ) =>
+    switch fieldsM {
+    | Some(Ok({SearchTypes.fields: fields})) =>
+      <Patternfly.Layout.Bullseye>
+        <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
+          <Bar value setValue fields suggestionsM />
+        </div>
+      </Patternfly.Layout.Bullseye>
+    | _ => <Spinner />
+    }
 }
