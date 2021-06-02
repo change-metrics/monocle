@@ -8,6 +8,7 @@ module Lentille.GitLab where
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
+import Data.Time.Clock
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
@@ -25,6 +26,12 @@ data GitLabGraphClient = GitLabGraphClient
     url :: Text,
     token :: Text
   }
+
+data Change = Change
+  { changeTitle :: Text,
+    changeUpdatedAt :: UTCTime
+  }
+  deriving (Show)
 
 newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
 newGitLabGraphClient url' = do
@@ -59,17 +66,27 @@ data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCou
 streamFetch ::
   (MonadIO m, Fetch a, FromJSON a) =>
   GitLabGraphClient ->
+  -- | MR updatedAt date until we need to fetch
+  UTCTime ->
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
   -- | query result adapter
-  (a -> (PageInfo, [Text], [b])) ->
-  Stream (Of b) m ()
-streamFetch client mkArgs transformResponse = go Nothing
+  (a -> (PageInfo, [Text], [Change])) ->
+  Stream (Of Change) m ()
+streamFetch client untilDate mkArgs transformResponse = go Nothing
   where
-    logStatus (PageInfo hasNextPage' _ totalCount') =
+    isChangeUpdatedAfterDate :: UTCTime -> Change -> Bool
+    isChangeUpdatedAfterDate t change = isDateOlderThan (changeUpdatedAt change) t
+    -- t1 is older than t2 then return True
+    isDateOlderThan :: UTCTime -> UTCTime -> Bool
+    isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
+    logStatus (PageInfo hasNextPage' _ totalCount') reachedLimit =
       putTextLn $
-        "[gitlab-graphql] got "
+        "[gitlab-graphql] got total count of MR: "
           <> show totalCount'
+          <> " fetching until date"
+          <> show untilDate
+          <> (if reachedLimit then " reached date limit " else "")
           <> (if hasNextPage' then " hasNextPage " else "")
     go pageInfoM = do
       respE <-
@@ -81,7 +98,11 @@ streamFetch client mkArgs transformResponse = go Nothing
             Right resp -> transformResponse resp
       -- TODO: report decoding error
       unless (null decodingErrors) (error ("Decoding failed: " <> show decodingErrors))
-      logStatus pageInfo
-      S.each xs
+      let filteredChanges = filtered xs
+      let reachedLimit = length xs > length filteredChanges
+      logStatus pageInfo reachedLimit
       -- TODO: implement throttle
-      when (hasNextPage pageInfo) (go (Just pageInfo))
+      S.each filteredChanges
+      when (hasNextPage pageInfo && not reachedLimit) (go (Just pageInfo))
+      where
+        filtered = filter (isChangeUpdatedAfterDate untilDate)

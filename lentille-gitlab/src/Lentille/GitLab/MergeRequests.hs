@@ -18,7 +18,8 @@ import Data.Morpheus.Client
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import Lentille.GitLab
-  ( GitLabGraphClient,
+  ( Change (..),
+    GitLabGraphClient,
     PageInfo (..),
     newGitLabGraphClient,
     runGitLabGraphRequest,
@@ -55,15 +56,9 @@ fetchMergeRequests client project =
 toProjectID :: String -> ID
 toProjectID project' = ID $ toText project'
 
-data Change = Change
-  { changeTitle :: Text,
-    changeUpdatedAt :: UTCTime
-  }
-  deriving (Show)
-
-streamMergeRequests :: MonadIO m => GitLabGraphClient -> String -> Stream (Of Change) m ()
-streamMergeRequests client project =
-  streamFetch client mkArgs transformResponse
+streamMergeRequests :: MonadIO m => GitLabGraphClient -> UTCTime -> String -> Stream (Of Change) m ()
+streamMergeRequests client untilDate project =
+  streamFetch client untilDate mkArgs transformResponse
   where
     mkArgs cursor = GetProjectMergeRequestsArgs (toProjectID project) $ toCursorM cursor
     toCursorM :: Text -> Maybe String
@@ -87,8 +82,6 @@ transformResponse result =
         ) -> (PageInfo hasNextPage endCursor count, [], nodesToChanges nodes)
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
-    -- fakeChange = Change "A Fake title" getFakeTime
-    -- getFakeTime = parseTimeOrError False defaultTimeLocale "%F" "2020-01-01"
     nodesToChanges :: [Maybe ProjectMergeRequestsNodesMergeRequest] -> [Change]
     nodesToChanges nodes' =
       map toChange (catMaybes nodes')
@@ -97,4 +90,4 @@ transformResponse result =
         toChange mr = Change (title mr) (updatedAtToUTCTime $ updatedAt mr)
         updatedAtToUTCTime :: Time -> UTCTime
         updatedAtToUTCTime t =
-          let Time tt = t in parseTimeOrError False defaultTimeLocale "%F" $ toString tt
+          let Time tt = t in parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
