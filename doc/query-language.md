@@ -225,3 +225,4 @@ The language may be extended with the following features:
 
 - `field in [x, xs..]`
 - inline range, e.g.: `count:0..10`
+- escape quote, e.g.: `"literal \"quote"`
