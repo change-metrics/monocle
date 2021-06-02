@@ -167,12 +167,13 @@ module ColumnEditor = {
     }
     let setName = (v, _) => setAndRender(nameRef, v)
     let setQuery = (v, _) => setAndRender(queryRef, v)
+    let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
     let appendField = v => {
       switch v {
       | Some(name, value) => {
           let prefix = queryRef.contents == "" ? "" : " and "
           let expr = switch Js.String.split(",", value)->Belt.Array.map(value =>
-            name ++ ":" ++ value
+            name ++ ":" ++ value->quoteValue
           ) {
           | [x] => x
           | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
