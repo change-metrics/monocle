@@ -75,6 +75,7 @@ library
                      , Monocle.Api.Server
                      , Monocle.Client
                      , Monocle.Config
+                     , Monocle.Change
                      , Monocle.Search
                      , Monocle.Search.CLI
                      , Monocle.Search.Change
