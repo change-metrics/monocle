@@ -9,6 +9,8 @@ import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
+import qualified Google.Protobuf.Timestamp as T
+import Monocle.Change
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
@@ -26,12 +28,6 @@ data GitLabGraphClient = GitLabGraphClient
     url :: Text,
     token :: Text
   }
-
-data Change = Change
-  { changeTitle :: Text,
-    changeUpdatedAt :: UTCTime
-  }
-  deriving (Show)
 
 newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
 newGitLabGraphClient url' = do
@@ -76,7 +72,10 @@ streamFetch ::
 streamFetch client untilDate mkArgs transformResponse = go Nothing
   where
     isChangeUpdatedAfterDate :: UTCTime -> Change -> Bool
-    isChangeUpdatedAfterDate t change = isDateOlderThan (changeUpdatedAt change) t
+    isChangeUpdatedAfterDate t change =
+      case changeUpdatedAt change of
+        Just tC -> isDateOlderThan (T.toUTCTime tC) t
+        _ -> False
     -- t1 is older than t2 then return True
     isDateOlderThan :: UTCTime -> UTCTime -> Bool
     isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
@@ -84,10 +83,10 @@ streamFetch client untilDate mkArgs transformResponse = go Nothing
       putTextLn $
         "[gitlab-graphql] got total count of MR: "
           <> show totalCount'
-          <> " fetching until date"
+          <> " fetching until date: "
           <> show untilDate
-          <> (if reachedLimit then " reached date limit " else "")
-          <> (if hasNextPage' then " hasNextPage " else "")
+          <> (if reachedLimit then " [reached date limit] " else "")
+          <> (if hasNextPage' then " [hasNextPage] " else "")
     go pageInfoM = do
       respE <-
         fetch

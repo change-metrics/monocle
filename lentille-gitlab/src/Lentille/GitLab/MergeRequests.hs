@@ -17,15 +17,17 @@ module Lentille.GitLab.MergeRequests where
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
+import qualified Data.Vector as V
+import qualified Google.Protobuf.Timestamp as T
 import Lentille.GitLab
-  ( Change (..),
-    GitLabGraphClient,
+  ( GitLabGraphClient,
     PageInfo (..),
     newGitLabGraphClient,
     runGitLabGraphRequest,
     schemaLocation,
     streamFetch,
   )
+import Monocle.Change
 import Relude
 import Streaming (Of, Stream)
 
@@ -87,7 +89,54 @@ transformResponse result =
       map toChange (catMaybes nodes')
       where
         toChange :: ProjectMergeRequestsNodesMergeRequest -> Change
-        toChange mr = Change (title mr) (updatedAtToUTCTime $ updatedAt mr)
-        updatedAtToUTCTime :: Time -> UTCTime
-        updatedAtToUTCTime t =
-          let Time tt = t in parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
+        toChange mr =
+          Change
+            "Id"
+            1
+            "ChangeId"
+            (toLazy $ title mr)
+            "Text"
+            "URL"
+            1
+            0
+            0
+            0
+            changedFiles
+            commits
+            "rp"
+            "rf"
+            "rs"
+            (Just fakeIdent)
+            (Just fakeIdent)
+            (Just fakeIdent)
+            Nothing
+            "my-branch"
+            "master"
+            Nothing
+            Nothing
+            Nothing
+            (Just $ updatedAtToTimestamp $ updatedAt mr)
+            Nothing
+            "merged"
+            60
+            "MERGEABLE"
+            labels
+            assignees
+            approvals
+            False
+            Nothing
+        changedFiles :: V.Vector ChangedFile
+        changedFiles = empty
+        commits :: V.Vector Commit
+        commits = empty
+        assignees :: V.Vector Ident
+        assignees = empty
+        labels :: V.Vector LText
+        labels = empty
+        approvals :: V.Vector LText
+        approvals = empty
+        fakeIdent :: Ident
+        fakeIdent = Ident "fabien" "fabien"
+        updatedAtToTimestamp :: Time -> T.Timestamp
+        updatedAtToTimestamp t =
+          let Time tt = t in T.fromUTCTime $ parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
