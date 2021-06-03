@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -36,7 +37,7 @@ import Streaming (Of, Stream)
 
 newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
-data MergeRequestStateAlt = MergeRequestStateOpened | MergeRequestStateClosed | MergeRequestStateLocked | MergeRequestStateAll | MergeRequestStateMerged
+-- data MergeRequestState = MergeRequestStateOpened | MergeRequestStateClosed | MergeRequestStateLocked | MergeRequestStateAll | MergeRequestStateMerged
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/index.html#projectmergerequests
 defineByDocumentFile
@@ -84,6 +85,17 @@ defineByDocumentFile
             createdAt
             updatedAt
             mergedAt
+            mergeable
+            labels {
+              nodes {
+                title
+              }
+            }
+            assignees {
+              nodes {
+                username
+              }
+            }
           }
         }
       }
@@ -126,7 +138,7 @@ transformResponse result =
         ) ->
         ( PageInfo hasNextPage endCursor count,
           [],
-          (nodesToChanges shortName fullName (toNamespaceName nameSpaceM)) nodes
+          nodesToChanges shortName fullName (toNamespaceName nameSpaceM) nodes
         )
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
@@ -167,25 +179,33 @@ transformResponse result =
             (Just $ timeToTimestamp $ updatedAt mr)
             -- No closedAt attribute for a MR ?
             Nothing
-            "merged"
-            60
-            "MERGEABLE"
-            labels
-            assignees
+            -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
+            ""
+            (ChangeOptionalDurationDuration <$> getDuration mr)
+            (if mergeable mr then "MERGEABLE" else "CONFLICT")
+            (getLabels $ labels mr)
+            (getAssignees $ assignees mr)
             approvals
             False
             Nothing
+        getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
+        getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
+          Just durationFM -> truncate <$> durationFM
+          _ -> Nothing
+          where
+            compuDiff :: Maybe String
+            compuDiff = fmap (show . nominalDiffTimeToSeconds . negate . diffUTCTime (timeToUTCTime createdAt) . timeToUTCTime) mergedAt
         getMergedAt :: Maybe Time -> Maybe ChangeOptionalMergedAt
         getMergedAt tM = fmap (ChangeOptionalMergedAtMergedAt . timeToTimestamp) tM
         ghostIdent = Ident "ghost" "ghost"
         getAuthorIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
-        getAuthorIdent ProjectMergeRequestsNodesMergeRequest {..} = case author of
+        getAuthorIdent ProjectMergeRequestsNodesMergeRequest {author} = case author of
           Just author' -> toIdent $ getUsername author'
           Nothing -> ghostIdent
           where
             getUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
         getMergedByIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
-        getMergedByIdent ProjectMergeRequestsNodesMergeRequest {..} = case mergeUser of
+        getMergedByIdent ProjectMergeRequestsNodesMergeRequest {mergeUser} = case mergeUser of
           Just author' -> toIdent $ getUsername author'
           Nothing -> ghostIdent
           where
@@ -227,12 +247,32 @@ transformResponse result =
             defaultTimestamp = Time "1970-01-01T00:00:00Z"
         toIdent :: Text -> Ident
         toIdent username' = Ident (toLazy $ "gitlab.com" <> "/" <> username') (toLazy username')
-        assignees :: V.Vector Ident
-        assignees = empty
-        labels :: V.Vector LText
-        labels = empty
+        getLabels :: Maybe ProjectMergeRequestsNodesLabelsLabelConnection -> V.Vector LText
+        getLabels labelsM =
+          case labelsM of
+            ( Just
+                ( ProjectMergeRequestsNodesLabelsLabelConnection
+                    (Just labels)
+                  )
+              ) -> fromList $ map toLabel (catMaybes labels)
+            _ -> empty
+          where
+            toLabel ProjectMergeRequestsNodesLabelsNodesLabel {title} = toLazy title
+        getAssignees :: Maybe ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection -> V.Vector Ident
+        getAssignees assigneesM =
+          case assigneesM of
+            ( Just
+                ( ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection
+                    (Just assignees)
+                  )
+              ) -> fromList $ map toUsername (catMaybes assignees)
+            _ -> empty
+          where
+            toUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {username} = toIdent username
         approvals :: V.Vector LText
         approvals = empty
         timeToTimestamp :: Time -> T.Timestamp
-        timeToTimestamp t =
-          let Time tt = t in T.fromUTCTime $ parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
+        timeToTimestamp = T.fromUTCTime . timeToUTCTime
+        timeToUTCTime :: Time -> UTCTime
+        timeToUTCTime t =
+          let Time tt = t in parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
