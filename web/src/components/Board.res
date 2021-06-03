@@ -11,26 +11,33 @@ let startWithFieldModalOpen = false
 module Column = {
   type t = {name: string, query: string}
 
-  let addGlExpr = (query, glExpr) => glExpr != "" ? "(" ++ query ++ ") and " ++ glExpr : query
+  let addQuery = (columnQuery, query) => {
+    let queryL = query->Js.String.toLowerCase
+    let prefix =
+      Js.String.startsWith("limit ", queryL) || Js.String.startsWith("order by ", queryL)
+        ? " "
+        : " and "
+    columnQuery != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
+  }
 
   @react.component
-  let make = (~index, ~column, ~glExpr: string) => {
+  let make = (~index, ~column, ~query: string) => {
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.changes_query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
     React.useEffect1(() => {
       switch column.query {
       | "" => ignore()
-      | query =>
+      | _ =>
         ignore(
           WebApi.Search.changesQuery({
             index: index,
-            query: addGlExpr(query, glExpr),
+            query: addQuery(column.query, query),
           }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [column.query ++ glExpr])
+    }, [column.query ++ query])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -65,13 +72,12 @@ module Column = {
 module ColumnEditor = {
   @react.component
   let make = (
+    ~store: Store.t,
     ~pos: int,
     ~count: int,
     ~nameRef: ref<string>,
     ~queryRef: ref<string>,
     ~onRemove: int => unit,
-    ~fields,
-    ~suggestionsM,
   ) => {
     let (_, doRender) = React.useState(_ => "")
     let setAndRender = (r, v) => {
@@ -89,7 +95,7 @@ module ColumnEditor = {
         onChange={setName}
         _type=#Text
       />
-      <Search.Bar value={queryRef.contents} setValue={v => setQuery(v, ())} fields suggestionsM />
+      <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
       {maybeRender(
         count > 1,
         <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
@@ -117,9 +123,10 @@ module Board = {
     (arr, arr->Belt.Array.length)
   }
 
-  let saveToUrl = (board: t) => {
+  let saveToUrl = (board: t, query: string) => {
     resetLocationSearch()->ignore
     setLocationSearch("t", board.title)->ignore
+    setLocationSearch("q", query)->ignore
     Belt.List.mapWithIndex(board.columns, (index, column) => {
       let posStr = string_of_int(index)
       setLocationSearch("n" ++ posStr, column.name)->ignore
@@ -157,7 +164,12 @@ module Board = {
     {...board, columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos)}
   }
 
-  let saveRefs = (title: string, columnsRefs: array<(ref<string>, ref<string>)>, _) =>
+  let saveRefs = (
+    query: string,
+    title: string,
+    columnsRefs: array<(ref<string>, ref<string>)>,
+    _,
+  ) =>
     {
       title: title,
       columns: columnsRefs
@@ -166,18 +178,17 @@ module Board = {
         query: queryRef.contents,
       })
       ->Belt.List.fromArray,
-    }->saveToUrl
+    }->saveToUrl(query)
 
   module Editor = {
     @react.component
     let make = (
+      ~store: Store.t,
       ~board: t,
       ~columns: array<Column.t>,
       ~onAdd,
       ~onRemove,
       ~onSave,
-      ~suggestionsM,
-      ~fields,
     ) => {
       let (showColumnEditor, setShowColumnEditor) = React.useState(_ => startWithEditorOpen)
       let (title, setTitle) = React.useState(_ => board.title)
@@ -219,7 +230,7 @@ module Board = {
 
       let bottomRow =
         <>
-          <SearchToolTip fields />
+          <SearchToolTip store />
           <Patternfly.Button
             onClick={_ => {
               onSave(title, columnsRefs)
@@ -235,13 +246,12 @@ module Board = {
             ->Belt.Array.mapWithIndex((pos, (nameRef, queryRef)) =>
               <ColumnEditor
                 key={nameRef.contents ++ string_of_int(pos)}
+                store
                 pos
                 nameRef
                 queryRef
                 onRemove
                 count={columnsCount}
-                fields
-                suggestionsM
               />
             )
             ->React.array}
@@ -256,13 +266,9 @@ module Board = {
 
 @react.component
 let make = (~index: string) => {
-  // Fetch search info from api
-  let fieldsM = useAutoGet(() => WebApi.Search.fields({version: "1"}))
-  let suggestionsM = useAutoGet(() => WebApi.Search.suggestions({index: index}))
-
-  // Global search state
-  let (glExpr, setGlExpr) = React.useState(_ => "")
-  Js.log2("GL expr", glExpr)
+  // TODO: move the store to the main App
+  let store = Store.use(index)
+  let (state, _) = store
 
   // Load from url and store the column state
   let (board, setBoard) = React.useState(Board.loadFromUrl)
@@ -273,28 +279,23 @@ let make = (~index: string) => {
   let onRemove = pos => setBoard(Board.removeColumn(pos))
 
   let onSave = (title: string, columnsRefs: array<(ref<string>, ref<string>)>) =>
-    setBoard(Board.saveRefs(title, columnsRefs))
+    setBoard(Board.saveRefs(state.query, title, columnsRefs))
 
-  let editor = switch fieldsM {
-  | Some(Ok({fields})) => <Board.Editor columns board onAdd onRemove onSave fields suggestionsM />
-  | _ => <Spinner />
-  }
+  let editor = <Board.Editor store columns board onAdd onRemove onSave />
 
   let board =
     <Patternfly.Layout.Split hasGutter={true}>
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column index column glExpr />
+          <Column index column query={state.query} />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
     </Patternfly.Layout.Split>
 
   <MStack>
-    <MStackItem>
-      <Search.Top value={glExpr} setValue={v => setGlExpr(_ => v)} fieldsM suggestionsM />
-    </MStackItem>
+    <MStackItem> <Search.Top store /> </MStackItem>
     <MStackItem>
       <Patternfly.Layout.Bullseye>
         <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>

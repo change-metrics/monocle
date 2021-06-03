@@ -1,12 +1,12 @@
 // Copyright (C) 2021 Monocle authors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// The search bar component
+// The search help component
 //
 open Prelude
 
 @react.component
-let make = (~fields: list<SearchTypes.field>) => {
+let make = (~store: Store.t) => {
   let renderFieldType = (ft: SearchTypes.field_type) =>
     switch ft {
     | SearchTypes.Field_date => "date"
@@ -21,7 +21,8 @@ let make = (~fields: list<SearchTypes.field>) => {
       {(" : " ++ f.description ++ " (" ++ renderFieldType(f.type_) ++ ")")->str}
     </li>
   let li = s => <li> {s->str} </li>
-  let content =
+  let content = switch Store.Fetch.fields(store) {
+  | Some(Ok(fields)) =>
     <div style={ReactDOM.Style.make(~textAlign="left", ())}>
       <h3> {"Example"->str} </h3>
       <ul>
@@ -35,7 +36,8 @@ let make = (~fields: list<SearchTypes.field>) => {
       <h3> {"Expr syntax"->str} </h3>
       <ul> {"field:value"->li} {"date_field>YYYY-MM-DD"->li} {"number_field>42"->li} </ul>
     </div>
-
+  | _ => <Spinner />
+  }
   <Patternfly.Tooltip position=#Bottom content>
     <Patternfly.Icons.OutlinedQuestionCircle />
   </Patternfly.Tooltip>
