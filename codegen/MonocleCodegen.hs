@@ -16,8 +16,11 @@ import Relude
 -- http://hackage.haskell.org/package/casing-0.1.4.1/docs/Text-Casing.html
 import qualified Text.Casing as Casing
 
+data ApiFilter = ALL | ExceptV2 deriving (Eq)
+
 -- A convenient helper to manage generated file content
 fromProto ::
+  ApiFilter ->
   -- | File headers
   [Text] ->
   -- | Create a service stub (service name, [(method name, input, output, path)])
@@ -26,7 +29,7 @@ fromProto ::
   PB.ProtoBuf ->
   -- | The codegen output
   String
-fromProto headers mkService pb =
+fromProto apiFilter headers mkService pb =
   toString
     ( unlines
         (headers <> concatMap mkServiceDecl (PB.services pb) <> [])
@@ -34,10 +37,12 @@ fromProto headers mkService pb =
   where
     mkServiceDecl :: PB.ServiceDeclaration -> [Text]
     mkServiceDecl pbService = case pbService of
-      PB.Service name _ methods -> [""] <> mkService name (map methodIO methods)
-    methodIO :: PB.Method -> (Text, [Text], [Text], Text)
+      PB.Service name _ methods -> [""] <> mkService name (mapMaybe methodIO methods)
+    methodIO :: PB.Method -> Maybe (Text, [Text], [Text], Text)
     methodIO pbMethod = case pbMethod of
-      PB.Method name _ (PB.TOther input) _ (PB.TOther output) opts -> (name, input, output, getPath opts)
+      PB.Method name _ (PB.TOther input) _ (PB.TOther output) opts
+        | Text.isPrefixOf "/api/2/" (getPath opts) && apiFilter == ExceptV2 -> Nothing
+        | otherwise -> Just (name, input, output, getPath opts)
       _ -> error "Invalid method"
     getPath :: [PB.Option] -> Text
     getPath = foldr (flip go) ""
@@ -63,7 +68,7 @@ attrName x = error ("Invalid attr name: " <> show x)
 
 -- | Create haskell module from a protobuf definition
 protoToHaskell :: PB.ProtoBuf -> String
-protoToHaskell = fromProto headers mkService
+protoToHaskell = fromProto ALL headers mkService
   where
     headers =
       [ "{-# OPTIONS_GHC -fno-warn-missing-export-lists -fno-warn-unused-imports #-}",
@@ -93,7 +98,7 @@ protoToHaskell = fromProto headers mkService
 
 -- | Create python modules from a protobuf definition
 protoToPython :: PB.ProtoBuf -> String
-protoToPython = fromProto headers mkService
+protoToPython = fromProto ExceptV2 headers mkService
   where
     headers =
       [ "# Copyright (C) 2021 Monocle authors",
@@ -144,7 +149,7 @@ protoToPython = fromProto headers mkService
 
 -- | Create rescript modules from a protobuf definition
 protoToReScript :: PB.ProtoBuf -> String
-protoToReScript = fromProto headers mkService
+protoToReScript = fromProto ALL headers mkService
   where
     headers =
       [ "// Copyright (C) 2021 Monocle authors",
