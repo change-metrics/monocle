@@ -57,6 +57,7 @@ library
                      , retry                      < 0.9
                      , streaming                  < 0.3
                      , time                       < 1.10
+                     , transformers
                      , vector                     < 0.13
                      , say                        ^>= 0.1
                      , servant                    ^>= 0.18.2
@@ -70,6 +71,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Monocle.Api.CLI
                      , Monocle.Api.Config
+                     , Monocle.Api.Env
                      , Monocle.Api.HTTP
                      , Monocle.Api.PBJSON
                      , Monocle.Api.Server

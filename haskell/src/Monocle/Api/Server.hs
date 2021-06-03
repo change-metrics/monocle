@@ -9,6 +9,7 @@ import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
+import Monocle.Api.Env
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Change (Author (..), ELKChange (..), TaskData (..))
@@ -21,18 +22,19 @@ import Proto3.Suite (Enumerated (..))
 import Relude
 import Servant (Handler)
 
-searchChangeQuery :: BH.BHEnv -> ChangesQueryRequest -> Handler ChangesQueryResponse
-searchChangeQuery bhEnv request = do
+searchChangeQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
+searchChangeQuery request = do
+  Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
-  SearchPB.ChangesQueryResponse . Just <$> response now
+  SearchPB.ChangesQueryResponse . Just <$> response bhEnv now
   where
     queryText = toStrict $ SearchPB.changesQueryRequestQuery request
     index = "monocle.changes.1." <> toStrict (SearchPB.changesQueryRequestIndex request)
-    response now = case P.parse queryText >>= Q.queryWithMods now of
+    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
       Left (ParseError msg offset) ->
         pure
           . SearchPB.ChangesQueryResponseResultError
-          . SearchPB.QueryError (toLazy (msg))
+          . SearchPB.QueryError (toLazy msg)
           $ (fromInteger . toInteger $ offset)
       Right query ->
         SearchPB.ChangesQueryResponseResultItems
@@ -65,7 +67,7 @@ searchChangeQuery bhEnv request = do
           newTaskDataScore = fromInteger $ toInteger $ tdScore td
        in TaskDataPB.NewTaskData {..}
 
-searchFields :: FieldsRequest -> Handler FieldsResponse
+searchFields :: FieldsRequest -> AppM FieldsResponse
 searchFields = const $ pure response
   where
     response :: FieldsResponse
