@@ -48,6 +48,8 @@ type changes_query_request = {
 }
 
 type change = {
+  change_id : string;
+  author : string;
   title : string;
   url : string;
   repository_fullname : string;
@@ -122,6 +124,8 @@ val default_changes_query_request :
 (** [default_changes_query_request ()] is the default value for type [changes_query_request] *)
 
 val default_change : 
+  ?change_id:string ->
+  ?author:string ->
   ?title:string ->
   ?url:string ->
   ?repository_fullname:string ->

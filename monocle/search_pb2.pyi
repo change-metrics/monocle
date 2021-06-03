@@ -197,6 +197,8 @@ global___ChangesQueryRequest = ChangesQueryRequest
 
 class Change(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    CHANGE_ID_FIELD_NUMBER: builtins.int
+    AUTHOR_FIELD_NUMBER: builtins.int
     TITLE_FIELD_NUMBER: builtins.int
     URL_FIELD_NUMBER: builtins.int
     REPOSITORY_FULLNAME_FIELD_NUMBER: builtins.int
@@ -204,6 +206,8 @@ class Change(google.protobuf.message.Message):
     BRANCH_FIELD_NUMBER: builtins.int
     CREATED_AT_FIELD_NUMBER: builtins.int
     TASK_DATA_FIELD_NUMBER: builtins.int
+    change_id: typing.Text = ...
+    author: typing.Text = ...
     title: typing.Text = ...
     url: typing.Text = ...
     repository_fullname: typing.Text = ...
@@ -220,6 +224,8 @@ class Change(google.protobuf.message.Message):
     def __init__(
         self,
         *,
+        change_id: typing.Text = ...,
+        author: typing.Text = ...,
         title: typing.Text = ...,
         url: typing.Text = ...,
         repository_fullname: typing.Text = ...,
@@ -236,8 +242,12 @@ class Change(google.protobuf.message.Message):
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
+            "author",
+            b"author",
             "branch",
             b"branch",
+            "change_id",
+            b"change_id",
             "created_at",
             b"created_at",
             "repository_fullname",

@@ -53,13 +53,15 @@ message ChangesQueryRequest {
 }
 
 message Change {
-  string title = 1;
-  string url = 2;
-  string repository_fullname = 3;
-  string state = 4;
-  string branch = 5;
-  google.protobuf.Timestamp created_at = 6;
-  repeated monocle_task_data.NewTaskData task_data = 7;
+  string change_id = 1;
+  string author = 2;
+  string title = 3;
+  string url = 4;
+  string repository_fullname = 5;
+  string state = 6;
+  string branch = 7;
+  google.protobuf.Timestamp created_at = 8;
+  repeated monocle_task_data.NewTaskData task_data = 9;
 }
 
 message Changes {

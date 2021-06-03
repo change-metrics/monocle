@@ -11,7 +11,7 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
-import Monocle.Search.Change (ELKChange (..), TaskData (..))
+import Monocle.Search.Change (Author (..), ELKChange (..), TaskData (..))
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
@@ -49,6 +49,8 @@ searchChangeQuery bhEnv request = do
           changeState = (toLazy $ elkchangeState change)
           changeBranch = (toLazy $ elkchangeBranch change)
           changeTaskData = V.fromList . map toTaskData . fromMaybe [] $ elkchangeTasksData change
+          changeChangeId = (toLazy $ elkchangeChangeId change)
+          changeAuthor = toLazy . authorMuid . elkchangeAuthor $ change
        in SearchPB.Change {..}
     toTaskData :: TaskData -> TaskDataPB.NewTaskData
     toTaskData td =
