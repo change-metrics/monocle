@@ -155,41 +155,37 @@ module Board = {
     }
   }
 
-  let addNewColumn = (board: t) => {
-    let newName = "Column #" ++ string_of_int(board.columns->Belt.List.length + 1)
-    {...board, columns: board.columns->Belt.List.concat(list{Column.mk(newName)})}
-  }
+  type action =
+    AddColumn | RemoveColumn(int) | Save(string, string, array<(ref<string>, ref<string>)>)
 
-  let removeColumn = (pos: int, board: t) => {
-    {...board, columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos)}
-  }
+  let reducer = (board: t, action: action) =>
+    switch action {
+    | AddColumn => {
+        let newName = "Column #" ++ string_of_int(board.columns->Belt.List.length + 1)
+        {...board, columns: board.columns->Belt.List.concat(list{Column.mk(newName)})}
+      }
+    | RemoveColumn(pos) => {
+        ...board,
+        columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos),
+      }
+    | Save(query, title, columnsRefs) =>
+      {
+        title: title,
+        columns: columnsRefs
+        ->Belt.Array.map(((nameRef, queryRef)) => {
+          Column.name: nameRef.contents,
+          query: queryRef.contents,
+        })
+        ->Belt.List.fromArray,
+      }->saveToUrl(query)
+    }
 
-  let saveRefs = (
-    query: string,
-    title: string,
-    columnsRefs: array<(ref<string>, ref<string>)>,
-    _,
-  ) =>
-    {
-      title: title,
-      columns: columnsRefs
-      ->Belt.Array.map(((nameRef, queryRef)) => {
-        Column.name: nameRef.contents,
-        query: queryRef.contents,
-      })
-      ->Belt.List.fromArray,
-    }->saveToUrl(query)
+  let use = () => React.useReducer(reducer, loadFromUrl())
 
   module Editor = {
     @react.component
-    let make = (
-      ~store: Store.t,
-      ~board: t,
-      ~columns: array<Column.t>,
-      ~onAdd,
-      ~onRemove,
-      ~onSave,
-    ) => {
+    let make = (~store: Store.t, ~board: t, ~columns: array<Column.t>, ~dispatch) => {
+      let (state, _) = store
       let (showColumnEditor, setShowColumnEditor) = React.useState(_ => startWithEditorOpen)
       let (title, setTitle) = React.useState(_ => board.title)
       let columnsCount = columns->Belt.Array.length
@@ -198,11 +194,13 @@ module Board = {
       let columnsRefs: array<(ref<string>, ref<string>)> =
         columns->Belt.Array.map(column => (ref(column.name), ref(column.query)))
 
+      let doSave = () => Save(state.query, title, columnsRefs)->dispatch
+
       // When removing a middle column, the one after lose their state, so we need to save
       // first
       let onRemove = pos => {
-        onSave(title, columnsRefs)
-        onRemove(pos)
+        doSave()
+        RemoveColumn(pos)->dispatch
       }
 
       let topRow =
@@ -218,7 +216,7 @@ module Board = {
             ? <Patternfly.Button
                 _type=#Submit
                 onClick={_ => {
-                  onSave(title, columnsRefs)
+                  doSave()
                   setShowColumnEditor(_ => false)
                 }}>
                 {"Save"->str}
@@ -233,8 +231,8 @@ module Board = {
           <SearchToolTip store />
           <Patternfly.Button
             onClick={_ => {
-              onSave(title, columnsRefs)
-              onAdd()
+              doSave()
+              AddColumn->dispatch
             }}>
             {"AddColumn"->str}
           </Patternfly.Button>
@@ -271,17 +269,11 @@ let make = (~index: string) => {
   let (state, _) = store
 
   // Load from url and store the column state
-  let (board, setBoard) = React.useState(Board.loadFromUrl)
+  let (board, dispatch) = Board.use()
+  // let (board, setBoard) = React.useState(Board.loadFromUrl)
   let columns = board.columns->Belt.List.toArray
 
-  // Callbacks to manage the state
-  let onAdd = () => setBoard(Board.addNewColumn)
-  let onRemove = pos => setBoard(Board.removeColumn(pos))
-
-  let onSave = (title: string, columnsRefs: array<(ref<string>, ref<string>)>) =>
-    setBoard(Board.saveRefs(state.query, title, columnsRefs))
-
-  let editor = <Board.Editor store columns board onAdd onRemove onSave />
+  let editor = <Board.Editor store columns board dispatch />
 
   let board =
     <Patternfly.Layout.Split hasGutter={true}>
