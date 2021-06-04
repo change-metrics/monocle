@@ -41,8 +41,7 @@ fields =
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
     ("severity", (fieldText, "tasks_data.severity", "Task severity")),
     ("task", (fieldText, "tasks_data.ttype", "Task type")),
-    ("score", (fieldNumber, "tasks_data.score", "PM score")),
-    ("self_merged", (fieldBoolean, "self_merged", "Change merged by the author"))
+    ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
 
 -- | 'lookupField' return a field type and actual field name
