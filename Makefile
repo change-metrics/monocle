@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
+BACKEND_ONLY = monocle/change.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell
@@ -15,7 +16,7 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/src/; done'
+	sh -c 'for pb in $(MESSAGES) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/src/; done'
 	find haskell/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
