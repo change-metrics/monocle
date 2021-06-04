@@ -45,6 +45,8 @@ type changes_query_request = {
 }
 
 type change = {
+  change_id : string;
+  author : string;
   title : string;
   url : string;
   repository_fullname : string;
@@ -123,6 +125,8 @@ let rec default_changes_query_request
 }
 
 let rec default_change 
+  ?change_id:((change_id:string) = "")
+  ?author:((author:string) = "")
   ?title:((title:string) = "")
   ?url:((url:string) = "")
   ?repository_fullname:((repository_fullname:string) = "")
@@ -131,6 +135,8 @@ let rec default_change
   ?created_at:((created_at:TimestampTypes.timestamp option) = None)
   ?task_data:((task_data:TaskDataTypes.new_task_data list) = [])
   () : change  = {
+  change_id;
+  author;
   title;
   url;
   repository_fullname;
