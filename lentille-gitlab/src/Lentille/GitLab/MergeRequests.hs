@@ -174,9 +174,9 @@ transformResponse result =
             (Just . ChangeOptionalMergedByMergedBy $ getMergedByIdent mr)
             (toLazy $ sourceBranch mr)
             (toLazy $ targetBranch mr)
-            (Just $ timeToTimestamp $ createdAt mr)
+            (Just $ timeToTimestamp Nothing $ createdAt mr)
             (getMergedAt $ mergedAt mr)
-            (Just $ timeToTimestamp $ updatedAt mr)
+            (Just $ timeToTimestamp Nothing $ updatedAt mr)
             -- No closedAt attribute for a MR ?
             Nothing
             -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
@@ -194,9 +194,9 @@ transformResponse result =
           _ -> Nothing
           where
             compuDiff :: Maybe String
-            compuDiff = fmap (show . nominalDiffTimeToSeconds . negate . diffUTCTime (timeToUTCTime createdAt) . timeToUTCTime) mergedAt
+            compuDiff = fmap (show . nominalDiffTimeToSeconds . negate . diffUTCTime (timeToUTCTime Nothing createdAt) . timeToUTCTime Nothing) mergedAt
         getMergedAt :: Maybe Time -> Maybe ChangeOptionalMergedAt
-        getMergedAt tM = fmap (ChangeOptionalMergedAtMergedAt . timeToTimestamp) tM
+        getMergedAt tM = fmap (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing) tM
         ghostIdent = Ident "ghost" "ghost"
         getAuthorIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
         getAuthorIdent ProjectMergeRequestsNodesMergeRequest {author} = case author of
@@ -235,16 +235,18 @@ transformResponse result =
                 (toLazy sha)
                 (Just . toIdent . getUsername $ author)
                 (Just . toIdent . getUsername $ author)
-                (Just . timeToTimestamp $ fromMaybe defaultTimestamp authoredDate)
-                (Just . timeToTimestamp $ fromMaybe defaultTimestamp authoredDate)
+                (Just . timeToTimestamp formatString $ fromMaybe defaultTimestamp authoredDate)
+                (Just . timeToTimestamp formatString $ fromMaybe defaultTimestamp authoredDate)
                 0
                 0
                 (toLazy $ fromMaybe "" title)
+              where
+                formatString = Just "%FT%X%Ez"
             getUsername :: Maybe ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore -> Text
             getUsername uM = case uM of
               Just u -> username (u :: ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore)
               Nothing -> ""
-            defaultTimestamp = Time "1970-01-01T00:00:00Z"
+            defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
         toIdent :: Text -> Ident
         toIdent username' = Ident (toLazy $ "gitlab.com" <> "/" <> username') (toLazy username')
         getLabels :: Maybe ProjectMergeRequestsNodesLabelsLabelConnection -> V.Vector LText
@@ -271,8 +273,8 @@ transformResponse result =
             toUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {username} = toIdent username
         approvals :: V.Vector LText
         approvals = empty
-        timeToTimestamp :: Time -> T.Timestamp
-        timeToTimestamp = T.fromUTCTime . timeToUTCTime
-        timeToUTCTime :: Time -> UTCTime
-        timeToUTCTime t =
-          let Time tt = t in parseTimeOrError False defaultTimeLocale "%FT%XZ" $ toString tt
+        timeToTimestamp :: Maybe String -> Time -> T.Timestamp
+        timeToTimestamp formatStringE = T.fromUTCTime . timeToUTCTime formatStringE
+        timeToUTCTime :: Maybe String -> Time -> UTCTime
+        timeToUTCTime formatStringE t =
+          let Time tt = t in parseTimeOrError False defaultTimeLocale (fromMaybe "%FT%XZ" formatStringE) $ toString tt
