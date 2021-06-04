@@ -64,6 +64,11 @@ defineByDocumentFile
               deletions
               fileCount
             }
+            diffStats {
+              path
+              additions
+              deletions
+            }
             commitsWithoutMergeCommits (first: 100) {
               nodes {
                 sha
@@ -95,6 +100,11 @@ defineByDocumentFile
               nodes {
                 username
               }
+            }
+            approved
+            draft
+            mergeUser {
+              username
             }
           }
         }
@@ -164,8 +174,7 @@ transformResponse result =
             (getAdditions $ diffStatsSummary mr)
             (getDeletions $ diffStatsSummary mr)
             (getChangedFileCount $ diffStatsSummary mr)
-            -- Unable to find a solution for the list of changed files
-            empty
+            (getChangedFiles $ diffStats mr)
             (getCommits $ commitsWithoutMergeCommits mr)
             (toLazy namespace)
             (toLazy fullName)
@@ -180,14 +189,14 @@ transformResponse result =
             -- No closedAt attribute for a MR ?
             Nothing
             -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
-            ""
+            (if isMerged $ mergedAt mr then "MERGED" else "CLOSED")
             (ChangeOptionalDurationDuration <$> getDuration mr)
             (if mergeable mr then "MERGEABLE" else "CONFLICT")
             (getLabels $ labels mr)
             (getAssignees $ assignees mr)
-            approvals
-            False
-            Nothing
+            (if approved mr then fromList ["APPROVED"] else fromList [])
+            (draft mr)
+            (ChangeOptionalSelfMergedSelfMerged <$> getSelfMerged mr)
         getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
         getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
           Just durationFM -> truncate <$> durationFM
@@ -218,6 +227,16 @@ transformResponse result =
         getAdditions diffStatsM = getDiffStatsAttr diffStatsM additions
         getDeletions diffStatsM = getDiffStatsAttr diffStatsM deletions
         getChangedFileCount diffStatsM = getDiffStatsAttr diffStatsM fileCount
+        getChangedFiles :: Maybe [ProjectMergeRequestsNodesDiffStatsDiffStats] -> V.Vector ChangedFile
+        getChangedFiles dfM = case dfM of
+          Just df -> fromList $ map toChangeFile df
+          Nothing -> fromList []
+          where
+            toChangeFile ProjectMergeRequestsNodesDiffStatsDiffStats {..} =
+              ChangedFile
+                (fromIntToInt32 additions)
+                (fromIntToInt32 deletions)
+                (toLazy path)
         getCommits :: Maybe ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection -> V.Vector Commit
         getCommits commitsM =
           case commitsM of
@@ -271,8 +290,17 @@ transformResponse result =
             _ -> empty
           where
             toUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {username} = toIdent username
-        approvals :: V.Vector LText
-        approvals = empty
+        isMerged :: Maybe Time -> Bool
+        isMerged mergedAt' = case mergedAt' of
+          Just _ -> True
+          Nothing -> False
+        getSelfMerged :: ProjectMergeRequestsNodesMergeRequest -> Maybe Bool
+        getSelfMerged ProjectMergeRequestsNodesMergeRequest {author, mergeUser, mergedAt} =
+          if isMerged mergedAt then checkIsSelfMerged author mergeUser else Nothing
+          where
+            checkIsSelfMerged a m = case (a, m) of
+              (Just (ProjectMergeRequestsNodesAuthorUserCore u1), Just (ProjectMergeRequestsNodesMergeUserUserCore u2)) -> Just $ u1 == u2
+              _ -> Nothing
         timeToTimestamp :: Maybe String -> Time -> T.Timestamp
         timeToTimestamp formatStringE = T.fromUTCTime . timeToUTCTime formatStringE
         timeToUTCTime :: Maybe String -> Time -> UTCTime
