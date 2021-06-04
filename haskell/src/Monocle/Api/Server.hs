@@ -22,8 +22,8 @@ import Proto3.Suite (Enumerated (..))
 import Relude
 import Servant (Handler)
 
-searchChangeQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
-searchChangeQuery request = do
+searchChangesQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
+searchChangesQuery request = do
   Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
   SearchPB.ChangesQueryResponse . Just <$> response bhEnv now
