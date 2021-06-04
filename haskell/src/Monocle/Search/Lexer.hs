@@ -75,14 +75,16 @@ locatedTokenParser = LocatedToken <$> Megaparsec.getOffset <*> tokenParser <*> M
 literal :: Parser Text
 literal = Lexer.lexeme Megaparsec.Char.space $ Combinators.choice [direct, quoted]
   where
-    direct = Megaparsec.takeWhile1P Nothing isLiteral
-    quoted = "\"" *> Megaparsec.takeWhile1P Nothing isQuotedLiteral <* "\""
-    isQuotedLiteral x = isLiteral x || x == ' '
-    isLiteral x = upper x || lower x || digit x || sep x
-    upper c = 'A' <= c && c <= 'Z'
-    lower c = 'a' <= c && c <= 'z'
-    digit c = '0' <= c && c <= '9'
-    sep c = c `elem` ['-', '_', '/', '.', '*']
+    direct = Megaparsec.takeWhile1P Nothing isValueChar
+    quoted = "\"" *> Megaparsec.takeWhile1P Nothing isText <* "\""
+    isValueChar c =
+      ('\x23' <= c && c <= '\x25')
+        || c == '\x27'
+        || ('\x2A' <= c && c <= '\x39')
+        || c == '\x3B'
+        || ('\x3F' <= c && c <= '\x7B')
+        || ('\x7D' <= c && c <= '\x10FFFF')
+    isText c = ('\x20' <= c && c <= '\x21') || ('\x23' <= c && c <= '\x10FFFF')
 
 -- | 'symbol' parses a known symbol
 symbol :: Text -> Parser Text
