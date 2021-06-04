@@ -2018,28 +2018,7 @@ instance HsJSONPB.ToSchema ChangeOptionalSelfMerged where
             }
         )
 
-data ChangeCreatedEvent = ChangeCreatedEvent
-  { changeCreatedEventId ::
-      Hs.Text,
-    changeCreatedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeCreatedEventAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeCreatedEventRepositoryPrefix :: Hs.Text,
-    changeCreatedEventRepositoryFullname :: Hs.Text,
-    changeCreatedEventRepositoryShortname :: Hs.Text,
-    changeCreatedEventBranch :: Hs.Text,
-    changeCreatedEventTargetBranch :: Hs.Text,
-    changeCreatedEventNumber :: Hs.Int32,
-    changeCreatedEventChangeId :: Hs.Text,
-    changeCreatedEventUrl :: Hs.Text,
-    changeCreatedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeCreatedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeCreatedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangeCreatedEvent = ChangeCreatedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeCreatedEvent where
@@ -2048,352 +2027,19 @@ instance HsProtobuf.Named ChangeCreatedEvent where
 instance HsProtobuf.HasDefault ChangeCreatedEvent
 
 instance HsProtobuf.Message ChangeCreatedEvent where
-  encodeMessage
-    _
-    ChangeCreatedEvent
-      { changeCreatedEventId = changeCreatedEventId,
-        changeCreatedEventCreatedAt = changeCreatedEventCreatedAt,
-        changeCreatedEventAuthor = changeCreatedEventAuthor,
-        changeCreatedEventRepositoryPrefix =
-          changeCreatedEventRepositoryPrefix,
-        changeCreatedEventRepositoryFullname =
-          changeCreatedEventRepositoryFullname,
-        changeCreatedEventRepositoryShortname =
-          changeCreatedEventRepositoryShortname,
-        changeCreatedEventBranch = changeCreatedEventBranch,
-        changeCreatedEventTargetBranch = changeCreatedEventTargetBranch,
-        changeCreatedEventNumber = changeCreatedEventNumber,
-        changeCreatedEventChangeId = changeCreatedEventChangeId,
-        changeCreatedEventUrl = changeCreatedEventUrl,
-        changeCreatedEventOnAuthor = changeCreatedEventOnAuthor,
-        changeCreatedEventOnCreatedAt = changeCreatedEventOnCreatedAt,
-        changeCreatedEventChangedFiles = changeCreatedEventChangedFiles
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changeCreatedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeCreatedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeCreatedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changeCreatedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changeCreatedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changeCreatedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changeCreatedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changeCreatedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changeCreatedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changeCreatedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changeCreatedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeCreatedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeCreatedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeCreatedEventChangedFiles
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangeCreatedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      )
-    ]
+  encodeMessage _ ChangeCreatedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeCreatedEvent)
+  dotProto _ = []
 
 instance HsJSONPB.ToJSONPB ChangeCreatedEvent where
-  toJSONPB
-    (ChangeCreatedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
-  toEncodingPB
-    (ChangeCreatedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
+  toJSONPB (ChangeCreatedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeCreatedEvent) = (HsJSONPB.pairs [])
 
 instance HsJSONPB.FromJSONPB ChangeCreatedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangeCreatedEvent"
-        ( \obj ->
-            (Hs.pure ChangeCreatedEvent) <*> obj .: "id"
-              <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-        )
+        (\obj -> (Hs.pure ChangeCreatedEvent))
     )
 
 instance HsJSONPB.ToJSON ChangeCreatedEvent where
@@ -2406,55 +2052,6 @@ instance HsJSONPB.FromJSON ChangeCreatedEvent where
 instance HsJSONPB.ToSchema ChangeCreatedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeCreatedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeCreatedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeCreatedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeCreatedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeCreatedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeCreatedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeCreatedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeCreatedEventTargetBranch <- declare_target_branch Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeCreatedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeCreatedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeCreatedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeCreatedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeCreatedEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeCreatedEventChangedFiles <- declare_changed_files Proxy.Proxy
-      let _ =
-            Hs.pure ChangeCreatedEvent <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2467,60 +2064,12 @@ instance HsJSONPB.ToSchema ChangeCreatedEvent where
                             Hs.Just HsJSONPB.SwaggerObject
                         },
                     HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeCreatedEventId),
-                          ("created_at", changeCreatedEventCreatedAt),
-                          ("author", changeCreatedEventAuthor),
-                          ( "repository_prefix",
-                            changeCreatedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeCreatedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeCreatedEventRepositoryShortname
-                          ),
-                          ("branch", changeCreatedEventBranch),
-                          ( "target_branch",
-                            changeCreatedEventTargetBranch
-                          ),
-                          ("number", changeCreatedEventNumber),
-                          ("change_id", changeCreatedEventChangeId),
-                          ("url", changeCreatedEventUrl),
-                          ("on_author", changeCreatedEventOnAuthor),
-                          ( "on_created_at",
-                            changeCreatedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeCreatedEventChangedFiles
-                          )
-                        ]
+                      HsJSONPB.insOrdFromList []
                   }
             }
         )
 
-data ChangeCommentedEvent = ChangeCommentedEvent
-  { changeCommentedEventId ::
-      Hs.Text,
-    changeCommentedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeCommentedEventAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeCommentedEventRepositoryPrefix :: Hs.Text,
-    changeCommentedEventRepositoryFullname :: Hs.Text,
-    changeCommentedEventRepositoryShortname :: Hs.Text,
-    changeCommentedEventBranch :: Hs.Text,
-    changeCommentedEventTargetBranch :: Hs.Text,
-    changeCommentedEventNumber :: Hs.Int32,
-    changeCommentedEventChangeId :: Hs.Text,
-    changeCommentedEventUrl :: Hs.Text,
-    changeCommentedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeCommentedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeCommentedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangeCommentedEvent = ChangeCommentedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeCommentedEvent where
@@ -2529,385 +2078,19 @@ instance HsProtobuf.Named ChangeCommentedEvent where
 instance HsProtobuf.HasDefault ChangeCommentedEvent
 
 instance HsProtobuf.Message ChangeCommentedEvent where
-  encodeMessage
-    _
-    ChangeCommentedEvent
-      { changeCommentedEventId =
-          changeCommentedEventId,
-        changeCommentedEventCreatedAt = changeCommentedEventCreatedAt,
-        changeCommentedEventAuthor = changeCommentedEventAuthor,
-        changeCommentedEventRepositoryPrefix =
-          changeCommentedEventRepositoryPrefix,
-        changeCommentedEventRepositoryFullname =
-          changeCommentedEventRepositoryFullname,
-        changeCommentedEventRepositoryShortname =
-          changeCommentedEventRepositoryShortname,
-        changeCommentedEventBranch = changeCommentedEventBranch,
-        changeCommentedEventTargetBranch =
-          changeCommentedEventTargetBranch,
-        changeCommentedEventNumber = changeCommentedEventNumber,
-        changeCommentedEventChangeId = changeCommentedEventChangeId,
-        changeCommentedEventUrl = changeCommentedEventUrl,
-        changeCommentedEventOnAuthor = changeCommentedEventOnAuthor,
-        changeCommentedEventOnCreatedAt = changeCommentedEventOnCreatedAt,
-        changeCommentedEventChangedFiles =
-          changeCommentedEventChangedFiles
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changeCommentedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeCommentedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeCommentedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changeCommentedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changeCommentedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changeCommentedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changeCommentedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changeCommentedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changeCommentedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changeCommentedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changeCommentedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeCommentedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeCommentedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeCommentedEventChangedFiles
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangeCommentedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      )
-    ]
+  encodeMessage _ ChangeCommentedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeCommentedEvent)
+  dotProto _ = []
 
 instance HsJSONPB.ToJSONPB ChangeCommentedEvent where
-  toJSONPB
-    ( ChangeCommentedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
-  toEncodingPB
-    ( ChangeCommentedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
+  toJSONPB (ChangeCommentedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeCommentedEvent) = (HsJSONPB.pairs [])
 
 instance HsJSONPB.FromJSONPB ChangeCommentedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangeCommentedEvent"
-        ( \obj ->
-            (Hs.pure ChangeCommentedEvent) <*> obj .: "id"
-              <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-        )
+        (\obj -> (Hs.pure ChangeCommentedEvent))
     )
 
 instance HsJSONPB.ToJSON ChangeCommentedEvent where
@@ -2920,62 +2103,6 @@ instance HsJSONPB.FromJSON ChangeCommentedEvent where
 instance HsJSONPB.ToSchema ChangeCommentedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeCommentedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeCommentedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeCommentedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeCommentedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeCommentedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeCommentedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeCommentedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeCommentedEventTargetBranch <-
-        declare_target_branch
-          Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeCommentedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeCommentedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeCommentedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeCommentedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeCommentedEventOnCreatedAt <-
-        declare_on_created_at
-          Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeCommentedEventChangedFiles <-
-        declare_changed_files
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeCommentedEvent
-              <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2988,62 +2115,12 @@ instance HsJSONPB.ToSchema ChangeCommentedEvent where
                             Hs.Just HsJSONPB.SwaggerObject
                         },
                     HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeCommentedEventId),
-                          ( "created_at",
-                            changeCommentedEventCreatedAt
-                          ),
-                          ("author", changeCommentedEventAuthor),
-                          ( "repository_prefix",
-                            changeCommentedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeCommentedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeCommentedEventRepositoryShortname
-                          ),
-                          ("branch", changeCommentedEventBranch),
-                          ( "target_branch",
-                            changeCommentedEventTargetBranch
-                          ),
-                          ("number", changeCommentedEventNumber),
-                          ("change_id", changeCommentedEventChangeId),
-                          ("url", changeCommentedEventUrl),
-                          ("on_author", changeCommentedEventOnAuthor),
-                          ( "on_created_at",
-                            changeCommentedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeCommentedEventChangedFiles
-                          )
-                        ]
+                      HsJSONPB.insOrdFromList []
                   }
             }
         )
 
-data ChangeAbandonedEvent = ChangeAbandonedEvent
-  { changeAbandonedEventId ::
-      Hs.Text,
-    changeAbandonedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeAbandonedEventAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeAbandonedEventRepositoryPrefix :: Hs.Text,
-    changeAbandonedEventRepositoryFullname :: Hs.Text,
-    changeAbandonedEventRepositoryShortname :: Hs.Text,
-    changeAbandonedEventBranch :: Hs.Text,
-    changeAbandonedEventTargetBranch :: Hs.Text,
-    changeAbandonedEventNumber :: Hs.Int32,
-    changeAbandonedEventChangeId :: Hs.Text,
-    changeAbandonedEventUrl :: Hs.Text,
-    changeAbandonedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeAbandonedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeAbandonedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangeAbandonedEvent = ChangeAbandonedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeAbandonedEvent where
@@ -3052,385 +2129,19 @@ instance HsProtobuf.Named ChangeAbandonedEvent where
 instance HsProtobuf.HasDefault ChangeAbandonedEvent
 
 instance HsProtobuf.Message ChangeAbandonedEvent where
-  encodeMessage
-    _
-    ChangeAbandonedEvent
-      { changeAbandonedEventId =
-          changeAbandonedEventId,
-        changeAbandonedEventCreatedAt = changeAbandonedEventCreatedAt,
-        changeAbandonedEventAuthor = changeAbandonedEventAuthor,
-        changeAbandonedEventRepositoryPrefix =
-          changeAbandonedEventRepositoryPrefix,
-        changeAbandonedEventRepositoryFullname =
-          changeAbandonedEventRepositoryFullname,
-        changeAbandonedEventRepositoryShortname =
-          changeAbandonedEventRepositoryShortname,
-        changeAbandonedEventBranch = changeAbandonedEventBranch,
-        changeAbandonedEventTargetBranch =
-          changeAbandonedEventTargetBranch,
-        changeAbandonedEventNumber = changeAbandonedEventNumber,
-        changeAbandonedEventChangeId = changeAbandonedEventChangeId,
-        changeAbandonedEventUrl = changeAbandonedEventUrl,
-        changeAbandonedEventOnAuthor = changeAbandonedEventOnAuthor,
-        changeAbandonedEventOnCreatedAt = changeAbandonedEventOnCreatedAt,
-        changeAbandonedEventChangedFiles =
-          changeAbandonedEventChangedFiles
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changeAbandonedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeAbandonedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeAbandonedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changeAbandonedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changeAbandonedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changeAbandonedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changeAbandonedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changeAbandonedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changeAbandonedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changeAbandonedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changeAbandonedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeAbandonedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeAbandonedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeAbandonedEventChangedFiles
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangeAbandonedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      )
-    ]
+  encodeMessage _ ChangeAbandonedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeAbandonedEvent)
+  dotProto _ = []
 
 instance HsJSONPB.ToJSONPB ChangeAbandonedEvent where
-  toJSONPB
-    ( ChangeAbandonedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
-  toEncodingPB
-    ( ChangeAbandonedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
+  toJSONPB (ChangeAbandonedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeAbandonedEvent) = (HsJSONPB.pairs [])
 
 instance HsJSONPB.FromJSONPB ChangeAbandonedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangeAbandonedEvent"
-        ( \obj ->
-            (Hs.pure ChangeAbandonedEvent) <*> obj .: "id"
-              <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-        )
+        (\obj -> (Hs.pure ChangeAbandonedEvent))
     )
 
 instance HsJSONPB.ToJSON ChangeAbandonedEvent where
@@ -3443,62 +2154,6 @@ instance HsJSONPB.FromJSON ChangeAbandonedEvent where
 instance HsJSONPB.ToSchema ChangeAbandonedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeAbandonedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeAbandonedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeAbandonedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeAbandonedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeAbandonedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeAbandonedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeAbandonedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeAbandonedEventTargetBranch <-
-        declare_target_branch
-          Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeAbandonedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeAbandonedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeAbandonedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeAbandonedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeAbandonedEventOnCreatedAt <-
-        declare_on_created_at
-          Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeAbandonedEventChangedFiles <-
-        declare_changed_files
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeAbandonedEvent
-              <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -3511,62 +2166,14 @@ instance HsJSONPB.ToSchema ChangeAbandonedEvent where
                             Hs.Just HsJSONPB.SwaggerObject
                         },
                     HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeAbandonedEventId),
-                          ( "created_at",
-                            changeAbandonedEventCreatedAt
-                          ),
-                          ("author", changeAbandonedEventAuthor),
-                          ( "repository_prefix",
-                            changeAbandonedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeAbandonedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeAbandonedEventRepositoryShortname
-                          ),
-                          ("branch", changeAbandonedEventBranch),
-                          ( "target_branch",
-                            changeAbandonedEventTargetBranch
-                          ),
-                          ("number", changeAbandonedEventNumber),
-                          ("change_id", changeAbandonedEventChangeId),
-                          ("url", changeAbandonedEventUrl),
-                          ("on_author", changeAbandonedEventOnAuthor),
-                          ( "on_created_at",
-                            changeAbandonedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeAbandonedEventChangedFiles
-                          )
-                        ]
+                      HsJSONPB.insOrdFromList []
                   }
             }
         )
 
-data ChangeReviewedEvent = ChangeReviewedEvent
-  { changeReviewedEventId ::
-      Hs.Text,
-    changeReviewedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeReviewedEventAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeReviewedEventRepositoryPrefix :: Hs.Text,
-    changeReviewedEventRepositoryFullname :: Hs.Text,
-    changeReviewedEventRepositoryShortname :: Hs.Text,
-    changeReviewedEventBranch :: Hs.Text,
-    changeReviewedEventTargetBranch :: Hs.Text,
-    changeReviewedEventNumber :: Hs.Int32,
-    changeReviewedEventChangeId :: Hs.Text,
-    changeReviewedEventUrl :: Hs.Text,
-    changeReviewedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeReviewedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeReviewedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath,
-    changeReviewedEventApprovals :: Hs.Vector Hs.Text
+newtype ChangeReviewedEvent = ChangeReviewedEvent
+  { changeReviewedEventApprovals ::
+      Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -3579,99 +2186,12 @@ instance HsProtobuf.Message ChangeReviewedEvent where
   encodeMessage
     _
     ChangeReviewedEvent
-      { changeReviewedEventId = changeReviewedEventId,
-        changeReviewedEventCreatedAt = changeReviewedEventCreatedAt,
-        changeReviewedEventAuthor = changeReviewedEventAuthor,
-        changeReviewedEventRepositoryPrefix =
-          changeReviewedEventRepositoryPrefix,
-        changeReviewedEventRepositoryFullname =
-          changeReviewedEventRepositoryFullname,
-        changeReviewedEventRepositoryShortname =
-          changeReviewedEventRepositoryShortname,
-        changeReviewedEventBranch = changeReviewedEventBranch,
-        changeReviewedEventTargetBranch = changeReviewedEventTargetBranch,
-        changeReviewedEventNumber = changeReviewedEventNumber,
-        changeReviewedEventChangeId = changeReviewedEventChangeId,
-        changeReviewedEventUrl = changeReviewedEventUrl,
-        changeReviewedEventOnAuthor = changeReviewedEventOnAuthor,
-        changeReviewedEventOnCreatedAt = changeReviewedEventOnCreatedAt,
-        changeReviewedEventChangedFiles = changeReviewedEventChangedFiles,
-        changeReviewedEventApprovals = changeReviewedEventApprovals
+      { changeReviewedEventApprovals =
+          changeReviewedEventApprovals
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                changeReviewedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeReviewedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeReviewedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changeReviewedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changeReviewedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changeReviewedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changeReviewedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changeReviewedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changeReviewedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changeReviewedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changeReviewedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeReviewedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeReviewedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeReviewedEventChangedFiles
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 15)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
                     changeReviewedEventApprovals
                 )
@@ -3680,202 +2200,16 @@ instance HsProtobuf.Message ChangeReviewedEvent where
       )
   decodeMessage _ =
     (Hs.pure ChangeReviewedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
       <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
               @(_ (Hs.Vector Hs.Text))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 15)
+                  (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 15)
           (HsProtobuf.Repeated HsProtobuf.String)
           (HsProtobuf.Single "approvals")
           []
@@ -3884,100 +2218,16 @@ instance HsProtobuf.Message ChangeReviewedEvent where
     ]
 
 instance HsJSONPB.ToJSONPB ChangeReviewedEvent where
-  toJSONPB
-    ( ChangeReviewedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-        f15
-      ) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14,
-            "approvals" .= f15
-          ]
-      )
-  toEncodingPB
-    ( ChangeReviewedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-        f15
-      ) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14,
-            "approvals" .= f15
-          ]
-      )
+  toJSONPB (ChangeReviewedEvent f1) =
+    (HsJSONPB.object ["approvals" .= f1])
+  toEncodingPB (ChangeReviewedEvent f1) =
+    (HsJSONPB.pairs ["approvals" .= f1])
 
 instance HsJSONPB.FromJSONPB ChangeReviewedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangeReviewedEvent"
-        ( \obj ->
-            (Hs.pure ChangeReviewedEvent) <*> obj .: "id"
-              <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-              <*> obj .: "approvals"
-        )
+        (\obj -> (Hs.pure ChangeReviewedEvent) <*> obj .: "approvals")
     )
 
 instance HsJSONPB.ToJSON ChangeReviewedEvent where
@@ -3990,61 +2240,10 @@ instance HsJSONPB.FromJSON ChangeReviewedEvent where
 instance HsJSONPB.ToSchema ChangeReviewedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeReviewedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeReviewedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeReviewedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeReviewedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeReviewedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeReviewedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeReviewedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeReviewedEventTargetBranch <-
-        declare_target_branch
-          Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeReviewedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeReviewedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeReviewedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeReviewedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeReviewedEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeReviewedEventChangedFiles <-
-        declare_changed_files
-          Proxy.Proxy
       let declare_approvals = HsJSONPB.declareSchemaRef
       changeReviewedEventApprovals <- declare_approvals Proxy.Proxy
       let _ =
-            Hs.pure ChangeReviewedEvent <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
+            Hs.pure ChangeReviewedEvent
               <*> HsJSONPB.asProxy declare_approvals
       Hs.return
         ( HsJSONPB.NamedSchema
@@ -4059,35 +2258,7 @@ instance HsJSONPB.ToSchema ChangeReviewedEvent where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("id", changeReviewedEventId),
-                          ( "created_at",
-                            changeReviewedEventCreatedAt
-                          ),
-                          ("author", changeReviewedEventAuthor),
-                          ( "repository_prefix",
-                            changeReviewedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeReviewedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeReviewedEventRepositoryShortname
-                          ),
-                          ("branch", changeReviewedEventBranch),
-                          ( "target_branch",
-                            changeReviewedEventTargetBranch
-                          ),
-                          ("number", changeReviewedEventNumber),
-                          ("change_id", changeReviewedEventChangeId),
-                          ("url", changeReviewedEventUrl),
-                          ("on_author", changeReviewedEventOnAuthor),
-                          ( "on_created_at",
-                            changeReviewedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeReviewedEventChangedFiles
-                          ),
-                          ( "approvals",
+                        [ ( "approvals",
                             changeReviewedEventApprovals
                           )
                         ]
@@ -4095,31 +2266,7 @@ instance HsJSONPB.ToSchema ChangeReviewedEvent where
             }
         )
 
-data ChangeForcePushedEvent = ChangeForcePushedEvent
-  { changeForcePushedEventId ::
-      Hs.Text,
-    changeForcePushedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeForcePushedEventAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeForcePushedEventRepositoryPrefix ::
-      Hs.Text,
-    changeForcePushedEventRepositoryFullname ::
-      Hs.Text,
-    changeForcePushedEventRepositoryShortname ::
-      Hs.Text,
-    changeForcePushedEventBranch :: Hs.Text,
-    changeForcePushedEventTargetBranch :: Hs.Text,
-    changeForcePushedEventNumber :: Hs.Int32,
-    changeForcePushedEventChangeId :: Hs.Text,
-    changeForcePushedEventUrl :: Hs.Text,
-    changeForcePushedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeForcePushedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeForcePushedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangeForcePushedEvent = ChangeForcePushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeForcePushedEvent where
@@ -4128,386 +2275,19 @@ instance HsProtobuf.Named ChangeForcePushedEvent where
 instance HsProtobuf.HasDefault ChangeForcePushedEvent
 
 instance HsProtobuf.Message ChangeForcePushedEvent where
-  encodeMessage
-    _
-    ChangeForcePushedEvent
-      { changeForcePushedEventId =
-          changeForcePushedEventId,
-        changeForcePushedEventCreatedAt = changeForcePushedEventCreatedAt,
-        changeForcePushedEventAuthor = changeForcePushedEventAuthor,
-        changeForcePushedEventRepositoryPrefix =
-          changeForcePushedEventRepositoryPrefix,
-        changeForcePushedEventRepositoryFullname =
-          changeForcePushedEventRepositoryFullname,
-        changeForcePushedEventRepositoryShortname =
-          changeForcePushedEventRepositoryShortname,
-        changeForcePushedEventBranch = changeForcePushedEventBranch,
-        changeForcePushedEventTargetBranch =
-          changeForcePushedEventTargetBranch,
-        changeForcePushedEventNumber = changeForcePushedEventNumber,
-        changeForcePushedEventChangeId = changeForcePushedEventChangeId,
-        changeForcePushedEventUrl = changeForcePushedEventUrl,
-        changeForcePushedEventOnAuthor = changeForcePushedEventOnAuthor,
-        changeForcePushedEventOnCreatedAt =
-          changeForcePushedEventOnCreatedAt,
-        changeForcePushedEventChangedFiles =
-          changeForcePushedEventChangedFiles
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changeForcePushedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeForcePushedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeForcePushedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changeForcePushedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changeForcePushedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changeForcePushedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changeForcePushedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changeForcePushedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changeForcePushedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changeForcePushedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changeForcePushedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeForcePushedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeForcePushedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeForcePushedEventChangedFiles
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangeForcePushedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      )
-    ]
+  encodeMessage _ ChangeForcePushedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeForcePushedEvent)
+  dotProto _ = []
 
 instance HsJSONPB.ToJSONPB ChangeForcePushedEvent where
-  toJSONPB
-    ( ChangeForcePushedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
-  toEncodingPB
-    ( ChangeForcePushedEvent
-        f1
-        f2
-        f3
-        f4
-        f5
-        f6
-        f7
-        f8
-        f9
-        f10
-        f11
-        f12
-        f13
-        f14
-      ) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
+  toJSONPB (ChangeForcePushedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeForcePushedEvent) = (HsJSONPB.pairs [])
 
 instance HsJSONPB.FromJSONPB ChangeForcePushedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangeForcePushedEvent"
-        ( \obj ->
-            (Hs.pure ChangeForcePushedEvent) <*> obj .: "id"
-              <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-        )
+        (\obj -> (Hs.pure ChangeForcePushedEvent))
     )
 
 instance HsJSONPB.ToJSON ChangeForcePushedEvent where
@@ -4520,62 +2300,6 @@ instance HsJSONPB.FromJSON ChangeForcePushedEvent where
 instance HsJSONPB.ToSchema ChangeForcePushedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeForcePushedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeForcePushedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeForcePushedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeForcePushedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeForcePushedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeForcePushedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeForcePushedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeForcePushedEventTargetBranch <-
-        declare_target_branch
-          Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeForcePushedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeForcePushedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeForcePushedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeForcePushedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeForcePushedEventOnCreatedAt <-
-        declare_on_created_at
-          Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeForcePushedEventChangedFiles <-
-        declare_changed_files
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeForcePushedEvent
-              <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -4588,65 +2312,12 @@ instance HsJSONPB.ToSchema ChangeForcePushedEvent where
                             Hs.Just HsJSONPB.SwaggerObject
                         },
                     HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeForcePushedEventId),
-                          ( "created_at",
-                            changeForcePushedEventCreatedAt
-                          ),
-                          ("author", changeForcePushedEventAuthor),
-                          ( "repository_prefix",
-                            changeForcePushedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeForcePushedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeForcePushedEventRepositoryShortname
-                          ),
-                          ("branch", changeForcePushedEventBranch),
-                          ( "target_branch",
-                            changeForcePushedEventTargetBranch
-                          ),
-                          ("number", changeForcePushedEventNumber),
-                          ( "change_id",
-                            changeForcePushedEventChangeId
-                          ),
-                          ("url", changeForcePushedEventUrl),
-                          ( "on_author",
-                            changeForcePushedEventOnAuthor
-                          ),
-                          ( "on_created_at",
-                            changeForcePushedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeForcePushedEventChangedFiles
-                          )
-                        ]
+                      HsJSONPB.insOrdFromList []
                   }
             }
         )
 
-data ChangePushedEvent = ChangePushedEvent
-  { changePushedEventId ::
-      Hs.Text,
-    changePushedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changePushedEventAuthor :: Hs.Maybe Monocle.Change.Ident,
-    changePushedEventRepositoryPrefix :: Hs.Text,
-    changePushedEventRepositoryFullname :: Hs.Text,
-    changePushedEventRepositoryShortname :: Hs.Text,
-    changePushedEventBranch :: Hs.Text,
-    changePushedEventTargetBranch :: Hs.Text,
-    changePushedEventNumber :: Hs.Int32,
-    changePushedEventChangeId :: Hs.Text,
-    changePushedEventUrl :: Hs.Text,
-    changePushedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changePushedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changePushedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangePushedEvent = ChangePushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangePushedEvent where
@@ -4655,351 +2326,19 @@ instance HsProtobuf.Named ChangePushedEvent where
 instance HsProtobuf.HasDefault ChangePushedEvent
 
 instance HsProtobuf.Message ChangePushedEvent where
-  encodeMessage
-    _
-    ChangePushedEvent
-      { changePushedEventId = changePushedEventId,
-        changePushedEventCreatedAt = changePushedEventCreatedAt,
-        changePushedEventAuthor = changePushedEventAuthor,
-        changePushedEventRepositoryPrefix =
-          changePushedEventRepositoryPrefix,
-        changePushedEventRepositoryFullname =
-          changePushedEventRepositoryFullname,
-        changePushedEventRepositoryShortname =
-          changePushedEventRepositoryShortname,
-        changePushedEventBranch = changePushedEventBranch,
-        changePushedEventTargetBranch = changePushedEventTargetBranch,
-        changePushedEventNumber = changePushedEventNumber,
-        changePushedEventChangeId = changePushedEventChangeId,
-        changePushedEventUrl = changePushedEventUrl,
-        changePushedEventOnAuthor = changePushedEventOnAuthor,
-        changePushedEventOnCreatedAt = changePushedEventOnCreatedAt,
-        changePushedEventChangedFiles = changePushedEventChangedFiles
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changePushedEventId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changePushedEventCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changePushedEventAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changePushedEventRepositoryPrefix
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changePushedEventRepositoryFullname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changePushedEventRepositoryShortname
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changePushedEventBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                changePushedEventTargetBranch
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changePushedEventNumber
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changePushedEventChangeId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                changePushedEventUrl
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
-                    @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changePushedEventOnAuthor
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
-                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changePushedEventOnCreatedAt
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
-                    @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changePushedEventChangedFiles
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangePushedEvent)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 8)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 11)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Change.Ident))
-              @(_ (Hs.Maybe Monocle.Change.Ident))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 12)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 13)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Change.ChangedFilePath))
-              @(_ (Hs.Vector Monocle.Change.ChangedFilePath))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 14)
-              )
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_prefix")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_fullname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "repository_shortname")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "target_branch")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.Int32)
-          (HsProtobuf.Single "number")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "change_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "url")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ident")))
-          (HsProtobuf.Single "on_author")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
-                  )
-              )
-          )
-          (HsProtobuf.Single "on_created_at")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "ChangedFilePath"))
-          )
-          (HsProtobuf.Single "changed_files")
-          []
-          ""
-      )
-    ]
+  encodeMessage _ ChangePushedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangePushedEvent)
+  dotProto _ = []
 
 instance HsJSONPB.ToJSONPB ChangePushedEvent where
-  toJSONPB
-    (ChangePushedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
-      ( HsJSONPB.object
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
-  toEncodingPB
-    (ChangePushedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
-      ( HsJSONPB.pairs
-          [ "id" .= f1,
-            "created_at" .= f2,
-            "author" .= f3,
-            "repository_prefix" .= f4,
-            "repository_fullname" .= f5,
-            "repository_shortname" .= f6,
-            "branch" .= f7,
-            "target_branch" .= f8,
-            "number" .= f9,
-            "change_id" .= f10,
-            "url" .= f11,
-            "on_author" .= f12,
-            "on_created_at" .= f13,
-            "changed_files" .= f14
-          ]
-      )
+  toJSONPB (ChangePushedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangePushedEvent) = (HsJSONPB.pairs [])
 
 instance HsJSONPB.FromJSONPB ChangePushedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ChangePushedEvent"
-        ( \obj ->
-            (Hs.pure ChangePushedEvent) <*> obj .: "id" <*> obj .: "created_at"
-              <*> obj .: "author"
-              <*> obj .: "repository_prefix"
-              <*> obj .: "repository_fullname"
-              <*> obj .: "repository_shortname"
-              <*> obj .: "branch"
-              <*> obj .: "target_branch"
-              <*> obj .: "number"
-              <*> obj .: "change_id"
-              <*> obj .: "url"
-              <*> obj .: "on_author"
-              <*> obj .: "on_created_at"
-              <*> obj .: "changed_files"
-        )
+        (\obj -> (Hs.pure ChangePushedEvent))
     )
 
 instance HsJSONPB.ToJSON ChangePushedEvent where
@@ -5012,55 +2351,6 @@ instance HsJSONPB.FromJSON ChangePushedEvent where
 instance HsJSONPB.ToSchema ChangePushedEvent where
   declareNamedSchema _ =
     do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changePushedEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changePushedEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changePushedEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changePushedEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changePushedEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changePushedEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changePushedEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changePushedEventTargetBranch <- declare_target_branch Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changePushedEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changePushedEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changePushedEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changePushedEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changePushedEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changePushedEventChangedFiles <- declare_changed_files Proxy.Proxy
-      let _ =
-            Hs.pure ChangePushedEvent <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -5073,59 +2363,12 @@ instance HsJSONPB.ToSchema ChangePushedEvent where
                             Hs.Just HsJSONPB.SwaggerObject
                         },
                     HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changePushedEventId),
-                          ("created_at", changePushedEventCreatedAt),
-                          ("author", changePushedEventAuthor),
-                          ( "repository_prefix",
-                            changePushedEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changePushedEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changePushedEventRepositoryShortname
-                          ),
-                          ("branch", changePushedEventBranch),
-                          ( "target_branch",
-                            changePushedEventTargetBranch
-                          ),
-                          ("number", changePushedEventNumber),
-                          ("change_id", changePushedEventChangeId),
-                          ("url", changePushedEventUrl),
-                          ("on_author", changePushedEventOnAuthor),
-                          ( "on_created_at",
-                            changePushedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changePushedEventChangedFiles
-                          )
-                        ]
+                      HsJSONPB.insOrdFromList []
                   }
             }
         )
 
-data ChangeMergedEvent = ChangeMergedEvent
-  { changeMergedEventId ::
-      Hs.Text,
-    changeMergedEventCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeMergedEventAuthor :: Hs.Maybe Monocle.Change.Ident,
-    changeMergedEventRepositoryPrefix :: Hs.Text,
-    changeMergedEventRepositoryFullname :: Hs.Text,
-    changeMergedEventRepositoryShortname :: Hs.Text,
-    changeMergedEventBranch :: Hs.Text,
-    changeMergedEventTargetBranch :: Hs.Text,
-    changeMergedEventNumber :: Hs.Int32,
-    changeMergedEventChangeId :: Hs.Text,
-    changeMergedEventUrl :: Hs.Text,
-    changeMergedEventOnAuthor ::
-      Hs.Maybe Monocle.Change.Ident,
-    changeMergedEventOnCreatedAt ::
-      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    changeMergedEventChangedFiles ::
-      Hs.Vector Monocle.Change.ChangedFilePath
-  }
+data ChangeMergedEvent = ChangeMergedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeMergedEvent where
@@ -5134,103 +2377,231 @@ instance HsProtobuf.Named ChangeMergedEvent where
 instance HsProtobuf.HasDefault ChangeMergedEvent
 
 instance HsProtobuf.Message ChangeMergedEvent where
+  encodeMessage _ ChangeMergedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeMergedEvent)
+  dotProto _ = []
+
+instance HsJSONPB.ToJSONPB ChangeMergedEvent where
+  toJSONPB (ChangeMergedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeMergedEvent) = (HsJSONPB.pairs [])
+
+instance HsJSONPB.FromJSONPB ChangeMergedEvent where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ChangeMergedEvent"
+        (\obj -> (Hs.pure ChangeMergedEvent))
+    )
+
+instance HsJSONPB.ToJSON ChangeMergedEvent where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ChangeMergedEvent where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ChangeMergedEvent where
+  declareNamedSchema _ =
+    do
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeMergedEvent",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList []
+                  }
+            }
+        )
+
+data ChangeEvent = ChangeEvent
+  { changeEventId :: Hs.Text,
+    changeEventCreatedAt ::
+      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeEventAuthor :: Hs.Maybe Monocle.Change.Ident,
+    changeEventRepositoryPrefix :: Hs.Text,
+    changeEventRepositoryFullname :: Hs.Text,
+    changeEventRepositoryShortname :: Hs.Text,
+    changeEventBranch :: Hs.Text,
+    changeEventTargetBranch :: Hs.Text,
+    changeEventNumber :: Hs.Int32,
+    changeEventChangeId :: Hs.Text,
+    changeEventUrl :: Hs.Text,
+    changeEventOnAuthor :: Hs.Maybe Monocle.Change.Ident,
+    changeEventOnCreatedAt ::
+      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeEventChangedFiles ::
+      Hs.Vector Monocle.Change.ChangedFilePath,
+    changeEventType :: Hs.Maybe ChangeEventType
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeEvent where
+  nameOf _ = (Hs.fromString "ChangeEvent")
+
+instance HsProtobuf.HasDefault ChangeEvent
+
+instance HsProtobuf.Message ChangeEvent where
   encodeMessage
     _
-    ChangeMergedEvent
-      { changeMergedEventId = changeMergedEventId,
-        changeMergedEventCreatedAt = changeMergedEventCreatedAt,
-        changeMergedEventAuthor = changeMergedEventAuthor,
-        changeMergedEventRepositoryPrefix =
-          changeMergedEventRepositoryPrefix,
-        changeMergedEventRepositoryFullname =
-          changeMergedEventRepositoryFullname,
-        changeMergedEventRepositoryShortname =
-          changeMergedEventRepositoryShortname,
-        changeMergedEventBranch = changeMergedEventBranch,
-        changeMergedEventTargetBranch = changeMergedEventTargetBranch,
-        changeMergedEventNumber = changeMergedEventNumber,
-        changeMergedEventChangeId = changeMergedEventChangeId,
-        changeMergedEventUrl = changeMergedEventUrl,
-        changeMergedEventOnAuthor = changeMergedEventOnAuthor,
-        changeMergedEventOnCreatedAt = changeMergedEventOnCreatedAt,
-        changeMergedEventChangedFiles = changeMergedEventChangedFiles
+    ChangeEvent
+      { changeEventId = changeEventId,
+        changeEventCreatedAt = changeEventCreatedAt,
+        changeEventAuthor = changeEventAuthor,
+        changeEventRepositoryPrefix = changeEventRepositoryPrefix,
+        changeEventRepositoryFullname = changeEventRepositoryFullname,
+        changeEventRepositoryShortname = changeEventRepositoryShortname,
+        changeEventBranch = changeEventBranch,
+        changeEventTargetBranch = changeEventTargetBranch,
+        changeEventNumber = changeEventNumber,
+        changeEventChangeId = changeEventChangeId,
+        changeEventUrl = changeEventUrl,
+        changeEventOnAuthor = changeEventOnAuthor,
+        changeEventOnCreatedAt = changeEventOnCreatedAt,
+        changeEventChangedFiles = changeEventChangedFiles,
+        changeEventType = changeEventType
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                changeMergedEventId
+                changeEventId
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeMergedEventCreatedAt
+                    changeEventCreatedAt
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
                     @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeMergedEventAuthor
+                    changeEventAuthor
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                changeMergedEventRepositoryPrefix
+                changeEventRepositoryPrefix
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
-                changeMergedEventRepositoryFullname
+                changeEventRepositoryFullname
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 6)
-                changeMergedEventRepositoryShortname
+                changeEventRepositoryShortname
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 7)
-                changeMergedEventBranch
+                changeEventBranch
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 8)
-                changeMergedEventTargetBranch
+                changeEventTargetBranch
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 9)
-                changeMergedEventNumber
+                changeEventNumber
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 10)
-                changeMergedEventChangeId
+                changeEventChangeId
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 11)
-                changeMergedEventUrl
+                changeEventUrl
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 12)
                 ( Hs.coerce @(Hs.Maybe Monocle.Change.Ident)
                     @(HsProtobuf.Nested Monocle.Change.Ident)
-                    changeMergedEventOnAuthor
+                    changeEventOnAuthor
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 13)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    changeMergedEventOnCreatedAt
+                    changeEventOnCreatedAt
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 14)
                 ( Hs.coerce @(Hs.Vector Monocle.Change.ChangedFilePath)
                     @(HsProtobuf.NestedVec Monocle.Change.ChangedFilePath)
-                    changeMergedEventChangedFiles
+                    changeEventChangedFiles
                 )
-            )
+            ),
+            case changeEventType of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeEventTypeChangeCreated y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 15)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeCreatedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeCreatedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangeCommented y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 16)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeCommentedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeCommentedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangeAbandoned y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 17)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeAbandonedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeAbandonedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangeReviewed y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 18)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeReviewedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeReviewedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangeForcePushed y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 19)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeForcePushedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeForcePushedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangePushed y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 20)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangePushedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangePushedEvent)
+                            (Hs.Just y)
+                        )
+                    )
+                  ChangeEventTypeChangeMerged y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 21)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeMergedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeMergedEvent)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
-    (Hs.pure ChangeMergedEvent)
+    (Hs.pure ChangeEvent)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -5304,6 +2675,66 @@ instance HsProtobuf.Message ChangeMergedEvent where
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 14)
               )
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 15),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeCreated))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeCreatedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeCreatedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 16),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeCommented))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeCommentedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeCommentedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 17),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeAbandoned))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeAbandonedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeAbandonedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 18),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeReviewed))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeReviewedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeReviewedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 19),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeForcePushed))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeForcePushedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeForcePushedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 20),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangePushed))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangePushedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangePushedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 21),
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeMerged))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeMergedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeMergedEvent))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -5420,9 +2851,25 @@ instance HsProtobuf.Message ChangeMergedEvent where
       )
     ]
 
-instance HsJSONPB.ToJSONPB ChangeMergedEvent where
+instance HsJSONPB.ToJSONPB ChangeEvent where
   toJSONPB
-    (ChangeMergedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
+    ( ChangeEvent
+        f1
+        f2
+        f3
+        f4
+        f5
+        f6
+        f7
+        f8
+        f9
+        f10
+        f11
+        f12
+        f13
+        f14
+        f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
+      ) =
       ( HsJSONPB.object
           [ "id" .= f1,
             "created_at" .= f2,
@@ -5437,11 +2884,50 @@ instance HsJSONPB.ToJSONPB ChangeMergedEvent where
             "url" .= f11,
             "on_author" .= f12,
             "on_created_at" .= f13,
-            "changed_files" .= f14
+            "changed_files" .= f14,
+            ( let encodeType =
+                    ( case f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21 of
+                        Hs.Just (ChangeEventTypeChangeCreated f15) ->
+                          (HsJSONPB.pair "ChangeCreated" f15)
+                        Hs.Just (ChangeEventTypeChangeCommented f16) ->
+                          (HsJSONPB.pair "ChangeCommented" f16)
+                        Hs.Just (ChangeEventTypeChangeAbandoned f17) ->
+                          (HsJSONPB.pair "ChangeAbandoned" f17)
+                        Hs.Just (ChangeEventTypeChangeReviewed f18) ->
+                          (HsJSONPB.pair "ChangeReviewed" f18)
+                        Hs.Just (ChangeEventTypeChangeForcePushed f19) ->
+                          (HsJSONPB.pair "ChangeForcePushed" f19)
+                        Hs.Just (ChangeEventTypeChangePushed f20) ->
+                          (HsJSONPB.pair "ChangePushed" f20)
+                        Hs.Just (ChangeEventTypeChangeMerged f21) ->
+                          (HsJSONPB.pair "ChangeMerged" f21)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then ("type" .= (HsJSONPB.objectOrNull [encodeType] options)) options
+                      else encodeType options
+            )
           ]
       )
   toEncodingPB
-    (ChangeMergedEvent f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f14) =
+    ( ChangeEvent
+        f1
+        f2
+        f3
+        f4
+        f5
+        f6
+        f7
+        f8
+        f9
+        f10
+        f11
+        f12
+        f13
+        f14
+        f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
+      ) =
       ( HsJSONPB.pairs
           [ "id" .= f1,
             "created_at" .= f2,
@@ -5456,16 +2942,39 @@ instance HsJSONPB.ToJSONPB ChangeMergedEvent where
             "url" .= f11,
             "on_author" .= f12,
             "on_created_at" .= f13,
-            "changed_files" .= f14
+            "changed_files" .= f14,
+            ( let encodeType =
+                    ( case f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21 of
+                        Hs.Just (ChangeEventTypeChangeCreated f15) ->
+                          (HsJSONPB.pair "ChangeCreated" f15)
+                        Hs.Just (ChangeEventTypeChangeCommented f16) ->
+                          (HsJSONPB.pair "ChangeCommented" f16)
+                        Hs.Just (ChangeEventTypeChangeAbandoned f17) ->
+                          (HsJSONPB.pair "ChangeAbandoned" f17)
+                        Hs.Just (ChangeEventTypeChangeReviewed f18) ->
+                          (HsJSONPB.pair "ChangeReviewed" f18)
+                        Hs.Just (ChangeEventTypeChangeForcePushed f19) ->
+                          (HsJSONPB.pair "ChangeForcePushed" f19)
+                        Hs.Just (ChangeEventTypeChangePushed f20) ->
+                          (HsJSONPB.pair "ChangePushed" f20)
+                        Hs.Just (ChangeEventTypeChangeMerged f21) ->
+                          (HsJSONPB.pair "ChangeMerged" f21)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then ("type" .= (HsJSONPB.pairsOrNull [encodeType] options)) options
+                      else encodeType options
+            )
           ]
       )
 
-instance HsJSONPB.FromJSONPB ChangeMergedEvent where
+instance HsJSONPB.FromJSONPB ChangeEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangeMergedEvent"
+        "ChangeEvent"
         ( \obj ->
-            (Hs.pure ChangeMergedEvent) <*> obj .: "id" <*> obj .: "created_at"
+            (Hs.pure ChangeEvent) <*> obj .: "id" <*> obj .: "created_at"
               <*> obj .: "author"
               <*> obj .: "repository_prefix"
               <*> obj .: "repository_fullname"
@@ -5478,55 +2987,78 @@ instance HsJSONPB.FromJSONPB ChangeMergedEvent where
               <*> obj .: "on_author"
               <*> obj .: "on_created_at"
               <*> obj .: "changed_files"
+              <*> ( let parseType parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. ChangeEventTypeChangeCreated
+                                <$> (HsJSONPB.parseField parseObj "ChangeCreated"),
+                              Hs.Just Hs.. ChangeEventTypeChangeCommented
+                                <$> (HsJSONPB.parseField parseObj "ChangeCommented"),
+                              Hs.Just Hs.. ChangeEventTypeChangeAbandoned
+                                <$> (HsJSONPB.parseField parseObj "ChangeAbandoned"),
+                              Hs.Just Hs.. ChangeEventTypeChangeReviewed
+                                <$> (HsJSONPB.parseField parseObj "ChangeReviewed"),
+                              Hs.Just Hs.. ChangeEventTypeChangeForcePushed
+                                <$> (HsJSONPB.parseField parseObj "ChangeForcePushed"),
+                              Hs.Just Hs.. ChangeEventTypeChangePushed
+                                <$> (HsJSONPB.parseField parseObj "ChangePushed"),
+                              Hs.Just Hs.. ChangeEventTypeChangeMerged
+                                <$> (HsJSONPB.parseField parseObj "ChangeMerged"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ((obj .: "type") Hs.>>= (HsJSONPB.withObject "type" parseType))
+                          <|> (parseType obj)
+                  )
         )
     )
 
-instance HsJSONPB.ToJSON ChangeMergedEvent where
+instance HsJSONPB.ToJSON ChangeEvent where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangeMergedEvent where
+instance HsJSONPB.FromJSON ChangeEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeMergedEvent where
+instance HsJSONPB.ToSchema ChangeEvent where
   declareNamedSchema _ =
     do
       let declare_id = HsJSONPB.declareSchemaRef
-      changeMergedEventId <- declare_id Proxy.Proxy
+      changeEventId <- declare_id Proxy.Proxy
       let declare_created_at = HsJSONPB.declareSchemaRef
-      changeMergedEventCreatedAt <- declare_created_at Proxy.Proxy
+      changeEventCreatedAt <- declare_created_at Proxy.Proxy
       let declare_author = HsJSONPB.declareSchemaRef
-      changeMergedEventAuthor <- declare_author Proxy.Proxy
+      changeEventAuthor <- declare_author Proxy.Proxy
       let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeMergedEventRepositoryPrefix <-
+      changeEventRepositoryPrefix <-
         declare_repository_prefix
           Proxy.Proxy
       let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeMergedEventRepositoryFullname <-
+      changeEventRepositoryFullname <-
         declare_repository_fullname
           Proxy.Proxy
       let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeMergedEventRepositoryShortname <-
+      changeEventRepositoryShortname <-
         declare_repository_shortname
           Proxy.Proxy
       let declare_branch = HsJSONPB.declareSchemaRef
-      changeMergedEventBranch <- declare_branch Proxy.Proxy
+      changeEventBranch <- declare_branch Proxy.Proxy
       let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeMergedEventTargetBranch <- declare_target_branch Proxy.Proxy
+      changeEventTargetBranch <- declare_target_branch Proxy.Proxy
       let declare_number = HsJSONPB.declareSchemaRef
-      changeMergedEventNumber <- declare_number Proxy.Proxy
+      changeEventNumber <- declare_number Proxy.Proxy
       let declare_change_id = HsJSONPB.declareSchemaRef
-      changeMergedEventChangeId <- declare_change_id Proxy.Proxy
+      changeEventChangeId <- declare_change_id Proxy.Proxy
       let declare_url = HsJSONPB.declareSchemaRef
-      changeMergedEventUrl <- declare_url Proxy.Proxy
+      changeEventUrl <- declare_url Proxy.Proxy
       let declare_on_author = HsJSONPB.declareSchemaRef
-      changeMergedEventOnAuthor <- declare_on_author Proxy.Proxy
+      changeEventOnAuthor <- declare_on_author Proxy.Proxy
       let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeMergedEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
+      changeEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
       let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeMergedEventChangedFiles <- declare_changed_files Proxy.Proxy
+      changeEventChangedFiles <- declare_changed_files Proxy.Proxy
+      let declare_type = HsJSONPB.declareSchemaRef
+      changeEventType <- declare_type Proxy.Proxy
       let _ =
-            Hs.pure ChangeMergedEvent <*> HsJSONPB.asProxy declare_id
+            Hs.pure ChangeEvent <*> HsJSONPB.asProxy declare_id
               <*> HsJSONPB.asProxy declare_created_at
               <*> HsJSONPB.asProxy declare_author
               <*> HsJSONPB.asProxy declare_repository_prefix
@@ -5540,10 +3072,11 @@ instance HsJSONPB.ToSchema ChangeMergedEvent where
               <*> HsJSONPB.asProxy declare_on_author
               <*> HsJSONPB.asProxy declare_on_created_at
               <*> HsJSONPB.asProxy declare_changed_files
+              <*> HsJSONPB.asProxy declare_type
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeMergedEvent",
+                Hs.Just "ChangeEvent",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -5553,46 +3086,133 @@ instance HsJSONPB.ToSchema ChangeMergedEvent where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("id", changeMergedEventId),
-                          ("created_at", changeMergedEventCreatedAt),
-                          ("author", changeMergedEventAuthor),
+                        [ ("id", changeEventId),
+                          ("created_at", changeEventCreatedAt),
+                          ("author", changeEventAuthor),
                           ( "repository_prefix",
-                            changeMergedEventRepositoryPrefix
+                            changeEventRepositoryPrefix
                           ),
                           ( "repository_fullname",
-                            changeMergedEventRepositoryFullname
+                            changeEventRepositoryFullname
                           ),
                           ( "repository_shortname",
-                            changeMergedEventRepositoryShortname
+                            changeEventRepositoryShortname
                           ),
-                          ("branch", changeMergedEventBranch),
-                          ( "target_branch",
-                            changeMergedEventTargetBranch
-                          ),
-                          ("number", changeMergedEventNumber),
-                          ("change_id", changeMergedEventChangeId),
-                          ("url", changeMergedEventUrl),
-                          ("on_author", changeMergedEventOnAuthor),
-                          ( "on_created_at",
-                            changeMergedEventOnCreatedAt
-                          ),
-                          ( "changed_files",
-                            changeMergedEventChangedFiles
-                          )
+                          ("branch", changeEventBranch),
+                          ("target_branch", changeEventTargetBranch),
+                          ("number", changeEventNumber),
+                          ("change_id", changeEventChangeId),
+                          ("url", changeEventUrl),
+                          ("on_author", changeEventOnAuthor),
+                          ("on_created_at", changeEventOnCreatedAt),
+                          ("changed_files", changeEventChangedFiles),
+                          ("type", changeEventType)
                         ]
+                  }
+            }
+        )
+
+data ChangeEventType
+  = ChangeEventTypeChangeCreated Monocle.Change.ChangeCreatedEvent
+  | ChangeEventTypeChangeCommented Monocle.Change.ChangeCommentedEvent
+  | ChangeEventTypeChangeAbandoned Monocle.Change.ChangeAbandonedEvent
+  | ChangeEventTypeChangeReviewed Monocle.Change.ChangeReviewedEvent
+  | ChangeEventTypeChangeForcePushed Monocle.Change.ChangeForcePushedEvent
+  | ChangeEventTypeChangePushed Monocle.Change.ChangePushedEvent
+  | ChangeEventTypeChangeMerged Monocle.Change.ChangeMergedEvent
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeEventType where
+  nameOf _ = (Hs.fromString "ChangeEventType")
+
+instance HsJSONPB.ToSchema ChangeEventType where
+  declareNamedSchema _ =
+    do
+      let declare_ChangeCreated = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeCreated <- declare_ChangeCreated Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeCreated
+              <*> HsJSONPB.asProxy declare_ChangeCreated
+      let declare_ChangeCommented = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeCommented <-
+        declare_ChangeCommented
+          Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeCommented
+              <*> HsJSONPB.asProxy declare_ChangeCommented
+      let declare_ChangeAbandoned = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeAbandoned <-
+        declare_ChangeAbandoned
+          Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeAbandoned
+              <*> HsJSONPB.asProxy declare_ChangeAbandoned
+      let declare_ChangeReviewed = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeReviewed <- declare_ChangeReviewed Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeReviewed
+              <*> HsJSONPB.asProxy declare_ChangeReviewed
+      let declare_ChangeForcePushed = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeForcePushed <-
+        declare_ChangeForcePushed
+          Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeForcePushed
+              <*> HsJSONPB.asProxy declare_ChangeForcePushed
+      let declare_ChangePushed = HsJSONPB.declareSchemaRef
+      changeEventTypeChangePushed <- declare_ChangePushed Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangePushed
+              <*> HsJSONPB.asProxy declare_ChangePushed
+      let declare_ChangeMerged = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeMerged <- declare_ChangeMerged Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEventTypeChangeMerged
+              <*> HsJSONPB.asProxy declare_ChangeMerged
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeEventType",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "ChangeCreated",
+                            changeEventTypeChangeCreated
+                          ),
+                          ( "ChangeCommented",
+                            changeEventTypeChangeCommented
+                          ),
+                          ( "ChangeAbandoned",
+                            changeEventTypeChangeAbandoned
+                          ),
+                          ( "ChangeReviewed",
+                            changeEventTypeChangeReviewed
+                          ),
+                          ( "ChangeForcePushed",
+                            changeEventTypeChangeForcePushed
+                          ),
+                          ( "ChangePushed",
+                            changeEventTypeChangePushed
+                          ),
+                          ( "ChangeMerged",
+                            changeEventTypeChangeMerged
+                          )
+                        ],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }
             }
         )
 
 data InputData
   = InputDataChange
-  | InputDataChangeCreatedEvent
-  | InputDataChangeCommentedEvent
-  | InputDataChangeAbandonedEvent
-  | InputDataChangeReviewedEvent
-  | InputDataChangeForcePushedEvent
-  | InputDataChangePushedEvent
-  | InputDataChangeMergedEvent
+  | InputDataChangeEvent
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named InputData where
@@ -5602,7 +3222,7 @@ instance HsProtobuf.HasDefault InputData
 
 instance Hs.Bounded InputData where
   minBound = InputDataChange
-  maxBound = InputDataChangeMergedEvent
+  maxBound = InputDataChangeEvent
 
 instance Hs.Ord InputData where
   compare x y =
@@ -5612,22 +3232,10 @@ instance Hs.Ord InputData where
 
 instance HsProtobuf.ProtoEnum InputData where
   toProtoEnumMay 0 = Hs.Just InputDataChange
-  toProtoEnumMay 1 = Hs.Just InputDataChangeCreatedEvent
-  toProtoEnumMay 2 = Hs.Just InputDataChangeCommentedEvent
-  toProtoEnumMay 3 = Hs.Just InputDataChangeAbandonedEvent
-  toProtoEnumMay 4 = Hs.Just InputDataChangeReviewedEvent
-  toProtoEnumMay 5 = Hs.Just InputDataChangeForcePushedEvent
-  toProtoEnumMay 6 = Hs.Just InputDataChangePushedEvent
-  toProtoEnumMay 7 = Hs.Just InputDataChangeMergedEvent
+  toProtoEnumMay 1 = Hs.Just InputDataChangeEvent
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (InputDataChange) = 0
-  fromProtoEnum (InputDataChangeCreatedEvent) = 1
-  fromProtoEnum (InputDataChangeCommentedEvent) = 2
-  fromProtoEnum (InputDataChangeAbandonedEvent) = 3
-  fromProtoEnum (InputDataChangeReviewedEvent) = 4
-  fromProtoEnum (InputDataChangeForcePushedEvent) = 5
-  fromProtoEnum (InputDataChangePushedEvent) = 6
-  fromProtoEnum (InputDataChangeMergedEvent) = 7
+  fromProtoEnum (InputDataChangeEvent) = 1
 
 instance HsJSONPB.ToJSONPB InputData where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -5635,20 +3243,8 @@ instance HsJSONPB.ToJSONPB InputData where
 
 instance HsJSONPB.FromJSONPB InputData where
   parseJSONPB (HsJSONPB.String "Change") = Hs.pure InputDataChange
-  parseJSONPB (HsJSONPB.String "ChangeCreatedEvent") =
-    Hs.pure InputDataChangeCreatedEvent
-  parseJSONPB (HsJSONPB.String "ChangeCommentedEvent") =
-    Hs.pure InputDataChangeCommentedEvent
-  parseJSONPB (HsJSONPB.String "ChangeAbandonedEvent") =
-    Hs.pure InputDataChangeAbandonedEvent
-  parseJSONPB (HsJSONPB.String "ChangeReviewedEvent") =
-    Hs.pure InputDataChangeReviewedEvent
-  parseJSONPB (HsJSONPB.String "ChangeForcePushedEvent") =
-    Hs.pure InputDataChangeForcePushedEvent
-  parseJSONPB (HsJSONPB.String "ChangePushedEvent") =
-    Hs.pure InputDataChangePushedEvent
-  parseJSONPB (HsJSONPB.String "ChangeMergedEvent") =
-    Hs.pure InputDataChangeMergedEvent
+  parseJSONPB (HsJSONPB.String "ChangeEvent") =
+    Hs.pure InputDataChangeEvent
   parseJSONPB v = (HsJSONPB.typeMismatch "InputData" v)
 
 instance HsJSONPB.ToJSON InputData where

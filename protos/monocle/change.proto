@@ -77,110 +77,23 @@ message Change {
   }
 }
 
-message ChangeCreatedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-}
+message ChangeCreatedEvent {}
 
-message ChangeCommentedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-}
+message ChangeCommentedEvent {}
 
-message ChangeAbandonedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-}
+message ChangeAbandonedEvent {}
 
 message ChangeReviewedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-  repeated string approvals = 15;
+  repeated string approvals = 1;
 }
 
-message ChangeForcePushedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-}
+message ChangeForcePushedEvent {}
 
-message ChangePushedEvent {
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Ident author = 3;
-  string repository_prefix = 4;
-  string repository_fullname = 5;
-  string repository_shortname = 6;
-  string branch = 7;
-  string target_branch = 8;
-  int32 number = 9;
-  string change_id = 10;
-  string url = 11;
-  Ident on_author = 12;
-  google.protobuf.Timestamp on_created_at = 13;
-  repeated ChangedFilePath changed_files = 14;
-}
+message ChangePushedEvent {}
 
-message ChangeMergedEvent {
+message ChangeMergedEvent {}
+
+message ChangeEvent {
   string id = 1;
   google.protobuf.Timestamp created_at = 2;
   Ident author = 3;
@@ -195,17 +108,20 @@ message ChangeMergedEvent {
   Ident on_author = 12;
   google.protobuf.Timestamp on_created_at = 13;
   repeated ChangedFilePath changed_files = 14;
+  oneof type {
+    ChangeCreatedEvent ChangeCreated = 15;
+    ChangeCommentedEvent ChangeCommented = 16;
+    ChangeAbandonedEvent ChangeAbandoned = 17;
+    ChangeReviewedEvent ChangeReviewed = 18;
+    ChangeForcePushedEvent ChangeForcePushed = 19;
+    ChangePushedEvent ChangePushed = 20;
+    ChangeMergedEvent ChangeMerged = 21;
+  }
 }
 
 enum InputData {
   Change = 0;
-  ChangeCreatedEvent = 1;
-  ChangeCommentedEvent = 2;
-  ChangeAbandonedEvent = 3;
-  ChangeReviewedEvent = 4;
-  ChangeForcePushedEvent = 5;
-  ChangePushedEvent = 6;
-  ChangeMergedEvent = 7;
+  ChangeEvent = 1;
 }
 
 message AddRequest {
