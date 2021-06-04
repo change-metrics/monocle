@@ -11,13 +11,30 @@ module MonoLink = {
   @react.component
   let make = (~store: Store.t, ~filter: string, ~path: string, ~name: string) => {
     let (state, dispatch) = store
-    let onClick = _ => filter->Store.Store.SetFilter->dispatch
-    <Link
-      onClick
-      style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-      _to={"/" ++ state.index ++ "/" ++ path ++ "?q=" ++ state.query ++ "&f=" ++ filter}>
-      {name->str}
-    </Link>
+    let base = "/" ++ state.index ++ "/" ++ path ++ "?"
+    let query = switch state.query {
+    | "" => ""
+    | query => "q=" ++ query ++ "&"
+    }
+    let href = base ++ query ++ "f=" ++ filter
+
+    let onClick = e => {
+      e->ReactEvent.Mouse.preventDefault
+      filter->Store.Store.SetFilter->dispatch
+      href->RescriptReactRouter.push
+    }
+    <a onClick style={ReactDOM.Style.make(~whiteSpace="nowrap", ())} href> {name->str} </a>
+  }
+}
+
+module Direct = {
+  @react.component
+  let make = (~link: string, ~name: string) => {
+    let onClick = e => {
+      e->ReactEvent.Mouse.preventDefault
+      link->RescriptReactRouter.push
+    }
+    <a href={link} onClick> {name->str} </a>
   }
 }
 

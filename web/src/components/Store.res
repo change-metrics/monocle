@@ -63,7 +63,10 @@ module Store = {
 
   let reducer = (state: t, action: action) =>
     switch action {
-    | ChangeIndex(index) => create(index)
+    | ChangeIndex(index) => {
+        RescriptReactRouter.push("/" ++ index)
+        create(index)
+      }
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}

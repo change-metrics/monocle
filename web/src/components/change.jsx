@@ -218,6 +218,4 @@ ChangeTable.propTypes = {
   events: PropTypes.any
 }
 
-const CChange = withRouter(ChangeTable)
-
-export default CChange
+export default ChangeTable

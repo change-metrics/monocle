@@ -21,7 +21,6 @@ import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-import { withRouter } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
@@ -229,6 +228,4 @@ const ChangesLifeCycleStats = (prop) => (
   </Row>
 )
 
-const CChangesLifeCycleStats = withRouter(ChangesLifeCycleStats)
-
-export { CChangesLifeCycleStats }
+export default ChangesLifeCycleStats
