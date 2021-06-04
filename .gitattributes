@@ -8,4 +8,5 @@
 /haskell/src/Monocle/Search.hs linguist-generated=true
 /haskell/src/Monocle/Change.hs linguist-generated=true
 /haskell/src/Monocle/TaskData.hs linguist-generated=true
+/haskell/src/Monocle/Api/HTTP.hs linguist-generated=true
 /haskell/src/Google/Protobuf/* linguist-generated=true

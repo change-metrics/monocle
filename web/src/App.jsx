@@ -275,9 +275,7 @@ ChangeView.propTypes = {
 
 class BoardView extends React.Component {
   render() {
-    return (
-      <Board index={this.props.match.params.index} />
-    )
+    return <Board index={this.props.match.params.index} />
   }
 }
 
@@ -289,57 +287,63 @@ BoardView.propTypes = {
   })
 }
 
+let LegacyApp = () => (
+  <Container>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+    <Switch>
+      <Route exact path="/" component={Indices} />
+      <Route exact path="/login" component={LoginView} />
+      <Route exact path="/user" component={CUserView} />
+      <Route exact path="/:index/people" component={PeopleView} />
+      <Route exact path="/:index/repos" component={ReposView} />
+      <Route exact path="/:index" component={RootView} />
+      <Route path="/:index/changes" component={ChangesViewRoute} />
+      <Route path="/:index/hot-changes" component={HotChangesView} />
+      <Route path="/:index/cold-changes" component={ColdChangesView} />
+      <Route path="/:index/change/:change" component={ChangeView} />
+      <Route path="/:index/board" component={BoardView} />
+    </Switch>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        <p></p>
+      </Col>
+    </Row>
+  </Container>
+)
 
 class App extends React.Component {
   render() {
     return (
       <React.Fragment>
         <TopMenu />
-        <Container>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Switch>
-            <Route exact path="/" component={Indices} />
-            <Route exact path="/login" component={LoginView} />
-            <Route exact path="/user" component={CUserView} />
-            <Route exact path="/:index/people" component={PeopleView} />
-            <Route exact path="/:index/repos" component={ReposView} />
-            <Route exact path="/:index" component={RootView} />
-            <Route path="/:index/changes" component={ChangesViewRoute} />
-            <Route path="/:index/hot-changes" component={HotChangesView} />
-            <Route path="/:index/cold-changes" component={ColdChangesView} />
-            <Route path="/:index/change/:change" component={ChangeView} />
-            <Route path="/:index/board" component={BoardView} />
-          </Switch>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <p></p>
-            </Col>
-          </Row>
-        </Container>
+        <Switch>
+          <Route path="/:index/board" component={BoardView} />
+          <Route path="/*" component={LegacyApp} />
+        </Switch>
         <Footer />
       </React.Fragment>
     )

@@ -4,8 +4,8 @@
 -- |
 module Monocle.Api.CLI (run) where
 
-import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
+import Monocle.Api.Env
 import Monocle.Api.HTTP (MonocleAPI, server)
 import qualified Monocle.Search.Queries as Q
 import qualified Network.Wai as Wai
@@ -14,13 +14,13 @@ import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Servant.Options (provideOptions)
 import Relude
-import Servant (serve)
+import Servant (hoistServer, serve)
 
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
-app :: [Config.Tenant] -> BH.BHEnv -> Wai.Application
-app tenants bhEnv = serve monocleAPI (server tenants bhEnv)
+app :: Env -> Wai.Application
+app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 
 run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
@@ -35,7 +35,7 @@ run port elkUrl configFile = do
         settings
         . cors (const $ Just policy)
         . provideOptions monocleAPI
-        $ app tenants bhEnv
+        $ app (Env tenants bhEnv)
   where
     policy =
       simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

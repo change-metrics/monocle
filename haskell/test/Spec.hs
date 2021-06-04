@@ -54,6 +54,15 @@ monocleSearchLanguage =
         "Lexer quoted"
         (lexMatch "field:\"A value\"" [L.Literal "field", L.Equal, L.Literal "A value"]),
       testCase
+        "Lexer unicode"
+        (lexMatch "!field:λr🌈bow" [L.Not, L.Literal "field", L.Equal, L.Literal "λr🌈bow"]),
+      testCase
+        "Lexer quoted unicode"
+        (lexMatch "\"Zuul ▲ user\"" [L.Literal "Zuul ▲ user"]),
+      testCase
+        "Lexer does not escape"
+        (lexMatch "\"test\\\"" [L.Literal "test\\"]),
+      testCase
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
@@ -87,8 +96,8 @@ monocleSearchLanguage =
       testCase
         "Query boolean"
         ( queryMatch
-            "self_merged:false"
-            "{\"term\":{\"self_merged\":{\"value\":\"false\"}}}"
+            "not state:self_merged"
+            "{\"bool\":{\"must_not\":[{\"term\":{\"self_merged\":{\"value\":\"true\"}}}]}}"
         ),
       testCase
         "Query regex"

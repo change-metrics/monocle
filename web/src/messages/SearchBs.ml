@@ -73,6 +73,8 @@ let default_changes_query_request_mutable () : changes_query_request_mutable = {
 }
 
 type change_mutable = {
+  mutable change_id : string;
+  mutable author : string;
   mutable title : string;
   mutable url : string;
   mutable repository_fullname : string;
@@ -83,6 +85,8 @@ type change_mutable = {
 }
 
 let default_change_mutable () : change_mutable = {
+  change_id = "";
+  author = "";
   title = "";
   url = "";
   repository_fullname = "";
@@ -297,6 +301,12 @@ let rec decode_change json =
   let last_key_index = Array.length keys - 1 in
   for i = 0 to last_key_index do
     match Array.unsafe_get keys i with
+    | "change_id" -> 
+      let json = Js.Dict.unsafeGet json "change_id" in
+      v.change_id <- Pbrt_bs.string json "change" "change_id"
+    | "author" -> 
+      let json = Js.Dict.unsafeGet json "author" in
+      v.author <- Pbrt_bs.string json "change" "author"
     | "title" -> 
       let json = Js.Dict.unsafeGet json "title" in
       v.title <- Pbrt_bs.string json "change" "title"
@@ -328,6 +338,8 @@ let rec decode_change json =
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
+    SearchTypes.change_id = v.change_id;
+    SearchTypes.author = v.author;
     SearchTypes.title = v.title;
     SearchTypes.url = v.url;
     SearchTypes.repository_fullname = v.repository_fullname;
@@ -445,6 +457,8 @@ let rec encode_changes_query_request (v:SearchTypes.changes_query_request) =
 
 let rec encode_change (v:SearchTypes.change) = 
   let json = Js.Dict.empty () in
+  Js.Dict.set json "change_id" (Js.Json.string v.SearchTypes.change_id);
+  Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
   Js.Dict.set json "title" (Js.Json.string v.SearchTypes.title);
   Js.Dict.set json "url" (Js.Json.string v.SearchTypes.url);
   Js.Dict.set json "repository_fullname" (Js.Json.string v.SearchTypes.repository_fullname);

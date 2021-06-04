@@ -145,6 +145,10 @@ components:
                     format: enum
         Change:
             properties:
+                change_id:
+                    type: string
+                author:
+                    type: string
                 title:
                     type: string
                 url:

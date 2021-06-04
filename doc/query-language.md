@@ -30,20 +30,27 @@ whsp = *whitespace-chunk
 ; nonempty whitespace
 whsp1 = 1*whitespace-chunk
 
-; Uppercase or lowercase ASCII letter
-ascii = %x41-5A / %x61-7A
-; ASCII digit
-digit = %x30-39
+; Uppercase or lowercase ASCII letter or "_"
+label-char = %x41-5A / %x61-7A / "_"
 
-; ASCII letter or "_"
-label-char = ascii / "_"
+; Any char excluding paren, operator and double quote
+; operators are skipped so that we can lex 'name:value' in three token
+value-char =
+                      ; 21 is '!' and 22 is '"'
+      %x23-25         ; 26 is '&'
+    / %x27            ; 28 is '(' and 29 is ')'
+    / %x2A-39         ; 3A is ':'
+    / %x3B            ; 3C is '<' and 3D is '=' and 3E is '>'
+    / %x3F-7B         ; 7C is '|'
+    / %x7D-10FFFF     ; todo: skip ∧, ∨ and ¬
 
-; label-char or ASCII digit or extra
-value-char = label-char / digit / "-" / "/" / "." / "*"
+; Any char excluding double quote
+quoted-char = %x20-21 / %x23-10FFFF
+quoted-value = %x22 1*quoted-char %x22
 
 ; Field and value
 field = 1*label-char
-value = 1*value-char
+value = quoted-value / 1*value-char
 
 ; boolean operator
 and = "and" / "AND" / "∧" / "&&"
@@ -218,5 +225,4 @@ The language may be extended with the following features:
 
 - `field in [x, xs..]`
 - inline range, e.g.: `count:0..10`
-- relative date, e.g.: `now-3weeks`
-- unicode value
+- escape quote, e.g.: `"literal \"quote"`
