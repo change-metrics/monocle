@@ -96,8 +96,8 @@ monocleSearchLanguage =
       testCase
         "Query boolean"
         ( queryMatch
-            "self_merged:false"
-            "{\"term\":{\"self_merged\":{\"value\":\"false\"}}}"
+            "not state:self_merged"
+            "{\"bool\":{\"must_not\":[{\"term\":{\"self_merged\":{\"value\":\"true\"}}}]}}"
         ),
       testCase
         "Query regex"

@@ -1,15 +1,12 @@
 // Copyright (C) 2021 Monocle authors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// The search bar component
+// The search help component
 //
 open Prelude
 
 @react.component
-let make = (~initialValue: string, ~fields: list<SearchTypes.field>, ~onSearch) => {
-  let (value, setValue) = React.useState(_ => initialValue)
-  let onChange = (v, _) => setValue(_ => v)
-  // Help
+let make = (~store: Store.t) => {
   let renderFieldType = (ft: SearchTypes.field_type) =>
     switch ft {
     | SearchTypes.Field_date => "date"
@@ -24,7 +21,8 @@ let make = (~initialValue: string, ~fields: list<SearchTypes.field>, ~onSearch) 
       {(" : " ++ f.description ++ " (" ++ renderFieldType(f.type_) ++ ")")->str}
     </li>
   let li = s => <li> {s->str} </li>
-  let content =
+  let content = switch Store.Fetch.fields(store) {
+  | Some(Ok(fields)) =>
     <div style={ReactDOM.Style.make(~textAlign="left", ())}>
       <h3> {"Example"->str} </h3>
       <ul>
@@ -38,21 +36,11 @@ let make = (~initialValue: string, ~fields: list<SearchTypes.field>, ~onSearch) 
       <h3> {"Expr syntax"->str} </h3>
       <ul> {"field:value"->li} {"date_field>YYYY-MM-DD"->li} {"number_field>42"->li} </ul>
     </div>
-
-  <form
-    onSubmit={e => {
-      e->ReactEvent.Form.preventDefault
-      value->onSearch
-    }}>
-    <span style={ReactDOM.Style.make(~display="flex", ())}>
-      <span>
-        <Patternfly.Tooltip position=#Bottom content>
-          <Patternfly.Icons.OutlinedQuestionCircle />
-        </Patternfly.Tooltip>
-      </span>
-      <Patternfly.TextInput id="fri-search" value _type=#Text iconVariant=#Search onChange />
-    </span>
-  </form>
+  | _ => <Spinner />
+  }
+  <Patternfly.Tooltip position=#Bottom content>
+    <Patternfly.Icons.OutlinedQuestionCircle />
+  </Patternfly.Tooltip>
 }
 
 let default = make
