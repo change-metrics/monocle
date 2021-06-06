@@ -147,6 +147,13 @@ items:
               persistentVolumeClaim:
                 claimName: elastic-data
     status: { }
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: monocle-k8s-deployment
+      namespace: batyam-devel
+    data:
+      GITHUB_APP_KEY_PATH: '-/etc/monocle/app_key.rsa'
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -264,10 +271,11 @@ items:
                 - --config
                 - /etc/monocle/config.yaml
               env:
-                - name: APP_ID
-                  value: ${GITHUB_APP_ID:-}
-                - name: APP_KEY_PATH
-                  value: ${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}
+                - name: monocle-k8s-deployment
+                    valueFrom:
+                      configMapKeyRef:
+                        name: monocle-k8s-deployment
+                        key: GITHUB_APP_KEY_PATH
               image: changemetrics/monocle_backend:latest
               name: crawler
               resources: { }
