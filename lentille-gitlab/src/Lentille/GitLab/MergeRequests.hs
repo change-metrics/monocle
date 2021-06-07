@@ -105,9 +105,6 @@ defineByDocumentFile
             }
             approved
             draft
-            mergeUser {
-              username
-            }
           }
         }
       }
@@ -187,7 +184,7 @@ transformResponse result =
               (toLazy $ sourceBranch mr)
               (toLazy $ targetBranch mr)
               (Just $ timeToTimestamp Nothing $ createdAt mr)
-              (getMergedAt $ mergedAt mr)
+              (ChangeOptionalMergedAtMergedAt <$> getMergedAt (mergedAt mr))
               (Just $ timeToTimestamp Nothing $ updatedAt mr)
               -- No closedAt attribute for a MR ?
               Nothing
@@ -200,12 +197,13 @@ transformResponse result =
               (if approved mr then fromList ["APPROVED"] else fromList [])
               (draft mr)
               (ChangeOptionalSelfMergedSelfMerged <$> getSelfMerged mr),
-            toChangeCreatedEvent mr : [] :: [ChangeEvent]
+            catMaybes [toChangeMergedEvent mr, toChangeCreatedEvent mr]
           )
-        toChangeCreatedEvent :: ProjectMergeRequestsNodesMergeRequest -> ChangeEvent
+        toChangeCreatedEvent :: ProjectMergeRequestsNodesMergeRequest -> Maybe ChangeEvent
         toChangeCreatedEvent
           ProjectMergeRequestsNodesMergeRequest
-            { iid,
+            { id,
+              iid,
               author,
               createdAt,
               sourceBranch,
@@ -213,28 +211,66 @@ transformResponse result =
               webUrl,
               diffStats
             } =
-            ChangeEvent
-              ("ChangeEventCreated-" <> toLazy iid)
-              (Just $ timeToTimestamp Nothing createdAt)
-              (Just $ getAuthorIdent' author)
-              (toLazy namespace)
-              (toLazy fullName)
-              (toLazy shortName)
-              (toLazy sourceBranch)
-              (toLazy targetBranch)
-              (getChangeNumber iid)
-              (getChangeId iid)
-              (fromMTtoLT webUrl)
-              (Just $ getAuthorIdent' author)
-              (Just $ timeToTimestamp Nothing createdAt)
-              (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
-              (Just $ ChangeEventTypeChangeCreated ChangeCreatedEvent)
+            Just $
+              ChangeEvent
+                ("ChangeEventCreated-" <> toLazy (unpackID id))
+                (Just $ timeToTimestamp Nothing createdAt)
+                (Just $ getAuthorIdent' author)
+                (toLazy namespace)
+                (toLazy fullName)
+                (toLazy shortName)
+                (toLazy sourceBranch)
+                (toLazy targetBranch)
+                (getChangeNumber iid)
+                (getChangeId iid)
+                (fromMTtoLT webUrl)
+                (Just $ getAuthorIdent' author)
+                (Just $ timeToTimestamp Nothing createdAt)
+                (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
+                (Just $ ChangeEventTypeChangeCreated ChangeCreatedEvent)
+        toChangeMergedEvent :: ProjectMergeRequestsNodesMergeRequest -> Maybe ChangeEvent
+        toChangeMergedEvent
+          ProjectMergeRequestsNodesMergeRequest
+            { id,
+              iid,
+              author,
+              createdAt,
+              mergedAt,
+              mergeUser,
+              sourceBranch,
+              targetBranch,
+              webUrl,
+              diffStats
+            } =
+            if isMerged mergedAt
+              then
+                Just $
+                  ChangeEvent
+                    ("ChangeEventMerged-" <> toLazy (unpackID id))
+                    (getMergedAt mergedAt)
+                    (getMergedByIdent' mergeUser)
+                    (toLazy namespace)
+                    (toLazy fullName)
+                    (toLazy shortName)
+                    (toLazy sourceBranch)
+                    (toLazy targetBranch)
+                    (getChangeNumber iid)
+                    (getChangeId iid)
+                    (fromMTtoLT webUrl)
+                    (Just $ getAuthorIdent' author)
+                    (Just $ timeToTimestamp Nothing createdAt)
+                    (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
+                    (Just $ ChangeEventTypeChangeMerged ChangeMergedEvent)
+              else Nothing
             where
-              getAuthorIdent' :: Maybe ProjectMergeRequestsNodesAuthorUserCore -> Ident
-              getAuthorIdent' (Just uc) = toIdent $ getUsername uc
+              getMergedByIdent' :: Maybe ProjectMergeRequestsNodesMergeUserUserCore -> Maybe Ident
+              getMergedByIdent' ucM = fmap (toIdent . getUsername) ucM
                 where
-                  getUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
-              getAuthorIdent' Nothing = ghostIdent
+                  getUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
+        getAuthorIdent' :: Maybe ProjectMergeRequestsNodesAuthorUserCore -> Ident
+        getAuthorIdent' (Just uc) = toIdent $ getAuthorUsername uc
+        getAuthorIdent' Nothing = ghostIdent
+        getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
         getChangeNumber :: Text -> Int32
         getChangeNumber iid =
           fromIntToInt32 $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
@@ -247,15 +283,13 @@ transformResponse result =
           where
             compuDiff :: Maybe String
             compuDiff = fmap (show . nominalDiffTimeToSeconds . negate . diffUTCTime (timeToUTCTime Nothing createdAt) . timeToUTCTime Nothing) mergedAt
-        getMergedAt :: Maybe Time -> Maybe ChangeOptionalMergedAt
-        getMergedAt tM = fmap (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing) tM
+        getMergedAt :: Maybe Time -> Maybe T.Timestamp
+        getMergedAt tM = fmap (timeToTimestamp Nothing) tM
         ghostIdent = Ident "ghost" "ghost"
         getAuthorIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
         getAuthorIdent ProjectMergeRequestsNodesMergeRequest {author} = case author of
-          Just author' -> toIdent $ getUsername author'
+          Just author' -> toIdent $ getAuthorUsername author'
           Nothing -> ghostIdent
-          where
-            getUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
         getMergedByIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
         getMergedByIdent ProjectMergeRequestsNodesMergeRequest {mergeUser} = case mergeUser of
           Just author' -> toIdent $ getUsername author'
