@@ -28,4 +28,4 @@ jobs:
             ${{ runner.os }}-
       - run: cabal update
       - run: cabal build --enable-tests all
-      - run: cabal test --enable-tests --test-show-details=direct all
+      - run: cabal test --enable-tests --test-show-details=direct test:monocle-test

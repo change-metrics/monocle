@@ -3,7 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
-module Monocle.Search.Change where
+module Monocle.Backend.Documents where
 
 import Data.Aeson (FromJSON, ToJSON, genericParseJSON, genericToJSON, parseJSON, toJSON)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)

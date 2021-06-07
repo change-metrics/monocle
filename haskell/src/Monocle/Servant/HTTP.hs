@@ -7,12 +7,12 @@
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
-module Monocle.Api.HTTP (MonocleAPI, server) where
+module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Env
-import Monocle.Api.PBJSON (PBJSON)
 import Monocle.Api.Server (searchChangesQuery, searchFields)
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse)
+import Monocle.Servant.Env
+import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 
 type MonocleAPI =

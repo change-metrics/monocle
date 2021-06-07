@@ -8,7 +8,7 @@ module Monocle.Search.Queries where
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Aeson as Aeson
 import qualified Database.Bloodhound as BH
-import Monocle.Search.Change (ELKChange (..))
+import Monocle.Backend.Documents (ELKChange (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (SortOrder (..))
 import qualified Network.HTTP.Client as HTTP
