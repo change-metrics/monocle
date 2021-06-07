@@ -17,6 +17,7 @@
 module Lentille.GitLab.MergeRequests where
 
 import Data.Morpheus.Client
+import qualified Data.Text as TE
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Data.Vector as V
@@ -55,6 +56,7 @@ defineByDocumentFile
           count
           nodes {
             id
+            iid
             title
             description
             webUrl
@@ -128,7 +130,7 @@ streamMergeRequests client untilDate project =
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
 
-transformResponse :: GetProjectMergeRequests -> (PageInfo, [Text], [Change])
+transformResponse :: GetProjectMergeRequests -> (PageInfo, [Text], [(Change, [ChangeEvent])])
 transformResponse result =
   case result of
     GetProjectMergeRequests
@@ -157,46 +159,87 @@ transformResponse result =
       Nothing -> ""
     fromMTtoLT t = toLazy $ fromMaybe "" t
     fromIntToInt32 = fromInteger . toInteger
-    nodesToChanges :: Text -> Text -> Text -> [Maybe ProjectMergeRequestsNodesMergeRequest] -> [Change]
+    nodesToChanges :: Text -> Text -> Text -> [Maybe ProjectMergeRequestsNodesMergeRequest] -> [(Change, [ChangeEvent])]
     nodesToChanges shortName fullName namespace nodes' =
-      map toChange (catMaybes nodes')
+      map toChangeAndEvents (catMaybes nodes')
       where
-        toChange :: ProjectMergeRequestsNodesMergeRequest -> Change
-        toChange mr =
-          Change
-            (let ID id' = Lentille.GitLab.MergeRequests.id mr in show id')
-            1
-            "ChangeId"
-            (toLazy $ title (mr :: ProjectMergeRequestsNodesMergeRequest))
-            (fromMTtoLT $ description mr)
-            (fromMTtoLT $ webUrl mr)
-            (fromIntToInt32 . fromMaybe 0 $ commitCount mr)
-            (getAdditions $ diffStatsSummary mr)
-            (getDeletions $ diffStatsSummary mr)
-            (getChangedFileCount $ diffStatsSummary mr)
-            (getChangedFiles $ diffStats mr)
-            (getCommits $ commitsWithoutMergeCommits mr)
-            (toLazy namespace)
-            (toLazy fullName)
-            (toLazy shortName)
-            (Just $ getAuthorIdent mr)
-            (Just . ChangeOptionalMergedByMergedBy $ getMergedByIdent mr)
-            (toLazy $ sourceBranch mr)
-            (toLazy $ targetBranch mr)
-            (Just $ timeToTimestamp Nothing $ createdAt mr)
-            (getMergedAt $ mergedAt mr)
-            (Just $ timeToTimestamp Nothing $ updatedAt mr)
-            -- No closedAt attribute for a MR ?
-            Nothing
-            -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
-            (if isMerged $ mergedAt mr then "MERGED" else "CLOSED")
-            (ChangeOptionalDurationDuration <$> getDuration mr)
-            (if mergeable mr then "MERGEABLE" else "CONFLICT")
-            (getLabels $ labels mr)
-            (getAssignees $ assignees mr)
-            (if approved mr then fromList ["APPROVED"] else fromList [])
-            (draft mr)
-            (ChangeOptionalSelfMergedSelfMerged <$> getSelfMerged mr)
+        toChangeAndEvents :: ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
+        toChangeAndEvents mr =
+          ( Change
+              -- (let ID id' = Lentille.GitLab.MergeRequests.id mr in show id')
+              (toLazy . unpackID $ id mr)
+              (getChangeNumber $ iid mr)
+              (getChangeId $ iid mr)
+              (toLazy $ title (mr :: ProjectMergeRequestsNodesMergeRequest))
+              (fromMTtoLT $ description mr)
+              (fromMTtoLT $ webUrl mr)
+              (fromIntToInt32 . fromMaybe 0 $ commitCount mr)
+              (getAdditions $ diffStatsSummary mr)
+              (getDeletions $ diffStatsSummary mr)
+              (getChangedFileCount $ diffStatsSummary mr)
+              (getChangedFiles $ diffStats mr)
+              (getCommits $ commitsWithoutMergeCommits mr)
+              (toLazy namespace)
+              (toLazy fullName)
+              (toLazy shortName)
+              (Just $ getAuthorIdent mr)
+              (Just . ChangeOptionalMergedByMergedBy $ getMergedByIdent mr)
+              (toLazy $ sourceBranch mr)
+              (toLazy $ targetBranch mr)
+              (Just $ timeToTimestamp Nothing $ createdAt mr)
+              (getMergedAt $ mergedAt mr)
+              (Just $ timeToTimestamp Nothing $ updatedAt mr)
+              -- No closedAt attribute for a MR ?
+              Nothing
+              -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
+              (if isMerged $ mergedAt mr then "MERGED" else "CLOSED")
+              (ChangeOptionalDurationDuration <$> getDuration mr)
+              (if mergeable mr then "MERGEABLE" else "CONFLICT")
+              (getLabels $ labels mr)
+              (getAssignees $ assignees mr)
+              (if approved mr then fromList ["APPROVED"] else fromList [])
+              (draft mr)
+              (ChangeOptionalSelfMergedSelfMerged <$> getSelfMerged mr),
+            toChangeCreatedEvent mr : [] :: [ChangeEvent]
+          )
+        toChangeCreatedEvent :: ProjectMergeRequestsNodesMergeRequest -> ChangeEvent
+        toChangeCreatedEvent
+          ProjectMergeRequestsNodesMergeRequest
+            { iid,
+              author,
+              createdAt,
+              sourceBranch,
+              targetBranch,
+              webUrl,
+              diffStats
+            } =
+            ChangeEvent
+              ("ChangeEventCreated-" <> toLazy iid)
+              (Just $ timeToTimestamp Nothing createdAt)
+              (Just $ getAuthorIdent' author)
+              (toLazy namespace)
+              (toLazy fullName)
+              (toLazy shortName)
+              (toLazy sourceBranch)
+              (toLazy targetBranch)
+              (getChangeNumber iid)
+              (getChangeId iid)
+              (fromMTtoLT webUrl)
+              (Just $ getAuthorIdent' author)
+              (Just $ timeToTimestamp Nothing createdAt)
+              (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
+              (Just $ ChangeEventTypeChangeCreated ChangeCreatedEvent)
+            where
+              getAuthorIdent' :: Maybe ProjectMergeRequestsNodesAuthorUserCore -> Ident
+              getAuthorIdent' (Just uc) = toIdent $ getUsername uc
+                where
+                  getUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
+              getAuthorIdent' Nothing = ghostIdent
+        getChangeNumber :: Text -> Int32
+        getChangeNumber iid =
+          fromIntToInt32 $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
+        getChangeId :: Text -> LText
+        getChangeId iid = toLazy . TE.replace " " "" $ TE.replace "/" "@" fullName <> "@" <> toText iid
         getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
         getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
           Just durationFM -> truncate <$> durationFM

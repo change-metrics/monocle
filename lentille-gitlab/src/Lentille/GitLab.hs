@@ -67,7 +67,7 @@ streamFetch ::
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
   -- | query result adapter
-  (a -> (PageInfo, [Text], [Change])) ->
+  (a -> (PageInfo, [Text], [(Change, [ChangeEvent])])) ->
   Stream (Of Change) m ()
 streamFetch client untilDate mkArgs transformResponse = go Nothing
   where
@@ -97,11 +97,12 @@ streamFetch client untilDate mkArgs transformResponse = go Nothing
             Right resp -> transformResponse resp
       -- TODO: report decoding error
       unless (null decodingErrors) (error ("Decoding failed: " <> show decodingErrors))
-      let filteredChanges = filtered xs
+      let filteredChanges = filtered $ map fst xs
       let reachedLimit = length xs > length filteredChanges
       logStatus pageInfo reachedLimit
       -- TODO: implement throttle
       S.each filteredChanges
       when (hasNextPage pageInfo && not reachedLimit) (go (Just pageInfo))
       where
+        filtered :: [Change] -> [Change]
         filtered = filter (isChangeUpdatedAfterDate untilDate)
