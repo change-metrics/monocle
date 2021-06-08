@@ -17,5 +17,5 @@ dnf install -y ghc cabal-install zlib-devel git && cabal update
 cabal test all
 
 # Start a repl:
-cabal repl monocle
+cabal repl
 ```
