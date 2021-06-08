@@ -177,7 +177,7 @@ transformResponse result =
               (getChangedFiles $ diffStats mr)
               (getCommits $ commitsWithoutMergeCommits mr)
               (toLazy namespace)
-              (toLazy fullName)
+              (toLazy $ removeSpace fullName)
               (toLazy shortName)
               (Just $ getAuthorIdent mr)
               (Just . ChangeOptionalMergedByMergedBy $ getMergedByIdent mr)
@@ -227,7 +227,7 @@ transformResponse result =
                   (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
                   (Just . toIdent . getCommitUsername $ author)
                   (toLazy namespace)
-                  (toLazy fullName)
+                  (toLazy $ removeSpace fullName)
                   (toLazy shortName)
                   (toLazy sourceBranch)
                   (toLazy targetBranch)
@@ -255,7 +255,7 @@ transformResponse result =
                 (Just $ timeToTimestamp Nothing createdAt)
                 (Just $ getAuthorIdent' author)
                 (toLazy namespace)
-                (toLazy fullName)
+                (toLazy $ removeSpace fullName)
                 (toLazy shortName)
                 (toLazy sourceBranch)
                 (toLazy targetBranch)
@@ -286,7 +286,7 @@ transformResponse result =
                 (getMergedAt mergedAt)
                 (getMergedByIdent' mergeUser)
                 (toLazy namespace)
-                (toLazy fullName)
+                (toLazy $ removeSpace fullName)
                 (toLazy shortName)
                 (toLazy sourceBranch)
                 (toLazy targetBranch)
@@ -314,7 +314,8 @@ transformResponse result =
         getChangeNumber iid =
           fromIntToInt32 $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
         getChangeId :: Text -> LText
-        getChangeId iid = toLazy . TE.replace " " "" $ TE.replace "/" "@" fullName <> "@" <> toText iid
+        getChangeId iid = toLazy . removeSpace $ TE.replace "/" "@" fullName <> "@" <> toText iid
+        removeSpace = TE.replace " " ""
         getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
         getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
           Just durationFM -> truncate <$> durationFM
