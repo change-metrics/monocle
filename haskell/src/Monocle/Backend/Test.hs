@@ -6,11 +6,69 @@ module Monocle.Backend.Test where
 
 import Control.Exception (bracket)
 import Data.Aeson (Value)
+import Data.Time.Format
+import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Backend.Index as C
+import Monocle.Change
 import qualified Monocle.Search.Queries as Q
 import Relude
 import Test.Tasty.HUnit
+
+fakeDate :: T.Timestamp
+fakeDate = T.fromUTCTime $ parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
+
+fakeIdent :: Ident
+fakeIdent = Ident "John" "John"
+
+fakeChange :: Change
+fakeChange =
+  Change
+    { changeId = "aFakeId",
+      changeNumber = 1,
+      changeChangeId = "change-id",
+      changeTitle = "change-title",
+      changeUrl = "https://url",
+      changeCommitCount = 1,
+      changeAdditions = 1,
+      changeDeletions = 1,
+      changeChangedFilesCount = 1,
+      changeChangedFiles = V.fromList [ChangedFile 0 0 "/fake/path"],
+      changeText = "",
+      changeCommits =
+        V.fromList
+          [ Commit
+              { commitSha = "",
+                commitAuthor = Just fakeIdent,
+                commitCommitter = Just fakeIdent,
+                commitAuthoredAt = Just fakeDate,
+                commitCommittedAt = Just fakeDate,
+                commitAdditions = 0,
+                commitDeletions = 0,
+                commitTitle = ""
+              }
+          ],
+      changeRepositoryPrefix = "",
+      changeRepositoryFullname = "",
+      changeRepositoryShortname = "",
+      changeAuthor = Just fakeIdent,
+      changeOptionalMergedBy = Nothing,
+      changeBranch = "",
+      changeTargetBranch = "",
+      changeCreatedAt = Just fakeDate,
+      changeOptionalMergedAt = Nothing,
+      changeUpdatedAt = Just fakeDate,
+      changeOptionalClosedAt = Nothing,
+      changeState = "OPEN",
+      changeOptionalDuration = Nothing,
+      changeMergeable = "",
+      changeLabels = V.fromList [],
+      changeAssignees = V.fromList [],
+      changeApprovals = V.fromList [],
+      changeDraft = False,
+      changeOptionalSelfMerged = Nothing
+    }
 
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
 withBH cb = bracket create cb delete
@@ -22,6 +80,7 @@ withBH cb = bracket create cb delete
       let testIndex = BH.IndexName "test-index"
       BH.runBH bhEnv $ do
         _ <- BH.createIndex indexSettings testIndex
+        _ <- BH.putMapping testIndex C.ChangesIndexMapping
         True <- BH.indexExists testIndex
         pure (bhEnv, testIndex)
     delete (bhEnv, testIndex) = do
@@ -45,7 +104,7 @@ testIndexChange = withBH doTest
 
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
-      C.indexChanges bhEnv testIndex [C.Change "test change" "test-author" "001"]
+      C.indexChanges bhEnv testIndex [fakeChange]
       checkIndex bhEnv testIndex
-      C.indexChanges bhEnv testIndex [C.Change "test change" "test-author" "001"]
+      C.indexChanges bhEnv testIndex [fakeChange]
       checkIndex bhEnv testIndex
