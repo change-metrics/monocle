@@ -23,8 +23,8 @@ import Data.Aeson
 import Data.Time (UTCTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
+import Monocle.Api.Client.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
 import Monocle.TaskData
-import Monocle.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log, retry)
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S

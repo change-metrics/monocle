@@ -11,8 +11,7 @@ module Main (main) where
 
 import Data.Time.Clock (UTCTime)
 import Lentille.Bugzilla
-import Monocle.Client
-import Monocle.Worker
+import Monocle.Api.Client
 import Options.Generic
 import Relude
 import qualified Streaming.Prelude as S

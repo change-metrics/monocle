@@ -13,9 +13,8 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Lentille.GitHub
 import Lentille.GitHub.Issues
-import Monocle.Client
+import Monocle.Api.Client
 import Monocle.TaskData
-import Monocle.Worker
 import Options.Generic
 import Relude
 import Streaming (Of, Stream)
