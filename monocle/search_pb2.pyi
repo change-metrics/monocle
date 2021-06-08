@@ -517,3 +517,253 @@ class ChangesQueryResponse(google.protobuf.message.Message):
     ) -> typing_extensions.Literal["error", "items"]: ...
 
 global___ChangesQueryResponse = ChangesQueryResponse
+
+class ChangesHistos(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class Event(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+        DOC_COUNT_FIELD_NUMBER: builtins.int
+        KEY_FIELD_NUMBER: builtins.int
+        KEY_AS_STRING_FIELD_NUMBER: builtins.int
+        doc_count: builtins.int = ...
+        key: builtins.int = ...
+        key_as_string: typing.Text = ...
+        def __init__(
+            self,
+            *,
+            doc_count: builtins.int = ...,
+            key: builtins.int = ...,
+            key_as_string: typing.Text = ...,
+        ) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "doc_count",
+                b"doc_count",
+                "key",
+                b"key",
+                "key_as_string",
+                b"key_as_string",
+            ],
+        ) -> None: ...
+    CHANGEABANDONEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGECOMMITFORCEPUSHEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGECOMMITPUSHEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGECREATEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGEMERGEDEVENT_FIELD_NUMBER: builtins.int
+    @property
+    def ChangeAbandonedEvent(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangesHistos.Event
+    ]: ...
+    @property
+    def ChangeCommitForcePushedEvent(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangesHistos.Event
+    ]: ...
+    @property
+    def ChangeCommitPushedEvent(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangesHistos.Event
+    ]: ...
+    @property
+    def ChangeCreatedEvent(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangesHistos.Event
+    ]: ...
+    @property
+    def ChangeMergedEvent(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangesHistos.Event
+    ]: ...
+    def __init__(
+        self,
+        *,
+        ChangeAbandonedEvent: typing.Optional[
+            typing.Iterable[global___ChangesHistos.Event]
+        ] = ...,
+        ChangeCommitForcePushedEvent: typing.Optional[
+            typing.Iterable[global___ChangesHistos.Event]
+        ] = ...,
+        ChangeCommitPushedEvent: typing.Optional[
+            typing.Iterable[global___ChangesHistos.Event]
+        ] = ...,
+        ChangeCreatedEvent: typing.Optional[
+            typing.Iterable[global___ChangesHistos.Event]
+        ] = ...,
+        ChangeMergedEvent: typing.Optional[
+            typing.Iterable[global___ChangesHistos.Event]
+        ] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "ChangeAbandonedEvent",
+            b"ChangeAbandonedEvent",
+            "ChangeCommitForcePushedEvent",
+            b"ChangeCommitForcePushedEvent",
+            "ChangeCommitPushedEvent",
+            b"ChangeCommitPushedEvent",
+            "ChangeCreatedEvent",
+            b"ChangeCreatedEvent",
+            "ChangeMergedEvent",
+            b"ChangeMergedEvent",
+        ],
+    ) -> None: ...
+
+global___ChangesHistos = ChangesHistos
+
+class ChangesLifecycle(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class Event(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+        AUTHORS_COUNT_FIELD_NUMBER: builtins.int
+        EVENTS_COUNT_FIELD_NUMBER: builtins.int
+        authors_count: builtins.int = ...
+        events_count: builtins.int = ...
+        def __init__(
+            self,
+            *,
+            authors_count: builtins.int = ...,
+            events_count: builtins.int = ...,
+        ) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "authors_count", b"authors_count", "events_count", b"events_count"
+            ],
+        ) -> None: ...
+    class Ratios(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+        ABANDONED_FIELD_NUMBER: builtins.int
+        ITERATIONS_FIELD_NUMBER: builtins.int
+        MERGED_FIELD_NUMBER: builtins.int
+        SELF_MERGED_FIELD_NUMBER: builtins.int
+        abandoned: builtins.float = ...
+        iterations: builtins.float = ...
+        merged: builtins.float = ...
+        self_merged: builtins.float = ...
+        def __init__(
+            self,
+            *,
+            abandoned: builtins.float = ...,
+            iterations: builtins.float = ...,
+            merged: builtins.float = ...,
+            self_merged: builtins.float = ...,
+        ) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "abandoned",
+                b"abandoned",
+                "iterations",
+                b"iterations",
+                "merged",
+                b"merged",
+                "self_merged",
+                b"self_merged",
+            ],
+        ) -> None: ...
+    CHANGECOMMITFORCEPUSHEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGECOMMITPUSHEDEVENT_FIELD_NUMBER: builtins.int
+    CHANGECREATEDEVENT_FIELD_NUMBER: builtins.int
+    ABANDONED_FIELD_NUMBER: builtins.int
+    COMMITS_FIELD_NUMBER: builtins.int
+    DURATION_FIELD_NUMBER: builtins.int
+    DURATION_VARIABILITY_FIELD_NUMBER: builtins.int
+    HISTOS_FIELD_NUMBER: builtins.int
+    MERGED_FIELD_NUMBER: builtins.int
+    OPENED_FIELD_NUMBER: builtins.int
+    RATIOS_FIELD_NUMBER: builtins.int
+    SELF_MERGED_FIELD_NUMBER: builtins.int
+    TESTS_FIELD_NUMBER: builtins.int
+    abandoned: builtins.int = ...
+    commits: builtins.float = ...
+    duration: builtins.float = ...
+    duration_variability: builtins.float = ...
+    merged: builtins.int = ...
+    opened: builtins.int = ...
+    self_merged: builtins.int = ...
+    tests: builtins.float = ...
+    @property
+    def ChangeCommitForcePushedEvent(self) -> global___ChangesLifecycle.Event: ...
+    @property
+    def ChangeCommitPushedEvent(self) -> global___ChangesLifecycle.Event: ...
+    @property
+    def ChangeCreatedEvent(self) -> global___ChangesLifecycle.Event: ...
+    @property
+    def histos(self) -> global___ChangesHistos: ...
+    @property
+    def ratios(self) -> global___ChangesLifecycle.Ratios: ...
+    def __init__(
+        self,
+        *,
+        ChangeCommitForcePushedEvent: typing.Optional[
+            global___ChangesLifecycle.Event
+        ] = ...,
+        ChangeCommitPushedEvent: typing.Optional[global___ChangesLifecycle.Event] = ...,
+        ChangeCreatedEvent: typing.Optional[global___ChangesLifecycle.Event] = ...,
+        abandoned: builtins.int = ...,
+        commits: builtins.float = ...,
+        duration: builtins.float = ...,
+        duration_variability: builtins.float = ...,
+        histos: typing.Optional[global___ChangesHistos] = ...,
+        merged: builtins.int = ...,
+        opened: builtins.int = ...,
+        ratios: typing.Optional[global___ChangesLifecycle.Ratios] = ...,
+        self_merged: builtins.int = ...,
+        tests: builtins.float = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "ChangeCommitForcePushedEvent",
+            b"ChangeCommitForcePushedEvent",
+            "ChangeCommitPushedEvent",
+            b"ChangeCommitPushedEvent",
+            "ChangeCreatedEvent",
+            b"ChangeCreatedEvent",
+            "histos",
+            b"histos",
+            "ratios",
+            b"ratios",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "ChangeCommitForcePushedEvent",
+            b"ChangeCommitForcePushedEvent",
+            "ChangeCommitPushedEvent",
+            b"ChangeCommitPushedEvent",
+            "ChangeCreatedEvent",
+            b"ChangeCreatedEvent",
+            "abandoned",
+            b"abandoned",
+            "commits",
+            b"commits",
+            "duration",
+            b"duration",
+            "duration_variability",
+            b"duration_variability",
+            "histos",
+            b"histos",
+            "merged",
+            b"merged",
+            "opened",
+            b"opened",
+            "ratios",
+            b"ratios",
+            "self_merged",
+            b"self_merged",
+            "tests",
+            b"tests",
+        ],
+    ) -> None: ...
+
+global___ChangesLifecycle = ChangesLifecycle

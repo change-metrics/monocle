@@ -121,3 +121,41 @@ message ChangesQueryResponse {
     Changes items = 2;
   }
 }
+
+message ChangesHistos {
+  message Event {
+    uint32 doc_count = 1;
+    uint64 key = 2;
+    string key_as_string = 3;
+  }
+  repeated Event ChangeAbandonedEvent = 1;
+  repeated Event ChangeCommitForcePushedEvent = 2;
+  repeated Event ChangeCommitPushedEvent = 3;
+  repeated Event ChangeCreatedEvent = 4;
+  repeated Event ChangeMergedEvent = 5;
+}
+message ChangesLifecycle {
+  message Event {
+    uint32 authors_count = 1;
+    uint32 events_count = 2;
+  }
+  Event ChangeCommitForcePushedEvent = 1;
+  Event ChangeCommitPushedEvent = 2;
+  Event ChangeCreatedEvent = 3;
+  uint32 abandoned = 4;
+  float commits = 5;
+  float duration = 6;
+  float duration_variability = 7;
+  ChangesHistos histos = 8;
+  uint32 merged = 9;
+  uint32 opened = 10;
+  message Ratios {
+    float abandoned = 1;
+    float iterations = 2;
+    float merged = 3;
+    float self_merged = 4;
+  }
+  Ratios ratios = 11;
+  uint32 self_merged = 12;
+  float tests = 13;
+}

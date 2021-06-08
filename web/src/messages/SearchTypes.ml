@@ -100,6 +100,48 @@ type changes_query_response =
   | Error of query_error
   | Items of changes
 
+type changes_histos_event = {
+  doc_count : int32;
+  key : int64;
+  key_as_string : string;
+}
+
+type changes_histos = {
+  change_abandoned_event : changes_histos_event list;
+  change_commit_force_pushed_event : changes_histos_event list;
+  change_commit_pushed_event : changes_histos_event list;
+  change_created_event : changes_histos_event list;
+  change_merged_event : changes_histos_event list;
+}
+
+type changes_lifecycle_event = {
+  authors_count : int32;
+  events_count : int32;
+}
+
+type changes_lifecycle_ratios = {
+  abandoned : float;
+  iterations : float;
+  merged : float;
+  self_merged : float;
+}
+
+type changes_lifecycle = {
+  change_commit_force_pushed_event : changes_lifecycle_event option;
+  change_commit_pushed_event : changes_lifecycle_event option;
+  change_created_event : changes_lifecycle_event option;
+  abandoned : int32;
+  commits : float;
+  duration : float;
+  duration_variability : float;
+  histos : changes_histos option;
+  merged : int32;
+  opened : int32;
+  ratios : changes_lifecycle_ratios option;
+  self_merged : int32;
+  tests : float;
+}
+
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
   () : search_suggestions_request  = {
@@ -253,3 +295,77 @@ let rec default_changes
 }
 
 let rec default_changes_query_response () : changes_query_response = Error (default_query_error ())
+
+let rec default_changes_histos_event 
+  ?doc_count:((doc_count:int32) = 0l)
+  ?key:((key:int64) = 0L)
+  ?key_as_string:((key_as_string:string) = "")
+  () : changes_histos_event  = {
+  doc_count;
+  key;
+  key_as_string;
+}
+
+let rec default_changes_histos 
+  ?change_abandoned_event:((change_abandoned_event:changes_histos_event list) = [])
+  ?change_commit_force_pushed_event:((change_commit_force_pushed_event:changes_histos_event list) = [])
+  ?change_commit_pushed_event:((change_commit_pushed_event:changes_histos_event list) = [])
+  ?change_created_event:((change_created_event:changes_histos_event list) = [])
+  ?change_merged_event:((change_merged_event:changes_histos_event list) = [])
+  () : changes_histos  = {
+  change_abandoned_event;
+  change_commit_force_pushed_event;
+  change_commit_pushed_event;
+  change_created_event;
+  change_merged_event;
+}
+
+let rec default_changes_lifecycle_event 
+  ?authors_count:((authors_count:int32) = 0l)
+  ?events_count:((events_count:int32) = 0l)
+  () : changes_lifecycle_event  = {
+  authors_count;
+  events_count;
+}
+
+let rec default_changes_lifecycle_ratios 
+  ?abandoned:((abandoned:float) = 0.)
+  ?iterations:((iterations:float) = 0.)
+  ?merged:((merged:float) = 0.)
+  ?self_merged:((self_merged:float) = 0.)
+  () : changes_lifecycle_ratios  = {
+  abandoned;
+  iterations;
+  merged;
+  self_merged;
+}
+
+let rec default_changes_lifecycle 
+  ?change_commit_force_pushed_event:((change_commit_force_pushed_event:changes_lifecycle_event option) = None)
+  ?change_commit_pushed_event:((change_commit_pushed_event:changes_lifecycle_event option) = None)
+  ?change_created_event:((change_created_event:changes_lifecycle_event option) = None)
+  ?abandoned:((abandoned:int32) = 0l)
+  ?commits:((commits:float) = 0.)
+  ?duration:((duration:float) = 0.)
+  ?duration_variability:((duration_variability:float) = 0.)
+  ?histos:((histos:changes_histos option) = None)
+  ?merged:((merged:int32) = 0l)
+  ?opened:((opened:int32) = 0l)
+  ?ratios:((ratios:changes_lifecycle_ratios option) = None)
+  ?self_merged:((self_merged:int32) = 0l)
+  ?tests:((tests:float) = 0.)
+  () : changes_lifecycle  = {
+  change_commit_force_pushed_event;
+  change_commit_pushed_event;
+  change_created_event;
+  abandoned;
+  commits;
+  duration;
+  duration_variability;
+  histos;
+  merged;
+  opened;
+  ratios;
+  self_merged;
+  tests;
+}

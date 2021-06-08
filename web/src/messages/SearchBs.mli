@@ -45,6 +45,21 @@ val encode_changes : SearchTypes.changes -> Js.Json.t Js.Dict.t
 val encode_changes_query_response : SearchTypes.changes_query_response -> Js.Json.t Js.Dict.t
 (** [encode_changes_query_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_changes_histos_event : SearchTypes.changes_histos_event -> Js.Json.t Js.Dict.t
+(** [encode_changes_histos_event v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_changes_histos : SearchTypes.changes_histos -> Js.Json.t Js.Dict.t
+(** [encode_changes_histos v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_changes_lifecycle_event : SearchTypes.changes_lifecycle_event -> Js.Json.t Js.Dict.t
+(** [encode_changes_lifecycle_event v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_changes_lifecycle_ratios : SearchTypes.changes_lifecycle_ratios -> Js.Json.t Js.Dict.t
+(** [encode_changes_lifecycle_ratios v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_changes_lifecycle : SearchTypes.changes_lifecycle -> Js.Json.t Js.Dict.t
+(** [encode_changes_lifecycle v dict] encodes [v] int the given JSON [dict] *)
+
 
 (** {2 BS Decoding} *)
 
@@ -89,3 +104,18 @@ val decode_changes : Js.Json.t Js.Dict.t -> SearchTypes.changes
 
 val decode_changes_query_response : Js.Json.t Js.Dict.t -> SearchTypes.changes_query_response
 (** [decode_changes_query_response decoder] decodes a [changes_query_response] value from [decoder] *)
+
+val decode_changes_histos_event : Js.Json.t Js.Dict.t -> SearchTypes.changes_histos_event
+(** [decode_changes_histos_event decoder] decodes a [changes_histos_event] value from [decoder] *)
+
+val decode_changes_histos : Js.Json.t Js.Dict.t -> SearchTypes.changes_histos
+(** [decode_changes_histos decoder] decodes a [changes_histos] value from [decoder] *)
+
+val decode_changes_lifecycle_event : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle_event
+(** [decode_changes_lifecycle_event decoder] decodes a [changes_lifecycle_event] value from [decoder] *)
+
+val decode_changes_lifecycle_ratios : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle_ratios
+(** [decode_changes_lifecycle_ratios decoder] decodes a [changes_lifecycle_ratios] value from [decoder] *)
+
+val decode_changes_lifecycle : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle
+(** [decode_changes_lifecycle decoder] decodes a [changes_lifecycle] value from [decoder] *)
