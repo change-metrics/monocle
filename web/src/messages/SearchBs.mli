@@ -27,6 +27,15 @@ val encode_query_error : SearchTypes.query_error -> Js.Json.t Js.Dict.t
 val encode_changes_query_request : SearchTypes.changes_query_request -> Js.Json.t Js.Dict.t
 (** [encode_changes_query_request v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_file : SearchTypes.file -> Js.Json.t Js.Dict.t
+(** [encode_file v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_commit : SearchTypes.commit -> Js.Json.t Js.Dict.t
+(** [encode_commit v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_change_merged_by_m : SearchTypes.change_merged_by_m -> Js.Json.t Js.Dict.t
+(** [encode_change_merged_by_m v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 (** [encode_change v dict] encodes [v] int the given JSON [dict] *)
 
@@ -62,6 +71,15 @@ val decode_query_error : Js.Json.t Js.Dict.t -> SearchTypes.query_error
 
 val decode_changes_query_request : Js.Json.t Js.Dict.t -> SearchTypes.changes_query_request
 (** [decode_changes_query_request decoder] decodes a [changes_query_request] value from [decoder] *)
+
+val decode_file : Js.Json.t Js.Dict.t -> SearchTypes.file
+(** [decode_file decoder] decodes a [file] value from [decoder] *)
+
+val decode_commit : Js.Json.t Js.Dict.t -> SearchTypes.commit
+(** [decode_commit decoder] decodes a [commit] value from [decoder] *)
+
+val decode_change_merged_by_m : Js.Json.t Js.Dict.t -> SearchTypes.change_merged_by_m
+(** [decode_change_merged_by_m decoder] decodes a [change_merged_by_m] value from [decoder] *)
 
 val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 (** [decode_change decoder] decodes a [change] value from [decoder] *)

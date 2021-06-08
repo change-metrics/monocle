@@ -11,7 +11,7 @@ import Data.Time.Clock (UTCTime)
 import Relude
 
 data Author = Author
-  {authorMuid :: Text}
+  {authorMuid :: LText}
   deriving (Show, Eq, Generic)
 
 instance ToJSON Author where
@@ -21,9 +21,9 @@ instance FromJSON Author where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data File = File
-  { fileAdditions :: Int,
-    fileDeletions :: Int,
-    filePath :: Text
+  { fileAdditions :: Word32,
+    fileDeletions :: Word32,
+    filePath :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -34,14 +34,14 @@ instance FromJSON File where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data Commit = Commit
-  { commitSha :: Text,
-    commitAuthor :: Author,
-    commitCommitter :: Author,
-    commitAuthoredAt :: UTCTime,
-    commitCommittedAt :: UTCTime,
-    commitAdditions :: Int,
-    commitDeletions :: Int,
-    commitTitle :: Text
+  { elkcommitSha :: LText,
+    elkcommitAuthor :: Author,
+    elkcommitCommitter :: Author,
+    elkcommitAuthoredAt :: UTCTime,
+    elkcommitCommittedAt :: UTCTime,
+    elkcommitAdditions :: Word32,
+    elkcommitDeletions :: Word32,
+    elkcommitTitle :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -78,10 +78,10 @@ data ELKChange = ELKChange
     elkchangeTitle :: Text,
     elkchangeText :: Text,
     elkchangeUrl :: Text,
-    elkchangeCommitCount :: Int,
-    elkchangeAdditions :: Int,
-    elkchangeDeletions :: Int,
-    elkchangeChangedFilesCount :: Int,
+    elkchangeCommitCount :: Word32,
+    elkchangeAdditions :: Word32,
+    elkchangeDeletions :: Word32,
+    elkchangeChangedFilesCount :: Word32,
     elkchangeChangedFiles :: [File],
     elkchangeCommits :: [Commit],
     elkchangeRepositoryPrefix :: Text,
@@ -91,6 +91,7 @@ data ELKChange = ELKChange
     elkchangeCommitter :: Maybe Author,
     elkchangeMergedBy :: Maybe Author,
     elkchangeBranch :: Text,
+    elkchangeTargetBranch :: Text,
     elkchangeCreatedAt :: UTCTime,
     elkchangeMergedAt :: Maybe UTCTime,
     elkchangeUpdatedAt :: UTCTime,

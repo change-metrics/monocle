@@ -951,6 +951,424 @@ instance HsJSONPB.ToSchema ChangesQueryRequest where
             }
         )
 
+data File = File
+  { fileAdditions :: Hs.Word32,
+    fileDeletions :: Hs.Word32,
+    filePath :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named File where
+  nameOf _ = (Hs.fromString "File")
+
+instance HsProtobuf.HasDefault File
+
+instance HsProtobuf.Message File where
+  encodeMessage
+    _
+    File
+      { fileAdditions = fileAdditions,
+        fileDeletions = fileDeletions,
+        filePath = filePath
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                fileAdditions
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                fileDeletions
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                filePath
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure File)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "additions")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "deletions")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "path")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB File where
+  toJSONPB (File f1 f2 f3) =
+    ( HsJSONPB.object
+        ["additions" .= f1, "deletions" .= f2, "path" .= f3]
+    )
+  toEncodingPB (File f1 f2 f3) =
+    ( HsJSONPB.pairs
+        ["additions" .= f1, "deletions" .= f2, "path" .= f3]
+    )
+
+instance HsJSONPB.FromJSONPB File where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "File"
+        ( \obj ->
+            (Hs.pure File) <*> obj .: "additions" <*> obj .: "deletions"
+              <*> obj .: "path"
+        )
+    )
+
+instance HsJSONPB.ToJSON File where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON File where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema File where
+  declareNamedSchema _ =
+    do
+      let declare_additions = HsJSONPB.declareSchemaRef
+      fileAdditions <- declare_additions Proxy.Proxy
+      let declare_deletions = HsJSONPB.declareSchemaRef
+      fileDeletions <- declare_deletions Proxy.Proxy
+      let declare_path = HsJSONPB.declareSchemaRef
+      filePath <- declare_path Proxy.Proxy
+      let _ =
+            Hs.pure File <*> HsJSONPB.asProxy declare_additions
+              <*> HsJSONPB.asProxy declare_deletions
+              <*> HsJSONPB.asProxy declare_path
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "File",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("additions", fileAdditions),
+                          ("deletions", fileDeletions),
+                          ("path", filePath)
+                        ]
+                  }
+            }
+        )
+
+data Commit = Commit
+  { commitSha :: Hs.Text,
+    commitTitle :: Hs.Text,
+    commitAuthor :: Hs.Text,
+    commitAuthoredAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    commitCommitter :: Hs.Text,
+    commitCommittedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    commitAdditions :: Hs.Word32,
+    commitDeletions :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Commit where
+  nameOf _ = (Hs.fromString "Commit")
+
+instance HsProtobuf.HasDefault Commit
+
+instance HsProtobuf.Message Commit where
+  encodeMessage
+    _
+    Commit
+      { commitSha = commitSha,
+        commitTitle = commitTitle,
+        commitAuthor = commitAuthor,
+        commitAuthoredAt = commitAuthoredAt,
+        commitCommitter = commitCommitter,
+        commitCommittedAt = commitCommittedAt,
+        commitAdditions = commitAdditions,
+        commitDeletions = commitDeletions
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                commitSha
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                commitTitle
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                commitAuthor
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    commitAuthoredAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                commitCommitter
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    commitCommittedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                commitAdditions
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                commitDeletions
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure Commit)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 4)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 5)
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 6)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 10)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 11)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "sha")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "title")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "author")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "authored_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "committer")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "committed_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "additions")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "deletions")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Commit where
+  toJSONPB (Commit f1 f2 f3 f4 f5 f6 f10 f11) =
+    ( HsJSONPB.object
+        [ "sha" .= f1,
+          "title" .= f2,
+          "author" .= f3,
+          "authored_at" .= f4,
+          "committer" .= f5,
+          "committed_at" .= f6,
+          "additions" .= f10,
+          "deletions" .= f11
+        ]
+    )
+  toEncodingPB (Commit f1 f2 f3 f4 f5 f6 f10 f11) =
+    ( HsJSONPB.pairs
+        [ "sha" .= f1,
+          "title" .= f2,
+          "author" .= f3,
+          "authored_at" .= f4,
+          "committer" .= f5,
+          "committed_at" .= f6,
+          "additions" .= f10,
+          "deletions" .= f11
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB Commit where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Commit"
+        ( \obj ->
+            (Hs.pure Commit) <*> obj .: "sha" <*> obj .: "title"
+              <*> obj .: "author"
+              <*> obj .: "authored_at"
+              <*> obj .: "committer"
+              <*> obj .: "committed_at"
+              <*> obj .: "additions"
+              <*> obj .: "deletions"
+        )
+    )
+
+instance HsJSONPB.ToJSON Commit where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Commit where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Commit where
+  declareNamedSchema _ =
+    do
+      let declare_sha = HsJSONPB.declareSchemaRef
+      commitSha <- declare_sha Proxy.Proxy
+      let declare_title = HsJSONPB.declareSchemaRef
+      commitTitle <- declare_title Proxy.Proxy
+      let declare_author = HsJSONPB.declareSchemaRef
+      commitAuthor <- declare_author Proxy.Proxy
+      let declare_authored_at = HsJSONPB.declareSchemaRef
+      commitAuthoredAt <- declare_authored_at Proxy.Proxy
+      let declare_committer = HsJSONPB.declareSchemaRef
+      commitCommitter <- declare_committer Proxy.Proxy
+      let declare_committed_at = HsJSONPB.declareSchemaRef
+      commitCommittedAt <- declare_committed_at Proxy.Proxy
+      let declare_additions = HsJSONPB.declareSchemaRef
+      commitAdditions <- declare_additions Proxy.Proxy
+      let declare_deletions = HsJSONPB.declareSchemaRef
+      commitDeletions <- declare_deletions Proxy.Proxy
+      let _ =
+            Hs.pure Commit <*> HsJSONPB.asProxy declare_sha
+              <*> HsJSONPB.asProxy declare_title
+              <*> HsJSONPB.asProxy declare_author
+              <*> HsJSONPB.asProxy declare_authored_at
+              <*> HsJSONPB.asProxy declare_committer
+              <*> HsJSONPB.asProxy declare_committed_at
+              <*> HsJSONPB.asProxy declare_additions
+              <*> HsJSONPB.asProxy declare_deletions
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Commit",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("sha", commitSha),
+                          ("title", commitTitle),
+                          ("author", commitAuthor),
+                          ("authored_at", commitAuthoredAt),
+                          ("committer", commitCommitter),
+                          ("committed_at", commitCommittedAt),
+                          ("additions", commitAdditions),
+                          ("deletions", commitDeletions)
+                        ]
+                  }
+            }
+        )
+
 data Change = Change
   { changeChangeId :: Hs.Text,
     changeAuthor :: Hs.Text,
@@ -959,7 +1377,23 @@ data Change = Change
     changeRepositoryFullname :: Hs.Text,
     changeState :: Hs.Text,
     changeBranch :: Hs.Text,
+    changeTargetBranch :: Hs.Text,
     changeCreatedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeUpdatedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeMergedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeMergedByM :: Hs.Maybe ChangeMergedByM,
+    changeText :: Hs.Text,
+    changeAdditions :: Hs.Word32,
+    changeDeletions :: Hs.Word32,
+    changeApproval :: Hs.Vector Hs.Text,
+    changeAssignees :: Hs.Vector Hs.Text,
+    changeLabels :: Hs.Vector Hs.Text,
+    changeDraft :: Hs.Bool,
+    changeMergeable :: Hs.Bool,
+    changeChangedFiles :: Hs.Vector Monocle.Search.File,
+    changeChangedFilesCount :: Hs.Word32,
+    changeCommits :: Hs.Vector Monocle.Search.Commit,
+    changeCommitsCount :: Hs.Word32,
     changeTaskData :: Hs.Vector Monocle.TaskData.NewTaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -980,7 +1414,23 @@ instance HsProtobuf.Message Change where
         changeRepositoryFullname = changeRepositoryFullname,
         changeState = changeState,
         changeBranch = changeBranch,
+        changeTargetBranch = changeTargetBranch,
         changeCreatedAt = changeCreatedAt,
+        changeUpdatedAt = changeUpdatedAt,
+        changeMergedAt = changeMergedAt,
+        changeMergedByM = changeMergedByM,
+        changeText = changeText,
+        changeAdditions = changeAdditions,
+        changeDeletions = changeDeletions,
+        changeApproval = changeApproval,
+        changeAssignees = changeAssignees,
+        changeLabels = changeLabels,
+        changeDraft = changeDraft,
+        changeMergeable = changeMergeable,
+        changeChangedFiles = changeChangedFiles,
+        changeChangedFilesCount = changeChangedFilesCount,
+        changeCommits = changeCommits,
+        changeCommitsCount = changeCommitsCount,
         changeTaskData = changeTaskData
       } =
       ( Hs.mconcat
@@ -1014,13 +1464,100 @@ instance HsProtobuf.Message Change where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 8)
+                changeTargetBranch
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 9)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                     changeCreatedAt
                 )
             ),
             ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
+                (HsProtobuf.FieldNumber 10)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    changeUpdatedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    changeMergedAt
+                )
+            ),
+            case changeMergedByM of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeMergedByMMergedBy y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 12)
+                        (HsProtobuf.ForceEmit y)
+                    ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 15)
+                changeText
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 20)
+                changeAdditions
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 21)
+                changeDeletions
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 25)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    changeApproval
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 26)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    changeAssignees
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 27)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    changeLabels
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 30)
+                changeDraft
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 32)
+                changeMergeable
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 50)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.File)
+                    @(HsProtobuf.NestedVec Monocle.Search.File)
+                    changeChangedFiles
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 51)
+                changeChangedFilesCount
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 60)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Commit)
+                    @(HsProtobuf.NestedVec Monocle.Search.Commit)
+                    changeCommits
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 61)
+                changeCommitsCount
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 70)
                 ( Hs.coerce @(Hs.Vector Monocle.TaskData.NewTaskData)
                     @(HsProtobuf.NestedVec Monocle.TaskData.NewTaskData)
                     changeTaskData
@@ -1058,19 +1595,110 @@ instance HsProtobuf.Message Change where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 7)
           )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 8)
+          )
       <*> ( Hs.coerce
               @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
               @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 8)
+                  (HsProtobuf.FieldNumber 9)
               )
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 10)
+              )
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 11)
+              )
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 12),
+                  (Hs.pure (Hs.Just Hs.. ChangeMergedByMMergedBy))
+                    <*> HsProtobuf.decodeMessageField
+                )
+              ]
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 15)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 20)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 21)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 25)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 26)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 27)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 30)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 32)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.File))
+              @(_ (Hs.Vector Monocle.Search.File))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 50)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 51)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Commit))
+              @(_ (Hs.Vector Monocle.Search.Commit))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 60)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 61)
           )
       <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.NewTaskData))
               @(_ (Hs.Vector Monocle.TaskData.NewTaskData))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 9)
+                  (HsProtobuf.FieldNumber 70)
               )
           )
   dotProto _ =
@@ -1125,6 +1753,13 @@ instance HsProtobuf.Message Change where
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 8)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "target_branch")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 9)
           ( HsProtobuf.Prim
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
@@ -1137,7 +1772,119 @@ instance HsProtobuf.Message Change where
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
+          (HsProtobuf.FieldNumber 10)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "updated_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "merged_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 15)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "text")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 20)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "additions")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 21)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "deletions")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 25)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "approval")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 26)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "assignees")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 27)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "labels")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 30)
+          (HsProtobuf.Prim HsProtobuf.Bool)
+          (HsProtobuf.Single "draft")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 32)
+          (HsProtobuf.Prim HsProtobuf.Bool)
+          (HsProtobuf.Single "mergeable")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 50)
+          (HsProtobuf.Repeated (HsProtobuf.Named (HsProtobuf.Single "File")))
+          (HsProtobuf.Single "changed_files")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 51)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "changed_files_count")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 60)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Commit"))
+          )
+          (HsProtobuf.Single "commits")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 61)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "commits_count")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 70)
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
@@ -1152,32 +1899,144 @@ instance HsProtobuf.Message Change where
     ]
 
 instance HsJSONPB.ToJSONPB Change where
-  toJSONPB (Change f1 f2 f3 f4 f5 f6 f7 f8 f9) =
-    ( HsJSONPB.object
-        [ "change_id" .= f1,
-          "author" .= f2,
-          "title" .= f3,
-          "url" .= f4,
-          "repository_fullname" .= f5,
-          "state" .= f6,
-          "branch" .= f7,
-          "created_at" .= f8,
-          "task_data" .= f9
-        ]
-    )
-  toEncodingPB (Change f1 f2 f3 f4 f5 f6 f7 f8 f9) =
-    ( HsJSONPB.pairs
-        [ "change_id" .= f1,
-          "author" .= f2,
-          "title" .= f3,
-          "url" .= f4,
-          "repository_fullname" .= f5,
-          "state" .= f6,
-          "branch" .= f7,
-          "created_at" .= f8,
-          "task_data" .= f9
-        ]
-    )
+  toJSONPB
+    ( Change
+        f1
+        f2
+        f3
+        f4
+        f5
+        f6
+        f7
+        f8
+        f9
+        f10
+        f11
+        f12
+        f15
+        f20
+        f21
+        f25
+        f26
+        f27
+        f30
+        f32
+        f50
+        f51
+        f60
+        f61
+        f70
+      ) =
+      ( HsJSONPB.object
+          [ "change_id" .= f1,
+            "author" .= f2,
+            "title" .= f3,
+            "url" .= f4,
+            "repository_fullname" .= f5,
+            "state" .= f6,
+            "branch" .= f7,
+            "target_branch" .= f8,
+            "created_at" .= f9,
+            "updated_at" .= f10,
+            "merged_at" .= f11,
+            ( let encodeMerged_byM =
+                    ( case f12 of
+                        Hs.Just (ChangeMergedByMMergedBy f12) ->
+                          (HsJSONPB.pair "merged_by" f12)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "merged_byM"
+                            .= (HsJSONPB.objectOrNull [encodeMerged_byM] options)
+                        )
+                          options
+                      else encodeMerged_byM options
+            ),
+            "text" .= f15,
+            "additions" .= f20,
+            "deletions" .= f21,
+            "approval" .= f25,
+            "assignees" .= f26,
+            "labels" .= f27,
+            "draft" .= f30,
+            "mergeable" .= f32,
+            "changed_files" .= f50,
+            "changed_files_count" .= f51,
+            "commits" .= f60,
+            "commits_count" .= f61,
+            "task_data" .= f70
+          ]
+      )
+  toEncodingPB
+    ( Change
+        f1
+        f2
+        f3
+        f4
+        f5
+        f6
+        f7
+        f8
+        f9
+        f10
+        f11
+        f12
+        f15
+        f20
+        f21
+        f25
+        f26
+        f27
+        f30
+        f32
+        f50
+        f51
+        f60
+        f61
+        f70
+      ) =
+      ( HsJSONPB.pairs
+          [ "change_id" .= f1,
+            "author" .= f2,
+            "title" .= f3,
+            "url" .= f4,
+            "repository_fullname" .= f5,
+            "state" .= f6,
+            "branch" .= f7,
+            "target_branch" .= f8,
+            "created_at" .= f9,
+            "updated_at" .= f10,
+            "merged_at" .= f11,
+            ( let encodeMerged_byM =
+                    ( case f12 of
+                        Hs.Just (ChangeMergedByMMergedBy f12) ->
+                          (HsJSONPB.pair "merged_by" f12)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ("merged_byM" .= (HsJSONPB.pairsOrNull [encodeMerged_byM] options))
+                          options
+                      else encodeMerged_byM options
+            ),
+            "text" .= f15,
+            "additions" .= f20,
+            "deletions" .= f21,
+            "approval" .= f25,
+            "assignees" .= f26,
+            "labels" .= f27,
+            "draft" .= f30,
+            "mergeable" .= f32,
+            "changed_files" .= f50,
+            "changed_files_count" .= f51,
+            "commits" .= f60,
+            "commits_count" .= f61,
+            "task_data" .= f70
+          ]
+      )
 
 instance HsJSONPB.FromJSONPB Change where
   parseJSONPB =
@@ -1190,7 +2049,33 @@ instance HsJSONPB.FromJSONPB Change where
               <*> obj .: "repository_fullname"
               <*> obj .: "state"
               <*> obj .: "branch"
+              <*> obj .: "target_branch"
               <*> obj .: "created_at"
+              <*> obj .: "updated_at"
+              <*> obj .: "merged_at"
+              <*> ( let parseMerged_byM parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. ChangeMergedByMMergedBy
+                                <$> (HsJSONPB.parseField parseObj "merged_by"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "merged_byM")
+                            Hs.>>= (HsJSONPB.withObject "merged_byM" parseMerged_byM)
+                        )
+                          <|> (parseMerged_byM obj)
+                  )
+              <*> obj .: "text"
+              <*> obj .: "additions"
+              <*> obj .: "deletions"
+              <*> obj .: "approval"
+              <*> obj .: "assignees"
+              <*> obj .: "labels"
+              <*> obj .: "draft"
+              <*> obj .: "mergeable"
+              <*> obj .: "changed_files"
+              <*> obj .: "changed_files_count"
+              <*> obj .: "commits"
+              <*> obj .: "commits_count"
               <*> obj .: "task_data"
         )
     )
@@ -1219,8 +2104,40 @@ instance HsJSONPB.ToSchema Change where
       changeState <- declare_state Proxy.Proxy
       let declare_branch = HsJSONPB.declareSchemaRef
       changeBranch <- declare_branch Proxy.Proxy
+      let declare_target_branch = HsJSONPB.declareSchemaRef
+      changeTargetBranch <- declare_target_branch Proxy.Proxy
       let declare_created_at = HsJSONPB.declareSchemaRef
       changeCreatedAt <- declare_created_at Proxy.Proxy
+      let declare_updated_at = HsJSONPB.declareSchemaRef
+      changeUpdatedAt <- declare_updated_at Proxy.Proxy
+      let declare_merged_at = HsJSONPB.declareSchemaRef
+      changeMergedAt <- declare_merged_at Proxy.Proxy
+      let declare_merged_byM = HsJSONPB.declareSchemaRef
+      changeMergedByM <- declare_merged_byM Proxy.Proxy
+      let declare_text = HsJSONPB.declareSchemaRef
+      changeText <- declare_text Proxy.Proxy
+      let declare_additions = HsJSONPB.declareSchemaRef
+      changeAdditions <- declare_additions Proxy.Proxy
+      let declare_deletions = HsJSONPB.declareSchemaRef
+      changeDeletions <- declare_deletions Proxy.Proxy
+      let declare_approval = HsJSONPB.declareSchemaRef
+      changeApproval <- declare_approval Proxy.Proxy
+      let declare_assignees = HsJSONPB.declareSchemaRef
+      changeAssignees <- declare_assignees Proxy.Proxy
+      let declare_labels = HsJSONPB.declareSchemaRef
+      changeLabels <- declare_labels Proxy.Proxy
+      let declare_draft = HsJSONPB.declareSchemaRef
+      changeDraft <- declare_draft Proxy.Proxy
+      let declare_mergeable = HsJSONPB.declareSchemaRef
+      changeMergeable <- declare_mergeable Proxy.Proxy
+      let declare_changed_files = HsJSONPB.declareSchemaRef
+      changeChangedFiles <- declare_changed_files Proxy.Proxy
+      let declare_changed_files_count = HsJSONPB.declareSchemaRef
+      changeChangedFilesCount <- declare_changed_files_count Proxy.Proxy
+      let declare_commits = HsJSONPB.declareSchemaRef
+      changeCommits <- declare_commits Proxy.Proxy
+      let declare_commits_count = HsJSONPB.declareSchemaRef
+      changeCommitsCount <- declare_commits_count Proxy.Proxy
       let declare_task_data = HsJSONPB.declareSchemaRef
       changeTaskData <- declare_task_data Proxy.Proxy
       let _ =
@@ -1231,7 +2148,23 @@ instance HsJSONPB.ToSchema Change where
               <*> HsJSONPB.asProxy declare_repository_fullname
               <*> HsJSONPB.asProxy declare_state
               <*> HsJSONPB.asProxy declare_branch
+              <*> HsJSONPB.asProxy declare_target_branch
               <*> HsJSONPB.asProxy declare_created_at
+              <*> HsJSONPB.asProxy declare_updated_at
+              <*> HsJSONPB.asProxy declare_merged_at
+              <*> HsJSONPB.asProxy declare_merged_byM
+              <*> HsJSONPB.asProxy declare_text
+              <*> HsJSONPB.asProxy declare_additions
+              <*> HsJSONPB.asProxy declare_deletions
+              <*> HsJSONPB.asProxy declare_approval
+              <*> HsJSONPB.asProxy declare_assignees
+              <*> HsJSONPB.asProxy declare_labels
+              <*> HsJSONPB.asProxy declare_draft
+              <*> HsJSONPB.asProxy declare_mergeable
+              <*> HsJSONPB.asProxy declare_changed_files
+              <*> HsJSONPB.asProxy declare_changed_files_count
+              <*> HsJSONPB.asProxy declare_commits
+              <*> HsJSONPB.asProxy declare_commits_count
               <*> HsJSONPB.asProxy declare_task_data
       Hs.return
         ( HsJSONPB.NamedSchema
@@ -1254,9 +2187,61 @@ instance HsJSONPB.ToSchema Change where
                           ),
                           ("state", changeState),
                           ("branch", changeBranch),
+                          ("target_branch", changeTargetBranch),
                           ("created_at", changeCreatedAt),
+                          ("updated_at", changeUpdatedAt),
+                          ("merged_at", changeMergedAt),
+                          ("merged_byM", changeMergedByM),
+                          ("text", changeText),
+                          ("additions", changeAdditions),
+                          ("deletions", changeDeletions),
+                          ("approval", changeApproval),
+                          ("assignees", changeAssignees),
+                          ("labels", changeLabels),
+                          ("draft", changeDraft),
+                          ("mergeable", changeMergeable),
+                          ("changed_files", changeChangedFiles),
+                          ( "changed_files_count",
+                            changeChangedFilesCount
+                          ),
+                          ("commits", changeCommits),
+                          ("commits_count", changeCommitsCount),
                           ("task_data", changeTaskData)
                         ]
+                  }
+            }
+        )
+
+data ChangeMergedByM = ChangeMergedByMMergedBy Hs.Text
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeMergedByM where
+  nameOf _ = (Hs.fromString "ChangeMergedByM")
+
+instance HsJSONPB.ToSchema ChangeMergedByM where
+  declareNamedSchema _ =
+    do
+      let declare_merged_by = HsJSONPB.declareSchemaRef
+      changeMergedByMMergedBy <- declare_merged_by Proxy.Proxy
+      let _ =
+            Hs.pure ChangeMergedByMMergedBy
+              <*> HsJSONPB.asProxy declare_merged_by
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeMergedByM",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("merged_by", changeMergedByMMergedBy)],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }
             }
         )

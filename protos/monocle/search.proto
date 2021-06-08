@@ -52,6 +52,23 @@ message ChangesQueryRequest {
   string query = 2;
 }
 
+message File {
+  uint32 additions = 1;
+  uint32 deletions = 2;
+  string path = 3;
+}
+
+message Commit {
+  string sha = 1;
+  string title = 2;
+  string author = 3;
+  google.protobuf.Timestamp authored_at = 4;
+  string committer = 5;
+  google.protobuf.Timestamp committed_at = 6;
+  uint32 additions = 10;
+  uint32 deletions = 11;
+}
+
 message Change {
   string change_id = 1;
   string author = 2;
@@ -60,8 +77,38 @@ message Change {
   string repository_fullname = 5;
   string state = 6;
   string branch = 7;
-  google.protobuf.Timestamp created_at = 8;
-  repeated monocle_task_data.NewTaskData task_data = 9;
+  string target_branch = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  google.protobuf.Timestamp merged_at = 11;
+
+  oneof merged_byM {
+    string merged_by = 12;
+  }
+
+  string text = 15;
+
+  uint32 additions = 20;
+  uint32 deletions = 21;
+  repeated string approval = 25;
+  repeated string assignees = 26;
+  repeated string labels = 27;
+
+  bool draft = 30;
+//  bool has_issue_tracker_links = 31;
+  bool mergeable = 32;
+//  bool tests_included = 33;
+
+  repeated File changed_files = 50;
+  uint32 changed_files_count = 51;
+
+  repeated Commit commits = 60;
+  uint32 commits_count = 61;
+
+//  string id = 63;
+//  uint32 number = 64;
+
+  repeated monocle_task_data.NewTaskData task_data = 70;
 }
 
 message Changes {

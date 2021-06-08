@@ -72,6 +72,40 @@ let default_changes_query_request_mutable () : changes_query_request_mutable = {
   query = "";
 }
 
+type file_mutable = {
+  mutable additions : int32;
+  mutable deletions : int32;
+  mutable path : string;
+}
+
+let default_file_mutable () : file_mutable = {
+  additions = 0l;
+  deletions = 0l;
+  path = "";
+}
+
+type commit_mutable = {
+  mutable sha : string;
+  mutable title : string;
+  mutable author : string;
+  mutable authored_at : TimestampTypes.timestamp option;
+  mutable committer : string;
+  mutable committed_at : TimestampTypes.timestamp option;
+  mutable additions : int32;
+  mutable deletions : int32;
+}
+
+let default_commit_mutable () : commit_mutable = {
+  sha = "";
+  title = "";
+  author = "";
+  authored_at = None;
+  committer = "";
+  committed_at = None;
+  additions = 0l;
+  deletions = 0l;
+}
+
 type change_mutable = {
   mutable change_id : string;
   mutable author : string;
@@ -80,7 +114,23 @@ type change_mutable = {
   mutable repository_fullname : string;
   mutable state : string;
   mutable branch : string;
+  mutable target_branch : string;
   mutable created_at : TimestampTypes.timestamp option;
+  mutable updated_at : TimestampTypes.timestamp option;
+  mutable merged_at : TimestampTypes.timestamp option;
+  mutable merged_by_m : SearchTypes.change_merged_by_m;
+  mutable text : string;
+  mutable additions : int32;
+  mutable deletions : int32;
+  mutable approval : string list;
+  mutable assignees : string list;
+  mutable labels : string list;
+  mutable draft : bool;
+  mutable mergeable : bool;
+  mutable changed_files : SearchTypes.file list;
+  mutable changed_files_count : int32;
+  mutable commits : SearchTypes.commit list;
+  mutable commits_count : int32;
   mutable task_data : TaskDataTypes.new_task_data list;
 }
 
@@ -92,7 +142,23 @@ let default_change_mutable () : change_mutable = {
   repository_fullname = "";
   state = "";
   branch = "";
+  target_branch = "";
   created_at = None;
+  updated_at = None;
+  merged_at = None;
+  merged_by_m = SearchTypes.Merged_by ("");
+  text = "";
+  additions = 0l;
+  deletions = 0l;
+  approval = [];
+  assignees = [];
+  labels = [];
+  draft = false;
+  mergeable = false;
+  changed_files = [];
+  changed_files_count = 0l;
+  commits = [];
+  commits_count = 0l;
   task_data = [];
 }
 
@@ -295,7 +361,90 @@ let rec decode_changes_query_request json =
     SearchTypes.query = v.query;
   } : SearchTypes.changes_query_request)
 
-let rec decode_change json =
+let rec decode_file json =
+  let v = default_file_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "additions" -> 
+      let json = Js.Dict.unsafeGet json "additions" in
+      v.additions <- Pbrt_bs.int32 json "file" "additions"
+    | "deletions" -> 
+      let json = Js.Dict.unsafeGet json "deletions" in
+      v.deletions <- Pbrt_bs.int32 json "file" "deletions"
+    | "path" -> 
+      let json = Js.Dict.unsafeGet json "path" in
+      v.path <- Pbrt_bs.string json "file" "path"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.additions = v.additions;
+    SearchTypes.deletions = v.deletions;
+    SearchTypes.path = v.path;
+  } : SearchTypes.file)
+
+let rec decode_commit json =
+  let v = default_commit_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "sha" -> 
+      let json = Js.Dict.unsafeGet json "sha" in
+      v.sha <- Pbrt_bs.string json "commit" "sha"
+    | "title" -> 
+      let json = Js.Dict.unsafeGet json "title" in
+      v.title <- Pbrt_bs.string json "commit" "title"
+    | "author" -> 
+      let json = Js.Dict.unsafeGet json "author" in
+      v.author <- Pbrt_bs.string json "commit" "author"
+    | "authored_at" -> 
+      let json = Js.Dict.unsafeGet json "authored_at" in
+      v.authored_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "commit" "authored_at")))
+    | "committer" -> 
+      let json = Js.Dict.unsafeGet json "committer" in
+      v.committer <- Pbrt_bs.string json "commit" "committer"
+    | "committed_at" -> 
+      let json = Js.Dict.unsafeGet json "committed_at" in
+      v.committed_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "commit" "committed_at")))
+    | "additions" -> 
+      let json = Js.Dict.unsafeGet json "additions" in
+      v.additions <- Pbrt_bs.int32 json "commit" "additions"
+    | "deletions" -> 
+      let json = Js.Dict.unsafeGet json "deletions" in
+      v.deletions <- Pbrt_bs.int32 json "commit" "deletions"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.sha = v.sha;
+    SearchTypes.title = v.title;
+    SearchTypes.author = v.author;
+    SearchTypes.authored_at = v.authored_at;
+    SearchTypes.committer = v.committer;
+    SearchTypes.committed_at = v.committed_at;
+    SearchTypes.additions = v.additions;
+    SearchTypes.deletions = v.deletions;
+  } : SearchTypes.commit)
+
+let rec decode_change_merged_by_m json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "change_merged_by_m"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "merged_by" -> 
+        let json = Js.Dict.unsafeGet json "merged_by" in
+        (SearchTypes.Merged_by (Pbrt_bs.string json "change_merged_by_m" "Merged_by") : SearchTypes.change_merged_by_m)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
+
+and decode_change json =
   let v = default_change_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
@@ -322,9 +471,87 @@ let rec decode_change json =
     | "branch" -> 
       let json = Js.Dict.unsafeGet json "branch" in
       v.branch <- Pbrt_bs.string json "change" "branch"
+    | "target_branch" -> 
+      let json = Js.Dict.unsafeGet json "target_branch" in
+      v.target_branch <- Pbrt_bs.string json "change" "target_branch"
     | "created_at" -> 
       let json = Js.Dict.unsafeGet json "created_at" in
       v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "created_at")))
+    | "updated_at" -> 
+      let json = Js.Dict.unsafeGet json "updated_at" in
+      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "updated_at")))
+    | "merged_at" -> 
+      let json = Js.Dict.unsafeGet json "merged_at" in
+      v.merged_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change" "merged_at")))
+    | "merged_by" -> 
+      let json = Js.Dict.unsafeGet json "merged_by" in
+      v.merged_by_m <- Merged_by (Pbrt_bs.string json "change" "merged_by_m")
+    | "text" -> 
+      let json = Js.Dict.unsafeGet json "text" in
+      v.text <- Pbrt_bs.string json "change" "text"
+    | "additions" -> 
+      let json = Js.Dict.unsafeGet json "additions" in
+      v.additions <- Pbrt_bs.int32 json "change" "additions"
+    | "deletions" -> 
+      let json = Js.Dict.unsafeGet json "deletions" in
+      v.deletions <- Pbrt_bs.int32 json "change" "deletions"
+    | "approval" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "approval" in 
+        Pbrt_bs.array_ a "change" "approval"
+      in
+      v.approval <- Array.map (fun json -> 
+        Pbrt_bs.string json "change" "approval"
+      ) a |> Array.to_list;
+    end
+    | "assignees" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "assignees" in 
+        Pbrt_bs.array_ a "change" "assignees"
+      in
+      v.assignees <- Array.map (fun json -> 
+        Pbrt_bs.string json "change" "assignees"
+      ) a |> Array.to_list;
+    end
+    | "labels" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "labels" in 
+        Pbrt_bs.array_ a "change" "labels"
+      in
+      v.labels <- Array.map (fun json -> 
+        Pbrt_bs.string json "change" "labels"
+      ) a |> Array.to_list;
+    end
+    | "draft" -> 
+      let json = Js.Dict.unsafeGet json "draft" in
+      v.draft <- Pbrt_bs.bool json "change" "draft"
+    | "mergeable" -> 
+      let json = Js.Dict.unsafeGet json "mergeable" in
+      v.mergeable <- Pbrt_bs.bool json "change" "mergeable"
+    | "changed_files" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "changed_files" in 
+        Pbrt_bs.array_ a "change" "changed_files"
+      in
+      v.changed_files <- Array.map (fun json -> 
+        (decode_file (Pbrt_bs.object_ json "change" "changed_files"))
+      ) a |> Array.to_list;
+    end
+    | "changed_filesCount" -> 
+      let json = Js.Dict.unsafeGet json "changed_filesCount" in
+      v.changed_files_count <- Pbrt_bs.int32 json "change" "changed_files_count"
+    | "commits" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "commits" in 
+        Pbrt_bs.array_ a "change" "commits"
+      in
+      v.commits <- Array.map (fun json -> 
+        (decode_commit (Pbrt_bs.object_ json "change" "commits"))
+      ) a |> Array.to_list;
+    end
+    | "commits_count" -> 
+      let json = Js.Dict.unsafeGet json "commits_count" in
+      v.commits_count <- Pbrt_bs.int32 json "change" "commits_count"
     | "task_data" -> begin
       let a = 
         let a = Js.Dict.unsafeGet json "task_data" in 
@@ -345,7 +572,23 @@ let rec decode_change json =
     SearchTypes.repository_fullname = v.repository_fullname;
     SearchTypes.state = v.state;
     SearchTypes.branch = v.branch;
+    SearchTypes.target_branch = v.target_branch;
     SearchTypes.created_at = v.created_at;
+    SearchTypes.updated_at = v.updated_at;
+    SearchTypes.merged_at = v.merged_at;
+    SearchTypes.merged_by_m = v.merged_by_m;
+    SearchTypes.text = v.text;
+    SearchTypes.additions = v.additions;
+    SearchTypes.deletions = v.deletions;
+    SearchTypes.approval = v.approval;
+    SearchTypes.assignees = v.assignees;
+    SearchTypes.labels = v.labels;
+    SearchTypes.draft = v.draft;
+    SearchTypes.mergeable = v.mergeable;
+    SearchTypes.changed_files = v.changed_files;
+    SearchTypes.changed_files_count = v.changed_files_count;
+    SearchTypes.commits = v.commits;
+    SearchTypes.commits_count = v.commits_count;
     SearchTypes.task_data = v.task_data;
   } : SearchTypes.change)
 
@@ -455,7 +698,48 @@ let rec encode_changes_query_request (v:SearchTypes.changes_query_request) =
   Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
   json
 
-let rec encode_change (v:SearchTypes.change) = 
+let rec encode_file (v:SearchTypes.file) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "additions" (Js.Json.number (Int32.to_float v.SearchTypes.additions));
+  Js.Dict.set json "deletions" (Js.Json.number (Int32.to_float v.SearchTypes.deletions));
+  Js.Dict.set json "path" (Js.Json.string v.SearchTypes.path);
+  json
+
+let rec encode_commit (v:SearchTypes.commit) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "sha" (Js.Json.string v.SearchTypes.sha);
+  Js.Dict.set json "title" (Js.Json.string v.SearchTypes.title);
+  Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
+  begin match v.SearchTypes.authored_at with
+  | None -> ()
+  | Some v ->
+    begin (* authoredAt field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "authored_at" (Js.Json.string json');
+    end;
+  end;
+  Js.Dict.set json "committer" (Js.Json.string v.SearchTypes.committer);
+  begin match v.SearchTypes.committed_at with
+  | None -> ()
+  | Some v ->
+    begin (* committedAt field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "committed_at" (Js.Json.string json');
+    end;
+  end;
+  Js.Dict.set json "additions" (Js.Json.number (Int32.to_float v.SearchTypes.additions));
+  Js.Dict.set json "deletions" (Js.Json.number (Int32.to_float v.SearchTypes.deletions));
+  json
+
+let rec encode_change_merged_by_m (v:SearchTypes.change_merged_by_m) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | SearchTypes.Merged_by v ->
+    Js.Dict.set json "merged_by" (Js.Json.string v);
+  end;
+  json
+
+and encode_change (v:SearchTypes.change) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "change_id" (Js.Json.string v.SearchTypes.change_id);
   Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
@@ -464,6 +748,7 @@ let rec encode_change (v:SearchTypes.change) =
   Js.Dict.set json "repository_fullname" (Js.Json.string v.SearchTypes.repository_fullname);
   Js.Dict.set json "state" (Js.Json.string v.SearchTypes.state);
   Js.Dict.set json "branch" (Js.Json.string v.SearchTypes.branch);
+  Js.Dict.set json "target_branch" (Js.Json.string v.SearchTypes.target_branch);
   begin match v.SearchTypes.created_at with
   | None -> ()
   | Some v ->
@@ -472,6 +757,61 @@ let rec encode_change (v:SearchTypes.change) =
       Js.Dict.set json "created_at" (Js.Json.string json');
     end;
   end;
+  begin match v.SearchTypes.updated_at with
+  | None -> ()
+  | Some v ->
+    begin (* updatedAt field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "updated_at" (Js.Json.string json');
+    end;
+  end;
+  begin match v.SearchTypes.merged_at with
+  | None -> ()
+  | Some v ->
+    begin (* mergedAt field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "merged_at" (Js.Json.string json');
+    end;
+  end;
+  begin match v.SearchTypes.merged_by_m with
+    | Merged_by v ->
+      Js.Dict.set json "merged_by" (Js.Json.string v);
+  end; (* match v.merged_by_m *)
+  Js.Dict.set json "text" (Js.Json.string v.SearchTypes.text);
+  Js.Dict.set json "additions" (Js.Json.number (Int32.to_float v.SearchTypes.additions));
+  Js.Dict.set json "deletions" (Js.Json.number (Int32.to_float v.SearchTypes.deletions));
+  let a = v.SearchTypes.approval |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "approval" (Js.Json.array a);
+  let a = v.SearchTypes.assignees |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "assignees" (Js.Json.array a);
+  let a = v.SearchTypes.labels |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "labels" (Js.Json.array a);
+  Js.Dict.set json "draft" (Js.Json.boolean v.SearchTypes.draft);
+  Js.Dict.set json "mergeable" (Js.Json.boolean v.SearchTypes.mergeable);
+  begin (* changedFiles field *)
+    let (changed_files':Js.Json.t) =
+      v.SearchTypes.changed_files
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_file |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "changed_files" changed_files';
+  end;
+  Js.Dict.set json "changed_filesCount" (Js.Json.number (Int32.to_float v.SearchTypes.changed_files_count));
+  begin (* commits field *)
+    let (commits':Js.Json.t) =
+      v.SearchTypes.commits
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_commit |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "commits" commits';
+  end;
+  Js.Dict.set json "commits_count" (Js.Json.number (Int32.to_float v.SearchTypes.commits_count));
   begin (* taskData field *)
     let (task_data':Js.Json.t) =
       v.SearchTypes.task_data

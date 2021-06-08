@@ -44,7 +44,27 @@ type changes_query_request = {
   query : string;
 }
 
-type change = {
+type file = {
+  additions : int32;
+  deletions : int32;
+  path : string;
+}
+
+type commit = {
+  sha : string;
+  title : string;
+  author : string;
+  authored_at : TimestampTypes.timestamp option;
+  committer : string;
+  committed_at : TimestampTypes.timestamp option;
+  additions : int32;
+  deletions : int32;
+}
+
+type change_merged_by_m =
+  | Merged_by of string
+
+and change = {
   change_id : string;
   author : string;
   title : string;
@@ -52,7 +72,23 @@ type change = {
   repository_fullname : string;
   state : string;
   branch : string;
+  target_branch : string;
   created_at : TimestampTypes.timestamp option;
+  updated_at : TimestampTypes.timestamp option;
+  merged_at : TimestampTypes.timestamp option;
+  merged_by_m : change_merged_by_m;
+  text : string;
+  additions : int32;
+  deletions : int32;
+  approval : string list;
+  assignees : string list;
+  labels : string list;
+  draft : bool;
+  mergeable : bool;
+  changed_files : file list;
+  changed_files_count : int32;
+  commits : commit list;
+  commits_count : int32;
   task_data : TaskDataTypes.new_task_data list;
 }
 
@@ -124,7 +160,39 @@ let rec default_changes_query_request
   query;
 }
 
-let rec default_change 
+let rec default_file 
+  ?additions:((additions:int32) = 0l)
+  ?deletions:((deletions:int32) = 0l)
+  ?path:((path:string) = "")
+  () : file  = {
+  additions;
+  deletions;
+  path;
+}
+
+let rec default_commit 
+  ?sha:((sha:string) = "")
+  ?title:((title:string) = "")
+  ?author:((author:string) = "")
+  ?authored_at:((authored_at:TimestampTypes.timestamp option) = None)
+  ?committer:((committer:string) = "")
+  ?committed_at:((committed_at:TimestampTypes.timestamp option) = None)
+  ?additions:((additions:int32) = 0l)
+  ?deletions:((deletions:int32) = 0l)
+  () : commit  = {
+  sha;
+  title;
+  author;
+  authored_at;
+  committer;
+  committed_at;
+  additions;
+  deletions;
+}
+
+let rec default_change_merged_by_m () : change_merged_by_m = Merged_by ("")
+
+and default_change 
   ?change_id:((change_id:string) = "")
   ?author:((author:string) = "")
   ?title:((title:string) = "")
@@ -132,7 +200,23 @@ let rec default_change
   ?repository_fullname:((repository_fullname:string) = "")
   ?state:((state:string) = "")
   ?branch:((branch:string) = "")
+  ?target_branch:((target_branch:string) = "")
   ?created_at:((created_at:TimestampTypes.timestamp option) = None)
+  ?updated_at:((updated_at:TimestampTypes.timestamp option) = None)
+  ?merged_at:((merged_at:TimestampTypes.timestamp option) = None)
+  ?merged_by_m:((merged_by_m:change_merged_by_m) = Merged_by (""))
+  ?text:((text:string) = "")
+  ?additions:((additions:int32) = 0l)
+  ?deletions:((deletions:int32) = 0l)
+  ?approval:((approval:string list) = [])
+  ?assignees:((assignees:string list) = [])
+  ?labels:((labels:string list) = [])
+  ?draft:((draft:bool) = false)
+  ?mergeable:((mergeable:bool) = false)
+  ?changed_files:((changed_files:file list) = [])
+  ?changed_files_count:((changed_files_count:int32) = 0l)
+  ?commits:((commits:commit list) = [])
+  ?commits_count:((commits_count:int32) = 0l)
   ?task_data:((task_data:TaskDataTypes.new_task_data list) = [])
   () : change  = {
   change_id;
@@ -142,7 +226,23 @@ let rec default_change
   repository_fullname;
   state;
   branch;
+  target_branch;
   created_at;
+  updated_at;
+  merged_at;
+  merged_by_m;
+  text;
+  additions;
+  deletions;
+  approval;
+  assignees;
+  labels;
+  draft;
+  mergeable;
+  changed_files;
+  changed_files_count;
+  commits;
+  commits_count;
   task_data;
 }
 

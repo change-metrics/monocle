@@ -159,9 +159,58 @@ components:
                     type: string
                 branch:
                     type: string
+                target_branch:
+                    type: string
                 created_at:
                     type: string
                     format: RFC3339
+                updated_at:
+                    type: string
+                    format: RFC3339
+                merged_at:
+                    type: string
+                    format: RFC3339
+                merged_by:
+                    type: string
+                text:
+                    type: string
+                additions:
+                    type: integer
+                    format: uint32
+                deletions:
+                    type: integer
+                    format: uint32
+                approval:
+                    type: array
+                    items:
+                        type: string
+                assignees:
+                    type: array
+                    items:
+                        type: string
+                labels:
+                    type: array
+                    items:
+                        type: string
+                draft:
+                    type: boolean
+                mergeable:
+                    type: boolean
+                    description: bool has_issue_tracker_links = 31;
+                changed_files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/File'
+                changed_files_count:
+                    type: integer
+                    format: uint32
+                commits:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Commit'
+                commits_count:
+                    type: integer
+                    format: uint32
                 task_data:
                     type: array
                     items:
@@ -184,6 +233,28 @@ components:
                     $ref: '#/components/schemas/QueryError'
                 items:
                     $ref: '#/components/schemas/Changes'
+        Commit:
+            properties:
+                sha:
+                    type: string
+                title:
+                    type: string
+                author:
+                    type: string
+                authored_at:
+                    type: string
+                    format: RFC3339
+                committer:
+                    type: string
+                committed_at:
+                    type: string
+                    format: RFC3339
+                additions:
+                    type: integer
+                    format: uint32
+                deletions:
+                    type: integer
+                    format: uint32
         Field:
             properties:
                 name:
@@ -203,6 +274,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Field'
+        File:
+            properties:
+                additions:
+                    type: integer
+                    format: uint32
+                deletions:
+                    type: integer
+                    format: uint32
+                path:
+                    type: string
         GetProjectsRequest:
             properties:
                 index:

@@ -195,6 +195,92 @@ class ChangesQueryRequest(google.protobuf.message.Message):
 
 global___ChangesQueryRequest = ChangesQueryRequest
 
+class File(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ADDITIONS_FIELD_NUMBER: builtins.int
+    DELETIONS_FIELD_NUMBER: builtins.int
+    PATH_FIELD_NUMBER: builtins.int
+    additions: builtins.int = ...
+    deletions: builtins.int = ...
+    path: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        additions: builtins.int = ...,
+        deletions: builtins.int = ...,
+        path: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "additions", b"additions", "deletions", b"deletions", "path", b"path"
+        ],
+    ) -> None: ...
+
+global___File = File
+
+class Commit(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    SHA_FIELD_NUMBER: builtins.int
+    TITLE_FIELD_NUMBER: builtins.int
+    AUTHOR_FIELD_NUMBER: builtins.int
+    AUTHORED_AT_FIELD_NUMBER: builtins.int
+    COMMITTER_FIELD_NUMBER: builtins.int
+    COMMITTED_AT_FIELD_NUMBER: builtins.int
+    ADDITIONS_FIELD_NUMBER: builtins.int
+    DELETIONS_FIELD_NUMBER: builtins.int
+    sha: typing.Text = ...
+    title: typing.Text = ...
+    author: typing.Text = ...
+    committer: typing.Text = ...
+    additions: builtins.int = ...
+    deletions: builtins.int = ...
+    @property
+    def authored_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def committed_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        sha: typing.Text = ...,
+        title: typing.Text = ...,
+        author: typing.Text = ...,
+        authored_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        committer: typing.Text = ...,
+        committed_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        additions: builtins.int = ...,
+        deletions: builtins.int = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "authored_at", b"authored_at", "committed_at", b"committed_at"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "additions",
+            b"additions",
+            "author",
+            b"author",
+            "authored_at",
+            b"authored_at",
+            "committed_at",
+            b"committed_at",
+            "committer",
+            b"committer",
+            "deletions",
+            b"deletions",
+            "sha",
+            b"sha",
+            "title",
+            b"title",
+        ],
+    ) -> None: ...
+
+global___Commit = Commit
+
 class Change(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     CHANGE_ID_FIELD_NUMBER: builtins.int
@@ -204,7 +290,23 @@ class Change(google.protobuf.message.Message):
     REPOSITORY_FULLNAME_FIELD_NUMBER: builtins.int
     STATE_FIELD_NUMBER: builtins.int
     BRANCH_FIELD_NUMBER: builtins.int
+    TARGET_BRANCH_FIELD_NUMBER: builtins.int
     CREATED_AT_FIELD_NUMBER: builtins.int
+    UPDATED_AT_FIELD_NUMBER: builtins.int
+    MERGED_AT_FIELD_NUMBER: builtins.int
+    MERGED_BY_FIELD_NUMBER: builtins.int
+    TEXT_FIELD_NUMBER: builtins.int
+    ADDITIONS_FIELD_NUMBER: builtins.int
+    DELETIONS_FIELD_NUMBER: builtins.int
+    APPROVAL_FIELD_NUMBER: builtins.int
+    ASSIGNEES_FIELD_NUMBER: builtins.int
+    LABELS_FIELD_NUMBER: builtins.int
+    DRAFT_FIELD_NUMBER: builtins.int
+    MERGEABLE_FIELD_NUMBER: builtins.int
+    CHANGED_FILES_FIELD_NUMBER: builtins.int
+    CHANGED_FILES_COUNT_FIELD_NUMBER: builtins.int
+    COMMITS_FIELD_NUMBER: builtins.int
+    COMMITS_COUNT_FIELD_NUMBER: builtins.int
     TASK_DATA_FIELD_NUMBER: builtins.int
     change_id: typing.Text = ...
     author: typing.Text = ...
@@ -213,8 +315,42 @@ class Change(google.protobuf.message.Message):
     repository_fullname: typing.Text = ...
     state: typing.Text = ...
     branch: typing.Text = ...
+    target_branch: typing.Text = ...
+    merged_by: typing.Text = ...
+    text: typing.Text = ...
+    additions: builtins.int = ...
+    deletions: builtins.int = ...
+    approval: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    assignees: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    labels: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    draft: builtins.bool = ...
+    mergeable: builtins.bool = ...
+    changed_files_count: builtins.int = ...
+    commits_count: builtins.int = ...
     @property
     def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def updated_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def merged_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def changed_files(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___File
+    ]: ...
+    @property
+    def commits(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Commit
+    ]: ...
     @property
     def task_data(
         self,
@@ -231,37 +367,102 @@ class Change(google.protobuf.message.Message):
         repository_fullname: typing.Text = ...,
         state: typing.Text = ...,
         branch: typing.Text = ...,
+        target_branch: typing.Text = ...,
         created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        updated_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        merged_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        merged_by: typing.Text = ...,
+        text: typing.Text = ...,
+        additions: builtins.int = ...,
+        deletions: builtins.int = ...,
+        approval: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        assignees: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        labels: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        draft: builtins.bool = ...,
+        mergeable: builtins.bool = ...,
+        changed_files: typing.Optional[typing.Iterable[global___File]] = ...,
+        changed_files_count: builtins.int = ...,
+        commits: typing.Optional[typing.Iterable[global___Commit]] = ...,
+        commits_count: builtins.int = ...,
         task_data: typing.Optional[
             typing.Iterable[monocle.task_data_pb2.NewTaskData]
         ] = ...,
     ) -> None: ...
     def HasField(
-        self, field_name: typing_extensions.Literal["created_at", b"created_at"]
+        self,
+        field_name: typing_extensions.Literal[
+            "created_at",
+            b"created_at",
+            "merged_at",
+            b"merged_at",
+            "merged_by",
+            b"merged_by",
+            "merged_byM",
+            b"merged_byM",
+            "updated_at",
+            b"updated_at",
+        ],
     ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
+            "additions",
+            b"additions",
+            "approval",
+            b"approval",
+            "assignees",
+            b"assignees",
             "author",
             b"author",
             "branch",
             b"branch",
             "change_id",
             b"change_id",
+            "changed_files",
+            b"changed_files",
+            "changed_files_count",
+            b"changed_files_count",
+            "commits",
+            b"commits",
+            "commits_count",
+            b"commits_count",
             "created_at",
             b"created_at",
+            "deletions",
+            b"deletions",
+            "draft",
+            b"draft",
+            "labels",
+            b"labels",
+            "mergeable",
+            b"mergeable",
+            "merged_at",
+            b"merged_at",
+            "merged_by",
+            b"merged_by",
+            "merged_byM",
+            b"merged_byM",
             "repository_fullname",
             b"repository_fullname",
             "state",
             b"state",
+            "target_branch",
+            b"target_branch",
             "task_data",
             b"task_data",
+            "text",
+            b"text",
             "title",
             b"title",
+            "updated_at",
+            b"updated_at",
             "url",
             b"url",
         ],
     ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["merged_byM", b"merged_byM"]
+    ) -> typing_extensions.Literal["merged_by"]: ...
 
 global___Change = Change
 
