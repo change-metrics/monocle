@@ -5,9 +5,9 @@
 module Monocle.Api.CLI (run) where
 
 import qualified Monocle.Api.Config as Config
-import Monocle.Api.Env
-import Monocle.Api.HTTP (MonocleAPI, server)
 import qualified Monocle.Search.Queries as Q
+import Monocle.Servant.Env
+import Monocle.Servant.HTTP (MonocleAPI, server)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
@@ -24,18 +24,18 @@ app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 
 run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
-  tenants <- Config.loadConfig configFile
-  bhEnv <- Q.mkEnv elkUrl
+  tenants' <- Config.loadConfig configFile
+  bhEnv' <- Q.mkEnv elkUrl
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
       putTextLn $
-        "Serving " <> show (length tenants) <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> elkUrl
+        "Serving " <> show (length tenants') <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> elkUrl
       Warp.runSettings
         settings
         . cors (const $ Just policy)
         . provideOptions monocleAPI
-        $ app (Env tenants bhEnv)
+        $ app (Env tenants' bhEnv')
   where
     policy =
       simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

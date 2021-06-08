@@ -7,20 +7,18 @@ module Monocle.Api.Server where
 
 import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Api.Env
+import Monocle.Backend.Documents (Author (..), ELKChange (..), TaskData (..))
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
-import Monocle.Search.Change (Author (..), ELKChange (..), TaskData (..))
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
+import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import Proto3.Suite (Enumerated (..))
 import Relude
-import Servant (Handler)
 
 searchChangesQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
 searchChangesQuery request = do

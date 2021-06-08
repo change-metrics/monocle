@@ -19,11 +19,11 @@ type Field = Text
 
 type FieldType = Field_Type
 
-fieldDate, fieldNumber, fieldText, fieldBoolean, fieldRegex :: FieldType
+fieldDate, fieldNumber, fieldText {- fieldBoolean, -}, fieldRegex :: FieldType
 fieldDate = Field_TypeFIELD_DATE
 fieldNumber = Field_TypeFIELD_NUMBER
 fieldText = Field_TypeFIELD_TEXT
-fieldBoolean = Field_TypeFIELD_BOOL
+-- fieldBoolean = Field_TypeFIELD_BOOL
 fieldRegex = Field_TypeFIELD_REGEX
 
 -- | 'fields' specifies how to handle field value

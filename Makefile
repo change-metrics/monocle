@@ -9,15 +9,15 @@ codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/WebApi.hs ../haskell/src/Monocle/Api/HTTP.hs ../monocle/webapi.py ../srcgen/WebApi.res)
-	ormolu -i ./haskell/src/Monocle/WebApi.hs ./haskell/src/Monocle/Api/HTTP.hs
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Api/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../monocle/webapi.py ../srcgen/WebApi.res)
+	ormolu -i ./haskell/src/Monocle/Api/Client/Api.hs ./haskell/src/Monocle/Servant/HTTP.hs
 	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/src/; done'
-	find haskell/ -type f -name "*.hs" -exec ormolu -i {} \;
+	sh -c 'for pb in $(MESSAGES) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
 	protoc $(PINCLUDE) --python_out=./ --mypy_out=./ $(MESSAGES)

@@ -10,7 +10,7 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- The Monocle API client
-module Monocle.Client
+module Monocle.Api.Client.Internal
   ( MonocleClient,
     withClient,
     monocleReq,
@@ -19,7 +19,6 @@ where
 
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Text as T
-import Monocle.TaskData
 import Network.HTTP.Client
   ( Manager,
     RequestBody (..),

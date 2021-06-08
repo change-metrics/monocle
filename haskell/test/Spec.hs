@@ -5,14 +5,13 @@ module Main (main) where
 
 import qualified Data.Aeson as Aeson
 import Google.Protobuf.Timestamp
-import Monocle.Client
+import Monocle.Api.Client
 import Monocle.Mock
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
 import Monocle.TaskData
-import Monocle.WebApi
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit

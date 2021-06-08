@@ -1,7 +1,7 @@
 -- | The api configuration environment
-module Monocle.Api.Env where
+module Monocle.Servant.Env where
 
-import Control.Monad.Trans.Reader (ReaderT, ask, runReaderT)
+import Control.Monad.Trans.Reader (ReaderT)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
 import Servant (Handler)

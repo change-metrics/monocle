@@ -10,7 +10,7 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- The Monocle worker
-module Monocle.Worker
+module Monocle.Api.Client.Worker
   ( run,
     TaskDataFetcher (..),
     MonadLog (..),
@@ -29,9 +29,9 @@ import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Client
+import Monocle.Api.Client.Api
+import Monocle.Api.Client.Internal
 import Monocle.TaskData
-import Monocle.WebApi
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
 import Proto3.Suite.Types (Enumerated (..))
