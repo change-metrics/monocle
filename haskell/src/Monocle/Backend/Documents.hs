@@ -73,7 +73,8 @@ instance FromJSON TaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChange = ELKChange
-  { elkchangeNumber :: Int,
+  { elkchangeId :: Text,
+    elkchangeNumber :: Int,
     elkchangeChangeId :: Text,
     elkchangeTitle :: Text,
     elkchangeText :: Text,

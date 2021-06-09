@@ -5,65 +5,64 @@
 module Monocle.Backend.Test where
 
 import Control.Exception (bracket)
-import Data.Time.Format
-import qualified Data.Vector as V
+import Data.Time.Clock (UTCTime)
 import qualified Database.Bloodhound as BH
-import qualified Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
-import Monocle.Change
 import Relude
 import Test.Tasty.HUnit
 
-fakeDate :: T.Timestamp
-fakeDate = T.fromUTCTime $ parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
+fakeDate :: UTCTime
+fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
 
-fakeIdent :: Ident
-fakeIdent = Ident "John" "John"
+fakeAuthor :: Author
+fakeAuthor = Author "John"
 
-mkFakeChange :: Int32 -> LText -> Change
+mkFakeChange :: Int -> Text -> ELKChange
 mkFakeChange number title =
   fakeChange
-    { changeId = "aFakeId-" <> show number,
-      changeNumber = number,
-      changeTitle = title,
-      changeUrl = "https://fakehost/change/" <> show number
+    { elkchangeId = "aFakeId-" <> show number,
+      elkchangeNumber = number,
+      elkchangeTitle = title,
+      elkchangeUrl = "https://fakehost/change/" <> show number
     }
 
-fakeChange :: Change
+fakeChange :: ELKChange
 fakeChange =
-  Change
-    { changeId = "",
-      changeNumber = 1,
-      changeChangeId = "change-id",
-      changeTitle = "",
-      changeUrl = "",
-      changeCommitCount = 1,
-      changeAdditions = 1,
-      changeDeletions = 1,
-      changeChangedFilesCount = 1,
-      changeChangedFiles = V.fromList [ChangedFile 0 0 "/fake/path"],
-      changeText = "",
-      changeCommits = V.fromList [],
-      changeRepositoryPrefix = "",
-      changeRepositoryFullname = "",
-      changeRepositoryShortname = "",
-      changeAuthor = Just fakeIdent,
-      changeOptionalMergedBy = Nothing,
-      changeBranch = "",
-      changeTargetBranch = "",
-      changeCreatedAt = Just fakeDate,
-      changeOptionalMergedAt = Nothing,
-      changeUpdatedAt = Just fakeDate,
-      changeOptionalClosedAt = Nothing,
-      changeState = "OPEN",
-      changeOptionalDuration = Nothing,
-      changeMergeable = "",
-      changeLabels = V.fromList [],
-      changeAssignees = V.fromList [],
-      changeApprovals = V.fromList [],
-      changeDraft = False,
-      changeOptionalSelfMerged = Nothing
+  ELKChange
+    { elkchangeId = "",
+      elkchangeNumber = 1,
+      elkchangeChangeId = "change-id",
+      elkchangeTitle = "",
+      elkchangeUrl = "",
+      elkchangeCommitCount = 1,
+      elkchangeAdditions = 1,
+      elkchangeDeletions = 1,
+      elkchangeChangedFilesCount = 1,
+      elkchangeChangedFiles = [File 0 0 "/fake/path"],
+      elkchangeText = "",
+      elkchangeCommits = [],
+      elkchangeRepositoryPrefix = "",
+      elkchangeRepositoryFullname = "",
+      elkchangeRepositoryShortname = "",
+      elkchangeAuthor = fakeAuthor,
+      elkchangeBranch = "",
+      elkchangeCreatedAt = fakeDate,
+      elkchangeUpdatedAt = fakeDate,
+      elkchangeCommitter = Nothing,
+      elkchangeMergedBy = Nothing,
+      elkchangeTargetBranch = "main",
+      elkchangeMergedAt = Nothing,
+      elkchangeClosedAt = Nothing,
+      elkchangeDuration = Nothing,
+      elkchangeApproval = Just ["OK"],
+      elkchangeSelfMerged = Nothing,
+      elkchangeTasksData = Nothing,
+      elkchangeState = "OPEN",
+      elkchangeMergeable = "",
+      elkchangeLabels = [],
+      elkchangeAssignees = [],
+      elkchangeDraft = False
     }
 
 testIndexName :: Text
@@ -120,13 +119,13 @@ testIndexChange = withBH doTest
         testIndex
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
-        (toText (changeTitle fakeChange1))
+        (toText (elkchangeTitle fakeChange1))
       checkDocExists bhEnv testIndex (I.getChangeDocId fakeChange2)
       checkELKChangeField
         bhEnv
         testIndex
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
-        (toText (changeTitle fakeChange2))
+        (toText (elkchangeTitle fakeChange2))
     fakeChange1 = mkFakeChange 1 "My change 1"
     fakeChange2 = mkFakeChange 2 "My change 2"

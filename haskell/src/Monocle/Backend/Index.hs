@@ -7,7 +7,7 @@ module Monocle.Backend.Index where
 import Data.Aeson
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
-import Monocle.Change
+import Monocle.Backend.Documents
 import qualified Network.HTTP.Client as HTTP
 import Relude
 
@@ -242,10 +242,10 @@ createChangesIndex serverUrl indexName = do
     True <- BH.indexExists index
     pure (bhEnv, index)
 
-getChangeDocId :: Change -> BH.DocId
-getChangeDocId change = BH.DocId . toText $ changeId change
+getChangeDocId :: ELKChange -> BH.DocId
+getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
-indexChanges :: BH.BHEnv -> BH.IndexName -> [Change] -> IO ()
+indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
 indexChanges bhEnv index changes = BH.runBH bhEnv $ do
   let stream = V.fromList (toBulkIndex <$> changes)
   _ <- BH.bulk stream

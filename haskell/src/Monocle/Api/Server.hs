@@ -8,10 +8,9 @@ module Monocle.Api.Server where
 import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Backend.Documents (Author (..), ELKChange (..), TaskData (..))
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
-import Monocle.Search.Change (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
