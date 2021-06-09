@@ -5,6 +5,7 @@
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
 module Monocle.Search.Query (Query (..), queryWithMods, query, fields) where
 
+import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
 import Data.List (lookup)
 import qualified Data.Text as Text
@@ -20,6 +21,8 @@ import Relude
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.Time.Clock (getCurrentTime)
 -- >>> now <- getCurrentTime
+
+type Parser a = Except ParseError a
 
 type Field = Text
 
@@ -137,19 +140,19 @@ mkRangeValue now op field fieldType value = do
     Field_TypeFIELD_NUMBER -> toRangeValue op <$> parseNumber value
     _ -> Left $ "Field " <> field <> " does not support range operator"
 
-toParseError :: Either Text a -> Either ParseError a
+toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> Left (ParseError msg 0)
-  Right x -> Right x
+  Left msg -> throwE (ParseError msg 0)
+  Right x -> pure x
 
-mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Either ParseError BH.Query
+mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
 mkRangeQuery now expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
     <$> (toParseError $ mkRangeValue now (toRangeOp expr) field fieldType value)
 
-mkEqQuery :: Field -> Text -> Either ParseError BH.Query
+mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   case (field, fieldType) of
@@ -166,14 +169,14 @@ mkEqQuery field value = do
       pure $ BH.TermQuery (BH.Term field' value') Nothing
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
-      Right
+      pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
-    _ -> Right $ BH.TermQuery (BH.Term fieldName value) Nothing
+    _ -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 
-mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Either ParseError BH.Query
+mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Parser BH.Query
 mkBoolQuery now op e1 e2 = do
   q1 <- query now e1
   q2 <- query now e2
@@ -182,7 +185,7 @@ mkBoolQuery now op e1 e2 = do
         Or -> ([], [q1, q2])
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
-mkNotQuery :: UTCTime -> Expr -> Either ParseError BH.Query
+mkNotQuery :: UTCTime -> Expr -> Parser BH.Query
 mkNotQuery now e1 = do
   q1 <- query now e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
@@ -194,7 +197,7 @@ mkNotQuery now e1 = do
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
-query :: UTCTime -> Expr -> Either ParseError BH.Query
+query :: UTCTime -> Expr -> Parser BH.Query
 query now expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery now And e1 e2
   OrExpr e1 e2 -> mkBoolQuery now Or e1 e2
@@ -204,13 +207,18 @@ query now expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery now e field value
   e@(LtExpr field value) -> mkRangeQuery now e field value
   e@(LtEqExpr field value) -> mkRangeQuery now e field value
-  LimitExpr _ _ -> Left (ParseError "Limit must be global" 0)
-  OrderByExpr _ _ _ -> Left (ParseError "Order by must be global" 0)
+  LimitExpr _ _ -> throwE (ParseError "Limit must be global" 0)
+  OrderByExpr _ _ _ -> throwE (ParseError "Order by must be global" 0)
 
-data Query = Query {queryOrder :: Maybe (Field, SortOrder), queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
+data Query = Query
+  { queryOrder :: Maybe (Field, SortOrder),
+    queryLimit :: Int,
+    queryBH :: BH.Query
+  }
+  deriving (Show)
 
 queryWithMods :: UTCTime -> Expr -> Either ParseError Query
-queryWithMods now baseExpr = Query order limit <$> query now expr
+queryWithMods now baseExpr = runExcept $ Query order limit <$> query now expr
   where
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
