@@ -22,7 +22,9 @@ import Relude
 -- >>> import Data.Time.Clock (getCurrentTime)
 -- >>> now <- getCurrentTime
 
-type Parser a = Except ParseError a
+type Bound = (Maybe UTCTime, UTCTime)
+
+type Parser a = StateT Bound (Except ParseError) a
 
 type Field = Text
 
@@ -64,6 +66,10 @@ parseDateValue txt = case tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y" o
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
 
+subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
+subUTCTimeSecond date sec =
+  addUTCTime (secondsToNominalDiffTime (fromInteger sec * (-1))) date
+
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
 parseRelativeDateValue now txt
   | Text.isPrefixOf "now-" txt = tryParseRange (Text.drop 4 txt)
@@ -84,7 +90,7 @@ parseRelativeDateValue now txt
           "day" -> Just day
           "week" -> Just week
           _ -> Nothing
-      pure $ addUTCTime (secondsToNominalDiffTime (fromInteger diffsec) * (-1)) now
+      pure $ subUTCTimeSecond now diffsec
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (toString txt) of
@@ -131,18 +137,19 @@ toRangeValue op = case op of
   Lt -> BH.RangeDoubleLt . BH.LessThan
   Lte -> BH.RangeDoubleLte . BH.LessThanEq
 
-mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Either Text BH.RangeValue
+mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue now op field fieldType value = do
   case fieldType of
     Field_TypeFIELD_DATE ->
-      toRangeValueD op
-        <$> (note ("Invalid date: " <> value) $ parseRelativeDateValue now value <|> parseDateValue value)
-    Field_TypeFIELD_NUMBER -> toRangeValue op <$> parseNumber value
-    _ -> Left $ "Field " <> field <> " does not support range operator"
+      toParseError $
+        toRangeValueD op
+          <$> (note ("Invalid date: " <> value) $ parseRelativeDateValue now value <|> parseDateValue value)
+    Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
+    _ -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> throwE (ParseError msg 0)
+  Left msg -> lift $ throwE (ParseError msg 0)
   Right x -> pure x
 
 mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
@@ -150,7 +157,7 @@ mkRangeQuery now expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> (toParseError $ mkRangeValue now (toRangeOp expr) field fieldType value)
+    <$> mkRangeValue now (toRangeOp expr) field fieldType value
 
 mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
@@ -207,19 +214,23 @@ query now expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery now e field value
   e@(LtExpr field value) -> mkRangeQuery now e field value
   e@(LtEqExpr field value) -> mkRangeQuery now e field value
-  LimitExpr _ _ -> throwE (ParseError "Limit must be global" 0)
-  OrderByExpr _ _ _ -> throwE (ParseError "Order by must be global" 0)
+  LimitExpr _ _ -> lift $ throwE (ParseError "Limit must be global" 0)
+  OrderByExpr _ _ _ -> lift $ throwE (ParseError "Order by must be global" 0)
 
 data Query = Query
   { queryOrder :: Maybe (Field, SortOrder),
     queryLimit :: Int,
-    queryBH :: BH.Query
+    queryBH :: BH.Query,
+    queryBounds :: (UTCTime, UTCTime)
   }
   deriving (Show)
 
 queryWithMods :: UTCTime -> Expr -> Either ParseError Query
-queryWithMods now baseExpr = runExcept $ Query order limit <$> query now expr
+queryWithMods now baseExpr = do
+  (query', (boundM, bound)) <- runExcept $ runStateT (query now expr) (Nothing, now)
+  pure $ Query order limit query' (fromMaybe threeWeeksAgo boundM, bound)
   where
+    threeWeeksAgo = subUTCTimeSecond now (3600 * 24 * 7 * 3)
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')
