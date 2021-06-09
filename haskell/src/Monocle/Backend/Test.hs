@@ -96,18 +96,20 @@ testIndexChange = withBH doTest
       resp <- BH.runBH bhEnv $ do
         BH.documentExists index docId
       assertEqual "doc exist" True resp
-    checkELKChangeField :: BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> Bool) -> IO ()
-    checkELKChangeField bhEnv index docId assertF = do
+    doCheck :: (Show a, Eq a) => (ELKChange -> a) -> a -> ELKChange -> Assertion
+    doCheck field value change = assertEqual "change field match" (field change) value
+    checkELKChangeField :: (Show a, Eq a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> IO ()
+    checkELKChangeField bhEnv index docId field value = do
       parsed <- BH.runBH bhEnv $ do
         resp <- BH.getDocument index docId
         BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.EsResult ELKChange))
       case parsed of
         Left _e -> error "Could not get changes back"
-        Right sr -> assertEqual "changes" (checkHit $ BH.foundResult sr) True
+        Right sr -> checkHit $ BH.foundResult sr
       where
-        checkHit :: Maybe (BH.EsResultFound ELKChange) -> Bool
-        checkHit (Just (BH.EsResultFound _ change)) = assertF change
-        checkHit _ = False
+        checkHit :: Maybe (BH.EsResultFound ELKChange) -> Assertion
+        checkHit (Just (BH.EsResultFound _ change)) = doCheck field value change
+        checkHit Nothing = error "Change not found"
 
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
@@ -117,12 +119,14 @@ testIndexChange = withBH doTest
         bhEnv
         testIndex
         (I.getChangeDocId fakeChange1)
-        (\c -> elkchangeTitle c == toText (changeTitle fakeChange1))
+        elkchangeTitle
+        (toText (changeTitle fakeChange1))
       checkDocExists bhEnv testIndex (I.getChangeDocId fakeChange2)
       checkELKChangeField
         bhEnv
         testIndex
         (I.getChangeDocId fakeChange2)
-        (\c -> elkchangeTitle c == toText (changeTitle fakeChange2))
+        elkchangeTitle
+        (toText (changeTitle fakeChange2))
     fakeChange1 = mkFakeChange 1 "My change 1"
     fakeChange2 = mkFakeChange 2 "My change 2"
