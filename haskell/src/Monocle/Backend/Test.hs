@@ -12,7 +12,6 @@ import qualified Database.Bloodhound as BH
 import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Backend.Index as C
 import Monocle.Change
-import qualified Monocle.Search.Queries as Q
 import Relude
 import Test.Tasty.HUnit
 
@@ -73,16 +72,8 @@ fakeChange =
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
 withBH cb = bracket create cb delete
   where
-    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-    create = do
-      bhEnv <- Q.mkEnv "http://localhost:9200"
-      -- todo: generate random name
-      let testIndex = BH.IndexName "test-index"
-      BH.runBH bhEnv $ do
-        _ <- BH.createIndex indexSettings testIndex
-        _ <- BH.putMapping testIndex C.ChangesIndexMapping
-        True <- BH.indexExists testIndex
-        pure (bhEnv, testIndex)
+    -- todo: generate random name
+    create = C.createChangesIndex "http://localhost:9200" "test-index"
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
         _ <- BH.deleteIndex testIndex

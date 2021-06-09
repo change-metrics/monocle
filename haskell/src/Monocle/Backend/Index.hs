@@ -9,7 +9,12 @@ import Data.Aeson
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Monocle.Change
+import qualified Monocle.Search.Queries as Q
 import Relude
+
+type MIndexName = Text
+
+type MServerName = Text
 
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
@@ -221,6 +226,17 @@ instance ToJSON ChangesIndexMapping where
                   ]
             ]
       ]
+
+createChangesIndex :: MServerName -> MIndexName -> IO (BH.BHEnv, BH.IndexName)
+createChangesIndex serverUrl indexName = do
+  let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+  bhEnv <- Q.mkEnv serverUrl
+  let index = BH.IndexName indexName
+  BH.runBH bhEnv $ do
+    _ <- BH.createIndex indexSettings index
+    _ <- BH.putMapping index ChangesIndexMapping
+    True <- BH.indexExists index
+    pure (bhEnv, index)
 
 indexChanges :: BH.BHEnv -> BH.IndexName -> [Change] -> IO ()
 indexChanges bhEnv index changes = BH.runBH bhEnv $ do
