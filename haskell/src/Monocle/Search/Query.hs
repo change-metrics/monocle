@@ -5,6 +5,7 @@
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
 module Monocle.Search.Query (Query (..), queryWithMods, query, fields) where
 
+import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
 import Data.List (lookup)
 import qualified Data.Text as Text
@@ -20,6 +21,10 @@ import Relude
 -- >>> import qualified Data.Aeson as Aeson
 -- >>> import Data.Time.Clock (getCurrentTime)
 -- >>> now <- getCurrentTime
+
+type Bound = (Maybe UTCTime, UTCTime)
+
+type Parser a = StateT Bound (Except ParseError) a
 
 type Field = Text
 
@@ -61,6 +66,10 @@ parseDateValue txt = case tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y" o
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
 
+subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
+subUTCTimeSecond date sec =
+  addUTCTime (secondsToNominalDiffTime (fromInteger sec * (-1))) date
+
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
 parseRelativeDateValue now txt
   | Text.isPrefixOf "now-" txt = tryParseRange (Text.drop 4 txt)
@@ -81,7 +90,7 @@ parseRelativeDateValue now txt
           "day" -> Just day
           "week" -> Just week
           _ -> Nothing
-      pure $ addUTCTime (secondsToNominalDiffTime (fromInteger diffsec) * (-1)) now
+      pure $ subUTCTimeSecond now diffsec
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (toString txt) of
@@ -95,6 +104,13 @@ parseBoolean txt = case txt of
   _ -> Left $ "Invalid booolean: " <> txt
 
 data RangeOp = Gt | Gte | Lt | Lte
+
+isMinOp :: RangeOp -> Bool
+isMinOp op = case op of
+  Gt -> True
+  Gte -> True
+  Lt -> False
+  Lte -> False
 
 note :: Text -> Maybe a -> Either Text a
 note err value = case value of
@@ -128,28 +144,44 @@ toRangeValue op = case op of
   Lt -> BH.RangeDoubleLt . BH.LessThan
   Lte -> BH.RangeDoubleLte . BH.LessThanEq
 
-mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Either Text BH.RangeValue
+updateBound :: RangeOp -> UTCTime -> Parser ()
+updateBound op date = do
+  (minDateM, maxDate) <- get
+  put $ newBounds minDateM maxDate
+  where
+    newBounds minDateM maxDate =
+      if isMinOp op
+        then (Just $ max date (fromMaybe date minDateM), maxDate)
+        else (minDateM, min date maxDate)
+
+mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue now op field fieldType value = do
   case fieldType of
-    Field_TypeFIELD_DATE ->
-      toRangeValueD op
-        <$> (note ("Invalid date: " <> value) $ parseRelativeDateValue now value <|> parseDateValue value)
-    Field_TypeFIELD_NUMBER -> toRangeValue op <$> parseNumber value
-    _ -> Left $ "Field " <> field <> " does not support range operator"
+    Field_TypeFIELD_DATE -> do
+      date <-
+        toParseError
+          . note ("Invalid date: " <> value)
+          $ parseRelativeDateValue now value <|> parseDateValue value
 
-toParseError :: Either Text a -> Either ParseError a
+      updateBound op date
+
+      pure $ toRangeValueD op date
+    Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
+    _ -> toParseError . Left $ "Field " <> field <> " does not support range operator"
+
+toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> Left (ParseError msg 0)
-  Right x -> Right x
+  Left msg -> lift $ throwE (ParseError msg 0)
+  Right x -> pure x
 
-mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Either ParseError BH.Query
+mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
 mkRangeQuery now expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> (toParseError $ mkRangeValue now (toRangeOp expr) field fieldType value)
+    <$> mkRangeValue now (toRangeOp expr) field fieldType value
 
-mkEqQuery :: Field -> Text -> Either ParseError BH.Query
+mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   case (field, fieldType) of
@@ -166,14 +198,14 @@ mkEqQuery field value = do
       pure $ BH.TermQuery (BH.Term field' value') Nothing
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
-      Right
+      pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
-    _ -> Right $ BH.TermQuery (BH.Term fieldName value) Nothing
+    _ -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 
-mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Either ParseError BH.Query
+mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Parser BH.Query
 mkBoolQuery now op e1 e2 = do
   q1 <- query now e1
   q2 <- query now e2
@@ -182,7 +214,7 @@ mkBoolQuery now op e1 e2 = do
         Or -> ([], [q1, q2])
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
-mkNotQuery :: UTCTime -> Expr -> Either ParseError BH.Query
+mkNotQuery :: UTCTime -> Expr -> Parser BH.Query
 mkNotQuery now e1 = do
   q1 <- query now e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
@@ -190,11 +222,12 @@ mkNotQuery now e1 = do
 -- | 'query' creates an elastic search query
 --
 -- >>> :{
---  let Right q = P.parse "state:open" >>= query now
+--  let Right expr = P.parse "state:open"
+--      Right (q, _) = runExcept $ runStateT (query now expr) (Nothing, now)
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
-query :: UTCTime -> Expr -> Either ParseError BH.Query
+query :: UTCTime -> Expr -> Parser BH.Query
 query now expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery now And e1 e2
   OrExpr e1 e2 -> mkBoolQuery now Or e1 e2
@@ -204,14 +237,30 @@ query now expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery now e field value
   e@(LtExpr field value) -> mkRangeQuery now e field value
   e@(LtEqExpr field value) -> mkRangeQuery now e field value
-  LimitExpr _ _ -> Left (ParseError "Limit must be global" 0)
-  OrderByExpr _ _ _ -> Left (ParseError "Order by must be global" 0)
+  LimitExpr _ _ -> lift $ throwE (ParseError "Limit must be global" 0)
+  OrderByExpr _ _ _ -> lift $ throwE (ParseError "Order by must be global" 0)
 
-data Query = Query {queryOrder :: Maybe (Field, SortOrder), queryLimit :: Int, queryBH :: BH.Query} deriving (Show)
+data Query = Query
+  { queryOrder :: Maybe (Field, SortOrder),
+    queryLimit :: Int,
+    queryBH :: BH.Query,
+    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
+    -- It defaults to (now-3weeks, now)
+    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
+    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
+    -- It keeps the maximum minbound and minimum maxbound, e.g.
+    --  `date>2020 and date>2021` results in (2021, now).
+    -- The goal is to get an approximate bound for histo grams queries.
+    queryBounds :: (UTCTime, UTCTime)
+  }
+  deriving (Show)
 
 queryWithMods :: UTCTime -> Expr -> Either ParseError Query
-queryWithMods now baseExpr = Query order limit <$> query now expr
+queryWithMods now baseExpr = do
+  (query', (boundM, bound)) <- runExcept $ runStateT (query now expr) (Nothing, now)
+  pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
+    threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')

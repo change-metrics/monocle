@@ -138,6 +138,7 @@ test-suite monocle-test
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
+                     , time
                      , wai                        < 3.3
   other-modules:       Monocle.Mock
   ghc-options:         -threaded
