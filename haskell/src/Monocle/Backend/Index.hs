@@ -242,6 +242,9 @@ createChangesIndex serverUrl indexName = do
     True <- BH.indexExists index
     pure (bhEnv, index)
 
+getChangeDocId :: Change -> BH.DocId
+getChangeDocId change = BH.DocId . toText $ changeId change
+
 indexChanges :: BH.BHEnv -> BH.IndexName -> [Change] -> IO ()
 indexChanges bhEnv index changes = BH.runBH bhEnv $ do
   let stream = V.fromList (toBulkIndex <$> changes)
@@ -251,4 +254,4 @@ indexChanges bhEnv index changes = BH.runBH bhEnv $ do
   pure ()
   where
     toBulkIndex change =
-      BH.BulkIndex index (BH.DocId $ toText $ changeId change) (toJSON change)
+      BH.BulkIndex index (getChangeDocId change) (toJSON change)
