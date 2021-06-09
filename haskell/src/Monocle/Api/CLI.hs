@@ -5,7 +5,7 @@
 module Monocle.Api.CLI (run) where
 
 import qualified Monocle.Api.Config as Config
-import qualified Monocle.Search.Queries as Q
+import qualified Monocle.Backend.Index as I
 import Monocle.Servant.Env
 import Monocle.Servant.HTTP (MonocleAPI, server)
 import qualified Network.Wai as Wai
@@ -25,7 +25,7 @@ app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- Config.loadConfig configFile
-  bhEnv' <- Q.mkEnv elkUrl
+  bhEnv' <- I.mkEnv elkUrl
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
@@ -9,7 +8,7 @@ import Data.Aeson
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Monocle.Change
-import qualified Monocle.Search.Queries as Q
+import qualified Network.HTTP.Client as HTTP
 import Relude
 
 type MIndexName = Text
@@ -227,10 +226,15 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
+mkEnv :: MonadIO m => MServerName -> m BH.BHEnv
+mkEnv server = do
+  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
+  pure $ BH.mkBHEnv (BH.Server server) manager
+
 createChangesIndex :: MServerName -> MIndexName -> IO (BH.BHEnv, BH.IndexName)
 createChangesIndex serverUrl indexName = do
   let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-  bhEnv <- Q.mkEnv serverUrl
+  bhEnv <- mkEnv serverUrl
   let index = BH.IndexName indexName
   BH.runBH bhEnv $ do
     _ <- BH.createIndex indexSettings index

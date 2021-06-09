@@ -11,14 +11,8 @@ import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents (ELKChange (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (SortOrder (..))
-import qualified Network.HTTP.Client as HTTP
 import Relude
 import Say
-
-mkEnv :: MonadIO m => Text -> m BH.BHEnv
-mkEnv server = do
-  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
-  pure $ BH.mkBHEnv (BH.Server server) manager
 
 -- | Helper search func that can be replaced by a scanSearch
 simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
