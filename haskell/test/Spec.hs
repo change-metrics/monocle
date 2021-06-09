@@ -4,6 +4,7 @@
 module Main (main) where
 
 import qualified Data.Aeson as Aeson
+import Data.Time.Clock (UTCTime)
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
 import Monocle.Mock
@@ -121,17 +122,43 @@ monocleSearchLanguage =
         ( queryMatch
             "updated_at > now-3weeks"
             "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
+        ),
+      testCase
+        "Query default bound"
+        (queryMatchBound "state:open" (threeWeek, now)),
+      testCase
+        "Query lower bound"
+        (queryMatchBound "updated_at>2021-01-01" (d "2021-01-01", now)),
+      testCase
+        "Query max bound"
+        (queryMatchBound "updated_at<2021-01-01" (d "2020-12-11", d "2021-01-01")),
+      testCase
+        "Query both bounds"
+        (queryMatchBound "created_at<2020-08-01 and updated_at>2020-06-01" (d "2020-06-01", d "2020-08-01")),
+      testCase
+        "Query silly bounds"
+        (queryMatchBound "created_at<2020-01-01 and updated_at>2021-01-01" (d "2021-01-01", d "2020-01-01")),
+      testCase
+        "Query multi bounds"
+        ( queryMatchBound
+            "created_at>2000 and created_at>2001 and created_at<2010 and created_at<2011"
+            (d "2001-01-01", d "2010-01-01")
         )
     ]
   where
-    date = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
+    d :: String -> UTCTime
+    d date = fromMaybe (error "nop") (readMaybe $ date <> " 00:00:00 Z")
+    threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 10:00:00 Z")
+    now = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
-    queryMatch code query =
+    queryDoMatch field code query =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods date >>= pure . Aeson.encode . Q.queryBH)
+        (P.parse code >>= Q.queryWithMods now >>= pure . field)
+    queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
+    queryMatchBound = queryDoMatch Q.queryBounds
 
 monocleWebApiTests :: TestTree
 monocleWebApiTests =

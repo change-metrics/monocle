@@ -105,6 +105,13 @@ parseBoolean txt = case txt of
 
 data RangeOp = Gt | Gte | Lt | Lte
 
+isMinOp :: RangeOp -> Bool
+isMinOp op = case op of
+  Gt -> True
+  Gte -> True
+  Lt -> False
+  Lte -> False
+
 note :: Text -> Maybe a -> Either Text a
 note err value = case value of
   Just a -> Right a
@@ -137,13 +144,28 @@ toRangeValue op = case op of
   Lt -> BH.RangeDoubleLt . BH.LessThan
   Lte -> BH.RangeDoubleLte . BH.LessThanEq
 
+updateBound :: RangeOp -> UTCTime -> Parser ()
+updateBound op date = do
+  (minDateM, maxDate) <- get
+  put $ newBounds minDateM maxDate
+  where
+    newBounds minDateM maxDate =
+      if isMinOp op
+        then (Just $ max date (fromMaybe date minDateM), maxDate)
+        else (minDateM, min date maxDate)
+
 mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue now op field fieldType value = do
   case fieldType of
-    Field_TypeFIELD_DATE ->
-      toParseError $
-        toRangeValueD op
-          <$> (note ("Invalid date: " <> value) $ parseRelativeDateValue now value <|> parseDateValue value)
+    Field_TypeFIELD_DATE -> do
+      date <-
+        toParseError
+          . note ("Invalid date: " <> value)
+          $ parseRelativeDateValue now value <|> parseDateValue value
+
+      updateBound op date
+
+      pure $ toRangeValueD op date
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
     _ -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
@@ -200,7 +222,8 @@ mkNotQuery now e1 = do
 -- | 'query' creates an elastic search query
 --
 -- >>> :{
---  let Right q = P.parse "state:open" >>= query now
+--  let Right expr = P.parse "state:open"
+--      Right (q, _) = runExcept $ runStateT (query now expr) (Nothing, now)
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
@@ -221,6 +244,13 @@ data Query = Query
   { queryOrder :: Maybe (Field, SortOrder),
     queryLimit :: Int,
     queryBH :: BH.Query,
+    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
+    -- It defaults to (now-3weeks, now)
+    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
+    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
+    -- It keeps the maximum minbound and minimum maxbound, e.g.
+    --  `date>2020 and date>2021` results in (2021, now).
+    -- The goal is to get an approximate bound for histo grams queries.
     queryBounds :: (UTCTime, UTCTime)
   }
   deriving (Show)
@@ -228,9 +258,9 @@ data Query = Query
 queryWithMods :: UTCTime -> Expr -> Either ParseError Query
 queryWithMods now baseExpr = do
   (query', (boundM, bound)) <- runExcept $ runStateT (query now expr) (Nothing, now)
-  pure $ Query order limit query' (fromMaybe threeWeeksAgo boundM, bound)
+  pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
-    threeWeeksAgo = subUTCTimeSecond now (3600 * 24 * 7 * 3)
+    threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')
