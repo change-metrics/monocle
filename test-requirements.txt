@@ -1,6 +1,6 @@
 black
 flake8
-mypy
+mypy<0.900
 nose
 deepdiff
 git+https://github.com/flepied/madr-tools-python@template
