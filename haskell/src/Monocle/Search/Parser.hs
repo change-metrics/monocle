@@ -15,12 +15,15 @@ import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 
+-- $setup
+-- >>> let toLocated = map (\v -> L.LocatedToken 0 v 0)
+
 -- | Short-hand type synonym used by parsing utilities
 type Parser = Megaparsec.Parsec Void [L.LocatedToken]
 
 -- | 'exprParser' parses an expression
 --
--- >>> Megaparsec.parse exprParser "" [Literal "status", Equal, Literal "open"]
+-- >>> Megaparsec.parse exprParser "" (toLocated [L.Literal "status", L.Equal, L.Literal "open"])
 -- Right (EqExpr "status" "open")
 exprParser :: Parser Expr
 exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]

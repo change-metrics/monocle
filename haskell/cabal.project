@@ -5,3 +5,4 @@ source-repository-package
   -- Pull in version bump that needs a new release
 
 packages: .
+write-ghc-environment-files: always

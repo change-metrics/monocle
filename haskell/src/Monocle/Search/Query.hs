@@ -15,6 +15,12 @@ import Monocle.Search (Field_Type (..))
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 
+-- $setup
+-- >>> import Monocle.Search.Parser as P
+-- >>> import qualified Data.Aeson as Aeson
+-- >>> import Data.Time.Clock (getCurrentTime)
+-- >>> now <- getCurrentTime
+
 type Field = Text
 
 type FieldType = Field_Type
@@ -183,8 +189,11 @@ mkNotQuery now e1 = do
 
 -- | 'query' creates an elastic search query
 --
--- >>> let Right q = (Parser.parse "state:open" >>= query) in putTextLn . decodeUtf8 . Aeson.encode $ q
--- {"term":{"state":{"value":"open"}}}
+-- >>> :{
+--  let Right q = P.parse "state:open" >>= query now
+--   in putTextLn . decodeUtf8 . Aeson.encode $ q
+-- :}
+-- {"term":{"state":{"value":"OPEN"}}}
 query :: UTCTime -> Expr -> Either ParseError BH.Query
 query now expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery now And e1 e2
