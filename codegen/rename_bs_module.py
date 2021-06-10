@@ -47,7 +47,15 @@ def fix_timestamp(content):
         # TODO: add new timestamp field to this list, e.g. when this error happens:
         #   Js.Dict.set json "updated_at" (Js.Json.object_ json');
         # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
-        ["timestamp", "updated_at", "created_at", "changed_at"],
+        [
+            "timestamp",
+            "updated_at",
+            "created_at",
+            "changed_at",
+            "authored_at",
+            "committed_at",
+            "merged_at",
+        ],
         content,
     ).replace(
         "TimestampBs.decode_timestamp (Pbrt_bs.object_",

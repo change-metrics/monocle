@@ -47,7 +47,27 @@ type changes_query_request = {
   query : string;
 }
 
-type change = {
+type file = {
+  additions : int32;
+  deletions : int32;
+  path : string;
+}
+
+type commit = {
+  sha : string;
+  title : string;
+  author : string;
+  authored_at : TimestampTypes.timestamp option;
+  committer : string;
+  committed_at : TimestampTypes.timestamp option;
+  additions : int32;
+  deletions : int32;
+}
+
+type change_merged_by_m =
+  | Merged_by of string
+
+and change = {
   change_id : string;
   author : string;
   title : string;
@@ -55,7 +75,23 @@ type change = {
   repository_fullname : string;
   state : string;
   branch : string;
+  target_branch : string;
   created_at : TimestampTypes.timestamp option;
+  updated_at : TimestampTypes.timestamp option;
+  merged_at : TimestampTypes.timestamp option;
+  merged_by_m : change_merged_by_m;
+  text : string;
+  additions : int32;
+  deletions : int32;
+  approval : string list;
+  assignees : string list;
+  labels : string list;
+  draft : bool;
+  mergeable : bool;
+  changed_files : file list;
+  changed_files_count : int32;
+  commits : commit list;
+  commits_count : int32;
   task_data : TaskDataTypes.new_task_data list;
 }
 
@@ -123,6 +159,30 @@ val default_changes_query_request :
   changes_query_request
 (** [default_changes_query_request ()] is the default value for type [changes_query_request] *)
 
+val default_file : 
+  ?additions:int32 ->
+  ?deletions:int32 ->
+  ?path:string ->
+  unit ->
+  file
+(** [default_file ()] is the default value for type [file] *)
+
+val default_commit : 
+  ?sha:string ->
+  ?title:string ->
+  ?author:string ->
+  ?authored_at:TimestampTypes.timestamp option ->
+  ?committer:string ->
+  ?committed_at:TimestampTypes.timestamp option ->
+  ?additions:int32 ->
+  ?deletions:int32 ->
+  unit ->
+  commit
+(** [default_commit ()] is the default value for type [commit] *)
+
+val default_change_merged_by_m : unit -> change_merged_by_m
+(** [default_change_merged_by_m ()] is the default value for type [change_merged_by_m] *)
+
 val default_change : 
   ?change_id:string ->
   ?author:string ->
@@ -131,7 +191,23 @@ val default_change :
   ?repository_fullname:string ->
   ?state:string ->
   ?branch:string ->
+  ?target_branch:string ->
   ?created_at:TimestampTypes.timestamp option ->
+  ?updated_at:TimestampTypes.timestamp option ->
+  ?merged_at:TimestampTypes.timestamp option ->
+  ?merged_by_m:change_merged_by_m ->
+  ?text:string ->
+  ?additions:int32 ->
+  ?deletions:int32 ->
+  ?approval:string list ->
+  ?assignees:string list ->
+  ?labels:string list ->
+  ?draft:bool ->
+  ?mergeable:bool ->
+  ?changed_files:file list ->
+  ?changed_files_count:int32 ->
+  ?commits:commit list ->
+  ?commits_count:int32 ->
   ?task_data:TaskDataTypes.new_task_data list ->
   unit ->
   change
