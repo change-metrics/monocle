@@ -30,3 +30,7 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 ### `npm run clean`
 
 Cleanup build artifacts
+
+### `NODE_ENV='"designer"' npm start`
+
+Runs the standalone application [Designer](./src/Designer.res) to help style the components without a backend.
