@@ -65,8 +65,8 @@ fakeChange =
       elkchangeDraft = False
     }
 
-testIndexName :: Text
-testIndexName = "test-index"
+testIndexName :: BH.IndexName
+testIndexName = BH.IndexName "test-index"
 
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
 withBH cb = bracket create cb delete

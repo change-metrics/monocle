@@ -11,8 +11,6 @@ import Monocle.Backend.Documents
 import qualified Network.HTTP.Client as HTTP
 import Relude
 
-type MIndexName = Text
-
 type MServerName = Text
 
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
@@ -231,11 +229,10 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-createChangesIndex :: MServerName -> MIndexName -> IO (BH.BHEnv, BH.IndexName)
-createChangesIndex serverUrl indexName = do
+createChangesIndex :: MServerName -> BH.IndexName -> IO (BH.BHEnv, BH.IndexName)
+createChangesIndex serverUrl index = do
   let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
   bhEnv <- mkEnv serverUrl
-  let index = BH.IndexName indexName
   BH.runBH bhEnv $ do
     _ <- BH.createIndex indexSettings index
     _ <- BH.putMapping index ChangesIndexMapping
