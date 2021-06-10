@@ -3,7 +3,7 @@
 
 module Main (main) where
 
-import Monocle.Backend.Test (testIndexChange)
+import Monocle.Backend.Test (testIndexChanges)
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -15,5 +15,5 @@ monocleIntegrationTests :: TestTree
 monocleIntegrationTests =
   testGroup
     "Monocle.Backend.Changes"
-    [ testCase "Index changes" testIndexChange
+    [ testCase "Index changes" testIndexChanges
     ]
