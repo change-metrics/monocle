@@ -63,7 +63,7 @@ module TaskData = {
   }
 }
 
-module Search = {
+module DataItem = {
   module Info = {
     @react.component
     let make = (~name, ~value) =>

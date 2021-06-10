@@ -13,11 +13,19 @@ import './App.css'
 
 open Prelude
 
+module Fixture = {
+  @module external changeJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/change.json"
+  let change: SearchTypes.change = SearchBs.decode_change(changeJson)
+}
+
 module App = {
   @react.component
   let make = () => <>
-    {[("title", <h2> {"Monocle designer mode"->str} </h2>), ("test", <p> {"Hi o/"->str} </p>)]
-    ->Belt.Array.map((key, v) => <span key> {v} <hr /> </span>)
+    {[
+      ("title", <h2> {"Monocle designer mode"->str} </h2>),
+      ("change", <div className="container"> <Change.DataItem change={Fixture.change} /> </div>),
+    ]
+    ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}
   </>
 }
