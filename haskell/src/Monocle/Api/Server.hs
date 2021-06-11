@@ -42,25 +42,24 @@ searchChangesQuery request = do
           <$> Q.changes bhEnv index query
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
-      let getText field = toLazy (field change)
-          changeTitle = getText elkchangeTitle
-          changeUrl = getText elkchangeUrl
+      let changeTitle = elkchangeTitle change
+          changeUrl = elkchangeUrl change
           changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
           changeUpdatedAt = (Just . Timestamp.fromUTCTime $ elkchangeUpdatedAt change)
-          changeRepositoryFullname = getText elkchangeRepositoryFullname
-          changeState = getText elkchangeState
-          changeBranch = getText elkchangeBranch
-          changeTargetBranch = getText elkchangeTargetBranch
+          changeRepositoryFullname = elkchangeRepositoryFullname change
+          changeState = elkchangeState change
+          changeBranch = elkchangeBranch change
+          changeTargetBranch = elkchangeTargetBranch change
           changeTaskData = V.fromList . maybe [] (map toTaskData) $ elkchangeTasksData change
-          changeChangeId = getText elkchangeChangeId
+          changeChangeId = elkchangeChangeId change
           changeAuthor = authorMuid . elkchangeAuthor $ change
-          changeText = getText elkchangeText
+          changeText = elkchangeText change
           changeAdditions = elkchangeAdditions change
           changeDeletions = elkchangeDeletions change
           changeChangedFilesCount = elkchangeChangedFilesCount change
-          changeApproval = V.fromList (maybe [] (fmap toLazy) (elkchangeApproval change))
+          changeApproval = V.fromList $ fromMaybe [] $ elkchangeApproval change
           changeAssignees = V.fromList (fmap authorMuid (elkchangeAssignees change))
-          changeLabels = V.fromList (toLazy <$> elkchangeLabels change)
+          changeLabels = V.fromList $ elkchangeLabels change
           changeDraft = elkchangeDraft change
           changeMergeable = elkchangeMergeable change == "MERGEABLE"
           changeCommits = V.fromList . map toCommit $ elkchangeCommits change

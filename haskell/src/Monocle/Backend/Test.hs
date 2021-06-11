@@ -19,9 +19,9 @@ fakeDateAlt :: UTCTime
 fakeDateAlt = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z")
 
 fakeAuthor :: Author
-fakeAuthor = Author "John"
+fakeAuthor = Author "John" "John"
 
-mkFakeChange :: Int -> Text -> ELKChange
+mkFakeChange :: Int -> LText -> ELKChange
 mkFakeChange number title =
   fakeChange
     { elkchangeId = "aFakeId-" <> show number,
@@ -53,7 +53,6 @@ fakeChange =
       elkchangeBranch = "",
       elkchangeCreatedAt = fakeDate,
       elkchangeUpdatedAt = fakeDate,
-      elkchangeCommitter = Nothing,
       elkchangeMergedBy = Nothing,
       elkchangeTargetBranch = "main",
       elkchangeMergedAt = Nothing,
@@ -119,19 +118,19 @@ testIndexChanges = withBH doTest
       checkELKChangeField'
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
-        (toText (elkchangeTitle fakeChange1))
+        (elkchangeTitle fakeChange1)
       checkDocExists' $ I.getChangeDocId fakeChange2
       checkELKChangeField'
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
-        (toText (elkchangeTitle fakeChange2))
+         (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1
       checkELKChangeField'
         (I.getChangeDocId fakeChange1Updated)
         elkchangeTitle
-        (toText (elkchangeTitle fakeChange1Updated))
+        (elkchangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
       checkChangeCount' 2
       where
