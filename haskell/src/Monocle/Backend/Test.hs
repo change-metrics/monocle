@@ -31,6 +31,7 @@ fakeChange :: ELKChange
 fakeChange =
   ELKChange
     { elkchangeId = "",
+      elkchangeType = "Change",
       elkchangeNumber = 1,
       elkchangeChangeId = "change-id",
       elkchangeTitle = "",
@@ -69,63 +70,94 @@ testIndexName :: BH.IndexName
 testIndexName = BH.IndexName "test-index"
 
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
-withBH cb = bracket create cb delete
+withBH = bracket create delete
   where
     -- todo: generate random name
     create = I.createChangesIndex "http://localhost:9200" testIndexName
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
-        _ <- BH.deleteIndex testIndex
+        resp <- BH.deleteIndex testIndex
+        print resp
         False <- BH.indexExists testIndex
         pure ()
 
-testIndexChange :: Assertion
-testIndexChange = withBH doTest
-  where
-    -- checkIndex bhEnv testIndex = do
-    --   let query = BH.MatchAllQuery Nothing
-    --   let search = BH.mkSearch (Just query) Nothing
-    --   parsed <- BH.runBH bhEnv $ do
-    --     resp <- BH.searchByIndex testIndex search
-    --     BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.SearchResult Value))
-    --   case parsed of
-    --     Left _e -> error "Could not get changes back"
-    --     Right sr -> assertEqual "changes" (BH.hitsTotal (BH.searchHits sr)) (BH.HitsTotal 1 BH.HTR_EQ)
-    checkDocExists bhEnv index docId = do
-      resp <- BH.runBH bhEnv $ do
-        BH.documentExists index docId
-      assertEqual "doc exist" True resp
-    doCheck :: (Show a, Eq a) => (ELKChange -> a) -> a -> ELKChange -> Assertion
-    doCheck field value change = assertEqual "change field match" (field change) value
-    checkELKChangeField :: (Show a, Eq a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> IO ()
-    checkELKChangeField bhEnv index docId field value = do
-      parsed <- BH.runBH bhEnv $ do
-        resp <- BH.getDocument index docId
-        BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.EsResult ELKChange))
-      case parsed of
-        Left _e -> error "Could not get changes back"
-        Right sr -> checkHit $ BH.foundResult sr
-      where
-        checkHit :: Maybe (BH.EsResultFound ELKChange) -> Assertion
-        checkHit (Just (BH.EsResultFound _ change)) = doCheck field value change
-        checkHit Nothing = error "Change not found"
+checkDocExists :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO ()
+checkDocExists bhEnv index docId = do
+  resp <- BH.runBH bhEnv $ do
+    BH.documentExists index docId
+  assertEqual "doc exist" True resp
 
+checkELKChangeField :: (Show a, Eq a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> IO ()
+checkELKChangeField bhEnv index docId field value = do
+  parsed <- BH.runBH bhEnv $ do
+    resp <- BH.getDocument index docId
+    BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.EsResult ELKChange))
+  case parsed of
+    Left _e -> error "Could not get changes back"
+    Right sr -> checkHit $ BH.foundResult sr
+  where
+    checkHit :: Maybe (BH.EsResultFound ELKChange) -> Assertion
+    checkHit (Just (BH.EsResultFound _ change)) = doCheck field value change
+    checkHit Nothing = error "Change not found"
+    doCheck :: (Show a, Eq a) => (ELKChange -> a) -> a -> ELKChange -> Assertion
+    doCheck field' value' change = assertEqual "change field match" (field' change) value'
+
+checkChangesCount :: BH.BHEnv -> BH.IndexName -> Int -> IO ()
+checkChangesCount bhEnv index expectedCount = do
+  resp <- BH.runBH bhEnv $ do
+    BH.countByIndex
+      index
+      ( BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing)
+      )
+  case resp of
+    Left _ -> error "Couldn't count changes"
+    Right countD -> assertEqual "check change count" expectedCount (fromEnum $ BH.crCount countD)
+
+-- checkChangesCount' :: BH.BHEnv -> BH.IndexName -> Int -> IO ()
+-- checkChangesCount' bhEnv index expectedCount = do
+--   parsed <- BH.runBH bhEnv $ do
+--     resp <-
+--       BH.searchByIndex
+--         index
+--         ( BH.mkSearch (Just (BH.TermQuery (BH.Term "type" "Change") Nothing)) Nothing
+--         )
+--     BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.SearchResult ELKChange))
+--   case parsed of
+--     Left _ -> error "Couldn't count changes"
+--     Right sr -> assertEqual "changes" (BH.HitsTotal expectedCount BH.HTR_EQ) (BH.hitsTotal (BH.searchHits sr))
+
+testIndexChanges :: Assertion
+testIndexChanges = withBH doTest
+  where
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
-      I.indexChanges bhEnv testIndex [fakeChange1, fakeChange2]
+      -- Index two Changes and check present in database
+      indexChanges [fakeChange1, fakeChange2]
       checkDocExists bhEnv testIndex (I.getChangeDocId fakeChange1)
-      checkELKChangeField
-        bhEnv
-        testIndex
+      checkELKChangeField'
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
         (toText (elkchangeTitle fakeChange1))
-      checkDocExists bhEnv testIndex (I.getChangeDocId fakeChange2)
-      checkELKChangeField
-        bhEnv
-        testIndex
+      checkDocExists' $ I.getChangeDocId fakeChange2
+      checkELKChangeField'
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
         (toText (elkchangeTitle fakeChange2))
-    fakeChange1 = mkFakeChange 1 "My change 1"
-    fakeChange2 = mkFakeChange 2 "My change 2"
+      -- Update a Change and ensure the document is updated in the database
+      indexChanges [fakeChange1Updated]
+      checkDocExists' $ I.getChangeDocId fakeChange1
+      checkELKChangeField'
+        (I.getChangeDocId fakeChange1Updated)
+        elkchangeTitle
+        (toText (elkchangeTitle fakeChange1Updated))
+      -- Check total count of Change document in the database
+      checkChangeCount' 2
+      where
+        indexChanges = I.indexChanges bhEnv testIndex
+        checkDocExists' = checkDocExists bhEnv testIndex
+        checkELKChangeField' :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> IO ()
+        checkELKChangeField' = checkELKChangeField bhEnv testIndex
+        checkChangeCount' = checkChangesCount bhEnv testIndex
+        fakeChange1 = mkFakeChange 1 "My change 1"
+        fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
+        fakeChange2 = mkFakeChange 2 "My change 2"

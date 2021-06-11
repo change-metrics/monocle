@@ -75,6 +75,7 @@ instance FromJSON TaskData where
 data ELKChange = ELKChange
   { elkchangeId :: Text,
     elkchangeNumber :: Int,
+    elkchangeType :: Text,
     elkchangeChangeId :: Text,
     elkchangeTitle :: Text,
     elkchangeText :: Text,

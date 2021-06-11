@@ -200,26 +200,26 @@ instance ToJSON ChangesIndexMapping where
                             .= object
                               [ "type" .= ("date" :: Text),
                                 "format" .= ("date_time_no_millis" :: Text)
-                              ]
-                        ],
-                    "change_url" .= object ["type" .= ("keyword" :: Text)],
-                    "severity" .= object ["type" .= ("keyword" :: Text)],
-                    "priority" .= object ["type" .= ("keyword" :: Text)],
-                    "score" .= object ["type" .= ("integer" :: Text)],
-                    "url" .= object ["type" .= ("keyword" :: Text)],
-                    "title"
-                      .= object
-                        [ "type" .= ("text" :: Text),
-                          "fields"
+                              ],
+                          "change_url" .= object ["type" .= ("keyword" :: Text)],
+                          "severity" .= object ["type" .= ("keyword" :: Text)],
+                          "priority" .= object ["type" .= ("keyword" :: Text)],
+                          "score" .= object ["type" .= ("integer" :: Text)],
+                          "url" .= object ["type" .= ("keyword" :: Text)],
+                          "title"
                             .= object
-                              [ "keyword"
+                              [ "type" .= ("text" :: Text),
+                                "fields"
                                   .= object
-                                    [ "type" .= ("keyword" :: Text),
-                                      "ignore_above" .= (8191 :: Int)
+                                    [ "keyword"
+                                        .= object
+                                          [ "type" .= ("keyword" :: Text),
+                                            "ignore_above" .= (8191 :: Int)
+                                          ]
                                     ]
-                              ]
-                        ],
-                    "_adopted" .= object ["type" .= ("boolean" :: Text)]
+                              ],
+                          "_adopted" .= object ["type" .= ("boolean" :: Text)]
+                        ]
                   ]
             ]
       ]
@@ -234,8 +234,10 @@ createChangesIndex serverUrl index = do
   let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
   bhEnv <- mkEnv serverUrl
   BH.runBH bhEnv $ do
-    _ <- BH.createIndex indexSettings index
-    _ <- BH.putMapping index ChangesIndexMapping
+    respCI <- BH.createIndex indexSettings index
+    print respCI
+    respPM <- BH.putMapping index ChangesIndexMapping
+    print respPM
     True <- BH.indexExists index
     pure (bhEnv, index)
 
@@ -244,11 +246,13 @@ getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
 indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
 indexChanges bhEnv index changes = BH.runBH bhEnv $ do
-  let stream = V.fromList (toBulkIndex <$> changes)
+  let stream = V.fromList (toBulkIndex . ensureType <$> changes)
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
   where
+    -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex change =
       BH.BulkIndex index (getChangeDocId change) (toJSON change)
+    ensureType change = change {elkchangeType = "Change"}
