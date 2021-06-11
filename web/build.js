@@ -9,8 +9,10 @@ const optionDefault = (option, defaultValue) => typeof option !== 'undefined' ? 
 const title = optionDefault(process.env.REACT_APP_TITLE, '"Monocle"')
 const api_url = optionDefault(process.env.REACT_APP_API_URL, '""')
 
+const isDesigner = process.env.NODE_ENV === '"designer"'
+
 const esbuildOptions = {
-  entryPoints: ['./src/index.jsx'],
+  entryPoints: [isDesigner ? './src/Designer.bs.js' : './src/index.jsx'],
   outfile: './build/dist/bundle.js',
   bundle: true,
   sourcemap: true,

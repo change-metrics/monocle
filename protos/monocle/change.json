@@ -1,0 +1,61 @@
+{
+  "number": 70,
+  "change_id": "change-metrics@monocle@70",
+  "title": "expose ChangeCommitForcePushedEvent and ChangeCommitPushedEvent",
+  "text": "exposed in the changes_lifecycle_stats API query\nexposed in the web \"Changes lifecycle stats\" graph + iteration/change",
+  "url": "https://github.com/change-metrics/monocle/pull/70",
+  "commit_count": 1,
+  "additions": 90,
+  "deletions": 33,
+  "changed_files_count": 3,
+  "changed_files": [
+    {
+      "additions": 30,
+      "deletions": 3,
+      "path": "monocle/db/queries.py"
+    },
+    {
+      "additions": 58,
+      "deletions": 28,
+      "path": "web/src/components/changes_lifecycle.js"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "web/src/components/changes_review.js"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "2d9d3ec73f6c2212b557762fac0d4f2835051321",
+      "author": "flepied",
+      "committer": "flepied",
+      "authored_at": "2020-04-11T07:01:15Z",
+      "committed_at": "2020-04-11T10:21:23Z",
+      "additions": 90,
+      "deletions": 33,
+      "title": "expose ChangeCommitForcePushedEven and ChangeCommitPushedEvent\n\n- exposed in the changes_lifecycle_stats API query\n- exposed in the web \"Changes lifecycle stats\" graph + iteration/change"
+    }
+  ],
+  "repository_prefix": "change-metrics",
+  "repository_fullname": "change-metrics/monocle",
+  "repository_shortname": "monocle",
+  "author": "flepied",
+  "merged_by": "morucci",
+  "branch": "changed",
+  "target_branch": "master",
+  "created_at": "2020-04-11T07:06:29Z",
+  "merged_at": "2020-04-11T21:46:18Z",
+  "updated_at": "2020-04-12T06:20:26Z",
+  "closed_at": "2020-04-11T21:46:19Z",
+  "state": "MERGED",
+  "duration": 52790,
+  "mergeable": true,
+  "labels": [],
+  "assignees": [],
+  "approval": ["APPROVED"],
+  "draft": false,
+  "self_merged": false,
+  "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",
+  "type": "Change"
+}
