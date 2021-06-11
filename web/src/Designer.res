@@ -6,6 +6,7 @@
 
 %%raw(`
 import '@patternfly/react-core/dist/styles/base.css'
+import '@patternfly/react-styles/css/components/Table/table.css'
 import './index.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
@@ -29,6 +30,7 @@ module App = {
           <Change.DataItem index={"test"} change={Fixture.change} />
         </div>,
       ),
+      ("table", <Change.Table index={"test"} changes={list{Fixture.change, Fixture.change}} />),
     ]
     ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}
