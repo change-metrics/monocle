@@ -115,3 +115,14 @@ instance ToJSON ELKChange where
 
 instance FromJSON ELKChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+newtype ELKCrawlerMetadata = ELKCrawlerMetadata
+  { elkcmLastCommitAt :: UTCTime
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKCrawlerMetadata where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKCrawlerMetadata where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase

@@ -5,6 +5,7 @@
 module Monocle.Backend.Index where
 
 import Data.Aeson
+import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
@@ -256,3 +257,55 @@ indexChanges bhEnv index changes = BH.runBH bhEnv $ do
     toBulkIndex change =
       BH.BulkIndex index (getChangeDocId change) (toJSON change)
     ensureType change = change {elkchangeType = "Change"}
+
+type CrawlerMetadataID = BH.DocId
+
+getCrawlerMetadataID :: Entity -> CrawlerMetadataID
+getCrawlerMetadataID entity = BH.DocId $ getEntityName entity
+
+getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataID -> IO (Maybe ELKCrawlerMetadata)
+getCrawlerMetadata bhEnv index cmId = do
+  parsed <- BH.runBH bhEnv $ do
+    resp <- BH.getDocument index cmId
+    BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.EsResult ELKCrawlerMetadata))
+  case parsed of
+    Left _ -> error "Unable to get parse result"
+    Right cm -> pure . getHit $ BH.foundResult cm
+  where
+    getHit :: Maybe (BH.EsResultFound ELKCrawlerMetadata) -> Maybe ELKCrawlerMetadata
+    getHit (Just (BH.EsResultFound _ cm)) = Just cm
+    getHit Nothing = Nothing
+
+getLastUpdatedFromConfig :: UTCTime
+getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
+
+data Entity = Project {getName :: Text} | Organization {getName :: Text}
+
+getEntityName :: Entity -> Text
+getEntityName entity = case entity of
+  Project name -> toText $ intercalate "-" ["project", toString name]
+  Organization name -> toText $ intercalate "-" ["organization", toString name]
+
+getLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> IO UTCTime
+getLastUpdated bhEnv index entity = do
+  cmM <- getCrawlerMetadata bhEnv index cmID
+  case cmM of
+    Just cm -> pure $ elkcmLastCommitAt cm
+    Nothing -> pure getLastUpdatedFromConfig
+  where
+    cmID = getCrawlerMetadataID entity
+
+setLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> UTCTime -> IO ()
+setLastUpdated bhEnv index entity lastUpdatedDate = do
+  BH.runBH bhEnv $ do
+    exists <- BH.documentExists index id'
+    resp <-
+      if exists
+        then do
+          BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+        else do
+          BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+    if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+  where
+    id' = getCrawlerMetadataID entity
+    cm = ELKCrawlerMetadata lastUpdatedDate

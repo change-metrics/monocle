@@ -15,6 +15,9 @@ import Test.Tasty.HUnit
 fakeDate :: UTCTime
 fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
 
+fakeDateAlt :: UTCTime
+fakeDateAlt = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z")
+
 fakeAuthor :: Author
 fakeAuthor = Author "John"
 
@@ -65,6 +68,9 @@ fakeChange =
       elkchangeAssignees = [],
       elkchangeDraft = False
     }
+
+fakeELKCrawlerMetadata :: ELKCrawlerMetadata
+fakeELKCrawlerMetadata = ELKCrawlerMetadata fakeDate
 
 testIndexName :: BH.IndexName
 testIndexName = BH.IndexName "test-index"
@@ -161,3 +167,19 @@ testIndexChanges = withBH doTest
         fakeChange1 = mkFakeChange 1 "My change 1"
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
+
+testCrawlerMetadata :: Assertion
+testCrawlerMetadata = withBH doTest
+  where
+    doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
+    doTest (bhEnv, testIndex) = do
+      -- Set inital last commitedAt date
+      I.setLastUpdated bhEnv testIndex entity fakeDate
+      lastUpdated <- I.getLastUpdated bhEnv testIndex entity
+      assertEqual "check date similar" lastUpdated fakeDate
+      -- Set a new last commitedAt date
+      I.setLastUpdated bhEnv testIndex entity fakeDateAlt
+      lastUpdated' <- I.getLastUpdated bhEnv testIndex entity
+      assertEqual "check date similar" lastUpdated' fakeDateAlt
+      where
+        entity = I.Project "nova"
