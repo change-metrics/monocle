@@ -23,7 +23,12 @@ module App = {
   let make = () => <>
     {[
       ("title", <h2> {"Monocle designer mode"->str} </h2>),
-      ("change", <div className="container"> <Change.DataItem change={Fixture.change} /> </div>),
+      (
+        "change",
+        <div className="container">
+          <Change.DataItem index={"test"} change={Fixture.change} />
+        </div>,
+      ),
     ]
     ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}

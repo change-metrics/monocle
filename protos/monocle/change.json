@@ -53,7 +53,7 @@
   "mergeable": true,
   "labels": [],
   "assignees": [],
-  "approval": ["APPROVED"],
+  "approval": ["APPROVED", "CODE-REVIEW+0", "CODE-REVIEW-2", "CR+2"],
   "draft": false,
   "self_merged": false,
   "id": "MDExOlB1bGxSZXF1ZXN0NDAyMTUxNDk5",

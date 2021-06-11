@@ -19,6 +19,16 @@ external getIndices: unit => axios<array<string>> = "getIndices"
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
+// Bindings for moment
+%%raw(`
+import moment from 'moment'
+`)
+let momentFromNow = %raw(`
+  function(d) {
+    return moment(d).fromNow()
+  }
+`)
+
 let resetLocationSearch = %raw(`
   function() {
     window.history.replaceState(null, null, window.location.origin + window.location.pathname);
