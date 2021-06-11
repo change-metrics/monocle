@@ -9,7 +9,11 @@ import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
+  ( ELKChange (elkchangeId, elkchangeType),
+    ELKCrawlerMetadata (..),
+  )
 import qualified Network.HTTP.Client as HTTP
+import qualified Network.HTTP.Types.Status as NHTS
 import Relude
 
 type MServerName = Text
@@ -263,18 +267,34 @@ type CrawlerMetadataID = BH.DocId
 getCrawlerMetadataID :: Entity -> CrawlerMetadataID
 getCrawlerMetadataID entity = BH.DocId $ getEntityName entity
 
-getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataID -> IO (Maybe ELKCrawlerMetadata)
-getCrawlerMetadata bhEnv index cmId = do
-  parsed <- BH.runBH bhEnv $ do
-    resp <- BH.getDocument index cmId
-    BH.parseEsResponse resp :: BH.BH IO (Either BH.EsError (BH.EsResult ELKCrawlerMetadata))
-  case parsed of
-    Left _ -> error "Unable to get parse result"
-    Right cm -> pure . getHit $ BH.foundResult cm
+statusCheck :: (Int -> c) -> HTTP.Response body -> c
+statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
+
+isNotFound :: BH.Reply -> Bool
+isNotFound = statusCheck (== 404)
+
+checkDocExists :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO Bool
+checkDocExists bhEnv index docId = do
+  BH.runBH bhEnv $ do
+    BH.documentExists index docId
+
+getDocument :: (FromJSON a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> IO (Maybe a)
+getDocument bhEnv index dId = do
+  BH.runBH bhEnv $ do
+    resp <- BH.getDocument index dId
+    if isNotFound resp
+      then pure Nothing
+      else do
+        parsed <- BH.parseEsResponse resp
+        case parsed of
+          Right cm -> pure . getHit $ BH.foundResult cm
+          Left _ -> error "Unable to get parse result"
   where
-    getHit :: Maybe (BH.EsResultFound ELKCrawlerMetadata) -> Maybe ELKCrawlerMetadata
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
+
+getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataID -> IO (Maybe ELKCrawlerMetadata)
+getCrawlerMetadata = getDocument
 
 getLastUpdatedFromConfig :: UTCTime
 getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
