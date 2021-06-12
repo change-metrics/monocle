@@ -32,7 +32,7 @@ type task_data_get_last_updated_response =
   | Error of task_data_get_last_updated_error
   | Timestamp of TimestampTypes.timestamp
 
-type new_task_data = {
+type task_data = {
   updated_at : TimestampTypes.timestamp option;
   change_url : string;
   ttype : string list;
@@ -48,7 +48,7 @@ type add_request = {
   index : string;
   crawler : string;
   apikey : string;
-  items : new_task_data list;
+  items : task_data list;
 }
 
 type add_response =
@@ -82,7 +82,7 @@ let rec default_task_data_get_last_updated_request
 
 let rec default_task_data_get_last_updated_response () : task_data_get_last_updated_response = Error (default_task_data_get_last_updated_error ())
 
-let rec default_new_task_data 
+let rec default_task_data 
   ?updated_at:((updated_at:TimestampTypes.timestamp option) = None)
   ?change_url:((change_url:string) = "")
   ?ttype:((ttype:string list) = [])
@@ -92,7 +92,7 @@ let rec default_new_task_data
   ?severity:((severity:string) = "")
   ?priority:((priority:string) = "")
   ?score:((score:int32) = 0l)
-  () : new_task_data  = {
+  () : task_data  = {
   updated_at;
   change_url;
   ttype;
@@ -108,7 +108,7 @@ let rec default_add_request
   ?index:((index:string) = "")
   ?crawler:((crawler:string) = "")
   ?apikey:((apikey:string) = "")
-  ?items:((items:new_task_data list) = [])
+  ?items:((items:task_data list) = [])
   () : add_request  = {
   index;
   crawler;

@@ -24,7 +24,7 @@ let default_task_data_get_last_updated_request_mutable () : task_data_get_last_u
   crawler = "";
 }
 
-type new_task_data_mutable = {
+type task_data_mutable = {
   mutable updated_at : TimestampTypes.timestamp option;
   mutable change_url : string;
   mutable ttype : string list;
@@ -36,7 +36,7 @@ type new_task_data_mutable = {
   mutable score : int32;
 }
 
-let default_new_task_data_mutable () : new_task_data_mutable = {
+let default_task_data_mutable () : task_data_mutable = {
   updated_at = None;
   change_url = "";
   ttype = [];
@@ -52,7 +52,7 @@ type add_request_mutable = {
   mutable index : string;
   mutable crawler : string;
   mutable apikey : string;
-  mutable items : TaskDataTypes.new_task_data list;
+  mutable items : TaskDataTypes.task_data list;
 }
 
 let default_add_request_mutable () : add_request_mutable = {
@@ -164,45 +164,45 @@ let rec decode_task_data_get_last_updated_response json =
   in
   loop (Array.length keys - 1)
 
-let rec decode_new_task_data json =
-  let v = default_new_task_data_mutable () in
+let rec decode_task_data json =
+  let v = default_task_data_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
   for i = 0 to last_key_index do
     match Array.unsafe_get keys i with
     | "updated_at" -> 
       let json = Js.Dict.unsafeGet json "updated_at" in
-      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "new_task_data" "updated_at")))
+      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "task_data" "updated_at")))
     | "change_url" -> 
       let json = Js.Dict.unsafeGet json "change_url" in
-      v.change_url <- Pbrt_bs.string json "new_task_data" "change_url"
+      v.change_url <- Pbrt_bs.string json "task_data" "change_url"
     | "ttype" -> begin
       let a = 
         let a = Js.Dict.unsafeGet json "ttype" in 
-        Pbrt_bs.array_ a "new_task_data" "ttype"
+        Pbrt_bs.array_ a "task_data" "ttype"
       in
       v.ttype <- Array.map (fun json -> 
-        Pbrt_bs.string json "new_task_data" "ttype"
+        Pbrt_bs.string json "task_data" "ttype"
       ) a |> Array.to_list;
     end
     | "tid" -> 
       let json = Js.Dict.unsafeGet json "tid" in
-      v.tid <- Pbrt_bs.string json "new_task_data" "tid"
+      v.tid <- Pbrt_bs.string json "task_data" "tid"
     | "url" -> 
       let json = Js.Dict.unsafeGet json "url" in
-      v.url <- Pbrt_bs.string json "new_task_data" "url"
+      v.url <- Pbrt_bs.string json "task_data" "url"
     | "title" -> 
       let json = Js.Dict.unsafeGet json "title" in
-      v.title <- Pbrt_bs.string json "new_task_data" "title"
+      v.title <- Pbrt_bs.string json "task_data" "title"
     | "severity" -> 
       let json = Js.Dict.unsafeGet json "severity" in
-      v.severity <- Pbrt_bs.string json "new_task_data" "severity"
+      v.severity <- Pbrt_bs.string json "task_data" "severity"
     | "priority" -> 
       let json = Js.Dict.unsafeGet json "priority" in
-      v.priority <- Pbrt_bs.string json "new_task_data" "priority"
+      v.priority <- Pbrt_bs.string json "task_data" "priority"
     | "score" -> 
       let json = Js.Dict.unsafeGet json "score" in
-      v.score <- Pbrt_bs.int32 json "new_task_data" "score"
+      v.score <- Pbrt_bs.int32 json "task_data" "score"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -216,7 +216,7 @@ let rec decode_new_task_data json =
     TaskDataTypes.severity = v.severity;
     TaskDataTypes.priority = v.priority;
     TaskDataTypes.score = v.score;
-  } : TaskDataTypes.new_task_data)
+  } : TaskDataTypes.task_data)
 
 let rec decode_add_request json =
   let v = default_add_request_mutable () in
@@ -239,7 +239,7 @@ let rec decode_add_request json =
         Pbrt_bs.array_ a "add_request" "items"
       in
       v.items <- Array.map (fun json -> 
-        (decode_new_task_data (Pbrt_bs.object_ json "add_request" "items"))
+        (decode_task_data (Pbrt_bs.object_ json "add_request" "items"))
       ) a |> Array.to_list;
     end
     
@@ -327,7 +327,7 @@ let rec encode_task_data_get_last_updated_response (v:TaskDataTypes.task_data_ge
   end;
   json
 
-let rec encode_new_task_data (v:TaskDataTypes.new_task_data) = 
+let rec encode_task_data (v:TaskDataTypes.task_data) = 
   let json = Js.Dict.empty () in
   begin match v.TaskDataTypes.updated_at with
   | None -> ()
@@ -358,7 +358,7 @@ let rec encode_add_request (v:TaskDataTypes.add_request) =
       v.TaskDataTypes.items
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> encode_new_task_data |> Js.Json.object_
+        v |> encode_task_data |> Js.Json.object_
       )
       |> Js.Json.array
     in

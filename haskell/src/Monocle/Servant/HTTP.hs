@@ -9,15 +9,17 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (searchChangesQuery, searchFields)
-import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse)
+import Monocle.Api.Server (searchFields, searchQuery)
+import Monocle.Search (FieldsRequest, FieldsResponse, QueryRequest, QueryResponse)
 import Monocle.Servant.Env
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 
 type MonocleAPI =
-  "api" :> "2" :> "search_fields" :> Vault :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
-    :<|> "api" :> "2" :> "search" :> "changes" :> Vault :> ReqBody '[JSON] ChangesQueryRequest :> Post '[PBJSON, JSON] ChangesQueryResponse
+  "api" :> "2" :> "search" :> "fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
+    :<|> "api" :> "2" :> "search" :> "query" :> ReqBody '[JSON] QueryRequest :> Post '[PBJSON, JSON] QueryResponse
 
 server :: ServerT MonocleAPI AppM
-server = searchFields :<|> searchChangesQuery
+server =
+  searchFields
+    :<|> searchQuery

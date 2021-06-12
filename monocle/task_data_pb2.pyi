@@ -172,7 +172,7 @@ class TaskDataGetLastUpdatedResponse(google.protobuf.message.Message):
 
 global___TaskDataGetLastUpdatedResponse = TaskDataGetLastUpdatedResponse
 
-class NewTaskData(google.protobuf.message.Message):
+class TaskData(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     UPDATED_AT_FIELD_NUMBER: builtins.int
     CHANGE_URL_FIELD_NUMBER: builtins.int
@@ -235,7 +235,7 @@ class NewTaskData(google.protobuf.message.Message):
         ],
     ) -> None: ...
 
-global___NewTaskData = NewTaskData
+global___TaskData = TaskData
 
 class AddRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
@@ -250,7 +250,7 @@ class AddRequest(google.protobuf.message.Message):
     def items(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___NewTaskData
+        global___TaskData
     ]: ...
     def __init__(
         self,
@@ -258,7 +258,7 @@ class AddRequest(google.protobuf.message.Message):
         index: typing.Text = ...,
         crawler: typing.Text = ...,
         apikey: typing.Text = ...,
-        items: typing.Optional[typing.Iterable[global___NewTaskData]] = ...,
+        items: typing.Optional[typing.Iterable[global___TaskData]] = ...,
     ) -> None: ...
     def ClearField(
         self,

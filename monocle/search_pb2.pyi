@@ -176,7 +176,7 @@ class QueryError(google.protobuf.message.Message):
 
 global___QueryError = QueryError
 
-class ChangesQueryRequest(google.protobuf.message.Message):
+class QueryRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     INDEX_FIELD_NUMBER: builtins.int
     QUERY_FIELD_NUMBER: builtins.int
@@ -193,7 +193,7 @@ class ChangesQueryRequest(google.protobuf.message.Message):
         field_name: typing_extensions.Literal["index", b"index", "query", b"query"],
     ) -> None: ...
 
-global___ChangesQueryRequest = ChangesQueryRequest
+global___QueryRequest = QueryRequest
 
 class File(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
@@ -355,7 +355,7 @@ class Change(google.protobuf.message.Message):
     def task_data(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        monocle.task_data_pb2.NewTaskData
+        monocle.task_data_pb2.TaskData
     ]: ...
     def __init__(
         self,
@@ -385,7 +385,7 @@ class Change(google.protobuf.message.Message):
         commits: typing.Optional[typing.Iterable[global___Commit]] = ...,
         commits_count: builtins.int = ...,
         task_data: typing.Optional[
-            typing.Iterable[monocle.task_data_pb2.NewTaskData]
+            typing.Iterable[monocle.task_data_pb2.TaskData]
         ] = ...,
     ) -> None: ...
     def HasField(
@@ -486,7 +486,7 @@ class Changes(google.protobuf.message.Message):
 
 global___Changes = Changes
 
-class ChangesQueryResponse(google.protobuf.message.Message):
+class QueryResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ERROR_FIELD_NUMBER: builtins.int
     ITEMS_FIELD_NUMBER: builtins.int
@@ -516,7 +516,7 @@ class ChangesQueryResponse(google.protobuf.message.Message):
         self, oneof_group: typing_extensions.Literal["result", b"result"]
     ) -> typing_extensions.Literal["error", "items"]: ...
 
-global___ChangesQueryResponse = ChangesQueryResponse
+global___QueryResponse = QueryResponse
 
 class ChangesHistos(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...

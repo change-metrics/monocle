@@ -104,7 +104,7 @@ retry action =
 -- Worker implementation
 -------------------------------------------------------------------------------
 newtype TaskDataFetcher m = TaskDataFetcher
-  { runFetcher :: UTCTime -> Stream (Of NewTaskData) m ()
+  { runFetcher :: UTCTime -> Stream (Of TaskData) m ()
   }
 
 data ProcessResult = Amended | AmendError Text deriving stock (Show)
@@ -115,7 +115,7 @@ pattern AddSuccess = AddResponse Nothing
 pattern AddError :: Enumerated TaskDataCommitError -> AddResponse
 pattern AddError err = AddResponse (Just (AddResponseResultError err))
 
-processBatch :: (MonadIO m, MonadLog m) => ([NewTaskData] -> m AddResponse) -> [NewTaskData] -> m ProcessResult
+processBatch :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> [TaskData] -> m ProcessResult
 processBatch postFunc tds = do
   log $ LogPostData (length tds)
   resp <- postFunc tds
@@ -124,12 +124,12 @@ processBatch postFunc tds = do
     (AddError err) -> AmendError (show err)
     _ -> AmendError "Unknown error"
 
-process :: (MonadIO m, MonadLog m) => ([NewTaskData] -> m AddResponse) -> Stream (Of NewTaskData) m () -> m ()
+process :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m ()
 process postFunc =
   S.print
     . S.mapM (processBatch postFunc)
-    . S.mapped S.toList --   Convert to list (type is Stream (Of [NewTaskData]) m ())
-    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of NewTaskData) m) m ())
+    . S.mapped S.toList --   Convert to list (type is Stream (Of [TaskData]) m ())
+    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TaskData) m) m ())
 
 type ApiKey = Text
 
@@ -192,7 +192,7 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
       case resp of
         GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
         _ -> error $ "Could not got initial timesamp: " <> show resp
-    mkRequest :: [NewTaskData] -> AddRequest
+    mkRequest :: [TaskData] -> AddRequest
     mkRequest =
       AddRequest
         (toLazy indexName)

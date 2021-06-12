@@ -23,14 +23,14 @@ module Column = {
   @react.component
   let make = (~index, ~column, ~query: string) => {
     let (result, setResult) = React.useState(_ => None)
-    let handleOk = (resp: WebApi.axiosResponse<SearchTypes.changes_query_response>) =>
+    let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
     React.useEffect1(() => {
       switch column.query {
       | "" => ignore()
       | _ =>
         ignore(
-          WebApi.Search.changesQuery({
+          WebApi.Search.query({
             index: index,
             query: addQuery(column.query, query),
           }) |> Js.Promise.then_(handleOk),

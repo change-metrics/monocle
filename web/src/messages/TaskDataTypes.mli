@@ -35,7 +35,7 @@ type task_data_get_last_updated_response =
   | Error of task_data_get_last_updated_error
   | Timestamp of TimestampTypes.timestamp
 
-type new_task_data = {
+type task_data = {
   updated_at : TimestampTypes.timestamp option;
   change_url : string;
   ttype : string list;
@@ -51,7 +51,7 @@ type add_request = {
   index : string;
   crawler : string;
   apikey : string;
-  items : new_task_data list;
+  items : task_data list;
 }
 
 type add_response =
@@ -88,7 +88,7 @@ val default_task_data_get_last_updated_request :
 val default_task_data_get_last_updated_response : unit -> task_data_get_last_updated_response
 (** [default_task_data_get_last_updated_response ()] is the default value for type [task_data_get_last_updated_response] *)
 
-val default_new_task_data : 
+val default_task_data : 
   ?updated_at:TimestampTypes.timestamp option ->
   ?change_url:string ->
   ?ttype:string list ->
@@ -99,14 +99,14 @@ val default_new_task_data :
   ?priority:string ->
   ?score:int32 ->
   unit ->
-  new_task_data
-(** [default_new_task_data ()] is the default value for type [new_task_data] *)
+  task_data
+(** [default_task_data ()] is the default value for type [task_data] *)
 
 val default_add_request : 
   ?index:string ->
   ?crawler:string ->
   ?apikey:string ->
-  ?items:new_task_data list ->
+  ?items:task_data list ->
   unit ->
   add_request
 (** [default_add_request ()] is the default value for type [add_request] *)

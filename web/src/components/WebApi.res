@@ -38,20 +38,18 @@ module Search = {
 
   let fields = (request: SearchTypes.fields_request): axios<SearchTypes.fields_response> =>
     request->SearchBs.encode_fields_request
-    |> fieldsRaw(serverUrl ++ "/api/2/search_fields")
+    |> fieldsRaw(serverUrl ++ "/api/2/search/fields")
     |> Js.Promise.then_(resp =>
       {data: resp.data->SearchBs.decode_fields_response}->Js.Promise.resolve
     )
   @module("axios")
-  external changesQueryRaw: (string, 'a) => axios<'b> = "post"
+  external queryRaw: (string, 'a) => axios<'b> = "post"
 
-  let changesQuery = (request: SearchTypes.changes_query_request): axios<
-    SearchTypes.changes_query_response,
-  > =>
-    request->SearchBs.encode_changes_query_request
-    |> changesQueryRaw(serverUrl ++ "/api/2/search/changes")
+  let query = (request: SearchTypes.query_request): axios<SearchTypes.query_response> =>
+    request->SearchBs.encode_query_request
+    |> queryRaw(serverUrl ++ "/api/2/search/query")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->SearchBs.decode_changes_query_response}->Js.Promise.resolve
+      {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
     )
 }
 
