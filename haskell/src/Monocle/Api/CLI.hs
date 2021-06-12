@@ -4,6 +4,7 @@
 -- |
 module Monocle.Api.CLI (run) where
 
+import qualified Data.ByteString as BS
 import qualified Data.HashMap.Lazy as HM
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
@@ -42,6 +43,20 @@ authSettings publicUrl oauthName oauthId oauthSecret =
           )
         ]
 
+-- | Apply the wai-middleware-auth only on the paths starting with a /a/
+--
+-- type Application = Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+-- type Middleware = Application -> Application
+enforceLoginPath :: Wai.Middleware -> Wai.Middleware
+enforceLoginPath authMiddleware monocleApp = app'
+  where
+    app' request
+      | matchAuth (Wai.rawPathInfo request) = authMiddleware monocleApp request
+      | otherwise = monocleApp request
+    matchAuth path
+      | "/a/" `BS.isPrefixOf` path || "/auth" `BS.isPrefixOf` path = True
+      | otherwise = False
+
 run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- Config.loadConfig configFile
@@ -49,9 +64,10 @@ run port elkUrl configFile = do
 
   authMiddleware <- liftIO $ do
     envs <- traverse lookupEnv ["PUBLIC_URL", "OAUTH_NAME", "OAUTH_ID", "OAUTH_SECRET"]
-    case (toText <$> catMaybes envs) of
+    case toText <$> catMaybes envs of
       [publicUrl, oauthName, oauthId, oauthSecret] ->
-        Auth.mkAuthMiddleware (authSettings publicUrl oauthName oauthId oauthSecret)
+        enforceLoginPath
+          <$> Auth.mkAuthMiddleware (authSettings publicUrl oauthName oauthId oauthSecret)
       _ -> pure id
 
   liftIO $
