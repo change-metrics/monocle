@@ -228,7 +228,7 @@ protoToServant pb =
             <> ( Text.intercalate " :> "
                    . map (\c -> "\"" <> c <> "\"")
                    . Text.split (== '/')
-                   $ Text.drop 1 path
+                   $ Text.drop (Text.length "/api/2/") path
                )
             <> " :> ReqBody '[JSON] "
             <> (name <> "Request")
