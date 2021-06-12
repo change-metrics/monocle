@@ -46,7 +46,7 @@ message TaskDataGetLastUpdatedResponse {
   }
  }
 
-message NewTaskData {
+message TaskData {
   google.protobuf.Timestamp updated_at = 1;
   string change_url = 2;
   repeated string ttype = 3;
@@ -62,7 +62,7 @@ message AddRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
-  repeated NewTaskData items = 4;
+  repeated TaskData items = 4;
 }
 
 message AddResponse {

@@ -839,39 +839,37 @@ instance HsJSONPB.ToSchema QueryError where
             }
         )
 
-data ChangesQueryRequest = ChangesQueryRequest
-  { changesQueryRequestIndex ::
-      Hs.Text,
-    changesQueryRequestQuery :: Hs.Text
+data QueryRequest = QueryRequest
+  { queryRequestIndex :: Hs.Text,
+    queryRequestQuery :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangesQueryRequest where
-  nameOf _ = (Hs.fromString "ChangesQueryRequest")
+instance HsProtobuf.Named QueryRequest where
+  nameOf _ = (Hs.fromString "QueryRequest")
 
-instance HsProtobuf.HasDefault ChangesQueryRequest
+instance HsProtobuf.HasDefault QueryRequest
 
-instance HsProtobuf.Message ChangesQueryRequest where
+instance HsProtobuf.Message QueryRequest where
   encodeMessage
     _
-    ChangesQueryRequest
-      { changesQueryRequestIndex =
-          changesQueryRequestIndex,
-        changesQueryRequestQuery = changesQueryRequestQuery
+    QueryRequest
+      { queryRequestIndex = queryRequestIndex,
+        queryRequestQuery = queryRequestQuery
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                changesQueryRequestIndex
+                queryRequestIndex
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                changesQueryRequestQuery
+                queryRequestQuery
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure ChangesQueryRequest)
+    (Hs.pure QueryRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -897,44 +895,42 @@ instance HsProtobuf.Message ChangesQueryRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB ChangesQueryRequest where
-  toJSONPB (ChangesQueryRequest f1 f2) =
+instance HsJSONPB.ToJSONPB QueryRequest where
+  toJSONPB (QueryRequest f1 f2) =
     (HsJSONPB.object ["index" .= f1, "query" .= f2])
-  toEncodingPB (ChangesQueryRequest f1 f2) =
+  toEncodingPB (QueryRequest f1 f2) =
     (HsJSONPB.pairs ["index" .= f1, "query" .= f2])
 
-instance HsJSONPB.FromJSONPB ChangesQueryRequest where
+instance HsJSONPB.FromJSONPB QueryRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangesQueryRequest"
+        "QueryRequest"
         ( \obj ->
-            (Hs.pure ChangesQueryRequest) <*> obj .: "index"
-              <*> obj .: "query"
+            (Hs.pure QueryRequest) <*> obj .: "index" <*> obj .: "query"
         )
     )
 
-instance HsJSONPB.ToJSON ChangesQueryRequest where
+instance HsJSONPB.ToJSON QueryRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangesQueryRequest where
+instance HsJSONPB.FromJSON QueryRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangesQueryRequest where
+instance HsJSONPB.ToSchema QueryRequest where
   declareNamedSchema _ =
     do
       let declare_index = HsJSONPB.declareSchemaRef
-      changesQueryRequestIndex <- declare_index Proxy.Proxy
+      queryRequestIndex <- declare_index Proxy.Proxy
       let declare_query = HsJSONPB.declareSchemaRef
-      changesQueryRequestQuery <- declare_query Proxy.Proxy
+      queryRequestQuery <- declare_query Proxy.Proxy
       let _ =
-            Hs.pure ChangesQueryRequest
-              <*> HsJSONPB.asProxy declare_index
+            Hs.pure QueryRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_query
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesQueryRequest",
+                Hs.Just "QueryRequest",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -944,8 +940,8 @@ instance HsJSONPB.ToSchema ChangesQueryRequest where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("index", changesQueryRequestIndex),
-                          ("query", changesQueryRequestQuery)
+                        [ ("index", queryRequestIndex),
+                          ("query", queryRequestQuery)
                         ]
                   }
             }
@@ -1394,7 +1390,7 @@ data Change = Change
     changeChangedFilesCount :: Hs.Word32,
     changeCommits :: Hs.Vector Monocle.Search.Commit,
     changeCommitsCount :: Hs.Word32,
-    changeTaskData :: Hs.Vector Monocle.TaskData.NewTaskData
+    changeTaskData :: Hs.Vector Monocle.TaskData.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1558,8 +1554,8 @@ instance HsProtobuf.Message Change where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 70)
-                ( Hs.coerce @(Hs.Vector Monocle.TaskData.NewTaskData)
-                    @(HsProtobuf.NestedVec Monocle.TaskData.NewTaskData)
+                ( Hs.coerce @(Hs.Vector Monocle.TaskData.TaskData)
+                    @(HsProtobuf.NestedVec Monocle.TaskData.TaskData)
                     changeTaskData
                 )
             )
@@ -1694,8 +1690,8 @@ instance HsProtobuf.Message Change where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 61)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.NewTaskData))
-              @(_ (Hs.Vector Monocle.TaskData.NewTaskData))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.TaskData))
+              @(_ (Hs.Vector Monocle.TaskData.TaskData))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 70)
@@ -1888,7 +1884,7 @@ instance HsProtobuf.Message Change where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_task_data" Hs.:| ["NewTaskData"]))
+                      (HsProtobuf.Path ("monocle_task_data" Hs.:| ["TaskData"]))
                   )
               )
           )
@@ -2332,30 +2328,27 @@ instance HsJSONPB.ToSchema Changes where
             }
         )
 
-newtype ChangesQueryResponse = ChangesQueryResponse
-  { changesQueryResponseResult ::
-      Hs.Maybe ChangesQueryResponseResult
+newtype QueryResponse = QueryResponse
+  { queryResponseResult ::
+      Hs.Maybe QueryResponseResult
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangesQueryResponse where
-  nameOf _ = (Hs.fromString "ChangesQueryResponse")
+instance HsProtobuf.Named QueryResponse where
+  nameOf _ = (Hs.fromString "QueryResponse")
 
-instance HsProtobuf.HasDefault ChangesQueryResponse
+instance HsProtobuf.HasDefault QueryResponse
 
-instance HsProtobuf.Message ChangesQueryResponse where
+instance HsProtobuf.Message QueryResponse where
   encodeMessage
     _
-    ChangesQueryResponse
-      { changesQueryResponseResult =
-          changesQueryResponseResult
-      } =
+    QueryResponse {queryResponseResult = queryResponseResult} =
       ( Hs.mconcat
-          [ case changesQueryResponseResult of
+          [ case queryResponseResult of
               Hs.Nothing -> Hs.mempty
               Hs.Just x ->
                 case x of
-                  ChangesQueryResponseResultError y ->
+                  QueryResponseResultError y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 1)
                         ( Hs.coerce @(Hs.Maybe Monocle.Search.QueryError)
@@ -2363,7 +2356,7 @@ instance HsProtobuf.Message ChangesQueryResponse where
                             (Hs.Just y)
                         )
                     )
-                  ChangesQueryResponseResultItems y ->
+                  QueryResponseResultItems y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 2)
                         ( Hs.coerce @(Hs.Maybe Monocle.Search.Changes)
@@ -2374,18 +2367,18 @@ instance HsProtobuf.Message ChangesQueryResponse where
           ]
       )
   decodeMessage _ =
-    (Hs.pure ChangesQueryResponse)
+    (Hs.pure QueryResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
               [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.fmap ChangesQueryResponseResultError))
+                  (Hs.pure (Hs.fmap QueryResponseResultError))
                     <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.QueryError))
                             @(_ (Hs.Maybe Monocle.Search.QueryError))
                             HsProtobuf.decodeMessageField
                         )
                 ),
                 ( (HsProtobuf.FieldNumber 2),
-                  (Hs.pure (Hs.fmap ChangesQueryResponseResultItems))
+                  (Hs.pure (Hs.fmap QueryResponseResultItems))
                     <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.Changes))
                             @(_ (Hs.Maybe Monocle.Search.Changes))
                             HsProtobuf.decodeMessageField
@@ -2395,15 +2388,13 @@ instance HsProtobuf.Message ChangesQueryResponse where
           )
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB ChangesQueryResponse where
-  toJSONPB (ChangesQueryResponse f1_or_f2) =
+instance HsJSONPB.ToJSONPB QueryResponse where
+  toJSONPB (QueryResponse f1_or_f2) =
     ( HsJSONPB.object
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (ChangesQueryResponseResultError f1) ->
-                        (HsJSONPB.pair "error" f1)
-                      Hs.Just (ChangesQueryResponseResultItems f2) ->
-                        (HsJSONPB.pair "items" f2)
+                      Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (QueryResponseResultItems f2) -> (HsJSONPB.pair "items" f2)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2415,14 +2406,12 @@ instance HsJSONPB.ToJSONPB ChangesQueryResponse where
           )
         ]
     )
-  toEncodingPB (ChangesQueryResponse f1_or_f2) =
+  toEncodingPB (QueryResponse f1_or_f2) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (ChangesQueryResponseResultError f1) ->
-                        (HsJSONPB.pair "error" f1)
-                      Hs.Just (ChangesQueryResponseResultItems f2) ->
-                        (HsJSONPB.pair "items" f2)
+                      Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (QueryResponseResultItems f2) -> (HsJSONPB.pair "items" f2)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2433,17 +2422,17 @@ instance HsJSONPB.ToJSONPB ChangesQueryResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB ChangesQueryResponse where
+instance HsJSONPB.FromJSONPB QueryResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangesQueryResponse"
+        "QueryResponse"
         ( \obj ->
-            (Hs.pure ChangesQueryResponse)
+            (Hs.pure QueryResponse)
               <*> ( let parseResult parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. ChangesQueryResponseResultError
+                            [ Hs.Just Hs.. QueryResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error"),
-                              Hs.Just Hs.. ChangesQueryResponseResultItems
+                              Hs.Just Hs.. QueryResponseResultItems
                                 <$> (HsJSONPB.parseField parseObj "items"),
                               Hs.pure Hs.Nothing
                             ]
@@ -2455,25 +2444,23 @@ instance HsJSONPB.FromJSONPB ChangesQueryResponse where
         )
     )
 
-instance HsJSONPB.ToJSON ChangesQueryResponse where
+instance HsJSONPB.ToJSON QueryResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangesQueryResponse where
+instance HsJSONPB.FromJSON QueryResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangesQueryResponse where
+instance HsJSONPB.ToSchema QueryResponse where
   declareNamedSchema _ =
     do
       let declare_result = HsJSONPB.declareSchemaRef
-      changesQueryResponseResult <- declare_result Proxy.Proxy
-      let _ =
-            Hs.pure ChangesQueryResponse
-              <*> HsJSONPB.asProxy declare_result
+      queryResponseResult <- declare_result Proxy.Proxy
+      let _ = Hs.pure QueryResponse <*> HsJSONPB.asProxy declare_result
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesQueryResponse",
+                Hs.Just "QueryResponse",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -2483,36 +2470,36 @@ instance HsJSONPB.ToSchema ChangesQueryResponse where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("result", changesQueryResponseResult)]
+                        [("result", queryResponseResult)]
                   }
             }
         )
 
-data ChangesQueryResponseResult
-  = ChangesQueryResponseResultError Monocle.Search.QueryError
-  | ChangesQueryResponseResultItems Monocle.Search.Changes
+data QueryResponseResult
+  = QueryResponseResultError Monocle.Search.QueryError
+  | QueryResponseResultItems Monocle.Search.Changes
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangesQueryResponseResult where
-  nameOf _ = (Hs.fromString "ChangesQueryResponseResult")
+instance HsProtobuf.Named QueryResponseResult where
+  nameOf _ = (Hs.fromString "QueryResponseResult")
 
-instance HsJSONPB.ToSchema ChangesQueryResponseResult where
+instance HsJSONPB.ToSchema QueryResponseResult where
   declareNamedSchema _ =
     do
       let declare_error = HsJSONPB.declareSchemaRef
-      changesQueryResponseResultError <- declare_error Proxy.Proxy
+      queryResponseResultError <- declare_error Proxy.Proxy
       let _ =
-            Hs.pure ChangesQueryResponseResultError
+            Hs.pure QueryResponseResultError
               <*> HsJSONPB.asProxy declare_error
       let declare_items = HsJSONPB.declareSchemaRef
-      changesQueryResponseResultItems <- declare_items Proxy.Proxy
+      queryResponseResultItems <- declare_items Proxy.Proxy
       let _ =
-            Hs.pure ChangesQueryResponseResultItems
+            Hs.pure QueryResponseResultItems
               <*> HsJSONPB.asProxy declare_items
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesQueryResponseResult",
+                Hs.Just "QueryResponseResult",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -2522,8 +2509,8 @@ instance HsJSONPB.ToSchema ChangesQueryResponseResult where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("error", changesQueryResponseResultError),
-                          ("items", changesQueryResponseResultItems)
+                        [ ("error", queryResponseResultError),
+                          ("items", queryResponseResultItems)
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
                     HsJSONPB._schemaMaxProperties = Hs.Just 1

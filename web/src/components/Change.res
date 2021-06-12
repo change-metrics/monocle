@@ -10,7 +10,7 @@ let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
   ts->Belt.Option.getExn->Belt.Option.getExn
 
 module TaskData = {
-  type t = TaskDataTypes.new_task_data
+  type t = TaskDataTypes.task_data
 
   module TaskType = {
     @react.component
@@ -43,7 +43,7 @@ module TaskData = {
 
   module TaskLink = {
     @react.component
-    let make = (~td: TaskDataTypes.new_task_data) =>
+    let make = (~td: TaskDataTypes.task_data) =>
       switch td.url {
       | url if Js.String.indexOf("show_bug.cgi", url) >= 0 =>
         <a href=url> <Patternfly.Icons.ExternalLinkAlt /> {(" rhbz#" ++ td.tid)->str} </a>

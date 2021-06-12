@@ -39,7 +39,7 @@ type query_error = {
   position : int32;
 }
 
-type changes_query_request = {
+type query_request = {
   index : string;
   query : string;
 }
@@ -89,14 +89,14 @@ and change = {
   changed_files_count : int32;
   commits : commit list;
   commits_count : int32;
-  task_data : TaskDataTypes.new_task_data list;
+  task_data : TaskDataTypes.task_data list;
 }
 
 type changes = {
   changes : change list;
 }
 
-type changes_query_response =
+type query_response =
   | Error of query_error
   | Items of changes
 
@@ -194,10 +194,10 @@ let rec default_query_error
   position;
 }
 
-let rec default_changes_query_request 
+let rec default_query_request 
   ?index:((index:string) = "")
   ?query:((query:string) = "")
-  () : changes_query_request  = {
+  () : query_request  = {
   index;
   query;
 }
@@ -259,7 +259,7 @@ and default_change
   ?changed_files_count:((changed_files_count:int32) = 0l)
   ?commits:((commits:commit list) = [])
   ?commits_count:((commits_count:int32) = 0l)
-  ?task_data:((task_data:TaskDataTypes.new_task_data list) = [])
+  ?task_data:((task_data:TaskDataTypes.task_data list) = [])
   () : change  = {
   change_id;
   author;
@@ -294,7 +294,7 @@ let rec default_changes
   changes;
 }
 
-let rec default_changes_query_response () : changes_query_response = Error (default_query_error ())
+let rec default_query_response () : query_response = Error (default_query_error ())
 
 let rec default_changes_histos_event 
   ?doc_count:((doc_count:int32) = 0l)

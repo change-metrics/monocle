@@ -25,10 +25,10 @@ searchSuggestions :: (MonadThrow m, MonadIO m) => MonocleClient -> SearchSuggest
 searchSuggestions = monocleReq "api/1/suggestions"
 
 searchFields :: (MonadThrow m, MonadIO m) => MonocleClient -> FieldsRequest -> m FieldsResponse
-searchFields = monocleReq "api/2/search_fields"
+searchFields = monocleReq "api/2/search/fields"
 
-searchChangesQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> ChangesQueryRequest -> m ChangesQueryResponse
-searchChangesQuery = monocleReq "api/2/search/changes"
+searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
+searchQuery = monocleReq "api/2/search/query"
 
 taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
 taskDataCommit = monocleReq "api/1/task_data_commit"
