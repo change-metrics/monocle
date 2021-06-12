@@ -10,6 +10,7 @@ import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
+import qualified Monocle.Auth as AuthPB
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import Monocle.Prelude
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
@@ -223,3 +224,10 @@ searchChangesLifecycle indexName queryText = do
 
 searchQueryAuth :: Vault -> QueryRequest -> AppM QueryResponse
 searchQueryAuth vault = searchQuery (Auth.getAuthUserVault vault)
+
+authWhoAmI :: Vault -> AuthPB.WhoAmIRequest -> AppM AuthPB.WhoAmIResponse
+authWhoAmI vault = const $ pure response
+  where
+    response :: AuthPB.WhoAmIResponse
+    response = AuthPB.WhoAmIResponse $ toLazy $ show user
+    user = fromMaybe (error "Authentication is missing") (Auth.getAuthUserFromVault vault)

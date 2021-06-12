@@ -72,6 +72,29 @@ function getQueryResults(queryParams) {
   })
 }
 
+function getAuth(authCB, anonCB) {
+  // We use fetch to detect redirection
+  fetch(server + '/api/2/a/whoami', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: '{}',
+    redirect: 'manual'
+  })
+    .then((res) => {
+      if (res.type === 'opaqueredirect') {
+        // The session is not authenticated, display banner
+        anonCB()
+      } else if (res.ok) {
+        authCB(res)
+      } else {
+        console.error('whoami get failed', res)
+      }
+    })
+    .catch((_) => console.error('whoami get threw'))
+}
+
 function getProjects(request) {
   return axios.post(baseurl + '/get_projects', request)
 }
@@ -93,6 +116,7 @@ function getLoggedUser() {
 }
 
 export {
+  getAuth,
   getQueryResults,
   getIndices,
   getLoggedUser,
