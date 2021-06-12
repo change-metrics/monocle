@@ -91,6 +91,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
+    /api/2/a/search/query:
+        post:
+            operationId: Search_QueryAuth
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/QueryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/QueryResponse'
     /api/2/search/fields:
         post:
             operationId: Search_Fields

@@ -21,13 +21,13 @@ import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Network.Wai.Middleware.Auth as Auth
+import qualified Network.Wai.Middleware.Auth.Provider as Auth
 import Proto3.Suite (Enumerated (..))
 import Servant.API.Vault (Vault)
 
-searchQuery :: Vault -> QueryRequest -> AppM QueryResponse
-searchQuery vault request = do
-  let user = Auth.getAuthUserVault vault
-  putTextLn $ "vaul user: " <> show user
+searchQuery :: Maybe Auth.AuthUser -> QueryRequest -> AppM QueryResponse
+searchQuery auth request = do
+  putTextLn $ "vaul user: " <> show auth
   Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
   SearchPB.QueryResponse . Just <$> response bhEnv now
@@ -101,8 +101,8 @@ searchQuery vault request = do
           taskDataScore = fromInteger $ toInteger $ tdScore td
        in TaskDataPB.TaskData {..}
 
-searchFields :: Vault -> FieldsRequest -> AppM FieldsResponse
-searchFields _vault = const $ pure response
+searchFields :: Maybe Auth.AuthUser -> FieldsRequest -> AppM FieldsResponse
+searchFields _auth = const $ pure response
   where
     response :: FieldsResponse
     response = FieldsResponse . V.fromList . map toResult $ Q.fields
@@ -220,3 +220,6 @@ searchChangesLifecycle indexName queryText = do
           changesLifecycleSelfMerged = selfMergedCount
           changesLifecycleTests = 0
        in SearchPB.ChangesLifecycle {..}
+
+searchQueryAuth :: Vault -> QueryRequest -> AppM QueryResponse
+searchQueryAuth vault = searchQuery (Auth.getAuthUserVault vault)

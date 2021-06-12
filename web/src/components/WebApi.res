@@ -51,6 +51,15 @@ module Search = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external queryAuthRaw: (string, 'a) => axios<'b> = "post"
+
+  let queryAuth = (request: SearchTypes.query_request): axios<SearchTypes.query_response> =>
+    request->SearchBs.encode_query_request
+    |> queryAuthRaw(serverUrl ++ "/api/2/a/search/query")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
+    )
 }
 
 module TaskData = {
