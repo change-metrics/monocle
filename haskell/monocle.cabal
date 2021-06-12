@@ -70,9 +70,11 @@ library
                      , tasty-hunit                < 0.11
                      , time                       < 1.10
                      , transformers
+                     , vault
                      , wai                        ^>= 3.2.3
                      , wai-cors                   ^>= 0.2
                      , wai-logger                 ^>= 2.3
+                     , wai-middleware-auth        ^>= 0.2.5
                      , warp                       ^>= 3.3.15
                      , yaml                       ^>= 0.11
   hs-source-dirs:      src, codegen

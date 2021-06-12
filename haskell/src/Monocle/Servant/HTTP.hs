@@ -16,10 +16,8 @@ import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 
 type MonocleAPI =
-  "api" :> "2" :> "search_fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
-    :<|> "api" :> "2" :> "search" :> "changes" :> ReqBody '[JSON] ChangesQueryRequest :> Post '[PBJSON, JSON] ChangesQueryResponse
+  "api" :> "2" :> "search_fields" :> Vault :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
+    :<|> "api" :> "2" :> "search" :> "changes" :> Vault :> ReqBody '[JSON] ChangesQueryRequest :> Post '[PBJSON, JSON] ChangesQueryResponse
 
 server :: ServerT MonocleAPI AppM
-server =
-  searchFields
-    :<|> searchChangesQuery
+server = searchFields :<|> searchChangesQuery

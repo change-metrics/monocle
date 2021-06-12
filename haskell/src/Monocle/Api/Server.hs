@@ -20,10 +20,14 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
+import qualified Network.Wai.Middleware.Auth as Auth
 import Proto3.Suite (Enumerated (..))
+import Servant.API.Vault (Vault)
 
-searchChangesQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
-searchChangesQuery request = do
+searchChangesQuery :: Vault -> ChangesQueryRequest -> AppM ChangesQueryResponse
+searchChangesQuery vault request = do
+  let user = Auth.getAuthUserVault vault
+  putTextLn $ "vaul user: " <> show user
   Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
   SearchPB.ChangesQueryResponse . Just <$> response bhEnv now
@@ -97,8 +101,8 @@ searchChangesQuery request = do
           newTaskDataScore = fromInteger $ toInteger $ tdScore td
        in TaskDataPB.NewTaskData {..}
 
-searchFields :: FieldsRequest -> AppM FieldsResponse
-searchFields = const $ pure response
+searchFields :: Vault -> FieldsRequest -> AppM FieldsResponse
+searchFields _vault = const $ pure response
   where
     response :: FieldsResponse
     response = FieldsResponse . V.fromList . map toResult $ Q.fields
