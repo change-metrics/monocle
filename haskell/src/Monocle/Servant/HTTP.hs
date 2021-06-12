@@ -10,19 +10,22 @@
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
 import Data.Maybe (Maybe (Nothing))
-import Monocle.Api.Server (searchFields, searchQuery, searchQueryAuth)
+import Monocle.Api.Server (authWhoAmI, searchFields, searchQuery, searchQueryAuth)
+import Monocle.Auth (WhoAmIRequest, WhoAmIResponse)
 import Monocle.Search (FieldsRequest, FieldsResponse, QueryRequest, QueryResponse)
 import Monocle.Servant.Env
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 
 type MonocleAPI =
-  "search" :> "fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
+  "a" :> "whoami" :> Vault :> ReqBody '[JSON] WhoAmIRequest :> Post '[PBJSON, JSON] WhoAmIResponse
+    :<|> "search" :> "fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
     :<|> "search" :> "query" :> ReqBody '[JSON] QueryRequest :> Post '[PBJSON, JSON] QueryResponse
     :<|> "a" :> "search" :> "query" :> Vault :> ReqBody '[JSON] QueryRequest :> Post '[PBJSON, JSON] QueryResponse
 
 server :: ServerT MonocleAPI AppM
 server =
-  searchFields Nothing
+  authWhoAmI
+    :<|> searchFields Nothing
     :<|> searchQuery Nothing
     :<|> searchQueryAuth

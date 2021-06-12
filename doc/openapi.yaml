@@ -107,6 +107,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/QueryResponse'
+    /api/2/a/whoami:
+        post:
+            operationId: Auth_WhoAmI
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/WhoAmIRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WhoAmIResponse'
     /api/2/search/fields:
         post:
             operationId: Search_Fields
@@ -410,3 +426,12 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
+        WhoAmIRequest:
+            properties:
+                noop:
+                    type: string
+            description: Empty messages result in bad codegen, so we have to use a fake noop field
+        WhoAmIResponse:
+            properties:
+                userid:
+                    type: string

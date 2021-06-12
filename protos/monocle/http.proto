@@ -10,9 +10,19 @@ option go_package = "monocle/http";
 
 import "google/api/annotations.proto";
 
+import "monocle/auth.proto";
 import "monocle/config.proto";
 import "monocle/search.proto";
 import "monocle/task_data.proto";
+
+service Auth {
+  rpc WhoAmI(monocle_auth.WhoAmIRequest) returns (monocle_auth.WhoAmIResponse) {
+    option (google.api.http) = {
+      post: "/api/2/a/whoami"
+      body: "*"
+    };
+  }
+}
 
 service Config {
   // Return the list of projects

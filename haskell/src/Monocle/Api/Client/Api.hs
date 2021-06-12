@@ -11,9 +11,13 @@ module Monocle.Api.Client.Api where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Monocle.Api.Client.Internal (MonocleClient, monocleReq)
+import Monocle.Auth
 import Monocle.Config
 import Monocle.Search
 import Monocle.TaskData
+
+authWhoAmI :: (MonadThrow m, MonadIO m) => MonocleClient -> WhoAmIRequest -> m WhoAmIResponse
+authWhoAmI = monocleReq "api/2/a/whoami"
 
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/1/get_projects"

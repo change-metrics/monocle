@@ -83,6 +83,7 @@ protoToHaskell = fromProto ALL headers mkService
         "import Control.Monad.Catch (MonadThrow)",
         "import Control.Monad.IO.Class (MonadIO)",
         "import Monocle.Api.Client.Internal (MonocleClient, monocleReq)",
+        "import Monocle.Auth",
         "import Monocle.Config",
         "import Monocle.TaskData",
         "import Monocle.Search"

@@ -1,0 +1,15 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_auth;
+option go_package = "monocle/auth";
+
+// Empty messages result in bad codegen, so we have to use a fake noop field
+message WhoAmIRequest {
+  string noop = 1;
+}
+
+message WhoAmIResponse {
+  string userid = 1;
+}
