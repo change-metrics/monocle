@@ -35,13 +35,11 @@ authSettings publicUrl oauthName oauthId oauthSecret =
     . Auth.setAuthSessionAge (3600 * 24 * 7)
     $ Auth.defaultAuthSettings
   where
-    providers =
-      HM.fromList
-        [ ( "github",
-            Auth.Provider $
-              Auth.mkGithubProvider oauthName oauthId oauthSecret [".*"] Nothing
-          )
-        ]
+    emailAllowList = [".*"]
+    ghProvider =
+      Auth.Provider $
+        Auth.mkGithubProvider oauthName oauthId oauthSecret emailAllowList Nothing
+    providers = HM.fromList [("github", ghProvider)]
 
 -- | Apply the wai-middleware-auth only on the paths starting with a /a/
 --
@@ -57,18 +55,21 @@ enforceLoginPath authMiddleware monocleApp = app'
       | "/a/" `BS.isPrefixOf` path || "/auth" `BS.isPrefixOf` path = True
       | otherwise = False
 
+createAuthMiddleware :: IO Wai.Middleware
+createAuthMiddleware = do
+  envs <- traverse lookupEnv ["PUBLIC_URL", "OAUTH_NAME", "OAUTH_ID", "OAUTH_SECRET"]
+  case toText <$> catMaybes envs of
+    [publicUrl, oauthName, oauthId, oauthSecret] ->
+      enforceLoginPath
+        <$> Auth.mkAuthMiddleware (authSettings publicUrl oauthName oauthId oauthSecret)
+    _ -> pure id
+
 run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
 
-  authMiddleware <- liftIO $ do
-    envs <- traverse lookupEnv ["PUBLIC_URL", "OAUTH_NAME", "OAUTH_ID", "OAUTH_SECRET"]
-    case toText <$> catMaybes envs of
-      [publicUrl, oauthName, oauthId, oauthSecret] ->
-        enforceLoginPath
-          <$> Auth.mkAuthMiddleware (authSettings publicUrl oauthName oauthId oauthSecret)
-      _ -> pure id
+  authMiddleware <- liftIO $ createAuthMiddleware
 
   liftIO $
     withStdoutLogger $ \aplogger -> do
