@@ -17,6 +17,9 @@
 # base image
 FROM quay.io/change-metrics/builder
 
+# TODO: remove when builder is updated
+RUN cabal v2-update
+
 # Build project
 COPY haskell/ /build
 RUN cabal v2-install -v1 exe:monocle-api
