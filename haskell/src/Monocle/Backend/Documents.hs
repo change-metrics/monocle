@@ -11,7 +11,9 @@ import Data.Time.Clock (UTCTime)
 import Relude
 
 data Author = Author
-  {authorMuid :: LText}
+  { authorMuid :: LText,
+    authorUid :: LText
+  }
   deriving (Show, Eq, Generic)
 
 instance ToJSON Author where
@@ -73,37 +75,36 @@ instance FromJSON TaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChange = ELKChange
-  { elkchangeId :: Text,
+  { elkchangeId :: LText,
     elkchangeNumber :: Int,
-    elkchangeType :: Text,
-    elkchangeChangeId :: Text,
-    elkchangeTitle :: Text,
-    elkchangeText :: Text,
-    elkchangeUrl :: Text,
+    elkchangeType :: LText,
+    elkchangeChangeId :: LText,
+    elkchangeTitle :: LText,
+    elkchangeText :: LText,
+    elkchangeUrl :: LText,
     elkchangeCommitCount :: Word32,
     elkchangeAdditions :: Word32,
     elkchangeDeletions :: Word32,
     elkchangeChangedFilesCount :: Word32,
     elkchangeChangedFiles :: [File],
     elkchangeCommits :: [Commit],
-    elkchangeRepositoryPrefix :: Text,
-    elkchangeRepositoryShortname :: Text,
-    elkchangeRepositoryFullname :: Text,
+    elkchangeRepositoryPrefix :: LText,
+    elkchangeRepositoryShortname :: LText,
+    elkchangeRepositoryFullname :: LText,
     elkchangeAuthor :: Author,
-    elkchangeCommitter :: Maybe Author,
     elkchangeMergedBy :: Maybe Author,
-    elkchangeBranch :: Text,
-    elkchangeTargetBranch :: Text,
+    elkchangeBranch :: LText,
+    elkchangeTargetBranch :: LText,
     elkchangeCreatedAt :: UTCTime,
     elkchangeMergedAt :: Maybe UTCTime,
     elkchangeUpdatedAt :: UTCTime,
     elkchangeClosedAt :: Maybe UTCTime,
-    elkchangeState :: Text,
+    elkchangeState :: LText,
     elkchangeDuration :: Maybe Int,
-    elkchangeMergeable :: Text,
-    elkchangeLabels :: [Text],
+    elkchangeMergeable :: LText,
+    elkchangeLabels :: [LText],
     elkchangeAssignees :: [Author],
-    elkchangeApproval :: Maybe [Text],
+    elkchangeApproval :: Maybe [LText],
     elkchangeDraft :: Bool,
     elkchangeSelfMerged :: Maybe Bool,
     elkchangeTasksData :: Maybe [TaskData]
@@ -114,4 +115,39 @@ instance ToJSON ELKChange where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 instance FromJSON ELKChange where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+data ELKChangeEvent = ELKChangeEvent
+  { elkchangeeventId :: Text,
+    elkchangeeventNumber :: Int,
+    elkchangeeventType :: Text,
+    elkchangeeventChangeId :: Text,
+    elkchangeeventUrl :: Text,
+    elkchangeeventChangedFiles :: Maybe [Text],
+    elkchangeeventRepositoryPrefix :: Text,
+    elkchangeeventRepositoryShortname :: Text,
+    elkchangeeventRepositoryFullname :: Text,
+    elkchangeeventAuthor :: Author,
+    elkchangeeventOnAuthor :: Author,
+    elkchangeeventBranch :: Text,
+    elkchangeeventOnCreatedAt :: UTCTime,
+    elkchangeeventMergedAt :: Maybe UTCTime
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKChangeEvent where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKChangeEvent where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+newtype ELKCrawlerMetadata = ELKCrawlerMetadata
+  { elkcmLastCommitAt :: UTCTime
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKCrawlerMetadata where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKCrawlerMetadata where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase

@@ -1,14 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 module Monocle.Backend.Index where
 
 import Data.Aeson
+import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
+import Monocle.Change
 import qualified Network.HTTP.Client as HTTP
+import qualified Network.HTTP.Types.Status as NHTS
+import Google.Protobuf.Timestamp as T
 import Relude
 
 type MServerName = Text
@@ -241,6 +246,73 @@ createChangesIndex serverUrl index = do
     True <- BH.indexExists index
     pure (bhEnv, index)
 
+toELKChange :: Change -> ELKChange
+toELKChange Change {..} =
+  ELKChange
+    { elkchangeId = changeId,
+      elkchangeType = "Change",
+      elkchangeTitle = changeTitle,
+      elkchangeUrl = changeUrl,
+      elkchangeCommitCount = fromInteger . toInteger $ changeCommitCount,
+      elkchangeNumber = fromInteger . toInteger $ changeNumber,
+      elkchangeChangeId = changeChangeId,
+      elkchangeText = changeText,
+      elkchangeAdditions = fromInteger $ toInteger changeAdditions,
+      elkchangeDeletions = fromInteger $ toInteger changeDeletions,
+      elkchangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
+      elkchangeChangedFiles = map toFile $ toList changeChangedFiles,
+      elkchangeCommits = map toCommit $ toList changeCommits,
+      elkchangeRepositoryPrefix = changeRepositoryPrefix,
+      elkchangeRepositoryFullname = changeRepositoryFullname,
+      elkchangeRepositoryShortname = changeRepositoryShortname,
+      elkchangeAuthor = toAuthor changeAuthor,
+      elkchangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
+      elkchangeBranch = changeBranch,
+      elkchangeTargetBranch = changeTargetBranch,
+      elkchangeCreatedAt = T.toUTCTime $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
+      elkchangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
+      elkchangeUpdatedAt = T.toUTCTime $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
+      elkchangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
+      elkchangeState = changeState,
+      elkchangeDuration = toDuration <$> changeOptionalDuration,
+      elkchangeMergeable = changeMergeable,
+      elkchangeLabels = toList changeLabels,
+      elkchangeAssignees = map toAuthor $ toList $ fmap Just changeAssignees,
+      elkchangeApproval = Just $ toList changeApprovals,
+      elkchangeDraft = changeDraft,
+      elkchangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
+      elkchangeTasksData = Nothing
+    }
+  where
+    toFile :: ChangedFile -> File
+    toFile ChangedFile {..} =
+      File (intC changedFileAdditions) (intC changedFileDeletions) changedFilePath
+    intC = fromInteger . toInteger
+    toCommit :: Monocle.Change.Commit -> Monocle.Backend.Documents.Commit
+    toCommit Monocle.Change.Commit {..} =
+      Monocle.Backend.Documents.Commit
+        { elkcommitSha = commitSha,
+          elkcommitAuthor = toAuthor commitAuthor,
+          elkcommitCommitter = toAuthor commitCommitter,
+          elkcommitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
+          elkcommitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
+          elkcommitDeletions = intC commitDeletions,
+          elkcommitAdditions = intC commitAdditions,
+          elkcommitTitle = commitTitle
+        }
+    toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
+    toAuthor (Just Monocle.Change.Ident {..}) =
+      Monocle.Backend.Documents.Author
+        { authorMuid = identMuid,
+          authorUid = identUid
+        }
+    toAuthor Nothing = error "Ident field is mandatory"
+    toMergedByAuthor (ChangeOptionalMergedByMergedBy m) = toAuthor (Just m)
+    toMergedAt (ChangeOptionalMergedAtMergedAt t) = T.toUTCTime t
+    toClosedAt (ChangeOptionalClosedAtClosedAt t) = T.toUTCTime t
+    toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
+    toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
+
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
@@ -256,3 +328,71 @@ indexChanges bhEnv index changes = BH.runBH bhEnv $ do
     toBulkIndex change =
       BH.BulkIndex index (getChangeDocId change) (toJSON change)
     ensureType change = change {elkchangeType = "Change"}
+
+type CrawlerMetadataID = BH.DocId
+
+getCrawlerMetadataID :: Entity -> CrawlerMetadataID
+getCrawlerMetadataID entity = BH.DocId $ getEntityName entity
+
+statusCheck :: (Int -> c) -> HTTP.Response body -> c
+statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
+
+isNotFound :: BH.Reply -> Bool
+isNotFound = statusCheck (== 404)
+
+checkDocExists :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO Bool
+checkDocExists bhEnv index docId = do
+  BH.runBH bhEnv $ do
+    BH.documentExists index docId
+
+getDocument :: (FromJSON a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> IO (Maybe a)
+getDocument bhEnv index dId = do
+  BH.runBH bhEnv $ do
+    resp <- BH.getDocument index dId
+    if isNotFound resp
+      then pure Nothing
+      else do
+        parsed <- BH.parseEsResponse resp
+        case parsed of
+          Right cm -> pure . getHit $ BH.foundResult cm
+          Left _ -> error "Unable to get parse result"
+  where
+    getHit (Just (BH.EsResultFound _ cm)) = Just cm
+    getHit Nothing = Nothing
+
+getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataID -> IO (Maybe ELKCrawlerMetadata)
+getCrawlerMetadata = getDocument
+
+getLastUpdatedFromConfig :: UTCTime
+getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
+
+data Entity = Project {getName :: Text} | Organization {getName :: Text}
+
+getEntityName :: Entity -> Text
+getEntityName entity = case entity of
+  Project name -> toText $ intercalate "-" ["project", toString name]
+  Organization name -> toText $ intercalate "-" ["organization", toString name]
+
+getLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> IO UTCTime
+getLastUpdated bhEnv index entity = do
+  cmM <- getCrawlerMetadata bhEnv index cmID
+  case cmM of
+    Just cm -> pure $ elkcmLastCommitAt cm
+    Nothing -> pure getLastUpdatedFromConfig
+  where
+    cmID = getCrawlerMetadataID entity
+
+setLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> UTCTime -> IO ()
+setLastUpdated bhEnv index entity lastUpdatedDate = do
+  BH.runBH bhEnv $ do
+    exists <- BH.documentExists index id'
+    resp <-
+      if exists
+        then do
+          BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+        else do
+          BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+    if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+  where
+    id' = getCrawlerMetadataID entity
+    cm = ELKCrawlerMetadata lastUpdatedDate
