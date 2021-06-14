@@ -103,6 +103,48 @@ type changes_query_response =
   | Error of query_error
   | Items of changes
 
+type changes_histos_event = {
+  doc_count : int32;
+  key : int64;
+  key_as_string : string;
+}
+
+type changes_histos = {
+  change_abandoned_event : changes_histos_event list;
+  change_commit_force_pushed_event : changes_histos_event list;
+  change_commit_pushed_event : changes_histos_event list;
+  change_created_event : changes_histos_event list;
+  change_merged_event : changes_histos_event list;
+}
+
+type changes_lifecycle_event = {
+  authors_count : int32;
+  events_count : int32;
+}
+
+type changes_lifecycle_ratios = {
+  abandoned : float;
+  iterations : float;
+  merged : float;
+  self_merged : float;
+}
+
+type changes_lifecycle = {
+  change_commit_force_pushed_event : changes_lifecycle_event option;
+  change_commit_pushed_event : changes_lifecycle_event option;
+  change_created_event : changes_lifecycle_event option;
+  abandoned : int32;
+  commits : float;
+  duration : float;
+  duration_variability : float;
+  histos : changes_histos option;
+  merged : int32;
+  opened : int32;
+  ratios : changes_lifecycle_ratios option;
+  self_merged : int32;
+  tests : float;
+}
+
 
 (** {2 Default values} *)
 
@@ -221,3 +263,55 @@ val default_changes :
 
 val default_changes_query_response : unit -> changes_query_response
 (** [default_changes_query_response ()] is the default value for type [changes_query_response] *)
+
+val default_changes_histos_event : 
+  ?doc_count:int32 ->
+  ?key:int64 ->
+  ?key_as_string:string ->
+  unit ->
+  changes_histos_event
+(** [default_changes_histos_event ()] is the default value for type [changes_histos_event] *)
+
+val default_changes_histos : 
+  ?change_abandoned_event:changes_histos_event list ->
+  ?change_commit_force_pushed_event:changes_histos_event list ->
+  ?change_commit_pushed_event:changes_histos_event list ->
+  ?change_created_event:changes_histos_event list ->
+  ?change_merged_event:changes_histos_event list ->
+  unit ->
+  changes_histos
+(** [default_changes_histos ()] is the default value for type [changes_histos] *)
+
+val default_changes_lifecycle_event : 
+  ?authors_count:int32 ->
+  ?events_count:int32 ->
+  unit ->
+  changes_lifecycle_event
+(** [default_changes_lifecycle_event ()] is the default value for type [changes_lifecycle_event] *)
+
+val default_changes_lifecycle_ratios : 
+  ?abandoned:float ->
+  ?iterations:float ->
+  ?merged:float ->
+  ?self_merged:float ->
+  unit ->
+  changes_lifecycle_ratios
+(** [default_changes_lifecycle_ratios ()] is the default value for type [changes_lifecycle_ratios] *)
+
+val default_changes_lifecycle : 
+  ?change_commit_force_pushed_event:changes_lifecycle_event option ->
+  ?change_commit_pushed_event:changes_lifecycle_event option ->
+  ?change_created_event:changes_lifecycle_event option ->
+  ?abandoned:int32 ->
+  ?commits:float ->
+  ?duration:float ->
+  ?duration_variability:float ->
+  ?histos:changes_histos option ->
+  ?merged:int32 ->
+  ?opened:int32 ->
+  ?ratios:changes_lifecycle_ratios option ->
+  ?self_merged:int32 ->
+  ?tests:float ->
+  unit ->
+  changes_lifecycle
+(** [default_changes_lifecycle ()] is the default value for type [changes_lifecycle] *)
