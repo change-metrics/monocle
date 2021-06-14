@@ -6,14 +6,19 @@
 module Monocle.Backend.Index where
 
 import Data.Aeson
+  ( FromJSON,
+    KeyValue ((.=)),
+    ToJSON (toJSON),
+    object,
+  )
 import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
 import Monocle.Change
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
-import Google.Protobuf.Timestamp as T
 import Relude
 
 type MServerName = Text
@@ -246,6 +251,46 @@ createChangesIndex serverUrl index = do
     True <- BH.indexExists index
     pure (bhEnv, index)
 
+-- intC = fromInteger . toInteger
+
+toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
+toAuthor (Just Monocle.Change.Ident {..}) =
+  Monocle.Backend.Documents.Author
+    { authorMuid = identMuid,
+      authorUid = identUid
+    }
+toAuthor Nothing = error "Ident field is mandatory"
+
+toELKChangeEvent :: ChangeEvent -> ELKChangeEvent
+toELKChangeEvent ChangeEvent {..} =
+  ELKChangeEvent
+    { elkchangeeventId = changeEventId,
+      elkchangeeventNumber = fromIntegral changeEventNumber,
+      elkchangeeventType = getEventType changeEventType,
+      elkchangeeventChangeId = changeEventChangeId,
+      elkchangeeventUrl = changeEventUrl,
+      elkchangeeventChangedFiles = Just $ map changedFilePathPath $ toList changeEventChangedFiles,
+      elkchangeeventRepositoryPrefix = changeEventRepositoryPrefix,
+      elkchangeeventRepositoryFullname = changeEventRepositoryFullname,
+      elkchangeeventRepositoryShortname = changeEventRepositoryShortname,
+      elkchangeeventAuthor = toAuthor changeEventAuthor,
+      elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
+      elkchangeeventBranch = changeEventBranch,
+      elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt
+    }
+  where
+    getEventType :: Maybe ChangeEventType -> LText
+    getEventType eventTypeM = case eventTypeM of
+      Just eventType -> case eventType of
+        ChangeEventTypeChangeCreated ChangeCreatedEvent -> "ChangeCreatedEvent"
+        ChangeEventTypeChangeCommented ChangeCommentedEvent -> "ChangeCommentedEvent"
+        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> "ChangeAbandonedEvent"
+        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> "ChangeReviewedEvent"
+        ChangeEventTypeChangeForcePushed ChangeForcePushedEvent -> "ChangeForcePushedEvent"
+        ChangeEventTypeChangePushed ChangePushedEvent -> "ChangePushedEvent"
+        ChangeEventTypeChangeMerged ChangeMergedEvent -> "ChangeMergedEvent"
+      Nothing -> error "changeEventType field is mandatory"
+
 toELKChange :: Change -> ELKChange
 toELKChange Change {..} =
   ELKChange
@@ -286,8 +331,7 @@ toELKChange Change {..} =
   where
     toFile :: ChangedFile -> File
     toFile ChangedFile {..} =
-      File (intC changedFileAdditions) (intC changedFileDeletions) changedFilePath
-    intC = fromInteger . toInteger
+      File (fromIntegral changedFileAdditions) (fromIntegral changedFileDeletions) changedFilePath
     toCommit :: Monocle.Change.Commit -> Monocle.Backend.Documents.Commit
     toCommit Monocle.Change.Commit {..} =
       Monocle.Backend.Documents.Commit
@@ -296,17 +340,10 @@ toELKChange Change {..} =
           elkcommitCommitter = toAuthor commitCommitter,
           elkcommitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
           elkcommitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
-          elkcommitDeletions = intC commitDeletions,
-          elkcommitAdditions = intC commitAdditions,
+          elkcommitDeletions = fromIntegral commitDeletions,
+          elkcommitAdditions = fromIntegral commitAdditions,
           elkcommitTitle = commitTitle
         }
-    toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
-    toAuthor (Just Monocle.Change.Ident {..}) =
-      Monocle.Backend.Documents.Author
-        { authorMuid = identMuid,
-          authorUid = identUid
-        }
-    toAuthor Nothing = error "Ident field is mandatory"
     toMergedByAuthor (ChangeOptionalMergedByMergedBy m) = toAuthor (Just m)
     toMergedAt (ChangeOptionalMergedAtMergedAt t) = T.toUTCTime t
     toClosedAt (ChangeOptionalClosedAtClosedAt t) = T.toUTCTime t
