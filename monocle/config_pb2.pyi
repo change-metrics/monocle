@@ -79,3 +79,33 @@ class GetProjectsResponse(google.protobuf.message.Message):
     ) -> None: ...
 
 global___GetProjectsResponse = GetProjectsResponse
+
+class HealthRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    INDEX_FIELD_NUMBER: builtins.int
+    index: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        index: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["index", b"index"]
+    ) -> None: ...
+
+global___HealthRequest = HealthRequest
+
+class HealthResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    STATUS_FIELD_NUMBER: builtins.int
+    status: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        status: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["status", b"status"]
+    ) -> None: ...
+
+global___HealthResponse = HealthResponse

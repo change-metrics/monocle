@@ -91,6 +91,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
+    /api/2/health:
+        post:
+            operationId: Config_Health
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/HealthRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HealthResponse'
     /api/2/search/changes:
         post:
             operationId: Search_ChangesQuery
@@ -294,6 +310,14 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ProjectDefinition'
+        HealthRequest:
+            properties:
+                index:
+                    type: string
+        HealthResponse:
+            properties:
+                status:
+                    type: string
         NewTaskData:
             properties:
                 updated_at:

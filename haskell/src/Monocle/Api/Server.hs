@@ -11,6 +11,7 @@ import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import qualified Monocle.Config as ConfigPB
 import Monocle.Prelude
 import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
 import qualified Monocle.Search as SearchPB
@@ -21,6 +22,11 @@ import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import Proto3.Suite (Enumerated (..))
+
+configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
+configHealth = const $ pure response
+  where
+    response = ConfigPB.HealthResponse "api running"
 
 searchChangesQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
 searchChangesQuery request = do
