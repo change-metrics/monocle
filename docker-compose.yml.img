@@ -71,7 +71,6 @@ services:
     depends_on:
       - api
     environment:
-      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
       REACT_APP_TITLE: "${MONOCLE_TITLE}"
     image: "quay.io/change-metrics/monocle_web:${MONOCLE_VERSION:-latest}"
     ports:

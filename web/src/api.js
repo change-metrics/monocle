@@ -17,15 +17,7 @@
 import axios from 'axios'
 import moment from 'moment'
 
-// The api server is defined by:
-// - window.API_URL value set by container runtime
-// - REACT_APP_API_URL set by development environment
-// - otherwise we assume the api is served by the proxy, on the same url as the static files.
-const server =
-  window.API_URL !== '__API_URL__'
-    ? window.API_URL
-    : process.env.REACT_APP_API_URL || ''
-const baseurl = server + '/api/0'
+const baseurl = '/api/0'
 
 console.log('BaseURL=' + baseurl)
 
@@ -74,7 +66,7 @@ function getQueryResults(queryParams) {
 
 function getAuth(authCB, anonCB) {
   // We use fetch to detect redirection
-  fetch(server + '/api/2/a/whoami', {
+  fetch('/api/2/a/whoami', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -101,7 +93,7 @@ function getAuth(authCB, anonCB) {
 }
 
 function logout() {
-  return axios.get(server + '/api/2/auth/logout')
+  return axios.get('/api/2/auth/logout')
 }
 
 function getProjects(request) {
@@ -115,4 +107,4 @@ function getIndices() {
   })
 }
 
-export { logout, getAuth, getQueryResults, getIndices, baseurl, getProjects, server }
+export { logout, getAuth, getQueryResults, getIndices, baseurl, getProjects }

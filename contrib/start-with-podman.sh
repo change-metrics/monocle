@@ -120,5 +120,5 @@ fi
 
 if [ "$1" == "start-web-dev" ]; then
     podman stop web
-    cd web && npm install && REACT_APP_TITLE="Monocle live dev deployment" REACT_APP_API_URL=http://localhost:9876 npm start
+    cd web && npm install && REACT_APP_TITLE="Monocle live dev deployment" npm start
 fi

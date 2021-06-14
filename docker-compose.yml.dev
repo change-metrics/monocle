@@ -74,7 +74,6 @@ services:
     depends_on:
       - api
     environment:
-      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
       REACT_APP_TITLE: "${MONOCLE_TITLE}"
     ports:
       - "${MONOCLE_WEB_ADDR:-0.0.0.0}:${MONOCLE_WEB_PORT:-8080}:8080"

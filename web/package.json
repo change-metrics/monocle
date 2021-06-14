@@ -41,7 +41,7 @@
     "test": "npm run re:build && npm run js:test",
     "lint": "eslint -f unix src",
     "format": "eslint --plugin prettier src",
-    "dev-server": "live-server --entry-file=index.html --host=localhost --port=3000 --quiet ./build/",
+    "dev-server": "live-server --entry-file=index.html --host=localhost --port=3000 --proxy=/api/0:http://localhost:9876/api/0 --proxy=/api/2:http://localhost:9898/api/2 --quiet ./build/",
     "js:test": "jest --env=jsdom",
     "es:build": "./build.js",
     "es:clean": "rm -Rf ./build/",

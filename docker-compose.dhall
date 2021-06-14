@@ -234,11 +234,7 @@ let createWebService =
               , volumes = Some [ "./web/conf:/etc/nginx/conf.d:z" ]
               , environment = Some
                   ( Compose.ListOrDict.Dict
-                      [ { mapKey = "REACT_APP_API_URL"
-                        , mapValue =
-                            "\${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
-                        }
-                      , { mapKey = "REACT_APP_TITLE"
+                      [ { mapKey = "REACT_APP_TITLE"
                         , mapValue = "\${MONOCLE_TITLE}"
                         }
                       ]
