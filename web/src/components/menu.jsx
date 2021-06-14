@@ -119,6 +119,7 @@ class TopMenu extends React.Component {
           </Navbar.Brand>
           <Switch>
             <Route exact path="/" />
+            <Route exact path="/login" />
             <Route path="/:index" component={IndexMenu} />
           </Switch>
           <Nav className="ml-auto">

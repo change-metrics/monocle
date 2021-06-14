@@ -44,6 +44,8 @@ import Indices from './components/Indices.bs.js'
 import ChangesView from './components/ChangesView.bs.js'
 import Board from './components/Board.bs.js'
 import Store from './components/Store.bs.js'
+import AuthLoginPage from './components/AuthLoginPage.bs.js'
+import AuthWelcome from './components/AuthWelcome.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -295,6 +297,12 @@ const LegacyApp = (data) => (
         exact
         path="/"
         render={(routeProps) => <Indices store={data.store} {...routeProps} />}
+      />
+      <Route exact path="/login" render={(_) => <AuthLoginPage />} />
+      <Route
+        exact
+        path="/a/whoami"
+        render={(_) => <AuthWelcome store={data.store} />}
       />
       <Route exact path="/:index/people" component={PeopleView} />
       <Route exact path="/:index/repos" component={ReposView} />

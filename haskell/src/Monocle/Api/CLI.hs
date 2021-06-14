@@ -10,6 +10,7 @@ import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
 import Monocle.Servant.Env
 import Monocle.Servant.HTTP (MonocleAPI, server)
+import Network.HTTP.Types.Status (seeOther303)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
@@ -45,23 +46,30 @@ authSettings publicUrl oauthName oauthId oauthSecret =
 --
 -- type Application = Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 -- type Middleware = Application -> Application
-enforceLoginPath :: Wai.Middleware -> Wai.Middleware
-enforceLoginPath authMiddleware monocleApp = app'
+enforceLoginPath :: Auth.AuthSettings -> Wai.Middleware -> Wai.Middleware
+enforceLoginPath as authMiddleware monocleApp = app'
   where
     app' request
+      | "/auth/logout" == Wai.rawPathInfo request = doLogout
       | matchAuth (Wai.rawPathInfo request) = authMiddleware monocleApp request
       | otherwise = monocleApp request
     matchAuth path
       | "/a/" `BS.isPrefixOf` path || "/auth" `BS.isPrefixOf` path = True
       | otherwise = False
+    doLogout doResp = doResp $ Wai.responseLBS seeOther303 headers ""
+      where
+        headers =
+          [ Auth.getDeleteSessionHeader as,
+            ("Location", "/")
+          ]
 
 createAuthMiddleware :: IO Wai.Middleware
 createAuthMiddleware = do
   envs <- traverse lookupEnv ["PUBLIC_URL", "OAUTH_NAME", "OAUTH_ID", "OAUTH_SECRET"]
   case toText <$> catMaybes envs of
     [publicUrl, oauthName, oauthId, oauthSecret] ->
-      enforceLoginPath
-        <$> Auth.mkAuthMiddleware (authSettings publicUrl oauthName oauthId oauthSecret)
+      let as = authSettings publicUrl oauthName oauthId oauthSecret
+       in enforceLoginPath as <$> Auth.mkAuthMiddleware as
     _ -> pure id
 
 run :: MonadIO m => Int -> Text -> FilePath -> m ()

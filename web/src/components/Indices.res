@@ -13,7 +13,7 @@ module Indice = {
       RescriptReactRouter.push(name)
     }
     <Tooltip position=#Bottom content={"Click to get the metric"}>
-      <a href="" onClick> {name->React.string} </a>
+      <LegacyRouter.Link _to={"/" ++ name} onClick> {name->React.string} </LegacyRouter.Link>
     </Tooltip>
   }
   let card: (Store.t, string) => React.element = (store, name) =>
