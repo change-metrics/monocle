@@ -284,7 +284,7 @@ BoardView.propTypes = {
   })
 }
 
-const LegacyApp = () => (
+const LegacyApp = (data) => (
   <Container>
     <Row>
       <Col>
@@ -292,7 +292,11 @@ const LegacyApp = () => (
       </Col>
     </Row>
     <Switch>
-      <Route exact path="/" component={Indices} />
+      <Route
+        exact
+        path="/"
+        render={(routeProps) => <Indices store={data.store} {...routeProps} />}
+      />
       <Route exact path="/login" component={LoginView} />
       <Route exact path="/user" component={CUserView} />
       <Route exact path="/:index/people" component={PeopleView} />
@@ -333,7 +337,8 @@ const LegacyApp = () => (
 )
 
 const App = () => {
-  const store = Store.use()
+  const [_, index] = window.location.pathname.split('/')
+  const store = Store.use(index)
   return (
     <React.Fragment>
       <TopMenu />

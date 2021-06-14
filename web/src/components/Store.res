@@ -27,6 +27,7 @@ module Store = {
     fields: RemoteData.t<list<SearchTypes.field>>,
   }
   type action =
+    | ChangeIndex(string)
     | SetQuery(string)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
@@ -34,6 +35,7 @@ module Store = {
 
   let reducer = (state: t, action: action) =>
     switch action {
+    | ChangeIndex(index) => {...state, index: index}
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
@@ -95,6 +97,8 @@ module Fetch = {
     )
   }
 }
+
+let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
 // Hook API
 type t = (Store.t, Store.action => unit)
