@@ -3,7 +3,7 @@
 
 module Main (main) where
 
-import Monocle.Backend.Test (testCrawlerMetadata, testIndexChanges)
+import Monocle.Backend.Test
 import Relude
 import System.Environment
 import Test.Tasty
@@ -21,6 +21,7 @@ monocleIntegrationTests =
     [ testCase
         "Index changes"
         testIndexChanges,
+      testCase "Test achievement" testAchievements,
       testCase
         "Index CrawlerMetadata"
         testCrawlerMetadata
