@@ -180,17 +180,22 @@ class QueryRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     INDEX_FIELD_NUMBER: builtins.int
     QUERY_FIELD_NUMBER: builtins.int
+    USERNAME_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     query: typing.Text = ...
+    username: typing.Text = ...
     def __init__(
         self,
         *,
         index: typing.Text = ...,
         query: typing.Text = ...,
+        username: typing.Text = ...,
     ) -> None: ...
     def ClearField(
         self,
-        field_name: typing_extensions.Literal["index", b"index", "query", b"query"],
+        field_name: typing_extensions.Literal[
+            "index", b"index", "query", b"query", "username", b"username"
+        ],
     ) -> None: ...
 
 global___QueryRequest = QueryRequest

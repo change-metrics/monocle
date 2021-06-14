@@ -50,6 +50,8 @@ message QueryError {
 message QueryRequest {
   string index = 1;
   string query = 2;
+  // The username to resolve `self` value.
+  string username = 3;
 }
 
 message File {

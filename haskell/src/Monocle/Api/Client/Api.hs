@@ -31,9 +31,6 @@ searchFields = monocleReq "api/2/search/fields"
 searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
 
-searchQueryAuth :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
-searchQueryAuth = monocleReq "api/2/a/search/query"
-
 taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
 taskDataCommit = monocleReq "api/1/task_data_commit"
 

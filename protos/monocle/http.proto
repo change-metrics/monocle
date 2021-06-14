@@ -56,13 +56,6 @@ service Search {
       body: "*"
     };
   }
-  rpc QueryAuth(monocle_search.QueryRequest)
-      returns (monocle_search.QueryResponse) {
-    option (google.api.http) = {
-      post: "/api/2/a/search/query"
-      body: "*"
-    };
-  }
 }
 
 service TaskData {

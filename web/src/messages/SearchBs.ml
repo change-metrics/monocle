@@ -65,11 +65,13 @@ let default_query_error_mutable () : query_error_mutable = {
 type query_request_mutable = {
   mutable index : string;
   mutable query : string;
+  mutable username : string;
 }
 
 let default_query_request_mutable () : query_request_mutable = {
   index = "";
   query = "";
+  username = "";
 }
 
 type file_mutable = {
@@ -437,12 +439,16 @@ let rec decode_query_request json =
     | "query" -> 
       let json = Js.Dict.unsafeGet json "query" in
       v.query <- Pbrt_bs.string json "query_request" "query"
+    | "username" -> 
+      let json = Js.Dict.unsafeGet json "username" in
+      v.username <- Pbrt_bs.string json "query_request" "username"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.index = v.index;
     SearchTypes.query = v.query;
+    SearchTypes.username = v.username;
   } : SearchTypes.query_request)
 
 let rec decode_file json =
@@ -978,6 +984,7 @@ let rec encode_query_request (v:SearchTypes.query_request) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
   Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
+  Js.Dict.set json "username" (Js.Json.string v.SearchTypes.username);
   json
 
 let rec encode_file (v:SearchTypes.file) = 

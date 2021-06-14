@@ -91,22 +91,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
-    /api/2/a/search/query:
-        post:
-            operationId: Search_QueryAuth
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/QueryRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/QueryResponse'
     /api/2/a/whoami:
         post:
             operationId: Auth_WhoAmI
@@ -337,6 +321,9 @@ components:
                     type: string
                 query:
                     type: string
+                username:
+                    type: string
+                    description: The username to resolve `self` value.
         QueryResponse:
             properties:
                 error:

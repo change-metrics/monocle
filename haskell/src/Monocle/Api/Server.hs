@@ -22,13 +22,11 @@ import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Network.Wai.Middleware.Auth as Auth
-import qualified Network.Wai.Middleware.Auth.Provider as Auth
 import Proto3.Suite (Enumerated (..))
 import Servant.API.Vault (Vault)
 
-searchQuery :: Maybe Auth.AuthUser -> QueryRequest -> AppM QueryResponse
-searchQuery auth request = do
-  putTextLn $ "vaul user: " <> show auth
+searchQuery :: QueryRequest -> AppM QueryResponse
+searchQuery request = do
   Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
   SearchPB.QueryResponse . Just <$> response bhEnv now
@@ -102,8 +100,8 @@ searchQuery auth request = do
           taskDataScore = fromInteger $ toInteger $ tdScore td
        in TaskDataPB.TaskData {..}
 
-searchFields :: Maybe Auth.AuthUser -> FieldsRequest -> AppM FieldsResponse
-searchFields _auth = const $ pure response
+searchFields :: FieldsRequest -> AppM FieldsResponse
+searchFields = const $ pure response
   where
     response :: FieldsResponse
     response = FieldsResponse . V.fromList . map toResult $ Q.fields
@@ -221,9 +219,6 @@ searchChangesLifecycle indexName queryText = do
           changesLifecycleSelfMerged = selfMergedCount
           changesLifecycleTests = 0
        in SearchPB.ChangesLifecycle {..}
-
-searchQueryAuth :: Vault -> QueryRequest -> AppM QueryResponse
-searchQueryAuth vault = searchQuery (Auth.getAuthUserVault vault)
 
 authWhoAmI :: Vault -> AuthPB.WhoAmIRequest -> AppM AuthPB.WhoAmIResponse
 authWhoAmI vault = const $ pure response

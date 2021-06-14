@@ -45,6 +45,7 @@ type query_error = {
 type query_request = {
   index : string;
   query : string;
+  username : string;
 }
 
 type file = {
@@ -197,6 +198,7 @@ val default_query_error :
 val default_query_request : 
   ?index:string ->
   ?query:string ->
+  ?username:string ->
   unit ->
   query_request
 (** [default_query_request ()] is the default value for type [query_request] *)

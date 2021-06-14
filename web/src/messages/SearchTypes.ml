@@ -42,6 +42,7 @@ type query_error = {
 type query_request = {
   index : string;
   query : string;
+  username : string;
 }
 
 type file = {
@@ -197,9 +198,11 @@ let rec default_query_error
 let rec default_query_request 
   ?index:((index:string) = "")
   ?query:((query:string) = "")
+  ?username:((username:string) = "")
   () : query_request  = {
   index;
   query;
+  username;
 }
 
 let rec default_file 

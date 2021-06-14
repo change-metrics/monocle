@@ -841,7 +841,8 @@ instance HsJSONPB.ToSchema QueryError where
 
 data QueryRequest = QueryRequest
   { queryRequestIndex :: Hs.Text,
-    queryRequestQuery :: Hs.Text
+    queryRequestQuery :: Hs.Text,
+    queryRequestUsername :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -855,7 +856,8 @@ instance HsProtobuf.Message QueryRequest where
     _
     QueryRequest
       { queryRequestIndex = queryRequestIndex,
-        queryRequestQuery = queryRequestQuery
+        queryRequestQuery = queryRequestQuery,
+        queryRequestUsername = queryRequestUsername
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -865,6 +867,10 @@ instance HsProtobuf.Message QueryRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 queryRequestQuery
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                queryRequestUsername
             )
           ]
       )
@@ -877,6 +883,10 @@ instance HsProtobuf.Message QueryRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -892,14 +902,23 @@ instance HsProtobuf.Message QueryRequest where
           (HsProtobuf.Single "query")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "username")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB QueryRequest where
-  toJSONPB (QueryRequest f1 f2) =
-    (HsJSONPB.object ["index" .= f1, "query" .= f2])
-  toEncodingPB (QueryRequest f1 f2) =
-    (HsJSONPB.pairs ["index" .= f1, "query" .= f2])
+  toJSONPB (QueryRequest f1 f2 f3) =
+    ( HsJSONPB.object
+        ["index" .= f1, "query" .= f2, "username" .= f3]
+    )
+  toEncodingPB (QueryRequest f1 f2 f3) =
+    (HsJSONPB.pairs ["index" .= f1, "query" .= f2, "username" .= f3])
 
 instance HsJSONPB.FromJSONPB QueryRequest where
   parseJSONPB =
@@ -907,6 +926,7 @@ instance HsJSONPB.FromJSONPB QueryRequest where
         "QueryRequest"
         ( \obj ->
             (Hs.pure QueryRequest) <*> obj .: "index" <*> obj .: "query"
+              <*> obj .: "username"
         )
     )
 
@@ -924,9 +944,12 @@ instance HsJSONPB.ToSchema QueryRequest where
       queryRequestIndex <- declare_index Proxy.Proxy
       let declare_query = HsJSONPB.declareSchemaRef
       queryRequestQuery <- declare_query Proxy.Proxy
+      let declare_username = HsJSONPB.declareSchemaRef
+      queryRequestUsername <- declare_username Proxy.Proxy
       let _ =
             Hs.pure QueryRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_query
+              <*> HsJSONPB.asProxy declare_username
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -941,7 +964,8 @@ instance HsJSONPB.ToSchema QueryRequest where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("index", queryRequestIndex),
-                          ("query", queryRequestQuery)
+                          ("query", queryRequestQuery),
+                          ("username", queryRequestUsername)
                         ]
                   }
             }

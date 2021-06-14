@@ -7,6 +7,18 @@ type axiosResponse<'data> = {data: 'data}
 type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 @module("../api.js") external serverUrl: string = "server"
 
+module Auth = {
+  @module("axios")
+  external whoAmIRaw: (string, 'a) => axios<'b> = "post"
+
+  let whoAmI = (request: AuthTypes.who_am_i_request): axios<AuthTypes.who_am_i_response> =>
+    request->AuthBs.encode_who_am_i_request
+    |> whoAmIRaw(serverUrl ++ "/api/2/a/whoami")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->AuthBs.decode_who_am_i_response}->Js.Promise.resolve
+    )
+}
+
 module Config = {
   @module("axios")
   external getProjectsRaw: (string, 'a) => axios<'b> = "post"
@@ -48,15 +60,6 @@ module Search = {
   let query = (request: SearchTypes.query_request): axios<SearchTypes.query_response> =>
     request->SearchBs.encode_query_request
     |> queryRaw(serverUrl ++ "/api/2/search/query")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
-    )
-  @module("axios")
-  external queryAuthRaw: (string, 'a) => axios<'b> = "post"
-
-  let queryAuth = (request: SearchTypes.query_request): axios<SearchTypes.query_response> =>
-    request->SearchBs.encode_query_request
-    |> queryAuthRaw(serverUrl ++ "/api/2/a/search/query")
     |> Js.Promise.then_(resp =>
       {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
     )
