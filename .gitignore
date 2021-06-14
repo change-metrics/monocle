@@ -11,3 +11,4 @@ etc
 docker-compose.yml
 dump
 .vscode
+client_session_key.aes
