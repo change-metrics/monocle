@@ -81,8 +81,7 @@ withBH = bracket create delete
     create = I.createChangesIndex "http://localhost:9200" testIndexName
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
-        resp <- BH.deleteIndex testIndex
-        print resp
+        _resp <- BH.deleteIndex testIndex
         False <- BH.indexExists testIndex
         pure ()
 
@@ -123,7 +122,7 @@ testIndexChanges = withBH doTest
       checkELKChangeField'
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
-         (elkchangeTitle fakeChange2)
+        (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1

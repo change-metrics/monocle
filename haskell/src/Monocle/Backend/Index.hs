@@ -244,10 +244,10 @@ createChangesIndex serverUrl index = do
   let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
   bhEnv <- mkEnv serverUrl
   BH.runBH bhEnv $ do
-    respCI <- BH.createIndex indexSettings index
-    print respCI
-    respPM <- BH.putMapping index ChangesIndexMapping
-    print respPM
+    _respCI <- BH.createIndex indexSettings index
+    -- print respCI
+    _respPM <- BH.putMapping index ChangesIndexMapping
+    -- print respPM
     True <- BH.indexExists index
     pure (bhEnv, index)
 
