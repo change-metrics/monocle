@@ -33,6 +33,7 @@ module Column = {
           WebApi.Search.query({
             index: index,
             query: addQuery(column.query, query),
+            username: "",
           }) |> Js.Promise.then_(handleOk),
         )
       }

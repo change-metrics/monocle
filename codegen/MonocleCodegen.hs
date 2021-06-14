@@ -169,7 +169,10 @@ protoToReScript = fromProto ALL headers mkService
         <> concatMap (mkMethod name) methods
         <> ["}"]
 
-    msgName moduleName msg = moduleName <> "Types." <> snake (attrName msg)
+    -- ocaml protoc does not snake for single letter
+    snake' = Text.replace "_i_" "_i" . snake
+
+    msgName moduleName msg = moduleName <> "Types." <> snake' (attrName msg)
 
     mkMethod moduleName (name, input, output, path) =
       [ "@module(\"axios\")",
@@ -182,10 +185,10 @@ protoToReScript = fromProto ALL headers mkService
         methodDef = "let " <> camel name <> " = (" <> methodInput <> "): " <> methodOutput
         methodInput = "request: " <> msgName moduleName input
         methodOutput = "axios<" <> msgName moduleName output <> ">"
-        requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake (attrName input)
+        requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake' (attrName input)
         requestCall = camel name <> "Raw(serverUrl ++ \"" <> path <> "\")"
         promiseDecode = "Js.Promise.then_(resp => { data: " <> decodeResponse <> "}->Js.Promise.resolve)"
-        decodeResponse = "resp.data-> " <> moduleName <> "Bs.decode_" <> snake (attrName output)
+        decodeResponse = "resp.data-> " <> moduleName <> "Bs.decode_" <> snake' (attrName output)
 
 -- | Create haskell servant module from a protobuf defnition
 protoToServant :: PB.ProtoBuf -> String
