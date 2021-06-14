@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import tempfile
 import time
 import unittest
@@ -122,19 +121,6 @@ class TestWebAPI(unittest.TestCase):
             headers={"REMOTE_USER": "jane"},
         )
         self.assertEqual(5, json.loads(resp.data))
-
-    def test_whoami(self):
-        "Test whoami method"
-        resp = self.client.get("/api/0/whoami")
-        self.assertEqual(503, resp.status_code)
-        os.environ["CLIENT_ID"] = "test"
-        resp = self.client.get("/api/0/whoami", headers={"REMOTE_USER": "jane"})
-        self.assertEqual("jane", json.loads(resp.data))
-
-        with self.client.session_transaction() as sess:
-            sess["username"] = "jane"
-        resp = self.client.get("/api/0/whoami")
-        self.assertEqual("jane", json.loads(resp.data))
 
     def test_config_project_def(self):
         "Test get project definitions"

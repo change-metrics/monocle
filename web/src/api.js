@@ -106,20 +106,10 @@ function getIndices() {
   })
 }
 
-function getLoggedUser() {
-  const url = baseurl + '/whoami'
-
-  return axios.get(url, {
-    params: {},
-    withCredentials: true
-  })
-}
-
 export {
   getAuth,
   getQueryResults,
   getIndices,
-  getLoggedUser,
   baseurl,
   getProjects,
   server

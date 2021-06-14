@@ -27,7 +27,6 @@ import PropTypes from 'prop-types'
 
 import TopMenu from './components/menu'
 import Footer from './components/footer'
-import { LoginView, CUserView } from './components/user'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import { CAuthorsHistoStats } from './components/authors_histo'
@@ -297,8 +296,6 @@ const LegacyApp = (data) => (
         path="/"
         render={(routeProps) => <Indices store={data.store} {...routeProps} />}
       />
-      <Route exact path="/login" component={LoginView} />
-      <Route exact path="/user" component={CUserView} />
       <Route exact path="/:index/people" component={PeopleView} />
       <Route exact path="/:index/repos" component={ReposView} />
       <Route exact path="/:index" component={RootView} />

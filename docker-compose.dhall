@@ -166,6 +166,15 @@ let createApiNgService =
                         , mapValue = "/etc/monocle/config.yaml"
                         }
                       , { mapKey = "ELASTIC_CONN", mapValue = "elastic:9200" }
+                      , { mapKey = "OAUTH_NAME"
+                        , mapValue = "\${GITHUB_AUTH_NAME:-monocle}"
+                        }
+                      , { mapKey = "OAUTH_ID"
+                        , mapValue = "\${GITHUB_CLIENT_ID:-}"
+                        }
+                      , { mapKey = "OAUTH_SECRET"
+                        , mapValue = "\${GITHUB_CLIENT_SECRET:-}"
+                        }
                       ]
                   )
               }

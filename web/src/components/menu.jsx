@@ -22,7 +22,6 @@ import Nav from 'react-bootstrap/Nav'
 import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import PropTypes from 'prop-types'
-import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
 
 const TITLE = window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
@@ -122,7 +121,7 @@ class TopMenu extends React.Component {
             <Route path="/:index" component={IndexMenu} />
           </Switch>
           <Nav className="ml-auto">
-            <CUserView />
+            placeholder
           </Nav>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
         </Navbar>

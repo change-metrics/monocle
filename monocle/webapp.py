@@ -25,14 +25,9 @@ from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
-from flask import redirect
 from flask import session
 from flask_cors import CORS
 from flask_caching import Cache
-
-# https://docs.authlib.org/en/latest/client/frameworks.html#frameworks-clients
-# https://docs.authlib.org/en/latest/client/flask.html#flask-client
-from authlib.integrations.flask_client import OAuth
 
 from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
@@ -57,19 +52,6 @@ CORS(
     resources={r"/api/*": {"origins": os.getenv("ALLOW_ORIGIN", "*")}},
     supports_credentials=True,
 )
-oauth = OAuth(app)
-
-oauth.register(
-    name="github",
-    client_id=os.getenv("CLIENT_ID"),
-    client_secret=os.getenv("CLIENT_SECRET"),
-    access_token_url="https://github.com/login/oauth/access_token",
-    access_token_params=None,
-    authorize_url="https://github.com/login/oauth/authorize",
-    authorize_params=None,
-    api_base_url="https://api.github.com/",
-    client_kwargs={"scope": "user:email"},
-)
 
 
 def returnAPIError(desc: str, code: int, details: Optional[str] = None):
@@ -88,35 +70,6 @@ def health():
         "timestamp": time.time(),
     }
     return jsonify(data)
-
-
-@app.route("/api/0/login", methods=["GET"])
-def login():
-    github = oauth.create_client("github")
-    redirect_uri = os.getenv("PUBLIC_URL", "")
-    return github.authorize_redirect(redirect_uri + "/api/0/authorize")
-
-
-@app.route("/api/0/authorize", methods=["GET"])
-def authorize():
-    github = oauth.create_client("github")
-    # token = github.authorize_access_token()
-    github.authorize_access_token()
-    resp = github.get("user")
-    profile = resp.json()
-    # do something with the token and profile
-    session["username"] = profile.get("login")
-    # return jsonify(profile)
-    redirect_uri = os.getenv("PUBLIC_URL", "/")
-    return redirect(redirect_uri)
-
-
-@app.route("/api/0/whoami", methods=["GET"])
-def whoami():
-    if not os.getenv("CLIENT_ID"):
-        returnAPIError("Authentication not configured", 503)
-    username = session.get("username") or request.headers.get("Remote-User")
-    return jsonify(username)
 
 
 def get_index(req):
