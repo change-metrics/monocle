@@ -5,7 +5,9 @@
 -- |
 module Monocle.Api.Server where
 
+import Data.Char (isDigit)
 import Data.Fixed (Deci)
+import qualified Data.Text as Text
 import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -22,6 +24,7 @@ import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Network.Wai.Middleware.Auth as Auth
+import qualified Network.Wai.Middleware.Auth.Provider as Auth
 import Proto3.Suite (Enumerated (..))
 import Servant.API.Vault (Vault)
 
@@ -220,9 +223,23 @@ searchChangesLifecycle indexName queryText = do
           changesLifecycleTests = 0
        in SearchPB.ChangesLifecycle {..}
 
+-- | Extract username from github auth
+--
+-- >>> usernameFromGH "42+TristanCacqueray@users"
+-- "TristanCacqueray"
+usernameFromGH :: Text -> Text
+usernameFromGH = Text.takeWhile (/= '@') . Text.drop 1 . Text.dropWhile isDigit
+
+usernameFromAuth :: Auth.AuthUser -> Text
+usernameFromAuth Auth.AuthUser {..} = username
+  where
+    username = case authProviderName of
+      "github" -> usernameFromGH (decodeUtf8 authLoginState)
+      _ -> error "Unknown provider"
+
 authWhoAmI :: Vault -> AuthPB.WhoAmIRequest -> AppM AuthPB.WhoAmIResponse
 authWhoAmI vault = const $ pure response
   where
     response :: AuthPB.WhoAmIResponse
-    response = AuthPB.WhoAmIResponse $ toLazy $ show user
+    response = AuthPB.WhoAmIResponse $ toLazy $ usernameFromAuth user
     user = fromMaybe (error "Authentication is missing") (Auth.getAuthUserFromVault vault)

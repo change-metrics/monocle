@@ -84,15 +84,24 @@ function getAuth(authCB, anonCB) {
   })
     .then((res) => {
       if (res.type === 'opaqueredirect') {
-        // The session is not authenticated, display banner
+        // The session is not authenticated
         anonCB()
       } else if (res.ok) {
-        authCB(res)
+        return res.json()
       } else {
         console.error('whoami get failed', res)
       }
     })
+    .then((data) => {
+      if (data) {
+        authCB(data)
+      }
+    })
     .catch((_) => console.error('whoami get threw'))
+}
+
+function logout() {
+  return axios.get(server + '/api/2/auth/logout')
 }
 
 function getProjects(request) {
@@ -106,11 +115,4 @@ function getIndices() {
   })
 }
 
-export {
-  getAuth,
-  getQueryResults,
-  getIndices,
-  baseurl,
-  getProjects,
-  server
-}
+export { logout, getAuth, getQueryResults, getIndices, baseurl, getProjects, server }

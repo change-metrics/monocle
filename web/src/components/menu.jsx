@@ -23,6 +23,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 
 import PropTypes from 'prop-types'
 import { SmallSizeWarning } from './common'
+import AuthButton from './AuthButton.bs.js'
 
 const TITLE = window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
 
@@ -121,7 +122,7 @@ class TopMenu extends React.Component {
             <Route path="/:index" component={IndexMenu} />
           </Switch>
           <Nav className="ml-auto">
-            placeholder
+            <AuthButton store={this.props.store} />
           </Nav>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
         </Navbar>
@@ -129,6 +130,10 @@ class TopMenu extends React.Component {
       </React.Fragment>
     )
   }
+}
+
+TopMenu.propTypes = {
+  store: PropTypes.array
 }
 
 export default TopMenu

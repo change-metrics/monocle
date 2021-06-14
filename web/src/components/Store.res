@@ -16,6 +16,10 @@ module UrlData = {
   }
 }
 
+module Session = {
+  type t = Unknown | Anonymous | Authenticated(string)
+}
+
 module Store = {
   type suggestionsR = RemoteData.t<SearchTypes.search_suggestions_response>
   type fieldsRespR = RemoteData.t<SearchTypes.fields_response>
@@ -23,12 +27,14 @@ module Store = {
   type t = {
     index: string,
     query: string,
+    session: Session.t,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
   }
   type action =
     | ChangeIndex(string)
     | SetQuery(string)
+    | SetSession(Session.t)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
   type dispatch = action => unit
@@ -40,6 +46,7 @@ module Store = {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
       }
+    | SetSession(session) => {...state, session: session}
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
     }
@@ -48,6 +55,7 @@ module Store = {
   let create = index => {
     index: index,
     query: UrlData.getQuery(),
+    session: Session.Unknown,
     suggestions: None,
     fields: None,
   }
