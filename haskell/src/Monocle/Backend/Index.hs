@@ -276,7 +276,10 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventAuthor = toAuthor changeEventAuthor,
       elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
       elkchangeeventBranch = changeEventBranch,
-      elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt
+      elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
+      elkchangeeventApproval = case changeEventType of
+        Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
+        _ -> Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> LText

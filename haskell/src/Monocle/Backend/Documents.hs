@@ -130,7 +130,8 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventAuthor :: Author,
     elkchangeeventOnAuthor :: Author,
     elkchangeeventBranch :: LText,
-    elkchangeeventOnCreatedAt :: UTCTime
+    elkchangeeventOnCreatedAt :: UTCTime,
+    elkchangeeventApproval :: Maybe [LText]
   }
   deriving (Show, Eq, Generic)
 
