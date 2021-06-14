@@ -44,6 +44,7 @@ import { CChange } from './components/change'
 import Indices from './components/Indices.bs.js'
 import ChangesView from './components/ChangesView.bs.js'
 import Board from './components/Board.bs.js'
+import Store from './components/Store.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -273,11 +274,7 @@ ChangeView.propTypes = {
   })
 }
 
-class BoardView extends React.Component {
-  render() {
-    return <Board index={this.props.match.params.index} />
-  }
-}
+const BoardView = (data) => <Board store={data.store} />
 
 BoardView.propTypes = {
   match: PropTypes.shape({
@@ -287,7 +284,7 @@ BoardView.propTypes = {
   })
 }
 
-let LegacyApp = () => (
+const LegacyApp = (data) => (
   <Container>
     <Row>
       <Col>
@@ -295,7 +292,11 @@ let LegacyApp = () => (
       </Col>
     </Row>
     <Switch>
-      <Route exact path="/" component={Indices} />
+      <Route
+        exact
+        path="/"
+        render={(routeProps) => <Indices store={data.store} {...routeProps} />}
+      />
       <Route exact path="/login" component={LoginView} />
       <Route exact path="/user" component={CUserView} />
       <Route exact path="/:index/people" component={PeopleView} />
@@ -335,19 +336,22 @@ let LegacyApp = () => (
   </Container>
 )
 
-class App extends React.Component {
-  render() {
-    return (
-      <React.Fragment>
-        <TopMenu />
-        <Switch>
-          <Route path="/:index/board" component={BoardView} />
-          <Route path="/*" component={LegacyApp} />
-        </Switch>
-        <Footer />
-      </React.Fragment>
-    )
-  }
+const App = () => {
+  const [_, index] = window.location.pathname.split('/')
+  const store = Store.use(index)
+  return (
+    <React.Fragment>
+      <TopMenu />
+      <Switch>
+        <Route
+          path="/:index/board"
+          render={() => <BoardView store={store} />}
+        />
+        <Route path="/*" render={() => <LegacyApp store={store} />} />
+      </Switch>
+      <Footer />
+    </React.Fragment>
+  )
 }
 
 export default App
