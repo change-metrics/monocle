@@ -6,6 +6,7 @@
 
 %%raw(`
 import '@patternfly/react-core/dist/styles/base.css'
+import '@patternfly/react-styles/css/components/Table/table.css'
 import './index.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.css'
@@ -23,7 +24,13 @@ module App = {
   let make = () => <>
     {[
       ("title", <h2> {"Monocle designer mode"->str} </h2>),
-      ("change", <div className="container"> <Change.DataItem change={Fixture.change} /> </div>),
+      (
+        "change",
+        <div className="container">
+          <Change.DataItem index={"test"} change={Fixture.change} />
+        </div>,
+      ),
+      ("table", <Change.Table index={"test"} changes={list{Fixture.change, Fixture.change}} />),
     ]
     ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}

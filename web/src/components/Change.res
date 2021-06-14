@@ -6,6 +6,9 @@
 
 open Prelude
 
+let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
+  ts->Belt.Option.getExn->Belt.Option.getExn
+
 module TaskData = {
   type t = TaskDataTypes.new_task_data
 
@@ -63,32 +66,168 @@ module TaskData = {
   }
 }
 
-module DataItem = {
-  module Info = {
+module Approvals = {
+  module Label = {
     @react.component
-    let make = (~name, ~value) =>
-      <DescriptionListGroup>
-        <DescriptionListTerm> {name->str} </DescriptionListTerm>
-        <DescriptionListDescription> {value->str} </DescriptionListDescription>
-      </DescriptionListGroup>
+    let make = (~approval: string) => {
+      let regex = %re("/.*-.$/")
+      let color = switch approval {
+      | "CHANGES_REQUESTED"
+      | "REVIEW_REQUIRED" =>
+        #Orange
+      | _ if regex->Js.Re.test_(approval) => #Red
+      | _ if Js.String.includes("+0", approval) => #Grey
+      | _ => #Green
+      }
+      <Patternfly.Label color> {approval} </Patternfly.Label>
+    }
   }
   @react.component
-  let make = (~change: SearchTypes.change) =>
+  let make = (~approvals: list<string>, ~withGroup: bool) => {
+    let labels =
+      approvals
+      ->Belt.List.mapWithIndex((idx, approval) => <Label key={string_of_int(idx)} approval />)
+      ->Belt.List.toArray
+      ->React.array
+    withGroup
+      ? <Patternfly.LabelGroup categoryName={"Approvals"} numLabels={5}>
+          {labels}
+        </Patternfly.LabelGroup>
+      : {labels}
+  }
+}
+
+let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5px", ())
+
+module ExternalLink = {
+  @react.component
+  let make = (~href) =>
+    <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}> {`🔗`->str} </a>
+}
+
+module ProjectLink = {
+  @react.component
+  let make = (~index, ~project, ~branch) => {
+    let name =
+      list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
+    <span style={horizontalSpacing}>
+      {"["->str}
+      <a
+        style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
+        href={"/" ++ index ++ "/changes?project=" ++ project}>
+        {name->str}
+      </a>
+      {"]"->str}
+    </span>
+  }
+}
+module ChangeLink = {
+  @react.component
+  let make = (~index, ~id, ~title) => <a href={"/" ++ index ++ "/change/" ++ id}> {title->str} </a>
+}
+
+module AuthorLink = {
+  @react.component
+  let make = (~index, ~title, ~author) => {
+    <> {title->str} <a href={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </a> </>
+  }
+}
+
+module RelativeDate = {
+  @react.component
+  let make = (~title, ~date) => {
+    let dateStr = date->momentFromNow
+    <> {title->str} {dateStr->str} </>
+  }
+}
+
+module State = {
+  @react.component
+  let make = (~state) => <Label> {state->str} </Label>
+}
+
+module DataItem = {
+  let oneLineStyle = ReactDOM.Style.make(
+    ~overflow="hidden",
+    ~textOverflow="ellipsis",
+    ~whiteSpace="nowrap",
+    (),
+  )
+
+  @react.component
+  let make = (~index: string, ~change: SearchTypes.change) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
-        <Card>
-          <CardHeader> <Label> {change.state->str} </Label> {change.title->str} </CardHeader>
+        <Card isCompact={true}>
+          <CardHeader>
+            <State state={change.state} />
+            <ExternalLink href={change.url} />
+            <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
+            <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
+              {"Complexicity: "->str} <Badge isRead={true}> {42->string_of_int->str} </Badge>
+            </span>
+          </CardHeader>
           <CardBody>
-            <DescriptionList isHorizontal={true}>
-              <Info name="Repository" value={change.repository_fullname} />
-              <Info name="Branch" value={change.branch} />
-              <Info name="URL" value={change.url} />
-            </DescriptionList>
+            <div style={oneLineStyle}>
+              {"Title: "->str} <ChangeLink index id={change.change_id} title={change.title} />
+            </div>
+            <div style={oneLineStyle}>
+              <RelativeDate title="Created " date={change.created_at->getDate} />
+              <AuthorLink index title=" by " author={change.author} />
+              <RelativeDate title=", updated " date={change.updated_at->getDate} />
+            </div>
+            <Approvals withGroup={true} approvals={change.approval} />
+            {switch change.task_data {
+            | list{} => React.null
+            | xs => xs->Belt.List.map(td => <TaskData td />)->Belt.List.toArray->React.array
+            }}
           </CardBody>
-          <CardFooter>
-            {change.task_data->Belt.List.map(td => <TaskData td />)->Belt.List.toArray->React.array}
-          </CardFooter>
         </Card>
       </DataListCell>
     </DataListItemRow>
+}
+
+module RowItem = {
+  module Head = {
+    @react.component
+    let make = () =>
+      <thead>
+        <tr role="row">
+          <th role="columnheader"> {"Title"->str} </th>
+          <th role="columnheader"> {"Status"->str} </th>
+          <th role="columnheader"> {"Owner"->str} </th>
+          <th role="columnheader"> {"Repo"->str} </th>
+          <th role="columnheader"> {"Updated"->str} </th>
+          <th role="columnheader"> {"Size"->str} </th>
+          <th role="columnheader"> {"Approvals"->str} </th>
+        </tr>
+      </thead>
+  }
+  @react.component
+  let make = (~index: string, ~change: SearchTypes.change) =>
+    <tr role="row">
+      <td role="cell"> <ChangeLink index id={change.change_id} title={change.title} /> </td>
+      <td role="cell"> <State state={change.state} /> </td>
+      <td role="cell"> <AuthorLink index title="" author={change.author} /> </td>
+      <td role="cell">
+        <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
+      </td>
+      <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
+      <td role="cell"> <Badge isRead={true}> {42->string_of_int->str} </Badge> </td>
+      <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
+    </tr>
+}
+
+module Table = {
+  @react.component
+  let make = (~index: string, ~changes: list<SearchTypes.change>) =>
+    <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
+      <RowItem.Head />
+      <tbody role="rowgroup">
+        {changes
+        ->Belt.List.mapWithIndex((idx, change) => <RowItem key={string_of_int(idx)} index change />)
+        ->Belt.List.toArray
+        ->React.array}
+      </tbody>
+    </table>
 }

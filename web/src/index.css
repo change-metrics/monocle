@@ -1,0 +1,5 @@
+/* Patternfly overrides */
+.pf-c-label {
+  --pf-global--spacer--xs: 1px;
+  --pf-global--spacer--sm: 4px;
+}

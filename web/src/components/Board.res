@@ -56,7 +56,7 @@ module Column = {
             | _ =>
               <Patternfly.DataList isCompact={true}>
                 {changes
-                ->Belt.Array.map(change => <Change.DataItem key={change.url} change={change} />)
+                ->Belt.Array.map(change => <Change.DataItem index key={change.url} change={change} />)
                 ->React.array}
               </Patternfly.DataList>
             }
