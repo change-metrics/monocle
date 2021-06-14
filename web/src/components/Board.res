@@ -263,10 +263,9 @@ module Board = {
 }
 
 @react.component
-let make = (~index: string) => {
-  // TODO: move the store to the main App
-  let store = Store.use(index)
+let make = (~store: Store.t) => {
   let (state, _) = store
+  let index = state.index
 
   // Load from url and store the column state
   let (board, dispatch) = Board.use()
