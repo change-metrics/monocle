@@ -13,6 +13,8 @@ jobs:
     name: Haskell GHC ${{ matrix.ghc }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: haskell/actions/setup@v1
         with:
           cabal-version: '3.4'
