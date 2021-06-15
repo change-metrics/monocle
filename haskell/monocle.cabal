@@ -111,6 +111,7 @@ library
                      , Monocle.Config
                      , Monocle.Search
                      , Monocle.TaskData
+                     , Monocle.Crawler
 
   other-modules:       Monocle.Api.Client.Api
                      , Monocle.Api.Client.Internal

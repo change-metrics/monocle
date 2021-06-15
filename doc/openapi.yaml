@@ -94,12 +94,12 @@ paths:
     /api/2/crawler/add:
         post:
             summary: Push crawler data
-            operationId: Crawler_Add
+            operationId: Crawler_AddDoc
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/AddRequest'
+                            $ref: '#/components/schemas/AddDocRequest'
                 required: true
             responses:
                 "200":
@@ -107,7 +107,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/AddResponse'
+                                $ref: '#/components/schemas/AddDocResponse'
     /api/2/crawler/commit:
         post:
             summary: Add commit message
@@ -192,19 +192,7 @@ paths:
                                 $ref: '#/components/schemas/QueryResponse'
 components:
     schemas:
-        AddRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TaskData'
-        AddRequest:
+        AddDocRequest:
             properties:
                 index:
                     type: string
@@ -223,16 +211,28 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChangeEvent'
+        AddDocResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+        AddRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskData'
         AddResponse:
             properties:
                 error:
                     type: integer
                     description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
-                    format: enum
-        AddResponse:
-            properties:
-                error:
-                    type: integer
                     format: enum
         Change:
             properties:

@@ -12,7 +12,7 @@ enum Entity {
   Change = 0;
 }
 
-message AddRequest {
+message AddDocRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
@@ -21,16 +21,16 @@ message AddRequest {
   repeated monocle_change.ChangeEvent events = 6;
 }
 
-enum AddError {
+enum AddDocError {
   AddUnknownIndex = 0;
   AddUnknownCrawler = 1;
   AddUnknownApiKey = 2;
   AddFailed = 3;
 }
 
-message AddResponse {
+message AddDocResponse {
   oneof result {
-    AddError error = 1;
+    AddDocError error = 1;
   }
 }
 

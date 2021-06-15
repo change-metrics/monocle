@@ -29,14 +29,14 @@ configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
 
-crawlerAdd :: CrawlerPB.AddRequest -> appM CrawlerPB.AddResponse
-crawlerAdd = _
+crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
+crawlerAddDoc = undefined
 
-crawlerCommit :: CrawlerPB.CommitRequest -> appM CrawlerPB.CommitResponse
-crawlerCommit = _
+crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
+crawlerCommit = undefined
 
-crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> appM CrawlerPB.CommitInfoResponse
-crawlerCommitInfo = _
+crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
+crawlerCommitInfo = undefined
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do

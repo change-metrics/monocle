@@ -98,13 +98,13 @@ module TaskData = {
 
 module Crawler = {
   @module("axios")
-  external addRaw: (string, 'a) => axios<'b> = "post"
+  external addDocRaw: (string, 'a) => axios<'b> = "post"
 
-  let add = (request: CrawlerTypes.add_request): axios<CrawlerTypes.add_response> =>
-    request->CrawlerBs.encode_add_request
-    |> addRaw(serverUrl ++ "/api/2/crawler/add")
+  let addDoc = (request: CrawlerTypes.add_doc_request): axios<CrawlerTypes.add_doc_response> =>
+    request->CrawlerBs.encode_add_doc_request
+    |> addDocRaw(serverUrl ++ "/api/2/crawler/add")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->CrawlerBs.decode_add_response}->Js.Promise.resolve
+      {data: resp.data->CrawlerBs.decode_add_doc_response}->Js.Promise.resolve
     )
   @module("axios")
   external commitRaw: (string, 'a) => axios<'b> = "post"

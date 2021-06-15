@@ -78,67 +78,68 @@ instance HsJSONPB.FromJSON Entity where
 
 instance HsProtobuf.Finite Entity
 
-data AddRequest = AddRequest
-  { addRequestIndex :: Hs.Text,
-    addRequestCrawler :: Hs.Text,
-    addRequestApikey :: Hs.Text,
-    addRequestEntity :: HsProtobuf.Enumerated Monocle.Crawler.Entity,
-    addRequestChanges :: Hs.Vector Monocle.Change.Change,
-    addRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent
+data AddDocRequest = AddDocRequest
+  { addDocRequestIndex :: Hs.Text,
+    addDocRequestCrawler :: Hs.Text,
+    addDocRequestApikey :: Hs.Text,
+    addDocRequestEntity ::
+      HsProtobuf.Enumerated Monocle.Crawler.Entity,
+    addDocRequestChanges :: Hs.Vector Monocle.Change.Change,
+    addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddRequest where
-  nameOf _ = (Hs.fromString "AddRequest")
+instance HsProtobuf.Named AddDocRequest where
+  nameOf _ = (Hs.fromString "AddDocRequest")
 
-instance HsProtobuf.HasDefault AddRequest
+instance HsProtobuf.HasDefault AddDocRequest
 
-instance HsProtobuf.Message AddRequest where
+instance HsProtobuf.Message AddDocRequest where
   encodeMessage
     _
-    AddRequest
-      { addRequestIndex = addRequestIndex,
-        addRequestCrawler = addRequestCrawler,
-        addRequestApikey = addRequestApikey,
-        addRequestEntity = addRequestEntity,
-        addRequestChanges = addRequestChanges,
-        addRequestEvents = addRequestEvents
+    AddDocRequest
+      { addDocRequestIndex = addDocRequestIndex,
+        addDocRequestCrawler = addDocRequestCrawler,
+        addDocRequestApikey = addDocRequestApikey,
+        addDocRequestEntity = addDocRequestEntity,
+        addDocRequestChanges = addDocRequestChanges,
+        addDocRequestEvents = addDocRequestEvents
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                addRequestIndex
+                addDocRequestIndex
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                addRequestCrawler
+                addDocRequestCrawler
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                addRequestApikey
+                addDocRequestApikey
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                addRequestEntity
+                addDocRequestEntity
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Vector Monocle.Change.Change)
                     @(HsProtobuf.NestedVec Monocle.Change.Change)
-                    addRequestChanges
+                    addDocRequestChanges
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 6)
                 ( Hs.coerce @(Hs.Vector Monocle.Change.ChangeEvent)
                     @(HsProtobuf.NestedVec Monocle.Change.ChangeEvent)
-                    addRequestEvents
+                    addDocRequestEvents
                 )
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure AddRequest)
+    (Hs.pure AddDocRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -226,8 +227,8 @@ instance HsProtobuf.Message AddRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB AddRequest where
-  toJSONPB (AddRequest f1 f2 f3 f4 f5 f6) =
+instance HsJSONPB.ToJSONPB AddDocRequest where
+  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.object
         [ "index" .= f1,
           "crawler" .= f2,
@@ -237,7 +238,7 @@ instance HsJSONPB.ToJSONPB AddRequest where
           "events" .= f6
         ]
     )
-  toEncodingPB (AddRequest f1 f2 f3 f4 f5 f6) =
+  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.pairs
         [ "index" .= f1,
           "crawler" .= f2,
@@ -248,12 +249,12 @@ instance HsJSONPB.ToJSONPB AddRequest where
         ]
     )
 
-instance HsJSONPB.FromJSONPB AddRequest where
+instance HsJSONPB.FromJSONPB AddDocRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "AddRequest"
+        "AddDocRequest"
         ( \obj ->
-            (Hs.pure AddRequest) <*> obj .: "index" <*> obj .: "crawler"
+            (Hs.pure AddDocRequest) <*> obj .: "index" <*> obj .: "crawler"
               <*> obj .: "apikey"
               <*> obj .: "entity"
               <*> obj .: "changes"
@@ -261,30 +262,30 @@ instance HsJSONPB.FromJSONPB AddRequest where
         )
     )
 
-instance HsJSONPB.ToJSON AddRequest where
+instance HsJSONPB.ToJSON AddDocRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON AddRequest where
+instance HsJSONPB.FromJSON AddDocRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddRequest where
+instance HsJSONPB.ToSchema AddDocRequest where
   declareNamedSchema _ =
     do
       let declare_index = HsJSONPB.declareSchemaRef
-      addRequestIndex <- declare_index Proxy.Proxy
+      addDocRequestIndex <- declare_index Proxy.Proxy
       let declare_crawler = HsJSONPB.declareSchemaRef
-      addRequestCrawler <- declare_crawler Proxy.Proxy
+      addDocRequestCrawler <- declare_crawler Proxy.Proxy
       let declare_apikey = HsJSONPB.declareSchemaRef
-      addRequestApikey <- declare_apikey Proxy.Proxy
+      addDocRequestApikey <- declare_apikey Proxy.Proxy
       let declare_entity = HsJSONPB.declareSchemaRef
-      addRequestEntity <- declare_entity Proxy.Proxy
+      addDocRequestEntity <- declare_entity Proxy.Proxy
       let declare_changes = HsJSONPB.declareSchemaRef
-      addRequestChanges <- declare_changes Proxy.Proxy
+      addDocRequestChanges <- declare_changes Proxy.Proxy
       let declare_events = HsJSONPB.declareSchemaRef
-      addRequestEvents <- declare_events Proxy.Proxy
+      addDocRequestEvents <- declare_events Proxy.Proxy
       let _ =
-            Hs.pure AddRequest <*> HsJSONPB.asProxy declare_index
+            Hs.pure AddDocRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_crawler
               <*> HsJSONPB.asProxy declare_apikey
               <*> HsJSONPB.asProxy declare_entity
@@ -293,7 +294,7 @@ instance HsJSONPB.ToSchema AddRequest where
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddRequest",
+                Hs.Just "AddDocRequest",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -303,117 +304,120 @@ instance HsJSONPB.ToSchema AddRequest where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("index", addRequestIndex),
-                          ("crawler", addRequestCrawler),
-                          ("apikey", addRequestApikey),
-                          ("entity", addRequestEntity),
-                          ("changes", addRequestChanges),
-                          ("events", addRequestEvents)
+                        [ ("index", addDocRequestIndex),
+                          ("crawler", addDocRequestCrawler),
+                          ("apikey", addDocRequestApikey),
+                          ("entity", addDocRequestEntity),
+                          ("changes", addDocRequestChanges),
+                          ("events", addDocRequestEvents)
                         ]
                   }
             }
         )
 
-data AddError
-  = AddErrorAddUnknownIndex
-  | AddErrorAddUnknownCrawler
-  | AddErrorAddUnknownApiKey
-  | AddErrorAddFailed
+data AddDocError
+  = AddDocErrorAddUnknownIndex
+  | AddDocErrorAddUnknownCrawler
+  | AddDocErrorAddUnknownApiKey
+  | AddDocErrorAddFailed
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddError where
-  nameOf _ = (Hs.fromString "AddError")
+instance HsProtobuf.Named AddDocError where
+  nameOf _ = (Hs.fromString "AddDocError")
 
-instance HsProtobuf.HasDefault AddError
+instance HsProtobuf.HasDefault AddDocError
 
-instance Hs.Bounded AddError where
-  minBound = AddErrorAddUnknownIndex
-  maxBound = AddErrorAddFailed
+instance Hs.Bounded AddDocError where
+  minBound = AddDocErrorAddUnknownIndex
+  maxBound = AddDocErrorAddFailed
 
-instance Hs.Ord AddError where
+instance Hs.Ord AddDocError where
   compare x y =
     Hs.compare
       (HsProtobuf.fromProtoEnum x)
       (HsProtobuf.fromProtoEnum y)
 
-instance HsProtobuf.ProtoEnum AddError where
-  toProtoEnumMay 0 = Hs.Just AddErrorAddUnknownIndex
-  toProtoEnumMay 1 = Hs.Just AddErrorAddUnknownCrawler
-  toProtoEnumMay 2 = Hs.Just AddErrorAddUnknownApiKey
-  toProtoEnumMay 3 = Hs.Just AddErrorAddFailed
+instance HsProtobuf.ProtoEnum AddDocError where
+  toProtoEnumMay 0 = Hs.Just AddDocErrorAddUnknownIndex
+  toProtoEnumMay 1 = Hs.Just AddDocErrorAddUnknownCrawler
+  toProtoEnumMay 2 = Hs.Just AddDocErrorAddUnknownApiKey
+  toProtoEnumMay 3 = Hs.Just AddDocErrorAddFailed
   toProtoEnumMay _ = Hs.Nothing
-  fromProtoEnum (AddErrorAddUnknownIndex) = 0
-  fromProtoEnum (AddErrorAddUnknownCrawler) = 1
-  fromProtoEnum (AddErrorAddUnknownApiKey) = 2
-  fromProtoEnum (AddErrorAddFailed) = 3
+  fromProtoEnum (AddDocErrorAddUnknownIndex) = 0
+  fromProtoEnum (AddDocErrorAddUnknownCrawler) = 1
+  fromProtoEnum (AddDocErrorAddUnknownApiKey) = 2
+  fromProtoEnum (AddDocErrorAddFailed) = 3
 
-instance HsJSONPB.ToJSONPB AddError where
+instance HsJSONPB.ToJSONPB AddDocError where
   toJSONPB x _ = HsJSONPB.enumFieldString x
   toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
 
-instance HsJSONPB.FromJSONPB AddError where
+instance HsJSONPB.FromJSONPB AddDocError where
   parseJSONPB (HsJSONPB.String "AddUnknownIndex") =
-    Hs.pure AddErrorAddUnknownIndex
+    Hs.pure AddDocErrorAddUnknownIndex
   parseJSONPB (HsJSONPB.String "AddUnknownCrawler") =
-    Hs.pure AddErrorAddUnknownCrawler
+    Hs.pure AddDocErrorAddUnknownCrawler
   parseJSONPB (HsJSONPB.String "AddUnknownApiKey") =
-    Hs.pure AddErrorAddUnknownApiKey
+    Hs.pure AddDocErrorAddUnknownApiKey
   parseJSONPB (HsJSONPB.String "AddFailed") =
-    Hs.pure AddErrorAddFailed
-  parseJSONPB v = (HsJSONPB.typeMismatch "AddError" v)
+    Hs.pure AddDocErrorAddFailed
+  parseJSONPB v = (HsJSONPB.typeMismatch "AddDocError" v)
 
-instance HsJSONPB.ToJSON AddError where
+instance HsJSONPB.ToJSON AddDocError where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON AddError where
+instance HsJSONPB.FromJSON AddDocError where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsProtobuf.Finite AddError
+instance HsProtobuf.Finite AddDocError
 
-newtype AddResponse = AddResponse
-  { addResponseResult ::
-      Hs.Maybe AddResponseResult
+newtype AddDocResponse = AddDocResponse
+  { addDocResponseResult ::
+      Hs.Maybe AddDocResponseResult
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddResponse where
-  nameOf _ = (Hs.fromString "AddResponse")
+instance HsProtobuf.Named AddDocResponse where
+  nameOf _ = (Hs.fromString "AddDocResponse")
 
-instance HsProtobuf.HasDefault AddResponse
+instance HsProtobuf.HasDefault AddDocResponse
 
-instance HsProtobuf.Message AddResponse where
-  encodeMessage _ AddResponse {addResponseResult = addResponseResult} =
-    ( Hs.mconcat
-        [ case addResponseResult of
-            Hs.Nothing -> Hs.mempty
-            Hs.Just x ->
-              case x of
-                AddResponseResultError y ->
-                  ( HsProtobuf.encodeMessageField
-                      (HsProtobuf.FieldNumber 1)
-                      (HsProtobuf.ForceEmit y)
-                  )
-        ]
-    )
+instance HsProtobuf.Message AddDocResponse where
+  encodeMessage
+    _
+    AddDocResponse {addDocResponseResult = addDocResponseResult} =
+      ( Hs.mconcat
+          [ case addDocResponseResult of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  AddDocResponseResultError y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 1)
+                        (HsProtobuf.ForceEmit y)
+                    )
+          ]
+      )
   decodeMessage _ =
-    (Hs.pure AddResponse)
+    (Hs.pure AddDocResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
               [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. AddResponseResultError))
+                  (Hs.pure (Hs.Just Hs.. AddDocResponseResultError))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
           )
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB AddResponse where
-  toJSONPB (AddResponse f1) =
+instance HsJSONPB.ToJSONPB AddDocResponse where
+  toJSONPB (AddDocResponse f1) =
     ( HsJSONPB.object
         [ ( let encodeResult =
                   ( case f1 of
-                      Hs.Just (AddResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (AddDocResponseResultError f1) ->
+                        (HsJSONPB.pair "error" f1)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -425,11 +429,12 @@ instance HsJSONPB.ToJSONPB AddResponse where
           )
         ]
     )
-  toEncodingPB (AddResponse f1) =
+  toEncodingPB (AddDocResponse f1) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
                   ( case f1 of
-                      Hs.Just (AddResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (AddDocResponseResultError f1) ->
+                        (HsJSONPB.pair "error" f1)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -440,15 +445,15 @@ instance HsJSONPB.ToJSONPB AddResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB AddResponse where
+instance HsJSONPB.FromJSONPB AddDocResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "AddResponse"
+        "AddDocResponse"
         ( \obj ->
-            (Hs.pure AddResponse)
+            (Hs.pure AddDocResponse)
               <*> ( let parseResult parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. AddResponseResultError
+                            [ Hs.Just Hs.. AddDocResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error"),
                               Hs.pure Hs.Nothing
                             ]
@@ -460,23 +465,23 @@ instance HsJSONPB.FromJSONPB AddResponse where
         )
     )
 
-instance HsJSONPB.ToJSON AddResponse where
+instance HsJSONPB.ToJSON AddDocResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON AddResponse where
+instance HsJSONPB.FromJSON AddDocResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddResponse where
+instance HsJSONPB.ToSchema AddDocResponse where
   declareNamedSchema _ =
     do
       let declare_result = HsJSONPB.declareSchemaRef
-      addResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure AddResponse <*> HsJSONPB.asProxy declare_result
+      addDocResponseResult <- declare_result Proxy.Proxy
+      let _ = Hs.pure AddDocResponse <*> HsJSONPB.asProxy declare_result
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddResponse",
+                Hs.Just "AddDocResponse",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -486,33 +491,33 @@ instance HsJSONPB.ToSchema AddResponse where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("result", addResponseResult)]
+                        [("result", addDocResponseResult)]
                   }
             }
         )
 
-data AddResponseResult
-  = AddResponseResultError
+data AddDocResponseResult
+  = AddDocResponseResultError
       ( HsProtobuf.Enumerated
-          Monocle.Crawler.AddError
+          Monocle.Crawler.AddDocError
       )
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddResponseResult where
-  nameOf _ = (Hs.fromString "AddResponseResult")
+instance HsProtobuf.Named AddDocResponseResult where
+  nameOf _ = (Hs.fromString "AddDocResponseResult")
 
-instance HsJSONPB.ToSchema AddResponseResult where
+instance HsJSONPB.ToSchema AddDocResponseResult where
   declareNamedSchema _ =
     do
       let declare_error = HsJSONPB.declareSchemaRef
-      addResponseResultError <- declare_error Proxy.Proxy
+      addDocResponseResultError <- declare_error Proxy.Proxy
       let _ =
-            Hs.pure AddResponseResultError
+            Hs.pure AddDocResponseResultError
               <*> HsJSONPB.asProxy declare_error
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddResponseResult",
+                Hs.Just "AddDocResponseResult",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -522,7 +527,7 @@ instance HsJSONPB.ToSchema AddResponseResult where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("error", addResponseResultError)],
+                        [("error", addDocResponseResultError)],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
                     HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }

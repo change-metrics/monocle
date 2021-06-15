@@ -84,7 +84,7 @@ service TaskData {
 
 service Crawler {
   // Push crawler data
-  rpc Add(monocle_crawler.AddRequest) returns (monocle_crawler.AddResponse) {
+  rpc AddDoc(monocle_crawler.AddDocRequest) returns (monocle_crawler.AddDocResponse) {
     option (google.api.http) = {
       post: "/api/2/crawler/add"
       body: "*"
