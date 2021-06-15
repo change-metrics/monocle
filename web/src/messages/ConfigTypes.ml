@@ -16,6 +16,14 @@ type get_projects_response = {
   projects : project_definition list;
 }
 
+type health_request = {
+  index : string;
+}
+
+type health_response = {
+  status : string;
+}
+
 let rec default_project_definition 
   ?name:((name:string) = "")
   ?repository_regex:((repository_regex:string) = "")
@@ -38,4 +46,16 @@ let rec default_get_projects_response
   ?projects:((projects:project_definition list) = [])
   () : get_projects_response  = {
   projects;
+}
+
+let rec default_health_request 
+  ?index:((index:string) = "")
+  () : health_request  = {
+  index;
+}
+
+let rec default_health_response 
+  ?status:((status:string) = "")
+  () : health_response  = {
+  status;
 }

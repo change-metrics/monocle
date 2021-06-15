@@ -18,6 +18,9 @@ import Monocle.TaskData
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/1/get_projects"
 
+configHealth :: (MonadThrow m, MonadIO m) => MonocleClient -> HealthRequest -> m HealthResponse
+configHealth = monocleReq "api/2/health"
+
 searchSuggestions :: (MonadThrow m, MonadIO m) => MonocleClient -> SearchSuggestionsRequest -> m SearchSuggestionsResponse
 searchSuggestions = monocleReq "api/1/suggestions"
 

@@ -19,6 +19,14 @@ type get_projects_response = {
   projects : project_definition list;
 }
 
+type health_request = {
+  index : string;
+}
+
+type health_response = {
+  status : string;
+}
+
 
 (** {2 Default values} *)
 
@@ -42,3 +50,15 @@ val default_get_projects_response :
   unit ->
   get_projects_response
 (** [default_get_projects_response ()] is the default value for type [get_projects_response] *)
+
+val default_health_request : 
+  ?index:string ->
+  unit ->
+  health_request
+(** [default_health_request ()] is the default value for type [health_request] *)
+
+val default_health_response : 
+  ?status:string ->
+  unit ->
+  health_response
+(** [default_health_response ()] is the default value for type [health_response] *)
