@@ -132,17 +132,21 @@ module Top = {
     let (state, dispatch) = store
     // The local state
     let (value, setValue') = React.useState(() => state.query)
+    let (savedValue, setSavedValue) = React.useState(() => state.query)
     let setValue = v => setValue'(_ => v)
 
     // Dispatch the value upstream
     let onClick = _ => {
+      setSavedValue(_ => value)
       value->Store.Store.SetQuery->dispatch
     }
 
     <Patternfly.Layout.Bullseye>
       <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
         <Bar value setValue store />
-        <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+        {value != savedValue
+          ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+          : React.null}
       </div>
     </Patternfly.Layout.Bullseye>
   }
