@@ -8,15 +8,17 @@ option go_package = "monocle/crawler";
 import "google/protobuf/timestamp.proto";
 import "monocle/change.proto";
 
-enum Entity {
-  Change = 0;
+message ChangeEntity {
+  string project = 1;
 }
 
 message AddDocRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
-  Entity entity = 4;
+  oneof entity {
+    ChangeEntity changeEntity = 4;
+  }
   repeated monocle_change.Change changes = 5;
   repeated monocle_change.ChangeEvent events = 6;
 }
@@ -38,7 +40,9 @@ message CommitRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
-  Entity entity = 4;
+  oneof entity {
+    ChangeEntity changes = 4;
+  }
   google.protobuf.Timestamp timestamp = 5;
 }
 
@@ -47,6 +51,7 @@ enum CommitError {
   CommitUnknownCrawler = 1;
   CommitUnknownApiKey = 2;
   CommitDateInferiorThanPrevious = 3;
+  CommitDateMissing = 4;
 }
 
 message CommitResponse {

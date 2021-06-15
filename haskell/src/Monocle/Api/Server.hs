@@ -12,6 +12,7 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
@@ -34,7 +35,24 @@ crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc = undefined
 
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
-crawlerCommit = undefined
+crawlerCommit request = do
+  Env {bhEnv = bhEnv} <- ask
+  let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
+  case (indexExist indexName, apiKeyMatch indexName crawlerName apiKey, timestampM) of
+    (True, True, Just ts) -> do
+      _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts)
+      pure $ CrawlerPB.CommitResponse (Just (CrawlerPB.CommitResponseResultTimestamp ts))
+    _ -> do
+      pure $
+        CrawlerPB.CommitResponse
+          (Just (CrawlerPB.CommitResponseResultError (Enumerated $ Right CrawlerPB.CommitErrorCommitDateMissing)))
+  where
+    toEntity :: Maybe CrawlerPB.CommitRequestEntity -> I.Entity
+    toEntity entityPB = case entityPB of
+      Just (CrawlerPB.CommitRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
+      _ -> error "Unknown Entity type"
+    indexExist name = True
+    apiKeyMatch indexName crawlerName apiKey = True
 
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo = undefined

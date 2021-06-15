@@ -200,9 +200,8 @@ components:
                     type: string
                 apikey:
                     type: string
-                entity:
-                    type: integer
-                    format: enum
+                changeEntity:
+                    $ref: '#/components/schemas/ChangeEntity'
                 changes:
                     type: array
                     items:
@@ -396,6 +395,10 @@ components:
             properties: {}
         ChangeCreatedEvent:
             properties: {}
+        ChangeEntity:
+            properties:
+                project:
+                    type: string
         ChangeEvent:
             properties:
                 id:
@@ -481,46 +484,46 @@ components:
             properties:
                 sha:
                     type: string
+                title:
+                    type: string
                 author:
-                    $ref: '#/components/schemas/Ident'
-                committer:
-                    $ref: '#/components/schemas/Ident'
+                    type: string
                 authored_at:
                     type: string
                     format: RFC3339
+                committer:
+                    type: string
                 committed_at:
                     type: string
                     format: RFC3339
                 additions:
                     type: integer
-                    format: int32
+                    format: uint32
                 deletions:
                     type: integer
-                    format: int32
-                title:
-                    type: string
+                    format: uint32
         Commit:
             properties:
                 sha:
                     type: string
-                title:
-                    type: string
                 author:
-                    type: string
+                    $ref: '#/components/schemas/Ident'
+                committer:
+                    $ref: '#/components/schemas/Ident'
                 authored_at:
                     type: string
                     format: RFC3339
-                committer:
-                    type: string
                 committed_at:
                     type: string
                     format: RFC3339
                 additions:
                     type: integer
-                    format: uint32
+                    format: int32
                 deletions:
                     type: integer
-                    format: uint32
+                    format: int32
+                title:
+                    type: string
         CommitInfoRequest:
             properties:
                 index:
@@ -543,9 +546,8 @@ components:
                     type: string
                 apikey:
                     type: string
-                entity:
-                    type: integer
-                    format: enum
+                changes:
+                    $ref: '#/components/schemas/ChangeEntity'
                 timestamp:
                     type: string
                     format: RFC3339
