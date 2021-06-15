@@ -161,8 +161,9 @@ updateBound op date = do
         then (Just $ max date (fromMaybe date minDateM), maxDate)
         else (minDateM, min date maxDate)
 
-mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
-mkRangeValue now op field fieldType value = do
+mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
+mkRangeValue op field fieldType value = do
+  now <- asks envNow
   case fieldType of
     Field_TypeFIELD_DATE -> do
       date <-
@@ -181,12 +182,12 @@ toParseError e = case e of
   Left msg -> lift . lift $ throwE (ParseError msg 0)
   Right x -> pure x
 
-mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
-mkRangeQuery now expr field value = do
+mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
+mkRangeQuery expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> mkRangeValue now (toRangeOp expr) field fieldType value
+    <$> mkRangeValue (toRangeOp expr) field fieldType value
 
 mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
@@ -212,18 +213,18 @@ mkEqQuery field value = do
 
 data BoolOp = And | Or
 
-mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Parser BH.Query
-mkBoolQuery now op e1 e2 = do
-  q1 <- query now e1
-  q2 <- query now e2
+mkBoolQuery :: BoolOp -> Expr -> Expr -> Parser BH.Query
+mkBoolQuery op e1 e2 = do
+  q1 <- query e1
+  q2 <- query e2
   let (must, should) = case op of
         And -> ([q1, q2], [])
         Or -> ([], [q1, q2])
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
-mkNotQuery :: UTCTime -> Expr -> Parser BH.Query
-mkNotQuery now e1 = do
-  q1 <- query now e1
+mkNotQuery :: Expr -> Parser BH.Query
+mkNotQuery e1 = do
+  q1 <- query e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
 
 -- | 'query' creates an elastic search query
@@ -234,16 +235,16 @@ mkNotQuery now e1 = do
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
-query :: UTCTime -> Expr -> Parser BH.Query
-query now expr = case expr of
-  AndExpr e1 e2 -> mkBoolQuery now And e1 e2
-  OrExpr e1 e2 -> mkBoolQuery now Or e1 e2
+query :: Expr -> Parser BH.Query
+query expr = case expr of
+  AndExpr e1 e2 -> mkBoolQuery And e1 e2
+  OrExpr e1 e2 -> mkBoolQuery Or e1 e2
   EqExpr field value -> mkEqQuery field value
-  NotExpr e1 -> mkNotQuery now e1
-  e@(GtExpr field value) -> mkRangeQuery now e field value
-  e@(GtEqExpr field value) -> mkRangeQuery now e field value
-  e@(LtExpr field value) -> mkRangeQuery now e field value
-  e@(LtEqExpr field value) -> mkRangeQuery now e field value
+  NotExpr e1 -> mkNotQuery e1
+  e@(GtExpr field value) -> mkRangeQuery e field value
+  e@(GtEqExpr field value) -> mkRangeQuery e field value
+  e@(LtExpr field value) -> mkRangeQuery e field value
+  e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
   OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
 
@@ -267,7 +268,7 @@ queryWithMods now baseExpr = do
   (query', (boundM, bound)) <-
     runExcept
       . flip runStateT (Nothing, now)
-      . runReaderT (query now expr)
+      . runReaderT (query expr)
       $ Env now []
   pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
