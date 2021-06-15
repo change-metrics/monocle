@@ -318,6 +318,7 @@ queryWithMods now username indexM baseExpr = do
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
+      LimitExpr limit' (OrderByExpr order' sortOrder expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')
       _ -> (Nothing, 100, baseExpr)
 

@@ -20,7 +20,7 @@ import Monocle.Search.Syntax (SortOrder (..))
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearch indexName search = do
-  -- say . decodeUtf8 . Aeson.encode $ search
+  -- monocleLog . decodeUtf8 . Aeson.encode $ search
   rawResp <- BH.searchByIndex indexName search
   resp <- BH.parseEsResponse rawResp
   case resp of

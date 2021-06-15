@@ -12,11 +12,31 @@ module Column = {
   type t = {name: string, query: string}
 
   let addQuery = (columnQuery, query) => {
+    // TODO: stop doing text combinaison of columnQuery and globalQuery
+    // instead, let the api combine both and correctly handle columnquery mod.
+    //
+    // In the meantime, if the global query is just a mod, e.g. `limit 5`, then append
+    // it correctly:
     let queryL = query->Js.String.toLowerCase
     let prefix =
       Js.String.startsWith("limit ", queryL) || Js.String.startsWith("order by ", queryL)
         ? " "
         : " and "
+
+    // If the column query contains a order by mod, then move it to the global query
+    let queryModRe = %re("/order by .*$/")
+    let queryMod =
+      queryModRe
+      ->Js.Re.exec_(columnQuery)
+      ->Belt.Option.flatMap(res =>
+        res->Js.Re.captures->Js.Array.unsafe_get(0)->Js.Nullable.toOption
+      )
+    let (columnQuery, query) = switch queryMod {
+    | None
+    | Some("") => (columnQuery, query)
+    | Some(queryMod) => (Js.String.replace(queryMod, "", columnQuery), query ++ " " ++ queryMod)
+    }
+
     columnQuery != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
   }
 
@@ -56,7 +76,9 @@ module Column = {
             | _ =>
               <Patternfly.DataList isCompact={true}>
                 {changes
-                ->Belt.Array.map(change => <Change.DataItem index key={change.url} change={change} />)
+                ->Belt.Array.map(change =>
+                  <Change.DataItem index key={change.url} change={change} />
+                )
                 ->React.array}
               </Patternfly.DataList>
             }
@@ -109,12 +131,31 @@ module ColumnEditor = {
 module Board = {
   type t = {title: string, columns: list<Column.t>}
 
+  let defaultNegativeApprovals = "(approval:Workflow-1 or approval:Code-Review-1 or approval:Code-Review-2)"
+  let defaultPositiveApprovals = "approval:Verified+1"
+
   let default = {
     title: "Reviewer Board",
     columns: list{
-      {Column.name: "To Review", query: "state: open and updated_at < now-1week"},
-      {Column.name: "To Approve", query: "state: open and updated_at > now-1week"},
-      {Column.name: "Done", query: "state:merged and updated_at > now-1week"},
+      {
+        Column.name: "To Review",
+        query: "state: open and updated_at < now-1week and updated_at > now-3week " ++
+        defaultPositiveApprovals ++
+        " and not " ++
+        defaultNegativeApprovals ++ " order by created_at",
+      },
+      {
+        Column.name: "To Approve",
+        query: "state:open and updated_at > now-1week order by created_at desc",
+      },
+      {
+        Column.name: "Done",
+        query: "state:merged and updated_at > now-1week order by updated_at desc",
+      },
+      {
+        Column.name: "Oldies",
+        query: "state:open and updated_at > now-3week order by updated_at desc",
+      },
     },
   }
 
