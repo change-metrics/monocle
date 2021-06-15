@@ -530,6 +530,8 @@ components:
                     type: string
                 crawler:
                     type: string
+                changes:
+                    $ref: '#/components/schemas/ChangeEntity'
         CommitInfoResponse:
             properties:
                 error:

@@ -64,6 +64,9 @@ message CommitResponse {
 message CommitInfoRequest {
   string index = 1;
   string crawler = 2;
+  oneof entity {
+    ChangeEntity changes = 3;
+  }
 }
 
 enum CommitInfoError {
