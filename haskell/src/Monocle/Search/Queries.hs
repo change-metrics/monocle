@@ -49,9 +49,9 @@ runQuery docType bhEnv index queryBase =
         { BH.size = BH.Size (Q.queryLimit queryBase),
           BH.sortBody = toSortBody <$> Q.queryOrder queryBase
         }
-    toSortBody (field, order) =
+    toSortBody (field', order) =
       [ BH.DefaultSortSpec
-          ( BH.DefaultSort (BH.FieldName field) (sortOrder order) Nothing Nothing Nothing Nothing
+          ( BH.DefaultSort (BH.FieldName field') (sortOrder order) Nothing Nothing Nothing Nothing
           )
       ]
     sortOrder order = case order of
@@ -184,14 +184,15 @@ data MergedStatsDuration = MergedStatsDuration
   }
   deriving (Eq, Show)
 
+field :: Text -> Value
+field name = Aeson.object ["field" .= name]
+
 changeMergedStatsDuration ::
   (MonadThrow m, MonadIO m) => BH.BHEnv -> BH.IndexName -> BH.Query -> m MergedStatsDuration
 changeMergedStatsDuration bhEnv index query = do
   res <- toAggRes <$> BHR.search bhEnv index (BHR.aggWithDocValues agg query)
   pure $ MergedStatsDuration (getAggValue "avg" res) (getAggValue "variability" res)
   where
-    field :: Text -> Value
-    field name = Aeson.object ["field" .= name]
     agg =
       [ ( "avg",
           Aeson.object
@@ -200,6 +201,63 @@ changeMergedStatsDuration bhEnv index query = do
         ( "variability",
           Aeson.object
             [ "median_absolute_deviation" .= field "duration"
+            ]
+        )
+      ]
+
+-- | The achievement query
+data ProjectBucket = ProjectBucket
+  { pbKey :: LText,
+    pbCount :: Word32
+  }
+  deriving (Eq, Show)
+
+instance FromJSON ProjectBucket where
+  parseJSON (Object v) = ProjectBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON _ = mzero
+
+newtype ProjectBuckets = ProjectBuckets {unProjectBuckets :: [ProjectBucket]} deriving (Eq, Show)
+
+instance FromJSON ProjectBuckets where
+  parseJSON (Object v) = ProjectBuckets <$> v .: "buckets"
+  parseJSON _ = mzero
+
+data EventProjectBucketAgg = EventProjectBucketAgg
+  { epbType :: LText,
+    epbCount :: Word32,
+    epbProjects :: [ProjectBucket]
+  }
+  deriving (Eq, Show)
+
+instance FromJSON EventProjectBucketAgg where
+  parseJSON (Object v) =
+    EventProjectBucketAgg
+      <$> v .: "key"
+      <*> v .: "doc_count"
+      <*> (unProjectBuckets <$> v .: "project")
+  parseJSON _ = mzero
+
+newtype EventProjectBucketAggs = EventProjectBucketAggs {unEPBuckets :: [EventProjectBucketAgg]} deriving (Eq, Show)
+
+instance FromJSON EventProjectBucketAggs where
+  parseJSON (Object v) = EventProjectBucketAggs <$> v .: "buckets"
+  parseJSON _ = mzero
+
+getProjectAgg :: MonadIO m => BH.BHEnv -> BH.IndexName -> BH.Query -> m [EventProjectBucketAgg]
+getProjectAgg bhEnv index query = do
+  res <- toAggRes <$> BHR.search bhEnv index (BHR.aggWithDocValues agg query)
+  pure $ unEPBuckets (parseAggregationResults "agg" res)
+  where
+    agg =
+      [ ( "agg",
+          Aeson.object
+            [ "terms" .= field "type",
+              "aggs"
+                .= Aeson.object
+                  [ "project"
+                      .= Aeson.object
+                        ["terms" .= field "repository_fullname"]
+                  ]
             ]
         )
       ]

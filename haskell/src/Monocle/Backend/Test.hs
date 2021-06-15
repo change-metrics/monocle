@@ -1,15 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 module Monocle.Backend.Test where
 
 import Control.Exception (bracket)
-import Data.Time.Clock (UTCTime)
+import Control.Monad.Random.Lazy
+import qualified Data.Text as Text
+import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
-import Relude
+import Monocle.Prelude hiding (head)
+import qualified Monocle.Search.Queries as Q
+import qualified Monocle.Search.Query as Q
+import Relude.Unsafe (head, (!!))
 import Test.Tasty.HUnit
 
 fakeDate :: UTCTime
@@ -81,8 +89,7 @@ withBH = bracket create delete
     create = I.createChangesIndex "http://localhost:9200" testIndexName
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
-        resp <- BH.deleteIndex testIndex
-        print resp
+        _resp <- BH.deleteIndex testIndex
         False <- BH.indexExists testIndex
         pure ()
 
@@ -123,7 +130,7 @@ testIndexChanges = withBH doTest
       checkELKChangeField'
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
-         (elkchangeTitle fakeChange2)
+        (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1
@@ -165,3 +172,146 @@ testCrawlerMetadata = withBH doTest
         entity = I.Project "nova"
         expectedDefaultDate :: UTCTime
         expectedDefaultDate = fromMaybe (error "nop") (readMaybe "2021-01-01 00:00:00 UTC")
+
+scenarioProject :: ScenarioProject
+scenarioProject =
+  SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+
+testAchievements :: Assertion
+testAchievements = withBH doTest
+  where
+    doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
+    doTest (bhEnv, testIndex) = do
+      indexScenario bhEnv testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
+
+      -- Try query
+      agg <- head <$> Q.getProjectAgg bhEnv testIndex query
+      assertEqual "event found" (Q.epbType agg) "Change"
+      assertEqual "event count match" (Q.epbCount agg) 1
+      where
+        query = Q.queryBH $ Q.load Nothing "state:open"
+
+-- Tests scenario helpers
+
+-- $setup
+-- >>> import Data.Time.Clock
+-- >>> let now = fromMaybe (error "") (readMaybe "2021-06-10 01:21:03Z")
+
+-- | 'randomAuthor' returns a random element of the given list
+randomAuthor :: (MonadRandom m) => [a] -> m a
+randomAuthor xs = do
+  let n = length xs
+  i <- getRandomR (0, n -1)
+  return (xs !! i)
+
+emptyChange :: ELKChange
+emptyChange = fakeChange
+
+emptyEvent :: ELKChangeEvent
+emptyEvent = ELKChangeEvent {..}
+  where
+    elkchangeeventId = mempty
+    elkchangeeventNumber = 0
+    elkchangeeventType = "ChangeMerged"
+    elkchangeeventChangeId = mempty
+    elkchangeeventUrl = mempty
+    elkchangeeventChangedFiles = mempty
+    elkchangeeventRepositoryPrefix = mempty
+    elkchangeeventRepositoryShortname = mempty
+    elkchangeeventRepositoryFullname = mempty
+    elkchangeeventAuthor = fakeAuthor
+    elkchangeeventOnAuthor = fakeAuthor
+    elkchangeeventBranch = mempty
+    elkchangeeventOnCreatedAt = fakeDate
+    elkchangeeventApproval = Nothing
+
+showEvents :: [ScenarioEvent] -> Text
+showEvents xs = Text.intercalate ", " (map go xs)
+  where
+    author = toStrict . authorMuid
+    date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
+    go ev = case ev of
+      SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
+      SCreation ELKChangeEvent {..} ->
+        ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
+          <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
+          <> "]"
+      SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
+      SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
+
+-- Tests scenario data types
+
+-- | 'ScenarioProject' is a data type to define a project for a scenario.
+data ScenarioProject = SProject
+  { name :: LText,
+    maintainers :: [Author],
+    contributors :: [Author]
+  }
+
+-- | 'ScenarioEvent' is a type of event generated for a given scenario.
+data ScenarioEvent
+  = SChange ELKChange
+  | SCreation ELKChangeEvent
+  | SReview ELKChangeEvent
+  | SMerge ELKChangeEvent
+
+toDoc :: ScenarioEvent -> (Value, BH.DocId)
+toDoc se = case se of
+  SChange e -> (toJSON e, I.getChangeDocId e)
+  SCreation e -> (toJSON e, I.getEventDocId e)
+  SReview e -> (toJSON e, I.getEventDocId e)
+  SMerge e -> (toJSON e, I.getEventDocId e)
+
+indexScenario :: BH.BHEnv -> BH.IndexName -> [ScenarioEvent] -> IO ()
+indexScenario bhEnv testIndex xs = I.indexDocs bhEnv testIndex $ fmap toDoc xs
+
+-- | 'nominalMerge' is the most simple scenario
+--
+-- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+-- >>> showEvents $ nominalMerge project "42" now (3600*24)
+-- "Change[2021-06-10 change-2218 created by eve], Reviewed[alice], Merged[2021-06-11]"
+nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
+nominalMerge SProject {..} elkchangeId start duration = evalRand scenario stdGen
+  where
+    -- The random number generator is based on the name
+    stdGen = mkStdGen (Text.length (toStrict name))
+
+    scenario = do
+      -- The base change
+      changeId <- getRandomR (1000, 9999)
+      let mkDate elapsed =
+            addUTCTime (secondsToNominalDiffTime (fromInteger elapsed)) start
+          mkChange ts author =
+            emptyChange
+              { elkchangeType = "Change",
+                elkchangeId = elkchangeId,
+                elkchangeRepositoryFullname = name,
+                elkchangeCreatedAt = mkDate ts,
+                elkchangeAuthor = author,
+                elkchangeChangeId =
+                  "change-" <> show @LText @Int changeId
+              }
+          mkEvent ts etype author =
+            emptyEvent
+              { elkchangeeventAuthor = author,
+                elkchangeeventId = etype,
+                elkchangeeventOnCreatedAt = mkDate ts,
+                elkchangeeventChangeId =
+                  toLazy $ "change-" <> show @Text @Int changeId
+              }
+
+      -- The change creation
+      author <- randomAuthor contributors
+      let create = mkEvent 0 "ChangeCreatedEvent" author
+          change = mkChange 0 author
+
+      -- The review
+      reviewer <- randomAuthor maintainers
+      let review = mkEvent (duration `div` 2) "ChangeCommentedEvent" reviewer
+
+      -- The change merged event
+      approver <- randomAuthor maintainers
+      let merge = mkEvent duration "ChangeMergedEvent" approver
+
+      -- The event lists
+      pure [SChange change, SCreation create, SReview review, SMerge merge]

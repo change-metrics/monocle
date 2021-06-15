@@ -3,13 +3,16 @@
 
 module Main (main) where
 
-import Monocle.Backend.Test (testCrawlerMetadata, testIndexChanges)
+import Monocle.Backend.Test
 import Relude
+import System.Environment
 import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [monocleIntegrationTests])
+main = do
+  setEnv "TASTY_NUM_THREADS" "1"
+  defaultMain (testGroup "Tests" [monocleIntegrationTests])
 
 monocleIntegrationTests :: TestTree
 monocleIntegrationTests =
@@ -18,8 +21,8 @@ monocleIntegrationTests =
     [ testCase
         "Index changes"
         testIndexChanges,
-      after AllFinish "Index changes" $
-        testCase
-          "Index CrawlerMetadata"
-          testCrawlerMetadata
+      testCase "Test achievement" testAchievements,
+      testCase
+        "Index CrawlerMetadata"
+        testCrawlerMetadata
     ]

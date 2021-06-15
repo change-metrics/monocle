@@ -9,6 +9,7 @@ import Data.Aeson
   ( FromJSON,
     KeyValue ((.=)),
     ToJSON (toJSON),
+    Value,
     object,
   )
 import Data.Time
@@ -244,10 +245,10 @@ createChangesIndex serverUrl index = do
   let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
   bhEnv <- mkEnv serverUrl
   BH.runBH bhEnv $ do
-    respCI <- BH.createIndex indexSettings index
-    print respCI
-    respPM <- BH.putMapping index ChangesIndexMapping
-    print respPM
+    _respCI <- BH.createIndex indexSettings index
+    -- print respCI
+    _respPM <- BH.putMapping index ChangesIndexMapping
+    -- print respPM
     True <- BH.indexExists index
     pure (bhEnv, index)
 
@@ -353,21 +354,33 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
 
-getChangeDocId :: ELKChange -> BH.DocId
-getChangeDocId change = BH.DocId . toText $ elkchangeId change
-
-indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
-indexChanges bhEnv index changes = BH.runBH bhEnv $ do
-  let stream = V.fromList (toBulkIndex . ensureType <$> changes)
+indexDocs :: BH.BHEnv -> BH.IndexName -> [(Value, BH.DocId)] -> IO ()
+indexDocs bhEnv index docs = BH.runBH bhEnv $ do
+  let stream = V.fromList $ fmap toBulkIndex docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
-    toBulkIndex change =
-      BH.BulkIndex index (getChangeDocId change) (toJSON change)
+    toBulkIndex (doc, docId) = BH.BulkIndex index docId doc
+
+getChangeDocId :: ELKChange -> BH.DocId
+getChangeDocId change = BH.DocId . toText $ elkchangeId change
+
+indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
+indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureType) changes
+  where
+    toDoc change = (toJSON change, getChangeDocId change)
     ensureType change = change {elkchangeType = "Change"}
+
+getEventDocId :: ELKChangeEvent -> BH.DocId
+getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
+
+indexEvents :: BH.BHEnv -> BH.IndexName -> [ELKChangeEvent] -> IO ()
+indexEvents bhEnv index events = indexDocs bhEnv index (fmap toDoc events)
+  where
+    toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 
 type CrawlerMetadataID = BH.DocId
 

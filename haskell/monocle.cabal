@@ -60,6 +60,7 @@ library
                      , http-types                 ^>=0.12
                      , megaparsec                 < 10
                      , parser-combinators         < 1.3
+                     , MonadRandom
                      , relude                     > 1.0.0.0
                      , retry                      < 0.9
                      , say                        ^>= 0.1
@@ -156,7 +157,8 @@ test-suite monocle-integration-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Integration.hs
-  build-depends:       monocle
+  build-depends:       base                       < 5
+                     , monocle
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11

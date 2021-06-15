@@ -3,7 +3,7 @@
 
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (Query (..), queryWithMods, query, fields) where
+module Monocle.Search.Query (Query (..), queryWithMods, query, fields, load) where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
@@ -13,6 +13,7 @@ import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
 import Monocle.Search (Field_Type (..))
+import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
 import Relude
 
@@ -265,3 +266,11 @@ queryWithMods now baseExpr = do
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
       LimitExpr limit' expr' -> (Nothing, limit', expr')
       _ -> (Nothing, 100, baseExpr)
+
+-- | Utility function to simply create a query
+load :: Maybe UTCTime -> Text -> Query
+load nowM code = case P.parse code >>= queryWithMods now of
+  Right x -> x
+  Left err -> error (show err)
+  where
+    now = fromMaybe (error "need time") nowM
