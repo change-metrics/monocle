@@ -170,13 +170,15 @@ protoToReScript = fromProto ALL headers mkService
 
     msgName moduleName msg = moduleName <> "Types." <> snake (attrName msg)
 
-    mkMethod moduleName (name, input, output, path) =
-      [ "@module(\"axios\")",
-        "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
-        "",
-        methodDef <> "=>",
-        requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
-      ]
+    mkMethod moduleName (name, input, output, path)
+      | "/crawler/" `Text.isInfixOf` path = []
+      | otherwise =
+        [ "@module(\"axios\")",
+          "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
+          "",
+          methodDef <> "=>",
+          requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
+        ]
       where
         methodDef = "let " <> camel name <> " = (" <> methodInput <> "): " <> methodOutput
         methodInput = "request: " <> msgName moduleName input
