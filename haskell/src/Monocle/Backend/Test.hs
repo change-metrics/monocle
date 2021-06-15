@@ -189,7 +189,7 @@ testAchievements = withBH doTest
       assertEqual "event found" (Q.epbType agg) "Change"
       assertEqual "event count match" (Q.epbCount agg) 1
       where
-        query = Q.queryBH $ Q.load Nothing Nothing "state:open"
+        query = Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
 -- Tests scenario helpers
 

@@ -49,6 +49,9 @@ searchQuery request = do
     indexName = toStrict $ SearchPB.queryRequestIndex request
     index = "monocle.changes.1." <> indexName
 
+    -- TODO: add field to the protobuf message
+    username = mempty
+
     toResponse :: SearchPB.QueryResponseResult -> QueryResponse
     toResponse = SearchPB.QueryResponse . Just
 
@@ -71,7 +74,7 @@ searchQuery request = do
       tenant <- case Config.lookupTenant tenants indexName of
         Nothing -> Left $ ParseError "unknown tenant" 0
         Just tenant -> Right tenant
-      Q.queryWithMods now (Just tenant) expr
+      Q.queryWithMods now username (Just tenant) expr
 
     go :: Q.Query -> AppM SearchPB.QueryResponseResult
     go query = do
@@ -155,7 +158,11 @@ searchChangesLifecycle indexName queryText = do
   response bhEnv now
   where
     index = BH.IndexName $ "monocle.changes.1." <> indexName
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now Nothing of
+
+    -- TODO: add field to the protobuf message
+    username = mempty
+
+    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now username Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied

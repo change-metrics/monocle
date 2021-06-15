@@ -163,7 +163,7 @@ monocleSearchLanguage =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods now (Just testTenant) >>= pure . field)
+        (P.parse code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
     queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =

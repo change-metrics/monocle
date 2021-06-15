@@ -29,6 +29,7 @@ type Bound = (Maybe UTCTime, UTCTime)
 
 data Env = Env
   { envNow :: UTCTime,
+    envUsername :: Text,
     envIndex :: Config.Index
   }
 
@@ -222,6 +223,17 @@ mkEqQuery field value = do
               _ -> Left $ "Invalid value for state: " <> value
           )
       pure $ BH.TermQuery (BH.Term field' value') Nothing
+    ("author", _) -> do
+      (field', value') <- case value of
+        "self" -> do
+          index <- asks envIndex
+          username <- asks envUsername
+          when (username == mempty) (toParseError $ Left "You need to be logged in to use the self value")
+          pure $ case Config.lookupIdent index username of
+            Just muid -> ("author.muid", muid)
+            Nothing -> ("author.id", username)
+        _ -> pure ("author.muid", value)
+      pure $ BH.TermQuery (BH.Term field' value') Nothing
     ("project", _) -> do
       index <- asks envIndex
       project <-
@@ -293,13 +305,13 @@ data Query = Query
   }
   deriving (Show)
 
-queryWithMods :: UTCTime -> Maybe Config.Index -> Expr -> Either ParseError Query
-queryWithMods now indexM baseExpr = do
+queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Expr -> Either ParseError Query
+queryWithMods now username indexM baseExpr = do
   (query', (boundM, bound)) <-
     runExcept
       . flip runStateT (Nothing, now)
       . runReaderT (query expr)
-      $ Env now index
+      $ Env now username index
   pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
     index = fromMaybe (error "need index") indexM
@@ -310,8 +322,8 @@ queryWithMods now indexM baseExpr = do
       _ -> (Nothing, 100, baseExpr)
 
 -- | Utility function to simply create a query
-load :: Maybe UTCTime -> Maybe Config.Index -> Text -> Query
-load nowM indexM code = case P.parse code >>= queryWithMods now indexM of
+load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query
+load nowM username indexM code = case P.parse code >>= queryWithMods now username indexM of
   Right x -> x
   Left err -> error (show err)
   where
