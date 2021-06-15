@@ -12,6 +12,7 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import qualified Monocle.Config as ConfigPB
+import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
@@ -27,6 +28,15 @@ configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
 configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
+
+crawlerAdd :: CrawlerPB.AddRequest -> appM CrawlerPB.AddResponse
+crawlerAdd = _
+
+crawlerCommit :: CrawlerPB.CommitRequest -> appM CrawlerPB.CommitResponse
+crawlerCommit = _
+
+crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> appM CrawlerPB.CommitInfoResponse
+crawlerCommitInfo = _
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
