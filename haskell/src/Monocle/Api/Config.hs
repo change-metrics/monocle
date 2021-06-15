@@ -16,6 +16,8 @@ module Monocle.Api.Config
     loadConfig,
     lookupTenant,
     lookupProject,
+    lookupIdent,
+    lookupGroupMembers,
     pname,
   )
 where
@@ -109,3 +111,10 @@ lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
   where
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
+
+-- | Need https://github.com/change-metrics/dhall-monocle/pull/3
+lookupIdent :: Index -> Text -> Maybe Text
+lookupIdent Index {..} userName = mempty
+
+lookupGroupMembers :: Index -> Text -> Maybe (NonEmpty Text)
+lookupGroupMembers Index {..} groupName = mempty

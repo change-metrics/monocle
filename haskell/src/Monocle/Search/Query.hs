@@ -56,6 +56,7 @@ fields =
     ("project", (fieldText, "project_def", "Project definition name")),
     ("author", (fieldText, "author.muid", "Author name")),
     ("author_regex", (fieldRegex, "author.muid", "Author regex")),
+    ("group", (fieldText, "group_def", "Group definition name")),
     ("branch", (fieldText, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
@@ -227,6 +228,12 @@ mkEqQuery field value = do
         toParseError $
           Config.lookupProject index value `orDie` ("Unknown project: " <> value)
       pure $ mkProjectQuery project
+    ("group", _) -> do
+      index <- asks envIndex
+      groupMembers <-
+        toParseError $
+          Config.lookupGroupMembers index value `orDie` ("Unknown group: " <> value)
+      pure $ BH.TermsQuery "author.muid" groupMembers
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
       pure
