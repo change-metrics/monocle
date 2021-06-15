@@ -248,7 +248,7 @@ task_data_service(app)
 
 
 def main():
-    app.run(host="0.0.0.0", port=9876)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 9876)))
 
 
 if __name__ == "__main__":
