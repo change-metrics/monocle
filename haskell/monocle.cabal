@@ -12,6 +12,8 @@ category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
 tested-with:         GHC == 8.10.4
+extra-source-files:  dhall-monocle/Monocle/**/*.dhall,
+                     test/data/*.yaml
 
 source-repository head
   type:                git
@@ -54,6 +56,7 @@ library
   build-depends:       aeson-casing
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
+                     , dhall                      ^>= 1.39
                      , exceptions                 < 0.11
                      , http-client                < 0.8
                      , http-client-tls            < 0.4

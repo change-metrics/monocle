@@ -7,6 +7,7 @@ import qualified Data.Aeson as Aeson
 import Data.Time.Clock (UTCTime)
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
+import qualified Monocle.Api.Config as Config
 import Monocle.Mock
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
@@ -18,7 +19,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests])
+main = defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
 
 monocleSearchLanguage :: TestTree
 monocleSearchLanguage =
@@ -188,3 +189,13 @@ monocleWebApiTests =
     test api input output = withMockClient withClient $ \client -> do
       resp <- api client input
       assertEqual "Response differ: " output resp
+
+monocleConfig :: TestTree
+monocleConfig =
+  testGroup
+    "Monocle.Api.Config"
+    [testConfigLoad]
+  where
+    testConfigLoad = testCase "Decode config" $ do
+      conf <- Config.loadConfig "./test/data/config.yaml"
+      assertEqual "config is loaded" 1 (length conf)
