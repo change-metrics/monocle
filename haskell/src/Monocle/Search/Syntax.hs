@@ -22,8 +22,8 @@ data Expr
   | GtEqExpr Field Value
   | LtEqExpr Field Value
   | -- Search operator
-    OrderByExpr Field SortOrder Expr
-  | LimitExpr Int Expr
+    OrderByExpr Field SortOrder (Maybe Expr)
+  | LimitExpr Int (Maybe Expr)
   deriving (Show, Eq)
 
 data ParseError = ParseError Text Int

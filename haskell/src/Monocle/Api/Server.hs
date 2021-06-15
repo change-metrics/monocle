@@ -166,7 +166,7 @@ searchChangesLifecycle indexName queryText = do
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied
-            bhQuery = Q.queryBH query
+            bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
             count = Q.countEvents bhEnv index
             queryType = Q.documentType bhQuery
 

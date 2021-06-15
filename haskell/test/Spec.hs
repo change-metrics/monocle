@@ -81,13 +81,13 @@ monocleSearchLanguage =
         "Parser order by"
         ( parseMatch
             "state:open order by review_date"
-            (S.OrderByExpr "review_date" S.Asc (S.EqExpr "state" "open"))
+            (S.OrderByExpr "review_date" S.Asc (Just $ S.EqExpr "state" "open"))
         ),
       testCase
         "Parser order by sort"
         ( parseMatch
             "state:open order by review_date desc"
-            (S.OrderByExpr "review_date" S.Desc (S.EqExpr "state" "open"))
+            (S.OrderByExpr "review_date" S.Desc (Just $ S.EqExpr "state" "open"))
         ),
       testCase
         "Query date"
@@ -165,7 +165,7 @@ monocleSearchLanguage =
     threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 10:00:00 Z")
     now = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
-    parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
+    parseMatch code expr = assertEqual "match" (Right (Just expr)) (P.parse code)
     queryDoMatch field code query =
       assertEqual
         "match"

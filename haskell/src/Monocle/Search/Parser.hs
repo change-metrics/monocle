@@ -64,11 +64,11 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
       -- Here it is safe to run 'exprParser' because 'parenExpr' first parses an 'OpenParenthesis'
       Combinators.between (token OpenParenthesis) (token CloseParenthesis) exprParser
 
-exprParserWithMods :: Parser Expr
+exprParserWithMods :: Parser (Maybe Expr)
 exprParserWithMods = do
-  expr <- exprParser
+  expr <- Combinators.optional exprParser
   modifiers <- Combinators.many modExpr
-  pure $ foldr (\modifier acc -> modifier acc) expr modifiers
+  pure $ foldr (\modifier acc -> Just $ modifier acc) expr modifiers
   where
     -- 'modExpr' is a trailing expression modifiers
     modExpr = do
@@ -113,7 +113,7 @@ tokens :: [Token] -> Parser Token
 tokens = Combinators.choice . map token
 
 -- | 'parse' parses the code into an 'Expr'
-parse :: Text -> Either ParseError Expr
+parse :: Text -> Either ParseError (Maybe Expr)
 parse code = do
   tokens' <- lex code
   case Megaparsec.parse (exprParserWithMods <* Megaparsec.eof) "<input>" tokens' of

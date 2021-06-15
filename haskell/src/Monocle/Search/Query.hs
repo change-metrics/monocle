@@ -293,7 +293,7 @@ query expr = case expr of
 data Query = Query
   { queryOrder :: Maybe (Field, SortOrder),
     queryLimit :: Int,
-    queryBH :: BH.Query,
+    queryBH :: Maybe BH.Query,
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -305,22 +305,26 @@ data Query = Query
   }
   deriving (Show)
 
-queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Expr -> Either ParseError Query
-queryWithMods now username indexM baseExpr = do
-  (query', (boundM, bound)) <-
-    runExcept
-      . flip runStateT (Nothing, now)
-      . runReaderT (query expr)
-      $ Env now username index
-  pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
+queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
+queryWithMods now username indexM baseExprM =
+  case exprM of
+    Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now)
+    Just expr -> do
+      (query', (boundM, bound)) <-
+        runExcept
+          . flip runStateT (Nothing, now)
+          . runReaderT (query expr)
+          $ Env now username index
+      pure $
+        Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
     index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
-    (order, limit, expr) = case baseExpr of
-      OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
-      LimitExpr limit' (OrderByExpr order' sortOrder expr') -> (Just (order', sortOrder), limit', expr')
-      LimitExpr limit' expr' -> (Nothing, limit', expr')
-      _ -> (Nothing, 100, baseExpr)
+    (order, limit, exprM) = case baseExprM of
+      (Just (OrderByExpr order' sortOrder (Just (LimitExpr limit' expr')))) -> (Just (order', sortOrder), limit', expr')
+      (Just (LimitExpr limit' (Just (OrderByExpr order' sortOrder expr')))) -> (Just (order', sortOrder), limit', expr')
+      (Just (LimitExpr limit' expr')) -> (Nothing, limit', expr')
+      expr' -> (Nothing, 100, expr')
 
 -- | Utility function to simply create a query
 load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query

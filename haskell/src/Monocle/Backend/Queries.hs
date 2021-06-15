@@ -41,9 +41,10 @@ runQuery docType bhEnv index queryBase =
       resp <- fmap BH.hitSource <$> simpleSearch (BH.IndexName index) search
       pure $ catMaybes resp
   where
+    queryBH = maybe [] (\q -> [q]) $ Q.queryBH queryBase
     query =
       BH.QueryBoolQuery $
-        BH.mkBoolQuery [BH.TermQuery (BH.Term "type" docType) Nothing, Q.queryBH queryBase] [] [] []
+        BH.mkBoolQuery ([BH.TermQuery (BH.Term "type" docType) Nothing] <> queryBH) [] [] []
     search =
       (BH.mkSearch (Just query) Nothing)
         { BH.size = BH.Size (Q.queryLimit queryBase),

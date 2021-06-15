@@ -17,7 +17,7 @@ module Column = {
     //
     // In the meantime, if the global query is just a mod, e.g. `limit 5`, then append
     // it correctly:
-    let queryL = query->Js.String.toLowerCase
+    let queryL = query->Js.String.toLowerCase->Js.String.trim
     let prefix =
       Js.String.startsWith("limit ", queryL) || Js.String.startsWith("order by ", queryL)
         ? " "
@@ -37,7 +37,7 @@ module Column = {
     | Some(queryMod) => (Js.String.replace(queryMod, "", columnQuery), query ++ " " ++ queryMod)
     }
 
-    columnQuery != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
+    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
   }
 
   @react.component
