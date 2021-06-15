@@ -118,20 +118,20 @@ instance FromJSON ELKChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeEvent = ELKChangeEvent
-  { elkchangeeventId :: Text,
-    elkchangeeventNumber :: Int,
-    elkchangeeventType :: Text,
-    elkchangeeventChangeId :: Text,
-    elkchangeeventUrl :: Text,
-    elkchangeeventChangedFiles :: Maybe [Text],
-    elkchangeeventRepositoryPrefix :: Text,
-    elkchangeeventRepositoryShortname :: Text,
-    elkchangeeventRepositoryFullname :: Text,
+  { elkchangeeventId :: LText,
+    elkchangeeventNumber :: Word32,
+    elkchangeeventType :: LText,
+    elkchangeeventChangeId :: LText,
+    elkchangeeventUrl :: LText,
+    elkchangeeventChangedFiles :: Maybe [LText],
+    elkchangeeventRepositoryPrefix :: LText,
+    elkchangeeventRepositoryShortname :: LText,
+    elkchangeeventRepositoryFullname :: LText,
     elkchangeeventAuthor :: Author,
     elkchangeeventOnAuthor :: Author,
-    elkchangeeventBranch :: Text,
+    elkchangeeventBranch :: LText,
     elkchangeeventOnCreatedAt :: UTCTime,
-    elkchangeeventMergedAt :: Maybe UTCTime
+    elkchangeeventApproval :: Maybe [LText]
   }
   deriving (Show, Eq, Generic)
 
