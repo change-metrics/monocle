@@ -12,13 +12,13 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env

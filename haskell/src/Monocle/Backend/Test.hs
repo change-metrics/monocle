@@ -14,8 +14,8 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
+import qualified Monocle.Backend.Queries as Q
 import Monocle.Prelude hiding (head)
-import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe (head, (!!))
 import Test.Tasty.HUnit

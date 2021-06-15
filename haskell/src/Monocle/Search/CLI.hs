@@ -7,8 +7,8 @@ module Monocle.Search.CLI (searchMain) where
 import qualified Data.Aeson as Aeson
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Monocle.Backend.Index as I
+import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Relude
 

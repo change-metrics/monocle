@@ -3,7 +3,7 @@
 
 -- | Monocle queries
 -- The goal of this module is to transform 'Query' into list of items
-module Monocle.Search.Queries where
+module Monocle.Backend.Queries where
 
 import Data.Aeson (Value (Object), (.:), (.=))
 import qualified Data.Aeson as Aeson

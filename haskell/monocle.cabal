@@ -99,13 +99,13 @@ library
                      -- bloodhound
                      , Monocle.Backend.Documents
                      , Monocle.Backend.Index
+                     , Monocle.Backend.Queries
                      , Monocle.Backend.Test
 
                      -- megaparsec search language
                      , Monocle.Search.CLI
                      , Monocle.Search.Lexer
                      , Monocle.Search.Parser
-                     , Monocle.Search.Queries
                      , Monocle.Search.Query
                      , Monocle.Search.Syntax
 
