@@ -13,7 +13,7 @@ import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import qualified Monocle.Config as ConfigPB
 import Monocle.Prelude
-import Monocle.Search (ChangesQueryRequest, ChangesQueryResponse, FieldsRequest, FieldsResponse (..))
+import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Queries as Q
@@ -28,22 +28,22 @@ configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
 
-searchChangesQuery :: ChangesQueryRequest -> AppM ChangesQueryResponse
-searchChangesQuery request = do
+searchQuery :: QueryRequest -> AppM QueryResponse
+searchQuery request = do
   Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
-  SearchPB.ChangesQueryResponse . Just <$> response bhEnv now
+  SearchPB.QueryResponse . Just <$> response bhEnv now
   where
-    queryText = toStrict $ SearchPB.changesQueryRequestQuery request
-    index = "monocle.changes.1." <> toStrict (SearchPB.changesQueryRequestIndex request)
+    queryText = toStrict $ SearchPB.queryRequestQuery request
+    index = "monocle.changes.1." <> toStrict (SearchPB.queryRequestIndex request)
     response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
       Left (ParseError msg offset) ->
         pure
-          . SearchPB.ChangesQueryResponseResultError
+          . SearchPB.QueryResponseResultError
           . SearchPB.QueryError (toLazy msg)
           $ (fromInteger . toInteger $ offset)
       Right query ->
-        SearchPB.ChangesQueryResponseResultItems
+        SearchPB.QueryResponseResultItems
           . SearchPB.Changes
           . V.fromList
           . map toResult
@@ -90,18 +90,18 @@ searchChangesQuery request = do
           commitAdditions = elkcommitAdditions
           commitDeletions = elkcommitDeletions
        in SearchPB.Commit {..}
-    toTaskData :: TaskData -> TaskDataPB.NewTaskData
+    toTaskData :: TaskData -> TaskDataPB.TaskData
     toTaskData td =
-      let newTaskDataUpdatedAt = Nothing
-          newTaskDataChangeUrl = toLazy $ tdUrl td
-          newTaskDataTtype = fmap toLazy $ V.fromList $ tdTtype td
-          newTaskDataTid = toLazy $ tdTid td
-          newTaskDataUrl = toLazy $ tdUrl td
-          newTaskDataTitle = toLazy $ tdUrl td
-          newTaskDataSeverity = toLazy $ tdSeverity td
-          newTaskDataPriority = toLazy $ tdPriority td
-          newTaskDataScore = fromInteger $ toInteger $ tdScore td
-       in TaskDataPB.NewTaskData {..}
+      let taskDataUpdatedAt = Nothing
+          taskDataChangeUrl = toLazy $ tdUrl td
+          taskDataTtype = fmap toLazy $ V.fromList $ tdTtype td
+          taskDataTid = toLazy $ tdTid td
+          taskDataUrl = toLazy $ tdUrl td
+          taskDataTitle = toLazy $ tdUrl td
+          taskDataSeverity = toLazy $ tdSeverity td
+          taskDataPriority = toLazy $ tdPriority td
+          taskDataScore = fromInteger $ toInteger $ tdScore td
+       in TaskDataPB.TaskData {..}
 
 searchFields :: FieldsRequest -> AppM FieldsResponse
 searchFields = const $ pure response

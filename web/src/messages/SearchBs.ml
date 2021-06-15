@@ -62,12 +62,12 @@ let default_query_error_mutable () : query_error_mutable = {
   position = 0l;
 }
 
-type changes_query_request_mutable = {
+type query_request_mutable = {
   mutable index : string;
   mutable query : string;
 }
 
-let default_changes_query_request_mutable () : changes_query_request_mutable = {
+let default_query_request_mutable () : query_request_mutable = {
   index = "";
   query = "";
 }
@@ -131,7 +131,7 @@ type change_mutable = {
   mutable changed_files_count : int32;
   mutable commits : SearchTypes.commit list;
   mutable commits_count : int32;
-  mutable task_data : TaskDataTypes.new_task_data list;
+  mutable task_data : TaskDataTypes.task_data list;
 }
 
 let default_change_mutable () : change_mutable = {
@@ -425,25 +425,25 @@ let rec decode_query_error json =
     SearchTypes.position = v.position;
   } : SearchTypes.query_error)
 
-let rec decode_changes_query_request json =
-  let v = default_changes_query_request_mutable () in
+let rec decode_query_request json =
+  let v = default_query_request_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
   for i = 0 to last_key_index do
     match Array.unsafe_get keys i with
     | "index" -> 
       let json = Js.Dict.unsafeGet json "index" in
-      v.index <- Pbrt_bs.string json "changes_query_request" "index"
+      v.index <- Pbrt_bs.string json "query_request" "index"
     | "query" -> 
       let json = Js.Dict.unsafeGet json "query" in
-      v.query <- Pbrt_bs.string json "changes_query_request" "query"
+      v.query <- Pbrt_bs.string json "query_request" "query"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.index = v.index;
     SearchTypes.query = v.query;
-  } : SearchTypes.changes_query_request)
+  } : SearchTypes.query_request)
 
 let rec decode_file json =
   let v = default_file_mutable () in
@@ -642,7 +642,7 @@ and decode_change json =
         Pbrt_bs.array_ a "change" "task_data"
       in
       v.task_data <- Array.map (fun json -> 
-        (TaskDataBs.decode_new_task_data (Pbrt_bs.object_ json "change" "task_data"))
+        (TaskDataBs.decode_task_data (Pbrt_bs.object_ json "change" "task_data"))
       ) a |> Array.to_list;
     end
     
@@ -698,18 +698,18 @@ let rec decode_changes json =
     SearchTypes.changes = v.changes;
   } : SearchTypes.changes)
 
-let rec decode_changes_query_response json =
+let rec decode_query_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
-    | -1 -> Pbrt_bs.E.malformed_variant "changes_query_response"
+    | -1 -> Pbrt_bs.E.malformed_variant "query_response"
     | i -> 
       begin match Array.unsafe_get keys i with
       | "error" -> 
         let json = Js.Dict.unsafeGet json "error" in
-        (SearchTypes.Error ((decode_query_error (Pbrt_bs.object_ json "changes_query_response" "Error"))) : SearchTypes.changes_query_response)
+        (SearchTypes.Error ((decode_query_error (Pbrt_bs.object_ json "query_response" "Error"))) : SearchTypes.query_response)
       | "items" -> 
         let json = Js.Dict.unsafeGet json "items" in
-        (SearchTypes.Items ((decode_changes (Pbrt_bs.object_ json "changes_query_response" "Items"))) : SearchTypes.changes_query_response)
+        (SearchTypes.Items ((decode_changes (Pbrt_bs.object_ json "query_response" "Items"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -974,7 +974,7 @@ let rec encode_query_error (v:SearchTypes.query_error) =
   Js.Dict.set json "position" (Js.Json.number (Int32.to_float v.SearchTypes.position));
   json
 
-let rec encode_changes_query_request (v:SearchTypes.changes_query_request) = 
+let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
   Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
@@ -1099,7 +1099,7 @@ and encode_change (v:SearchTypes.change) =
       v.SearchTypes.task_data
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> TaskDataBs.encode_new_task_data |> Js.Json.object_
+        v |> TaskDataBs.encode_task_data |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -1122,7 +1122,7 @@ let rec encode_changes (v:SearchTypes.changes) =
   end;
   json
 
-let rec encode_changes_query_response (v:SearchTypes.changes_query_response) = 
+let rec encode_query_response (v:SearchTypes.query_response) = 
   let json = Js.Dict.empty () in
   begin match v with
   | SearchTypes.Error v ->

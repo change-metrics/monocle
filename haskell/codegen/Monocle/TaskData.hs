@@ -865,85 +865,85 @@ instance HsJSONPB.ToSchema TaskDataGetLastUpdatedResponseResult where
             }
         )
 
-data NewTaskData = NewTaskData
-  { newTaskDataUpdatedAt ::
+data TaskData = TaskData
+  { taskDataUpdatedAt ::
       Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
-    newTaskDataChangeUrl :: Hs.Text,
-    newTaskDataTtype :: Hs.Vector Hs.Text,
-    newTaskDataTid :: Hs.Text,
-    newTaskDataUrl :: Hs.Text,
-    newTaskDataTitle :: Hs.Text,
-    newTaskDataSeverity :: Hs.Text,
-    newTaskDataPriority :: Hs.Text,
-    newTaskDataScore :: Hs.Int32
+    taskDataChangeUrl :: Hs.Text,
+    taskDataTtype :: Hs.Vector Hs.Text,
+    taskDataTid :: Hs.Text,
+    taskDataUrl :: Hs.Text,
+    taskDataTitle :: Hs.Text,
+    taskDataSeverity :: Hs.Text,
+    taskDataPriority :: Hs.Text,
+    taskDataScore :: Hs.Int32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named NewTaskData where
-  nameOf _ = (Hs.fromString "NewTaskData")
+instance HsProtobuf.Named TaskData where
+  nameOf _ = (Hs.fromString "TaskData")
 
-instance HsProtobuf.HasDefault NewTaskData
+instance HsProtobuf.HasDefault TaskData
 
-instance HsProtobuf.Message NewTaskData where
+instance HsProtobuf.Message TaskData where
   encodeMessage
     _
-    NewTaskData
-      { newTaskDataUpdatedAt = newTaskDataUpdatedAt,
-        newTaskDataChangeUrl = newTaskDataChangeUrl,
-        newTaskDataTtype = newTaskDataTtype,
-        newTaskDataTid = newTaskDataTid,
-        newTaskDataUrl = newTaskDataUrl,
-        newTaskDataTitle = newTaskDataTitle,
-        newTaskDataSeverity = newTaskDataSeverity,
-        newTaskDataPriority = newTaskDataPriority,
-        newTaskDataScore = newTaskDataScore
+    TaskData
+      { taskDataUpdatedAt = taskDataUpdatedAt,
+        taskDataChangeUrl = taskDataChangeUrl,
+        taskDataTtype = taskDataTtype,
+        taskDataTid = taskDataTid,
+        taskDataUrl = taskDataUrl,
+        taskDataTitle = taskDataTitle,
+        taskDataSeverity = taskDataSeverity,
+        taskDataPriority = taskDataPriority,
+        taskDataScore = taskDataScore
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    newTaskDataUpdatedAt
+                    taskDataUpdatedAt
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                newTaskDataChangeUrl
+                taskDataChangeUrl
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    newTaskDataTtype
+                    taskDataTtype
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                newTaskDataTid
+                taskDataTid
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
-                newTaskDataUrl
+                taskDataUrl
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 6)
-                newTaskDataTitle
+                taskDataTitle
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 7)
-                newTaskDataSeverity
+                taskDataSeverity
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 8)
-                newTaskDataPriority
+                taskDataPriority
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 9)
-                newTaskDataScore
+                taskDataScore
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure NewTaskData)
+    (Hs.pure TaskData)
       <*> ( Hs.coerce
               @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
               @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
@@ -1059,8 +1059,8 @@ instance HsProtobuf.Message NewTaskData where
       )
     ]
 
-instance HsJSONPB.ToJSONPB NewTaskData where
-  toJSONPB (NewTaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
+instance HsJSONPB.ToJSONPB TaskData where
+  toJSONPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
     ( HsJSONPB.object
         [ "updated_at" .= f1,
           "change_url" .= f2,
@@ -1073,7 +1073,7 @@ instance HsJSONPB.ToJSONPB NewTaskData where
           "score" .= f9
         ]
     )
-  toEncodingPB (NewTaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
+  toEncodingPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
     ( HsJSONPB.pairs
         [ "updated_at" .= f1,
           "change_url" .= f2,
@@ -1087,13 +1087,12 @@ instance HsJSONPB.ToJSONPB NewTaskData where
         ]
     )
 
-instance HsJSONPB.FromJSONPB NewTaskData where
+instance HsJSONPB.FromJSONPB TaskData where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "NewTaskData"
+        "TaskData"
         ( \obj ->
-            (Hs.pure NewTaskData) <*> obj .: "updated_at"
-              <*> obj .: "change_url"
+            (Hs.pure TaskData) <*> obj .: "updated_at" <*> obj .: "change_url"
               <*> obj .: "ttype"
               <*> obj .: "tid"
               <*> obj .: "url"
@@ -1104,36 +1103,36 @@ instance HsJSONPB.FromJSONPB NewTaskData where
         )
     )
 
-instance HsJSONPB.ToJSON NewTaskData where
+instance HsJSONPB.ToJSON TaskData where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON NewTaskData where
+instance HsJSONPB.FromJSON TaskData where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema NewTaskData where
+instance HsJSONPB.ToSchema TaskData where
   declareNamedSchema _ =
     do
       let declare_updated_at = HsJSONPB.declareSchemaRef
-      newTaskDataUpdatedAt <- declare_updated_at Proxy.Proxy
+      taskDataUpdatedAt <- declare_updated_at Proxy.Proxy
       let declare_change_url = HsJSONPB.declareSchemaRef
-      newTaskDataChangeUrl <- declare_change_url Proxy.Proxy
+      taskDataChangeUrl <- declare_change_url Proxy.Proxy
       let declare_ttype = HsJSONPB.declareSchemaRef
-      newTaskDataTtype <- declare_ttype Proxy.Proxy
+      taskDataTtype <- declare_ttype Proxy.Proxy
       let declare_tid = HsJSONPB.declareSchemaRef
-      newTaskDataTid <- declare_tid Proxy.Proxy
+      taskDataTid <- declare_tid Proxy.Proxy
       let declare_url = HsJSONPB.declareSchemaRef
-      newTaskDataUrl <- declare_url Proxy.Proxy
+      taskDataUrl <- declare_url Proxy.Proxy
       let declare_title = HsJSONPB.declareSchemaRef
-      newTaskDataTitle <- declare_title Proxy.Proxy
+      taskDataTitle <- declare_title Proxy.Proxy
       let declare_severity = HsJSONPB.declareSchemaRef
-      newTaskDataSeverity <- declare_severity Proxy.Proxy
+      taskDataSeverity <- declare_severity Proxy.Proxy
       let declare_priority = HsJSONPB.declareSchemaRef
-      newTaskDataPriority <- declare_priority Proxy.Proxy
+      taskDataPriority <- declare_priority Proxy.Proxy
       let declare_score = HsJSONPB.declareSchemaRef
-      newTaskDataScore <- declare_score Proxy.Proxy
+      taskDataScore <- declare_score Proxy.Proxy
       let _ =
-            Hs.pure NewTaskData <*> HsJSONPB.asProxy declare_updated_at
+            Hs.pure TaskData <*> HsJSONPB.asProxy declare_updated_at
               <*> HsJSONPB.asProxy declare_change_url
               <*> HsJSONPB.asProxy declare_ttype
               <*> HsJSONPB.asProxy declare_tid
@@ -1145,7 +1144,7 @@ instance HsJSONPB.ToSchema NewTaskData where
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "NewTaskData",
+                Hs.Just "TaskData",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -1155,15 +1154,15 @@ instance HsJSONPB.ToSchema NewTaskData where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("updated_at", newTaskDataUpdatedAt),
-                          ("change_url", newTaskDataChangeUrl),
-                          ("ttype", newTaskDataTtype),
-                          ("tid", newTaskDataTid),
-                          ("url", newTaskDataUrl),
-                          ("title", newTaskDataTitle),
-                          ("severity", newTaskDataSeverity),
-                          ("priority", newTaskDataPriority),
-                          ("score", newTaskDataScore)
+                        [ ("updated_at", taskDataUpdatedAt),
+                          ("change_url", taskDataChangeUrl),
+                          ("ttype", taskDataTtype),
+                          ("tid", taskDataTid),
+                          ("url", taskDataUrl),
+                          ("title", taskDataTitle),
+                          ("severity", taskDataSeverity),
+                          ("priority", taskDataPriority),
+                          ("score", taskDataScore)
                         ]
                   }
             }
@@ -1173,7 +1172,7 @@ data AddRequest = AddRequest
   { addRequestIndex :: Hs.Text,
     addRequestCrawler :: Hs.Text,
     addRequestApikey :: Hs.Text,
-    addRequestItems :: Hs.Vector Monocle.TaskData.NewTaskData
+    addRequestItems :: Hs.Vector Monocle.TaskData.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1206,8 +1205,8 @@ instance HsProtobuf.Message AddRequest where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                ( Hs.coerce @(Hs.Vector Monocle.TaskData.NewTaskData)
-                    @(HsProtobuf.NestedVec Monocle.TaskData.NewTaskData)
+                ( Hs.coerce @(Hs.Vector Monocle.TaskData.TaskData)
+                    @(HsProtobuf.NestedVec Monocle.TaskData.TaskData)
                     addRequestItems
                 )
             )
@@ -1227,8 +1226,8 @@ instance HsProtobuf.Message AddRequest where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.NewTaskData))
-              @(_ (Hs.Vector Monocle.TaskData.NewTaskData))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.TaskData))
+              @(_ (Hs.Vector Monocle.TaskData.TaskData))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
@@ -1259,7 +1258,7 @@ instance HsProtobuf.Message AddRequest where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 4)
           ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "NewTaskData"))
+              (HsProtobuf.Named (HsProtobuf.Single "TaskData"))
           )
           (HsProtobuf.Single "items")
           []

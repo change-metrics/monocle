@@ -47,7 +47,7 @@ message QueryError {
   uint32 position = 2;
 }
 
-message ChangesQueryRequest {
+message QueryRequest {
   string index = 1;
   string query = 2;
 }
@@ -108,14 +108,14 @@ message Change {
 //  string id = 63;
 //  uint32 number = 64;
 
-  repeated monocle_task_data.NewTaskData task_data = 70;
+  repeated monocle_task_data.TaskData task_data = 70;
 }
 
 message Changes {
   repeated Change changes = 1;
 }
 
-message ChangesQueryResponse {
+message QueryResponse {
   oneof result {
     QueryError error = 1;
     Changes items = 2;

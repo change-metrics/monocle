@@ -42,7 +42,7 @@ type query_error = {
   position : int32;
 }
 
-type changes_query_request = {
+type query_request = {
   index : string;
   query : string;
 }
@@ -92,14 +92,14 @@ and change = {
   changed_files_count : int32;
   commits : commit list;
   commits_count : int32;
-  task_data : TaskDataTypes.new_task_data list;
+  task_data : TaskDataTypes.task_data list;
 }
 
 type changes = {
   changes : change list;
 }
 
-type changes_query_response =
+type query_response =
   | Error of query_error
   | Items of changes
 
@@ -194,12 +194,12 @@ val default_query_error :
   query_error
 (** [default_query_error ()] is the default value for type [query_error] *)
 
-val default_changes_query_request : 
+val default_query_request : 
   ?index:string ->
   ?query:string ->
   unit ->
-  changes_query_request
-(** [default_changes_query_request ()] is the default value for type [changes_query_request] *)
+  query_request
+(** [default_query_request ()] is the default value for type [query_request] *)
 
 val default_file : 
   ?additions:int32 ->
@@ -250,7 +250,7 @@ val default_change :
   ?changed_files_count:int32 ->
   ?commits:commit list ->
   ?commits_count:int32 ->
-  ?task_data:TaskDataTypes.new_task_data list ->
+  ?task_data:TaskDataTypes.task_data list ->
   unit ->
   change
 (** [default_change ()] is the default value for type [change] *)
@@ -261,8 +261,8 @@ val default_changes :
   changes
 (** [default_changes ()] is the default value for type [changes] *)
 
-val default_changes_query_response : unit -> changes_query_response
-(** [default_changes_query_response ()] is the default value for type [changes_query_response] *)
+val default_query_response : unit -> query_response
+(** [default_query_response ()] is the default value for type [query_response] *)
 
 val default_changes_histos_event : 
   ?doc_count:int32 ->

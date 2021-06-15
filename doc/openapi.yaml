@@ -107,23 +107,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/HealthResponse'
-    /api/2/search/changes:
-        post:
-            operationId: Search_ChangesQuery
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ChangesQueryRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ChangesQueryResponse'
-    /api/2/search_fields:
+    /api/2/search/fields:
         post:
             operationId: Search_Fields
             requestBody:
@@ -139,6 +123,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/FieldsResponse'
+    /api/2/search/query:
+        post:
+            operationId: Search_Query
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/QueryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/QueryResponse'
 components:
     schemas:
         AddRequest:
@@ -152,7 +152,7 @@ components:
                 items:
                     type: array
                     items:
-                        $ref: '#/components/schemas/NewTaskData'
+                        $ref: '#/components/schemas/TaskData'
         AddResponse:
             properties:
                 error:
@@ -230,25 +230,13 @@ components:
                 task_data:
                     type: array
                     items:
-                        $ref: '#/components/schemas/NewTaskData'
+                        $ref: '#/components/schemas/TaskData'
         Changes:
             properties:
                 changes:
                     type: array
                     items:
                         $ref: '#/components/schemas/Change'
-        ChangesQueryRequest:
-            properties:
-                index:
-                    type: string
-                query:
-                    type: string
-        ChangesQueryResponse:
-            properties:
-                error:
-                    $ref: '#/components/schemas/QueryError'
-                items:
-                    $ref: '#/components/schemas/Changes'
         Commit:
             properties:
                 sha:
@@ -318,30 +306,6 @@ components:
             properties:
                 status:
                     type: string
-        NewTaskData:
-            properties:
-                updated_at:
-                    type: string
-                    format: RFC3339
-                change_url:
-                    type: string
-                ttype:
-                    type: array
-                    items:
-                        type: string
-                tid:
-                    type: string
-                url:
-                    type: string
-                title:
-                    type: string
-                severity:
-                    type: string
-                priority:
-                    type: string
-                score:
-                    type: integer
-                    format: int32
         ProjectDefinition:
             properties:
                 name:
@@ -359,6 +323,18 @@ components:
                 position:
                     type: integer
                     format: uint32
+        QueryRequest:
+            properties:
+                index:
+                    type: string
+                query:
+                    type: string
+        QueryResponse:
+            properties:
+                error:
+                    $ref: '#/components/schemas/QueryError'
+                items:
+                    $ref: '#/components/schemas/Changes'
         SearchSuggestionsRequest:
             properties:
                 index:
@@ -385,6 +361,30 @@ components:
                     type: array
                     items:
                         type: string
+        TaskData:
+            properties:
+                updated_at:
+                    type: string
+                    format: RFC3339
+                change_url:
+                    type: string
+                ttype:
+                    type: array
+                    items:
+                        type: string
+                tid:
+                    type: string
+                url:
+                    type: string
+                title:
+                    type: string
+                severity:
+                    type: string
+                priority:
+                    type: string
+                score:
+                    type: integer
+                    format: int32
         TaskDataCommitRequest:
             properties:
                 index:

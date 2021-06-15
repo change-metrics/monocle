@@ -17,7 +17,7 @@
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
-from monocle.task_data_pb2 import NewTaskData
+import monocle.task_data_pb2 as PBTD
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,7 @@ class TaskData:
     score: Optional[int] = None
 
 
-def toTaskData(crawler: str, ntd: NewTaskData) -> TaskData:
+def toTaskData(crawler: str, ntd: PBTD.TaskData) -> TaskData:
     return TaskData(
         crawler,
         ntd.updated_at.ToDatetime(),
