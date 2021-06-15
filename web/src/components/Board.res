@@ -40,6 +40,47 @@ module Column = {
     columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
   }
 
+  module Row = {
+    // TODO: merge common code with Column
+    @react.component
+    let make = (~index, ~column, ~query: string) => {
+      let (result, setResult) = React.useState(_ => None)
+      let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
+        setResult(_ => resp.data->Some)->Js.Promise.resolve
+      let query = addQuery(column.query, query)
+      React.useEffect1(() => {
+        switch query {
+        | "" => ignore()
+        | _ =>
+          ignore(
+            WebApi.Search.query({
+              index: index,
+              query: query,
+            }) |> Js.Promise.then_(handleOk),
+          )
+        }
+        None
+      }, [query])
+      switch result {
+      | None => React.null
+      | Some(SearchTypes.Error(err)) =>
+        <Alert
+          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+        />
+      | Some(SearchTypes.Items(items)) => {
+          let changes = items.changes->Belt.List.toArray
+          switch changes->Belt.Array.length {
+          | 0 => <p> {"No changes matched"->str} </p>
+          | _ =>
+            changes
+            ->Belt.Array.map(change => <Change.RowItem index key={change.url} change={change} />)
+            ->React.array
+          }
+        }
+      }
+    }
+  }
+
   @react.component
   let make = (~index, ~column, ~query: string) => {
     let (result, setResult) = React.useState(_ => None)
@@ -130,7 +171,8 @@ module ColumnEditor = {
 }
 
 module Board = {
-  type t = {title: string, columns: list<Column.t>}
+  type style = Kanban | Table
+  type t = {title: string, columns: list<Column.t>, style: style}
 
   let defaultNegativeApprovals = "(approval:Workflow-1 or approval:Code-Review-1 or approval:Code-Review-2)"
   let defaultPositiveApprovals = "approval:Verified+1"
@@ -158,6 +200,7 @@ module Board = {
         query: "state:open and updated_at > now-3week order by updated_at desc",
       },
     },
+    style: Kanban,
   }
 
   let columnsArray = (board: t) => {
@@ -167,6 +210,7 @@ module Board = {
 
   let saveToUrl = (board: t, query: string) => {
     resetLocationSearch()->ignore
+    board.style == Table ? setLocationSearch("s", "table")->ignore : ignore()
     setLocationSearch("t", board.title)->ignore
     setLocationSearch("q", query)->ignore
     Belt.List.mapWithIndex(board.columns, (index, column) => {
@@ -187,18 +231,26 @@ module Board = {
       | _ => list{}
       }
     }
+    let style = switch getP("s") {
+    | Some("table") => Table
+    | _ => Kanban
+    }
     switch (getP("t"), go(0)) {
     | (None, _)
     | (_, list{}) => default
     | (Some(title), columns) => {
         title: title,
         columns: columns,
+        style: style,
       }
     }
   }
 
   type action =
-    AddColumn | RemoveColumn(int) | Save(string, string, array<(ref<string>, ref<string>)>)
+    | AddColumn
+    | RemoveColumn(int)
+    | SetStyle(style)
+    | Save(string, string, array<(ref<string>, ref<string>)>)
 
   let reducer = (board: t, action: action) =>
     switch action {
@@ -210,8 +262,13 @@ module Board = {
         ...board,
         columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos),
       }
+    | SetStyle(style) => {
+        ...board,
+        style: style,
+      }
     | Save(query, title, columnsRefs) =>
       {
+        style: board.style,
         title: title,
         columns: columnsRefs
         ->Belt.Array.map(((nameRef, queryRef)) => {
@@ -236,6 +293,17 @@ module Board = {
       let columnsRefs: array<(ref<string>, ref<string>)> =
         columns->Belt.Array.map(column => (ref(column.name), ref(column.query)))
 
+      let (currentStyle, setStyle) = React.useState(_ => board.style == Table)
+      let toggleStyle = () => {
+        setStyle(_ => board.style != Table)
+        switch board.style {
+        | Kanban => Table
+        | Table => Kanban
+        }
+        ->SetStyle
+        ->dispatch
+      }
+
       let doSave = () => Save(state.query, title, columnsRefs)->dispatch
 
       // When removing a middle column, the one after lose their state, so we need to save
@@ -255,14 +323,22 @@ module Board = {
             _type=#Text
           />
           {showColumnEditor
-            ? <Patternfly.Button
-                _type=#Submit
-                onClick={_ => {
-                  doSave()
-                  setShowColumnEditor(_ => false)
-                }}>
-                {"Save"->str}
-              </Patternfly.Button>
+            ? <>
+                <Patternfly.Checkbox
+                  id="style"
+                  description="table"
+                  isChecked={currentStyle}
+                  onChange={(_, _) => toggleStyle()}
+                />
+                <Patternfly.Button
+                  _type=#Submit
+                  onClick={_ => {
+                    doSave()
+                    setShowColumnEditor(_ => false)
+                  }}>
+                  {"Save"->str}
+                </Patternfly.Button>
+              </>
             : <Patternfly.Button variant=#Tertiary onClick={_ => setShowColumnEditor(_ => true)}>
                 {"Edit"->str}
               </Patternfly.Button>}
@@ -316,7 +392,8 @@ let make = (~store: Store.t) => {
 
   let editor = <Board.Editor store columns board dispatch />
 
-  let board =
+  let board = switch board.style {
+  | Board.Kanban =>
     <Patternfly.Layout.Split hasGutter={true}>
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
@@ -326,6 +403,27 @@ let make = (~store: Store.t) => {
       )
       ->React.array}
     </Patternfly.Layout.Split>
+  | Board.Table =>
+    <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
+      <Change.RowItem.Head />
+      {columns
+      ->Belt.Array.mapWithIndex((pos, column) =>
+        <React.Fragment key={column.name ++ string_of_int(pos)}>
+          <tbody>
+            <tr>
+              <td colSpan=42>
+                {pos > 0 ? <br /> : React.null}
+                <b> {column.name->str} </b>
+                <i> {(" : " ++ column.query)->str} </i>
+              </td>
+            </tr>
+            <Column.Row index column query={state.query} />
+          </tbody>
+        </React.Fragment>
+      )
+      ->React.array}
+    </table>
+  }
 
   <MStack>
     <MStackItem> <Search.Top store /> </MStackItem>
