@@ -41,28 +41,47 @@ crawlerCommitInfo = undefined
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
-  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  Env {tenants = tenants} <- ask
   now <- liftIO getCurrentTime
-  SearchPB.QueryResponse . Just <$> response bhEnv tenants now
+  toResponse <$> handleValidation (validateRequest tenants now)
   where
     queryText = toStrict $ SearchPB.queryRequestQuery request
     indexName = toStrict $ SearchPB.queryRequestIndex request
     index = "monocle.changes.1." <> indexName
-    response bhEnv tenants now = case P.parse queryText >>= Q.queryWithMods now of
-      Left (ParseError msg offset) ->
-        pure
-          . SearchPB.QueryResponseResultError
-          . SearchPB.QueryError (toLazy msg)
-          $ (fromInteger . toInteger $ offset)
-      Right query ->
-        case Config.lookupTenant tenants indexName of
-          Nothing -> pure . SearchPB.QueryResponseResultError . SearchPB.QueryError "Unknown tenant" $ 0
-          Just _ ->
-            SearchPB.QueryResponseResultItems
-              . SearchPB.Changes
-              . V.fromList
-              . map toResult
-              <$> Q.changes bhEnv index query
+
+    toResponse :: SearchPB.QueryResponseResult -> QueryResponse
+    toResponse = SearchPB.QueryResponse . Just
+
+    -- If the validation is a Left, use handleError, otherwise use go
+    -- either :: (a -> c) -> (b -> c) -> Either a b -> c
+    handleValidation :: Either ParseError Q.Query -> AppM SearchPB.QueryResponseResult
+    handleValidation = either (pure . handleError) go
+
+    handleError :: ParseError -> SearchPB.QueryResponseResult
+    handleError (ParseError msg offset) =
+      SearchPB.QueryResponseResultError $
+        SearchPB.QueryError
+          (toLazy msg)
+          (fromInteger . toInteger $ offset)
+
+    validateRequest :: [Config.Index] -> UTCTime -> Either ParseError Q.Query
+    validateRequest tenants now = do
+      -- Note: the bind (>>=) of Either stops when the value is a Left.
+      expr <- P.parse queryText
+      query <- Q.queryWithMods now expr
+      case Config.lookupTenant tenants indexName of
+        Nothing -> Left $ ParseError "unknown tenant" 0
+        Just _ -> Right query
+
+    go :: Q.Query -> AppM SearchPB.QueryResponseResult
+    go query = do
+      Env {bhEnv = bhEnv} <- ask
+      SearchPB.QueryResponseResultItems
+        . SearchPB.Changes
+        . V.fromList
+        . map toResult
+        <$> Q.changes bhEnv index query
+
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
       let changeTitle = elkchangeTitle change
