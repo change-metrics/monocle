@@ -12,6 +12,7 @@ import qualified Data.Text as Text
 import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
+import qualified Monocle.Api.Config as Config
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
@@ -25,7 +26,12 @@ import Relude
 
 type Bound = (Maybe UTCTime, UTCTime)
 
-type Parser a = StateT Bound (Except ParseError) a
+data Env = Env
+  { envNow :: UTCTime,
+    envProjects :: [Config.Project]
+  }
+
+type Parser a = ReaderT Env (StateT Bound (Except ParseError)) a
 
 type Field = Text
 
@@ -172,7 +178,7 @@ mkRangeValue now op field fieldType value = do
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> lift $ throwE (ParseError msg 0)
+  Left msg -> lift . lift $ throwE (ParseError msg 0)
   Right x -> pure x
 
 mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
@@ -238,8 +244,8 @@ query now expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery now e field value
   e@(LtExpr field value) -> mkRangeQuery now e field value
   e@(LtEqExpr field value) -> mkRangeQuery now e field value
-  LimitExpr _ _ -> lift $ throwE (ParseError "Limit must be global" 0)
-  OrderByExpr _ _ _ -> lift $ throwE (ParseError "Order by must be global" 0)
+  LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
+  OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
 
 data Query = Query
   { queryOrder :: Maybe (Field, SortOrder),
@@ -258,7 +264,11 @@ data Query = Query
 
 queryWithMods :: UTCTime -> Expr -> Either ParseError Query
 queryWithMods now baseExpr = do
-  (query', (boundM, bound)) <- runExcept $ runStateT (query now expr) (Nothing, now)
+  (query', (boundM, bound)) <-
+    runExcept
+      . flip runStateT (Nothing, now)
+      . runReaderT (query now expr)
+      $ Env now []
   pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
