@@ -90,7 +90,7 @@ defineByDocumentFile
 -- fetchLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> m (Either String GetLinkedIssues)
 -- fetchLinkedIssue client searchText = fetch (runGithubGraphRequest client) (GetLinkedIssuesArgs searchText "")
 
-streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> Stream (Of NewTaskData) m ()
+streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> Stream (Of TaskData) m ()
 streamLinkedIssue client searchText =
   streamFetch client mkArgs transformResponse
   where
@@ -101,7 +101,7 @@ streamLinkedIssue client searchText =
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
-transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [NewTaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
@@ -111,7 +111,7 @@ transformResponse searchResult =
           (SearchPageInfoPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
-        let newTaskDataE = concatMap mkNewTaskData issues
+        let newTaskDataE = concatMap mkTaskData issues
          in ( PageInfo hasNextPage' endCursor' issueCount,
               RateLimit used' remaining' resetAt',
               lefts newTaskDataE,
@@ -119,20 +119,20 @@ transformResponse searchResult =
             )
     respOther -> error ("Invalid response: " <> show respOther)
   where
-    mkNewTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text NewTaskData]
-    mkNewTaskData issueM = case issueM of
+    mkTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text TaskData]
+    mkTaskData issueM = case issueM of
       Just issue ->
-        -- (fmap . join . fmap $ toNewTaskData issue) (getTDChangeUrls issue)
+        -- (fmap . join . fmap $ toTaskData issue) (getTDChangeUrls issue)
         let tdChangeUrlsE :: [Either Text Text]
             tdChangeUrlsE = getTDChangeUrls issue
-            newTaskDataEE :: [Either Text (Either Text NewTaskData)]
-            newTaskDataEE = (fmap . fmap $ toNewTaskData issue) tdChangeUrlsE
+            newTaskDataEE :: [Either Text (Either Text TaskData)]
+            newTaskDataEE = (fmap . fmap $ toTaskData issue) tdChangeUrlsE
             newTaskDataE = fmap join newTaskDataEE
          in newTaskDataE
       Nothing -> []
-    toNewTaskData :: SearchNodesSearchResultItem -> Text -> Either Text NewTaskData
-    toNewTaskData issue curl =
-      NewTaskData
+    toTaskData :: SearchNodesSearchResultItem -> Text -> Either Text TaskData
+    toTaskData issue curl =
+      TaskData
         <$> (Just <$> getUpdatedAt issue)
         <*> pure (toLazy curl)
         <*> (V.fromList <$> labels)

@@ -39,11 +39,11 @@ testBugToTaskData = testCase "bugToTaskData" go
       case toTaskData bz of
         (td : _tds) ->
           sequence_
-            [ newTaskDataTid td @=? "1791815",
-              newTaskDataChangeUrl td @=? "https://review.opendev.org/764427",
-              newTaskDataUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
-              newTaskDataTtype td @=? V.fromList ["FutureFeature"],
-              newTaskDataScore td @=? 9001
+            [ taskDataTid td @=? "1791815",
+              taskDataChangeUrl td @=? "https://review.opendev.org/764427",
+              taskDataUrl td @=? "https://bugzilla.redhat.com/show_bug.cgi?id=1791815",
+              taskDataTtype td @=? V.fromList ["FutureFeature"],
+              taskDataScore td @=? 9001
             ]
         [] -> assertBool "No external bugs found" False
 

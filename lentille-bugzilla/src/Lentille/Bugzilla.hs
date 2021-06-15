@@ -133,7 +133,7 @@ getBugsWithScore bzSession sinceTS product'' limit offset = getBugs bzSession re
     searchQuery = BZS.evalSearchExpr $ (searchExpr sinceTS product'')
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
-toTaskData :: BugWithScore -> [NewTaskData]
+toTaskData :: BugWithScore -> [TaskData]
 toTaskData bz = map mkTaskData ebugs
   where
     isOpenDev :: BZ.ExternalBug -> Bool
@@ -141,9 +141,9 @@ toTaskData bz = map mkTaskData ebugs
     ebugs :: [BZ.ExternalBug]
     ebugs = filter isOpenDev (bugExternalBugs bz)
     changeUrl ebug = BZ.externalTypeUrl (BZ.externalType ebug) <> BZ.externalBugId ebug
-    mkTaskData :: BZ.ExternalBug -> NewTaskData
+    mkTaskData :: BZ.ExternalBug -> TaskData
     mkTaskData ebug =
-      NewTaskData
+      TaskData
         (Just . Timestamp.fromUTCTime . bugLastChangeTime $ bz)
         (toLazy . changeUrl $ ebug)
         (toLazy <$> (V.fromList . bugKeywords $ bz))
@@ -156,7 +156,7 @@ toTaskData bz = map mkTaskData ebugs
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData ::
-  (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> Text -> UTCTime -> Stream (Of NewTaskData) m ()
+  (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) m ()
 getBZData bzSession product''' sinceTS = go 0
   where
     limit = 100

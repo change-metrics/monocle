@@ -65,7 +65,7 @@ main = do
             (crawlerName $ args)
             (TaskDataFetcher (ghTDF ghClient))
       where
-        ghTDF :: MonadIO m => GitHubGraphClient -> UTCTime -> Stream (Of NewTaskData) m ()
+        ghTDF :: MonadIO m => GitHubGraphClient -> UTCTime -> Stream (Of TaskData) m ()
         ghTDF ghClient since' = streamLinkedIssue ghClient (buildSearchQuery (repo args) since')
         buildSearchQuery :: Text -> UTCTime -> String
         buildSearchQuery repo' utctime =
