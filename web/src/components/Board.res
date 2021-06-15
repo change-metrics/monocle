@@ -45,19 +45,20 @@ module Column = {
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
+    let query = addQuery(column.query, query)
     React.useEffect1(() => {
-      switch column.query {
+      switch query {
       | "" => ignore()
       | _ =>
         ignore(
           WebApi.Search.query({
             index: index,
-            query: addQuery(column.query, query),
+            query: query,
           }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [column.query ++ query])
+    }, [query])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -101,10 +102,10 @@ module ColumnEditor = {
     ~queryRef: ref<string>,
     ~onRemove: int => unit,
   ) => {
-    let (_, doRender) = React.useState(_ => "")
+    let (_, doRender) = React.useState(_ => 0)
     let setAndRender = (r, v) => {
       r.contents = v
-      doRender(_ => v)
+      doRender(x => x + 1)
     }
     let setName = (v, _) => setAndRender(nameRef, v)
     let setQuery = (v, _) => setAndRender(queryRef, v)
