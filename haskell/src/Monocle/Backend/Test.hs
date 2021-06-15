@@ -223,7 +223,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventOnAuthor = fakeAuthor
     elkchangeeventBranch = mempty
     elkchangeeventOnCreatedAt = fakeDate
-    elkchangeeventMergedAt = Nothing
+    elkchangeeventApproval = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " (map go xs)
@@ -234,7 +234,7 @@ showEvents xs = Text.intercalate ", " (map go xs)
       SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
       SCreation ELKChangeEvent {..} ->
         ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
-          <> (elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
+          <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
           <> "]"
       SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
       SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
@@ -297,7 +297,7 @@ nominalMerge SProject {..} elkchangeId start duration = evalRand scenario stdGen
                 elkchangeeventId = etype,
                 elkchangeeventOnCreatedAt = mkDate ts,
                 elkchangeeventChangeId =
-                  "change-" <> show @Text @Int changeId
+                  toLazy $ "change-" <> show @Text @Int changeId
               }
 
       -- The change creation

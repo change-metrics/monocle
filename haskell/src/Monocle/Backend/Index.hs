@@ -9,6 +9,7 @@ import Data.Aeson
   ( FromJSON,
     KeyValue ((.=)),
     ToJSON (toJSON),
+    Value,
     object,
   )
 import Data.Time
@@ -374,12 +375,12 @@ indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureT
     ensureType change = change {elkchangeType = "Change"}
 
 getEventDocId :: ELKChangeEvent -> BH.DocId
-getEventDocId event = BH.DocId $ elkchangeeventChangeId event
+getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
 
 indexEvents :: BH.BHEnv -> BH.IndexName -> [ELKChangeEvent] -> IO ()
 indexEvents bhEnv index events = indexDocs bhEnv index (fmap toDoc events)
   where
-    toDoc ev = (toJSON ev, BH.DocId $ elkchangeeventChangeId ev)
+    toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 
 type CrawlerMetadataID = BH.DocId
 
