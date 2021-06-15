@@ -10,6 +10,7 @@ import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
@@ -40,24 +41,28 @@ crawlerCommitInfo = undefined
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
-  Env {bhEnv = bhEnv} <- ask
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
   now <- liftIO getCurrentTime
-  SearchPB.QueryResponse . Just <$> response bhEnv now
+  SearchPB.QueryResponse . Just <$> response bhEnv tenants now
   where
     queryText = toStrict $ SearchPB.queryRequestQuery request
-    index = "monocle.changes.1." <> toStrict (SearchPB.queryRequestIndex request)
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
+    indexName = toStrict $ SearchPB.queryRequestIndex request
+    index = "monocle.changes.1." <> indexName
+    response bhEnv tenants now = case P.parse queryText >>= Q.queryWithMods now of
       Left (ParseError msg offset) ->
         pure
           . SearchPB.QueryResponseResultError
           . SearchPB.QueryError (toLazy msg)
           $ (fromInteger . toInteger $ offset)
       Right query ->
-        SearchPB.QueryResponseResultItems
-          . SearchPB.Changes
-          . V.fromList
-          . map toResult
-          <$> Q.changes bhEnv index query
+        case Config.lookupTenant tenants indexName of
+          Nothing -> pure . SearchPB.QueryResponseResultError . SearchPB.QueryError "Unknown tenant" $ 0
+          Just _ ->
+            SearchPB.QueryResponseResultItems
+              . SearchPB.Changes
+              . V.fromList
+              . map toResult
+              <$> Q.changes bhEnv index query
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
       let changeTitle = elkchangeTitle change

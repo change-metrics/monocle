@@ -3,11 +3,19 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Monocle.Api.Config (Index (..), Project (..), TaskCrawler (..), loadConfig) where
+module Monocle.Api.Config
+  ( Index (..),
+    Project (..),
+    TaskCrawler (..),
+    loadConfig,
+    lookupTenant,
+  )
+where
 
 import Data.Yaml as YAML
 import qualified Dhall.TH
@@ -83,3 +91,8 @@ instance FromJSON Tenants where
 
 loadConfig :: MonadIO m => FilePath -> m [Index]
 loadConfig fp = unTenants <$> YAML.decodeFileThrow fp
+
+lookupTenant :: [Index] -> Text -> Maybe Index
+lookupTenant xs tenantName = find isTenant xs
+  where
+    isTenant Index {..} = index == tenantName
