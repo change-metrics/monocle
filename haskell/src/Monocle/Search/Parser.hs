@@ -33,7 +33,7 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
       -- Here we would like to run 'exprParser' directly, but that will cause
       -- a left recursion, so we are using a left factoring technique.
       leftExpr <- closedExpr
-      operatorToken <- tokens [And, Or]
+      operatorToken <- fromMaybe And <$> Combinators.optional (tokens [And, Or])
       case operatorToken of
         -- For the right expression, it is safe to run 'exprParser'
         And -> AndExpr leftExpr <$> exprParser

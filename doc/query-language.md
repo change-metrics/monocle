@@ -73,6 +73,7 @@ expression =
     ; boolean operator
       expression whsp1 and whsp1 expression
     / expression whsp1 or whsp1 expression
+    / expression whsp1 expression ; implicit AND
     / not whsp1 expression
 
     ; field operator

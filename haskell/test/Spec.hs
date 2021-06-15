@@ -71,6 +71,13 @@ monocleSearchLanguage =
             )
         ),
       testCase
+        "Parser implicit and"
+        ( parseMatch
+            "state:open author:foo"
+            ( (S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo"))
+            )
+        ),
+      testCase
         "Parser order by"
         ( parseMatch
             "state:open order by review_date"
