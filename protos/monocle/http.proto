@@ -13,6 +13,7 @@ import "google/api/annotations.proto";
 import "monocle/config.proto";
 import "monocle/search.proto";
 import "monocle/task_data.proto";
+import "monocle/crawler.proto";
 
 service Config {
   // Return the list of projects
@@ -76,6 +77,31 @@ service TaskData {
   rpc Add(monocle_task_data.AddRequest) returns (monocle_task_data.AddResponse) {
     option (google.api.http) = {
       post: "/api/1/task_data_add"
+      body: "*"
+    };
+  }
+}
+
+service Crawler {
+  // Push crawler data
+  rpc Add(monocle_crawler.AddRequest) returns (monocle_crawler.AddResponse) {
+    option (google.api.http) = {
+      post: "/api/2/crawler/add"
+      body: "*"
+    };
+  }
+  // Add commit message
+  rpc Commit(monocle_crawler.CommitRequest) returns (monocle_crawler.CommitResponse) {
+    option (google.api.http) = {
+      post: "/api/2/crawler/commit"
+      body: "*"
+    };
+  }
+  // Get commit message
+  rpc CommitInfo(monocle_crawler.CommitInfoRequest)
+      returns (monocle_crawler.CommitInfoResponse) {
+    option (google.api.http) = {
+      post: "/api/2/crawler/get_commit_info"
       body: "*"
     };
   }

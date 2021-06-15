@@ -1,0 +1,74 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_crawler;
+option go_package = "monocle/crawler";
+
+import "google/protobuf/timestamp.proto";
+import "monocle/change.proto";
+
+enum Entity {
+  Change = 0;
+}
+
+message AddRequest {
+  string index = 1;
+  string crawler = 2;
+  string apikey = 3;
+  Entity entity = 4;
+  repeated monocle_change.Change changes = 5;
+  repeated monocle_change.ChangeEvent events = 6;
+}
+
+enum AddError {
+  AddUnknownIndex = 0;
+  AddUnknownCrawler = 1;
+  AddUnknownApiKey = 2;
+  AddFailed = 3;
+}
+
+message AddResponse {
+  oneof result {
+    AddError error = 1;
+  }
+}
+
+message CommitRequest {
+  string index = 1;
+  string crawler = 2;
+  string apikey = 3;
+  Entity entity = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+enum CommitError {
+  CommitUnknownIndex = 0;
+  CommitUnknownCrawler = 1;
+  CommitUnknownApiKey = 2;
+  CommitDateInferiorThanPrevious = 3;
+}
+
+message CommitResponse {
+  oneof result {
+    CommitError error = 1;
+    google.protobuf.Timestamp timestamp = 2;
+  }
+ }
+
+message CommitInfoRequest {
+  string index = 1;
+  string crawler = 2;
+}
+
+enum CommitInfoError {
+  CommitGetUnknownIndex = 0;
+  CommitGetUnknownCrawler = 1;
+}
+
+message CommitInfoResponse {
+  oneof result {
+    CommitInfoError error = 1;
+    google.protobuf.Timestamp last_commit_at = 2;
+  }
+}

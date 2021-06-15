@@ -91,6 +91,57 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
+    /api/2/crawler/add:
+        post:
+            summary: Push crawler data
+            operationId: Crawler_Add
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddResponse'
+    /api/2/crawler/commit:
+        post:
+            summary: Add commit message
+            operationId: Crawler_Commit
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CommitRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CommitResponse'
+    /api/2/crawler/get_commit_info:
+        post:
+            summary: Get commit message
+            operationId: Crawler_CommitInfo
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CommitInfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CommitInfoResponse'
     /api/2/health:
         post:
             operationId: Config_Health
@@ -153,11 +204,35 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaskData'
+        AddRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                entity:
+                    type: integer
+                    format: enum
+                changes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Change'
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangeEvent'
         AddResponse:
             properties:
                 error:
                     type: integer
                     description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
+                    format: enum
+        AddResponse:
+            properties:
+                error:
+                    type: integer
                     format: enum
         Change:
             properties:
@@ -231,12 +306,199 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaskData'
+        Change:
+            properties:
+                id:
+                    type: string
+                number:
+                    type: integer
+                    format: int32
+                change_id:
+                    type: string
+                title:
+                    type: string
+                text:
+                    type: string
+                url:
+                    type: string
+                commit_count:
+                    type: integer
+                    format: int32
+                additions:
+                    type: integer
+                    format: int32
+                deletions:
+                    type: integer
+                    format: int32
+                changed_files_count:
+                    type: integer
+                    format: int32
+                changed_files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangedFile'
+                commits:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Commit'
+                repository_prefix:
+                    type: string
+                repository_fullname:
+                    type: string
+                repository_shortname:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/Ident'
+                merged_by:
+                    $ref: '#/components/schemas/Ident'
+                branch:
+                    type: string
+                target_branch:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                merged_at:
+                    type: string
+                    format: RFC3339
+                updated_at:
+                    type: string
+                    format: RFC3339
+                closed_at:
+                    type: string
+                    format: RFC3339
+                state:
+                    type: string
+                duration:
+                    type: integer
+                    format: int32
+                mergeable:
+                    type: string
+                labels:
+                    type: array
+                    items:
+                        type: string
+                assignees:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Ident'
+                approvals:
+                    type: array
+                    items:
+                        type: string
+                draft:
+                    type: boolean
+                self_merged:
+                    type: boolean
+        ChangeAbandonedEvent:
+            properties: {}
+        ChangeCommentedEvent:
+            properties: {}
+        ChangeCreatedEvent:
+            properties: {}
+        ChangeEvent:
+            properties:
+                id:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                author:
+                    $ref: '#/components/schemas/Ident'
+                repository_prefix:
+                    type: string
+                repository_fullname:
+                    type: string
+                repository_shortname:
+                    type: string
+                branch:
+                    type: string
+                target_branch:
+                    type: string
+                number:
+                    type: integer
+                    format: int32
+                change_id:
+                    type: string
+                url:
+                    type: string
+                on_author:
+                    $ref: '#/components/schemas/Ident'
+                on_created_at:
+                    type: string
+                    format: RFC3339
+                changed_files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangedFilePath'
+                ChangeCreated:
+                    $ref: '#/components/schemas/ChangeCreatedEvent'
+                ChangeCommented:
+                    $ref: '#/components/schemas/ChangeCommentedEvent'
+                ChangeAbandoned:
+                    $ref: '#/components/schemas/ChangeAbandonedEvent'
+                ChangeReviewed:
+                    $ref: '#/components/schemas/ChangeReviewedEvent'
+                ChangeForcePushed:
+                    $ref: '#/components/schemas/ChangeForcePushedEvent'
+                ChangePushed:
+                    $ref: '#/components/schemas/ChangePushedEvent'
+                ChangeMerged:
+                    $ref: '#/components/schemas/ChangeMergedEvent'
+        ChangeForcePushedEvent:
+            properties: {}
+        ChangeMergedEvent:
+            properties: {}
+        ChangePushedEvent:
+            properties: {}
+        ChangeReviewedEvent:
+            properties:
+                approvals:
+                    type: array
+                    items:
+                        type: string
+        ChangedFile:
+            properties:
+                additions:
+                    type: integer
+                    format: int32
+                deletions:
+                    type: integer
+                    format: int32
+                path:
+                    type: string
+        ChangedFilePath:
+            properties:
+                path:
+                    type: string
         Changes:
             properties:
                 changes:
                     type: array
                     items:
                         $ref: '#/components/schemas/Change'
+        Commit:
+            properties:
+                sha:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/Ident'
+                committer:
+                    $ref: '#/components/schemas/Ident'
+                authored_at:
+                    type: string
+                    format: RFC3339
+                committed_at:
+                    type: string
+                    format: RFC3339
+                additions:
+                    type: integer
+                    format: int32
+                deletions:
+                    type: integer
+                    format: int32
+                title:
+                    type: string
         Commit:
             properties:
                 sha:
@@ -259,6 +521,42 @@ components:
                 deletions:
                     type: integer
                     format: uint32
+        CommitInfoRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+        CommitInfoResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                last_commit_at:
+                    type: string
+                    format: RFC3339
+        CommitRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                entity:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string
+                    format: RFC3339
+        CommitResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string
+                    format: RFC3339
         Field:
             properties:
                 name:
@@ -305,6 +603,12 @@ components:
         HealthResponse:
             properties:
                 status:
+                    type: string
+        Ident:
+            properties:
+                uid:
+                    type: string
+                muid:
                     type: string
         ProjectDefinition:
             properties:

@@ -95,3 +95,35 @@ module TaskData = {
       {data: resp.data->TaskDataBs.decode_add_response}->Js.Promise.resolve
     )
 }
+
+module Crawler = {
+  @module("axios")
+  external addRaw: (string, 'a) => axios<'b> = "post"
+
+  let add = (request: CrawlerTypes.add_request): axios<CrawlerTypes.add_response> =>
+    request->CrawlerBs.encode_add_request
+    |> addRaw(serverUrl ++ "/api/2/crawler/add")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->CrawlerBs.decode_add_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external commitRaw: (string, 'a) => axios<'b> = "post"
+
+  let commit = (request: CrawlerTypes.commit_request): axios<CrawlerTypes.commit_response> =>
+    request->CrawlerBs.encode_commit_request
+    |> commitRaw(serverUrl ++ "/api/2/crawler/commit")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->CrawlerBs.decode_commit_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external commitInfoRaw: (string, 'a) => axios<'b> = "post"
+
+  let commitInfo = (request: CrawlerTypes.commit_info_request): axios<
+    CrawlerTypes.commit_info_response,
+  > =>
+    request->CrawlerBs.encode_commit_info_request
+    |> commitInfoRaw(serverUrl ++ "/api/2/crawler/get_commit_info")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->CrawlerBs.decode_commit_info_response}->Js.Promise.resolve
+    )
+}

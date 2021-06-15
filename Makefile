@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
-BACKEND_ONLY = monocle/change.proto
+BACKEND_ONLY = monocle/change.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell
