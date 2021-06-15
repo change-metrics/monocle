@@ -37,7 +37,7 @@ jobs:
           pip install tox
 
       - name: Test with tox
-        run: tox
+        run: tox -e py3
 
       # - name: Validate usefulness of tests
       #   uses: quality-of-tests/has-useful-tests-action@master
