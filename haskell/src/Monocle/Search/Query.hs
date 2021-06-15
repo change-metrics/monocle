@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Monocle search language query
@@ -13,10 +14,10 @@ import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
+import Monocle.Prelude
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
-import Relude
 
 -- $setup
 -- >>> import Monocle.Search.Parser as P
@@ -28,7 +29,7 @@ type Bound = (Maybe UTCTime, UTCTime)
 
 data Env = Env
   { envNow :: UTCTime,
-    envProjects :: [Config.Project]
+    envIndex :: Config.Index
   }
 
 type Parser a = ReaderT Env (StateT Bound (Except ParseError)) a
@@ -52,6 +53,7 @@ fields =
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
+    ("project", (fieldText, "project_def", "Project definition name")),
     ("author", (fieldText, "author.muid", "Author name")),
     ("author_regex", (fieldRegex, "author.muid", "Author regex")),
     ("branch", (fieldText, "target_branch", "Branch name")),
@@ -189,6 +191,21 @@ mkRangeQuery expr field value = do
     . BH.mkRangeQuery (BH.FieldName fieldName)
     <$> mkRangeValue (toRangeOp expr) field fieldType value
 
+mkProjectQuery :: Config.Project -> BH.Query
+mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
+  where
+    must =
+      map BH.QueryRegexpQuery $
+        maybe [] repository repository_regex
+          <> maybe [] branch branch_regex
+          <> maybe [] file file_regex
+    mkRegexpQ field value =
+      [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
+    repository = mkRegexpQ "repository_fullname"
+    branch = mkRegexpQ "target_branch"
+    -- TODO: check how to regexp match nested list
+    file = const [] -- mkRegexpQ "changed_files"
+
 mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
@@ -204,6 +221,12 @@ mkEqQuery field value = do
               _ -> Left $ "Invalid value for state: " <> value
           )
       pure $ BH.TermQuery (BH.Term field' value') Nothing
+    ("project", _) -> do
+      index <- asks envIndex
+      project <-
+        toParseError $
+          Config.lookupProject index value `orDie` ("Unknown project: " <> value)
+      pure $ mkProjectQuery project
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
       pure
@@ -263,15 +286,16 @@ data Query = Query
   }
   deriving (Show)
 
-queryWithMods :: UTCTime -> Expr -> Either ParseError Query
-queryWithMods now baseExpr = do
+queryWithMods :: UTCTime -> Maybe Config.Index -> Expr -> Either ParseError Query
+queryWithMods now indexM baseExpr = do
   (query', (boundM, bound)) <-
     runExcept
       . flip runStateT (Nothing, now)
       . runReaderT (query expr)
-      $ Env now []
+      $ Env now index
   pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
+    index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
     (order, limit, expr) = case baseExpr of
       OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
@@ -279,8 +303,8 @@ queryWithMods now baseExpr = do
       _ -> (Nothing, 100, baseExpr)
 
 -- | Utility function to simply create a query
-load :: Maybe UTCTime -> Text -> Query
-load nowM code = case P.parse code >>= queryWithMods now of
+load :: Maybe UTCTime -> Maybe Config.Index -> Text -> Query
+load nowM indexM code = case P.parse code >>= queryWithMods now indexM of
   Right x -> x
   Left err -> error (show err)
   where

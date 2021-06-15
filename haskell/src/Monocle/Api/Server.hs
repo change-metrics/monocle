@@ -68,10 +68,10 @@ searchQuery request = do
     validateRequest tenants now = do
       -- Note: the bind (>>=) of Either stops when the value is a Left.
       expr <- P.parse queryText
-      query <- Q.queryWithMods now expr
-      case Config.lookupTenant tenants indexName of
+      tenant <- case Config.lookupTenant tenants indexName of
         Nothing -> Left $ ParseError "unknown tenant" 0
-        Just _ -> Right query
+        Just tenant -> Right tenant
+      Q.queryWithMods now (Just tenant) expr
 
     go :: Q.Query -> AppM SearchPB.QueryResponseResult
     go query = do
@@ -155,7 +155,7 @@ searchChangesLifecycle indexName queryText = do
   response bhEnv now
   where
     index = BH.IndexName $ "monocle.changes.1." <> indexName
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
+    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied

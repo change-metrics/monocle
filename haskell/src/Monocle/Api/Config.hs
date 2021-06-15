@@ -10,10 +10,13 @@
 
 module Monocle.Api.Config
   ( Index (..),
+    Crawler (..),
     Project (..),
     TaskCrawler (..),
     loadConfig,
     lookupTenant,
+    lookupProject,
+    pname,
   )
 where
 
@@ -89,6 +92,10 @@ instance FromJSON Tenants where
   parseJSON (Object v) = Tenants <$> v .: "tenants"
   parseJSON _ = mzero
 
+-- | Disambiguate the project name accessor
+pname :: Project -> Text
+pname = name
+
 loadConfig :: MonadIO m => FilePath -> m [Index]
 loadConfig fp = unTenants <$> YAML.decodeFileThrow fp
 
@@ -96,3 +103,9 @@ lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
   where
     isTenant Index {..} = index == tenantName
+
+lookupProject :: Index -> Text -> Maybe Project
+lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
+  where
+    isProject :: Project -> Bool
+    isProject Project {..} = name == projectName

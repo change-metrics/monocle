@@ -125,6 +125,12 @@ monocleSearchLanguage =
             "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
         ),
       testCase
+        "Query project"
+        ( queryMatch
+            "project:zuul"
+            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}}]}}"
+        ),
+      testCase
         "Query default bound"
         (queryMatchBound "state:open" (threeWeek, now)),
       testCase
@@ -157,9 +163,28 @@ monocleSearchLanguage =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods now >>= pure . field)
+        (P.parse code >>= Q.queryWithMods now (Just testTenant) >>= pure . field)
     queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
+    testTenant =
+      Config.Index
+        { Config.index = "test",
+          Config.users = Nothing,
+          Config.task_crawlers = Nothing,
+          Config.crawler = testCrawler,
+          Config.projects = (Just [testProjects])
+        }
+    testCrawler =
+      Config.Crawler
+        { Config.loop_delay = 0,
+          Config.github_orgs = Nothing,
+          Config.gerrit_repositories = Nothing
+        }
+    testProjects =
+      let br = Just "master"
+          fr = Just "tests/.*"
+          rr = Just "zuul/.*"
+       in Config.Project br fr "zuul" rr
 
 monocleWebApiTests :: TestTree
 monocleWebApiTests =

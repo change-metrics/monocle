@@ -17,7 +17,7 @@ parseQuery now code = either show decodeUtf8 query
   where
     query = do
       expr <- P.parse code
-      Aeson.encode . Q.queryBH <$> Q.queryWithMods now expr
+      Aeson.encode . Q.queryBH <$> Q.queryWithMods now Nothing expr
 
 printQuery :: MonadIO m => UTCTime -> Text -> Text -> Text -> m ()
 printQuery now elkUrl index code = do
@@ -26,7 +26,7 @@ printQuery now elkUrl index code = do
   mapM_ (putTextLn . show) (take 2 changes)
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where
-    query = case P.parse code >>= Q.queryWithMods now of
+    query = case P.parse code >>= Q.queryWithMods now Nothing of
       Left err -> error $ "Invalid query: " <> show err
       Right q -> q
 
