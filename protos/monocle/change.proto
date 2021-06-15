@@ -118,28 +118,3 @@ message ChangeEvent {
     ChangeMergedEvent ChangeMerged = 21;
   }
 }
-
-enum InputData {
-  Change = 0;
-  ChangeEvent = 1;
-}
-
-message AddRequest {
-  string index = 1;
-  string crawler = 2;
-  string apikey = 3;
-  repeated InputData items = 4;
-}
-
-enum AddError {
-  UnknownIndex = 0;
-  UnknownCrawler = 1;
-  UnknownApiKey = 2;
-  AddFailed = 3;
-}
-
-message AddResponse {
-  oneof result {
-    AddError error = 1;
-  }
-}

@@ -95,3 +95,7 @@ module TaskData = {
       {data: resp.data->TaskDataBs.decode_add_response}->Js.Promise.resolve
     )
 }
+
+module Crawler = {
+
+}

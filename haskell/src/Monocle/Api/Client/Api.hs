@@ -12,6 +12,7 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Monocle.Api.Client.Internal (MonocleClient, monocleReq)
 import Monocle.Config
+import Monocle.Crawler
 import Monocle.Search
 import Monocle.TaskData
 
@@ -38,3 +39,12 @@ taskDataGetLastUpdated = monocleReq "api/1/task_data_get_last_updated"
 
 taskDataAdd :: (MonadThrow m, MonadIO m) => MonocleClient -> AddRequest -> m AddResponse
 taskDataAdd = monocleReq "api/1/task_data_add"
+
+crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
+crawlerAddDoc = monocleReq "api/2/crawler/add"
+
+crawlerCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> CommitRequest -> m CommitResponse
+crawlerCommit = monocleReq "api/2/crawler/commit"
+
+crawlerCommitInfo :: (MonadThrow m, MonadIO m) => MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
+crawlerCommitInfo = monocleReq "api/2/crawler/get_commit_info"
