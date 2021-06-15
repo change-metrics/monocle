@@ -156,7 +156,8 @@ test-suite monocle-integration-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Integration.hs
-  build-depends:       monocle
+  build-depends:       base                       < 5
+                     , monocle
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
