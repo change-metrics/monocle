@@ -13,6 +13,7 @@ module Monocle.Api.Config
     Crawler (..),
     Project (..),
     TaskCrawler (..),
+    Worker,
     loadConfig,
     lookupTenant,
     lookupProject,
@@ -112,6 +113,9 @@ lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
   where
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
+
+-- | TODO: integrate https://github.com/change-metrics/dhall-monocle/pull/4
+type Worker = TaskCrawler
 
 lookupCrawler :: Index -> Text -> Maybe TaskCrawler
 lookupCrawler Index {..} crawlerName = find isProject (fromMaybe [] task_crawlers)

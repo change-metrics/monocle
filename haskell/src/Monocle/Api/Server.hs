@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -31,6 +32,18 @@ configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
 
+pattern ProjectEntity project =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
+toEntity :: Maybe CrawlerPB.Entity -> I.Entity
+toEntity entityPB = case entityPB of
+  ProjectEntity projectName -> I.Project $ toStrict projectName
+  _ -> error "Unknown Entity type"
+
+fromPBEnum :: Enumerated a -> a
+fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
+fromPBEnum (Enumerated (Right x)) = x
+
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
@@ -49,10 +62,7 @@ crawlerAddDoc request = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
       crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
       when (Config.api_key crawler /= apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
-    toEntity :: Maybe CrawlerPB.AddDocRequestEntity -> I.Entity
-    toEntity entityPB = case entityPB of
-      Just (CrawlerPB.AddDocRequestEntityChangeEntity (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
-      _ -> error "Unknown Entity type"
+
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
       CrawlerPB.AddDocResponse
@@ -77,10 +87,7 @@ crawlerCommit request = do
       crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
       when (Config.api_key crawler /= apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
       timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
-    toEntity :: Maybe CrawlerPB.CommitRequestEntity -> I.Entity
-    toEntity entityPB = case entityPB of
-      Just (CrawlerPB.CommitRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
-      _ -> error "Unknown Entity type"
+
     toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
     toErrorResponse err =
       CrawlerPB.CommitResponse
@@ -89,29 +96,35 @@ crawlerCommit request = do
         . Enumerated
         $ Right err
 
+-- | Returns the oldest entity
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
+      entityType = fromPBEnum entity
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
-    Right _ -> do
-      ts <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity)
+    Right worker -> do
+      (name, ts) <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) worker entityType
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
-        . CrawlerPB.CommitInfoResponseResultLastCommitAt
-        $ Timestamp.fromUTCTime ts
+        . CrawlerPB.CommitInfoResponseResultEntity
+        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entityType (toLazy name))
+        $ (Just $ Timestamp.fromUTCTime ts)
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError ()
+    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError Config.Worker
     validateRequest tenants indexName crawlerName = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
-      _ <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
-      pure ()
-    toEntity :: Maybe CrawlerPB.CommitInfoRequestEntity -> I.Entity
-    toEntity entityPB = case entityPB of
-      Just (CrawlerPB.CommitInfoRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
-      _ -> error "Unknown Entity type"
+      worker <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
+      pure worker
+
+    fromEntityType :: CrawlerPB.CommitInfoRequest_EntityType -> LText -> CrawlerPB.Entity
+    fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
+      CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> CrawlerPB.EntityEntityOrganizationName value
+      CrawlerPB.CommitInfoRequest_EntityTypeProject -> CrawlerPB.EntityEntityProjectName value
+      _ -> error "Not implemented"
+
     toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
     toErrorResponse err =
       CrawlerPB.CommitInfoResponse

@@ -9,12 +9,13 @@ module Monocle.Backend.Test where
 import Control.Exception (bracket)
 import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
-import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
+import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude hiding (head)
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe (head, (!!))
@@ -158,20 +159,22 @@ testCrawlerMetadata = withBH doTest
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
       -- No previous
-      defaultLastUpdatedDate <- I.getLastUpdated bhEnv testIndex entity
-      assertEqual "check default date" defaultLastUpdatedDate expectedDefaultDate
+      defaultLastUpdatedDate <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check default date" defaultLastUpdatedDate ("nova", expectedDefaultDate)
       -- Set inital last updated date
       I.setLastUpdated bhEnv testIndex entity fakeDate
-      lastUpdated <- I.getLastUpdated bhEnv testIndex entity
-      assertEqual "check date similar" lastUpdated fakeDate
+      lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check date similar" lastUpdated ("nova", fakeDate)
       -- Set a new last updated date
       I.setLastUpdated bhEnv testIndex entity fakeDateAlt
-      lastUpdated' <- I.getLastUpdated bhEnv testIndex entity
-      assertEqual "check date similar" lastUpdated' fakeDateAlt
+      lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check date similar" lastUpdated' ("nova", fakeDateAlt)
       where
+        entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
         expectedDefaultDate :: UTCTime
         expectedDefaultDate = fromMaybe (error "nop") (readMaybe "2021-01-01 00:00:00 UTC")
+        worker = undefined
 
 scenarioProject :: ScenarioProject
 scenarioProject =
