@@ -32,29 +32,27 @@ configHealth = const $ pure response
     response = ConfigPB.HealthResponse "api running"
 
 -- Mock to bind to function from another PR
-indexExist name = True
-
 crawlerExist indexName crawlerName = True
 
 apiKeyMatch indexName crawlerName apiKey = True
 
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
-  Env {bhEnv = bhEnv} <- ask
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
-  case (indexExist indexName, crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey) of
-    (True, True, True) -> do
+  case (Config.lookupTenant tenants $ toStrict indexName, crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey) of
+    (Just _, True, True) -> do
       case toEntity entity of
         I.Project _ -> do
           _ <- liftIO $ I.indexChanges bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChange $ toList changes)
           _ <- liftIO $ I.indexEvents bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChangeEvent $ toList events)
           pure $ CrawlerPB.AddDocResponse Nothing
         I.Organization _ -> error "Organization entity not yet supported"
-    (True, True, False) -> do
+    (Just _, True, False) -> do
       pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownApiKey
-    (True, False, _) -> do
+    (Just _, False, _) -> do
       pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownCrawler
-    (False, _, _) -> do
+    (Nothing, _, _) -> do
       pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownIndex
   where
     toEntity :: Maybe CrawlerPB.AddDocRequestEntity -> I.Entity
@@ -71,19 +69,19 @@ crawlerAddDoc request = do
 
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
-  Env {bhEnv = bhEnv} <- ask
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
-  case (indexExist indexName, crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey, timestampM) of
-    (True, True, True, Just ts) -> do
+  case (Config.lookupTenant tenants (toStrict indexName), crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey, timestampM) of
+    (Just _, True, True, Just ts) -> do
       _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts)
       pure $ CrawlerPB.CommitResponse (Just (CrawlerPB.CommitResponseResultTimestamp ts))
-    (True, True, True, Nothing) -> do
+    (Just _, True, True, Nothing) -> do
       pure $ toErrorResponse CrawlerPB.CommitErrorCommitDateMissing
-    (True, True, False, _) -> do
+    (Just _, True, False, _) -> do
       pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownApiKey
-    (True, False, _, _) -> do
+    (Just _, False, _, _) -> do
       pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownCrawler
-    (False, _, _, _) -> do
+    (Nothing, _, _, _) -> do
       pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownIndex
   where
     toEntity :: Maybe CrawlerPB.CommitRequestEntity -> I.Entity
@@ -100,19 +98,19 @@ crawlerCommit request = do
 
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  Env {bhEnv = bhEnv} <- ask
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
-  case (indexExist indexName, crawlerExist indexName crawlerName) of
-    (True, True) -> do
+  case (Config.lookupTenant tenants (toStrict indexName), crawlerExist indexName crawlerName) of
+    (Just _, True) -> do
       ts <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity)
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
         . CrawlerPB.CommitInfoResponseResultLastCommitAt
         $ Timestamp.fromUTCTime ts
-    (True, False) -> do
+    (Just _, False) -> do
       pure $ toErrorResponse CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
-    (False, _) -> do
+    (Nothing, _) -> do
       pure $ toErrorResponse CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
   where
     toEntity :: Maybe CrawlerPB.CommitInfoRequestEntity -> I.Entity
