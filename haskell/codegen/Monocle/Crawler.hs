@@ -38,52 +38,88 @@ import qualified Proto3.Wire as HsProtobuf
 import qualified Unsafe.Coerce as Hs
 import qualified Prelude as Hs
 
-data Entity = EntityChange
-  deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
+newtype ChangeEntity = ChangeEntity {changeEntityProject :: Hs.Text}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named Entity where
-  nameOf _ = (Hs.fromString "Entity")
+instance HsProtobuf.Named ChangeEntity where
+  nameOf _ = (Hs.fromString "ChangeEntity")
 
-instance HsProtobuf.HasDefault Entity
+instance HsProtobuf.HasDefault ChangeEntity
 
-instance Hs.Bounded Entity where
-  minBound = EntityChange
-  maxBound = EntityChange
+instance HsProtobuf.Message ChangeEntity where
+  encodeMessage
+    _
+    ChangeEntity {changeEntityProject = changeEntityProject} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                changeEntityProject
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ChangeEntity)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "project")
+          []
+          ""
+      )
+    ]
 
-instance Hs.Ord Entity where
-  compare x y =
-    Hs.compare
-      (HsProtobuf.fromProtoEnum x)
-      (HsProtobuf.fromProtoEnum y)
+instance HsJSONPB.ToJSONPB ChangeEntity where
+  toJSONPB (ChangeEntity f1) = (HsJSONPB.object ["project" .= f1])
+  toEncodingPB (ChangeEntity f1) = (HsJSONPB.pairs ["project" .= f1])
 
-instance HsProtobuf.ProtoEnum Entity where
-  toProtoEnumMay 0 = Hs.Just EntityChange
-  toProtoEnumMay _ = Hs.Nothing
-  fromProtoEnum (EntityChange) = 0
+instance HsJSONPB.FromJSONPB ChangeEntity where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ChangeEntity"
+        (\obj -> (Hs.pure ChangeEntity) <*> obj .: "project")
+    )
 
-instance HsJSONPB.ToJSONPB Entity where
-  toJSONPB x _ = HsJSONPB.enumFieldString x
-  toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
-
-instance HsJSONPB.FromJSONPB Entity where
-  parseJSONPB (HsJSONPB.String "Change") = Hs.pure EntityChange
-  parseJSONPB v = (HsJSONPB.typeMismatch "Entity" v)
-
-instance HsJSONPB.ToJSON Entity where
+instance HsJSONPB.ToJSON ChangeEntity where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON Entity where
+instance HsJSONPB.FromJSON ChangeEntity where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsProtobuf.Finite Entity
+instance HsJSONPB.ToSchema ChangeEntity where
+  declareNamedSchema _ =
+    do
+      let declare_project = HsJSONPB.declareSchemaRef
+      changeEntityProject <- declare_project Proxy.Proxy
+      let _ = Hs.pure ChangeEntity <*> HsJSONPB.asProxy declare_project
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeEntity",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("project", changeEntityProject)]
+                  }
+            }
+        )
 
 data AddDocRequest = AddDocRequest
   { addDocRequestIndex :: Hs.Text,
     addDocRequestCrawler :: Hs.Text,
     addDocRequestApikey :: Hs.Text,
-    addDocRequestEntity ::
-      HsProtobuf.Enumerated Monocle.Crawler.Entity,
+    addDocRequestEntity :: Hs.Maybe AddDocRequestEntity,
     addDocRequestChanges :: Hs.Vector Monocle.Change.Change,
     addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent
   }
@@ -118,10 +154,18 @@ instance HsProtobuf.Message AddDocRequest where
                 (HsProtobuf.FieldNumber 3)
                 addDocRequestApikey
             ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                addDocRequestEntity
-            ),
+            case addDocRequestEntity of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  AddDocRequestEntityChangeEntity y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 4)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Crawler.ChangeEntity)
+                            @(HsProtobuf.Nested Monocle.Crawler.ChangeEntity)
+                            (Hs.Just y)
+                        )
+                    ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Vector Monocle.Change.Change)
@@ -152,9 +196,16 @@ instance HsProtobuf.Message AddDocRequest where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 4),
+                  (Hs.pure (Hs.fmap AddDocRequestEntityChangeEntity))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Crawler.ChangeEntity))
+                            @(_ (Hs.Maybe Monocle.Crawler.ChangeEntity))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
           )
       <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Change.Change))
               @(_ (Hs.Vector Monocle.Change.Change))
@@ -193,13 +244,6 @@ instance HsProtobuf.Message AddDocRequest where
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
-          (HsProtobuf.Single "entity")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 5)
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
@@ -233,7 +277,19 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
-          "entity" .= f4,
+          ( let encodeEntity =
+                  ( case f4 of
+                      Hs.Just (AddDocRequestEntityChangeEntity f4) ->
+                        (HsJSONPB.pair "changeEntity" f4)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("entity" .= (HsJSONPB.objectOrNull [encodeEntity] options))
+                        options
+                    else encodeEntity options
+          ),
           "changes" .= f5,
           "events" .= f6
         ]
@@ -243,7 +299,17 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
-          "entity" .= f4,
+          ( let encodeEntity =
+                  ( case f4 of
+                      Hs.Just (AddDocRequestEntityChangeEntity f4) ->
+                        (HsJSONPB.pair "changeEntity" f4)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("entity" .= (HsJSONPB.pairsOrNull [encodeEntity] options)) options
+                    else encodeEntity options
+          ),
           "changes" .= f5,
           "events" .= f6
         ]
@@ -256,7 +322,17 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
         ( \obj ->
             (Hs.pure AddDocRequest) <*> obj .: "index" <*> obj .: "crawler"
               <*> obj .: "apikey"
-              <*> obj .: "entity"
+              <*> ( let parseEntity parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. AddDocRequestEntityChangeEntity
+                                <$> (HsJSONPB.parseField parseObj "changeEntity"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "entity")
+                            Hs.>>= (HsJSONPB.withObject "entity" parseEntity)
+                        )
+                          <|> (parseEntity obj)
+                  )
               <*> obj .: "changes"
               <*> obj .: "events"
         )
@@ -311,6 +387,43 @@ instance HsJSONPB.ToSchema AddDocRequest where
                           ("changes", addDocRequestChanges),
                           ("events", addDocRequestEvents)
                         ]
+                  }
+            }
+        )
+
+data AddDocRequestEntity = AddDocRequestEntityChangeEntity Monocle.Crawler.ChangeEntity
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named AddDocRequestEntity where
+  nameOf _ = (Hs.fromString "AddDocRequestEntity")
+
+instance HsJSONPB.ToSchema AddDocRequestEntity where
+  declareNamedSchema _ =
+    do
+      let declare_changeEntity = HsJSONPB.declareSchemaRef
+      addDocRequestEntityChangeEntity <- declare_changeEntity Proxy.Proxy
+      let _ =
+            Hs.pure AddDocRequestEntityChangeEntity
+              <*> HsJSONPB.asProxy declare_changeEntity
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "AddDocRequestEntity",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "changeEntity",
+                            addDocRequestEntityChangeEntity
+                          )
+                        ],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }
             }
         )
@@ -538,8 +651,7 @@ data CommitRequest = CommitRequest
   { commitRequestIndex :: Hs.Text,
     commitRequestCrawler :: Hs.Text,
     commitRequestApikey :: Hs.Text,
-    commitRequestEntity ::
-      HsProtobuf.Enumerated Monocle.Crawler.Entity,
+    commitRequestEntity :: Hs.Maybe CommitRequestEntity,
     commitRequestTimestamp ::
       Hs.Maybe Google.Protobuf.Timestamp.Timestamp
   }
@@ -573,10 +685,18 @@ instance HsProtobuf.Message CommitRequest where
                 (HsProtobuf.FieldNumber 3)
                 commitRequestApikey
             ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                commitRequestEntity
-            ),
+            case commitRequestEntity of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  CommitRequestEntityChanges y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 4)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Crawler.ChangeEntity)
+                            @(HsProtobuf.Nested Monocle.Crawler.ChangeEntity)
+                            (Hs.Just y)
+                        )
+                    ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
@@ -600,9 +720,16 @@ instance HsProtobuf.Message CommitRequest where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 4),
+                  (Hs.pure (Hs.fmap CommitRequestEntityChanges))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Crawler.ChangeEntity))
+                            @(_ (Hs.Maybe Monocle.Crawler.ChangeEntity))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
           )
       <*> ( Hs.coerce
               @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
@@ -635,13 +762,6 @@ instance HsProtobuf.Message CommitRequest where
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
-          (HsProtobuf.Single "entity")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 5)
           ( HsProtobuf.Prim
               ( HsProtobuf.Named
@@ -662,7 +782,19 @@ instance HsJSONPB.ToJSONPB CommitRequest where
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
-          "entity" .= f4,
+          ( let encodeEntity =
+                  ( case f4 of
+                      Hs.Just (CommitRequestEntityChanges f4) ->
+                        (HsJSONPB.pair "changes" f4)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("entity" .= (HsJSONPB.objectOrNull [encodeEntity] options))
+                        options
+                    else encodeEntity options
+          ),
           "timestamp" .= f5
         ]
     )
@@ -671,7 +803,17 @@ instance HsJSONPB.ToJSONPB CommitRequest where
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
-          "entity" .= f4,
+          ( let encodeEntity =
+                  ( case f4 of
+                      Hs.Just (CommitRequestEntityChanges f4) ->
+                        (HsJSONPB.pair "changes" f4)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("entity" .= (HsJSONPB.pairsOrNull [encodeEntity] options)) options
+                    else encodeEntity options
+          ),
           "timestamp" .= f5
         ]
     )
@@ -683,7 +825,17 @@ instance HsJSONPB.FromJSONPB CommitRequest where
         ( \obj ->
             (Hs.pure CommitRequest) <*> obj .: "index" <*> obj .: "crawler"
               <*> obj .: "apikey"
-              <*> obj .: "entity"
+              <*> ( let parseEntity parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. CommitRequestEntityChanges
+                                <$> (HsJSONPB.parseField parseObj "changes"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "entity")
+                            Hs.>>= (HsJSONPB.withObject "entity" parseEntity)
+                        )
+                          <|> (parseEntity obj)
+                  )
               <*> obj .: "timestamp"
         )
     )
@@ -737,11 +889,46 @@ instance HsJSONPB.ToSchema CommitRequest where
             }
         )
 
+data CommitRequestEntity = CommitRequestEntityChanges Monocle.Crawler.ChangeEntity
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named CommitRequestEntity where
+  nameOf _ = (Hs.fromString "CommitRequestEntity")
+
+instance HsJSONPB.ToSchema CommitRequestEntity where
+  declareNamedSchema _ =
+    do
+      let declare_changes = HsJSONPB.declareSchemaRef
+      commitRequestEntityChanges <- declare_changes Proxy.Proxy
+      let _ =
+            Hs.pure CommitRequestEntityChanges
+              <*> HsJSONPB.asProxy declare_changes
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "CommitRequestEntity",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("changes", commitRequestEntityChanges)],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
+                  }
+            }
+        )
+
 data CommitError
   = CommitErrorCommitUnknownIndex
   | CommitErrorCommitUnknownCrawler
   | CommitErrorCommitUnknownApiKey
   | CommitErrorCommitDateInferiorThanPrevious
+  | CommitErrorCommitDateMissing
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named CommitError where
@@ -751,7 +938,7 @@ instance HsProtobuf.HasDefault CommitError
 
 instance Hs.Bounded CommitError where
   minBound = CommitErrorCommitUnknownIndex
-  maxBound = CommitErrorCommitDateInferiorThanPrevious
+  maxBound = CommitErrorCommitDateMissing
 
 instance Hs.Ord CommitError where
   compare x y =
@@ -765,11 +952,13 @@ instance HsProtobuf.ProtoEnum CommitError where
   toProtoEnumMay 2 = Hs.Just CommitErrorCommitUnknownApiKey
   toProtoEnumMay 3 =
     Hs.Just CommitErrorCommitDateInferiorThanPrevious
+  toProtoEnumMay 4 = Hs.Just CommitErrorCommitDateMissing
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (CommitErrorCommitUnknownIndex) = 0
   fromProtoEnum (CommitErrorCommitUnknownCrawler) = 1
   fromProtoEnum (CommitErrorCommitUnknownApiKey) = 2
   fromProtoEnum (CommitErrorCommitDateInferiorThanPrevious) = 3
+  fromProtoEnum (CommitErrorCommitDateMissing) = 4
 
 instance HsJSONPB.ToJSONPB CommitError where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -784,6 +973,8 @@ instance HsJSONPB.FromJSONPB CommitError where
     Hs.pure CommitErrorCommitUnknownApiKey
   parseJSONPB (HsJSONPB.String "CommitDateInferiorThanPrevious") =
     Hs.pure CommitErrorCommitDateInferiorThanPrevious
+  parseJSONPB (HsJSONPB.String "CommitDateMissing") =
+    Hs.pure CommitErrorCommitDateMissing
   parseJSONPB v = (HsJSONPB.typeMismatch "CommitError" v)
 
 instance HsJSONPB.ToJSON CommitError where
@@ -992,7 +1183,9 @@ instance HsJSONPB.ToSchema CommitResponseResult where
 data CommitInfoRequest = CommitInfoRequest
   { commitInfoRequestIndex ::
       Hs.Text,
-    commitInfoRequestCrawler :: Hs.Text
+    commitInfoRequestCrawler :: Hs.Text,
+    commitInfoRequestEntity ::
+      Hs.Maybe CommitInfoRequestEntity
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1006,7 +1199,8 @@ instance HsProtobuf.Message CommitInfoRequest where
     _
     CommitInfoRequest
       { commitInfoRequestIndex = commitInfoRequestIndex,
-        commitInfoRequestCrawler = commitInfoRequestCrawler
+        commitInfoRequestCrawler = commitInfoRequestCrawler,
+        commitInfoRequestEntity = commitInfoRequestEntity
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -1016,7 +1210,19 @@ instance HsProtobuf.Message CommitInfoRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 commitInfoRequestCrawler
-            )
+            ),
+            case commitInfoRequestEntity of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  CommitInfoRequestEntityChanges y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 3)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Crawler.ChangeEntity)
+                            @(HsProtobuf.Nested Monocle.Crawler.ChangeEntity)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -1028,6 +1234,17 @@ instance HsProtobuf.Message CommitInfoRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 3),
+                  (Hs.pure (Hs.fmap CommitInfoRequestEntityChanges))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Crawler.ChangeEntity))
+                            @(_ (Hs.Maybe Monocle.Crawler.ChangeEntity))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -1047,18 +1264,60 @@ instance HsProtobuf.Message CommitInfoRequest where
     ]
 
 instance HsJSONPB.ToJSONPB CommitInfoRequest where
-  toJSONPB (CommitInfoRequest f1 f2) =
-    (HsJSONPB.object ["index" .= f1, "crawler" .= f2])
-  toEncodingPB (CommitInfoRequest f1 f2) =
-    (HsJSONPB.pairs ["index" .= f1, "crawler" .= f2])
+  toJSONPB (CommitInfoRequest f1 f2 f3) =
+    ( HsJSONPB.object
+        [ "index" .= f1,
+          "crawler" .= f2,
+          ( let encodeEntity =
+                  ( case f3 of
+                      Hs.Just (CommitInfoRequestEntityChanges f3) ->
+                        (HsJSONPB.pair "changes" f3)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("entity" .= (HsJSONPB.objectOrNull [encodeEntity] options))
+                        options
+                    else encodeEntity options
+          )
+        ]
+    )
+  toEncodingPB (CommitInfoRequest f1 f2 f3) =
+    ( HsJSONPB.pairs
+        [ "index" .= f1,
+          "crawler" .= f2,
+          ( let encodeEntity =
+                  ( case f3 of
+                      Hs.Just (CommitInfoRequestEntityChanges f3) ->
+                        (HsJSONPB.pair "changes" f3)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("entity" .= (HsJSONPB.pairsOrNull [encodeEntity] options)) options
+                    else encodeEntity options
+          )
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB CommitInfoRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
         "CommitInfoRequest"
         ( \obj ->
-            (Hs.pure CommitInfoRequest) <*> obj .: "index"
-              <*> obj .: "crawler"
+            (Hs.pure CommitInfoRequest) <*> obj .: "index" <*> obj .: "crawler"
+              <*> ( let parseEntity parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. CommitInfoRequestEntityChanges
+                                <$> (HsJSONPB.parseField parseObj "changes"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "entity")
+                            Hs.>>= (HsJSONPB.withObject "entity" parseEntity)
+                        )
+                          <|> (parseEntity obj)
+                  )
         )
     )
 
@@ -1076,10 +1335,13 @@ instance HsJSONPB.ToSchema CommitInfoRequest where
       commitInfoRequestIndex <- declare_index Proxy.Proxy
       let declare_crawler = HsJSONPB.declareSchemaRef
       commitInfoRequestCrawler <- declare_crawler Proxy.Proxy
+      let declare_entity = HsJSONPB.declareSchemaRef
+      commitInfoRequestEntity <- declare_entity Proxy.Proxy
       let _ =
             Hs.pure CommitInfoRequest
               <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_crawler
+              <*> HsJSONPB.asProxy declare_entity
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -1094,8 +1356,46 @@ instance HsJSONPB.ToSchema CommitInfoRequest where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("index", commitInfoRequestIndex),
-                          ("crawler", commitInfoRequestCrawler)
+                          ("crawler", commitInfoRequestCrawler),
+                          ("entity", commitInfoRequestEntity)
                         ]
+                  }
+            }
+        )
+
+data CommitInfoRequestEntity = CommitInfoRequestEntityChanges Monocle.Crawler.ChangeEntity
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named CommitInfoRequestEntity where
+  nameOf _ = (Hs.fromString "CommitInfoRequestEntity")
+
+instance HsJSONPB.ToSchema CommitInfoRequestEntity where
+  declareNamedSchema _ =
+    do
+      let declare_changes = HsJSONPB.declareSchemaRef
+      commitInfoRequestEntityChanges <- declare_changes Proxy.Proxy
+      let _ =
+            Hs.pure CommitInfoRequestEntityChanges
+              <*> HsJSONPB.asProxy declare_changes
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "CommitInfoRequestEntity",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "changes",
+                            commitInfoRequestEntityChanges
+                          )
+                        ],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }
             }
         )

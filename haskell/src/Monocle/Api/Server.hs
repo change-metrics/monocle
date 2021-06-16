@@ -12,6 +12,7 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
@@ -31,13 +32,93 @@ configHealth = const $ pure response
     response = ConfigPB.HealthResponse "api running"
 
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
-crawlerAddDoc = undefined
+crawlerAddDoc request = do
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
+    Right _ -> case toEntity entity of
+      I.Project _ -> do
+        _ <- liftIO $ I.indexChanges bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChange $ toList changes)
+        _ <- liftIO $ I.indexEvents bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChangeEvent $ toList events)
+        pure $ CrawlerPB.AddDocResponse Nothing
+      I.Organization _ -> error "Organization entity not yet supported"
+    Left err -> pure $ toErrorResponse err
+  where
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError ()
+    validateRequest tenants indexName crawlerName apiKey = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
+      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
+      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
+    toEntity :: Maybe CrawlerPB.AddDocRequestEntity -> I.Entity
+    toEntity entityPB = case entityPB of
+      Just (CrawlerPB.AddDocRequestEntityChangeEntity (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
+      _ -> error "Unknown Entity type"
+    toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
+    toErrorResponse err =
+      CrawlerPB.AddDocResponse
+        . Just
+        . CrawlerPB.AddDocResponseResultError
+        . Enumerated
+        $ Right err
 
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
-crawlerCommit = undefined
+crawlerCommit request = do
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
+    Right ts' -> do
+      _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts')
+      pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
+    Left err -> pure $ toErrorResponse err
+  where
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Maybe Timestamp -> Either CrawlerPB.CommitError Timestamp
+    validateRequest tenants indexName crawlerName apiKey timestampM = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
+      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
+      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
+      timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
+    toEntity :: Maybe CrawlerPB.CommitRequestEntity -> I.Entity
+    toEntity entityPB = case entityPB of
+      Just (CrawlerPB.CommitRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
+      _ -> error "Unknown Entity type"
+    toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
+    toErrorResponse err =
+      CrawlerPB.CommitResponse
+        . Just
+        . CrawlerPB.CommitResponseResultError
+        . Enumerated
+        $ Right err
 
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
-crawlerCommitInfo = undefined
+crawlerCommitInfo request = do
+  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
+    Right _ -> do
+      ts <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity)
+      pure
+        . CrawlerPB.CommitInfoResponse
+        . Just
+        . CrawlerPB.CommitInfoResponseResultLastCommitAt
+        $ Timestamp.fromUTCTime ts
+    Left err -> pure $ toErrorResponse err
+  where
+    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError ()
+    validateRequest tenants indexName crawlerName = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
+      _ <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
+      pure ()
+    toEntity :: Maybe CrawlerPB.CommitInfoRequestEntity -> I.Entity
+    toEntity entityPB = case entityPB of
+      Just (CrawlerPB.CommitInfoRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
+      _ -> error "Unknown Entity type"
+    toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
+    toErrorResponse err =
+      CrawlerPB.CommitInfoResponse
+        . Just
+        . CrawlerPB.CommitInfoResponseResultError
+        . Enumerated
+        $ Right err
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
