@@ -14,8 +14,8 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
+import qualified Monocle.Backend.Queries as Q
 import Monocle.Prelude hiding (head)
-import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe (head, (!!))
 import Test.Tasty.HUnit
@@ -189,7 +189,7 @@ testAchievements = withBH doTest
       assertEqual "event found" (Q.epbType agg) "Change"
       assertEqual "event count match" (Q.epbCount agg) 1
       where
-        query = Q.queryBH $ Q.load Nothing "state:open"
+        query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
 -- Tests scenario helpers
 

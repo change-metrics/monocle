@@ -10,14 +10,15 @@ import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Queries as Q
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
@@ -40,24 +41,50 @@ crawlerCommitInfo = undefined
 
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
-  Env {bhEnv = bhEnv} <- ask
+  Env {tenants = tenants} <- ask
   now <- liftIO getCurrentTime
-  SearchPB.QueryResponse . Just <$> response bhEnv now
+  toResponse <$> handleValidation (validateRequest tenants now)
   where
     queryText = toStrict $ SearchPB.queryRequestQuery request
-    index = "monocle.changes.1." <> toStrict (SearchPB.queryRequestIndex request)
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
-      Left (ParseError msg offset) ->
-        pure
-          . SearchPB.QueryResponseResultError
-          . SearchPB.QueryError (toLazy msg)
-          $ (fromInteger . toInteger $ offset)
-      Right query ->
-        SearchPB.QueryResponseResultItems
-          . SearchPB.Changes
-          . V.fromList
-          . map toResult
-          <$> Q.changes bhEnv index query
+    indexName = toStrict $ SearchPB.queryRequestIndex request
+    index = "monocle.changes.1." <> indexName
+
+    -- TODO: add field to the protobuf message
+    username = mempty
+
+    toResponse :: SearchPB.QueryResponseResult -> QueryResponse
+    toResponse = SearchPB.QueryResponse . Just
+
+    -- If the validation is a Left, use handleError, otherwise use go
+    -- either :: (a -> c) -> (b -> c) -> Either a b -> c
+    handleValidation :: Either ParseError Q.Query -> AppM SearchPB.QueryResponseResult
+    handleValidation = either (pure . handleError) go
+
+    handleError :: ParseError -> SearchPB.QueryResponseResult
+    handleError (ParseError msg offset) =
+      SearchPB.QueryResponseResultError $
+        SearchPB.QueryError
+          (toLazy msg)
+          (fromInteger . toInteger $ offset)
+
+    validateRequest :: [Config.Index] -> UTCTime -> Either ParseError Q.Query
+    validateRequest tenants now = do
+      -- Note: the bind (>>=) of Either stops when the value is a Left.
+      expr <- P.parse queryText
+      tenant <- case Config.lookupTenant tenants indexName of
+        Nothing -> Left $ ParseError "unknown tenant" 0
+        Just tenant -> Right tenant
+      Q.queryWithMods now username (Just tenant) expr
+
+    go :: Q.Query -> AppM SearchPB.QueryResponseResult
+    go query = do
+      Env {bhEnv = bhEnv} <- ask
+      SearchPB.QueryResponseResultItems
+        . SearchPB.Changes
+        . V.fromList
+        . map toResult
+        <$> Q.changes bhEnv index query
+
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
       let changeTitle = elkchangeTitle change
@@ -131,11 +158,15 @@ searchChangesLifecycle indexName queryText = do
   response bhEnv now
   where
     index = BH.IndexName $ "monocle.changes.1." <> indexName
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now of
+
+    -- TODO: add field to the protobuf message
+    username = mempty
+
+    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now username Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied
-            bhQuery = Q.queryBH query
+            bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
             count = Q.countEvents bhEnv index
             queryType = Q.documentType bhQuery
 

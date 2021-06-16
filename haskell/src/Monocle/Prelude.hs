@@ -12,12 +12,14 @@ module Monocle.Prelude
     FromJSON (..),
     ToJSON (..),
     Value,
+    UTCTime,
   )
 where
 
 import Control.Monad.Catch (MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value)
 import Data.Fixed (Fixed (..), HasResolution (resolution))
+import Data.Time.Clock (UTCTime)
 import GHC.Float (double2Float)
 import Relude
 import Say (sayErr)
@@ -27,9 +29,9 @@ fromFixed :: (Fractional a, HasResolution b) => Fixed b -> a
 fromFixed fv@(MkFixed v) = fromIntegral v / fromIntegral (resolution fv)
 
 -- | From https://www.haskellforall.com/2021/05/the-trick-to-avoid-deeply-nested-error.html
-orDie :: Maybe a -> String -> Either String a
+orDie :: Maybe a -> b -> Either b a
 Just a `orDie` _ = Right a
-Nothing `orDie` string = Left string
+Nothing `orDie` err = Left err
 
 getExn :: Either String a -> a
 getExn (Right x) = x

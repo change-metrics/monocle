@@ -7,7 +7,7 @@ import qualified Monocle.Api.Config as Config
 import Servant (Handler)
 
 data Env = Env
-  { tenants :: [Config.Tenant],
+  { tenants :: [Config.Index],
     bhEnv :: BH.BHEnv
   }
 

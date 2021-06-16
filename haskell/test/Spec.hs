@@ -7,6 +7,7 @@ import qualified Data.Aeson as Aeson
 import Data.Time.Clock (UTCTime)
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
+import qualified Monocle.Api.Config as Config
 import Monocle.Mock
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
@@ -18,7 +19,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests])
+main = defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
 
 monocleSearchLanguage :: TestTree
 monocleSearchLanguage =
@@ -70,16 +71,23 @@ monocleSearchLanguage =
             )
         ),
       testCase
+        "Parser implicit and"
+        ( parseMatch
+            "state:open author:foo"
+            ( (S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo"))
+            )
+        ),
+      testCase
         "Parser order by"
         ( parseMatch
             "state:open order by review_date"
-            (S.OrderByExpr "review_date" S.Asc (S.EqExpr "state" "open"))
+            (S.OrderByExpr "review_date" S.Asc (Just $ S.EqExpr "state" "open"))
         ),
       testCase
         "Parser order by sort"
         ( parseMatch
             "state:open order by review_date desc"
-            (S.OrderByExpr "review_date" S.Desc (S.EqExpr "state" "open"))
+            (S.OrderByExpr "review_date" S.Desc (Just $ S.EqExpr "state" "open"))
         ),
       testCase
         "Query date"
@@ -124,6 +132,12 @@ monocleSearchLanguage =
             "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
         ),
       testCase
+        "Query project"
+        ( queryMatch
+            "project:zuul"
+            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}}]}}"
+        ),
+      testCase
         "Query default bound"
         (queryMatchBound "state:open" (threeWeek, now)),
       testCase
@@ -151,14 +165,33 @@ monocleSearchLanguage =
     threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 10:00:00 Z")
     now = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
-    parseMatch code expr = assertEqual "match" (Right expr) (P.parse code)
+    parseMatch code expr = assertEqual "match" (Right (Just expr)) (P.parse code)
     queryDoMatch field code query =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods now >>= pure . field)
+        (P.parse code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
     queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
+    testTenant =
+      Config.Index
+        { Config.index = "test",
+          Config.users = Nothing,
+          Config.task_crawlers = Nothing,
+          Config.crawler = testCrawler,
+          Config.projects = (Just [testProjects])
+        }
+    testCrawler =
+      Config.Crawler
+        { Config.loop_delay = 0,
+          Config.github_orgs = Nothing,
+          Config.gerrit_repositories = Nothing
+        }
+    testProjects =
+      let br = Just "master"
+          fr = Just "tests/.*"
+          rr = Just "zuul/.*"
+       in Config.Project br fr "zuul" rr
 
 monocleWebApiTests :: TestTree
 monocleWebApiTests =
@@ -188,3 +221,13 @@ monocleWebApiTests =
     test api input output = withMockClient withClient $ \client -> do
       resp <- api client input
       assertEqual "Response differ: " output resp
+
+monocleConfig :: TestTree
+monocleConfig =
+  testGroup
+    "Monocle.Api.Config"
+    [testConfigLoad]
+  where
+    testConfigLoad = testCase "Decode config" $ do
+      conf <- Config.loadConfig "./test/data/config.yaml"
+      assertEqual "config is loaded" 1 (length conf)

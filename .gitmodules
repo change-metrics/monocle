@@ -1,0 +1,3 @@
+[submodule "dhall-monocle"]
+	path = haskell/dhall-monocle
+	url = https://github.com/change-metrics/dhall-monocle

@@ -3,7 +3,7 @@
 
 -- | Monocle queries
 -- The goal of this module is to transform 'Query' into list of items
-module Monocle.Search.Queries where
+module Monocle.Backend.Queries where
 
 import Data.Aeson (Value (Object), (.:), (.=))
 import qualified Data.Aeson as Aeson
@@ -20,7 +20,7 @@ import Monocle.Search.Syntax (SortOrder (..))
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearch indexName search = do
-  -- say . decodeUtf8 . Aeson.encode $ search
+  -- monocleLog . decodeUtf8 . Aeson.encode $ search
   rawResp <- BH.searchByIndex indexName search
   resp <- BH.parseEsResponse rawResp
   case resp of
@@ -41,9 +41,10 @@ runQuery docType bhEnv index queryBase =
       resp <- fmap BH.hitSource <$> simpleSearch (BH.IndexName index) search
       pure $ catMaybes resp
   where
+    queryBH = maybe [] (\q -> [q]) $ Q.queryBH queryBase
     query =
       BH.QueryBoolQuery $
-        BH.mkBoolQuery [BH.TermQuery (BH.Term "type" docType) Nothing, Q.queryBH queryBase] [] [] []
+        BH.mkBoolQuery ([BH.TermQuery (BH.Term "type" docType) Nothing] <> queryBH) [] [] []
     search =
       (BH.mkSearch (Just query) Nothing)
         { BH.size = BH.Size (Q.queryLimit queryBase),

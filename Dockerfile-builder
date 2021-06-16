@@ -28,7 +28,7 @@ RUN dnf update -y && dnf install -y git ghc cabal-install
 RUN cabal v2-update
 
 # Install proto3-suite and servant-server first, that pulls in most dependencies
-RUN cabal v2-install proto3-suite servant-server --constraint='proto3-suite ^>=0.4.2' --constraint='servant ^>=0.18.2'
+RUN cabal v2-install proto3-suite servant-server dhall --constraint='proto3-suite ^>=0.4.2' --constraint='servant ^>=0.18.2' --constraint='dhall ^>= 1.39'
 
 # Install project dependencies
 COPY haskell/cabal.project haskell/monocle.cabal /build/

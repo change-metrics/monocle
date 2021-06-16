@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Monocle search language query
@@ -12,10 +13,11 @@ import qualified Data.Text as Text
 import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import qualified Database.Bloodhound as BH
+import qualified Monocle.Api.Config as Config
+import Monocle.Prelude
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
-import Relude
 
 -- $setup
 -- >>> import Monocle.Search.Parser as P
@@ -25,7 +27,13 @@ import Relude
 
 type Bound = (Maybe UTCTime, UTCTime)
 
-type Parser a = StateT Bound (Except ParseError) a
+data Env = Env
+  { envNow :: UTCTime,
+    envUsername :: Text,
+    envIndex :: Config.Index
+  }
+
+type Parser a = ReaderT Env (StateT Bound (Except ParseError)) a
 
 type Field = Text
 
@@ -46,8 +54,10 @@ fields =
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
+    ("project", (fieldText, "project_def", "Project definition name")),
     ("author", (fieldText, "author.muid", "Author name")),
     ("author_regex", (fieldRegex, "author.muid", "Author regex")),
+    ("group", (fieldText, "group_def", "Group definition name")),
     ("branch", (fieldText, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
@@ -155,8 +165,9 @@ updateBound op date = do
         then (Just $ max date (fromMaybe date minDateM), maxDate)
         else (minDateM, min date maxDate)
 
-mkRangeValue :: UTCTime -> RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
-mkRangeValue now op field fieldType value = do
+mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
+mkRangeValue op field fieldType value = do
+  now <- asks envNow
   case fieldType of
     Field_TypeFIELD_DATE -> do
       date <-
@@ -172,15 +183,30 @@ mkRangeValue now op field fieldType value = do
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> lift $ throwE (ParseError msg 0)
+  Left msg -> lift . lift $ throwE (ParseError msg 0)
   Right x -> pure x
 
-mkRangeQuery :: UTCTime -> Expr -> Field -> Text -> Parser BH.Query
-mkRangeQuery now expr field value = do
+mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
+mkRangeQuery expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   BH.QueryRangeQuery
     . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> mkRangeValue now (toRangeOp expr) field fieldType value
+    <$> mkRangeValue (toRangeOp expr) field fieldType value
+
+mkProjectQuery :: Config.Project -> BH.Query
+mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
+  where
+    must =
+      map BH.QueryRegexpQuery $
+        maybe [] repository repository_regex
+          <> maybe [] branch branch_regex
+          <> maybe [] file file_regex
+    mkRegexpQ field value =
+      [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
+    repository = mkRegexpQ "repository_fullname"
+    branch = mkRegexpQ "target_branch"
+    -- TODO: check how to regexp match nested list
+    file = const [] -- mkRegexpQ "changed_files"
 
 mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
@@ -197,6 +223,29 @@ mkEqQuery field value = do
               _ -> Left $ "Invalid value for state: " <> value
           )
       pure $ BH.TermQuery (BH.Term field' value') Nothing
+    ("author", _) -> do
+      (field', value') <- case value of
+        "self" -> do
+          index <- asks envIndex
+          username <- asks envUsername
+          when (username == mempty) (toParseError $ Left "You need to be logged in to use the self value")
+          pure $ case Config.lookupIdent index username of
+            Just muid -> ("author.muid", muid)
+            Nothing -> ("author.id", username)
+        _ -> pure ("author.muid", value)
+      pure $ BH.TermQuery (BH.Term field' value') Nothing
+    ("project", _) -> do
+      index <- asks envIndex
+      project <-
+        toParseError $
+          Config.lookupProject index value `orDie` ("Unknown project: " <> value)
+      pure $ mkProjectQuery project
+    ("group", _) -> do
+      index <- asks envIndex
+      groupMembers <-
+        toParseError $
+          Config.lookupGroupMembers index value `orDie` ("Unknown group: " <> value)
+      pure $ BH.TermsQuery "author.muid" groupMembers
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
       pure
@@ -206,18 +255,18 @@ mkEqQuery field value = do
 
 data BoolOp = And | Or
 
-mkBoolQuery :: UTCTime -> BoolOp -> Expr -> Expr -> Parser BH.Query
-mkBoolQuery now op e1 e2 = do
-  q1 <- query now e1
-  q2 <- query now e2
+mkBoolQuery :: BoolOp -> Expr -> Expr -> Parser BH.Query
+mkBoolQuery op e1 e2 = do
+  q1 <- query e1
+  q2 <- query e2
   let (must, should) = case op of
         And -> ([q1, q2], [])
         Or -> ([], [q1, q2])
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
-mkNotQuery :: UTCTime -> Expr -> Parser BH.Query
-mkNotQuery now e1 = do
-  q1 <- query now e1
+mkNotQuery :: Expr -> Parser BH.Query
+mkNotQuery e1 = do
+  q1 <- query e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
 
 -- | 'query' creates an elastic search query
@@ -228,23 +277,23 @@ mkNotQuery now e1 = do
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
-query :: UTCTime -> Expr -> Parser BH.Query
-query now expr = case expr of
-  AndExpr e1 e2 -> mkBoolQuery now And e1 e2
-  OrExpr e1 e2 -> mkBoolQuery now Or e1 e2
+query :: Expr -> Parser BH.Query
+query expr = case expr of
+  AndExpr e1 e2 -> mkBoolQuery And e1 e2
+  OrExpr e1 e2 -> mkBoolQuery Or e1 e2
   EqExpr field value -> mkEqQuery field value
-  NotExpr e1 -> mkNotQuery now e1
-  e@(GtExpr field value) -> mkRangeQuery now e field value
-  e@(GtEqExpr field value) -> mkRangeQuery now e field value
-  e@(LtExpr field value) -> mkRangeQuery now e field value
-  e@(LtEqExpr field value) -> mkRangeQuery now e field value
-  LimitExpr _ _ -> lift $ throwE (ParseError "Limit must be global" 0)
-  OrderByExpr _ _ _ -> lift $ throwE (ParseError "Order by must be global" 0)
+  NotExpr e1 -> mkNotQuery e1
+  e@(GtExpr field value) -> mkRangeQuery e field value
+  e@(GtEqExpr field value) -> mkRangeQuery e field value
+  e@(LtExpr field value) -> mkRangeQuery e field value
+  e@(LtEqExpr field value) -> mkRangeQuery e field value
+  LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
+  OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
 
 data Query = Query
   { queryOrder :: Maybe (Field, SortOrder),
     queryLimit :: Int,
-    queryBH :: BH.Query,
+    queryBH :: Maybe BH.Query,
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -256,20 +305,30 @@ data Query = Query
   }
   deriving (Show)
 
-queryWithMods :: UTCTime -> Expr -> Either ParseError Query
-queryWithMods now baseExpr = do
-  (query', (boundM, bound)) <- runExcept $ runStateT (query now expr) (Nothing, now)
-  pure $ Query order limit query' (fromMaybe (threeWeeksAgo bound) boundM, bound)
+queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
+queryWithMods now username indexM baseExprM =
+  case exprM of
+    Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now)
+    Just expr -> do
+      (query', (boundM, bound)) <-
+        runExcept
+          . flip runStateT (Nothing, now)
+          . runReaderT (query expr)
+          $ Env now username index
+      pure $
+        Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
+    index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
-    (order, limit, expr) = case baseExpr of
-      OrderByExpr order' sortOrder (LimitExpr limit' expr') -> (Just (order', sortOrder), limit', expr')
-      LimitExpr limit' expr' -> (Nothing, limit', expr')
-      _ -> (Nothing, 100, baseExpr)
+    (order, limit, exprM) = case baseExprM of
+      (Just (OrderByExpr order' sortOrder (Just (LimitExpr limit' expr')))) -> (Just (order', sortOrder), limit', expr')
+      (Just (LimitExpr limit' (Just (OrderByExpr order' sortOrder expr')))) -> (Just (order', sortOrder), limit', expr')
+      (Just (LimitExpr limit' expr')) -> (Nothing, limit', expr')
+      expr' -> (Nothing, 100, expr')
 
 -- | Utility function to simply create a query
-load :: Maybe UTCTime -> Text -> Query
-load nowM code = case P.parse code >>= queryWithMods now of
+load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query
+load nowM username indexM code = case P.parse code >>= queryWithMods now username indexM of
   Right x -> x
   Left err -> error (show err)
   where

@@ -2,7 +2,7 @@ build
 dist
 *.py[oc]
 monocle.egg-info
-data
+/data
 etc
 .venv
 .tox

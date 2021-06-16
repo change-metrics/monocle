@@ -9,6 +9,9 @@ open Prelude
 let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
   ts->Belt.Option.getExn->Belt.Option.getExn
 
+let complexicity = (change: SearchTypes.change) =>
+  Int32.to_int(change.changed_files_count) + Int32.to_int(change.additions) + Int32.to_int(change.deletions)
+
 module TaskData = {
   type t = TaskDataTypes.task_data
 
@@ -164,7 +167,7 @@ module DataItem = {
             <ExternalLink href={change.url} />
             <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
-              {"Complexicity: "->str} <Badge isRead={true}> {42->string_of_int->str} </Badge>
+              {"Complexicity: "->str} <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
             </span>
           </CardHeader>
           <CardBody>
@@ -213,7 +216,7 @@ module RowItem = {
         <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
       </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
-      <td role="cell"> <Badge isRead={true}> {42->string_of_int->str} </Badge> </td>
+      <td role="cell"> <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge> </td>
       <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
     </tr>
 }
