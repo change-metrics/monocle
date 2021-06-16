@@ -43,16 +43,11 @@ library
   exposed-modules:     Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
 
--- executable lentille-gitlab
---   import:              common-options
---   hs-source-dirs:      app
---   main-is:             Main.hs
---   build-depends:       lentille-gitlab
---                      , monocle
---                      , optparse-generic           < 1.5
---                      , relude                     > 1.0 && < 1.1
---                      , streaming                  < 0.3
---                      , time                       < 1.12
---   ghc-options:         -threaded
---                        -rtsopts
---                        -with-rtsopts=-N
+executable lentille-gitlab
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       base
+  ghc-options:         -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
