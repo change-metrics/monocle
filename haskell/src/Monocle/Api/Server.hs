@@ -31,11 +31,6 @@ configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
 
--- Mock to bind to function from another PR
-crawlerExist indexName crawlerName = True
-
-apiKeyMatch indexName crawlerName apiKey = True
-
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
@@ -70,19 +65,18 @@ crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
-  case (Config.lookupTenant tenants (toStrict indexName), crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey, timestampM) of
-    (Just _, True, True, Just ts) -> do
-      _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts)
-      pure $ CrawlerPB.CommitResponse (Just (CrawlerPB.CommitResponseResultTimestamp ts))
-    (Just _, True, True, Nothing) -> do
-      pure $ toErrorResponse CrawlerPB.CommitErrorCommitDateMissing
-    (Just _, True, False, _) -> do
-      pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownApiKey
-    (Just _, False, _, _) -> do
-      pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownCrawler
-    (Nothing, _, _, _) -> do
-      pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownIndex
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
+    Right ts' -> do
+      _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts')
+      pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
+    Left err -> pure $ toErrorResponse err
   where
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Maybe Timestamp -> Either CrawlerPB.CommitError Timestamp
+    validateRequest tenants indexName crawlerName apiKey timestampM = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
+      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
+      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
+      timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
     toEntity :: Maybe CrawlerPB.CommitRequestEntity -> I.Entity
     toEntity entityPB = case entityPB of
       Just (CrawlerPB.CommitRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
@@ -99,19 +93,21 @@ crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoRes
 crawlerCommitInfo request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
-  case (Config.lookupTenant tenants (toStrict indexName), crawlerExist indexName crawlerName) of
-    (Just _, True) -> do
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
+    Right _ -> do
       ts <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity)
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
         . CrawlerPB.CommitInfoResponseResultLastCommitAt
         $ Timestamp.fromUTCTime ts
-    (Just _, False) -> do
-      pure $ toErrorResponse CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
-    (Nothing, _) -> do
-      pure $ toErrorResponse CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
+    Left err -> pure $ toErrorResponse err
   where
+    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError ()
+    validateRequest tenants indexName crawlerName = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
+      _ <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
+      pure ()
     toEntity :: Maybe CrawlerPB.CommitInfoRequestEntity -> I.Entity
     toEntity entityPB = case entityPB of
       Just (CrawlerPB.CommitInfoRequestEntityChanges (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
