@@ -90,6 +90,7 @@ library
                      -- api client for lentille
                      , Monocle.Api.Client
                      , Monocle.Api.Client.Worker
+                     , Monocle.Api.Client.CrawlerWorker
 
                      -- servant
                      , Monocle.Servant.Env

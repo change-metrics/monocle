@@ -9,7 +9,8 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
--- The Monocle worker
+-- The Monocle worker for task data. To be replaced by the new
+-- general document interface, once the legacy api is rewritten.
 module Monocle.Api.Client.Worker
   ( run,
     TaskDataFetcher (..),
@@ -163,7 +164,6 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
   log (if res then LogEnded else LogFailed)
   where
     commitTimestamp startTime = do
-      -- setUpdatedSince monocleClient indexName crawlerName apiKey startTime
       commitResp <-
         taskDataCommit
           monocleClient
