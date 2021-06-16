@@ -16,6 +16,7 @@ module Monocle.Api.Config
     loadConfig,
     lookupTenant,
     lookupProject,
+    lookupCrawler,
     lookupIdent,
     lookupGroupMembers,
     pname,
@@ -111,6 +112,12 @@ lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
   where
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
+
+lookupCrawler :: Index -> Text -> Maybe TaskCrawler
+lookupCrawler Index {..} crawlerName = find isProject (fromMaybe [] task_crawlers)
+  where
+    isProject :: TaskCrawler -> Bool
+    isProject TaskCrawler {..} = name == crawlerName
 
 -- | Need https://github.com/change-metrics/dhall-monocle/pull/3
 lookupIdent :: Index -> Text -> Maybe Text

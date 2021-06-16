@@ -40,21 +40,20 @@ crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
-  case (Config.lookupTenant tenants $ toStrict indexName, crawlerExist indexName crawlerName, apiKeyMatch indexName crawlerName apiKey) of
-    (Just _, True, True) -> do
-      case toEntity entity of
-        I.Project _ -> do
-          _ <- liftIO $ I.indexChanges bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChange $ toList changes)
-          _ <- liftIO $ I.indexEvents bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChangeEvent $ toList events)
-          pure $ CrawlerPB.AddDocResponse Nothing
-        I.Organization _ -> error "Organization entity not yet supported"
-    (Just _, True, False) -> do
-      pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownApiKey
-    (Just _, False, _) -> do
-      pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownCrawler
-    (Nothing, _, _) -> do
-      pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownIndex
+  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
+    Right _ -> case toEntity entity of
+      I.Project _ -> do
+        _ <- liftIO $ I.indexChanges bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChange $ toList changes)
+        _ <- liftIO $ I.indexEvents bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChangeEvent $ toList events)
+        pure $ CrawlerPB.AddDocResponse Nothing
+      I.Organization _ -> error "Organization entity not yet supported"
+    Left err -> pure $ toErrorResponse err
   where
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError ()
+    validateRequest tenants indexName crawlerName apiKey = do
+      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
+      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
+      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
     toEntity :: Maybe CrawlerPB.AddDocRequestEntity -> I.Entity
     toEntity entityPB = case entityPB of
       Just (CrawlerPB.AddDocRequestEntityChangeEntity (CrawlerPB.ChangeEntity projectName)) -> I.Project $ toStrict projectName
