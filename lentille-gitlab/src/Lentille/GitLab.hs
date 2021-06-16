@@ -29,14 +29,18 @@ data GitLabGraphClient = GitLabGraphClient
     token :: Text
   }
 
+newGitLabGraphClientWithKey :: MonadIO m => Text -> Text -> m GitLabGraphClient
+newGitLabGraphClientWithKey url' token' = do
+  manager' <- liftIO $ HTTP.newManager tlsManagerSettings
+  pure $ GitLabGraphClient manager' url' token'
+
 newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
 newGitLabGraphClient url' = do
-  manager' <- liftIO $ HTTP.newManager tlsManagerSettings
   token' <-
     toText
       . fromMaybe (error "GITLAB_GRAPH_TOKEN environment is missing")
       <$> liftIO (lookupEnv "GITLAB_GRAPH_TOKEN")
-  pure $ GitLabGraphClient manager' url' token'
+  newGitLabGraphClientWithKey url' token'
 
 runGitLabGraphRequest :: MonadIO m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString
 runGitLabGraphRequest (GitLabGraphClient manager' url' token') jsonBody = do

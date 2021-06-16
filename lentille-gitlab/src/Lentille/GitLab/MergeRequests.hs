@@ -111,18 +111,15 @@ defineByDocumentFile
     }
   |]
 
-fetchMergeRequests :: MonadIO m => GitLabGraphClient -> String -> m (Either String GetProjectMergeRequests)
+fetchMergeRequests :: MonadIO m => GitLabGraphClient -> Text -> m (Either String GetProjectMergeRequests)
 fetchMergeRequests client project =
-  fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (toProjectID project) Nothing)
+  fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) Nothing)
 
-toProjectID :: String -> ID
-toProjectID project' = ID $ toText project'
-
-streamMergeRequests :: MonadIO m => GitLabGraphClient -> UTCTime -> String -> Stream (Of Change) m ()
+streamMergeRequests :: MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Change) m ()
 streamMergeRequests client untilDate project =
   streamFetch client untilDate mkArgs transformResponse
   where
-    mkArgs cursor = GetProjectMergeRequestsArgs (toProjectID project) $ toCursorM cursor
+    mkArgs cursor = GetProjectMergeRequestsArgs (ID project) $ toCursorM cursor
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
