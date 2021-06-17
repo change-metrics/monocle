@@ -32,8 +32,8 @@ crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
 -- | 'run' is the entrypoint of the macroscope process
-runMacroscope :: MacroM m => Bool -> FilePath -> MonocleClient -> m ()
-runMacroscope verbose confPath client = do
+runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
+runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
   conf <- Config.loadConfig confPath
   loop conf
@@ -42,14 +42,17 @@ runMacroscope verbose confPath client = do
       -- Crawl each index
       traverse_ crawl (getCrawlers conf)
 
-      -- Pause 10 minutes
-      liftIO $ threadDelay 600_000_000
+      -- Pause
+      liftIO $ threadDelay interval_usec
 
       -- Loop again
       loop conf
 
+    interval_usec = fromInteger . toInteger $ interval * 1_000_000
+
     crawl :: MacroM m => (Text, Text, Config.Crawler) -> m ()
     crawl (index, key, crawler) = do
+      now <- liftIO $ getCurrentTime
       when verbose (monocleLog $ "Crawling " <> crawlerName crawler)
 
       -- Create document streams
@@ -66,7 +69,7 @@ runMacroscope verbose confPath client = do
 
       -- Consume each stream
       let runner =
-            runStream client (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+            runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
       -- TODO: handle exceptions
       traverse_ runner docStreams
 

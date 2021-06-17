@@ -97,37 +97,45 @@ process postFunc =
     . S.mapped S.toList
     . S.chunksOf 500
 
--- | 'CompletionStatus' is the output of the 'run' function
-data CompletionStatus = Completed | NotCompleted
-
 -- | Run is the main function used by macroscope
 runStream ::
   (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
+  UTCTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
   DocumentStream m ->
-  m CompletionStatus
-runStream monocleClient apiKey indexName crawlerName documentStream = do
-  -- It is important to get the commit date before starting the process to not miss
-  -- document updated when we start
-  startTime <- log' $ LogStartingEntity entityType
-
-  -- Query the monocle api for the oldest entity to be updated.
-  oldestEntity <- getOldestEntity
-  log $ LogOldestEntity oldestEntity
-
-  -- Run the document stream for that entity
-  process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)
-
-  -- Post the commit date
-  res <- retry $ commitTimestamp oldestEntity startTime
-  log (if res then LogEnded else LogFailed)
-
-  -- TODO: return a signal when the update is incomplete, e.g. when we are ratelimited
-  pure Completed
+  m ()
+runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities
   where
+    drainEntities = do
+      -- It is important to get the commit date before starting the process to not miss
+      -- document updated when we start
+      startTime <- log' $ LogStartingEntity entityType
+
+      -- Query the monocle api for the oldest entity to be updated.
+      oldestEntity <- getOldestEntity
+      log $ LogOldestEntity oldestEntity
+
+      if oldestEntityDate oldestEntity > startDate
+        then log LogEnded
+        else do
+          -- Run the document stream for that entity
+          process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)
+          -- Post the commit date
+          res <- retry $ commitTimestamp oldestEntity startTime
+
+          if not res
+            then log LogFailed
+            else do
+              putTextLn "Continuing..."
+              drainEntities
+
+    oldestEntityDate oe = case oe of
+      CommitInfoResponse_OldestEntity _ (Just tc) -> Timestamp.toUTCTime tc
+      _ -> error "Timestamp missing"
+
     -- Adapt the document stream to intermediate representation
     getStream oldestEntity = case documentStream of
       Changes s ->

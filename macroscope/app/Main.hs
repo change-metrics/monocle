@@ -16,7 +16,8 @@ import Relude
 data Macroscope w = Macroscope
   { monocleUrl :: w ::: Text <?> "The monocle API",
     config :: w ::: FilePath <?> "The monocle configuration",
-    debug :: w ::: Bool <?> "Verbose mode"
+    debug :: w ::: Bool <?> "Verbose mode",
+    interval :: w ::: Maybe Word32 <?> "Interval in seconds, default to 600"
   }
   deriving stock (Generic)
 
@@ -30,4 +31,5 @@ main = do
     runMacroscope
       (debug args)
       (config args)
+      (fromMaybe 600 (interval args))
       client
