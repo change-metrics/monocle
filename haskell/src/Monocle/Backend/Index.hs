@@ -414,7 +414,19 @@ getDocument bhEnv index dId = do
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
 
-getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO (Maybe ELKCrawlerMetadata)
+type CrawlerMetadataDocId = BH.DocId
+
+getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
+getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
+  BH.DocId . toText $
+    intercalate
+      "-"
+      [ toString crawlerName,
+        toString crawlerType,
+        toString crawlerTypeValue
+      ]
+
+getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
 getCrawlerMetadata = getDocument
 
 getLastUpdatedFromConfig :: UTCTime
@@ -473,7 +485,7 @@ setLastUpdated bhEnv index entity crawlerName lastUpdatedDate = do
     _ <- BH.refreshIndex index
     if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
   where
-    id' = BH.DocId $ getEntityName entity
+    id' = getId entity
     cm =
       ELKCrawlerMetadata
         { elkcmCrawlerMetadata =
@@ -483,9 +495,7 @@ setLastUpdated bhEnv index entity crawlerName lastUpdatedDate = do
               (toLazy $ getName entity)
               lastUpdatedDate
         }
-    getEntityName entity' =
-      toText $
-        intercalate "-" [toString crawlerName, crawlerType entity', toString $ getName entity']
+    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
     crawlerType entity' = case entity' of
       Project _ -> "project"
       _ -> error "Unsupported Entity"
