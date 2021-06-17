@@ -61,7 +61,7 @@ crawlerAddDoc request = do
     validateRequest tenants indexName crawlerName apiKey = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
       crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
-      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
+      when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
@@ -85,7 +85,7 @@ crawlerCommit request = do
     validateRequest tenants indexName crawlerName apiKey timestampM = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
       crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
-      when (Config.api_key crawler /= apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
+      when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
       timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
 
     toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
@@ -113,7 +113,7 @@ crawlerCommitInfo request = do
         $ (Just $ Timestamp.fromUTCTime ts)
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError Config.Worker
+    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError Config.Crawler
     validateRequest tenants indexName crawlerName = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
       worker <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler

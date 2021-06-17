@@ -176,16 +176,10 @@ monocleSearchLanguage =
     testTenant =
       Config.Index
         { Config.index = "test",
-          Config.users = Nothing,
-          Config.task_crawlers = Nothing,
-          Config.crawler = testCrawler,
-          Config.projects = (Just [testProjects])
-        }
-    testCrawler =
-      Config.Crawler
-        { Config.loop_delay = 0,
-          Config.github_orgs = Nothing,
-          Config.gerrit_repositories = Nothing
+          Config.projects = (Just [testProjects]),
+          Config.crawlers = Nothing,
+          Config.crawlers_api_key = Nothing,
+          Config.idents = Nothing
         }
     testProjects =
       let br = Just "master"

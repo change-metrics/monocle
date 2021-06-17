@@ -7,22 +7,9 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 
-module Monocle.Api.Config
-  ( Index (..),
-    Crawler (..),
-    Project (..),
-    TaskCrawler (..),
-    Worker,
-    loadConfig,
-    lookupTenant,
-    lookupProject,
-    lookupCrawler,
-    lookupIdent,
-    lookupGroupMembers,
-    pname,
-  )
-where
+module Monocle.Api.Config where
 
 import Data.Yaml as YAML
 import qualified Dhall.TH
@@ -31,28 +18,24 @@ import Relude
 -- | Generate Haskell Type from Dhall Type
 -- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
 Dhall.TH.makeHaskellTypes
-  [ Dhall.TH.SingleConstructor "Project" "Project" "./dhall-monocle/Monocle/Project/Type.dhall",
-    Dhall.TH.SingleConstructor
-      "Gerrit"
-      "Gerrit"
-      "./dhall-monocle/Monocle/Gerrit/Type.dhall",
-    Dhall.TH.SingleConstructor
-      "GitHub"
-      "GitHub"
-      "./dhall-monocle/Monocle/GitHub/Type.dhall",
-    Dhall.TH.SingleConstructor
-      "Crawler"
-      "Crawler"
-      "./dhall-monocle/Monocle/Crawler/Type.dhall",
-    Dhall.TH.SingleConstructor
-      "TaskCrawler"
-      "TaskCrawler"
-      "./dhall-monocle/Monocle/TaskCrawler/Type.dhall",
-    Dhall.TH.SingleConstructor
-      "Index"
-      "Index"
-      "./dhall-monocle/Monocle/Index/Type.dhall"
-  ]
+  ( let providerPath name = "./dhall-monocle/Monocle/Provider/" <> name <> "/Type.dhall"
+        provider name = Dhall.TH.SingleConstructor name name $ providerPath name
+        mainPath name = "./dhall-monocle/Monocle/" <> name <> "/Type.dhall"
+        main name = Dhall.TH.SingleConstructor name name $ mainPath name
+     in [ main "Project",
+          main "Ident",
+          provider "Gerrit",
+          provider "Gitlab",
+          provider "Github",
+          provider "Bugzilla",
+          Dhall.TH.MultipleConstructors
+            "Provider"
+            "./dhall-monocle/Monocle/Lentille/Provider.dhall",
+          -- To support backward compatible schema, we replace Index and Crawler schemas
+          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Tenant",
+          Dhall.TH.SingleConstructor "Crawler" "Crawler" $ mainPath "Lentille"
+        ]
+  )
 
 deriving instance FromJSON Gerrit
 
@@ -60,11 +43,23 @@ deriving instance Eq Gerrit
 
 deriving instance Show Gerrit
 
-deriving instance FromJSON GitHub
+deriving instance FromJSON Github
 
-deriving instance Eq GitHub
+deriving instance Eq Github
 
-deriving instance Show GitHub
+deriving instance Show Github
+
+deriving instance FromJSON Gitlab
+
+deriving instance Eq Gitlab
+
+deriving instance Show Gitlab
+
+deriving instance FromJSON Bugzilla
+
+deriving instance Eq Bugzilla
+
+deriving instance Show Bugzilla
 
 deriving instance FromJSON Project
 
@@ -72,17 +67,23 @@ deriving instance Eq Project
 
 deriving instance Show Project
 
-deriving instance FromJSON TaskCrawler
+deriving instance FromJSON Provider
 
-deriving instance Eq TaskCrawler
+deriving instance Eq Provider
 
-deriving instance Show TaskCrawler
+deriving instance Show Provider
 
 deriving instance FromJSON Crawler
 
 deriving instance Eq Crawler
 
 deriving instance Show Crawler
+
+deriving instance FromJSON Ident
+
+deriving instance Eq Ident
+
+deriving instance Show Ident
 
 deriving instance FromJSON Index
 
@@ -101,7 +102,9 @@ pname :: Project -> Text
 pname = name
 
 loadConfig :: MonadIO m => FilePath -> m [Index]
-loadConfig fp = unTenants <$> YAML.decodeFileThrow fp
+loadConfig fp =
+  -- TODO: drop 'users', 'task_crawlers' and 'crawler' key
+  unTenants <$> YAML.decodeFileThrow fp
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
@@ -114,18 +117,27 @@ lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
 
--- | TODO: integrate https://github.com/change-metrics/dhall-monocle/pull/4
-type Worker = TaskCrawler
-
-lookupCrawler :: Index -> Text -> Maybe TaskCrawler
-lookupCrawler Index {..} crawlerName = find isProject (fromMaybe [] task_crawlers)
+lookupCrawler :: Index -> Text -> Maybe Crawler
+lookupCrawler Index {..} crawlerName = find isProject (fromMaybe [] crawlers)
   where
-    isProject :: TaskCrawler -> Bool
-    isProject TaskCrawler {..} = name == crawlerName
+    isProject Crawler {..} = name == crawlerName
 
--- | Need https://github.com/change-metrics/dhall-monocle/pull/3
 lookupIdent :: Index -> Text -> Maybe Text
-lookupIdent Index {..} userName = mempty
+lookupIdent Index {..} userName = getName <$> find isUser (fromMaybe [] idents)
+  where
+    getName Ident {..} = ident
+    isUser Ident {..} = ident == userName
 
 lookupGroupMembers :: Index -> Text -> Maybe (NonEmpty Text)
-lookupGroupMembers Index {..} groupName = mempty
+lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents) of
+  [] -> Nothing
+  (x : xs) -> Just (x :| xs)
+  where
+    -- For each ident, check if it is a member of groupName.
+    -- If it is, then add the ident name to the list
+    go :: Ident -> [Text] -> [Text]
+    go Ident {..} acc = case groups of
+      Just xs
+        | groupName `elem` xs -> ident : acc
+        | otherwise -> acc
+      Nothing -> acc
