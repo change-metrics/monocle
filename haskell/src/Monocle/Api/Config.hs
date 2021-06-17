@@ -11,11 +11,10 @@
 
 module Monocle.Api.Config where
 
-import Data.Aeson (FromJSON, Value (Object), parseJSON, (.:))
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
-import qualified Dhall as Dhall
-import qualified Dhall.Binary as Dhall
+import Data.FileEmbed (embedFile)
+import qualified Dhall
 import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
 import Relude
@@ -43,55 +42,37 @@ Dhall.TH.makeHaskellTypes
         ]
   )
 
-deriving instance FromJSON Gerrit
-
 deriving instance Eq Gerrit
 
 deriving instance Show Gerrit
-
-deriving instance FromJSON Github
 
 deriving instance Eq Github
 
 deriving instance Show Github
 
-deriving instance FromJSON Gitlab
-
 deriving instance Eq Gitlab
 
 deriving instance Show Gitlab
-
-deriving instance FromJSON Bugzilla
 
 deriving instance Eq Bugzilla
 
 deriving instance Show Bugzilla
 
-deriving instance FromJSON Project
-
 deriving instance Eq Project
 
 deriving instance Show Project
-
-deriving instance FromJSON Provider
 
 deriving instance Eq Provider
 
 deriving instance Show Provider
 
-deriving instance FromJSON Crawler
-
 deriving instance Eq Crawler
 
 deriving instance Show Crawler
 
-deriving instance FromJSON Ident
-
 deriving instance Eq Ident
 
 deriving instance Show Ident
-
-deriving instance FromJSON Index
 
 deriving instance Eq Index
 
@@ -116,7 +97,11 @@ loadConfig fp = do
     Success config -> pure (tenants config)
     Failure err -> error (show err)
   where
-    loadOpt = Dhall.defaultOptions $ Just "./dhall-monocle/Monocle/Config.dhall"
+    -- when updating the dhall-monocle schema, the config needs to be
+    -- regenerated using:
+    -- `dhall <<< ./dhall-monocle/Monocle/Config.dhall > test/data/Config.dhall`
+    configType = $(embedFile "./test/data/Config.dhall")
+    loadOpt = Dhall.defaultOptions $ Just $ decodeUtf8 configType
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
