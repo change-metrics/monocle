@@ -279,7 +279,10 @@ toAuthor (Just Monocle.Change.Ident {..}) =
     { authorMuid = identMuid,
       authorUid = identUid
     }
-toAuthor Nothing = error "Ident field is mandatory"
+toAuthor Nothing =
+  Monocle.Backend.Documents.Author
+    "backend-ghost"
+    "backend-ghost"
 
 toELKChangeEvent :: ChangeEvent -> ELKChangeEvent
 toELKChangeEvent ChangeEvent {..} =
@@ -372,6 +375,11 @@ toELKChange Change {..} =
     toClosedAt (ChangeOptionalClosedAtClosedAt t) = T.toUTCTime t
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
+
+refreshIndex :: BH.BHEnv -> BH.IndexName -> IO ()
+refreshIndex bhEnv index = BH.runBH bhEnv $ do
+  _ <- BH.refreshIndex index
+  pure ()
 
 indexDocs :: BH.BHEnv -> BH.IndexName -> [(Value, BH.DocId)] -> IO ()
 indexDocs bhEnv index docs = BH.runBH bhEnv $ do

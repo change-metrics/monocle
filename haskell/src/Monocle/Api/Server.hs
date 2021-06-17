@@ -49,19 +49,24 @@ crawlerAddDoc request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
-    Right _ -> case toEntity entity of
+    Right index -> case toEntity entity of
       I.Project _ -> do
-        _ <- liftIO $ I.indexChanges bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChange $ toList changes)
-        _ <- liftIO $ I.indexEvents bhEnv (BH.IndexName $ toStrict indexName) (map I.toELKChangeEvent $ toList events)
+        let indexName' = I.tenantIndexName index
+        -- putTextLn . toStrict $ "Indexing " <> show (length changes) <> " changes to " <> index
+        _ <- liftIO $ I.indexChanges bhEnv indexName' (map I.toELKChange $ toList changes)
+        -- putTextLn . toStrict $ "Indexing " <> show (length events) <> " events to " <> indexName
+        _ <- liftIO $ I.indexEvents bhEnv indexName' (map I.toELKChangeEvent $ toList events)
+        liftIO $ I.refreshIndex bhEnv indexName'
         pure $ CrawlerPB.AddDocResponse Nothing
       I.Organization _ -> error "Organization entity not yet supported"
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError ()
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError Config.Index
     validateRequest tenants indexName crawlerName apiKey = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
       _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
       when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
+      pure index
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
