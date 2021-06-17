@@ -12,6 +12,7 @@ import qualified Data.Text as Text
 import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
@@ -76,9 +77,6 @@ fakeChange =
       elkchangeAssignees = [],
       elkchangeDraft = False
     }
-
-fakeELKCrawlerMetadata :: ELKCrawlerMetadata
-fakeELKCrawlerMetadata = ELKCrawlerMetadata fakeDate
 
 testIndexName :: BH.IndexName
 testIndexName = BH.IndexName "test-index"
@@ -158,23 +156,18 @@ testCrawlerMetadata = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
-      -- No previous
-      defaultLastUpdatedDate <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check default date" defaultLastUpdatedDate ("nova", expectedDefaultDate)
-      -- Set inital last updated date
-      I.setLastUpdated bhEnv testIndex entity fakeDate
+      I.setLastUpdated bhEnv testIndex entity crawlerName fakeDateB
+      I.setLastUpdated bhEnv testIndex entityAlt crawlerName fakeDateA
       lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check date similar" lastUpdated ("nova", fakeDate)
-      -- Set a new last updated date
-      I.setLastUpdated bhEnv testIndex entity fakeDateAlt
-      lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check date similar" lastUpdated' ("nova", fakeDateAlt)
+      assertEqual "check date similar" ("nova", fakeDateB) lastUpdated
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
-        expectedDefaultDate :: UTCTime
-        expectedDefaultDate = fromMaybe (error "nop") (readMaybe "2021-01-01 00:00:00 UTC")
-        worker = undefined
+        entityAlt = I.Project "neutron"
+        crawlerName = "test-crawler"
+        worker = Config.TaskCrawler "" crawlerName ""
+        fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
+        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
 
 scenarioProject :: ScenarioProject
 scenarioProject =

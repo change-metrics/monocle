@@ -77,7 +77,14 @@ crawlerCommit request = do
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
     Right ts' -> do
-      _ <- liftIO $ I.setLastUpdated bhEnv (BH.IndexName $ toStrict indexName) (toEntity entity) (Timestamp.toUTCTime ts')
+      _ <-
+        liftIO $
+          I.setLastUpdated
+            bhEnv
+            (BH.IndexName $ toStrict indexName)
+            (toEntity entity)
+            (toStrict crawlerName)
+            (Timestamp.toUTCTime ts')
       pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
     Left err -> pure $ toErrorResponse err
   where
