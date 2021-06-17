@@ -12,6 +12,7 @@ import qualified Data.Text as Text
 import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
@@ -76,9 +77,6 @@ fakeChange =
       elkchangeAssignees = [],
       elkchangeDraft = False
     }
-
-fakeELKCrawlerMetadata :: ELKCrawlerMetadata
-fakeELKCrawlerMetadata = ELKCrawlerMetadata fakeDate
 
 testIndexName :: BH.IndexName
 testIndexName = BH.IndexName "test-index"
@@ -158,23 +156,46 @@ testCrawlerMetadata = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
-      -- No previous
-      defaultLastUpdatedDate <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check default date" defaultLastUpdatedDate ("nova", expectedDefaultDate)
-      -- Set inital last updated date
-      I.setLastUpdated bhEnv testIndex entity fakeDate
+      -- Init default crawler metadata and Ensure we get the default updated date
+      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
       lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check date similar" lastUpdated ("nova", fakeDate)
-      -- Set a new last updated date
-      I.setLastUpdated bhEnv testIndex entity fakeDateAlt
+      assertEqual "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+
+      -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateB entity
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check date similar" lastUpdated' ("nova", fakeDateAlt)
+      assertEqual "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+
+      -- Update one crawler and ensure we get the right oldest
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateC entity
+      lastUpdated'' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
+
+      -- Re run init and ensure it was noop
+      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
+      lastUpdated''' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
-        expectedDefaultDate :: UTCTime
-        expectedDefaultDate = fromMaybe (error "nop") (readMaybe "2021-01-01 00:00:00 UTC")
-        worker = undefined
+        entityAlt = I.Project "neutron"
+        crawlerName = "test-crawler"
+        worker =
+          let name = crawlerName
+              update_since = toText fakeDefaultDateStr
+              provider =
+                let gitlab_url = "https://localhost"
+                    gitlab_api_key = "key"
+                    gitlab_repositories = Just ["nova", "neutron"]
+                    gitlab_organizations = Nothing
+                 in Config.GitlabProvider Config.Gitlab {..}
+           in Config.Crawler {..}
+        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
+        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
+        fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
+        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
+        fakeDateC = fromMaybe (error "nop") (readMaybe "2021-06-02 23:00:00 Z" :: Maybe UTCTime)
 
 scenarioProject :: ScenarioProject
 scenarioProject =

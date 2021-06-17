@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+-- TEMP, to remove when org and task data are migrated to this new system
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- |
 -- Copyright: (c) 2021 Monocle authors
@@ -15,7 +17,6 @@ module Monocle.Api.Client.CrawlerWorker
   )
 where
 
-import Control.Monad.Catch (MonadThrow)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Client.Api
@@ -35,7 +36,7 @@ data DocumentStream m
   = -- | Fetch project for a organization name
     Projects (Text -> Stream (Of Text) m ())
   | -- | Fetch recent changes from a project
-    Changes (UTCTime -> Text -> Stream (Of Change) m ())
+    Changes (UTCTime -> Text -> Stream (Of (Change, [ChangeEvent])) m ())
   | -- | Fetch recent task data
     TaskDatas (UTCTime -> Stream (Of TaskData) m ())
 
@@ -73,7 +74,7 @@ getProject oe = (getDate oe, toStrict project)
 -- This intermediary representation enables generic processing with 'processBatch'
 data DocumentType
   = DTProject Text
-  | DTChanges Change
+  | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
 
 data ProcessResult = AddOk | AddError Text deriving stock (Show)
@@ -162,11 +163,14 @@ run monocleClient apiKey indexName crawlerName documentStream = do
           addDocRequestApikey = apiKey
           addDocRequestEntity = commitInfoResponse_OldestEntityEntity oe
           addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
-          addDocRequestEvents = mempty
+          addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
        in AddDocRequest {..}
       where
+        getEvents x = case x of
+          DTChanges (_, events) -> Just events
+          _ -> Nothing
         getChanges x = case x of
-          DTChanges change -> Just change
+          DTChanges (change, _) -> Just change
           _ -> Nothing
 
     -- 'commitTimestamp' post the commit date.

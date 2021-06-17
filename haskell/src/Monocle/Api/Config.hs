@@ -141,3 +141,8 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
         | groupName `elem` xs -> ident : acc
         | otherwise -> acc
       Nothing -> acc
+
+getCrawlerProject :: Crawler -> [Text]
+getCrawlerProject Crawler {..} = case provider of
+  GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
+  _ -> []

@@ -18,6 +18,7 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
+import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import qualified Network.HTTP.Client as HTTP
@@ -186,7 +187,10 @@ instance ToJSON ChangesIndexMapping where
                 .= object
                   [ "properties"
                       .= object
-                        [ "last_commit_at"
+                        [ "crawler_name" .= object ["type" .= ("keyword" :: Text)],
+                          "crawler_type" .= object ["type" .= ("keyword" :: Text)],
+                          "crawler_type_value" .= object ["type" .= ("keyword" :: Text)],
+                          "last_commit_at"
                             .= object
                               [ "type" .= ("date" :: Text),
                                 "format" .= ("date_time_no_millis" :: Text)
@@ -252,6 +256,7 @@ createChangesIndex serverUrl index = do
     _respPM <- BH.putMapping index ChangesIndexMapping
     -- print respPM
     True <- BH.indexExists index
+    -- TODO: call initCrawlerLastUpdatedFromWorkerConfig
     pure (bhEnv, index)
 
 -- intC = fromInteger . toInteger
@@ -384,11 +389,6 @@ indexEvents bhEnv index events = indexDocs bhEnv index (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 
-type CrawlerMetadataID = BH.DocId
-
-getCrawlerMetadataID :: Entity -> CrawlerMetadataID
-getCrawlerMetadataID entity = BH.DocId $ getEntityName entity
-
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 
@@ -415,7 +415,19 @@ getDocument bhEnv index dId = do
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
 
-getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataID -> IO (Maybe ELKCrawlerMetadata)
+type CrawlerMetadataDocId = BH.DocId
+
+getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
+getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
+  BH.DocId . toText $
+    intercalate
+      "-"
+      [ toString crawlerName,
+        toString crawlerType,
+        toString crawlerTypeValue
+      ]
+
+getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
 getCrawlerMetadata = getDocument
 
 getLastUpdatedFromConfig :: UTCTime
@@ -423,36 +435,72 @@ getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-0
 
 data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
-getEntityName :: Entity -> Text
-getEntityName entity = case entity of
-  Project name -> toText $ intercalate "-" ["project", toString name]
-  Organization name -> toText $ intercalate "-" ["organization", toString name]
-
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
+getWorkerName :: Config.Crawler -> Text
+getWorkerName Config.Crawler {..} = name
+
 getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> EntityType -> IO (Text, UTCTime)
-getLastUpdated _bhEnv _index _worker _entity = undefined
-
-{-
-  cmM <- getCrawlerMetadata bhEnv index cmID
-  case cmM of
-    Just cm -> pure $ elkcmLastCommitAt cm
-    Nothing -> pure getLastUpdatedFromConfig
+getLastUpdated bhEnv index crawler entity = do
+  BH.runBH bhEnv $ do
+    resp <- fmap BH.hitSource <$> (Q.simpleSearch index search :: BH.BH IO [BH.Hit ELKCrawlerMetadata])
+    case catMaybes resp of
+      [] -> error "Unsupported"
+      (x : _) -> pure $ getRespFromMetadata x
   where
-    cmID = getCrawlerMetadataID entity
--}
+    search =
+      (BH.mkSearch (Just query) Nothing)
+        { BH.size = BH.Size 1,
+          BH.sortBody = Just [BH.DefaultSortSpec bhSort]
+        }
 
-setLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> UTCTime -> IO ()
-setLastUpdated bhEnv index entity lastUpdatedDate = do
+    bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
+    query =
+      Q.mkAnd
+        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
+          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
+        ]
+    crawlerType :: EntityType -> Text
+    crawlerType entity' = case entity' of
+      CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
+      _ -> error "Unsupported Entity"
+    getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
+      (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+
+setOrUpdateLastUpdated :: Bool -> BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entity = do
   BH.runBH bhEnv $ do
     exists <- BH.documentExists index id'
-    resp <-
-      if exists
-        then do
-          BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-        else do
-          BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-    if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+    when ((exists && not doNotUpdate) || not exists) $ do
+      resp <-
+        if exists
+          then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+          else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+      _ <- BH.refreshIndex index
+      if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
   where
-    id' = getCrawlerMetadataID entity
-    cm = ELKCrawlerMetadata lastUpdatedDate
+    id' = getId entity
+    cm =
+      ELKCrawlerMetadata
+        { elkcmCrawlerMetadata =
+            ELKCrawlerMetadataObject
+              (toLazy crawlerName)
+              (toLazy $ crawlerType entity)
+              (toLazy $ getName entity)
+              lastUpdatedDate
+        }
+    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
+    crawlerType entity' = case entity' of
+      Project _ -> "project"
+      _ -> error "Unsupported Entity"
+
+setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setLastUpdated = setOrUpdateLastUpdated False
+
+initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> IO ()
+initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = traverse_ run entities
+  where
+    run = setOrUpdateLastUpdated True bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker)
+    entities = Project <$> Config.getCrawlerProject worker
+    getWorkerUpdatedSince Config.Crawler {..} =
+      fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
