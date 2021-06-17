@@ -156,18 +156,35 @@ testCrawlerMetadata = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
     doTest (bhEnv, testIndex) = do
-      I.setLastUpdated bhEnv testIndex entity crawlerName fakeDateB
-      I.setLastUpdated bhEnv testIndex entityAlt crawlerName fakeDateA
+      -- Init default crawler metadata and Ensure we get the default updated date
+      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
       lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check date similar" ("nova", fakeDateB) lastUpdated
+      assertEqual "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+      -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateB False entity
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateA False entityAlt
+      lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+      -- Update one crawler and ensure we get the right oldest
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateC False entity
+      lastUpdated'' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
       where
+        -- Re run init and ensure it was noop
+        -- I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
+        -- lastUpdated''' <- I.getLastUpdated bhEnv testIndex worker entityType
+        -- assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
         entityAlt = I.Project "neutron"
         crawlerName = "test-crawler"
-        worker = Config.TaskCrawler "" crawlerName ""
+        worker = Config.TaskCrawler "" crawlerName $ toText fakeDefaultDateStr
+        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
+        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
         fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
         fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
+        fakeDateC = fromMaybe (error "nop") (readMaybe "2021-06-02 23:00:00 Z" :: Maybe UTCTime)
 
 scenarioProject :: ScenarioProject
 scenarioProject =

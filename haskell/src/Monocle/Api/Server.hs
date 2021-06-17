@@ -82,9 +82,10 @@ crawlerCommit request = do
           I.setLastUpdated
             bhEnv
             (BH.IndexName $ toStrict indexName)
-            (toEntity entity)
             (toStrict crawlerName)
             (Timestamp.toUTCTime ts')
+            False
+            (toEntity entity)
       pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
     Left err -> pure $ toErrorResponse err
   where

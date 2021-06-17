@@ -436,6 +436,9 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
+getWorkerName :: Config.TaskCrawler -> Text
+getWorkerName Config.TaskCrawler {..} = name
+
 getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Worker -> EntityType -> IO (Text, UTCTime)
 getLastUpdated bhEnv index worker entity = do
   BH.runBH bhEnv $ do
@@ -465,20 +468,20 @@ getLastUpdated bhEnv index worker entity = do
           []
           []
           []
-    getWorkerName Config.TaskCrawler {..} = name
     crawlerType :: EntityType -> Text
     crawlerType entity' = case entity' of
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
       _ -> error "Unsupported Entity"
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) = (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
-setLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> Text -> UTCTime -> IO ()
-setLastUpdated bhEnv index entity crawlerName lastUpdatedDate = do
+setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Bool -> Entity -> IO ()
+setLastUpdated bhEnv index crawlerName lastUpdatedDate doNotUpdate entity = do
   BH.runBH bhEnv $ do
     exists <- BH.documentExists index id'
     resp <-
       if exists
         then do
+          when doNotUpdate $ pure ()
           BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
         else do
           BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
@@ -499,3 +502,13 @@ setLastUpdated bhEnv index entity crawlerName lastUpdatedDate = do
     crawlerType entity' = case entity' of
       Project _ -> "project"
       _ -> error "Unsupported Entity"
+
+initCrawlerLastUpdated :: (Entity -> IO ()) -> [Entity] -> IO ()
+initCrawlerLastUpdated = mapM_
+
+initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Worker -> IO ()
+initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = initCrawlerLastUpdated run entities
+  where
+    run = setLastUpdated bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker) True
+    entities = [Project "nova", Project "neutron"]
+    getWorkerUpdatedSince Config.TaskCrawler {..} = fromMaybe (error "nop") (readMaybe (toString updated_since) :: Maybe UTCTime)
