@@ -84,7 +84,6 @@ crawlerCommit request = do
             (BH.IndexName $ toStrict indexName)
             (toStrict crawlerName)
             (Timestamp.toUTCTime ts')
-            False
             (toEntity entity)
       pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
     Left err -> pure $ toErrorResponse err

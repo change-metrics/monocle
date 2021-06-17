@@ -160,21 +160,23 @@ testCrawlerMetadata = withBH doTest
       I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
       lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
       assertEqual "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateB False entity
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateA False entityAlt
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateB entity
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
       assertEqual "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+
       -- Update one crawler and ensure we get the right oldest
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateC False entity
+      I.setLastUpdated bhEnv testIndex crawlerName fakeDateC entity
       lastUpdated'' <- I.getLastUpdated bhEnv testIndex worker entityType
       assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
-      where
-        -- Re run init and ensure it was noop
-        -- I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
-        -- lastUpdated''' <- I.getLastUpdated bhEnv testIndex worker entityType
-        -- assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
 
+      -- Re run init and ensure it was noop
+      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
+      lastUpdated''' <- I.getLastUpdated bhEnv testIndex worker entityType
+      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+      where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
         entityAlt = I.Project "neutron"

@@ -442,8 +442,6 @@ getWorkerName Config.TaskCrawler {..} = name
 getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Worker -> EntityType -> IO (Text, UTCTime)
 getLastUpdated bhEnv index worker entity = do
   BH.runBH bhEnv $ do
-    let search' = search
-    print search'
     resp <- fmap BH.hitSource <$> (Q.simpleSearch index search :: BH.BH IO [BH.Hit ELKCrawlerMetadata])
     case catMaybes resp of
       [] -> error "Unsupported"
@@ -460,33 +458,27 @@ getLastUpdated bhEnv index worker entity = do
               ]
         }
     query =
-      BH.QueryBoolQuery $
-        BH.mkBoolQuery
-          [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName worker)) Nothing,
-            BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
-          ]
-          []
-          []
-          []
+      Q.mkAnd
+        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName worker)) Nothing,
+          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
+        ]
     crawlerType :: EntityType -> Text
     crawlerType entity' = case entity' of
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
       _ -> error "Unsupported Entity"
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) = (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
-setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Bool -> Entity -> IO ()
-setLastUpdated bhEnv index crawlerName lastUpdatedDate doNotUpdate entity = do
+setOrUpdateLastUpdated :: Bool -> BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entity = do
   BH.runBH bhEnv $ do
     exists <- BH.documentExists index id'
-    resp <-
-      if exists
-        then do
-          when doNotUpdate $ pure ()
-          BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-        else do
-          BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-    _ <- BH.refreshIndex index
-    if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+    when ((exists && not doNotUpdate) || not exists) $ do
+      resp <-
+        if exists
+          then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+          else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+      _ <- BH.refreshIndex index
+      if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
   where
     id' = getId entity
     cm =
@@ -503,12 +495,12 @@ setLastUpdated bhEnv index crawlerName lastUpdatedDate doNotUpdate entity = do
       Project _ -> "project"
       _ -> error "Unsupported Entity"
 
-initCrawlerLastUpdated :: (Entity -> IO ()) -> [Entity] -> IO ()
-initCrawlerLastUpdated = mapM_
+setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setLastUpdated = setOrUpdateLastUpdated False
 
 initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Worker -> IO ()
-initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = initCrawlerLastUpdated run entities
+initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = traverse_ run entities
   where
-    run = setLastUpdated bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker) True
+    run = setOrUpdateLastUpdated True bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker)
     entities = [Project "nova", Project "neutron"]
     getWorkerUpdatedSince Config.TaskCrawler {..} = fromMaybe (error "nop") (readMaybe (toString updated_since) :: Maybe UTCTime)
