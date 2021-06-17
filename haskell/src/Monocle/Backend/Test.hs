@@ -78,14 +78,20 @@ fakeChange =
       elkchangeDraft = False
     }
 
-testIndexName :: BH.IndexName
-testIndexName = BH.IndexName "test-index"
+emptyConfig :: Text -> Config.Index
+emptyConfig name =
+  let crawlers_api_key = Nothing
+      crawlers = Nothing
+      projects = Nothing
+      idents = Nothing
+   in Config.Index {..}
 
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
 withBH = bracket create delete
   where
     -- todo: generate random name
-    create = I.createChangesIndex "http://localhost:9200" testIndexName
+    testName = "test-index"
+    create = I.createChangesIndex "http://localhost:9200" (emptyConfig testName)
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
         _resp <- BH.deleteIndex testIndex

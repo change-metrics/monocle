@@ -26,6 +26,7 @@ run :: MonadIO m => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
+  traverse_ (I.ensureIndex bhEnv') tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

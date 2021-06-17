@@ -60,7 +60,7 @@ crawlerAddDoc request = do
     validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError ()
     validateRequest tenants indexName crawlerName apiKey = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
-      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
+      _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
       when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
@@ -76,24 +76,25 @@ crawlerCommit request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
-    Right ts' -> do
+    Right (index, ts') -> do
       _ <-
         liftIO $
           I.setLastUpdated
             bhEnv
-            (BH.IndexName $ toStrict indexName)
+            (I.tenantIndexName index)
             (toStrict crawlerName)
             (Timestamp.toUTCTime ts')
             (toEntity entity)
       pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Maybe Timestamp -> Either CrawlerPB.CommitError Timestamp
+    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Maybe Timestamp -> Either CrawlerPB.CommitError (Config.Index, Timestamp)
     validateRequest tenants indexName crawlerName apiKey timestampM = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
-      crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
+      _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
       when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
-      timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
+      ts <- timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
+      pure (index, ts)
 
     toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
     toErrorResponse err =
@@ -110,8 +111,8 @@ crawlerCommitInfo request = do
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
       entityType = fromPBEnum entity
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
-    Right worker -> do
-      (name, ts) <- liftIO $ I.getLastUpdated bhEnv (BH.IndexName $ toStrict indexName) worker entityType
+    Right (index, worker) -> do
+      (name, ts) <- liftIO $ I.getLastUpdated bhEnv (I.tenantIndexName index) worker entityType
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
@@ -120,11 +121,11 @@ crawlerCommitInfo request = do
         $ (Just $ Timestamp.fromUTCTime ts)
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError Config.Crawler
+    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError (Config.Index, Config.Crawler)
     validateRequest tenants indexName crawlerName = do
       index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
       worker <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
-      pure worker
+      pure (index, worker)
 
     fromEntityType :: CrawlerPB.CommitInfoRequest_EntityType -> LText -> CrawlerPB.Entity
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of

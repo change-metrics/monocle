@@ -246,18 +246,29 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-createChangesIndex :: MServerName -> BH.IndexName -> IO (BH.BHEnv, BH.IndexName)
-createChangesIndex serverUrl index = do
-  let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-  bhEnv <- mkEnv serverUrl
-  BH.runBH bhEnv $ do
-    _respCI <- BH.createIndex indexSettings index
+tenantIndexName :: Config.Index -> BH.IndexName
+tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
+
+ensureIndex :: MonadIO m => BH.BHEnv -> Config.Index -> m BH.IndexName
+ensureIndex bhEnv config@Config.Index {..} = do
+  liftIO . BH.runBH bhEnv $ do
+    _respCI <- BH.createIndex indexSettings indexName
     -- print respCI
-    _respPM <- BH.putMapping index ChangesIndexMapping
+    _respPM <- BH.putMapping indexName ChangesIndexMapping
     -- print respPM
-    True <- BH.indexExists index
-    -- TODO: call initCrawlerLastUpdatedFromWorkerConfig
-    pure (bhEnv, index)
+    True <- BH.indexExists indexName
+    pure ()
+  liftIO $ traverse_ (initCrawlerLastUpdatedFromWorkerConfig bhEnv indexName) (fromMaybe [] crawlers)
+  pure indexName
+  where
+    indexName = tenantIndexName config
+    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
+createChangesIndex serverUrl config = do
+  bhEnv <- mkEnv serverUrl
+  indexName <- ensureIndex bhEnv config
+  pure (bhEnv, indexName)
 
 -- intC = fromInteger . toInteger
 
