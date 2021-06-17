@@ -155,7 +155,8 @@ class ChangesTable extends React.Component {
                     ) : (
                       ''
                     )}
-                    {change.tasks_data !== undefined &&
+                    {change.tasks_data &&
+                      change.tasks_data !== undefined &&
                       change.tasks_data.map((td, idx) => (
                         <Row key={idx}>
                           <Col>
@@ -323,7 +324,9 @@ class LastChangesNG extends AbstractLastChanges {
     this.state.title = 'Changes'
   }
 
-  extractTime(x) { return x.created_at; }
+  extractTime(x) {
+    return x.created_at
+  }
 }
 
 const lastChangesNGMapStateToProps = (state) =>
