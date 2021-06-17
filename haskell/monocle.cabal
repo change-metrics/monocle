@@ -93,8 +93,8 @@ library
 
                      -- api client for lentille
                      , Monocle.Api.Client
+                     , Monocle.Api.Client.Api
                      , Monocle.Api.Client.Worker
-                     , Monocle.Api.Client.CrawlerWorker
 
                      -- servant
                      , Monocle.Servant.Env
@@ -121,8 +121,7 @@ library
                      , Monocle.TaskData
                      , Monocle.Crawler
 
-  other-modules:       Monocle.Api.Client.Api
-                     , Monocle.Api.Client.Internal
+  other-modules:       Monocle.Api.Client.Internal
 
                      , Database.Bloodhound.Raw
 
