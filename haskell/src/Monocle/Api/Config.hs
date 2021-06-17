@@ -11,8 +11,13 @@
 
 module Monocle.Api.Config where
 
-import Data.Yaml as YAML
+import Data.Aeson (FromJSON, Value (Object), parseJSON, (.:))
+import qualified Data.ByteString as BS
+import Data.Either.Validation (Validation (Failure, Success))
+import qualified Dhall as Dhall
+import qualified Dhall.Binary as Dhall
 import qualified Dhall.TH
+import qualified Dhall.YamlToDhall as Dhall
 import Relude
 
 -- | Generate Haskell Type from Dhall Type
@@ -33,7 +38,8 @@ Dhall.TH.makeHaskellTypes
             "./dhall-monocle/Monocle/Lentille/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Tenant",
-          Dhall.TH.SingleConstructor "Crawler" "Crawler" $ mainPath "Lentille"
+          Dhall.TH.SingleConstructor "Crawler" "Crawler" $ mainPath "Lentille",
+          Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
         ]
   )
 
@@ -91,20 +97,26 @@ deriving instance Eq Index
 
 deriving instance Show Index
 
-newtype Tenants = Tenants {unTenants :: [Index]} deriving (Eq, Show)
-
-instance FromJSON Tenants where
-  parseJSON (Object v) = Tenants <$> v .: "tenants"
-  parseJSON _ = mzero
-
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name
 
+-- | Load the YAML config file
 loadConfig :: MonadIO m => FilePath -> m [Index]
-loadConfig fp =
-  -- TODO: drop 'users', 'task_crawlers' and 'crawler' key
-  unTenants <$> YAML.decodeFileThrow fp
+loadConfig fp = do
+  -- Here we use the yaml-to-dhall logic to correctly decode Union value.
+  -- Otherwise the decoder may fail with:
+  -- AesonException "Error in $.tenants[1].crawlers[0].provider: parsing "
+  --   Monocle.Api.Config.Provider(GitlabProvider) failed, key \"contents\" not found"
+  --
+  -- dhallFromYaml is able to infer the sum type by its value and it picks
+  -- the first constructor that fit.
+  expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile fp
+  case Dhall.extract Dhall.auto expr of
+    Success config -> pure (tenants config)
+    Failure err -> error (show err)
+  where
+    loadOpt = Dhall.defaultOptions $ Just "./dhall-monocle/Monocle/Config.dhall"
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
