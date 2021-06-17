@@ -256,6 +256,7 @@ createChangesIndex serverUrl index = do
     _respPM <- BH.putMapping index ChangesIndexMapping
     -- print respPM
     True <- BH.indexExists index
+    -- TODO: call initCrawlerLastUpdatedFromWorkerConfig
     pure (bhEnv, index)
 
 -- intC = fromInteger . toInteger
@@ -436,11 +437,11 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
-getWorkerName :: Config.TaskCrawler -> Text
-getWorkerName Config.TaskCrawler {..} = name
+getWorkerName :: Config.Crawler -> Text
+getWorkerName Config.Crawler {..} = name
 
-getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Worker -> EntityType -> IO (Text, UTCTime)
-getLastUpdated bhEnv index worker entity = do
+getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> EntityType -> IO (Text, UTCTime)
+getLastUpdated bhEnv index crawler entity = do
   BH.runBH bhEnv $ do
     resp <- fmap BH.hitSource <$> (Q.simpleSearch index search :: BH.BH IO [BH.Hit ELKCrawlerMetadata])
     case catMaybes resp of
@@ -450,23 +451,21 @@ getLastUpdated bhEnv index worker entity = do
     search =
       (BH.mkSearch (Just query) Nothing)
         { BH.size = BH.Size 1,
-          BH.sortBody =
-            Just
-              [ BH.DefaultSortSpec
-                  ( BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
-                  )
-              ]
+          BH.sortBody = Just [BH.DefaultSortSpec bhSort]
         }
+
+    bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
     query =
       Q.mkAnd
-        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName worker)) Nothing,
+        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
           BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
         ]
     crawlerType :: EntityType -> Text
     crawlerType entity' = case entity' of
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
       _ -> error "Unsupported Entity"
-    getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) = (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+    getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
+      (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
 setOrUpdateLastUpdated :: Bool -> BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
 setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entity = do
@@ -498,9 +497,10 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
 setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Worker -> IO ()
+initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> IO ()
 initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = traverse_ run entities
   where
     run = setOrUpdateLastUpdated True bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker)
-    entities = [Project "nova", Project "neutron"]
-    getWorkerUpdatedSince Config.TaskCrawler {..} = fromMaybe (error "nop") (readMaybe (toString updated_since) :: Maybe UTCTime)
+    entities = Project <$> Config.getCrawlerProject worker
+    getWorkerUpdatedSince Config.Crawler {..} =
+      fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)

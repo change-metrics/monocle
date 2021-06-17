@@ -181,7 +181,16 @@ testCrawlerMetadata = withBH doTest
         entity = I.Project "nova"
         entityAlt = I.Project "neutron"
         crawlerName = "test-crawler"
-        worker = Config.TaskCrawler "" crawlerName $ toText fakeDefaultDateStr
+        worker =
+          let name = crawlerName
+              update_since = toText fakeDefaultDateStr
+              provider =
+                let gitlab_url = "https://localhost"
+                    gitlab_api_key = "key"
+                    gitlab_repositories = Just ["nova", "neutron"]
+                    gitlab_organizations = Nothing
+                 in Config.GitlabProvider Config.Gitlab {..}
+           in Config.Crawler {..}
         fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
         fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
         fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
