@@ -12,6 +12,7 @@ import Data.Aeson
     Value,
     object,
   )
+import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -430,12 +431,12 @@ type CrawlerMetadataDocId = BH.DocId
 
 getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
-  BH.DocId . toText $
-    intercalate
+  BH.DocId . Text.replace "/" "@" $
+    Text.intercalate
       "-"
-      [ toString crawlerName,
-        toString crawlerType,
-        toString crawlerTypeValue
+      [ crawlerName,
+        crawlerType,
+        crawlerTypeValue
       ]
 
 getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
@@ -488,7 +489,7 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
           then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
           else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
       _ <- BH.refreshIndex index
-      if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+      if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
   where
     id' = getId entity
     cm =
