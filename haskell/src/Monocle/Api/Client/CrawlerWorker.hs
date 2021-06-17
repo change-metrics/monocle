@@ -113,10 +113,11 @@ run ::
 run monocleClient apiKey indexName crawlerName documentStream = do
   -- It is important to get the commit date before starting the process to not miss
   -- document updated when we start
-  startTime <- log' LogStarting
+  startTime <- log' $ LogStartingEntity entityType
 
   -- Query the monocle api for the oldest entity to be updated.
   oldestEntity <- getOldestEntity
+  log $ LogOldestEntity oldestEntity
 
   -- Run the document stream for that entity
   process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)

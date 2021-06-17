@@ -32,6 +32,7 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Client.Api
 import Monocle.Api.Client.Internal
+import qualified Monocle.Crawler as CrawlerPB
 import Monocle.TaskData
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
@@ -46,9 +47,11 @@ import qualified Streaming.Prelude as S
 -------------------------------------------------------------------------------
 data LogEvent
   = LogStarting
+  | LogStartingEntity CrawlerPB.CommitInfoRequest_EntityType
   | LogEnded
   | LogFailed
   | LogNetworkFailure Text
+  | LogOldestEntity CrawlerPB.CommitInfoResponse_OldestEntity
   | LogGetBugs UTCTime Int Int
   | LogPostData Int
 
@@ -67,12 +70,14 @@ logEvent ev = do
     showTime now = toText . take 23 $ formatTime defaultTimeLocale "%F %T.%q" now
     evStr = case ev of
       LogStarting -> "Starting updates"
+      LogStartingEntity e -> "Starting updates for " <> show e
       LogEnded -> "Update completed"
       LogFailed -> "Commit failed"
       LogNetworkFailure msg -> "Network error: " <> msg
       LogGetBugs ts offset limit ->
         "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
       LogPostData count -> "Posting tracker data " <> show count
+      LogOldestEntity oe -> "Got entity " <> show oe
 
 class Monad m => MonadLog m where
   log' :: LogEvent -> m UTCTime
