@@ -430,7 +430,7 @@ getEntityName entity = case entity of
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
-getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Worker -> EntityType -> IO (Text, UTCTime)
+getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> EntityType -> IO (Text, UTCTime)
 getLastUpdated _bhEnv _index _worker _entity = undefined
 
 {-
