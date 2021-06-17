@@ -16,8 +16,10 @@ import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as T
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import Monocle.Change
+import qualified Monocle.Crawler as CrawlerPB
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 import Relude
@@ -426,14 +428,19 @@ getEntityName entity = case entity of
   Project name -> toText $ intercalate "-" ["project", toString name]
   Organization name -> toText $ intercalate "-" ["organization", toString name]
 
-getLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> IO UTCTime
-getLastUpdated bhEnv index entity = do
+type EntityType = CrawlerPB.CommitInfoRequest_EntityType
+
+getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Worker -> EntityType -> IO (Text, UTCTime)
+getLastUpdated _bhEnv _index _worker _entity = undefined
+
+{-
   cmM <- getCrawlerMetadata bhEnv index cmID
   case cmM of
     Just cm -> pure $ elkcmLastCommitAt cm
     Nothing -> pure getLastUpdatedFromConfig
   where
     cmID = getCrawlerMetadataID entity
+-}
 
 setLastUpdated :: BH.BHEnv -> BH.IndexName -> Entity -> UTCTime -> IO ()
 setLastUpdated bhEnv index entity lastUpdatedDate = do

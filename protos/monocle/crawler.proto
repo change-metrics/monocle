@@ -8,17 +8,20 @@ option go_package = "monocle/crawler";
 import "google/protobuf/timestamp.proto";
 import "monocle/change.proto";
 
-message ChangeEntity {
-  string project = 1;
+message Entity {
+  oneof entity {
+    string organization_name = 1;
+    string project_name = 2;
+    string change_commit_name = 3;
+    string change_event_name = 4;
+  }
 }
 
 message AddDocRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
-  oneof entity {
-    ChangeEntity changeEntity = 4;
-  }
+  Entity entity = 4;
   repeated monocle_change.Change changes = 5;
   repeated monocle_change.ChangeEvent events = 6;
 }
@@ -31,18 +34,14 @@ enum AddDocError {
 }
 
 message AddDocResponse {
-  oneof result {
-    AddDocError error = 1;
-  }
+  oneof result { AddDocError error = 1; }
 }
 
 message CommitRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
-  oneof entity {
-    ChangeEntity changes = 4;
-  }
+  Entity entity = 4;
   google.protobuf.Timestamp timestamp = 5;
 }
 
@@ -59,14 +58,18 @@ message CommitResponse {
     CommitError error = 1;
     google.protobuf.Timestamp timestamp = 2;
   }
- }
+}
 
 message CommitInfoRequest {
+  enum EntityType {
+    Organization = 0;
+    Project = 1;
+    ChangeCommit = 2;
+    ChangeComment = 3;
+  }
   string index = 1;
   string crawler = 2;
-  oneof entity {
-    ChangeEntity changes = 3;
-  }
+  EntityType entity_type = 3;
 }
 
 enum CommitInfoError {
@@ -75,8 +78,12 @@ enum CommitInfoError {
 }
 
 message CommitInfoResponse {
+  message OldestEntity {
+    Entity entity = 1;
+    google.protobuf.Timestamp last_commit_at = 2;
+  }
   oneof result {
     CommitInfoError error = 1;
-    google.protobuf.Timestamp last_commit_at = 2;
+    OldestEntity entity = 2;
   }
 }

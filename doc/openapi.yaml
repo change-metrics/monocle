@@ -200,8 +200,8 @@ components:
                     type: string
                 apikey:
                     type: string
-                changeEntity:
-                    $ref: '#/components/schemas/ChangeEntity'
+                entity:
+                    $ref: '#/components/schemas/Entity'
                 changes:
                     type: array
                     items:
@@ -233,78 +233,6 @@ components:
                     type: integer
                     description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
                     format: enum
-        Change:
-            properties:
-                change_id:
-                    type: string
-                author:
-                    type: string
-                title:
-                    type: string
-                url:
-                    type: string
-                repository_fullname:
-                    type: string
-                state:
-                    type: string
-                branch:
-                    type: string
-                target_branch:
-                    type: string
-                created_at:
-                    type: string
-                    format: RFC3339
-                updated_at:
-                    type: string
-                    format: RFC3339
-                merged_at:
-                    type: string
-                    format: RFC3339
-                merged_by:
-                    type: string
-                text:
-                    type: string
-                additions:
-                    type: integer
-                    format: uint32
-                deletions:
-                    type: integer
-                    format: uint32
-                approval:
-                    type: array
-                    items:
-                        type: string
-                assignees:
-                    type: array
-                    items:
-                        type: string
-                labels:
-                    type: array
-                    items:
-                        type: string
-                draft:
-                    type: boolean
-                mergeable:
-                    type: boolean
-                    description: bool has_issue_tracker_links = 31;
-                changed_files:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/File'
-                changed_files_count:
-                    type: integer
-                    format: uint32
-                commits:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Commit'
-                commits_count:
-                    type: integer
-                    format: uint32
-                task_data:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TaskData'
         Change:
             properties:
                 id:
@@ -389,16 +317,84 @@ components:
                     type: boolean
                 self_merged:
                     type: boolean
+        Change:
+            properties:
+                change_id:
+                    type: string
+                author:
+                    type: string
+                title:
+                    type: string
+                url:
+                    type: string
+                repository_fullname:
+                    type: string
+                state:
+                    type: string
+                branch:
+                    type: string
+                target_branch:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                updated_at:
+                    type: string
+                    format: RFC3339
+                merged_at:
+                    type: string
+                    format: RFC3339
+                merged_by:
+                    type: string
+                text:
+                    type: string
+                additions:
+                    type: integer
+                    format: uint32
+                deletions:
+                    type: integer
+                    format: uint32
+                approval:
+                    type: array
+                    items:
+                        type: string
+                assignees:
+                    type: array
+                    items:
+                        type: string
+                labels:
+                    type: array
+                    items:
+                        type: string
+                draft:
+                    type: boolean
+                mergeable:
+                    type: boolean
+                    description: bool has_issue_tracker_links = 31;
+                changed_files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/File'
+                changed_files_count:
+                    type: integer
+                    format: uint32
+                commits:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Commit'
+                commits_count:
+                    type: integer
+                    format: uint32
+                task_data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskData'
         ChangeAbandonedEvent:
             properties: {}
         ChangeCommentedEvent:
             properties: {}
         ChangeCreatedEvent:
             properties: {}
-        ChangeEntity:
-            properties:
-                project:
-                    type: string
         ChangeEvent:
             properties:
                 id:
@@ -484,62 +480,62 @@ components:
             properties:
                 sha:
                     type: string
-                title:
-                    type: string
                 author:
-                    type: string
+                    $ref: '#/components/schemas/Ident'
+                committer:
+                    $ref: '#/components/schemas/Ident'
                 authored_at:
                     type: string
                     format: RFC3339
-                committer:
-                    type: string
                 committed_at:
                     type: string
                     format: RFC3339
                 additions:
                     type: integer
-                    format: uint32
+                    format: int32
                 deletions:
                     type: integer
-                    format: uint32
+                    format: int32
+                title:
+                    type: string
         Commit:
             properties:
                 sha:
                     type: string
+                title:
+                    type: string
                 author:
-                    $ref: '#/components/schemas/Ident'
-                committer:
-                    $ref: '#/components/schemas/Ident'
+                    type: string
                 authored_at:
                     type: string
                     format: RFC3339
+                committer:
+                    type: string
                 committed_at:
                     type: string
                     format: RFC3339
                 additions:
                     type: integer
-                    format: int32
+                    format: uint32
                 deletions:
                     type: integer
-                    format: int32
-                title:
-                    type: string
+                    format: uint32
         CommitInfoRequest:
             properties:
                 index:
                     type: string
                 crawler:
                     type: string
-                changes:
-                    $ref: '#/components/schemas/ChangeEntity'
+                entity_type:
+                    type: integer
+                    format: enum
         CommitInfoResponse:
             properties:
                 error:
                     type: integer
                     format: enum
-                last_commit_at:
-                    type: string
-                    format: RFC3339
+                entity:
+                    $ref: '#/components/schemas/OldestEntity'
         CommitRequest:
             properties:
                 index:
@@ -548,8 +544,8 @@ components:
                     type: string
                 apikey:
                     type: string
-                changes:
-                    $ref: '#/components/schemas/ChangeEntity'
+                entity:
+                    $ref: '#/components/schemas/Entity'
                 timestamp:
                     type: string
                     format: RFC3339
@@ -561,6 +557,16 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
+        Entity:
+            properties:
+                organization_name:
+                    type: string
+                project_name:
+                    type: string
+                change_commit_name:
+                    type: string
+                change_event_name:
+                    type: string
         Field:
             properties:
                 name:
