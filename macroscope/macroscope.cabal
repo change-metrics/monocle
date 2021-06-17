@@ -47,11 +47,13 @@ library
   build-depends:       base                       < 5
                      , lentille-gitlab
                      , monocle
+                     , proto3-suite               >= 0.4.2
                      , relude                     > 1.0 && < 1.1
                      , streaming                  < 0.3
                      , time                       < 1.12
                      , vector                     < 0.13
   exposed-modules:     Macroscope.Main
+                     , Macroscope.Worker
 
 executable macroscope
   import:              common-options

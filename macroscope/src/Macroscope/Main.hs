@@ -9,8 +9,8 @@ module Macroscope.Main (runMacroscope) where
 import Control.Concurrent (threadDelay)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
-import Monocle.Api.Client hiding (run)
-import Monocle.Api.Client.CrawlerWorker (DocumentStream (..), run)
+import Macroscope.Worker (DocumentStream (..), runStream)
+import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 
@@ -66,7 +66,7 @@ runMacroscope verbose confPath client = do
 
       -- Consume each stream
       let runner =
-            Monocle.Api.Client.CrawlerWorker.run client (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+            runStream client (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
       -- TODO: handle exceptions
       traverse_ runner docStreams
 
