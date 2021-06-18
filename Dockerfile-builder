@@ -27,8 +27,13 @@ WORKDIR /build
 RUN dnf update -y && dnf install -y git ghc cabal-install
 RUN cabal v2-update
 
-# Install proto3-suite and servant-server first, that pulls in most dependencies
-RUN cabal v2-install proto3-suite servant-server dhall --constraint='proto3-suite ^>=0.4.2' --constraint='servant ^>=0.18.2' --constraint='dhall ^>= 1.39'
+# Install the main dependencies first, as well as the one for lentille
+RUN cabal v2-install proto3-suite servant-server dhall dhall-yaml                 \
+  morpheus-graphql-client                                                         \
+  --constraint='proto3-suite ^>=0.4.2'                                            \
+  --constraint='servant ^>=0.18.2'                                                \
+  --constraint='dhall-yaml ^>= 1.2'                                               \
+  --constraint='morpheus-graphql-client ^>= 0.17'
 
 # Install project dependencies
 COPY haskell/cabal.project haskell/monocle.cabal /build/
