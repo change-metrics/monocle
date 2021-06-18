@@ -273,10 +273,9 @@ mkNotQuery e1 = do
 
 -- | 'query' creates an elastic search query
 --
---  :{
---  let Right expr = P.parse "state:open"
---      Right (q, _) = runExcept $ runStateT (query now expr) (Nothing, now)
---   in putTextLn . decodeUtf8 . Aeson.encode $ q
+-- >>> :{
+--  let query = load Nothing mempty Nothing "state:open"
+--   in putTextLn . decodeUtf8 . Aeson.encode $ (queryBH query)
 -- :}
 -- {"term":{"state":{"value":"OPEN"}}}
 query :: Expr -> Parser BH.Query
