@@ -8,6 +8,7 @@ module Monocle.Prelude
     orDie,
     getExn,
     MonadThrow,
+    MonadMask,
     monocleLog,
     FromJSON (..),
     ToJSON (..),
@@ -18,7 +19,7 @@ module Monocle.Prelude
   )
 where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value)
 import Data.Fixed (Fixed (..), HasResolution (resolution))
 import Data.Time.Clock (UTCTime, getCurrentTime)
