@@ -4,8 +4,10 @@
 -- |
 module Monocle.Api.CLI (run) where
 
+import Monocle.Api.Client.Worker (MonadLog, retry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
+import Monocle.Prelude
 import Monocle.Servant.Env
 import Monocle.Servant.HTTP (MonocleAPI, server)
 import qualified Network.Wai as Wai
@@ -13,7 +15,6 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Servant.Options (provideOptions)
-import Relude
 import Servant (hoistServer, serve)
 
 monocleAPI :: Proxy MonocleAPI
@@ -22,10 +23,11 @@ monocleAPI = Proxy
 app :: Env -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 
-run :: MonadIO m => Int -> Text -> FilePath -> m ()
+run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
+  retry $ traverse_ (I.ensureIndex bhEnv') tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

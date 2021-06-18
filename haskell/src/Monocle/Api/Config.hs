@@ -11,8 +11,12 @@
 
 module Monocle.Api.Config where
 
-import Data.Yaml as YAML
+import qualified Data.ByteString as BS
+import Data.Either.Validation (Validation (Failure, Success))
+import Data.FileEmbed (embedFile)
+import qualified Dhall
 import qualified Dhall.TH
+import qualified Dhall.YamlToDhall as Dhall
 import Relude
 
 -- | Generate Haskell Type from Dhall Type
@@ -33,78 +37,71 @@ Dhall.TH.makeHaskellTypes
             "./dhall-monocle/Monocle/Lentille/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Tenant",
-          Dhall.TH.SingleConstructor "Crawler" "Crawler" $ mainPath "Lentille"
+          Dhall.TH.SingleConstructor "Crawler" "Crawler" $ mainPath "Lentille",
+          Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
         ]
   )
-
-deriving instance FromJSON Gerrit
 
 deriving instance Eq Gerrit
 
 deriving instance Show Gerrit
 
-deriving instance FromJSON Github
-
 deriving instance Eq Github
 
 deriving instance Show Github
-
-deriving instance FromJSON Gitlab
 
 deriving instance Eq Gitlab
 
 deriving instance Show Gitlab
 
-deriving instance FromJSON Bugzilla
-
 deriving instance Eq Bugzilla
 
 deriving instance Show Bugzilla
-
-deriving instance FromJSON Project
 
 deriving instance Eq Project
 
 deriving instance Show Project
 
-deriving instance FromJSON Provider
-
 deriving instance Eq Provider
 
 deriving instance Show Provider
-
-deriving instance FromJSON Crawler
 
 deriving instance Eq Crawler
 
 deriving instance Show Crawler
 
-deriving instance FromJSON Ident
-
 deriving instance Eq Ident
 
 deriving instance Show Ident
-
-deriving instance FromJSON Index
 
 deriving instance Eq Index
 
 deriving instance Show Index
 
-newtype Tenants = Tenants {unTenants :: [Index]} deriving (Eq, Show)
-
-instance FromJSON Tenants where
-  parseJSON (Object v) = Tenants <$> v .: "tenants"
-  parseJSON _ = mzero
-
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name
 
+-- | Load the YAML config file
 loadConfig :: MonadIO m => FilePath -> m [Index]
-loadConfig fp =
-  -- TODO: drop 'users', 'task_crawlers' and 'crawler' key
-  unTenants <$> YAML.decodeFileThrow fp
+loadConfig fp = do
+  -- Here we use the yaml-to-dhall logic to correctly decode Union value.
+  -- Otherwise the decoder may fail with:
+  -- AesonException "Error in $.tenants[1].crawlers[0].provider: parsing "
+  --   Monocle.Api.Config.Provider(GitlabProvider) failed, key \"contents\" not found"
+  --
+  -- dhallFromYaml is able to infer the sum type by its value and it picks
+  -- the first constructor that fit.
+  expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile fp
+  case Dhall.extract Dhall.auto expr of
+    Success config -> pure (tenants config)
+    Failure err -> error (show err)
+  where
+    -- when updating the dhall-monocle schema, the config needs to be
+    -- regenerated using:
+    -- `dhall <<< ./dhall-monocle/Monocle/Config.dhall > test/data/Config.dhall`
+    configType = $(embedFile "./test/data/Config.dhall")
+    loadOpt = Dhall.defaultOptions $ Just $ decodeUtf8 configType
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs

@@ -12,6 +12,7 @@ import Data.Aeson
     Value,
     object,
   )
+import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -246,18 +247,29 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-createChangesIndex :: MServerName -> BH.IndexName -> IO (BH.BHEnv, BH.IndexName)
-createChangesIndex serverUrl index = do
-  let indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-  bhEnv <- mkEnv serverUrl
-  BH.runBH bhEnv $ do
-    _respCI <- BH.createIndex indexSettings index
+tenantIndexName :: Config.Index -> BH.IndexName
+tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
+
+ensureIndex :: MonadIO m => BH.BHEnv -> Config.Index -> m BH.IndexName
+ensureIndex bhEnv config@Config.Index {..} = do
+  liftIO . BH.runBH bhEnv $ do
+    _respCI <- BH.createIndex indexSettings indexName
     -- print respCI
-    _respPM <- BH.putMapping index ChangesIndexMapping
+    _respPM <- BH.putMapping indexName ChangesIndexMapping
     -- print respPM
-    True <- BH.indexExists index
-    -- TODO: call initCrawlerLastUpdatedFromWorkerConfig
-    pure (bhEnv, index)
+    True <- BH.indexExists indexName
+    pure ()
+  liftIO $ traverse_ (initCrawlerLastUpdatedFromWorkerConfig bhEnv indexName) (fromMaybe [] crawlers)
+  pure indexName
+  where
+    indexName = tenantIndexName config
+    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
+createChangesIndex serverUrl config = do
+  bhEnv <- mkEnv serverUrl
+  indexName <- ensureIndex bhEnv config
+  pure (bhEnv, indexName)
 
 -- intC = fromInteger . toInteger
 
@@ -267,7 +279,10 @@ toAuthor (Just Monocle.Change.Ident {..}) =
     { authorMuid = identMuid,
       authorUid = identUid
     }
-toAuthor Nothing = error "Ident field is mandatory"
+toAuthor Nothing =
+  Monocle.Backend.Documents.Author
+    "backend-ghost"
+    "backend-ghost"
 
 toELKChangeEvent :: ChangeEvent -> ELKChangeEvent
 toELKChangeEvent ChangeEvent {..} =
@@ -361,6 +376,11 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
 
+refreshIndex :: BH.BHEnv -> BH.IndexName -> IO ()
+refreshIndex bhEnv index = BH.runBH bhEnv $ do
+  _ <- BH.refreshIndex index
+  pure ()
+
 indexDocs :: BH.BHEnv -> BH.IndexName -> [(Value, BH.DocId)] -> IO ()
 indexDocs bhEnv index docs = BH.runBH bhEnv $ do
   let stream = V.fromList $ fmap toBulkIndex docs
@@ -419,12 +439,12 @@ type CrawlerMetadataDocId = BH.DocId
 
 getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
-  BH.DocId . toText $
-    intercalate
+  BH.DocId . Text.replace "/" "@" $
+    Text.intercalate
       "-"
-      [ toString crawlerName,
-        toString crawlerType,
-        toString crawlerTypeValue
+      [ crawlerName,
+        crawlerType,
+        crawlerTypeValue
       ]
 
 getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
@@ -477,7 +497,7 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
           then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
           else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
       _ <- BH.refreshIndex index
-      if BH.isSuccess resp then pure () else error "Unable to set Crawler Metadata"
+      if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
   where
     id' = getId entity
     cm =

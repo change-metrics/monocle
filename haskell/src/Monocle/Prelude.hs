@@ -8,19 +8,23 @@ module Monocle.Prelude
     orDie,
     getExn,
     MonadThrow,
+    MonadMask,
     monocleLog,
     FromJSON (..),
     ToJSON (..),
     Value,
     UTCTime,
+    MonocleClient,
+    getCurrentTime,
   )
 where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value)
 import Data.Fixed (Fixed (..), HasResolution (resolution))
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import GHC.Float (double2Float)
+import Monocle.Api.Client.Internal (MonocleClient)
 import Relude
 import Say (sayErr)
 
