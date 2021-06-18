@@ -84,6 +84,7 @@ emptyConfig name =
       crawlers = Nothing
       projects = Nothing
       idents = Nothing
+      index = name
    in Config.Index {..}
 
 withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()

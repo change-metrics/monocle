@@ -7,7 +7,6 @@
 module Monocle.Api.Server where
 
 import Data.Fixed (Deci)
-import Data.Time.Clock (getCurrentTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
