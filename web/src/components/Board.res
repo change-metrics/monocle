@@ -189,7 +189,9 @@ module Board = {
       },
       {
         Column.name: "To Approve",
-        query: "state:open and updated_at > now-1week order by created_at desc",
+        query: "state:open and updated_at > now-1week " ++
+        "not " ++
+        defaultNegativeApprovals ++ " order by created_at desc",
       },
       {
         Column.name: "Done",
@@ -197,7 +199,7 @@ module Board = {
       },
       {
         Column.name: "Oldies",
-        query: "state:open and updated_at > now-3week order by updated_at desc",
+        query: "state:open and updated_at < now-3week order by updated_at desc",
       },
     },
     style: Kanban,
