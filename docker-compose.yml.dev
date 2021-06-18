@@ -24,6 +24,8 @@ services:
       context: '.'
       dockerfile: Dockerfile-api
     command: monocle-api --port 9898
+    depends_on:
+      - elastic
     environment:
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200

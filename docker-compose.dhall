@@ -157,6 +157,7 @@ let createApiNgService =
                 , retries = Some 6
                 , timeout = Some "60s"
                 }
+              , depends_on = Some [ "elastic" ]
               , command = Some
                   (Compose.StringOrList.String "monocle-api --port 9898")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
