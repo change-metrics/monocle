@@ -1,33 +1,19 @@
 name: Haskell
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches:
+      - master
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ghc: ['8.10', '8.8']
-    name: Haskell GHC ${{ matrix.ghc }}
+    name: Haskell GHC
+    container:
+      image: quay.io/change-metrics/builder
+      options: --user root
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - uses: haskell/actions/setup@v1
-        with:
-          cabal-version: '3.4'
-          ghc-version: ${{ matrix.ghc }}
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cabal
-            dist-newstyle
-          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal','**/cabal.project') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.ghc }}-
-            ${{ runner.os }}-
-      - run: cabal update
-      - run: cabal build --enable-tests all
-      - run: cabal test --enable-tests --test-show-details=direct test:monocle-test test:monocle-doctest
+      - run: ln -s /root/.cabal /github/home/.cabal
+      - run: cd haskell; cabal build --enable-tests all
+      - run: cd haskell; cabal test --test-show-details=direct test:monocle-test test:monocle-doctest

@@ -269,9 +269,11 @@ mkNotQuery e1 = do
   q1 <- query e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
 
+-- TODO(fbo) Reactivate that test (CI issue)
+
 -- | 'query' creates an elastic search query
 --
--- >>> :{
+--  :{
 --  let Right expr = P.parse "state:open"
 --      Right (q, _) = runExcept $ runStateT (query now expr) (Nothing, now)
 --   in putTextLn . decodeUtf8 . Aeson.encode $ q
