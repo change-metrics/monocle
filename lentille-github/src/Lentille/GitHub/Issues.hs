@@ -8,6 +8,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports #-}
@@ -94,10 +95,10 @@ streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> Stream (Of Task
 streamLinkedIssue client searchText =
   streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor = GetLinkedIssuesArgs (searchText <> " linked:pr") $ toCursorM cursor
+    mkArgs cursor' = GetLinkedIssuesArgs (searchText <> " linked:pr") $ toCursorM cursor'
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
-    toCursorM cursor'' = Just . toString $ cursor''
+    toCursorM cursor'' = Just $ toString cursor''
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
@@ -107,12 +108,12 @@ transformResponse searchResult =
     GetLinkedIssues
       (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
       ( SearchSearchResultItemConnection
-          issueCount
+          issueCount'
           (SearchPageInfoPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
-         in ( PageInfo hasNextPage' endCursor' issueCount,
+         in ( PageInfo hasNextPage' endCursor' issueCount',
               RateLimit used' remaining' resetAt',
               lefts newTaskDataE,
               rights newTaskDataE
@@ -135,7 +136,7 @@ transformResponse searchResult =
       TaskData
         <$> (Just <$> getUpdatedAt issue)
         <*> pure (toLazy curl)
-        <*> (V.fromList <$> labels)
+        <*> (V.fromList <$> getLabelsE)
         <*> pure (toLazy $ getIssueID issue)
         <*> pure (toLazy $ getIssueURL issue)
         <*> pure (toLazy $ title issue)
@@ -143,8 +144,8 @@ transformResponse searchResult =
         <*> pure "low"
         <*> pure 0
       where
-        -- labels :: Either Text [Text]
-        labels = case partitionEithers (getLabels issue) of
+        getLabelsE :: Either Text [LText]
+        getLabelsE = case partitionEithers (getLabels issue) of
           (labels', []) -> Right (fmap toLazy labels')
           (_, errors) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
@@ -152,10 +153,10 @@ transformResponse searchResult =
         getIssueID :: SearchNodesSearchResultItem -> Text
         getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
     getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
-    getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt) _ _ _) =
-      case Timestamp.fromRFC3339 $ toLazy updatedAt of
+    getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt') _ _ _) =
+      case Timestamp.fromRFC3339 $ toLazy updatedAt' of
         Just ts -> Right ts
-        Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt
+        Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
     getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
     getLabels issue =
       case issue of
