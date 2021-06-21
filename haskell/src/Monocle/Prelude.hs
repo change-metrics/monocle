@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Utility functions
@@ -16,6 +17,10 @@ module Monocle.Prelude
     UTCTime,
     MonocleClient,
     getCurrentTime,
+
+    -- * System events
+    MonocleEvent (..),
+    monocleLogEvent,
   )
 where
 
@@ -23,6 +28,7 @@ import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value)
 import Data.Fixed (Fixed (..), HasResolution (resolution))
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Monocle.Api.Client.Internal (MonocleClient)
 import Relude
@@ -43,3 +49,14 @@ getExn (Left err) = error (toText err)
 
 monocleLog :: MonadIO m => Text -> m ()
 monocleLog = sayErr
+
+data MonocleEvent
+  = AddingChange BH.IndexName Int Int
+
+eventToText :: MonocleEvent -> Text
+eventToText ev = case ev of
+  AddingChange (BH.IndexName index) changes events ->
+    "Adding " <> show changes <> " changes with " <> show events <> " events to " <> index
+
+monocleLogEvent :: MonadIO m => MonocleEvent -> m ()
+monocleLogEvent = sayErr . eventToText

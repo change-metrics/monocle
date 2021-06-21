@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- |
+-- | The servant endpoint implementation
 module Monocle.Api.Server where
 
 import Data.Fixed (Deci)
@@ -26,6 +26,7 @@ import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import Proto3.Suite (Enumerated (..))
 
+-- | /health endpoint
 configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
 configHealth = const $ pure response
   where
@@ -43,20 +44,15 @@ fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
 fromPBEnum (Enumerated (Right x)) = x
 
+-- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {bhEnv = bhEnv, tenants = tenants} <- ask
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
+
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
     Right index -> case toEntity entity of
-      I.Project _ -> do
-        let indexName' = I.tenantIndexName index
-        -- putTextLn . toStrict $ "Indexing " <> show (length changes) <> " changes to " <> index
-        _ <- liftIO $ I.indexChanges bhEnv indexName' (map I.toELKChange $ toList changes)
-        -- putTextLn . toStrict $ "Indexing " <> show (length events) <> " events to " <> indexName
-        _ <- liftIO $ I.indexEvents bhEnv indexName' (map I.toELKChangeEvent $ toList events)
-        liftIO $ I.refreshIndex bhEnv indexName'
-        pure $ CrawlerPB.AddDocResponse Nothing
+      I.Project _ -> addChanges bhEnv index changes events
       I.Organization _ -> error "Organization entity not yet supported"
     Left err -> pure $ toErrorResponse err
   where
@@ -66,6 +62,14 @@ crawlerAddDoc request = do
       _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
       when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
       pure index
+
+    addChanges bhEnv index changes events = do
+      let indexName' = I.tenantIndexName index
+      monocleLogEvent $ AddingChange indexName' (length changes) (length events)
+      liftIO $ I.indexChanges bhEnv indexName' (map I.toELKChange $ toList changes)
+      liftIO $ I.indexEvents bhEnv indexName' (map I.toELKChangeEvent $ toList events)
+      liftIO $ I.refreshIndex bhEnv indexName'
+      pure $ CrawlerPB.AddDocResponse Nothing
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
