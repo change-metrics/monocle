@@ -59,6 +59,7 @@ library
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , bytestring                 >= 0.10
+                     , connection
                      , dhall                      ^>= 1.39
                      , dhall-yaml                 ^>= 1.2
                      , either                     ^>= 5

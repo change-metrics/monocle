@@ -19,6 +19,7 @@ module Monocle.Api.Client.Worker
 
     -- * Utility function
     retry,
+    mkManager,
     MonadMask,
   )
 where
