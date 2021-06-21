@@ -25,7 +25,7 @@ app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 
 run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
-  tenants' <- Config.loadConfig configFile
+  tenants' <- getExn <$> Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
   retry $ traverse_ (I.ensureIndex bhEnv') tenants'
   liftIO $

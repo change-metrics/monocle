@@ -37,7 +37,7 @@ orDie :: Maybe a -> b -> Either b a
 Just a `orDie` _ = Right a
 Nothing `orDie` err = Left err
 
-getExn :: Either String a -> a
+getExn :: (ToText e, HasCallStack) => Either e a -> a
 getExn (Right x) = x
 getExn (Left err) = error (toText err)
 
