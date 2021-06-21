@@ -71,9 +71,11 @@ lookupField :: Field -> Either Text (FieldType, Field, Text)
 lookupField name = maybe (Left $ "Unknown field: " <> name) Right (lookup name fields)
 
 parseDateValue :: Text -> Maybe UTCTime
-parseDateValue txt = case tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y" of
-  Just value -> pure value
-  Nothing -> Nothing
+parseDateValue txt =
+  maybe
+    Nothing
+    pure
+    (tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y")
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
 

@@ -122,7 +122,7 @@ crawlerCommitInfo request = do
         . Just
         . CrawlerPB.CommitInfoResponseResultEntity
         . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entityType (toLazy name))
-        $ (Just $ Timestamp.fromUTCTime ts)
+        $ Just (Timestamp.fromUTCTime ts)
     Left err -> pure $ toErrorResponse err
   where
     validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError (Config.Index, Config.Crawler)
@@ -283,18 +283,18 @@ searchChangesLifecycle indexName queryText = do
         let histo = Q.getHistoEventAgg bhEnv index
             histos =
               toHisto
-                <$> (histo $ queryType "ChangeCreatedEvent")
-                <*> (histo $ queryType "ChangeMergedEvent")
-                <*> (histo $ queryType "ChangeAbandonedEvent")
-                <*> (histo $ queryType "ChangeCommitPushedEvent")
-                <*> (histo $ queryType "ChangeCommitForcePushedEvent")
+                <$> histo (queryType "ChangeCreatedEvent")
+                <*> histo (queryType "ChangeMergedEvent")
+                <*> histo (queryType "ChangeAbandonedEvent")
+                <*> histo (queryType "ChangeCommitPushedEvent")
+                <*> histo (queryType "ChangeCommitForcePushedEvent")
 
         -- ratios
         let ratios =
               toRatio eventCounts
-                <$> (count $ queryType "ChangeCreatedEvent")
-                <*> (count $ queryType "ChangeCommitPushedEvent")
-                <*> (count $ queryType "ChangeCommitForcePushedEvent")
+                <$> count (queryType "ChangeCreatedEvent")
+                <*> count (queryType "ChangeCommitPushedEvent")
+                <*> count (queryType "ChangeCommitForcePushedEvent")
 
         -- duration aggregate
         let durationAgg =

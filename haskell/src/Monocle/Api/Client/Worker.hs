@@ -126,7 +126,7 @@ processBatch postFunc tds = do
   log $ LogPostData (length tds)
   resp <- postFunc tds
   pure $ case resp of
-    (AddSuccess) -> Amended
+    AddSuccess -> Amended
     (AddError err) -> AmendError (show err)
     _ -> AmendError "Unknown error"
 
@@ -161,9 +161,7 @@ run ::
   m ()
 run monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
-  since <- case sinceM of
-    Just ts -> pure ts
-    Nothing -> getTimestampFromApi
+  since <- maybe getTimestampFromApi pure sinceM
   process (retry . taskDataAdd monocleClient . mkRequest) (runFetcher tdf since)
   res <- retry $ commitTimestamp startTime
   log (if res then LogEnded else LogFailed)
@@ -184,7 +182,7 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
           putTextLn ("Commit failed: " <> show err)
           pure False
         _ -> do
-          putTextLn ("Empty commit response")
+          putTextLn "Empty commit response"
           pure False
     getTimestampFromApi = do
       resp <-

@@ -41,7 +41,7 @@ runQuery docType bhEnv index queryBase =
       resp <- fmap BH.hitSource <$> simpleSearch (BH.IndexName index) search
       pure $ catMaybes resp
   where
-    queryBH = maybe [] (\q -> [q]) $ Q.queryBH queryBase
+    queryBH = maybe [] ((: [])) $ Q.queryBH queryBase
     query =
       BH.QueryBoolQuery $
         BH.mkBoolQuery ([BH.TermQuery (BH.Term "type" docType) Nothing] <> queryBH) [] [] []
@@ -121,9 +121,9 @@ data EventCounts = EventCounts
 getEventCounts :: (MonadThrow m, MonadIO m) => BH.BHEnv -> BH.IndexName -> BH.Query -> m EventCounts
 getEventCounts bhEnv index query =
   EventCounts
-    <$> (count $ queryState "OPEN")
-      <*> (count $ queryState "MERGED")
-      <*> (count $ queryState "ABANDONED")
+    <$> count (queryState "OPEN")
+      <*> count (queryState "MERGED")
+      <*> count (queryState "ABANDONED")
       <*> count selfMergedQ
   where
     count = countEvents bhEnv index
