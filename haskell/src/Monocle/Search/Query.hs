@@ -91,12 +91,11 @@ parseRelativeDateValue now txt
     tryParseRange :: Text -> Maybe UTCTime
     tryParseRange txt' = do
       let countTxt = Text.takeWhile isDigit txt'
-          count :: Integer
-          count = fromMaybe (error $ "Invalid relative count: " <> txt') $ readMaybe (toString countTxt)
           valTxt = Text.dropWhileEnd (== 's') $ Text.drop (Text.length countTxt) txt'
           hour = 3600
           day = hour * 24
           week = day * 7
+      count <- readMaybe (toString countTxt)
       diffsec <-
         (* count) <$> case valTxt of
           "hour" -> Just hour
