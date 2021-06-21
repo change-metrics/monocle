@@ -6,10 +6,7 @@
 module Monocle.Backend.Index where
 
 import Data.Aeson
-  ( FromJSON,
-    KeyValue ((.=)),
-    ToJSON (toJSON),
-    Value,
+  ( KeyValue ((.=)),
     object,
   )
 import qualified Data.Text as Text
@@ -22,9 +19,9 @@ import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
-import Relude
 
 type MServerName = Text
 
@@ -461,13 +458,12 @@ type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
 
-getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> EntityType -> IO (Text, UTCTime)
-getLastUpdated bhEnv index crawler entity = do
-  BH.runBH bhEnv $ do
-    resp <- fmap BH.hitSource <$> (Q.simpleSearch index search :: BH.BH IO [BH.Hit ELKCrawlerMetadata])
-    case catMaybes resp of
-      [] -> error "Unsupported"
-      (x : _) -> pure $ getRespFromMetadata x
+getLastUpdated :: (MonadThrow m, BH.MonadBH m) => BH.IndexName -> Config.Crawler -> EntityType -> m (Text, UTCTime)
+getLastUpdated index crawler entity = do
+  resp <- fmap BH.hitSource <$> Q.simpleSearch index search
+  case catMaybes resp of
+    [] -> error "Unsupported"
+    (x : _) -> pure $ getRespFromMetadata x
   where
     search =
       (BH.mkSearch (Just query) Nothing)

@@ -115,12 +115,12 @@ crawlerCommit request = do
 -- | Returns the oldest entity
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  Env {tenants = tenants} <- ask
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
       entityType = fromPBEnum entity
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
     Right (index, worker) -> do
-      (name, ts) <- liftIO $ I.getLastUpdated bhEnv (I.tenantIndexName index) worker entityType
+      (name, ts) <- I.getLastUpdated (I.tenantIndexName index) worker entityType
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
