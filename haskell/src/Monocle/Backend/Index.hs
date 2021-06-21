@@ -247,16 +247,14 @@ mkEnv server = do
 tenantIndexName :: Config.Index -> BH.IndexName
 tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
 
-ensureIndex :: MonadIO m => BH.BHEnv -> Config.Index -> m BH.IndexName
-ensureIndex bhEnv config@Config.Index {..} = do
-  liftIO . BH.runBH bhEnv $ do
-    _respCI <- BH.createIndex indexSettings indexName
-    -- print respCI
-    _respPM <- BH.putMapping indexName ChangesIndexMapping
-    -- print respPM
-    True <- BH.indexExists indexName
-    pure ()
-  liftIO $ traverse_ (initCrawlerLastUpdatedFromWorkerConfig bhEnv indexName) (fromMaybe [] crawlers)
+ensureIndex :: (MonadFail m, BH.MonadBH m) => Config.Index -> m BH.IndexName
+ensureIndex config@Config.Index {..} = do
+  _respCI <- BH.createIndex indexSettings indexName
+  -- print respCI
+  _respPM <- BH.putMapping indexName ChangesIndexMapping
+  -- print respPM
+  True <- BH.indexExists indexName
+  traverse_ (initCrawlerLastUpdatedFromWorkerConfig indexName) (fromMaybe [] crawlers)
   pure indexName
   where
     indexName = tenantIndexName config
@@ -265,7 +263,7 @@ ensureIndex bhEnv config@Config.Index {..} = do
 createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
 createChangesIndex serverUrl config = do
   bhEnv <- mkEnv serverUrl
-  indexName <- ensureIndex bhEnv config
+  indexName <- BH.runBH bhEnv $ ensureIndex config
   pure (bhEnv, indexName)
 
 -- intC = fromInteger . toInteger
@@ -484,17 +482,16 @@ getLastUpdated index crawler entity = do
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
-setOrUpdateLastUpdated :: Bool -> BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
-setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entity = do
-  BH.runBH bhEnv $ do
-    exists <- BH.documentExists index id'
-    when ((exists && not doNotUpdate) || not exists) $ do
-      resp <-
-        if exists
-          then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-          else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-      _ <- BH.refreshIndex index
-      if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
+setOrUpdateLastUpdated :: BH.MonadBH m => Bool -> BH.IndexName -> Text -> UTCTime -> Entity -> m ()
+setOrUpdateLastUpdated doNotUpdate index crawlerName lastUpdatedDate entity = do
+  exists <- BH.documentExists index id'
+  when ((exists && not doNotUpdate) || not exists) $ do
+    resp <-
+      if exists
+        then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+        else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+    _ <- BH.refreshIndex index
+    if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
   where
     id' = getId entity
     cm =
@@ -511,13 +508,13 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
       Project _ -> "project"
       otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setLastUpdated :: BH.MonadBH m => BH.IndexName -> Text -> UTCTime -> Entity -> m ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> IO ()
-initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = traverse_ run entities
+initCrawlerLastUpdatedFromWorkerConfig :: BH.MonadBH m => BH.IndexName -> Config.Crawler -> m ()
+initCrawlerLastUpdatedFromWorkerConfig index worker = traverse_ run entities
   where
-    run = setOrUpdateLastUpdated True bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker)
+    run = setOrUpdateLastUpdated True index (getWorkerName worker) (getWorkerUpdatedSince worker)
     entities = Project <$> Config.getCrawlerProject worker
     getWorkerUpdatedSince Config.Crawler {..} =
       fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)

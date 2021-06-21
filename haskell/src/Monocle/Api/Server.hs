@@ -81,18 +81,16 @@ crawlerAddDoc request = do
 
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
-  Env {bhEnv = bhEnv, tenants = tenants} <- ask
+  Env {tenants = tenants} <- ask
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
     Right (index, ts') -> do
       _ <-
-        liftIO $
-          I.setLastUpdated
-            bhEnv
-            (I.tenantIndexName index)
-            (toStrict crawlerName)
-            (Timestamp.toUTCTime ts')
-            (toEntity entity)
+        I.setLastUpdated
+          (I.tenantIndexName index)
+          (toStrict crawlerName)
+          (Timestamp.toUTCTime ts')
+          (toEntity entity)
       pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
     Left err -> pure $ toErrorResponse err
   where

@@ -4,6 +4,7 @@
 -- |
 module Monocle.Api.CLI (run) where
 
+import qualified Database.Bloodhound as BH
 import Monocle.Api.Client.Worker (MonadLog, retry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
@@ -23,11 +24,11 @@ monocleAPI = Proxy
 app :: Env -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
 
-run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
+run :: (MonadMask m, MonadLog m, MonadIO m, MonadFail m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- getExn <$> Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
-  retry $ traverse_ (I.ensureIndex bhEnv') tenants'
+  retry $ BH.runBH bhEnv' $ traverse_ I.ensureIndex tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

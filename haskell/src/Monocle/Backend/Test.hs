@@ -163,31 +163,35 @@ testIndexChanges = withBH doTest
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
 
+-- | A lifted version of assertEqual
+assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
+assertEqual' n a b = liftIO $ assertEqual n a b
+
 testCrawlerMetadata :: Assertion
 testCrawlerMetadata = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (bhEnv, testIndex) = do
+    doTest (_bhEnv, testIndex) = do
       -- Init default crawler metadata and Ensure we get the default updated date
-      liftIO $ I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
+      I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
       lastUpdated <- I.getLastUpdated testIndex worker entityType
-      liftIO $ assertEqual "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-      liftIO $ I.setLastUpdated bhEnv testIndex crawlerName fakeDateB entity
-      liftIO $ I.setLastUpdated bhEnv testIndex crawlerName fakeDateA entityAlt
+      I.setLastUpdated testIndex crawlerName fakeDateB entity
+      I.setLastUpdated testIndex crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated testIndex worker entityType
-      liftIO $ assertEqual "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+      assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
-      liftIO $ I.setLastUpdated bhEnv testIndex crawlerName fakeDateC entity
+      I.setLastUpdated testIndex crawlerName fakeDateC entity
       lastUpdated'' <- I.getLastUpdated testIndex worker entityType
-      liftIO $ assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
+      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      liftIO $ I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
+      I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
       lastUpdated''' <- I.getLastUpdated testIndex worker entityType
-      liftIO $ assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
         entity = I.Project "nova"
