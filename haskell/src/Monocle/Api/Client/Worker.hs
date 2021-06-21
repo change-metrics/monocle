@@ -24,21 +24,20 @@ module Monocle.Api.Client.Worker
   )
 where
 
-import Control.Monad.Catch (Handler (Handler), MonadMask, MonadThrow)
+import Control.Monad.Catch (Handler (Handler))
 import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
-import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Client.Api
 import Monocle.Api.Client.Internal
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Prelude
 import Monocle.TaskData
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
 import Proto3.Suite.Types (Enumerated (..))
-import Relude
 import Streaming (Of, Stream)
 import qualified Streaming as S
 import qualified Streaming.Prelude as S
@@ -129,7 +128,7 @@ processBatch postFunc tds = do
   pure $ case resp of
     AddSuccess -> Amended
     (AddError err) -> AmendError (show err)
-    _ -> AmendError "Unknown error"
+    anyOtherResponse -> AmendError ("Unknown error: " <> show anyOtherResponse)
 
 process :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m ()
 process postFunc =
@@ -180,10 +179,10 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
       case commitResp of
         CommitSuccess -> pure True
         CommitError err -> do
-          putTextLn ("Commit failed: " <> show err)
+          monocleLog ("Commit failed: " <> show err)
           pure False
-        _ -> do
-          putTextLn "Empty commit response"
+        anyOtherResponse -> do
+          monocleLog ("Empty commit response: " <> show anyOtherResponse)
           pure False
     getTimestampFromApi = do
       resp <-
@@ -195,7 +194,8 @@ run monocleClient sinceM apiKey indexName crawlerName tdf = do
           )
       case resp of
         GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
-        _ -> error $ "Could not got initial timesamp: " <> show resp
+        anyOtherResponse ->
+          error $ "Could not got initial timesamp: " <> show anyOtherResponse
     mkRequest :: [TaskData] -> AddRequest
     mkRequest =
       AddRequest

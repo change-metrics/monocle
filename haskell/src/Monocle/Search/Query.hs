@@ -136,7 +136,7 @@ toRangeOp expr = case expr of
   LtExpr _ _ -> Lt
   GtEqExpr _ _ -> Gte
   LtEqExpr _ _ -> Lte
-  _ -> error "Unsupported range expression"
+  _anyOtherExpr -> error $ "Unsupported range expression"
 
 -- | dropTime ensures the encoded date does not have millisecond.
 -- This actually discard hour differences
@@ -181,7 +181,7 @@ mkRangeValue op field fieldType value = do
 
       pure $ toRangeValueD op date
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
-    _ -> toParseError . Left $ "Field " <> field <> " does not support range operator"
+    _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
@@ -253,7 +253,7 @@ mkEqQuery field value = do
       pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
-    _ -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
+    _anyOtherField -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 

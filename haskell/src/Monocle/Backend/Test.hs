@@ -17,9 +17,9 @@ import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
-import Monocle.Prelude hiding (head)
+import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
-import Relude.Unsafe (head, (!!))
+import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
 
 fakeDate :: UTCTime
@@ -216,7 +216,7 @@ testAchievements = withBH doTest
       indexScenario bhEnv testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
-      agg <- head <$> Q.getProjectAgg bhEnv testIndex query
+      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg bhEnv testIndex query
       assertEqual "event found" (Q.epbType agg) "Change"
       assertEqual "event count match" (Q.epbCount agg) 1
       where

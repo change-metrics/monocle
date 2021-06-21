@@ -38,7 +38,7 @@ pattern ProjectEntity project =
 toEntity :: Maybe CrawlerPB.Entity -> I.Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> I.Project $ toStrict projectName
-  _ -> error "Unknown Entity type"
+  otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
@@ -139,7 +139,7 @@ crawlerCommitInfo request = do
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
       CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> CrawlerPB.EntityEntityOrganizationName value
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> CrawlerPB.EntityEntityProjectName value
-      _ -> error "Not implemented"
+      otherEntity -> error $ "Not implemented: " <> show otherEntity
 
     toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
     toErrorResponse err =

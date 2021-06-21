@@ -142,4 +142,4 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
-  _ -> []
+  otherProvider -> error $ "Provider not supported: " <> show otherProvider

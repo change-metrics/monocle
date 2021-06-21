@@ -302,7 +302,7 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       elkchangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
-        _ -> Nothing
+        _anyOtherApprovals -> Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> LText
@@ -454,6 +454,7 @@ getLastUpdatedFromConfig :: UTCTime
 getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
 
 data Entity = Project {getName :: Text} | Organization {getName :: Text}
+  deriving (Eq, Show)
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
@@ -483,7 +484,7 @@ getLastUpdated bhEnv index crawler entity = do
     crawlerType :: EntityType -> Text
     crawlerType entity' = case entity' of
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-      _ -> error "Unsupported Entity"
+      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
@@ -512,7 +513,7 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
     getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
     crawlerType entity' = case entity' of
       Project _ -> "project"
-      _ -> error "Unsupported Entity"
+      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
 setLastUpdated = setOrUpdateLastUpdated False

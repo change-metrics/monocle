@@ -37,4 +37,4 @@ searchMain = do
   case args of
     ["--parse", query] -> putTextLn $ parseQuery now query
     [elkUrl, index, code] -> printQuery now elkUrl index code
-    _ -> putTextLn "usage: elk-url index query"
+    _otherArgs -> putTextLn "usage: elk-url index query"
