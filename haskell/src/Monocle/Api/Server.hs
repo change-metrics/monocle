@@ -172,33 +172,36 @@ crawlerCommitInfo request = do
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   Env {tenants = tenants} <- ask
-  let (SearchPB.QueryRequest indexName queryText) = request
+  let (SearchPB.QueryRequest {..}) = request
   now <- liftIO getCurrentTime
 
   let requestE =
         do
-          expr <- P.parse (toStrict queryText)
+          expr <- P.parse (toStrict queryRequestQuery)
 
           tenant <-
-            Config.lookupTenant tenants (toStrict indexName)
+            Config.lookupTenant tenants (toStrict queryRequestIndex)
               `orDie` ParseError "unknown tenant" 0
 
-          -- TODO: add field to the protobuf message
-          let username = mempty
+          query <-
+            Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
 
-          query <- Q.queryWithMods now username (Just tenant) expr
-
-          pure (tenant, query)
+          pure (tenant, query, fromPBEnum queryRequestQueryType)
 
   case requestE of
-    Right (tenant, query) -> runTenantM tenant $ do
-      monocleLogEvent $ Searching "changes" queryText query
-      SearchPB.QueryResponse . Just
-        . SearchPB.QueryResponseResultItems
-        . SearchPB.Changes
-        . V.fromList
-        . map toResult
-        <$> Q.changes query
+    Right (tenant, query, queryType) -> runTenantM tenant $ do
+      monocleLogEvent $ Searching queryType queryRequestQuery query
+
+      case queryType of
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChanges
+            . SearchPB.Changes
+            . V.fromList
+            . map toResult
+            <$> Q.changes query
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
+          error "LifeCycle Not Implemented"
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
