@@ -91,12 +91,12 @@ emptyConfig name =
 -- an instance for MonadBH (ReaderT BHEnv IO)
 type TestM = ReaderT BH.BHEnv IO
 
-withBH :: ((BH.BHEnv, BH.IndexName) -> TestM ()) -> IO ()
+withBH :: (BH.IndexName -> TestM ()) -> IO ()
 withBH cb = bracket create delete runBH
   where
     -- todo: generate random name
     testName = "test-index"
-    runBH x@(bhEnv, _) = flip runReaderT bhEnv $ cb x
+    runBH (bhEnv, index) = flip runReaderT bhEnv $ cb index
     create = I.createChangesIndex "http://localhost:9200" (emptyConfig testName)
     delete (bhEnv, testIndex) = do
       BH.runBH bhEnv $ do
@@ -125,8 +125,8 @@ checkChangesCount index expectedCount = do
 testIndexChanges :: Assertion
 testIndexChanges = withBH doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (_bhEnv, testIndex) = do
+    doTest :: BH.IndexName -> TestM ()
+    doTest testIndex = do
       -- Index two Changes and check present in database
       indexChanges [fakeChange1, fakeChange2]
       checkDocExists' $ I.getChangeDocId fakeChange1
@@ -166,8 +166,8 @@ assertEqual' n a b = liftIO $ assertEqual n a b
 testCrawlerMetadata :: Assertion
 testCrawlerMetadata = withBH doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (_bhEnv, testIndex) = do
+    doTest :: BH.IndexName -> TestM ()
+    doTest testIndex = do
       -- Init default crawler metadata and Ensure we get the default updated date
       I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
       lastUpdated <- I.getLastUpdated testIndex worker entityType
@@ -216,12 +216,12 @@ scenarioProject =
 testAchievements :: Assertion
 testAchievements = withBH doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (bhEnv, testIndex) = do
+    doTest :: BH.IndexName -> TestM ()
+    doTest testIndex = do
       indexScenario testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
-      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg bhEnv testIndex query
+      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg testIndex query
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where

@@ -186,12 +186,11 @@ searchQuery request = do
 
     go :: Q.Query -> AppM SearchPB.QueryResponseResult
     go query = do
-      Env {bhEnv = bhEnv} <- ask
       SearchPB.QueryResponseResultItems
         . SearchPB.Changes
         . V.fromList
         . map toResult
-        <$> Q.changes bhEnv index query
+        <$> Q.changes index query
 
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
@@ -261,28 +260,27 @@ searchFields = const $ pure response
 
 searchChangesLifecycle :: Text -> Text -> AppM SearchPB.ChangesLifecycle
 searchChangesLifecycle indexName queryText = do
-  Env {bhEnv = bhEnv} <- ask
   now <- liftIO getCurrentTime
-  response bhEnv now
+  response now
   where
     index = BH.IndexName $ "monocle.changes.1." <> indexName
 
     -- TODO: add field to the protobuf message
     username = mempty
 
-    response bhEnv now = case P.parse queryText >>= Q.queryWithMods now username Nothing of
+    response now = case P.parse queryText >>= Q.queryWithMods now username Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied
             bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
-            count = Q.countEvents bhEnv index
+            count = Q.countEvents index
             queryType = Q.documentType bhQuery
 
         -- get events count
-        eventCounts <- Q.getEventCounts bhEnv index bhQuery
+        eventCounts <- Q.getEventCounts index bhQuery
 
         -- histos
-        let histo = Q.getHistoEventAgg bhEnv index
+        let histo = Q.getHistoEventAgg index
             histos =
               toHisto
                 <$> histo (queryType "ChangeCreatedEvent")
@@ -300,7 +298,7 @@ searchChangesLifecycle indexName queryText = do
 
         -- duration aggregate
         let durationAgg =
-              Q.changeMergedStatsDuration bhEnv index bhQuery
+              Q.changeMergedStatsDuration index bhQuery
 
         -- create final result
         let result =

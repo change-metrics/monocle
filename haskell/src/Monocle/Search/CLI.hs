@@ -6,6 +6,7 @@ module Monocle.Search.CLI (searchMain) where
 
 import qualified Data.Aeson as Aeson
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import qualified Database.Bloodhound as BH
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Search.Parser as P
@@ -22,7 +23,7 @@ parseQuery now code = either show decodeUtf8 query
 printQuery :: MonadIO m => UTCTime -> Text -> Text -> Text -> m ()
 printQuery now elkUrl index code = do
   bhEnv <- I.mkEnv elkUrl
-  changes <- Q.changes bhEnv index query
+  changes <- liftIO $ BH.runBH bhEnv $ Q.changes index query
   mapM_ (putTextLn . show) (take 2 changes)
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where
