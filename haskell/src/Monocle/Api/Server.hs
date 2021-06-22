@@ -155,7 +155,6 @@ searchQuery request = do
   where
     queryText = toStrict $ SearchPB.queryRequestQuery request
     indexName = toStrict $ SearchPB.queryRequestIndex request
-    index = "monocle.changes.1." <> indexName
 
     -- TODO: add field to the protobuf message
     username = mempty
@@ -165,8 +164,8 @@ searchQuery request = do
 
     -- If the validation is a Left, use handleError, otherwise use go
     -- either :: (a -> c) -> (b -> c) -> Either a b -> c
-    handleValidation :: Either ParseError Q.Query -> AppM SearchPB.QueryResponseResult
-    handleValidation = either (pure . handleError) go
+    handleValidation :: Either ParseError (Config.Index, Q.Query) -> AppM SearchPB.QueryResponseResult
+    handleValidation = either (pure . handleError) (\(tenant, query) -> runTenantM tenant (go query))
 
     handleError :: ParseError -> SearchPB.QueryResponseResult
     handleError (ParseError msg offset) =
@@ -175,22 +174,23 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    validateRequest :: [Config.Index] -> UTCTime -> Either ParseError Q.Query
+    validateRequest :: [Config.Index] -> UTCTime -> Either ParseError (Config.Index, Q.Query)
     validateRequest tenants now = do
       -- Note: the bind (>>=) of Either stops when the value is a Left.
       expr <- P.parse queryText
       tenant <- case Config.lookupTenant tenants indexName of
         Nothing -> Left $ ParseError "unknown tenant" 0
         Just tenant -> Right tenant
-      Q.queryWithMods now username (Just tenant) expr
+      query <- Q.queryWithMods now username (Just tenant) expr
+      pure (tenant, query)
 
-    go :: Q.Query -> AppM SearchPB.QueryResponseResult
+    go :: Q.Query -> TenantM SearchPB.QueryResponseResult
     go query = do
       SearchPB.QueryResponseResultItems
         . SearchPB.Changes
         . V.fromList
         . map toResult
-        <$> Q.changes index query
+        <$> Q.changes query
 
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
