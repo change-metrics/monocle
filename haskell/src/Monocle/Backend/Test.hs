@@ -226,7 +226,7 @@ testAchievements = withTenant doTest
       indexScenario testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
-      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg testIndex query
+      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg query
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where

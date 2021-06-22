@@ -60,8 +60,9 @@ runQuery docType index queryBase = do
 changes :: (MonadThrow m, MonadBH m) => Text -> Q.Query -> m [ELKChange]
 changes = runQuery "Change"
 
-countEvents :: (MonadIO m, MonadBH m, MonadThrow m) => BH.IndexName -> BH.Query -> m Word32
-countEvents index query = do
+countEvents :: BH.Query -> TenantM Word32
+countEvents query = do
+  index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
   case resp of
     Left e -> error (show e)
@@ -91,13 +92,10 @@ documentType baseQuery type' =
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
 
-aggSearch ::
-  (MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Query -> BH.Aggregations -> m BH.AggregationResults
-aggSearch indexName query aggs = do
+aggSearch :: BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
+aggSearch query aggs = do
+  indexName <- getIndexName
   toAggRes <$> doSearch indexName (BH.mkAggregateSearch (Just query) aggs)
-
-runAggSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> BH.Query -> BH.Aggregations -> m BH.AggregationResults
-runAggSearch = aggSearch
 
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
@@ -114,15 +112,14 @@ data EventCounts = EventCounts
   }
   deriving (Eq, Show)
 
-getEventCounts :: (MonadThrow m, MonadBH m) => BH.IndexName -> BH.Query -> m EventCounts
-getEventCounts index query =
+getEventCounts :: BH.Query -> TenantM EventCounts
+getEventCounts query =
   EventCounts
-    <$> count (queryState "OPEN")
-      <*> count (queryState "MERGED")
-      <*> count (queryState "ABANDONED")
-      <*> count selfMergedQ
+    <$> countEvents (queryState "OPEN")
+      <*> countEvents (queryState "MERGED")
+      <*> countEvents (queryState "ABANDONED")
+      <*> countEvents selfMergedQ
   where
-    count = countEvents index
     bhQuery = query
     queryState = changeState bhQuery
     selfMergedQ = mkAnd [query, BH.TermQuery (BH.Term "self_merged" "true") Nothing]
@@ -152,10 +149,10 @@ instance FromJSON HistoEventAgg where
   parseJSON (Object v) = HistoEventAgg <$> v .: "buckets"
   parseJSON _ = mzero
 
-getHistoEventAgg :: (MonadIO m, MonadBH m, MonadThrow m) => BH.IndexName -> BH.Query -> m HistoEventAgg
-getHistoEventAgg index query =
+getHistoEventAgg :: BH.Query -> TenantM HistoEventAgg
+getHistoEventAgg query =
   parseAggregationResults "agg1"
-    <$> runAggSearch index query (Map.fromList [("agg1", histoEventAgg)])
+    <$> aggSearch query (Map.fromList [("agg1", histoEventAgg)])
 
 histoEventAgg :: BH.Aggregation
 histoEventAgg = BH.DateHistogramAgg dateAgg
@@ -240,8 +237,9 @@ instance FromJSON EventProjectBucketAggs where
   parseJSON (Object v) = EventProjectBucketAggs <$> v .: "buckets"
   parseJSON _ = mzero
 
-getProjectAgg :: (MonadIO m, MonadBH m, MonadThrow m) => BH.IndexName -> BH.Query -> m [EventProjectBucketAgg]
-getProjectAgg index query = do
+getProjectAgg :: BH.Query -> TenantM [EventProjectBucketAgg]
+getProjectAgg query = do
+  index <- getIndexName
   res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg query)
   pure $ unEPBuckets (parseAggregationResults "agg" res)
   where

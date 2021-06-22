@@ -271,8 +271,6 @@ searchChangesLifecycle indexName queryText = do
     Nothing -> error $ "Unknown tenant: " <> indexName
     Just tenant -> runTenantM tenant $ response now
   where
-    index = BH.IndexName $ "monocle.changes.1." <> indexName
-
     -- TODO: add field to the protobuf message
     username = mempty
 
@@ -281,14 +279,14 @@ searchChangesLifecycle indexName queryText = do
       Right query -> do
         let -- Helper functions ready to be applied
             bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
-            count = Q.countEvents index
+            count = Q.countEvents
             queryType = Q.documentType bhQuery
 
         -- get events count
-        eventCounts <- Q.getEventCounts index bhQuery
+        eventCounts <- Q.getEventCounts bhQuery
 
         -- histos
-        let histo = Q.getHistoEventAgg index
+        let histo = Q.getHistoEventAgg
             histos =
               toHisto
                 <$> histo (queryType "ChangeCreatedEvent")
