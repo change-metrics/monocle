@@ -363,22 +363,23 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
 
-indexDocs :: BH.MonadBH m => BH.IndexName -> [(Value, BH.DocId)] -> m ()
-indexDocs index docs = do
-  let stream = V.fromList $ fmap toBulkIndex docs
+indexDocs :: [(Value, BH.DocId)] -> TenantM ()
+indexDocs docs = do
+  index <- getIndexName
+  let stream = V.fromList $ fmap (toBulkIndex index) docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
-    toBulkIndex (doc, docId) = BH.BulkIndex index docId doc
+    toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
-indexChanges :: MonadBH m => BH.IndexName -> [ELKChange] -> m ()
-indexChanges index changes = indexDocs index $ fmap (toDoc . ensureType) changes
+indexChanges :: [ELKChange] -> TenantM ()
+indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
     ensureType change = change {elkchangeType = "Change"}
@@ -386,8 +387,8 @@ indexChanges index changes = indexDocs index $ fmap (toDoc . ensureType) changes
 getEventDocId :: ELKChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
 
-indexEvents :: MonadBH m => BH.IndexName -> [ELKChangeEvent] -> m ()
-indexEvents index events = indexDocs index (fmap toDoc events)
+indexEvents :: [ELKChangeEvent] -> TenantM ()
+indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 

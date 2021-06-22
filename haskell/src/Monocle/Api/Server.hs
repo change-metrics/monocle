@@ -8,7 +8,6 @@ module Monocle.Api.Server where
 
 import Data.Fixed (Deci)
 import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
@@ -51,8 +50,8 @@ crawlerAddDoc request = do
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
 
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
-    Right index -> case toEntity entity of
-      I.Project _ -> addChanges index changes events
+    Right index -> runTenantM index $ case toEntity entity of
+      I.Project _ -> addChanges changes events
       I.Organization _ -> error "Organization entity not yet supported"
     Left err -> pure $ toErrorResponse err
   where
@@ -63,12 +62,11 @@ crawlerAddDoc request = do
       when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
       pure index
 
-    addChanges index changes events = do
-      let indexName' = I.tenantIndexName' index
-      monocleLogEvent $ AddingChange indexName' (length changes) (length events)
-      I.indexChanges indexName' (map I.toELKChange $ toList changes)
-      I.indexEvents indexName' (map I.toELKChangeEvent $ toList events)
-      _ <- BH.refreshIndex indexName'
+    addChanges changes events = do
+      indexName <- getIndexName
+      monocleLogEvent $ AddingChange indexName (length changes) (length events)
+      I.indexChanges (map I.toELKChange $ toList changes)
+      I.indexEvents (map I.toELKChangeEvent $ toList events)
       pure $ CrawlerPB.AddDocResponse Nothing
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse

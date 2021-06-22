@@ -131,7 +131,7 @@ testIndexChanges = withTenant doTest
     doTest = do
       testIndex <- getIndexName
       -- Index two Changes and check present in database
-      I.indexChanges testIndex [fakeChange1, fakeChange2]
+      I.indexChanges [fakeChange1, fakeChange2]
       checkDocExists' testIndex $ I.getChangeDocId fakeChange1
       checkELKChangeField
         testIndex
@@ -145,7 +145,7 @@ testIndexChanges = withTenant doTest
         elkchangeTitle
         (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
-      I.indexChanges testIndex [fakeChange1Updated]
+      I.indexChanges [fakeChange1Updated]
       checkDocExists' testIndex $ I.getChangeDocId fakeChange1
       checkELKChangeField
         testIndex
@@ -222,8 +222,7 @@ testAchievements = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      testIndex <- getIndexName
-      indexScenario testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
+      indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
       agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg query
@@ -303,8 +302,8 @@ toDoc se = case se of
   SReview e -> (toJSON e, I.getEventDocId e)
   SMerge e -> (toJSON e, I.getEventDocId e)
 
-indexScenario :: MonadBH m => BH.IndexName -> [ScenarioEvent] -> m ()
-indexScenario testIndex xs = I.indexDocs testIndex $ fmap toDoc xs
+indexScenario :: [ScenarioEvent] -> TenantM ()
+indexScenario xs = I.indexDocs $ fmap toDoc xs
 
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
