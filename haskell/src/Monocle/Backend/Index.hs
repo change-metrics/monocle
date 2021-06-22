@@ -261,14 +261,6 @@ ensureIndex config@Config.Index {..} = do
     indexName = tenantIndexName' config
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
-createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
-createChangesIndex serverUrl config = do
-  bhEnv <- mkEnv serverUrl
-  indexName <- BH.runBH bhEnv $ ensureIndex config
-  pure (bhEnv, indexName)
-
--- intC = fromInteger . toInteger
-
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =
   Monocle.Backend.Documents.Author

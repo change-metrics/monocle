@@ -88,23 +88,6 @@ emptyConfig name =
       index = name
    in Config.Index {..}
 
--- | The TestM is the MonadBH + MonadIO because bloodhound already provides
--- an instance for MonadBH (ReaderT BHEnv IO)
-type TestM = ReaderT BH.BHEnv IO
-
-withBH :: (BH.IndexName -> TestM ()) -> IO ()
-withBH cb = bracket create delete runBH
-  where
-    -- todo: generate random name
-    testName = "test-index"
-    runBH (bhEnv, index) = flip runReaderT bhEnv $ cb index
-    create = I.createChangesIndex "http://localhost:9200" (emptyConfig testName)
-    delete (bhEnv, testIndex) = do
-      BH.runBH bhEnv $ do
-        _resp <- BH.deleteIndex testIndex
-        False <- BH.indexExists testIndex
-        pure ()
-
 withTenant :: TenantM () -> IO ()
 withTenant cb = bracket create delete toTenantM
   where
@@ -142,38 +125,39 @@ checkChangesCount index expectedCount = do
     Right countD -> assertEqual' "check change count" expectedCount (fromEnum $ BH.crCount countD)
 
 testIndexChanges :: Assertion
-testIndexChanges = withBH doTest
+testIndexChanges = withTenant doTest
   where
-    doTest :: BH.IndexName -> TestM ()
-    doTest testIndex = do
+    doTest :: TenantM ()
+    doTest = do
+      testIndex <- getIndexName
       -- Index two Changes and check present in database
-      indexChanges [fakeChange1, fakeChange2]
-      checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField'
+      I.indexChanges testIndex [fakeChange1, fakeChange2]
+      checkDocExists' testIndex $ I.getChangeDocId fakeChange1
+      checkELKChangeField
+        testIndex
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
         (elkchangeTitle fakeChange1)
-      checkDocExists' $ I.getChangeDocId fakeChange2
-      checkELKChangeField'
+      checkDocExists' testIndex $ I.getChangeDocId fakeChange2
+      checkELKChangeField
+        testIndex
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
         (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
-      indexChanges [fakeChange1Updated]
-      checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField'
+      I.indexChanges testIndex [fakeChange1Updated]
+      checkDocExists' testIndex $ I.getChangeDocId fakeChange1
+      checkELKChangeField
+        testIndex
         (I.getChangeDocId fakeChange1Updated)
         elkchangeTitle
         (elkchangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
-      checkChangeCount' 2
+      checkChangesCount testIndex 2
       where
-        indexChanges = I.indexChanges testIndex
-        checkDocExists' dId = do
+        checkDocExists' testIndex dId = do
           exists <- I.checkDocExists testIndex dId
           assertEqual' "check doc exists" exists True
-        checkELKChangeField' = checkELKChangeField testIndex
-        checkChangeCount' = checkChangesCount testIndex
         fakeChange1 = mkFakeChange 1 "My change 1"
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
@@ -234,10 +218,11 @@ scenarioProject =
   SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
 
 testAchievements :: Assertion
-testAchievements = withBH doTest
+testAchievements = withTenant doTest
   where
-    doTest :: BH.IndexName -> TestM ()
-    doTest testIndex = do
+    doTest :: TenantM ()
+    doTest = do
+      testIndex <- getIndexName
       indexScenario testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
