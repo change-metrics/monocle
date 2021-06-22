@@ -106,15 +106,16 @@ withTenant cb = bracket create delete toTenantM
         pure ()
     toTenantM (bhEnv, config) = runTenantM' bhEnv config cb
 
-checkELKChangeField :: (Show a, Eq a, MonadBH m, MonadThrow m) => BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> m ()
-checkELKChangeField index docId field value = do
-  docM <- I.getDocument index docId
+checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
+checkELKChangeField docId field value = do
+  docM <- I.getDocument docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
 
-checkChangesCount :: (MonadIO m, MonadBH m, MonadThrow m) => BH.IndexName -> Int -> m ()
-checkChangesCount index expectedCount = do
+checkChangesCount :: Int -> TenantM ()
+checkChangesCount expectedCount = do
+  index <- getIndexName
   resp <-
     BH.countByIndex
       index
@@ -129,34 +130,30 @@ testIndexChanges = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      testIndex <- getIndexName
       -- Index two Changes and check present in database
       I.indexChanges [fakeChange1, fakeChange2]
-      checkDocExists' testIndex $ I.getChangeDocId fakeChange1
+      checkDocExists' $ I.getChangeDocId fakeChange1
       checkELKChangeField
-        testIndex
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
         (elkchangeTitle fakeChange1)
-      checkDocExists' testIndex $ I.getChangeDocId fakeChange2
+      checkDocExists' $ I.getChangeDocId fakeChange2
       checkELKChangeField
-        testIndex
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
         (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       I.indexChanges [fakeChange1Updated]
-      checkDocExists' testIndex $ I.getChangeDocId fakeChange1
+      checkDocExists' $ I.getChangeDocId fakeChange1
       checkELKChangeField
-        testIndex
         (I.getChangeDocId fakeChange1Updated)
         elkchangeTitle
         (elkchangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
-      checkChangesCount testIndex 2
+      checkChangesCount 2
       where
-        checkDocExists' testIndex dId = do
-          exists <- I.checkDocExists testIndex dId
+        checkDocExists' dId = do
+          exists <- I.checkDocExists dId
           assertEqual' "check doc exists" exists True
         fakeChange1 = mkFakeChange 1 "My change 1"
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}

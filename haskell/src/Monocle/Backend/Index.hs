@@ -244,9 +244,6 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-tenantIndexName' :: Config.Index -> BH.IndexName
-tenantIndexName' Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
-
 ensureIndex :: TenantM ()
 ensureIndex = do
   indexName <- getIndexName
@@ -398,13 +395,15 @@ statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 isNotFound :: BH.Reply -> Bool
 isNotFound = statusCheck (== 404)
 
-checkDocExists :: MonadBH m => BH.IndexName -> BH.DocId -> m Bool
-checkDocExists index docId = do
+checkDocExists :: BH.DocId -> TenantM Bool
+checkDocExists docId = do
+  index <- getIndexName
   BH.documentExists index docId
 
-getDocument :: (FromJSON a, MonadBH m, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
-getDocument index dId = do
-  resp <- BH.getDocument index dId
+getDocument :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
+getDocument docId = do
+  index <- getIndexName
+  resp <- BH.getDocument index docId
   if isNotFound resp
     then pure Nothing
     else do
@@ -416,9 +415,7 @@ getDocument index dId = do
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
 
-type CrawlerMetadataDocId = BH.DocId
-
-getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
+getCrawlerMetadataDocId :: Text -> Text -> Text -> BH.DocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
   BH.DocId . Text.replace "/" "@" $
     Text.intercalate
@@ -427,9 +424,6 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerType,
         crawlerTypeValue
       ]
-
-getCrawlerMetadata :: (MonadBH m, MonadThrow m) => BH.IndexName -> CrawlerMetadataDocId -> m (Maybe ELKCrawlerMetadata)
-getCrawlerMetadata = getDocument
 
 getLastUpdatedFromConfig :: UTCTime
 getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
