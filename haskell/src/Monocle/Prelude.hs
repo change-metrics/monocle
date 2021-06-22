@@ -18,6 +18,9 @@ module Monocle.Prelude
     MonocleClient,
     getCurrentTime,
 
+    -- * bloodhound
+    BH.MonadBH,
+
     -- * System events
     MonocleEvent (..),
     monocleLogEvent,

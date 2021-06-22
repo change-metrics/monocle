@@ -104,32 +104,29 @@ withBH cb = bracket create delete runBH
         False <- BH.indexExists testIndex
         pure ()
 
-checkELKChangeField :: (Show a, Eq a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> IO ()
-checkELKChangeField bhEnv index docId field value = do
-  docM <- I.getDocument bhEnv index docId :: IO (Maybe ELKChange)
+checkELKChangeField :: (Show a, Eq a, MonadBH m, MonadThrow m) => BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> m ()
+checkELKChangeField index docId field value = do
+  docM <- I.getDocument index docId
   case docM of
-    Just change -> doCheck field value change
+    Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
-  where
-    doCheck :: (Show a, Eq a) => (ELKChange -> a) -> a -> ELKChange -> Assertion
-    doCheck field' value' change = assertEqual "change field match" (field' change) value'
 
-checkChangesCount :: BH.BHEnv -> BH.IndexName -> Int -> IO ()
-checkChangesCount bhEnv index expectedCount = do
-  resp <- BH.runBH bhEnv $ do
+checkChangesCount :: (MonadIO m, MonadBH m, MonadThrow m) => BH.IndexName -> Int -> m ()
+checkChangesCount index expectedCount = do
+  resp <-
     BH.countByIndex
       index
       ( BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing)
       )
   case resp of
     Left _ -> error "Couldn't count changes"
-    Right countD -> assertEqual "check change count" expectedCount (fromEnum $ BH.crCount countD)
+    Right countD -> assertEqual' "check change count" expectedCount (fromEnum $ BH.crCount countD)
 
 testIndexChanges :: Assertion
 testIndexChanges = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (bhEnv, testIndex) = liftIO $ do
+    doTest (_bhEnv, testIndex) = do
       -- Index two Changes and check present in database
       indexChanges [fakeChange1, fakeChange2]
       checkDocExists' $ I.getChangeDocId fakeChange1
@@ -152,13 +149,12 @@ testIndexChanges = withBH doTest
       -- Check total count of Change document in the database
       checkChangeCount' 2
       where
-        indexChanges = I.indexChanges bhEnv testIndex
+        indexChanges = I.indexChanges testIndex
         checkDocExists' dId = do
-          exists <- I.checkDocExists bhEnv testIndex dId
-          assertEqual "check doc exists" exists True
-        checkELKChangeField' :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> IO ()
-        checkELKChangeField' = checkELKChangeField bhEnv testIndex
-        checkChangeCount' = checkChangesCount bhEnv testIndex
+          exists <- I.checkDocExists testIndex dId
+          assertEqual' "check doc exists" exists True
+        checkELKChangeField' = checkELKChangeField testIndex
+        checkChangeCount' = checkChangesCount testIndex
         fakeChange1 = mkFakeChange 1 "My change 1"
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
@@ -221,13 +217,13 @@ testAchievements :: Assertion
 testAchievements = withBH doTest
   where
     doTest :: (BH.BHEnv, BH.IndexName) -> TestM ()
-    doTest (bhEnv, testIndex) = liftIO $ do
-      indexScenario bhEnv testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
+    doTest (bhEnv, testIndex) = do
+      indexScenario testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
       agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg bhEnv testIndex query
-      assertEqual "event found" (Q.epbType agg) "Change"
-      assertEqual "event count match" (Q.epbCount agg) 1
+      assertEqual' "event found" (Q.epbType agg) "Change"
+      assertEqual' "event count match" (Q.epbCount agg) 1
       where
         query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
@@ -302,8 +298,8 @@ toDoc se = case se of
   SReview e -> (toJSON e, I.getEventDocId e)
   SMerge e -> (toJSON e, I.getEventDocId e)
 
-indexScenario :: BH.BHEnv -> BH.IndexName -> [ScenarioEvent] -> IO ()
-indexScenario bhEnv testIndex xs = I.indexDocs bhEnv testIndex $ fmap toDoc xs
+indexScenario :: MonadBH m => BH.IndexName -> [ScenarioEvent] -> m ()
+indexScenario testIndex xs = I.indexDocs testIndex $ fmap toDoc xs
 
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]

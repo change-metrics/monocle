@@ -371,13 +371,8 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
 
-refreshIndex :: BH.BHEnv -> BH.IndexName -> IO ()
-refreshIndex bhEnv index = BH.runBH bhEnv $ do
-  _ <- BH.refreshIndex index
-  pure ()
-
-indexDocs :: BH.BHEnv -> BH.IndexName -> [(Value, BH.DocId)] -> IO ()
-indexDocs bhEnv index docs = BH.runBH bhEnv $ do
+indexDocs :: BH.MonadBH m => BH.IndexName -> [(Value, BH.DocId)] -> m ()
+indexDocs index docs = do
   let stream = V.fromList $ fmap toBulkIndex docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
@@ -390,8 +385,8 @@ indexDocs bhEnv index docs = BH.runBH bhEnv $ do
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
-indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
-indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureType) changes
+indexChanges :: MonadBH m => BH.IndexName -> [ELKChange] -> m ()
+indexChanges index changes = indexDocs index $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
     ensureType change = change {elkchangeType = "Change"}
@@ -399,8 +394,8 @@ indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureT
 getEventDocId :: ELKChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
 
-indexEvents :: BH.BHEnv -> BH.IndexName -> [ELKChangeEvent] -> IO ()
-indexEvents bhEnv index events = indexDocs bhEnv index (fmap toDoc events)
+indexEvents :: MonadBH m => BH.IndexName -> [ELKChangeEvent] -> m ()
+indexEvents index events = indexDocs index (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 
@@ -410,22 +405,20 @@ statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 isNotFound :: BH.Reply -> Bool
 isNotFound = statusCheck (== 404)
 
-checkDocExists :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO Bool
-checkDocExists bhEnv index docId = do
-  BH.runBH bhEnv $ do
-    BH.documentExists index docId
+checkDocExists :: MonadBH m => BH.IndexName -> BH.DocId -> m Bool
+checkDocExists index docId = do
+  BH.documentExists index docId
 
-getDocument :: (FromJSON a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> IO (Maybe a)
-getDocument bhEnv index dId = do
-  BH.runBH bhEnv $ do
-    resp <- BH.getDocument index dId
-    if isNotFound resp
-      then pure Nothing
-      else do
-        parsed <- BH.parseEsResponse resp
-        case parsed of
-          Right cm -> pure . getHit $ BH.foundResult cm
-          Left _ -> error "Unable to get parse result"
+getDocument :: (FromJSON a, MonadBH m, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
+getDocument index dId = do
+  resp <- BH.getDocument index dId
+  if isNotFound resp
+    then pure Nothing
+    else do
+      parsed <- BH.parseEsResponse resp
+      case parsed of
+        Right cm -> pure . getHit $ BH.foundResult cm
+        Left _ -> error "Unable to get parse result"
   where
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
@@ -442,7 +435,7 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
-getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
+getCrawlerMetadata :: (MonadBH m, MonadThrow m) => BH.IndexName -> CrawlerMetadataDocId -> m (Maybe ELKCrawlerMetadata)
 getCrawlerMetadata = getDocument
 
 getLastUpdatedFromConfig :: UTCTime
