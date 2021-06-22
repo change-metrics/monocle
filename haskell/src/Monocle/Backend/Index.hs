@@ -247,17 +247,17 @@ mkEnv server = do
 tenantIndexName' :: Config.Index -> BH.IndexName
 tenantIndexName' Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
 
-ensureIndex :: (MonadFail m, BH.MonadBH m) => Config.Index -> m BH.IndexName
-ensureIndex config@Config.Index {..} = do
+ensureIndex :: TenantM ()
+ensureIndex = do
+  indexName <- getIndexName
+  config <- getIndexConfig
   _respCI <- BH.createIndex indexSettings indexName
   -- print respCI
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ (initCrawlerLastUpdatedFromWorkerConfig indexName) (fromMaybe [] crawlers)
-  pure indexName
+  traverse_ initCrawlerLastUpdatedFromWorkerConfig (fromMaybe [] (Config.crawlers config))
   where
-    indexName = tenantIndexName' config
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
@@ -469,8 +469,9 @@ getLastUpdated crawler entity = do
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
-setOrUpdateLastUpdated :: BH.MonadBH m => Bool -> BH.IndexName -> Text -> UTCTime -> Entity -> m ()
-setOrUpdateLastUpdated doNotUpdate index crawlerName lastUpdatedDate entity = do
+setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
+setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
+  index <- getIndexName
   exists <- BH.documentExists index id'
   when ((exists && not doNotUpdate) || not exists) $ do
     resp <-
@@ -495,13 +496,13 @@ setOrUpdateLastUpdated doNotUpdate index crawlerName lastUpdatedDate entity = do
       Project _ -> "project"
       otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setLastUpdated :: BH.MonadBH m => BH.IndexName -> Text -> UTCTime -> Entity -> m ()
+setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: BH.MonadBH m => BH.IndexName -> Config.Crawler -> m ()
-initCrawlerLastUpdatedFromWorkerConfig index worker = traverse_ run entities
+initCrawlerLastUpdatedFromWorkerConfig :: Config.Crawler -> TenantM ()
+initCrawlerLastUpdatedFromWorkerConfig worker = traverse_ run entities
   where
-    run = setOrUpdateLastUpdated True index (getWorkerName worker) (getWorkerUpdatedSince worker)
+    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
     entities = Project <$> Config.getCrawlerProject worker
     getWorkerUpdatedSince Config.Crawler {..} =
       fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)

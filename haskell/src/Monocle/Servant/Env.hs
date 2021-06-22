@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The api configuration environment
-module Monocle.Servant.Env (Env (..), AppM (..), TenantM, runTenantM, runTenantM', tenantIndexName, getIndexName) where
+module Monocle.Servant.Env (Env (..), AppM (..), TenantM, runTenantM, runTenantM', tenantIndexName, getIndexName, getIndexConfig) where
 
 import Control.Monad.Catch (MonadThrow)
 import qualified Database.Bloodhound as BH
@@ -60,6 +60,9 @@ instance BH.MonadBH TenantM where
 
 getIndexName :: TenantM BH.IndexName
 getIndexName = tenantIndexName <$> asks tenant
+
+getIndexConfig :: TenantM Config.Index
+getIndexConfig = asks tenant
 
 instance MonadFail AppM where
   fail = error . toText

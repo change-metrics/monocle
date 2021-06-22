@@ -96,7 +96,7 @@ withTenant cb = bracket create delete toTenantM
     create = do
       bhEnv <- I.mkEnv "http://localhost:9200"
       let config = emptyConfig testName
-      _ <- BH.runBH bhEnv $ I.ensureIndex config
+      _ <- runTenantM' bhEnv config I.ensureIndex
       pure (bhEnv, config)
     delete (bhEnv, config) = do
       BH.runBH bhEnv $ do
@@ -171,25 +171,24 @@ testCrawlerMetadata = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      testIndex <- getIndexName
       -- Init default crawler metadata and Ensure we get the default updated date
-      I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
+      I.initCrawlerLastUpdatedFromWorkerConfig worker
       lastUpdated <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-      I.setLastUpdated testIndex crawlerName fakeDateB entity
-      I.setLastUpdated testIndex crawlerName fakeDateA entityAlt
+      I.setLastUpdated crawlerName fakeDateB entity
+      I.setLastUpdated crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
-      I.setLastUpdated testIndex crawlerName fakeDateC entity
+      I.setLastUpdated crawlerName fakeDateC entity
       lastUpdated'' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
+      I.initCrawlerLastUpdatedFromWorkerConfig worker
       lastUpdated''' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where

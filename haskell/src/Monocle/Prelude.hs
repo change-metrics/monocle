@@ -28,6 +28,7 @@ module Monocle.Prelude
     -- * Application context
     TenantM,
     getIndexName,
+    getIndexConfig,
   )
 where
 
