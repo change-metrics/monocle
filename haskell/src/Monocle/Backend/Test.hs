@@ -19,6 +19,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
+import Monocle.Servant.Env
 import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
 
@@ -104,6 +105,24 @@ withBH cb = bracket create delete runBH
         False <- BH.indexExists testIndex
         pure ()
 
+withTenant :: TenantM () -> IO ()
+withTenant cb = bracket create delete toTenantM
+  where
+    -- todo: generate random name
+    testName = "test-tenant"
+    create = do
+      bhEnv <- I.mkEnv "http://localhost:9200"
+      let config = emptyConfig testName
+      _ <- BH.runBH bhEnv $ I.ensureIndex config
+      pure (bhEnv, config)
+    delete (bhEnv, config) = do
+      BH.runBH bhEnv $ do
+        let testIndex = tenantIndexName config
+        _resp <- BH.deleteIndex testIndex
+        False <- BH.indexExists testIndex
+        pure ()
+    toTenantM (bhEnv, config) = runTenantM' bhEnv config cb
+
 checkELKChangeField :: (Show a, Eq a, MonadBH m, MonadThrow m) => BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> m ()
 checkELKChangeField index docId field value = do
   docM <- I.getDocument index docId
@@ -164,29 +183,30 @@ assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
 assertEqual' n a b = liftIO $ assertEqual n a b
 
 testCrawlerMetadata :: Assertion
-testCrawlerMetadata = withBH doTest
+testCrawlerMetadata = withTenant doTest
   where
-    doTest :: BH.IndexName -> TestM ()
-    doTest testIndex = do
+    doTest :: TenantM ()
+    doTest = do
+      testIndex <- getIndexName
       -- Init default crawler metadata and Ensure we get the default updated date
       I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
-      lastUpdated <- I.getLastUpdated testIndex worker entityType
+      lastUpdated <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
       I.setLastUpdated testIndex crawlerName fakeDateB entity
       I.setLastUpdated testIndex crawlerName fakeDateA entityAlt
-      lastUpdated' <- I.getLastUpdated testIndex worker entityType
+      lastUpdated' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
       I.setLastUpdated testIndex crawlerName fakeDateC entity
-      lastUpdated'' <- I.getLastUpdated testIndex worker entityType
+      lastUpdated'' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
       I.initCrawlerLastUpdatedFromWorkerConfig testIndex worker
-      lastUpdated''' <- I.getLastUpdated testIndex worker entityType
+      lastUpdated''' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject

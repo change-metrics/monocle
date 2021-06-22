@@ -64,7 +64,7 @@ crawlerAddDoc request = do
       pure index
 
     addChanges index changes events = do
-      let indexName' = I.tenantIndexName index
+      let indexName' = I.tenantIndexName' index
       monocleLogEvent $ AddingChange indexName' (length changes) (length events)
       I.indexChanges indexName' (map I.toELKChange $ toList changes)
       I.indexEvents indexName' (map I.toELKChangeEvent $ toList events)
@@ -87,7 +87,7 @@ crawlerCommit request = do
     Right (index, ts') -> do
       _ <-
         I.setLastUpdated
-          (I.tenantIndexName index)
+          (I.tenantIndexName' index)
           (toStrict crawlerName)
           (Timestamp.toUTCTime ts')
           (toEntity entity)
@@ -117,8 +117,8 @@ crawlerCommitInfo request = do
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
       entityType = fromPBEnum entity
   case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
-    Right (index, worker) -> do
-      (name, ts) <- I.getLastUpdated (I.tenantIndexName index) worker entityType
+    Right (index, worker) -> runTenantM index $ do
+      (name, ts) <- I.getLastUpdated worker entityType
       pure
         . CrawlerPB.CommitInfoResponse
         . Just

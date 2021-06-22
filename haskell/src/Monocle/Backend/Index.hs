@@ -20,6 +20,7 @@ import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
+import Monocle.Servant.Env
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 
@@ -244,8 +245,8 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-tenantIndexName :: Config.Index -> BH.IndexName
-tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
+tenantIndexName' :: Config.Index -> BH.IndexName
+tenantIndexName' Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
 
 ensureIndex :: (MonadFail m, BH.MonadBH m) => Config.Index -> m BH.IndexName
 ensureIndex config@Config.Index {..} = do
@@ -257,7 +258,7 @@ ensureIndex config@Config.Index {..} = do
   traverse_ (initCrawlerLastUpdatedFromWorkerConfig indexName) (fromMaybe [] crawlers)
   pure indexName
   where
-    indexName = tenantIndexName config
+    indexName = tenantIndexName' config
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
 createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
@@ -449,8 +450,9 @@ type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
 
-getLastUpdated :: (MonadThrow m, BH.MonadBH m) => BH.IndexName -> Config.Crawler -> EntityType -> m (Text, UTCTime)
-getLastUpdated index crawler entity = do
+getLastUpdated :: Config.Crawler -> EntityType -> TenantM (Text, UTCTime)
+getLastUpdated crawler entity = do
+  index <- getIndexName
   resp <- fmap BH.hitSource <$> Q.simpleSearch index search
   case catMaybes resp of
     [] -> error "Unsupported"
