@@ -642,13 +642,18 @@ components:
             properties:
                 index:
                     type: string
+                username:
+                    type: string
                 query:
                     type: string
+                query_type:
+                    type: integer
+                    format: enum
         QueryResponse:
             properties:
                 error:
                     $ref: '#/components/schemas/QueryError'
-                items:
+                changes:
                     $ref: '#/components/schemas/Changes'
         SearchSuggestionsRequest:
             properties:

@@ -39,9 +39,15 @@ type query_error = {
   position : int32;
 }
 
+type query_request_query_type =
+  | Query_change 
+  | Query_change_lifecycle 
+
 type query_request = {
   index : string;
+  username : string;
   query : string;
+  query_type : query_request_query_type;
 }
 
 type file = {
@@ -98,7 +104,7 @@ type changes = {
 
 type query_response =
   | Error of query_error
-  | Items of changes
+  | Changes of changes
 
 type changes_histos_event = {
   doc_count : int32;
@@ -194,12 +200,18 @@ let rec default_query_error
   position;
 }
 
+let rec default_query_request_query_type () = (Query_change:query_request_query_type)
+
 let rec default_query_request 
   ?index:((index:string) = "")
+  ?username:((username:string) = "")
   ?query:((query:string) = "")
+  ?query_type:((query_type:query_request_query_type) = default_query_request_query_type ())
   () : query_request  = {
   index;
+  username;
   query;
+  query_type;
 }
 
 let rec default_file 

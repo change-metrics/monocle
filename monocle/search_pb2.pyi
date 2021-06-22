@@ -178,19 +178,46 @@ global___QueryError = QueryError
 
 class QueryRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class _QueryType(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[QueryType.V],
+        builtins.type,
+    ):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
+        QUERY_CHANGE = QueryRequest.QueryType.V(0)
+        QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
+    class QueryType(metaclass=_QueryType):
+        V = typing.NewType("V", builtins.int)
+    QUERY_CHANGE = QueryRequest.QueryType.V(0)
+    QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
+
     INDEX_FIELD_NUMBER: builtins.int
+    USERNAME_FIELD_NUMBER: builtins.int
     QUERY_FIELD_NUMBER: builtins.int
+    QUERY_TYPE_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
+    username: typing.Text = ...
     query: typing.Text = ...
+    query_type: global___QueryRequest.QueryType.V = ...
     def __init__(
         self,
         *,
         index: typing.Text = ...,
+        username: typing.Text = ...,
         query: typing.Text = ...,
+        query_type: global___QueryRequest.QueryType.V = ...,
     ) -> None: ...
     def ClearField(
         self,
-        field_name: typing_extensions.Literal["index", b"index", "query", b"query"],
+        field_name: typing_extensions.Literal[
+            "index",
+            b"index",
+            "query",
+            b"query",
+            "query_type",
+            b"query_type",
+            "username",
+            b"username",
+        ],
     ) -> None: ...
 
 global___QueryRequest = QueryRequest
@@ -489,32 +516,32 @@ global___Changes = Changes
 class QueryResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ERROR_FIELD_NUMBER: builtins.int
-    ITEMS_FIELD_NUMBER: builtins.int
+    CHANGES_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
-    def items(self) -> global___Changes: ...
+    def changes(self) -> global___Changes: ...
     def __init__(
         self,
         *,
         error: typing.Optional[global___QueryError] = ...,
-        items: typing.Optional[global___Changes] = ...,
+        changes: typing.Optional[global___Changes] = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
-            "error", b"error", "items", b"items", "result", b"result"
+            "changes", b"changes", "error", b"error", "result", b"result"
         ],
     ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "error", b"error", "items", b"items", "result", b"result"
+            "changes", b"changes", "error", b"error", "result", b"result"
         ],
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error", "items"]: ...
+    ) -> typing_extensions.Literal["error", "changes"]: ...
 
 global___QueryResponse = QueryResponse
 
