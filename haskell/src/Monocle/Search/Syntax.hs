@@ -1,8 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The Monocle Search Language Syntax
-module Monocle.Search.Syntax (Expr (..), SortOrder (..), ParseError (..)) where
+module Monocle.Search.Syntax (Expr (..), SortOrder (..), ParseError (..), Query (..)) where
 
+import Data.Time.Clock (UTCTime)
+import qualified Database.Bloodhound as BH
 import Relude
 
 type Field = Text
@@ -28,3 +30,18 @@ data Expr
 
 data ParseError = ParseError Text Int
   deriving (Show, Eq)
+
+data Query = Query
+  { queryOrder :: Maybe (Text, SortOrder),
+    queryLimit :: Int,
+    queryBH :: Maybe BH.Query,
+    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
+    -- It defaults to (now-3weeks, now)
+    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
+    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
+    -- It keeps the maximum minbound and minimum maxbound, e.g.
+    --  `date>2020 and date>2021` results in (2021, now).
+    -- The goal is to get an approximate bound for histo grams queries.
+    queryBounds :: (UTCTime, UTCTime)
+  }
+  deriving (Show)

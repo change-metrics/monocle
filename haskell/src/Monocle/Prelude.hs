@@ -21,6 +21,9 @@ module Monocle.Prelude
     -- * bloodhound
     BH.MonadBH,
 
+    -- * Shared types
+    Entity (..),
+
     -- * System events
     MonocleEvent (..),
     monocleLogEvent,
@@ -33,12 +36,14 @@ module Monocle.Prelude
 where
 
 import Control.Monad.Catch (MonadMask, MonadThrow)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Fixed (..), HasResolution (resolution))
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Monocle.Api.Client.Internal (MonocleClient)
+import qualified Monocle.Api.Config as Config
+import Monocle.Search.Syntax
 import Monocle.Servant.Env
 import Relude
 import Say (sayErr)
@@ -59,13 +64,25 @@ getExn (Left err) = error (toText err)
 monocleLog :: MonadIO m => Text -> m ()
 monocleLog = sayErr
 
+data Entity = Project {getName :: Text} | Organization {getName :: Text}
+  deriving (Eq, Show)
+
 data MonocleEvent
-  = AddingChange BH.IndexName Int Int
+  = AddingChange LText Int Int
+  | UpdatingEntity LText Entity UTCTime
+  | Searching LText LText Query
 
 eventToText :: MonocleEvent -> Text
 eventToText ev = case ev of
-  AddingChange (BH.IndexName index) changes events ->
-    "Adding " <> show changes <> " changes with " <> show events <> " events to " <> index
+  AddingChange crawler changes events ->
+    toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
+  UpdatingEntity crawler entity ts ->
+    toStrict crawler <> " updating " <> show entity <> " to " <> show ts
+  Searching name queryText query ->
+    let jsonQuery = decodeUtf8 . encode $ queryBH query
+     in "searching " <> toStrict name <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
 
-monocleLogEvent :: MonadIO m => MonocleEvent -> m ()
-monocleLogEvent = sayErr . eventToText
+monocleLogEvent :: MonocleEvent -> TenantM ()
+monocleLogEvent ev = do
+  tenant <- getIndexConfig
+  sayErr $ Config.index tenant <> ": " <> eventToText ev

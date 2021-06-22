@@ -34,9 +34,9 @@ configHealth = const $ pure response
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
 
-toEntity :: Maybe CrawlerPB.Entity -> I.Entity
+toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
-  ProjectEntity projectName -> I.Project $ toStrict projectName
+  ProjectEntity projectName -> Project $ toStrict projectName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 fromPBEnum :: Enumerated a -> a
@@ -49,22 +49,29 @@ crawlerAddDoc request = do
   Env {tenants = tenants} <- ask
   let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
 
-  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) of
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict indexName)
+            `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
+
+        _crawler <-
+          Config.lookupCrawler index (toStrict crawlerName)
+            `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
+
+        when
+          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
+
+        pure index
+
+  case requestE of
     Right index -> runTenantM index $ case toEntity entity of
-      I.Project _ -> addChanges changes events
-      I.Organization _ -> error "Organization entity not yet supported"
+      Project _ -> addChanges crawlerName changes events
+      Organization _ -> error "Organization entity not yet supported"
     Left err -> pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Either CrawlerPB.AddDocError Config.Index
-    validateRequest tenants indexName crawlerName apiKey = do
-      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
-      _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
-      when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
-      pure index
-
-    addChanges changes events = do
-      indexName <- getIndexName
-      monocleLogEvent $ AddingChange indexName (length changes) (length events)
+    addChanges crawlerName changes events = do
+      monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
       I.indexChanges (map I.toELKChange $ toList changes)
       I.indexEvents (map I.toELKChangeEvent $ toList events)
       pure $ CrawlerPB.AddDocResponse Nothing
@@ -77,25 +84,42 @@ crawlerAddDoc request = do
         . Enumerated
         $ Right err
 
+-- | /crawler/commit endpoint
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
   Env {tenants = tenants} <- ask
-  let (CrawlerPB.CommitRequest indexName crawlerName apiKey entity timestampM) = request
-  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) (toStrict apiKey) timestampM of
-    Right (index, ts') -> runTenantM index $ do
-      _ <-
-        I.setLastUpdated (toStrict crawlerName) (Timestamp.toUTCTime ts') (toEntity entity)
-      pure $ CrawlerPB.CommitResponse (Just $ CrawlerPB.CommitResponseResultTimestamp ts')
-    Left err -> pure $ toErrorResponse err
-  where
-    validateRequest :: [Config.Index] -> Text -> Text -> Text -> Maybe Timestamp -> Either CrawlerPB.CommitError (Config.Index, Timestamp)
-    validateRequest tenants indexName crawlerName apiKey timestampM = do
-      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
-      _crawler <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
-      when (Config.crawlers_api_key index /= Just apiKey) (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
-      ts <- timestampM `orDie` CrawlerPB.CommitErrorCommitDateMissing
-      pure (index, ts)
+  let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict indexName)
+            `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
+
+        _crawler <-
+          Config.lookupCrawler index (toStrict crawlerName)
+            `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
+
+        when
+          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
+
+        ts <-
+          timestampM
+            `orDie` CrawlerPB.CommitErrorCommitDateMissing
+
+        pure (index, ts, toEntity entityPB)
+
+  case requestE of
+    Right (index, ts, entity) -> runTenantM index $ do
+      let date = Timestamp.toUTCTime ts
+      monocleLogEvent $ UpdatingEntity crawlerName entity date
+
+      _ <- I.setLastUpdated (toStrict crawlerName) date entity
+
+      pure . CrawlerPB.CommitResponse . Just $
+        CrawlerPB.CommitResponseResultTimestamp ts
+    Left err -> pure . toErrorResponse $ err
+  where
     toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
     toErrorResponse err =
       CrawlerPB.CommitResponse
@@ -104,13 +128,25 @@ crawlerCommit request = do
         . Enumerated
         $ Right err
 
--- | Returns the oldest entity
+-- | /crawler/get_commit_info endpoint
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
   Env {tenants = tenants} <- ask
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
       entityType = fromPBEnum entity
-  case validateRequest tenants (toStrict indexName) (toStrict crawlerName) of
+
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict indexName)
+            `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
+
+        worker <-
+          Config.lookupCrawler index (toStrict crawlerName)
+            `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
+
+        pure (index, worker)
+
+  case requestE of
     Right (index, worker) -> runTenantM index $ do
       (name, ts) <- I.getLastUpdated worker entityType
       pure
@@ -119,14 +155,9 @@ crawlerCommitInfo request = do
         . CrawlerPB.CommitInfoResponseResultEntity
         . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entityType (toLazy name))
         $ Just (Timestamp.fromUTCTime ts)
-    Left err -> pure $ toErrorResponse err
+    Left err ->
+      pure $ toErrorResponse err
   where
-    validateRequest :: [Config.Index] -> Text -> Text -> Either CrawlerPB.CommitInfoError (Config.Index, Config.Crawler)
-    validateRequest tenants indexName crawlerName = do
-      index <- Config.lookupTenant tenants indexName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
-      worker <- Config.lookupCrawler index crawlerName `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
-      pure (index, worker)
-
     fromEntityType :: CrawlerPB.CommitInfoRequest_EntityType -> LText -> CrawlerPB.Entity
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
       CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> CrawlerPB.EntityEntityOrganizationName value
@@ -141,50 +172,46 @@ crawlerCommitInfo request = do
         . Enumerated
         $ Right err
 
+-- | /search/query endpoint
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   Env {tenants = tenants} <- ask
+  let (SearchPB.QueryRequest indexName queryText) = request
   now <- liftIO getCurrentTime
-  toResponse <$> handleValidation (validateRequest tenants now)
-  where
-    queryText = toStrict $ SearchPB.queryRequestQuery request
-    indexName = toStrict $ SearchPB.queryRequestIndex request
 
-    -- TODO: add field to the protobuf message
-    username = mempty
+  let requestE =
+        do
+          expr <- P.parse (toStrict queryText)
 
-    toResponse :: SearchPB.QueryResponseResult -> QueryResponse
-    toResponse = SearchPB.QueryResponse . Just
+          tenant <-
+            Config.lookupTenant tenants (toStrict indexName)
+              `orDie` ParseError "unknown tenant" 0
 
-    -- If the validation is a Left, use handleError, otherwise use go
-    -- either :: (a -> c) -> (b -> c) -> Either a b -> c
-    handleValidation :: Either ParseError (Config.Index, Q.Query) -> AppM SearchPB.QueryResponseResult
-    handleValidation = either (pure . handleError) (\(tenant, query) -> runTenantM tenant (go query))
+          -- TODO: add field to the protobuf message
+          let username = mempty
 
-    handleError :: ParseError -> SearchPB.QueryResponseResult
-    handleError (ParseError msg offset) =
-      SearchPB.QueryResponseResultError $
-        SearchPB.QueryError
-          (toLazy msg)
-          (fromInteger . toInteger $ offset)
+          query <- Q.queryWithMods now username (Just tenant) expr
 
-    validateRequest :: [Config.Index] -> UTCTime -> Either ParseError (Config.Index, Q.Query)
-    validateRequest tenants now = do
-      -- Note: the bind (>>=) of Either stops when the value is a Left.
-      expr <- P.parse queryText
-      tenant <- case Config.lookupTenant tenants indexName of
-        Nothing -> Left $ ParseError "unknown tenant" 0
-        Just tenant -> Right tenant
-      query <- Q.queryWithMods now username (Just tenant) expr
-      pure (tenant, query)
+          pure (tenant, query)
 
-    go :: Q.Query -> TenantM SearchPB.QueryResponseResult
-    go query = do
-      SearchPB.QueryResponseResultItems
+  case requestE of
+    Right (tenant, query) -> runTenantM tenant $ do
+      monocleLogEvent $ Searching "changes" queryText query
+      SearchPB.QueryResponse . Just
+        . SearchPB.QueryResponseResultItems
         . SearchPB.Changes
         . V.fromList
         . map toResult
         <$> Q.changes query
+    Left err -> pure . handleError $ err
+  where
+    handleError :: ParseError -> SearchPB.QueryResponse
+    handleError (ParseError msg offset) =
+      SearchPB.QueryResponse . Just
+        . SearchPB.QueryResponseResultError
+        $ SearchPB.QueryError
+          (toLazy msg)
+          (fromInteger . toInteger $ offset)
 
     toResult :: ELKChange -> SearchPB.Change
     toResult change =
@@ -215,8 +242,10 @@ searchQuery request = do
           changeMergedAt = toTS =<< elkchangeMergedAt change
           changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< elkchangeMergedBy change
        in SearchPB.Change {..}
+
     toTS = Just . Timestamp.fromUTCTime
     toFile File {..} = SearchPB.File {..}
+
     toCommit :: Commit -> SearchPB.Commit
     toCommit Commit {..} =
       let commitSha = elkcommitSha
@@ -228,6 +257,7 @@ searchQuery request = do
           commitAdditions = elkcommitAdditions
           commitDeletions = elkcommitDeletions
        in SearchPB.Commit {..}
+
     toTaskData :: TaskData -> TaskDataPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing

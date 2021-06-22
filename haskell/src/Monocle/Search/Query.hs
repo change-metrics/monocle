@@ -17,7 +17,7 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
+import Monocle.Search.Syntax
 
 -- $setup
 -- >>> import Monocle.Search.Parser as P
@@ -291,21 +291,6 @@ query expr = case expr of
   e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
   OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
-
-data Query = Query
-  { queryOrder :: Maybe (Field, SortOrder),
-    queryLimit :: Int,
-    queryBH :: Maybe BH.Query,
-    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
-    -- It defaults to (now-3weeks, now)
-    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
-    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
-    -- It keeps the maximum minbound and minimum maxbound, e.g.
-    --  `date>2020 and date>2021` results in (2021, now).
-    -- The goal is to get an approximate bound for histo grams queries.
-    queryBounds :: (UTCTime, UTCTime)
-  }
-  deriving (Show)
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now username indexM baseExprM =

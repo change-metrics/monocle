@@ -428,9 +428,6 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
 getLastUpdatedFromConfig :: UTCTime
 getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
 
-data Entity = Project {getName :: Text} | Organization {getName :: Text}
-  deriving (Eq, Show)
-
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
 getWorkerName :: Config.Crawler -> Text

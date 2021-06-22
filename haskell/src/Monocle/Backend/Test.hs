@@ -190,8 +190,8 @@ testCrawlerMetadata = withTenant doTest
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
-        entity = I.Project "nova"
-        entityAlt = I.Project "neutron"
+        entity = Project "nova"
+        entityAlt = Project "neutron"
         crawlerName = "test-crawler"
         worker =
           let name = crawlerName
