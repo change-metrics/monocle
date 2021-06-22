@@ -258,10 +258,18 @@ searchFields = const $ pure response
           fieldType = Enumerated . Right $ fieldType'
        in SearchPB.Field {..}
 
+lookupTenant :: Text -> AppM (Maybe Config.Index)
+lookupTenant name = do
+  Env {tenants = tenants} <- ask
+  pure $ Config.lookupTenant tenants name
+
 searchChangesLifecycle :: Text -> Text -> AppM SearchPB.ChangesLifecycle
 searchChangesLifecycle indexName queryText = do
   now <- liftIO getCurrentTime
-  response now
+  tenantM <- lookupTenant indexName
+  case tenantM of
+    Nothing -> error $ "Unknown tenant: " <> indexName
+    Just tenant -> runTenantM tenant $ response now
   where
     index = BH.IndexName $ "monocle.changes.1." <> indexName
 
@@ -298,7 +306,7 @@ searchChangesLifecycle indexName queryText = do
 
         -- duration aggregate
         let durationAgg =
-              Q.changeMergedStatsDuration index bhQuery
+              Q.changeMergedStatsDuration bhQuery
 
         -- create final result
         let result =

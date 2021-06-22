@@ -184,9 +184,9 @@ data MergedStatsDuration = MergedStatsDuration
 field :: Text -> Value
 field name = Aeson.object ["field" .= name]
 
-changeMergedStatsDuration ::
-  (MonadThrow m, MonadBH m) => BH.IndexName -> BH.Query -> m MergedStatsDuration
-changeMergedStatsDuration index query = do
+changeMergedStatsDuration :: BH.Query -> TenantM MergedStatsDuration
+changeMergedStatsDuration query = do
+  index <- getIndexName
   res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg query)
   pure $ MergedStatsDuration (getAggValue "avg" res) (getAggValue "variability" res)
   where

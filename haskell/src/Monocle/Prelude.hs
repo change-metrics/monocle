@@ -24,6 +24,10 @@ module Monocle.Prelude
     -- * System events
     MonocleEvent (..),
     monocleLogEvent,
+
+    -- * Application context
+    TenantM,
+    getIndexName,
   )
 where
 
@@ -34,6 +38,7 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Monocle.Api.Client.Internal (MonocleClient)
+import Monocle.Servant.Env
 import Relude
 import Say (sayErr)
 

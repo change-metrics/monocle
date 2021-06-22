@@ -8,9 +8,10 @@
 -- | The api configuration environment
 module Monocle.Servant.Env (Env (..), AppM (..), TenantM, runTenantM, runTenantM', tenantIndexName, getIndexName) where
 
+import Control.Monad.Catch (MonadThrow)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
-import Monocle.Prelude
+import Relude
 import Servant (Handler)
 
 -- | 'Env' is the global environment

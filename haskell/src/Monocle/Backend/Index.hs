@@ -20,7 +20,6 @@ import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
-import Monocle.Servant.Env
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 
