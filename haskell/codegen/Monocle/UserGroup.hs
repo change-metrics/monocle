@@ -306,3 +306,636 @@ instance HsJSONPB.ToSchema ListResponse where
                   }
             }
         )
+
+data ReviewHisto = ReviewHisto
+  { reviewHistoDate :: Hs.Word64,
+    reviewHistoCount :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ReviewHisto where
+  nameOf _ = (Hs.fromString "ReviewHisto")
+
+instance HsProtobuf.HasDefault ReviewHisto
+
+instance HsProtobuf.Message ReviewHisto where
+  encodeMessage
+    _
+    ReviewHisto
+      { reviewHistoDate = reviewHistoDate,
+        reviewHistoCount = reviewHistoCount
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                reviewHistoDate
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                reviewHistoCount
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ReviewHisto)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt64)
+          (HsProtobuf.Single "date")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "count")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ReviewHisto where
+  toJSONPB (ReviewHisto f1 f2) =
+    (HsJSONPB.object ["date" .= f1, "count" .= f2])
+  toEncodingPB (ReviewHisto f1 f2) =
+    (HsJSONPB.pairs ["date" .= f1, "count" .= f2])
+
+instance HsJSONPB.FromJSONPB ReviewHisto where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ReviewHisto"
+        ( \obj ->
+            (Hs.pure ReviewHisto) <*> obj .: "date" <*> obj .: "count"
+        )
+    )
+
+instance HsJSONPB.ToJSON ReviewHisto where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ReviewHisto where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ReviewHisto where
+  declareNamedSchema _ =
+    do
+      let declare_date = HsJSONPB.declareSchemaRef
+      reviewHistoDate <- declare_date Proxy.Proxy
+      let declare_count = HsJSONPB.declareSchemaRef
+      reviewHistoCount <- declare_count Proxy.Proxy
+      let _ =
+            Hs.pure ReviewHisto <*> HsJSONPB.asProxy declare_date
+              <*> HsJSONPB.asProxy declare_count
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ReviewHisto",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("date", reviewHistoDate),
+                          ("count", reviewHistoCount)
+                        ]
+                  }
+            }
+        )
+
+data GroupStat = GroupStat
+  { groupStatChangeReviewRatio :: Hs.Float,
+    groupStatAuthorReviewRatio :: Hs.Float,
+    groupStatReviewHisto :: Hs.Vector Monocle.UserGroup.ReviewHisto
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GroupStat where
+  nameOf _ = (Hs.fromString "GroupStat")
+
+instance HsProtobuf.HasDefault GroupStat
+
+instance HsProtobuf.Message GroupStat where
+  encodeMessage
+    _
+    GroupStat
+      { groupStatChangeReviewRatio = groupStatChangeReviewRatio,
+        groupStatAuthorReviewRatio = groupStatAuthorReviewRatio,
+        groupStatReviewHisto = groupStatReviewHisto
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                groupStatChangeReviewRatio
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                groupStatAuthorReviewRatio
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Monocle.UserGroup.ReviewHisto)
+                    @(HsProtobuf.NestedVec Monocle.UserGroup.ReviewHisto)
+                    groupStatReviewHisto
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GroupStat)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.UserGroup.ReviewHisto))
+              @(_ (Hs.Vector Monocle.UserGroup.ReviewHisto))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "change_review_ratio")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "author_review_ratio")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "ReviewHisto"))
+          )
+          (HsProtobuf.Single "review_histo")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GroupStat where
+  toJSONPB (GroupStat f1 f2 f3) =
+    ( HsJSONPB.object
+        [ "change_review_ratio" .= f1,
+          "author_review_ratio" .= f2,
+          "review_histo" .= f3
+        ]
+    )
+  toEncodingPB (GroupStat f1 f2 f3) =
+    ( HsJSONPB.pairs
+        [ "change_review_ratio" .= f1,
+          "author_review_ratio" .= f2,
+          "review_histo" .= f3
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB GroupStat where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GroupStat"
+        ( \obj ->
+            (Hs.pure GroupStat) <*> obj .: "change_review_ratio"
+              <*> obj .: "author_review_ratio"
+              <*> obj .: "review_histo"
+        )
+    )
+
+instance HsJSONPB.ToJSON GroupStat where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GroupStat where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GroupStat where
+  declareNamedSchema _ =
+    do
+      let declare_change_review_ratio = HsJSONPB.declareSchemaRef
+      groupStatChangeReviewRatio <-
+        declare_change_review_ratio
+          Proxy.Proxy
+      let declare_author_review_ratio = HsJSONPB.declareSchemaRef
+      groupStatAuthorReviewRatio <-
+        declare_author_review_ratio
+          Proxy.Proxy
+      let declare_review_histo = HsJSONPB.declareSchemaRef
+      groupStatReviewHisto <- declare_review_histo Proxy.Proxy
+      let _ =
+            Hs.pure GroupStat
+              <*> HsJSONPB.asProxy declare_change_review_ratio
+              <*> HsJSONPB.asProxy declare_author_review_ratio
+              <*> HsJSONPB.asProxy declare_review_histo
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GroupStat",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "change_review_ratio",
+                            groupStatChangeReviewRatio
+                          ),
+                          ( "author_review_ratio",
+                            groupStatAuthorReviewRatio
+                          ),
+                          ("review_histo", groupStatReviewHisto)
+                        ]
+                  }
+            }
+        )
+
+data UserStat = UserStat
+  { userStatName :: Hs.Text,
+    userStatStat :: Hs.Maybe Monocle.UserGroup.GroupStat
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named UserStat where
+  nameOf _ = (Hs.fromString "UserStat")
+
+instance HsProtobuf.HasDefault UserStat
+
+instance HsProtobuf.Message UserStat where
+  encodeMessage
+    _
+    UserStat {userStatName = userStatName, userStatStat = userStatStat} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                userStatName
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Maybe Monocle.UserGroup.GroupStat)
+                    @(HsProtobuf.Nested Monocle.UserGroup.GroupStat)
+                    userStatStat
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure UserStat)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.UserGroup.GroupStat))
+              @(_ (Hs.Maybe Monocle.UserGroup.GroupStat))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "GroupStat"))
+          )
+          (HsProtobuf.Single "stat")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB UserStat where
+  toJSONPB (UserStat f1 f2) =
+    (HsJSONPB.object ["name" .= f1, "stat" .= f2])
+  toEncodingPB (UserStat f1 f2) =
+    (HsJSONPB.pairs ["name" .= f1, "stat" .= f2])
+
+instance HsJSONPB.FromJSONPB UserStat where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "UserStat"
+        (\obj -> (Hs.pure UserStat) <*> obj .: "name" <*> obj .: "stat")
+    )
+
+instance HsJSONPB.ToJSON UserStat where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON UserStat where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema UserStat where
+  declareNamedSchema _ =
+    do
+      let declare_name = HsJSONPB.declareSchemaRef
+      userStatName <- declare_name Proxy.Proxy
+      let declare_stat = HsJSONPB.declareSchemaRef
+      userStatStat <- declare_stat Proxy.Proxy
+      let _ =
+            Hs.pure UserStat <*> HsJSONPB.asProxy declare_name
+              <*> HsJSONPB.asProxy declare_stat
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "UserStat",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("name", userStatName),
+                          ("stat", userStatStat)
+                        ]
+                  }
+            }
+        )
+
+data GetRequest = GetRequest
+  { getRequestIndex :: Hs.Text,
+    getRequestName :: Hs.Text,
+    getRequestQuery :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetRequest where
+  nameOf _ = (Hs.fromString "GetRequest")
+
+instance HsProtobuf.HasDefault GetRequest
+
+instance HsProtobuf.Message GetRequest where
+  encodeMessage
+    _
+    GetRequest
+      { getRequestIndex = getRequestIndex,
+        getRequestName = getRequestName,
+        getRequestQuery = getRequestQuery
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                getRequestIndex
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                getRequestName
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                getRequestQuery
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "index")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "query")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetRequest where
+  toJSONPB (GetRequest f1 f2 f3) =
+    (HsJSONPB.object ["index" .= f1, "name" .= f2, "query" .= f3])
+  toEncodingPB (GetRequest f1 f2 f3) =
+    (HsJSONPB.pairs ["index" .= f1, "name" .= f2, "query" .= f3])
+
+instance HsJSONPB.FromJSONPB GetRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetRequest"
+        ( \obj ->
+            (Hs.pure GetRequest) <*> obj .: "index" <*> obj .: "name"
+              <*> obj .: "query"
+        )
+    )
+
+instance HsJSONPB.ToJSON GetRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetRequest where
+  declareNamedSchema _ =
+    do
+      let declare_index = HsJSONPB.declareSchemaRef
+      getRequestIndex <- declare_index Proxy.Proxy
+      let declare_name = HsJSONPB.declareSchemaRef
+      getRequestName <- declare_name Proxy.Proxy
+      let declare_query = HsJSONPB.declareSchemaRef
+      getRequestQuery <- declare_query Proxy.Proxy
+      let _ =
+            Hs.pure GetRequest <*> HsJSONPB.asProxy declare_index
+              <*> HsJSONPB.asProxy declare_name
+              <*> HsJSONPB.asProxy declare_query
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("index", getRequestIndex),
+                          ("name", getRequestName),
+                          ("query", getRequestQuery)
+                        ]
+                  }
+            }
+        )
+
+data GetResponse = GetResponse
+  { getResponseAll ::
+      Hs.Maybe Monocle.UserGroup.GroupStat,
+    getResponseUsers :: Hs.Vector Monocle.UserGroup.UserStat
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetResponse where
+  nameOf _ = (Hs.fromString "GetResponse")
+
+instance HsProtobuf.HasDefault GetResponse
+
+instance HsProtobuf.Message GetResponse where
+  encodeMessage
+    _
+    GetResponse
+      { getResponseAll = getResponseAll,
+        getResponseUsers = getResponseUsers
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Monocle.UserGroup.GroupStat)
+                    @(HsProtobuf.Nested Monocle.UserGroup.GroupStat)
+                    getResponseAll
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Vector Monocle.UserGroup.UserStat)
+                    @(HsProtobuf.NestedVec Monocle.UserGroup.UserStat)
+                    getResponseUsers
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetResponse)
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.UserGroup.GroupStat))
+              @(_ (Hs.Maybe Monocle.UserGroup.GroupStat))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.UserGroup.UserStat))
+              @(_ (Hs.Vector Monocle.UserGroup.UserStat))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "GroupStat"))
+          )
+          (HsProtobuf.Single "all")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "UserStat"))
+          )
+          (HsProtobuf.Single "users")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetResponse where
+  toJSONPB (GetResponse f1 f2) =
+    (HsJSONPB.object ["all" .= f1, "users" .= f2])
+  toEncodingPB (GetResponse f1 f2) =
+    (HsJSONPB.pairs ["all" .= f1, "users" .= f2])
+
+instance HsJSONPB.FromJSONPB GetResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetResponse"
+        ( \obj ->
+            (Hs.pure GetResponse) <*> obj .: "all" <*> obj .: "users"
+        )
+    )
+
+instance HsJSONPB.ToJSON GetResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetResponse where
+  declareNamedSchema _ =
+    do
+      let declare_all = HsJSONPB.declareSchemaRef
+      getResponseAll <- declare_all Proxy.Proxy
+      let declare_users = HsJSONPB.declareSchemaRef
+      getResponseUsers <- declare_users Proxy.Proxy
+      let _ =
+            Hs.pure GetResponse <*> HsJSONPB.asProxy declare_all
+              <*> HsJSONPB.asProxy declare_users
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("all", getResponseAll),
+                          ("users", getResponseUsers)
+                        ]
+                  }
+            }
+        )

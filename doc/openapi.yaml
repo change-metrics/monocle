@@ -190,6 +190,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_search_QueryResponse'
+    /api/2/user_group/get:
+        post:
+            operationId: UserGroup_Get
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_user_group_GetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_user_group_GetResponse'
     /api/2/user_group/list:
         post:
             operationId: UserGroup_List
@@ -754,6 +770,22 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
+        monocle_user_group_GetRequest:
+            properties:
+                index:
+                    type: string
+                name:
+                    type: string
+                query:
+                    type: string
+        monocle_user_group_GetResponse:
+            properties:
+                all:
+                    $ref: '#/components/schemas/monocle_user_group_GroupStat'
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_user_group_UserStat'
         monocle_user_group_GroupDefinition:
             properties:
                 name:
@@ -761,6 +793,18 @@ components:
                 members:
                     type: integer
                     format: uint32
+        monocle_user_group_GroupStat:
+            properties:
+                change_review_ratio:
+                    type: number
+                    format: float
+                author_review_ratio:
+                    type: number
+                    format: float
+                review_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_user_group_ReviewHisto'
         monocle_user_group_ListRequest:
             properties:
                 index:
@@ -771,3 +815,17 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_user_group_GroupDefinition'
+        monocle_user_group_ReviewHisto:
+            properties:
+                date:
+                    type: integer
+                    format: uint64
+                count:
+                    type: integer
+                    format: uint32
+        monocle_user_group_UserStat:
+            properties:
+                name:
+                    type: string
+                stat:
+                    $ref: '#/components/schemas/monocle_user_group_GroupStat'

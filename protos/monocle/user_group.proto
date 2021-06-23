@@ -17,3 +17,30 @@ message ListRequest {
 message ListResponse {
   repeated GroupDefinition items = 1;
 }
+
+message ReviewHisto {
+  uint64 date = 1;
+  uint32 count = 2;
+}
+
+message GroupStat {
+  float change_review_ratio = 1;
+  float author_review_ratio = 2;
+  repeated ReviewHisto review_histo = 3;
+}
+
+message UserStat {
+  string name = 1;
+  GroupStat stat = 2;
+}
+
+message GetRequest {
+  string index = 1;
+  string name = 2;
+  string query = 3;
+}
+
+message GetResponse {
+  GroupStat all = 1;
+  repeated UserStat users = 2;
+}

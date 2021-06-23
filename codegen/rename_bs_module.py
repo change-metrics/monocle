@@ -35,6 +35,7 @@ def fix_field_name(content):
         )
         .replace("Task_data_types", "TaskDataTypes")
         .replace("Task_data_bs", "TaskDataBs")
+        .replace("Ratio", "_ratio")
     )
 
 

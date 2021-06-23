@@ -72,6 +72,15 @@ module UserGroup = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->UserGroupBs.decode_list_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external getRaw: (string, 'a) => axios<'b> = "post"
+
+  let get = (request: UserGroupTypes.get_request): axios<UserGroupTypes.get_response> =>
+    request->UserGroupBs.encode_get_request
+    |> getRaw(serverUrl ++ "/api/2/user_group/get")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->UserGroupBs.decode_get_response}->Js.Promise.resolve
+    )
 }
 
 module TaskData = {

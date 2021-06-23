@@ -35,6 +35,9 @@ searchQuery = monocleReq "api/2/search/query"
 userGroupList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
 userGroupList = monocleReq "api/2/user_group/list"
 
+userGroupGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
+userGroupGet = monocleReq "api/2/user_group/get"
+
 taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
 taskDataCommit = monocleReq "api/1/task_data_commit"
 

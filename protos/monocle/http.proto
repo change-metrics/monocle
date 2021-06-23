@@ -65,6 +65,13 @@ service UserGroup {
       body: "*"
     };
   }
+  rpc Get(monocle_user_group.GetRequest)
+      returns (monocle_user_group.GetResponse) {
+    option (google.api.http) = {
+      post: "/api/2/user_group/get"
+      body: "*"
+    };
+  }
 }
 
 service TaskData {
