@@ -50,6 +50,12 @@ class IndexMenu extends React.Component {
           </Link>
           <Link
             className="nav-link"
+            to={'/' + this.props.match.params.index + '/user_groups'}
+          >
+            User Groups
+          </Link>
+          <Link
+            className="nav-link"
             to={'/' + this.props.match.params.index + '/people' + search}
           >
             People
