@@ -23,6 +23,7 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
+import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
 -- | /health endpoint
@@ -30,6 +31,22 @@ configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
 configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
+
+-- | /api/2/user_group/list endpoint
+userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
+userGroupList request = do
+  Env {tenants = tenants} <- ask
+  let UserGroupPB.ListRequest {..} = request
+
+  pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
+    Just index -> toGroupCounts <$> Config.getTenantGroups index
+    Nothing -> []
+  where
+    toGroupCounts :: (Text, [Text]) -> UserGroupPB.GroupDefinition
+    toGroupCounts (name, users) =
+      let groupDefinitionName = toLazy name
+          groupDefinitionMembers = fromInteger . toInteger $ length users
+       in UserGroupPB.GroupDefinition {..}
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))

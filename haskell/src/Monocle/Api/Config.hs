@@ -14,6 +14,7 @@ module Monocle.Api.Config where
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.FileEmbed (embedFile)
+import qualified Data.Map as Map
 import qualified Dhall
 import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
@@ -143,3 +144,33 @@ getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
   otherProvider -> error $ "Provider not supported: " <> show otherProvider
+
+emptyTenant :: Text -> [Ident] -> Index
+emptyTenant name idents' =
+  let crawlers_api_key = Nothing
+      crawlers = Nothing
+      projects = Nothing
+      idents = Just idents'
+      index = name
+   in Index {..}
+
+emptyIdent :: Text -> [Text] -> Ident
+emptyIdent name groups' =
+  let ident = name
+      aliases = []
+      groups = Just groups'
+   in Ident {..}
+
+-- | Get the list of group and members
+--
+-- >>> getTenantGroups (emptyTenant "test" [emptyIdent "alice" ["core", "ptl"], emptyIdent "bob" ["core"]])
+-- [("core",["bob","alice"]),("ptl",["alice"])]
+getTenantGroups :: Index -> [(Text, [Text])]
+getTenantGroups Index {..} = Map.toList $ foldr go mempty (fromMaybe [] idents)
+  where
+    go :: Ident -> Map Text [Text] -> Map Text [Text]
+    go Ident {..} acc = foldr (addUser ident) acc (fromMaybe [] groups)
+    addUser :: Text -> Text -> Map Text [Text] -> Map Text [Text]
+    addUser name groupName acc =
+      let users = fromMaybe [] (Map.lookup groupName acc)
+       in Map.insert groupName (users <> [name]) acc
