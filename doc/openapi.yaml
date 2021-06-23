@@ -15,7 +15,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/GetProjectsRequest'
+                            $ref: '#/components/schemas/monocle_config_GetProjectsRequest'
                 required: true
             responses:
                 "200":
@@ -23,7 +23,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GetProjectsResponse'
+                                $ref: '#/components/schemas/monocle_config_GetProjectsResponse'
     /api/1/suggestions:
         post:
             operationId: Search_Suggestions
@@ -31,7 +31,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SearchSuggestionsRequest'
+                            $ref: '#/components/schemas/monocle_search_SearchSuggestionsRequest'
                 required: true
             responses:
                 "200":
@@ -39,7 +39,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/SearchSuggestionsResponse'
+                                $ref: '#/components/schemas/monocle_search_SearchSuggestionsResponse'
     /api/1/task_data_add:
         post:
             summary: Add task data
@@ -48,7 +48,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/AddRequest'
+                            $ref: '#/components/schemas/monocle_task_data_AddRequest'
                 required: true
             responses:
                 "200":
@@ -56,7 +56,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/AddResponse'
+                                $ref: '#/components/schemas/monocle_task_data_AddResponse'
     /api/1/task_data_commit:
         post:
             summary: Commit the last updated timestamp
@@ -65,7 +65,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/TaskDataCommitRequest'
+                            $ref: '#/components/schemas/monocle_task_data_TaskDataCommitRequest'
                 required: true
             responses:
                 "200":
@@ -73,7 +73,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/TaskDataCommitResponse'
+                                $ref: '#/components/schemas/monocle_task_data_TaskDataCommitResponse'
     /api/1/task_data_get_last_updated:
         post:
             summary: Commit the last updated timestamp
@@ -82,7 +82,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/TaskDataGetLastUpdatedRequest'
+                            $ref: '#/components/schemas/monocle_task_data_TaskDataGetLastUpdatedRequest'
                 required: true
             responses:
                 "200":
@@ -90,7 +90,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/TaskDataGetLastUpdatedResponse'
+                                $ref: '#/components/schemas/monocle_task_data_TaskDataGetLastUpdatedResponse'
     /api/2/crawler/add:
         post:
             summary: Push crawler data
@@ -99,7 +99,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/AddDocRequest'
+                            $ref: '#/components/schemas/monocle_crawler_AddDocRequest'
                 required: true
             responses:
                 "200":
@@ -107,7 +107,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/AddDocResponse'
+                                $ref: '#/components/schemas/monocle_crawler_AddDocResponse'
     /api/2/crawler/commit:
         post:
             summary: Add commit message
@@ -116,7 +116,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CommitRequest'
+                            $ref: '#/components/schemas/monocle_crawler_CommitRequest'
                 required: true
             responses:
                 "200":
@@ -124,7 +124,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/CommitResponse'
+                                $ref: '#/components/schemas/monocle_crawler_CommitResponse'
     /api/2/crawler/get_commit_info:
         post:
             summary: Get commit message
@@ -133,7 +133,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CommitInfoRequest'
+                            $ref: '#/components/schemas/monocle_crawler_CommitInfoRequest'
                 required: true
             responses:
                 "200":
@@ -141,7 +141,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/CommitInfoResponse'
+                                $ref: '#/components/schemas/monocle_crawler_CommitInfoResponse'
     /api/2/health:
         post:
             operationId: Config_Health
@@ -149,7 +149,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/HealthRequest'
+                            $ref: '#/components/schemas/monocle_config_HealthRequest'
                 required: true
             responses:
                 "200":
@@ -157,7 +157,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/HealthResponse'
+                                $ref: '#/components/schemas/monocle_config_HealthResponse'
     /api/2/search/fields:
         post:
             operationId: Search_Fields
@@ -165,7 +165,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/FieldsRequest'
+                            $ref: '#/components/schemas/monocle_search_FieldsRequest'
                 required: true
             responses:
                 "200":
@@ -173,7 +173,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/FieldsResponse'
+                                $ref: '#/components/schemas/monocle_search_FieldsResponse'
     /api/2/search/query:
         post:
             operationId: Search_Query
@@ -181,7 +181,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/QueryRequest'
+                            $ref: '#/components/schemas/monocle_search_QueryRequest'
                 required: true
             responses:
                 "200":
@@ -189,51 +189,10 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/QueryResponse'
+                                $ref: '#/components/schemas/monocle_search_QueryResponse'
 components:
     schemas:
-        AddDocRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                entity:
-                    $ref: '#/components/schemas/Entity'
-                changes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Change'
-                events:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangeEvent'
-        AddDocResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-        AddRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TaskData'
-        AddResponse:
-            properties:
-                error:
-                    type: integer
-                    description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
-                    format: enum
-        Change:
+        monocle_change_Change:
             properties:
                 id:
                     type: string
@@ -263,11 +222,11 @@ components:
                 changed_files:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ChangedFile'
+                        $ref: '#/components/schemas/monocle_change_ChangedFile'
                 commits:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Commit'
+                        $ref: '#/components/schemas/monocle_change_Commit'
                 repository_prefix:
                     type: string
                 repository_fullname:
@@ -275,9 +234,9 @@ components:
                 repository_shortname:
                     type: string
                 author:
-                    $ref: '#/components/schemas/Ident'
+                    $ref: '#/components/schemas/monocle_change_Ident'
                 merged_by:
-                    $ref: '#/components/schemas/Ident'
+                    $ref: '#/components/schemas/monocle_change_Ident'
                 branch:
                     type: string
                 target_branch:
@@ -309,7 +268,7 @@ components:
                 assignees:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Ident'
+                        $ref: '#/components/schemas/monocle_change_Ident'
                 approvals:
                     type: array
                     items:
@@ -318,7 +277,214 @@ components:
                     type: boolean
                 self_merged:
                     type: boolean
-        Change:
+        monocle_change_ChangeAbandonedEvent:
+            properties: {}
+        monocle_change_ChangeCommentedEvent:
+            properties: {}
+        monocle_change_ChangeCommitForcePushedEvent:
+            properties: {}
+        monocle_change_ChangeCommitPushedEvent:
+            properties: {}
+        monocle_change_ChangeCreatedEvent:
+            properties: {}
+        monocle_change_ChangeEvent:
+            properties:
+                id:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                author:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                repository_prefix:
+                    type: string
+                repository_fullname:
+                    type: string
+                repository_shortname:
+                    type: string
+                branch:
+                    type: string
+                target_branch:
+                    type: string
+                number:
+                    type: integer
+                    format: int32
+                change_id:
+                    type: string
+                url:
+                    type: string
+                on_author:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                on_created_at:
+                    type: string
+                    format: RFC3339
+                changed_files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_change_ChangedFilePath'
+                ChangeCreated:
+                    $ref: '#/components/schemas/monocle_change_ChangeCreatedEvent'
+                ChangeCommented:
+                    $ref: '#/components/schemas/monocle_change_ChangeCommentedEvent'
+                ChangeAbandoned:
+                    $ref: '#/components/schemas/monocle_change_ChangeAbandonedEvent'
+                ChangeReviewed:
+                    $ref: '#/components/schemas/monocle_change_ChangeReviewedEvent'
+                ChangeCommitForcePushed:
+                    $ref: '#/components/schemas/monocle_change_ChangeCommitForcePushedEvent'
+                ChangeCommitPushed:
+                    $ref: '#/components/schemas/monocle_change_ChangeCommitPushedEvent'
+                ChangeMerged:
+                    $ref: '#/components/schemas/monocle_change_ChangeMergedEvent'
+        monocle_change_ChangeMergedEvent:
+            properties: {}
+        monocle_change_ChangeReviewedEvent:
+            properties:
+                approvals:
+                    type: array
+                    items:
+                        type: string
+        monocle_change_ChangedFile:
+            properties:
+                additions:
+                    type: integer
+                    format: int32
+                deletions:
+                    type: integer
+                    format: int32
+                path:
+                    type: string
+        monocle_change_ChangedFilePath:
+            properties:
+                path:
+                    type: string
+        monocle_change_Commit:
+            properties:
+                sha:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                committer:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                authored_at:
+                    type: string
+                    format: RFC3339
+                committed_at:
+                    type: string
+                    format: RFC3339
+                additions:
+                    type: integer
+                    format: int32
+                deletions:
+                    type: integer
+                    format: int32
+                title:
+                    type: string
+        monocle_change_Ident:
+            properties:
+                uid:
+                    type: string
+                muid:
+                    type: string
+        monocle_config_GetProjectsRequest:
+            properties:
+                index:
+                    type: string
+        monocle_config_GetProjectsResponse:
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_config_ProjectDefinition'
+        monocle_config_HealthRequest:
+            properties:
+                index:
+                    type: string
+        monocle_config_HealthResponse:
+            properties:
+                status:
+                    type: string
+        monocle_config_ProjectDefinition:
+            properties:
+                name:
+                    type: string
+                repository_regex:
+                    type: string
+                branch_regex:
+                    type: string
+                file_regex:
+                    type: string
+        monocle_crawler_AddDocRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_Entity'
+                changes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_change_Change'
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_change_ChangeEvent'
+        monocle_crawler_AddDocResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+        monocle_crawler_CommitInfoRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                entity_type:
+                    type: integer
+                    format: enum
+        monocle_crawler_CommitInfoResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_OldestEntity'
+        monocle_crawler_CommitRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_Entity'
+                timestamp:
+                    type: string
+                    format: RFC3339
+        monocle_crawler_CommitResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                timestamp:
+                    type: string
+                    format: RFC3339
+        monocle_crawler_Entity:
+            properties:
+                organization_name:
+                    type: string
+                project_name:
+                    type: string
+                change_commit_name:
+                    type: string
+                change_event_name:
+                    type: string
+        monocle_search_Change:
             properties:
                 change_id:
                     type: string
@@ -375,131 +541,28 @@ components:
                 changed_files:
                     type: array
                     items:
-                        $ref: '#/components/schemas/File'
+                        $ref: '#/components/schemas/monocle_search_File'
                 changed_files_count:
                     type: integer
                     format: uint32
                 commits:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Commit'
+                        $ref: '#/components/schemas/monocle_search_Commit'
                 commits_count:
                     type: integer
                     format: uint32
                 task_data:
                     type: array
                     items:
-                        $ref: '#/components/schemas/TaskData'
-        ChangeAbandonedEvent:
-            properties: {}
-        ChangeCommentedEvent:
-            properties: {}
-        ChangeCommitForcePushedEvent:
-            properties: {}
-        ChangeCommitPushedEvent:
-            properties: {}
-        ChangeCreatedEvent:
-            properties: {}
-        ChangeEvent:
-            properties:
-                id:
-                    type: string
-                created_at:
-                    type: string
-                    format: RFC3339
-                author:
-                    $ref: '#/components/schemas/Ident'
-                repository_prefix:
-                    type: string
-                repository_fullname:
-                    type: string
-                repository_shortname:
-                    type: string
-                branch:
-                    type: string
-                target_branch:
-                    type: string
-                number:
-                    type: integer
-                    format: int32
-                change_id:
-                    type: string
-                url:
-                    type: string
-                on_author:
-                    $ref: '#/components/schemas/Ident'
-                on_created_at:
-                    type: string
-                    format: RFC3339
-                changed_files:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedFilePath'
-                ChangeCreated:
-                    $ref: '#/components/schemas/ChangeCreatedEvent'
-                ChangeCommented:
-                    $ref: '#/components/schemas/ChangeCommentedEvent'
-                ChangeAbandoned:
-                    $ref: '#/components/schemas/ChangeAbandonedEvent'
-                ChangeReviewed:
-                    $ref: '#/components/schemas/ChangeReviewedEvent'
-                ChangeCommitForcePushed:
-                    $ref: '#/components/schemas/ChangeCommitForcePushedEvent'
-                ChangeCommitPushed:
-                    $ref: '#/components/schemas/ChangeCommitPushedEvent'
-                ChangeMerged:
-                    $ref: '#/components/schemas/ChangeMergedEvent'
-        ChangeMergedEvent:
-            properties: {}
-        ChangeReviewedEvent:
-            properties:
-                approvals:
-                    type: array
-                    items:
-                        type: string
-        ChangedFile:
-            properties:
-                additions:
-                    type: integer
-                    format: int32
-                deletions:
-                    type: integer
-                    format: int32
-                path:
-                    type: string
-        ChangedFilePath:
-            properties:
-                path:
-                    type: string
-        Changes:
+                        $ref: '#/components/schemas/monocle_task_data_TaskData'
+        monocle_search_Changes:
             properties:
                 changes:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Change'
-        Commit:
-            properties:
-                sha:
-                    type: string
-                author:
-                    $ref: '#/components/schemas/Ident'
-                committer:
-                    $ref: '#/components/schemas/Ident'
-                authored_at:
-                    type: string
-                    format: RFC3339
-                committed_at:
-                    type: string
-                    format: RFC3339
-                additions:
-                    type: integer
-                    format: int32
-                deletions:
-                    type: integer
-                    format: int32
-                title:
-                    type: string
-        Commit:
+                        $ref: '#/components/schemas/monocle_search_Change'
+        monocle_search_Commit:
             properties:
                 sha:
                     type: string
@@ -521,54 +584,7 @@ components:
                 deletions:
                     type: integer
                     format: uint32
-        CommitInfoRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                entity_type:
-                    type: integer
-                    format: enum
-        CommitInfoResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-                entity:
-                    $ref: '#/components/schemas/OldestEntity'
-        CommitRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                entity:
-                    $ref: '#/components/schemas/Entity'
-                timestamp:
-                    type: string
-                    format: RFC3339
-        CommitResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-                timestamp:
-                    type: string
-                    format: RFC3339
-        Entity:
-            properties:
-                organization_name:
-                    type: string
-                project_name:
-                    type: string
-                change_commit_name:
-                    type: string
-                change_event_name:
-                    type: string
-        Field:
+        monocle_search_Field:
             properties:
                 name:
                     type: string
@@ -577,17 +593,17 @@ components:
                 type:
                     type: integer
                     format: enum
-        FieldsRequest:
+        monocle_search_FieldsRequest:
             properties:
                 version:
                     type: string
-        FieldsResponse:
+        monocle_search_FieldsResponse:
             properties:
                 fields:
                     type: array
                     items:
-                        $ref: '#/components/schemas/Field'
-        File:
+                        $ref: '#/components/schemas/monocle_search_Field'
+        monocle_search_File:
             properties:
                 additions:
                     type: integer
@@ -597,48 +613,14 @@ components:
                     format: uint32
                 path:
                     type: string
-        GetProjectsRequest:
-            properties:
-                index:
-                    type: string
-        GetProjectsResponse:
-            properties:
-                projects:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProjectDefinition'
-        HealthRequest:
-            properties:
-                index:
-                    type: string
-        HealthResponse:
-            properties:
-                status:
-                    type: string
-        Ident:
-            properties:
-                uid:
-                    type: string
-                muid:
-                    type: string
-        ProjectDefinition:
-            properties:
-                name:
-                    type: string
-                repository_regex:
-                    type: string
-                branch_regex:
-                    type: string
-                file_regex:
-                    type: string
-        QueryError:
+        monocle_search_QueryError:
             properties:
                 message:
                     type: string
                 position:
                     type: integer
                     format: uint32
-        QueryRequest:
+        monocle_search_QueryRequest:
             properties:
                 index:
                     type: string
@@ -649,17 +631,17 @@ components:
                 query_type:
                     type: integer
                     format: enum
-        QueryResponse:
+        monocle_search_QueryResponse:
             properties:
                 error:
-                    $ref: '#/components/schemas/QueryError'
+                    $ref: '#/components/schemas/monocle_search_QueryError'
                 changes:
-                    $ref: '#/components/schemas/Changes'
-        SearchSuggestionsRequest:
+                    $ref: '#/components/schemas/monocle_search_Changes'
+        monocle_search_SearchSuggestionsRequest:
             properties:
                 index:
                     type: string
-        SearchSuggestionsResponse:
+        monocle_search_SearchSuggestionsResponse:
             properties:
                 task_types:
                     type: array
@@ -681,7 +663,25 @@ components:
                     type: array
                     items:
                         type: string
-        TaskData:
+        monocle_task_data_AddRequest:
+            properties:
+                index:
+                    type: string
+                crawler:
+                    type: string
+                apikey:
+                    type: string
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_task_data_TaskData'
+        monocle_task_data_AddResponse:
+            properties:
+                error:
+                    type: integer
+                    description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
+                    format: enum
+        monocle_task_data_TaskData:
             properties:
                 updated_at:
                     type: string
@@ -705,7 +705,7 @@ components:
                 score:
                     type: integer
                     format: int32
-        TaskDataCommitRequest:
+        monocle_task_data_TaskDataCommitRequest:
             properties:
                 index:
                     type: string
@@ -716,7 +716,7 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
-        TaskDataCommitResponse:
+        monocle_task_data_TaskDataCommitResponse:
             properties:
                 error:
                     type: integer
@@ -724,13 +724,13 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
-        TaskDataGetLastUpdatedRequest:
+        monocle_task_data_TaskDataGetLastUpdatedRequest:
             properties:
                 index:
                     type: string
                 crawler:
                     type: string
-        TaskDataGetLastUpdatedResponse:
+        monocle_task_data_TaskDataGetLastUpdatedResponse:
             properties:
                 error:
                     type: integer
