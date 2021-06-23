@@ -15,6 +15,7 @@ import Monocle.Config
 import Monocle.Crawler
 import Monocle.Search
 import Monocle.TaskData
+import Monocle.UserGroup
 
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/1/get_projects"
@@ -30,6 +31,9 @@ searchFields = monocleReq "api/2/search/fields"
 
 searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
+
+userGroupList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
+userGroupList = monocleReq "api/2/user_group/list"
 
 taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
 taskDataCommit = monocleReq "api/1/task_data_commit"

@@ -190,6 +190,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_search_QueryResponse'
+    /api/2/user_group/list:
+        post:
+            operationId: UserGroup_List
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_user_group_ListRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_user_group_ListResponse'
 components:
     schemas:
         monocle_change_Change:
@@ -738,3 +754,20 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
+        monocle_user_group_GroupDefinition:
+            properties:
+                name:
+                    type: string
+                members:
+                    type: integer
+                    format: uint32
+        monocle_user_group_ListRequest:
+            properties:
+                index:
+                    type: string
+        monocle_user_group_ListResponse:
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_user_group_GroupDefinition'

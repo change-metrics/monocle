@@ -124,6 +124,7 @@ library
                      , Monocle.Search
                      , Monocle.TaskData
                      , Monocle.Crawler
+                     , Monocle.UserGroup
 
   other-modules:       Monocle.Api.Client.Internal
 

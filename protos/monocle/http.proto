@@ -14,6 +14,7 @@ import "monocle/config.proto";
 import "monocle/search.proto";
 import "monocle/task_data.proto";
 import "monocle/crawler.proto";
+import "monocle/user_group.proto";
 
 service Config {
   // Return the list of projects
@@ -51,6 +52,16 @@ service Search {
       returns (monocle_search.QueryResponse) {
     option (google.api.http) = {
       post: "/api/2/search/query"
+      body: "*"
+    };
+  }
+}
+
+service UserGroup {
+  rpc List(monocle_user_group.ListRequest)
+      returns (monocle_user_group.ListResponse) {
+    option (google.api.http) = {
+      post: "/api/2/user_group/list"
       body: "*"
     };
   }
