@@ -83,7 +83,7 @@ pname :: Project -> Text
 pname = name
 
 -- | Load the YAML config file
-loadConfig :: MonadIO m => FilePath -> m [Index]
+loadConfig :: MonadIO m => FilePath -> m (Either Text [Index])
 loadConfig fp = do
   -- Here we use the yaml-to-dhall logic to correctly decode Union value.
   -- Otherwise the decoder may fail with:
@@ -93,9 +93,9 @@ loadConfig fp = do
   -- dhallFromYaml is able to infer the sum type by its value and it picks
   -- the first constructor that fit.
   expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile fp
-  case Dhall.extract Dhall.auto expr of
-    Success config -> pure (tenants config)
-    Failure err -> error (show err)
+  pure $ case Dhall.extract Dhall.auto expr of
+    Success config -> Right $ tenants config
+    Failure err -> Left $ show err
   where
     -- when updating the dhall-monocle schema, the config needs to be
     -- regenerated using:
@@ -142,4 +142,4 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
-  _ -> []
+  otherProvider -> error $ "Provider not supported: " <> show otherProvider

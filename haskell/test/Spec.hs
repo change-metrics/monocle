@@ -4,17 +4,16 @@
 module Main (main) where
 
 import qualified Data.Aeson as Aeson
-import Data.Time.Clock (UTCTime)
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
 import Monocle.Mock
+import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
 import Monocle.TaskData
-import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -223,5 +222,5 @@ monocleConfig =
     [testConfigLoad]
   where
     testConfigLoad = testCase "Decode config" $ do
-      conf <- Config.loadConfig "./test/data/config.yaml"
+      conf <- getExn <$> Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length conf)

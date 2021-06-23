@@ -32,22 +32,20 @@ dispatch method url body = do
   liftIO $ HTTP.httpLbs request manager
 
 search ::
-  (MonadIO m) =>
+  (MonadIO m, MonadBH m, MonadThrow m) =>
   (Aeson.ToJSON body, Aeson.FromJSON resp) =>
-  BH.BHEnv ->
   BH.IndexName ->
   body ->
   m (BH.SearchResult resp)
-search bhEnv (BH.IndexName index) body = liftIO $
-  BH.runBH bhEnv $ do
-    BH.Server s <- BH.bhServer <$> BH.getBHEnv
-    let url = Text.intercalate "/" [s, index, "_search"]
-        method = HTTP.methodPost
-    rawResp <- dispatch method url (Aeson.encode body)
-    resp <- BH.parseEsResponse rawResp
-    case resp of
-      Left _e -> handleError rawResp
-      Right x -> pure x
+search (BH.IndexName index) body = do
+  BH.Server s <- BH.bhServer <$> BH.getBHEnv
+  let url = Text.intercalate "/" [s, index, "_search"]
+      method = HTTP.methodPost
+  rawResp <- dispatch method url (Aeson.encode body)
+  resp <- BH.parseEsResponse rawResp
+  case resp of
+    Left _e -> handleError rawResp
+    Right x -> pure x
   where
     handleError resp = do
       monocleLog (show resp)

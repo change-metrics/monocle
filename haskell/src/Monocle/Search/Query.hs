@@ -17,7 +17,7 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
+import Monocle.Search.Syntax
 
 -- $setup
 -- >>> import Monocle.Search.Parser as P
@@ -71,9 +71,11 @@ lookupField :: Field -> Either Text (FieldType, Field, Text)
 lookupField name = maybe (Left $ "Unknown field: " <> name) Right (lookup name fields)
 
 parseDateValue :: Text -> Maybe UTCTime
-parseDateValue txt = case tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y" of
-  Just value -> pure value
-  Nothing -> Nothing
+parseDateValue txt =
+  maybe
+    Nothing
+    pure
+    (tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y")
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
 
@@ -89,12 +91,11 @@ parseRelativeDateValue now txt
     tryParseRange :: Text -> Maybe UTCTime
     tryParseRange txt' = do
       let countTxt = Text.takeWhile isDigit txt'
-          count :: Integer
-          count = fromMaybe (error $ "Invalid relative count: " <> txt') $ readMaybe (toString countTxt)
           valTxt = Text.dropWhileEnd (== 's') $ Text.drop (Text.length countTxt) txt'
           hour = 3600
           day = hour * 24
           week = day * 7
+      count <- readMaybe (toString countTxt)
       diffsec <-
         (* count) <$> case valTxt of
           "hour" -> Just hour
@@ -134,7 +135,7 @@ toRangeOp expr = case expr of
   LtExpr _ _ -> Lt
   GtEqExpr _ _ -> Gte
   LtEqExpr _ _ -> Lte
-  _ -> error "Unsupported range expression"
+  _anyOtherExpr -> error $ "Unsupported range expression"
 
 -- | dropTime ensures the encoded date does not have millisecond.
 -- This actually discard hour differences
@@ -179,7 +180,7 @@ mkRangeValue op field fieldType value = do
 
       pure $ toRangeValueD op date
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
-    _ -> toParseError . Left $ "Field " <> field <> " does not support range operator"
+    _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
@@ -251,7 +252,7 @@ mkEqQuery field value = do
       pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
-    _ -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
+    _anyOtherField -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
 
@@ -290,21 +291,6 @@ query expr = case expr of
   e@(LtEqExpr field value) -> mkRangeQuery e field value
   LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
   OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
-
-data Query = Query
-  { queryOrder :: Maybe (Field, SortOrder),
-    queryLimit :: Int,
-    queryBH :: Maybe BH.Query,
-    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
-    -- It defaults to (now-3weeks, now)
-    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
-    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
-    -- It keeps the maximum minbound and minimum maxbound, e.g.
-    --  `date>2020 and date>2021` results in (2021, now).
-    -- The goal is to get an approximate bound for histo grams queries.
-    queryBounds :: (UTCTime, UTCTime)
-  }
-  deriving (Show)
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now username indexM baseExprM =

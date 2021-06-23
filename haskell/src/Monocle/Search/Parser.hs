@@ -38,7 +38,7 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
         -- For the right expression, it is safe to run 'exprParser'
         And -> AndExpr leftExpr <$> exprParser
         Or -> OrExpr leftExpr <$> exprParser
-        _ -> error "this should not happen, see the expression before the case statement"
+        x -> error $ "this should not happen, see the expression before the case statement: " <> show x
 
     -- 'closedExpr' is a single expression
     closedExpr = Combinators.choice [notExpr, fieldExpr, parenExpr]
@@ -57,7 +57,7 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
           Lower -> LtExpr
           GreaterEqual -> GtEqExpr
           LowerEqual -> LtEqExpr
-          _ -> error "this should not happen, see the expression before the case statement"
+          x -> error $ "this should not happen, see the expression before the case statement: " <> show x
       operator field <$> literal
 
     parenExpr =
@@ -76,14 +76,14 @@ exprParserWithMods = do
       case operatorToken of
         OrderBy -> OrderByExpr <$> literal <*> orderSort
         Limit -> LimitExpr <$> intLiteral
-        _ -> error "this should not happen, see the expression before the case statement"
+        x -> error $ "this should not happen, see the expression before the case statement: " <> show x
 
     orderSort = do
       sortToken <- Combinators.optional $ tokens [SortAsc, SortDesc]
       pure $ case fromMaybe SortAsc sortToken of
         SortAsc -> Asc
         SortDesc -> Desc
-        _ -> error "this should not happen, see the expression before the case statement"
+        x -> error $ "this should not happen, see the expression before the case statement: " <> show x
 
 -- | 'intLiteral' parses a number
 intLiteral :: Parser Int

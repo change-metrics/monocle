@@ -17,9 +17,10 @@ import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
-import Monocle.Prelude hiding (head)
+import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
-import Relude.Unsafe (head, (!!))
+import Monocle.Servant.Env
+import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
 
 fakeDate :: UTCTime
@@ -87,106 +88,110 @@ emptyConfig name =
       index = name
    in Config.Index {..}
 
-withBH :: ((BH.BHEnv, BH.IndexName) -> IO ()) -> IO ()
-withBH = bracket create delete
+withTenant :: TenantM () -> IO ()
+withTenant cb = bracket create delete toTenantM
   where
     -- todo: generate random name
-    testName = "test-index"
-    create = I.createChangesIndex "http://localhost:9200" (emptyConfig testName)
-    delete (bhEnv, testIndex) = do
+    testName = "test-tenant"
+    create = do
+      bhEnv <- I.mkEnv "http://localhost:9200"
+      let config = emptyConfig testName
+      _ <- runTenantM' bhEnv config I.ensureIndex
+      pure (bhEnv, config)
+    delete (bhEnv, config) = do
       BH.runBH bhEnv $ do
+        let testIndex = tenantIndexName config
         _resp <- BH.deleteIndex testIndex
         False <- BH.indexExists testIndex
         pure ()
+    toTenantM (bhEnv, config) = runTenantM' bhEnv config cb
 
-checkELKChangeField :: (Show a, Eq a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> (ELKChange -> a) -> a -> IO ()
-checkELKChangeField bhEnv index docId field value = do
-  docM <- I.getDocument bhEnv index docId :: IO (Maybe ELKChange)
+checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
+checkELKChangeField docId field value = do
+  docM <- I.getDocument docId
   case docM of
-    Just change -> doCheck field value change
+    Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
-  where
-    doCheck :: (Show a, Eq a) => (ELKChange -> a) -> a -> ELKChange -> Assertion
-    doCheck field' value' change = assertEqual "change field match" (field' change) value'
 
-checkChangesCount :: BH.BHEnv -> BH.IndexName -> Int -> IO ()
-checkChangesCount bhEnv index expectedCount = do
-  resp <- BH.runBH bhEnv $ do
+checkChangesCount :: Int -> TenantM ()
+checkChangesCount expectedCount = do
+  index <- getIndexName
+  resp <-
     BH.countByIndex
       index
       ( BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing)
       )
   case resp of
     Left _ -> error "Couldn't count changes"
-    Right countD -> assertEqual "check change count" expectedCount (fromEnum $ BH.crCount countD)
+    Right countD -> assertEqual' "check change count" expectedCount (fromEnum $ BH.crCount countD)
 
 testIndexChanges :: Assertion
-testIndexChanges = withBH doTest
+testIndexChanges = withTenant doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
-    doTest (bhEnv, testIndex) = do
+    doTest :: TenantM ()
+    doTest = do
       -- Index two Changes and check present in database
-      indexChanges [fakeChange1, fakeChange2]
+      I.indexChanges [fakeChange1, fakeChange2]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField'
+      checkELKChangeField
         (I.getChangeDocId fakeChange1)
         elkchangeTitle
         (elkchangeTitle fakeChange1)
       checkDocExists' $ I.getChangeDocId fakeChange2
-      checkELKChangeField'
+      checkELKChangeField
         (I.getChangeDocId fakeChange2)
         elkchangeTitle
         (elkchangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
-      indexChanges [fakeChange1Updated]
+      I.indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField'
+      checkELKChangeField
         (I.getChangeDocId fakeChange1Updated)
         elkchangeTitle
         (elkchangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
-      checkChangeCount' 2
+      checkChangesCount 2
       where
-        indexChanges = I.indexChanges bhEnv testIndex
         checkDocExists' dId = do
-          exists <- I.checkDocExists bhEnv testIndex dId
-          assertEqual "check doc exists" exists True
-        checkELKChangeField' :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> IO ()
-        checkELKChangeField' = checkELKChangeField bhEnv testIndex
-        checkChangeCount' = checkChangesCount bhEnv testIndex
+          exists <- I.checkDocExists dId
+          assertEqual' "check doc exists" exists True
         fakeChange1 = mkFakeChange 1 "My change 1"
         fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
 
+-- | A lifted version of assertEqual
+assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
+assertEqual' n a b = liftIO $ assertEqual n a b
+
 testCrawlerMetadata :: Assertion
-testCrawlerMetadata = withBH doTest
+testCrawlerMetadata = withTenant doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
-    doTest (bhEnv, testIndex) = do
+    doTest :: TenantM ()
+    doTest = do
       -- Init default crawler metadata and Ensure we get the default updated date
-      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
-      lastUpdated <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      lastUpdated <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateB entity
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateA entityAlt
-      lastUpdated' <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+      I.setLastUpdated crawlerName fakeDateB entity
+      I.setLastUpdated crawlerName fakeDateA entityAlt
+      lastUpdated' <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
-      I.setLastUpdated bhEnv testIndex crawlerName fakeDateC entity
-      lastUpdated'' <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
+      I.setLastUpdated crawlerName fakeDateC entity
+      lastUpdated'' <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      I.initCrawlerLastUpdatedFromWorkerConfig bhEnv testIndex worker
-      lastUpdated''' <- I.getLastUpdated bhEnv testIndex worker entityType
-      assertEqual "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      lastUpdated''' <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
-        entity = I.Project "nova"
-        entityAlt = I.Project "neutron"
+        entity = Project "nova"
+        entityAlt = Project "neutron"
         crawlerName = "test-crawler"
         worker =
           let name = crawlerName
@@ -209,16 +214,16 @@ scenarioProject =
   SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
 
 testAchievements :: Assertion
-testAchievements = withBH doTest
+testAchievements = withTenant doTest
   where
-    doTest :: (BH.BHEnv, BH.IndexName) -> IO ()
-    doTest (bhEnv, testIndex) = do
-      indexScenario bhEnv testIndex (nominalMerge scenarioProject "42" fakeDate 3600)
+    doTest :: TenantM ()
+    doTest = do
+      indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
 
       -- Try query
-      agg <- head <$> Q.getProjectAgg bhEnv testIndex query
-      assertEqual "event found" (Q.epbType agg) "Change"
-      assertEqual "event count match" (Q.epbCount agg) 1
+      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg query
+      assertEqual' "event found" (Q.epbType agg) "Change"
+      assertEqual' "event count match" (Q.epbCount agg) 1
       where
         query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
@@ -293,8 +298,8 @@ toDoc se = case se of
   SReview e -> (toJSON e, I.getEventDocId e)
   SMerge e -> (toJSON e, I.getEventDocId e)
 
-indexScenario :: BH.BHEnv -> BH.IndexName -> [ScenarioEvent] -> IO ()
-indexScenario bhEnv testIndex xs = I.indexDocs bhEnv testIndex $ fmap toDoc xs
+indexScenario :: [ScenarioEvent] -> TenantM ()
+indexScenario xs = I.indexDocs $ fmap toDoc xs
 
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]

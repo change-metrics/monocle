@@ -13,12 +13,14 @@
 module Monocle.Api.Client.Internal
   ( MonocleClient,
     withClient,
+    mkManager,
     monocleReq,
   )
 where
 
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Text as T
+import qualified Network.Connection as Connection
 import Network.HTTP.Client
   ( Manager,
     RequestBody (..),
@@ -30,7 +32,7 @@ import Network.HTTP.Client
     requestHeaders,
     responseBody,
   )
-import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Client.TLS as HTTP
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
 import qualified Proto3.Suite.JSONPB as JSONPB
 import Relude
@@ -41,6 +43,17 @@ data MonocleClient = MonocleClient
     baseUrl :: Text,
     manager :: Manager
   }
+
+-- | Create a HTTP manager
+mkManager :: MonadIO m => m Manager
+mkManager = do
+  disableTlsM <- lookupEnv "TLS_NO_VERIFY"
+  let managerSettings = case disableTlsM of
+        Nothing ->
+          let tlsSettings = Connection.TLSSettingsSimple True False False
+           in HTTP.mkManagerSettings tlsSettings Nothing
+        Just _ -> HTTP.tlsManagerSettings
+  liftIO $ newManager managerSettings
 
 -- | Create the 'MonocleClient'
 withClient ::
@@ -57,7 +70,7 @@ withClient url managerM callBack =
   do
     manager <- case managerM of
       Just manager' -> pure manager'
-      Nothing -> liftIO $ newManager tlsManagerSettings
+      Nothing -> mkManager
     callBack MonocleClient {..}
   where
     baseUrl = T.dropWhileEnd (== '/') url <> "/"

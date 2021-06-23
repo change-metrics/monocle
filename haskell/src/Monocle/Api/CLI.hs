@@ -15,19 +15,22 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Servant.Options (provideOptions)
-import Servant (hoistServer, serve)
+import Servant (Handler, hoistServer, serve)
 
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
 app :: Env -> Wai.Application
-app env = serve monocleAPI $ hoistServer monocleAPI (`runReaderT` env) server
+app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
+  where
+    mkAppM :: AppM x -> Handler x
+    mkAppM apM = runReaderT (unApp apM) env
 
 run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
-  tenants' <- Config.loadConfig configFile
+  tenants' <- getExn <$> Config.loadConfig configFile
   bhEnv' <- I.mkEnv elkUrl
-  retry $ traverse_ (I.ensureIndex bhEnv') tenants'
+  retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv' tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

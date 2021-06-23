@@ -30,6 +30,9 @@ common common-options
                        -- Needed until https://github.com/awakesecurity/proto3-suite/pull/149
                        -fno-warn-missing-export-lists
                        --write-ghc-environment-files=always
+                       -- Enable stan integration
+                       -fwrite-ide-info
+                       -hiedir=.hie
   if impl(ghc >= 8.0)
     ghc-options:       -Wredundant-constraints
   if impl(ghc >= 8.2)
@@ -59,6 +62,7 @@ library
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , bytestring                 >= 0.10
+                     , connection
                      , dhall                      ^>= 1.39
                      , dhall-yaml                 ^>= 1.2
                      , either                     ^>= 5

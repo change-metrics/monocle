@@ -6,10 +6,7 @@
 module Monocle.Backend.Index where
 
 import Data.Aeson
-  ( FromJSON,
-    KeyValue ((.=)),
-    ToJSON (toJSON),
-    Value,
+  ( KeyValue ((.=)),
     object,
   )
 import qualified Data.Text as Text
@@ -22,9 +19,9 @@ import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
-import Relude
 
 type MServerName = Text
 
@@ -247,31 +244,18 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
-tenantIndexName :: Config.Index -> BH.IndexName
-tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
-
-ensureIndex :: MonadIO m => BH.BHEnv -> Config.Index -> m BH.IndexName
-ensureIndex bhEnv config@Config.Index {..} = do
-  liftIO . BH.runBH bhEnv $ do
-    _respCI <- BH.createIndex indexSettings indexName
-    -- print respCI
-    _respPM <- BH.putMapping indexName ChangesIndexMapping
-    -- print respPM
-    True <- BH.indexExists indexName
-    pure ()
-  liftIO $ traverse_ (initCrawlerLastUpdatedFromWorkerConfig bhEnv indexName) (fromMaybe [] crawlers)
-  pure indexName
+ensureIndex :: TenantM ()
+ensureIndex = do
+  indexName <- getIndexName
+  config <- getIndexConfig
+  _respCI <- BH.createIndex indexSettings indexName
+  -- print respCI
+  _respPM <- BH.putMapping indexName ChangesIndexMapping
+  -- print respPM
+  True <- BH.indexExists indexName
+  traverse_ initCrawlerLastUpdatedFromWorkerConfig (fromMaybe [] (Config.crawlers config))
   where
-    indexName = tenantIndexName config
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-
-createChangesIndex :: MServerName -> Config.Index -> IO (BH.BHEnv, BH.IndexName)
-createChangesIndex serverUrl config = do
-  bhEnv <- mkEnv serverUrl
-  indexName <- ensureIndex bhEnv config
-  pure (bhEnv, indexName)
-
--- intC = fromInteger . toInteger
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =
@@ -302,7 +286,7 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       elkchangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
-        _ -> Nothing
+        _anyOtherApprovals -> Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> LText
@@ -376,27 +360,23 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
 
-refreshIndex :: BH.BHEnv -> BH.IndexName -> IO ()
-refreshIndex bhEnv index = BH.runBH bhEnv $ do
-  _ <- BH.refreshIndex index
-  pure ()
-
-indexDocs :: BH.BHEnv -> BH.IndexName -> [(Value, BH.DocId)] -> IO ()
-indexDocs bhEnv index docs = BH.runBH bhEnv $ do
-  let stream = V.fromList $ fmap toBulkIndex docs
+indexDocs :: [(Value, BH.DocId)] -> TenantM ()
+indexDocs docs = do
+  index <- getIndexName
+  let stream = V.fromList $ fmap (toBulkIndex index) docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
-    toBulkIndex (doc, docId) = BH.BulkIndex index docId doc
+    toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
-indexChanges :: BH.BHEnv -> BH.IndexName -> [ELKChange] -> IO ()
-indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureType) changes
+indexChanges :: [ELKChange] -> TenantM ()
+indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
     ensureType change = change {elkchangeType = "Change"}
@@ -404,8 +384,8 @@ indexChanges bhEnv index changes = indexDocs bhEnv index $ fmap (toDoc . ensureT
 getEventDocId :: ELKChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
 
-indexEvents :: BH.BHEnv -> BH.IndexName -> [ELKChangeEvent] -> IO ()
-indexEvents bhEnv index events = indexDocs bhEnv index (fmap toDoc events)
+indexEvents :: [ELKChangeEvent] -> TenantM ()
+indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
 
@@ -415,29 +395,27 @@ statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 isNotFound :: BH.Reply -> Bool
 isNotFound = statusCheck (== 404)
 
-checkDocExists :: BH.BHEnv -> BH.IndexName -> BH.DocId -> IO Bool
-checkDocExists bhEnv index docId = do
-  BH.runBH bhEnv $ do
-    BH.documentExists index docId
+checkDocExists :: BH.DocId -> TenantM Bool
+checkDocExists docId = do
+  index <- getIndexName
+  BH.documentExists index docId
 
-getDocument :: (FromJSON a) => BH.BHEnv -> BH.IndexName -> BH.DocId -> IO (Maybe a)
-getDocument bhEnv index dId = do
-  BH.runBH bhEnv $ do
-    resp <- BH.getDocument index dId
-    if isNotFound resp
-      then pure Nothing
-      else do
-        parsed <- BH.parseEsResponse resp
-        case parsed of
-          Right cm -> pure . getHit $ BH.foundResult cm
-          Left _ -> error "Unable to get parse result"
+getDocument :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
+getDocument docId = do
+  index <- getIndexName
+  resp <- BH.getDocument index docId
+  if isNotFound resp
+    then pure Nothing
+    else do
+      parsed <- BH.parseEsResponse resp
+      case parsed of
+        Right cm -> pure . getHit $ BH.foundResult cm
+        Left _ -> error "Unable to get parse result"
   where
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
 
-type CrawlerMetadataDocId = BH.DocId
-
-getCrawlerMetadataDocId :: Text -> Text -> Text -> CrawlerMetadataDocId
+getCrawlerMetadataDocId :: Text -> Text -> Text -> BH.DocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
   BH.DocId . Text.replace "/" "@" $
     Text.intercalate
@@ -447,26 +425,21 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
-getCrawlerMetadata :: BH.BHEnv -> BH.IndexName -> CrawlerMetadataDocId -> IO (Maybe ELKCrawlerMetadata)
-getCrawlerMetadata = getDocument
-
 getLastUpdatedFromConfig :: UTCTime
 getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
-
-data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
 
-getLastUpdated :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> EntityType -> IO (Text, UTCTime)
-getLastUpdated bhEnv index crawler entity = do
-  BH.runBH bhEnv $ do
-    resp <- fmap BH.hitSource <$> (Q.simpleSearch index search :: BH.BH IO [BH.Hit ELKCrawlerMetadata])
-    case catMaybes resp of
-      [] -> error "Unsupported"
-      (x : _) -> pure $ getRespFromMetadata x
+getLastUpdated :: Config.Crawler -> EntityType -> TenantM (Text, UTCTime)
+getLastUpdated crawler entity = do
+  index <- getIndexName
+  resp <- fmap BH.hitSource <$> Q.simpleSearch index search
+  case catMaybes resp of
+    [] -> error "Unsupported"
+    (x : _) -> pure $ getRespFromMetadata x
   where
     search =
       (BH.mkSearch (Just query) Nothing)
@@ -483,21 +456,21 @@ getLastUpdated bhEnv index crawler entity = do
     crawlerType :: EntityType -> Text
     crawlerType entity' = case entity' of
       CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-      _ -> error "Unsupported Entity"
+      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
 
-setOrUpdateLastUpdated :: Bool -> BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
-setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entity = do
-  BH.runBH bhEnv $ do
-    exists <- BH.documentExists index id'
-    when ((exists && not doNotUpdate) || not exists) $ do
-      resp <-
-        if exists
-          then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-          else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-      _ <- BH.refreshIndex index
-      if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
+setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
+setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
+  index <- getIndexName
+  exists <- BH.documentExists index id'
+  when ((exists && not doNotUpdate) || not exists) $ do
+    resp <-
+      if exists
+        then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
+        else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
+    _ <- BH.refreshIndex index
+    if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
   where
     id' = getId entity
     cm =
@@ -512,15 +485,15 @@ setOrUpdateLastUpdated doNotUpdate bhEnv index crawlerName lastUpdatedDate entit
     getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
     crawlerType entity' = case entity' of
       Project _ -> "project"
-      _ -> error "Unsupported Entity"
+      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setLastUpdated :: BH.BHEnv -> BH.IndexName -> Text -> UTCTime -> Entity -> IO ()
+setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: BH.BHEnv -> BH.IndexName -> Config.Crawler -> IO ()
-initCrawlerLastUpdatedFromWorkerConfig bhEnv index worker = traverse_ run entities
+initCrawlerLastUpdatedFromWorkerConfig :: Config.Crawler -> TenantM ()
+initCrawlerLastUpdatedFromWorkerConfig worker = traverse_ run entities
   where
-    run = setOrUpdateLastUpdated True bhEnv index (getWorkerName worker) (getWorkerUpdatedSince worker)
+    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
     entities = Project <$> Config.getCrawlerProject worker
     getWorkerUpdatedSince Config.Crawler {..} =
       fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)

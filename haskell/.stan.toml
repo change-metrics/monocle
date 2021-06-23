@@ -1,0 +1,26 @@
+[[remove]]
+directory = "codegen/"
+
+# Usage of length
+[[check]]
+type = "Exclude"
+id = "STAN-0103"
+scope = "all"
+[[check]]
+type = "Exclude"
+id = "STAN-0208"
+scope = "all"
+
+# Non strict fields
+[[check]]
+type = "Exclude"
+id = "STAN-0206"
+scope = "all"
+
+# embedFile usage
+[[ignore]]
+id = "OBS-STAN-0212-EK+OIW-103:20"
+
+# random list element
+[[ignore]]
+id = "OBS-STAN-0005-iVBczI-236:14"
