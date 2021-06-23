@@ -36,9 +36,17 @@ module Store = {
     | FetchUserGroups(userGroupsR)
   type dispatch = action => unit
 
+  let create = index => {
+    index: index,
+    query: UrlData.getQuery(),
+    suggestions: None,
+    fields: None,
+    user_groups: None,
+  }
+
   let reducer = (state: t, action: action) =>
     switch action {
-    | ChangeIndex(index) => {...state, index: index}
+    | ChangeIndex(index) => create(index)
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
@@ -47,15 +55,6 @@ module Store = {
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchUserGroups(res) => {...state, user_groups: res}
     }
-
-  // TODO: replace static index with a SetIndex action, after the LegacyApp is removed
-  let create = index => {
-    index: index,
-    query: UrlData.getQuery(),
-    suggestions: None,
-    fields: None,
-    user_groups: None,
-  }
 }
 
 module Fetch = {

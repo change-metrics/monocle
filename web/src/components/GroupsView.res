@@ -4,13 +4,10 @@ module GroupItem = {
   @react.component
   let make = (~store: Store.t, ~group: UserGroupTypes.group_definition) => {
     let (state, dispatch) = store
-    let onClick = _ => {
-      RescriptReactRouter.push("/" ++ state.index ++ "/user_groups/" ++ group.name)
-    }
     <MSimpleCard>
-      <a href="" onClick>
+      <Link _to={"/" ++ state.index ++ "/user_groups/" ++ group.name}>
         {(group.name ++ " (" ++ group.members->Int32.to_int->string_of_int ++ " member)")->str}
-      </a>
+      </Link>
     </MSimpleCard>
   }
 }

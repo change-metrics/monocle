@@ -115,24 +115,24 @@ module ProjectLink = {
       list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
     <span style={horizontalSpacing}>
       {"["->str}
-      <a
+      <Link
         style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-        href={"/" ++ index ++ "/changes?project=" ++ project}>
+        _to={"/" ++ index ++ "/changes?project=" ++ project}>
         {name->str}
-      </a>
+      </Link>
       {"]"->str}
     </span>
   }
 }
 module ChangeLink = {
   @react.component
-  let make = (~index, ~id, ~title) => <a href={"/" ++ index ++ "/change/" ++ id}> {title->str} </a>
+  let make = (~index, ~id, ~title) => <Link _to={"/" ++ index ++ "/change/" ++ id}> {title->str} </Link>
 }
 
 module AuthorLink = {
   @react.component
   let make = (~index, ~title, ~author) => {
-    <> {title->str} <a href={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </a> </>
+    <> {title->str} <Link _to={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </Link> </>
   }
 }
 

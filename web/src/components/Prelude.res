@@ -43,6 +43,17 @@ let setLocationSearch = %raw(`
   }
 `)
 
+// Bindings for react router
+module Link = {
+  @react.component @module("react-router-dom")
+  external make: (
+    ~_to: string,
+    ~children: 'children,
+    ~style: option<'style>=?,
+    ~onClick: option<'cb>=?,
+  ) => React.element = "Link"
+}
+
 // A temporary module to provide runtime setting
 module Env = {
   type t = {
