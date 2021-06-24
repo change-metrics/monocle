@@ -14,8 +14,8 @@ module Lentille.GitHub where
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
+import Monocle.Api.Client.Worker (mkManager)
 import qualified Network.HTTP.Client as HTTP
-import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
@@ -34,7 +34,7 @@ data GitHubGraphClient = GitHubGraphClient
 
 newGithubGraphClient :: MonadIO m => Text -> m GitHubGraphClient
 newGithubGraphClient url' = do
-  manager' <- liftIO $ HTTP.newManager tlsManagerSettings
+  manager' <- mkManager
   token' <-
     toText
       . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")

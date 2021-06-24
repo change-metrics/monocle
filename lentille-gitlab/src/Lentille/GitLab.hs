@@ -9,8 +9,8 @@ import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
+import Monocle.Api.Client.Worker (mkManager)
 import qualified Network.HTTP.Client as HTTP
-import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
@@ -29,7 +29,7 @@ data GitLabGraphClient = GitLabGraphClient
 
 newGitLabGraphClientWithKey :: MonadIO m => Text -> Text -> m GitLabGraphClient
 newGitLabGraphClientWithKey url' token' = do
-  manager' <- liftIO $ HTTP.newManager tlsManagerSettings
+  manager' <- mkManager
   pure $ GitLabGraphClient manager' url' token'
 
 newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
