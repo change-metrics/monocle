@@ -7,6 +7,7 @@
 module Monocle.Api.Server where
 
 import Data.Fixed (Deci)
+import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
@@ -47,6 +48,65 @@ userGroupList request = do
       let groupDefinitionName = toLazy name
           groupDefinitionMembers = fromInteger . toInteger $ length users
        in UserGroupPB.GroupDefinition {..}
+
+-- | /api/2/user_group/get endpoint
+userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
+userGroupGet request = do
+  Env {tenants = tenants} <- ask
+  let UserGroupPB.GetRequest {..} = request
+  now <- liftIO getCurrentTime
+
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict getRequestIndex)
+            `orDie` ParseError "unknown index" 0
+
+        users <-
+          lookup (toStrict getRequestName) (Config.getTenantGroups index)
+            `orDie` ParseError "unknown group" 0
+
+        expr <- P.parse (toStrict getRequestQuery)
+
+        query <-
+          Q.queryWithMods now mempty (Just index) expr
+
+        pure (index, users, query)
+
+  case requestE of
+    Right (index, users, query) -> runTenantQueryM index query $ getGroupStats users
+    Left err -> error (show err)
+  where
+    getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
+    getGroupStats users = do
+      let allQuery = Q.mkOr $ map Q.toUserTerm users
+
+      allStats <- withFilter [allQuery] $ do
+        UserGroupPB.GroupStat
+          <$> Q.changeReviewRatio
+          <*> pure 0
+          <*> pure mempty
+
+      userStats <- traverse getUserStat users
+
+      pure $ UserGroupPB.GetResponse (Just allStats) (V.fromList userStats)
+
+    getUserStat :: Text -> QueryM UserGroupPB.UserStat
+    getUserStat name = do
+      let userQuery = Q.toUserTerm name
+          reviewQuery = Q.mkOr $ map (Q.mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+
+      userStats <- withFilter [userQuery] $ do
+        reviewHisto <- withFilter [reviewQuery] Q.getReviewHisto
+
+        UserGroupPB.GroupStat
+          <$> Q.changeReviewRatio
+          <*> pure 0
+          <*> pure (toReviewHisto <$> reviewHisto)
+
+      pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
+
+    toReviewHisto :: Q.HistoEventBucket -> UserGroupPB.ReviewHisto
+    toReviewHisto Q.HistoEventBucket {..} = UserGroupPB.ReviewHisto heKey heCount
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
@@ -320,7 +380,7 @@ searchChangesLifecycle indexName queryText = do
         let -- Helper functions ready to be applied
             bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
             count = Q.countEvents
-            queryType = Q.documentType bhQuery
+            queryType = Q.documentType [bhQuery]
 
         -- get events count
         eventCounts <- Q.getEventCounts bhQuery
