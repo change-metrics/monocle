@@ -33,6 +33,15 @@ module Monocle.Prelude
     getIndexName,
     getIndexConfig,
     fromPBEnum,
+
+    -- * Query context
+    QueryM,
+    runQueryM,
+    getQuery,
+    getQueryBH',
+    liftTenantM,
+    getQueryBH,
+    withFilter,
   )
 where
 

@@ -34,21 +34,19 @@ doSearch indexName search = do
 simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
-runQuery :: Text -> Q.Query -> TenantM [ELKChange]
-runQuery docType queryBase = do
-  index <- getIndexName
-  resp <- fmap BH.hitSource <$> simpleSearch index search
-  pure $ catMaybes resp
+runQuery :: Text -> QueryM [ELKChange]
+runQuery docType = withFilter [BH.TermQuery (BH.Term "type" docType) Nothing] $ do
+  query <- getQuery
+  let search =
+        (BH.mkSearch (Q.queryBH query) Nothing)
+          { BH.size = BH.Size (Q.queryLimit query),
+            BH.sortBody = toSortBody <$> Q.queryOrder query
+          }
+  liftTenantM $ do
+    index <- getIndexName
+    resp <- fmap BH.hitSource <$> simpleSearch index search
+    pure $ catMaybes resp
   where
-    queryBH = maybeToList $ Q.queryBH queryBase
-    query =
-      BH.QueryBoolQuery $
-        BH.mkBoolQuery ([BH.TermQuery (BH.Term "type" docType) Nothing] <> queryBH) [] [] []
-    search =
-      (BH.mkSearch (Just query) Nothing)
-        { BH.size = BH.Size (Q.queryLimit queryBase),
-          BH.sortBody = toSortBody <$> Q.queryOrder queryBase
-        }
     toSortBody (field', order) =
       [ BH.DefaultSortSpec
           ( BH.DefaultSort (BH.FieldName field') (sortOrder order) Nothing Nothing Nothing Nothing
@@ -58,7 +56,7 @@ runQuery docType queryBase = do
       Asc -> BH.Ascending
       Desc -> BH.Descending
 
-changes :: Q.Query -> TenantM [ELKChange]
+changes :: QueryM [ELKChange]
 changes = runQuery "Change"
 
 countEvents :: BH.Query -> TenantM Word32

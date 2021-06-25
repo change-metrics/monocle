@@ -206,8 +206,8 @@ searchQuery request = do
           pure (tenant, query, fromPBEnum queryRequestQueryType)
 
   case requestE of
-    Right (tenant, query, queryType) -> runTenantM tenant $ do
-      monocleLogEvent $ Searching queryType queryRequestQuery query
+    Right (tenant, query, queryType) -> runTenantQueryM tenant query $ do
+      liftTenantM $ monocleLogEvent $ Searching queryType queryRequestQuery query
 
       case queryType of
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
@@ -216,7 +216,7 @@ searchQuery request = do
             . SearchPB.Changes
             . V.fromList
             . map toResult
-            <$> Q.changes query
+            <$> Q.changes
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
           error "LifeCycle Not Implemented"
     Left err -> pure . handleError $ err

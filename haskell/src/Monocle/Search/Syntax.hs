@@ -1,7 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The Monocle Search Language Syntax
-module Monocle.Search.Syntax (Expr (..), SortOrder (..), ParseError (..), Query (..)) where
+module Monocle.Search.Syntax
+  ( Expr (..),
+    SortOrder (..),
+    ParseError (..),
+    Query (..),
+    toBHQuery,
+    setQueryBH,
+  )
+where
 
 import Data.Time.Clock (UTCTime)
 import qualified Database.Bloodhound as BH
@@ -45,3 +53,9 @@ data Query = Query
     queryBounds :: (UTCTime, UTCTime)
   }
   deriving (Show)
+
+toBHQuery :: Query -> [BH.Query]
+toBHQuery = maybeToList . queryBH
+
+setQueryBH :: BH.Query -> Query -> Query
+setQueryBH queryBH' query = query {queryBH = Just queryBH'}
