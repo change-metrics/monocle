@@ -200,6 +200,7 @@ module RowItem = {
           <th role="columnheader"> {"Status"->str} </th>
           <th role="columnheader"> {"Owner"->str} </th>
           <th role="columnheader"> {"Repo"->str} </th>
+          <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
           <th role="columnheader"> {"Approvals"->str} </th>
@@ -216,6 +217,7 @@ module RowItem = {
         <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
       </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
+      <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
       <td role="cell"> <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge> </td>
       <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
     </tr>
