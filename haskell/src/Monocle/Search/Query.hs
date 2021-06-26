@@ -144,10 +144,10 @@ dropTime (UTCTime day _sec) = UTCTime day 0
 
 toRangeValueD :: RangeOp -> (UTCTime -> BH.RangeValue)
 toRangeValueD op = case op of
-  Gt -> BH.RangeDateGt . BH.GreaterThanD . dropTime
-  Gte -> BH.RangeDateGte . BH.GreaterThanEqD . dropTime
-  Lt -> BH.RangeDateLt . BH.LessThanD . dropTime
-  Lte -> BH.RangeDateLte . BH.LessThanEqD . dropTime
+  Gt -> BH.RangeDateGt . BH.GreaterThanD
+  Gte -> BH.RangeDateGte . BH.GreaterThanEqD
+  Lt -> BH.RangeDateLt . BH.LessThanD
+  Lte -> BH.RangeDateLte . BH.LessThanEqD
 
 toRangeValue :: RangeOp -> (Double -> BH.RangeValue)
 toRangeValue op = case op of
@@ -172,9 +172,11 @@ mkRangeValue op field fieldType value = do
   case fieldType of
     Field_TypeFIELD_DATE -> do
       date <-
-        toParseError
-          . note ("Invalid date: " <> value)
-          $ parseRelativeDateValue now value <|> parseDateValue value
+        dropTime
+          <$> ( toParseError
+                  . note ("Invalid date: " <> value)
+                  $ parseRelativeDateValue now value <|> parseDateValue value
+              )
 
       updateBound op date
 
@@ -293,7 +295,7 @@ query expr = case expr of
   OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
-queryWithMods now username indexM baseExprM =
+queryWithMods now' username indexM baseExprM =
   case exprM of
     Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now)
     Just expr -> do
@@ -305,6 +307,7 @@ queryWithMods now username indexM baseExprM =
       pure $
         Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound)
   where
+    now = dropTime now'
     index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
     (order, limit, exprM) = case baseExprM of
