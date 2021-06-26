@@ -13,17 +13,23 @@ module RowItem = {
       <thead>
         <tr role="row">
           <th role="columnheader"> {"Member"->str} </th>
-          <th role="columnheader"> {"Ratio"->str} </th>
+          <Tooltip content={"The ratio between change created and change reviewed"}>
+            <th role="columnheader"> {"Commit / Review"->str} </th>
+          </Tooltip>
         </tr>
       </thead>
   }
   @react.component
   let make = (~user: UserGroupTypes.user_stat) => {
-    Js.log2("HERE", user.stat)
+    let stat = user.stat->Belt.Option.getExn
     <tr role="row">
       <td role="cell"> {user.name->str} </td>
       <td role="cell">
-        {(user.stat->Belt.Option.getExn).change_review_ratio->Js.Float.toString->str}
+        <Canvas.Dom
+          width=100
+          height=20
+          onDraw={Canvas.drawScale(stat.change_review_ratio->Js.Math.unsafe_round)}
+        />
       </td>
     </tr>
   }
