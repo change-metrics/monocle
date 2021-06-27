@@ -43,6 +43,7 @@ library
   exposed-modules:     Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.MergeRequest
+                     , Lentille.GitLab.Transformer
 
 executable lentille-gitlab
   import:              common-options

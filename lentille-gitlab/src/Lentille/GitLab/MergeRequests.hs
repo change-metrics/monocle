@@ -30,14 +30,13 @@ import Lentille.GitLab
     schemaLocation,
     streamFetch,
   )
+import Lentille.GitLab.Transformer
 import Monocle.Change
 import Relude hiding (id)
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
 -- TODO(fbo): use NamedFieldPuns
-
-newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 -- data MergeRequestState = MergeRequestStateOpened | MergeRequestStateClosed | MergeRequestStateLocked | MergeRequestStateAll | MergeRequestStateMerged
 
@@ -58,6 +57,7 @@ defineByDocumentFile
           nodes {
             id
             iid
+            state
             title
             description
             webUrl
@@ -112,10 +112,6 @@ defineByDocumentFile
     }
   |]
 
-fetchMergeRequests :: MonadIO m => GitLabGraphClient -> Text -> m (Either String GetProjectMergeRequests)
-fetchMergeRequests client project =
-  fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) Nothing)
-
 type Changes = (Change, [ChangeEvent])
 
 streamMergeRequests :: MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Changes) m ()
@@ -168,8 +164,6 @@ transformResponse result =
     toNamespaceName nsoM = case nsoM of
       Just nso -> name (nso :: ProjectNamespaceNamespace)
       Nothing -> ""
-    fromMTtoLT t = toLazy $ fromMaybe "" t
-    fromIntToInt32 = fromInteger . toInteger
     nodesToChanges :: Text -> Text -> Text -> [Maybe ProjectMergeRequestsNodesMergeRequest] -> [(Change, [ChangeEvent])]
     nodesToChanges shortName fullName namespace nodes' =
       map toChangeAndEvents (catMaybes nodes')
@@ -180,7 +174,7 @@ transformResponse result =
               -- (let ID id' = Lentille.GitLab.MergeRequests.id mr in show id')
               (toLazy . unpackID $ id mr)
               (getChangeNumber $ iid mr)
-              (getChangeId $ iid mr)
+              (getChangeId fullName $ iid mr)
               (toLazy $ title (mr :: ProjectMergeRequestsNodesMergeRequest))
               (fromMTtoLT $ description mr)
               (fromMTtoLT $ webUrl mr)
@@ -246,7 +240,7 @@ transformResponse result =
                   (toLazy sourceBranch)
                   (toLazy targetBranch)
                   (getChangeNumber iid)
-                  (getChangeId iid)
+                  (getChangeId fullName iid)
                   (fromMTtoLT webUrl)
                   (Just changeAuthor)
                   (Just changeCreatedAt)
@@ -274,7 +268,7 @@ transformResponse result =
                 (toLazy sourceBranch)
                 (toLazy targetBranch)
                 (getChangeNumber iid)
-                (getChangeId iid)
+                (getChangeId fullName iid)
                 (fromMTtoLT webUrl)
                 (Just $ getAuthorIdent' author)
                 (Just $ timeToTimestamp Nothing createdAt)
@@ -305,7 +299,7 @@ transformResponse result =
                 (toLazy sourceBranch)
                 (toLazy targetBranch)
                 (getChangeNumber iid)
-                (getChangeId iid)
+                (getChangeId fullName iid)
                 (fromMTtoLT webUrl)
                 (Just $ getAuthorIdent' author)
                 (Just $ timeToTimestamp Nothing createdAt)
@@ -324,12 +318,6 @@ transformResponse result =
         getAuthorIdent' (Just uc) = toIdent $ getAuthorUsername uc
         getAuthorIdent' Nothing = ghostIdent
         getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
-        getChangeNumber :: Text -> Int32
-        getChangeNumber iid =
-          fromIntToInt32 $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
-        getChangeId :: Text -> LText
-        getChangeId iid = toLazy . removeSpace $ TE.replace "/" "@" fullName <> "@" <> toText iid
-        removeSpace = TE.replace " " ""
         getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
         getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
           Just durationFM -> truncate <$> durationFM
