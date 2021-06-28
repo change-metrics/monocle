@@ -328,7 +328,7 @@ toELKChange Change {..} =
       elkchangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
       elkchangeUpdatedAt = T.toUTCTime $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
       elkchangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
-      elkchangeState = changeState,
+      elkchangeState = toState $ fromPBEnum changeState,
       elkchangeDuration = toDuration <$> changeOptionalDuration,
       elkchangeMergeable = changeMergeable,
       elkchangeLabels = toList changeLabels,
@@ -359,6 +359,10 @@ toELKChange Change {..} =
     toClosedAt (ChangeOptionalClosedAtClosedAt t) = T.toUTCTime t
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
+    toState cstate = case cstate of
+      Change_ChangeStateOpen -> "OPEN"
+      Change_ChangeStateMerged -> "MERGED"
+      Change_ChangeStateClosed -> "CLOSED"
 
 indexDocs :: [(Value, BH.DocId)] -> TenantM ()
 indexDocs docs = do

@@ -39,10 +39,6 @@ toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
-fromPBEnum :: Enumerated a -> a
-fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
-fromPBEnum (Enumerated (Right x)) = x
-
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do

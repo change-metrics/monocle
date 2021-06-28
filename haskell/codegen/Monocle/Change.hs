@@ -667,7 +667,8 @@ data Change = Change
     changeOptionalMergedAt :: Hs.Maybe ChangeOptionalMergedAt,
     changeUpdatedAt :: Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
     changeOptionalClosedAt :: Hs.Maybe ChangeOptionalClosedAt,
-    changeState :: Hs.Text,
+    changeState ::
+      HsProtobuf.Enumerated Monocle.Change.Change_ChangeState,
     changeOptionalDuration :: Hs.Maybe ChangeOptionalDuration,
     changeMergeable :: Hs.Text,
     changeLabels :: Hs.Vector Hs.Text,
@@ -1244,7 +1245,9 @@ instance HsProtobuf.Message Change where
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 24)
-          (HsProtobuf.Prim HsProtobuf.String)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "ChangeState"))
+          )
           (HsProtobuf.Single "state")
           []
           ""
@@ -1830,6 +1833,58 @@ instance HsJSONPB.ToSchema Change where
                   }
             }
         )
+
+data Change_ChangeState
+  = Change_ChangeStateOpen
+  | Change_ChangeStateMerged
+  | Change_ChangeStateClosed
+  deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Change_ChangeState where
+  nameOf _ = (Hs.fromString "Change_ChangeState")
+
+instance HsProtobuf.HasDefault Change_ChangeState
+
+instance Hs.Bounded Change_ChangeState where
+  minBound = Change_ChangeStateOpen
+  maxBound = Change_ChangeStateClosed
+
+instance Hs.Ord Change_ChangeState where
+  compare x y =
+    Hs.compare
+      (HsProtobuf.fromProtoEnum x)
+      (HsProtobuf.fromProtoEnum y)
+
+instance HsProtobuf.ProtoEnum Change_ChangeState where
+  toProtoEnumMay 0 = Hs.Just Change_ChangeStateOpen
+  toProtoEnumMay 1 = Hs.Just Change_ChangeStateMerged
+  toProtoEnumMay 2 = Hs.Just Change_ChangeStateClosed
+  toProtoEnumMay _ = Hs.Nothing
+  fromProtoEnum (Change_ChangeStateOpen) = 0
+  fromProtoEnum (Change_ChangeStateMerged) = 1
+  fromProtoEnum (Change_ChangeStateClosed) = 2
+
+instance HsJSONPB.ToJSONPB Change_ChangeState where
+  toJSONPB x _ = HsJSONPB.enumFieldString x
+  toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
+
+instance HsJSONPB.FromJSONPB Change_ChangeState where
+  parseJSONPB (HsJSONPB.String "Open") =
+    Hs.pure Change_ChangeStateOpen
+  parseJSONPB (HsJSONPB.String "Merged") =
+    Hs.pure Change_ChangeStateMerged
+  parseJSONPB (HsJSONPB.String "Closed") =
+    Hs.pure Change_ChangeStateClosed
+  parseJSONPB v = (HsJSONPB.typeMismatch "Change_ChangeState" v)
+
+instance HsJSONPB.ToJSON Change_ChangeState where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Change_ChangeState where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsProtobuf.Finite Change_ChangeState
 
 data ChangeOptionalMergedBy = ChangeOptionalMergedByMergedBy Monocle.Change.Ident
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)

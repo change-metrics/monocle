@@ -32,6 +32,7 @@ module Monocle.Prelude
     TenantM,
     getIndexName,
     getIndexConfig,
+    fromPBEnum,
   )
 where
 
@@ -45,6 +46,7 @@ import Monocle.Api.Client.Internal (MonocleClient)
 import qualified Monocle.Api.Config as Config
 import Monocle.Search.Syntax
 import Monocle.Servant.Env
+import Proto3.Suite (Enumerated (..))
 import Relude
 import Say (sayErr)
 
@@ -86,3 +88,7 @@ monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
   tenant <- getIndexConfig
   sayErr $ Config.index tenant <> ": " <> eventToText ev
+
+fromPBEnum :: Enumerated a -> a
+fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
+fromPBEnum (Enumerated (Right x)) = x

@@ -11,3 +11,4 @@ etc
 docker-compose.yml
 dump
 .vscode
+.hie

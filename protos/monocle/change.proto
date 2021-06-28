@@ -34,6 +34,11 @@ message Commit {
 }
 
 message Change {
+  enum ChangeState {
+    Open = 0;
+    Merged = 1;
+    Closed = 2;
+  }
   string id = 1;
   int32 number = 2;
   string change_id = 3;
@@ -63,7 +68,7 @@ message Change {
   oneof optional_closed_at {
     google.protobuf.Timestamp closed_at = 23;
   }
-  string state = 24;
+  ChangeState state = 24;
   oneof optional_duration {
     int32 duration = 25;
   }

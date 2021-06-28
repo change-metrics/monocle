@@ -295,7 +295,8 @@ components:
                     type: string
                     format: RFC3339
                 state:
-                    type: string
+                    type: integer
+                    format: enum
                 duration:
                     type: integer
                     format: int32
