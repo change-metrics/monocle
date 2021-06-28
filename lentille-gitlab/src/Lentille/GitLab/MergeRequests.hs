@@ -57,7 +57,6 @@ defineByDocumentFile
           nodes {
             id
             iid
-            state
             title
             description
             webUrl
@@ -157,268 +156,143 @@ transformResponse result =
         ) ->
         ( PageInfo hasNextPage endCursor count,
           [],
-          nodesToChanges shortName fullName (toNamespaceName nameSpaceM) nodes
+          extract shortName fullName (toNamespaceName nameSpaceM) <$> catMaybes nodes
         )
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
     toNamespaceName nsoM = case nsoM of
       Just nso -> name (nso :: ProjectNamespaceNamespace)
       Nothing -> ""
-    nodesToChanges :: Text -> Text -> Text -> [Maybe ProjectMergeRequestsNodesMergeRequest] -> [(Change, [ChangeEvent])]
-    nodesToChanges shortName fullName namespace nodes' =
-      map toChangeAndEvents (catMaybes nodes')
-      where
-        toChangeAndEvents :: ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
-        toChangeAndEvents mr =
-          ( Change
-              -- (let ID id' = Lentille.GitLab.MergeRequests.id mr in show id')
-              (toLazy . unpackID $ id mr)
-              (getChangeNumber $ iid mr)
-              (getChangeId fullName $ iid mr)
-              (toLazy $ title (mr :: ProjectMergeRequestsNodesMergeRequest))
-              (fromMTtoLT $ description mr)
-              (fromMTtoLT $ webUrl mr)
-              (fromIntToInt32 . fromMaybe 0 $ commitCount mr)
-              (getAdditions $ diffStatsSummary mr)
-              (getDeletions $ diffStatsSummary mr)
-              (getChangedFileCount $ diffStatsSummary mr)
-              (getChangedFiles $ diffStats mr)
-              (getCommits $ commitsWithoutMergeCommits mr)
-              (toLazy namespace)
-              (toLazy $ removeSpace fullName)
-              (toLazy shortName)
-              (Just $ getAuthorIdent mr)
-              (Just . ChangeOptionalMergedByMergedBy $ getMergedByIdent mr)
-              (toLazy $ sourceBranch mr)
-              (toLazy $ targetBranch mr)
-              (Just $ timeToTimestamp Nothing $ createdAt mr)
-              (ChangeOptionalMergedAtMergedAt <$> getMergedAt (mergedAt mr))
-              (Just $ timeToTimestamp Nothing $ updatedAt mr)
-              -- No closedAt attribute for a MR ?
-              Nothing
-              -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
-              (if isMerged $ mergedAt mr then "MERGED" else "CLOSED")
-              (ChangeOptionalDurationDuration <$> getDuration mr)
-              -- TODO(fbo) Use the merge status : https://docs.gitlab.com/ee/api/graphql/reference/index.html#mergestatus
-              (if mergeable mr then "MERGEABLE" else "CONFLICT")
-              (getLabels $ labels mr)
-              (getAssignees $ assignees mr)
-              (if approved mr then fromList ["APPROVED"] else fromList [])
-              (draft mr)
-              (ChangeOptionalSelfMergedSelfMerged <$> getSelfMerged mr),
-            toChangePushedEvent mr <> toChangeMergedEvent mr <> toChangeCreatedEvent mr
+    extract :: Text -> Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
+    extract shortName fullName namespace mr =
+      let change = getChange mr
+       in ( change,
+            getChangeCreatedEvent change
+              <> getChangePushedEvent change
+              <> getChangeMergedEvent change
           )
-        toChangePushedEvent :: ProjectMergeRequestsNodesMergeRequest -> [ChangeEvent]
-        toChangePushedEvent
-          ProjectMergeRequestsNodesMergeRequest
-            { id,
-              iid,
-              author,
-              createdAt,
-              sourceBranch,
-              targetBranch,
-              webUrl,
-              diffStats,
-              commitsWithoutMergeCommits
-            } = case commitsWithoutMergeCommits of
-            Just (ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection (Just nodes)) -> fromNodestoCommitEvents getChangeAuthor getChangeCreatedAt $ catMaybes nodes
-            _ -> []
-            where
-              getChangeAuthor = getAuthorIdent' author
-              getChangeCreatedAt = timeToTimestamp Nothing createdAt
-              fromNodestoCommitEvents :: Ident -> T.Timestamp -> [ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit] -> [ChangeEvent]
-              fromNodestoCommitEvents changeAuthor changeCreatedAt commitNodes = map (toCommitEvent changeAuthor changeCreatedAt) commitNodes
-              toCommitEvent :: Ident -> T.Timestamp -> ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit -> ChangeEvent
-              toCommitEvent changeAuthor changeCreatedAt ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit {..} =
-                ChangeEvent
-                  ("ChangeEventCommitPushed-" <> toLazy (unpackID id))
-                  (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
-                  (Just . toIdent . getCommitUsername $ author)
-                  (toLazy namespace)
-                  (toLazy $ removeSpace fullName)
-                  (toLazy shortName)
-                  (toLazy sourceBranch)
-                  (toLazy targetBranch)
-                  (getChangeNumber iid)
-                  (getChangeId fullName iid)
-                  (fromMTtoLT webUrl)
-                  (Just changeAuthor)
-                  (Just changeCreatedAt)
-                  (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
-                  (Just $ ChangeEventTypeChangePushed ChangePushedEvent)
-        toChangeCreatedEvent :: ProjectMergeRequestsNodesMergeRequest -> [ChangeEvent]
-        toChangeCreatedEvent
-          ProjectMergeRequestsNodesMergeRequest
-            { id,
-              iid,
-              author,
-              createdAt,
-              sourceBranch,
-              targetBranch,
-              webUrl,
-              diffStats
-            } =
-            [ ChangeEvent
-                ("ChangeEventCreated-" <> toLazy (unpackID id))
-                (Just $ timeToTimestamp Nothing createdAt)
-                (Just $ getAuthorIdent' author)
-                (toLazy namespace)
-                (toLazy $ removeSpace fullName)
-                (toLazy shortName)
-                (toLazy sourceBranch)
-                (toLazy targetBranch)
-                (getChangeNumber iid)
-                (getChangeId fullName iid)
-                (fromMTtoLT webUrl)
-                (Just $ getAuthorIdent' author)
-                (Just $ timeToTimestamp Nothing createdAt)
-                (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
-                (Just $ ChangeEventTypeChangeCreated ChangeCreatedEvent)
-            ]
-        toChangeMergedEvent :: ProjectMergeRequestsNodesMergeRequest -> [ChangeEvent]
-        toChangeMergedEvent
-          ProjectMergeRequestsNodesMergeRequest
-            { id,
-              iid,
-              author,
-              createdAt,
-              mergedAt,
-              mergeUser,
-              sourceBranch,
-              targetBranch,
-              webUrl,
-              diffStats
-            } =
-            [ ChangeEvent
-                ("ChangeEventMerged-" <> toLazy (unpackID id))
-                (getMergedAt mergedAt)
-                (getMergedByIdent' mergeUser)
-                (toLazy namespace)
-                (toLazy $ removeSpace fullName)
-                (toLazy shortName)
-                (toLazy sourceBranch)
-                (toLazy targetBranch)
-                (getChangeNumber iid)
-                (getChangeId fullName iid)
-                (fromMTtoLT webUrl)
-                (Just $ getAuthorIdent' author)
-                (Just $ timeToTimestamp Nothing createdAt)
-                (ChangedFilePath . changedFilePath <$> getChangedFiles diffStats)
-                (Just $ ChangeEventTypeChangeMerged ChangeMergedEvent)
-              | isMerged mergedAt
-            ]
-            where
-              getMergedByIdent' :: Maybe ProjectMergeRequestsNodesMergeUserUserCore -> Maybe Ident
-              getMergedByIdent' ucM = fmap (toIdent . getUsername) ucM
-                where
-                  getUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
-        defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
-        commitFormatString = Just "%FT%X%Ez"
-        getAuthorIdent' :: Maybe ProjectMergeRequestsNodesAuthorUserCore -> Ident
-        getAuthorIdent' (Just uc) = toIdent $ getAuthorUsername uc
-        getAuthorIdent' Nothing = ghostIdent
+      where
+        toDiffStatsSummary ProjectMergeRequestsNodesDiffStatsSummaryDiffStatsSummary {..} = DiffStatsSummary {..}
+        toDiffStats ProjectMergeRequestsNodesDiffStatsDiffStats {..} = DiffStats {..}
+        toMRCommit (ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit sha author' authoredDate ctitle) =
+          let cauthor = authorName <$> author' in MRCommit {..}
+          where
+            authorName ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore {..} = MRUserCore username
+        toCommitsNodes
+          (ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection nodes) = cleanMaybeMNodes nodes
+        toLabelsNodes
+          (ProjectMergeRequestsNodesLabelsLabelConnection nodes) = cleanMaybeMNodes nodes
+        toAssigneesNodes
+          (ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection nodes) = cleanMaybeMNodes nodes
+        getLabelTitle (ProjectMergeRequestsNodesLabelsNodesLabel title') = toLazy title'
         getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
-        getDuration :: ProjectMergeRequestsNodesMergeRequest -> Maybe Int32
-        getDuration ProjectMergeRequestsNodesMergeRequest {createdAt, mergedAt} = case fmap readMaybe compuDiff :: Maybe (Maybe Float) of
-          Just durationFM -> truncate <$> durationFM
-          _ -> Nothing
+        getMergerUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
+        getAssigneesUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {..} = username
+        getChange :: ProjectMergeRequestsNodesMergeRequest -> Change
+        getChange ProjectMergeRequestsNodesMergeRequest {..} =
+          let changeId = (toLazy $ unpackID id)
+              changeNumber = getChangeNumber iid
+              changeChangeId = getChangeId fullName iid
+              changeTitle = toLazy title
+              changeText = fromMTtoLT description
+              changeUrl = fromMTtoLT webUrl
+              changeCommitCount = (fromIntToInt32 $ fromMaybe 0 commitCount)
+              changeAdditions = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSAdditions)
+              changeDeletions = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSDeletions)
+              changeChangedFilesCount = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
+              changeChangedFiles = (fromList $ getChangedFile . toDiffStats <$> fromMaybe [] diffStats)
+              changeCommits = (fromList $ toCommit . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
+              changeRepositoryPrefix = toLazy namespace
+              changeRepositoryFullname = (toLazy $ removeSpace fullName)
+              changeRepositoryShortname = toLazy shortName
+              changeAuthor = (Just $ maybe ghostIdent (toIdent . getAuthorUsername) author)
+              changeOptionalMergedBy =
+                ( Just . ChangeOptionalMergedByMergedBy $
+                    maybe ghostIdent (toIdent . getMergerUsername) mergeUser
+                )
+              changeBranch = toLazy sourceBranch
+              changeTargetBranch = toLazy targetBranch
+              changeCreatedAt = (Just $ timeToTimestamp Nothing createdAt)
+              changeOptionalMergedAt = (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing <$> mergedAt)
+              changeUpdatedAt = (Just $ timeToTimestamp Nothing updatedAt)
+              -- No closedAt attribute for a MR ?
+              changeOptionalClosedAt = Nothing
+              -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
+              changeState = (if isJust mergedAt then "MERGED" else "CLOSED")
+              changeOptionalDuration =
+                ( ChangeOptionalDurationDuration . fromIntToInt32
+                    . diffTime
+                      ( timeToUTCTime Nothing createdAt
+                      )
+                    <$> (timeToUTCTime Nothing <$> mergedAt)
+                )
+              -- TODO(fbo) Use the merge status : https://docs.gitlab.com/ee/api/graphql/reference/index.html#mergestatus
+              changeMergeable = (if mergeable then "MERGEABLE" else "CONFLICT")
+              changeLabels = (fromList $ getLabelTitle <$> maybe [] toLabelsNodes labels)
+              changeAssignees = (fromList $ toIdent . getAssigneesUsername <$> maybe [] toAssigneesNodes assignees)
+              changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
+              changeDraft = draft
+              changeOptionalSelfMerged =
+                ( ChangeOptionalSelfMergedSelfMerged
+                    <$> ( (==)
+                            <$> (getAuthorUsername <$> author) <*> (getMergerUsername <$> mergeUser)
+                        )
+                )
+           in Change {..}
+
+        getBaseEvent :: Change -> ChangeEvent
+        getBaseEvent Change {..} =
+          let changeEventOnAuthor = changeAuthor
+              changeEventOnCreatedAt = changeCreatedAt
+              changeEventRepositoryPrefix = changeRepositoryPrefix
+              changeEventRepositoryFullname = changeEventRepositoryFullname
+              changeEventRepositoryShortname = changeRepositoryShortname
+              changeEventBranch = changeBranch
+              changeEventTargetBranch = changeTargetBranch
+              changeEventNumber = changeNumber
+              changeEventChangeId = changeChangeId
+              changeEventUrl = changeUrl
+              changeEventChangedFiles = fmap toChangeFilePath changeChangedFiles
+              -- To be filled by caller function
+              changeEventCreatedAt = Nothing
+              changeEventAuthor = Nothing
+              changeEventType = Nothing
+              changeEventId = ""
+           in ChangeEvent {..}
           where
-            compuDiff :: Maybe String
-            compuDiff = fmap (show . nominalDiffTimeToSeconds . negate . diffUTCTime (timeToUTCTime Nothing createdAt) . timeToUTCTime Nothing) mergedAt
-        getMergedAt :: Maybe Time -> Maybe T.Timestamp
-        getMergedAt tM = fmap (timeToTimestamp Nothing) tM
-        ghostIdent = Ident "ghost" "ghost"
-        getAuthorIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
-        getAuthorIdent ProjectMergeRequestsNodesMergeRequest {author} = case author of
-          Just author' -> toIdent $ getAuthorUsername author'
-          Nothing -> ghostIdent
-        getMergedByIdent :: ProjectMergeRequestsNodesMergeRequest -> Ident
-        getMergedByIdent ProjectMergeRequestsNodesMergeRequest {mergeUser} = case mergeUser of
-          Just author' -> toIdent $ getUsername author'
-          Nothing -> ghostIdent
+            toChangeFilePath ChangedFile {..} = ChangedFilePath changedFilePath
+
+        getChangeCreatedEvent :: Change -> [ChangeEvent]
+        getChangeCreatedEvent change =
+          [ (getBaseEvent change)
+              { changeEventId = "ChangeCreatedEvent-" <> changeId change,
+                changeEventType = Just $ ChangeEventTypeChangeCreated ChangeCreatedEvent,
+                changeEventAuthor = changeAuthor change,
+                changeEventCreatedAt = changeCreatedAt change
+              }
+          ]
+
+        getChangeMergedEvent :: Change -> [ChangeEvent]
+        getChangeMergedEvent change =
+          [ (getBaseEvent change)
+              { changeEventId = "ChangeMergedEvent-" <> changeId change,
+                changeEventType = Just $ ChangeEventTypeChangeMerged ChangeMergedEvent,
+                changeEventAuthor = getMergedByIdent <$> changeOptionalMergedBy change,
+                changeEventCreatedAt = getMergedAt <$> changeOptionalMergedAt change
+              }
+            | changeState change == "MERGED"
+          ]
           where
-            getUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
-        getDiffStatsAttr :: Maybe ProjectMergeRequestsNodesDiffStatsSummaryDiffStatsSummary -> (ProjectMergeRequestsNodesDiffStatsSummaryDiffStatsSummary -> Int) -> Int32
-        getDiffStatsAttr diffStatsM cb =
-          case diffStatsM of
-            Just diffStats -> fromIntToInt32 $ cb diffStats
-            Nothing -> 0
-        getAdditions diffStatsM = getDiffStatsAttr diffStatsM additions
-        getDeletions diffStatsM = getDiffStatsAttr diffStatsM deletions
-        getChangedFileCount diffStatsM = getDiffStatsAttr diffStatsM fileCount
-        getChangedFiles :: Maybe [ProjectMergeRequestsNodesDiffStatsDiffStats] -> V.Vector ChangedFile
-        getChangedFiles dfM = case dfM of
-          Just df -> fromList $ map toChangeFile df
-          Nothing -> fromList []
+            getMergedByIdent (ChangeOptionalMergedByMergedBy ident) = ident
+            getMergedAt (ChangeOptionalMergedAtMergedAt ts) = ts
+
+        getChangePushedEvent :: Change -> [ChangeEvent]
+        getChangePushedEvent change = toList $ mkPushEvent <$> changeCommits change
           where
-            toChangeFile ProjectMergeRequestsNodesDiffStatsDiffStats {..} =
-              ChangedFile
-                (fromIntToInt32 additions)
-                (fromIntToInt32 deletions)
-                (toLazy path)
-        getCommitUsername :: Maybe ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore -> Text
-        getCommitUsername uM = case uM of
-          Just u -> username (u :: ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore)
-          Nothing -> ""
-        getCommits :: Maybe ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection -> V.Vector Commit
-        getCommits commitsM =
-          case commitsM of
-            Just
-              ( ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection
-                  (Just commits)
-                ) -> fromList $ map toCommit (catMaybes commits)
-            _ -> empty
-          where
-            toCommit :: ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit -> Commit
-            toCommit ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit {..} =
-              -- Unable to get the committer and the committed_at date
-              -- Unable to get additions/deletions
-              Commit
-                (toLazy sha)
-                (Just . toIdent . getCommitUsername $ author)
-                (Just . toIdent . getCommitUsername $ author)
-                (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
-                (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
-                0
-                0
-                (toLazy $ fromMaybe "" title)
-        toIdent :: Text -> Ident
-        toIdent username' = Ident (toLazy $ "gitlab.com" <> "/" <> username') (toLazy username')
-        getLabels :: Maybe ProjectMergeRequestsNodesLabelsLabelConnection -> V.Vector LText
-        getLabels labelsM =
-          case labelsM of
-            ( Just
-                ( ProjectMergeRequestsNodesLabelsLabelConnection
-                    (Just labels)
-                  )
-              ) -> fromList $ map toLabel (catMaybes labels)
-            _ -> empty
-          where
-            toLabel ProjectMergeRequestsNodesLabelsNodesLabel {title} = toLazy title
-        getAssignees :: Maybe ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection -> V.Vector Ident
-        getAssignees assigneesM =
-          case assigneesM of
-            ( Just
-                ( ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection
-                    (Just assignees)
-                  )
-              ) -> fromList $ map toUsername (catMaybes assignees)
-            _ -> empty
-          where
-            toUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {username} = toIdent username
-        isMerged :: Maybe Time -> Bool
-        isMerged mergedAt' = case mergedAt' of
-          Just _ -> True
-          Nothing -> False
-        getSelfMerged :: ProjectMergeRequestsNodesMergeRequest -> Maybe Bool
-        getSelfMerged ProjectMergeRequestsNodesMergeRequest {author, mergeUser, mergedAt} =
-          if isMerged mergedAt then checkIsSelfMerged author mergeUser else Nothing
-          where
-            checkIsSelfMerged a m = case (a, m) of
-              (Just (ProjectMergeRequestsNodesAuthorUserCore u1), Just (ProjectMergeRequestsNodesMergeUserUserCore u2)) -> Just $ u1 == u2
-              _ -> Nothing
-        timeToTimestamp :: Maybe String -> Time -> T.Timestamp
-        timeToTimestamp formatStringE = T.fromUTCTime . timeToUTCTime formatStringE
-        timeToUTCTime :: Maybe String -> Time -> UTCTime
-        timeToUTCTime formatStringE t =
-          let Time tt = t in parseTimeOrError False defaultTimeLocale (fromMaybe "%FT%XZ" formatStringE) $ toString tt
+            mkPushEvent Commit {..} =
+              (getBaseEvent change)
+                { changeEventId = "ChangePushedEvent-" <> changeId change,
+                  changeEventType = Just $ ChangeEventTypeChangePushed ChangePushedEvent,
+                  changeEventAuthor = commitAuthor,
+                  changeEventCreatedAt = commitAuthoredAt
+                }
