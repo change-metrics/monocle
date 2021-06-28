@@ -11858,7 +11858,7 @@ type MergeRequest implements Noteable & CurrentUserTodos {
   squashOnMerge: Boolean!
 
   """State of the merge request."""
-  state: MergeRequestState!
+  state: String!
 
   """
   Indicates if the currently logged in user is subscribed to this merge request.

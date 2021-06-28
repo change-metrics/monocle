@@ -32,7 +32,7 @@ import Lentille.GitLab
   )
 import Lentille.GitLab.Transformer
 import Monocle.Change
-import Relude hiding (id)
+import Relude hiding (id, state)
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
@@ -55,6 +55,7 @@ defineByDocumentFile
             iid
             title
             description
+            state
             webUrl
             commitCount
             diffStatsSummary {
@@ -218,8 +219,7 @@ transformResponse result =
               changeUpdatedAt = (Just $ timeToTimestamp Nothing updatedAt)
               -- No closedAt attribute for a MR ?
               changeOptionalClosedAt = Nothing
-              -- For now unable to get the state https://github.com/morpheusgraphql/morpheus-graphql/issues/600
-              changeState = (if isJust mergedAt then "MERGED" else "CLOSED")
+              changeState = toState state
               changeOptionalDuration =
                 ( ChangeOptionalDurationDuration . fromIntToInt32
                     . diffTime
@@ -281,7 +281,7 @@ transformResponse result =
                 changeEventAuthor = getMergedByIdent <$> changeOptionalMergedBy change,
                 changeEventCreatedAt = getMergedAt <$> changeOptionalMergedAt change
               }
-            | changeState change == "MERGED"
+            | isMerged $ changeState change
           ]
           where
             getMergedByIdent (ChangeOptionalMergedByMergedBy ident) = ident

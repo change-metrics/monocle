@@ -17,6 +17,7 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Google.Protobuf.Timestamp as T
 import Monocle.Change
+import Proto3.Suite (Enumerated (..))
 import Relude
 
 newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
@@ -122,3 +123,15 @@ diffTime l e =
   where
     trunc :: Float -> Int
     trunc = truncate
+
+toState :: Text -> Enumerated Change_ChangeState
+toState state' = case state' of
+  "closed" -> Enumerated (Right Change_ChangeStateClosed)
+  "merged" -> Enumerated $ Right Change_ChangeStateMerged
+  "opened" -> Enumerated $ Right Change_ChangeStateOpen
+  _otherwise -> error ("Unable to decode Merge Request state: " <> _otherwise)
+
+isMerged :: Enumerated Change_ChangeState -> Bool
+isMerged state' = case state' of
+  Enumerated (Right Change_ChangeStateMerged) -> True
+  _otherwise -> False

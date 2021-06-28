@@ -36,6 +36,7 @@ library
                      , monocle
                      , streaming                  < 0.3
                      , http-client                < 0.8
+                     , proto3-suite               >= 0.4.2
                      , http-client-tls            < 0.4
                      , time                       < 1.12
                      , vector
