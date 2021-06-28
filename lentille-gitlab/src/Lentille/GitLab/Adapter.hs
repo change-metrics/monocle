@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports #-}
 
-module Lentille.GitLab.Transformer where
+module Lentille.GitLab.Adapter where
 
 import Data.Morpheus.Client
 import qualified Data.Text as TE

@@ -30,7 +30,7 @@ import Lentille.GitLab
     schemaLocation,
     streamFetch,
   )
-import Lentille.GitLab.Transformer
+import Lentille.GitLab.Adapter
 import Monocle.Change
 import Relude hiding (id, state)
 import Streaming (Of, Stream)
