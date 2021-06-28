@@ -35,8 +35,10 @@ crawlerName Config.Crawler {..} = name
 runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
-  conf <- Config.loadConfig confPath
-  loop conf
+  confE <- Config.loadConfig confPath
+  case confE of
+    Left err -> error ("Unable to read the configuration file: " <> err)
+    Right conf -> loop conf
   where
     loop conf = do
       -- Crawl each index
