@@ -34,7 +34,7 @@ data MRCommit = MRCommit {sha :: Text, cauthor :: Maybe MRUserCore, authoredDate
 -- Some default data
 
 commitFormatString :: Maybe String
-commitFormatString = Just "%FT%X%Ez"
+commitFormatString = Just "%FT%X%EZ"
 
 defaultTimestamp :: Time
 defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
