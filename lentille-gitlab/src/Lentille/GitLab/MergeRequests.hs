@@ -12,7 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
-{-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports #-}
+{-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports -Wno-orphans #-}
 
 module Lentille.GitLab.MergeRequests where
 
@@ -36,22 +36,18 @@ import Relude hiding (id)
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
--- TODO(fbo): use NamedFieldPuns
-
--- data MergeRequestState = MergeRequestStateOpened | MergeRequestStateClosed | MergeRequestStateLocked | MergeRequestStateAll | MergeRequestStateMerged
-
 -- https://docs.gitlab.com/ee/api/graphql/reference/index.html#projectmergerequests
 defineByDocumentFile
   schemaLocation
   [gql|
-    query GetProjectMergeRequests ($project: ID!, $cursor: String) {
+    query GetProjectMergeRequests ($project: ID!, $iids: [String!], $cursor: String) {
       project(fullPath: $project) {
         name
         nameWithNamespace
         namespace {
           name
         }
-        mergeRequests (first: 100, after: $cursor, sort: UPDATED_DESC) {
+        mergeRequests (first: 100, after: $cursor, sort: UPDATED_DESC, iids: $iids) {
           pageInfo {hasNextPage endCursor}
           count
           nodes {
@@ -113,11 +109,16 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-streamMergeRequests :: MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Changes) m ()
+fetchMergeRequest :: MonadIO m => GitLabGraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
+fetchMergeRequest client project mrID =
+  fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
+
+streamMergeRequests ::
+  MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Changes) m ()
 streamMergeRequests client untilDate project =
   streamFetch client untilDate mkArgs transformResponse breakOnDate
   where
-    mkArgs cursor = GetProjectMergeRequestsArgs (ID project) $ toCursorM cursor
+    mkArgs cursor = GetProjectMergeRequestsArgs (ID project) Nothing $ toCursorM cursor
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''

@@ -42,7 +42,6 @@ library
                      , morpheus-graphql-client    ^>= 0.17
   exposed-modules:     Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
-                     , Lentille.GitLab.MergeRequest
                      , Lentille.GitLab.Transformer
 
 executable lentille-gitlab
