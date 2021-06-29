@@ -98,7 +98,7 @@ schema = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["index", "crawler"],
+                "required": ["index"],
                 "properties": {
                     "index": {
                         "type": "string",
