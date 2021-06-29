@@ -223,7 +223,7 @@ def main() -> None:
             app = application.get_app(os.getenv("APP_ID"), os.getenv("APP_KEY_PATH"))
         for tenant in configdata["tenants"]:
             idents_config = config.get_idents_config(configdata, tenant["index"])
-            for crawler_item in tenant["crawler"].get("github_orgs", []):
+            for crawler_item in tenant.get("crawler", {}).get("github_orgs", []):
                 tg = pullrequest.TokenGetter(
                     crawler_item["name"], crawler_item.get("token"), app
                 )
@@ -278,7 +278,9 @@ def main() -> None:
                 for repository in repositories:
                     github_c_args.repository = repository
                     group[gid].add_crawler(Runner(github_c_args))
-            for crawler_item in tenant["crawler"].get("gerrit_repositories", []):
+            for crawler_item in tenant.get("crawler", {}).get(
+                "gerrit_repositories", []
+            ):
                 gerrit_c_args = review.GerritCrawlerArgs(
                     command="gerrit_crawler",
                     repository=crawler_item["name"],
