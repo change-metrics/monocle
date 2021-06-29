@@ -119,3 +119,81 @@ firefox http://localhost:8080
 ```
 
 See the `usage` section in the script.
+
+## Running the services manually
+
+This section describes how to start the Monocle services directly on your host without using containers.
+This can be used to better understand how the system works and to enable fast reload of local changes.
+
+### Requirements
+
+```ShellSession
+sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
+```
+
+### HTTP gateway
+
+Adjust and copy this configuration to `/etc/nginx/conf.d/monocle.conf`
+
+```
+server {
+  listen 8081;
+
+  gzip on;
+    gzip_min_length 1000;
+    gzip_types text/plain text/xml application/javascript text/css;
+
+  location /api/ {
+    proxy_pass http://localhost:9878/api/;
+    proxy_http_version 1.1;
+  }
+
+  location /api/2/ {
+    proxy_pass http://localhost:9879/;
+    proxy_http_version 1.1;
+  }
+
+  location /auth {
+    proxy_pass http://localhost:9879/auth;
+    proxy_http_version 1.1;
+  }
+
+  # Forward the rest to the node development server
+  location / {
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+  }
+}
+```
+
+
+### Elastic
+
+```ShellSession
+./contrib/start-elk.sh 9200
+```
+
+### APIv1
+
+```ShellSession
+./contrib/start-apiv1.sh 9878
+```
+
+### Web
+
+```ShellSession
+./contrib/start-web.sh
+```
+
+### APIv2
+
+```ShellSession
+cd haskell
+cabal repl
+λ> import Monocle.Api.CLI
+λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
+```
