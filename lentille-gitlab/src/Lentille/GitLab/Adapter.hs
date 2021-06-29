@@ -22,15 +22,37 @@ import Relude
 
 newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
-data DiffStatsSummary = DiffStatsSummary {additions :: Int, deletions :: Int, fileCount :: Int}
+data DiffStatsSummary = DiffStatsSummary
+  { additions :: Int,
+    deletions :: Int,
+    fileCount :: Int
+  }
 
 data DiffStatsSummaryItem = DSSAdditions | DSSDeletions | DSSFileCount
 
-data DiffStats = DiffStats {path :: Text, additions :: Int, deletions :: Int}
+data DiffStats = DiffStats
+  { path :: Text,
+    additions :: Int,
+    deletions :: Int
+  }
 
 newtype MRUserCore = MRUserCore {username :: Text}
 
-data MRCommit = MRCommit {sha :: Text, cauthor :: Maybe MRUserCore, authoredDate :: Maybe Time, ctitle :: Maybe Text}
+data MRCommit = MRCommit
+  { sha :: Text,
+    cauthor :: Maybe MRUserCore,
+    authoredDate :: Maybe Time,
+    ctitle :: Maybe Text
+  }
+
+data CommentType = CoApproval Text | CoComment | CoOther deriving (Show)
+
+data MRComment = MRComment
+  { coAuthor :: Ident,
+    coAuthoredAt :: Time,
+    coType :: CommentType
+  }
+  deriving (Show)
 
 -- Some default data
 
@@ -140,3 +162,13 @@ isClosed :: Enumerated Change_ChangeState -> Bool
 isClosed state' = case state' of
   Enumerated (Right Change_ChangeStateClosed) -> True
   _otherwise -> False
+
+isComment :: MRComment -> Bool
+isComment MRComment {..} = case coType of
+  CoComment -> True
+  _ -> False
+
+isApprovalComment :: MRComment -> Bool
+isApprovalComment MRComment {..} = case coType of
+  CoApproval _ -> True
+  _ -> False

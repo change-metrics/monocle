@@ -100,6 +100,15 @@ defineByDocumentFile
                 username
               }
             }
+            notes {
+              nodes {
+                author {
+                  username
+                }
+                createdAt
+                systemNoteIconName
+              }
+            }
             approved
             draft
           }
@@ -168,10 +177,13 @@ transformResponse result =
     extract :: Text -> Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
     extract shortName fullName namespace mr =
       let change = getChange mr
+          comments = getComments mr
        in ( change,
             getChangeCreatedEvent change
               <> getChangePushedEvent change
               <> getChangeMergedEvent change
+              <> getChangeCommentedEvent change comments
+              <> getChangeReviewedEvent change comments
           )
       where
         toDiffStatsSummary ProjectMergeRequestsNodesDiffStatsSummaryDiffStatsSummary {..} = DiffStatsSummary {..}
@@ -190,6 +202,7 @@ transformResponse result =
         getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
         getMergerUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
         getAssigneesUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {..} = username
+
         getChange :: ProjectMergeRequestsNodesMergeRequest -> Change
         getChange ProjectMergeRequestsNodesMergeRequest {..} =
           let changeId = (toLazy $ unpackID id)
@@ -243,6 +256,25 @@ transformResponse result =
                         )
                 )
            in Change {..}
+
+        getComments :: ProjectMergeRequestsNodesMergeRequest -> [MRComment]
+        getComments ProjectMergeRequestsNodesMergeRequest {..} =
+          toMRComment <$> maybe [] toNotesNodes (Just notes)
+          where
+            toNotesNodes (ProjectMergeRequestsNodesNotesNoteConnection nodes) = cleanMaybeMNodes nodes
+            toMRComment :: ProjectMergeRequestsNodesNotesNodesNote -> MRComment
+            toMRComment (ProjectMergeRequestsNodesNotesNodesNote author' commentedAt ntype) =
+              let ProjectMergeRequestsNodesNotesNodesAuthorUserCore author'' = author'
+                  commentType = getCommentType ntype
+               in MRComment
+                    { coAuthor = toIdent author'',
+                      coAuthoredAt = commentedAt,
+                      coType = commentType
+                    }
+            getCommentType ntypeM = case ntypeM of
+              Just "approval" -> CoApproval "Approved"
+              Just "unapproval" -> CoApproval "Unapproved"
+              _otherwise -> CoOther
 
         getBaseEvent :: Change -> ChangeEvent
         getBaseEvent Change {..} =
@@ -300,3 +332,34 @@ transformResponse result =
                   changeEventAuthor = commitAuthor,
                   changeEventCreatedAt = commitAuthoredAt
                 }
+
+        getChangeCommentedEvent :: Change -> [MRComment] -> [ChangeEvent]
+        getChangeCommentedEvent change comments =
+          toList $ mkCommentEvent <$> filter isComment comments
+          where
+            mkCommentEvent MRComment {..} =
+              (getBaseEvent change)
+                { changeEventId = "ChangeCommentedEvent-" <> changeId change,
+                  changeEventType = Just $ ChangeEventTypeChangeCommented ChangeCommentedEvent,
+                  changeEventAuthor = Just coAuthor,
+                  changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
+                }
+
+        getChangeReviewedEvent :: Change -> [MRComment] -> [ChangeEvent]
+        getChangeReviewedEvent change comments =
+          toList $ mkCommentEvent <$> filter isApprovalComment comments
+          where
+            mkCommentEvent MRComment {..} =
+              let approval = case coType of
+                    CoApproval approval' -> approval'
+                    _ -> error "Runtime error"
+               in (getBaseEvent change)
+                    { changeEventId = "ChangeReviewedEvent-" <> changeId change,
+                      changeEventType =
+                        Just
+                          . ChangeEventTypeChangeReviewed
+                          . ChangeReviewedEvent
+                          $ fromList [toLazy approval],
+                      changeEventAuthor = Just coAuthor,
+                      changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
+                    }
