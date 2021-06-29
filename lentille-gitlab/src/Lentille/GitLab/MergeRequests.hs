@@ -217,8 +217,11 @@ transformResponse result =
               changeCreatedAt = (Just $ timeToTimestamp Nothing createdAt)
               changeOptionalMergedAt = (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing <$> mergedAt)
               changeUpdatedAt = (Just $ timeToTimestamp Nothing updatedAt)
-              -- No closedAt attribute for a MR ?
-              changeOptionalClosedAt = Nothing
+              -- No closedAt attribute for a MR then use updatedAt when the MR is closed state
+              changeOptionalClosedAt =
+                if isClosed $ toState state
+                  then Just . ChangeOptionalClosedAtClosedAt $ timeToTimestamp Nothing updatedAt
+                  else Nothing
               changeState = toState state
               changeOptionalDuration =
                 ( ChangeOptionalDurationDuration . fromIntToInt32

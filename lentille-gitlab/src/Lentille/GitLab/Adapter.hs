@@ -135,3 +135,8 @@ isMerged :: Enumerated Change_ChangeState -> Bool
 isMerged state' = case state' of
   Enumerated (Right Change_ChangeStateMerged) -> True
   _otherwise -> False
+
+isClosed :: Enumerated Change_ChangeState -> Bool
+isClosed state' = case state' of
+  Enumerated (Right Change_ChangeStateClosed) -> True
+  _otherwise -> False
