@@ -1,10 +1,11 @@
 let
   # pin the upstream nixpkgs
-  nixpkgsSrc = (import (fetchTarball {
+  nixpkgsPath = fetchTarball {
     url =
       "https://github.com/NixOS/nixpkgs/archive/8d0340aee5caac3807c58ad7fa4ebdbbdd9134d6.tar.gz";
     sha256 = "0r00azbz64fz8yylm8x37imnrsm5cdzshd5ma8gwfwjyw166n3r1";
-  }));
+  };
+  nixpkgsSrc = (import nixpkgsPath);
 
   # create the main package set without options
   pkgs = nixpkgsSrc { };
@@ -221,6 +222,7 @@ in rec {
     shellHook = ''
       export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
       export PROTOBUF_SRC=${protobuf-src}/src
+      export NIX_PATH=nixpkgs=${nixpkgsPath}
       eval $(egrep ^export ${ghc}/bin/ghc)
     '';
   };
