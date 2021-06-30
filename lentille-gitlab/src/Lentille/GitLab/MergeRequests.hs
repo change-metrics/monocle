@@ -46,9 +46,6 @@ defineByDocumentFile
       project(fullPath: $project) {
         name
         nameWithNamespace
-        namespace {
-          name
-        }
         mergeRequests (first: 100, after: $cursor, sort: UPDATED_DESC, iids: $iids) {
           pageInfo {hasNextPage endCursor}
           count
@@ -158,7 +155,6 @@ transformResponse result =
           ( ProjectProject
               shortName
               fullName
-              nameSpaceM
               ( Just
                   ( ProjectMergeRequestsMergeRequestConnection
                       (ProjectMergeRequestsPageInfoPageInfo hasNextPage endCursor)
@@ -170,15 +166,12 @@ transformResponse result =
         ) ->
         ( PageInfo hasNextPage endCursor count,
           [],
-          extract shortName fullName (toNamespaceName nameSpaceM) <$> catMaybes nodes
+          extract shortName fullName <$> catMaybes nodes
         )
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
-    toNamespaceName nsoM = case nsoM of
-      Just nso -> name (nso :: ProjectNamespaceNamespace)
-      Nothing -> ""
-    extract :: Text -> Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
-    extract shortName fullName namespace mr =
+    extract :: Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
+    extract shortName fullName mr =
       let change = getChange mr
           comments = getComments mr
        in ( change,
@@ -220,8 +213,8 @@ transformResponse result =
               changeChangedFilesCount = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
               changeChangedFiles = (fromList $ getChangedFile . toDiffStats <$> fromMaybe [] diffStats)
               changeCommits = (fromList $ toCommit . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
-              changeRepositoryPrefix = toLazy namespace
-              changeRepositoryFullname = (toLazy $ removeSpace fullName)
+              changeRepositoryPrefix = toLazy $ TE.replace ("/" <> shortName) "" $ removeSpace fullName
+              changeRepositoryFullname = toLazy $ removeSpace fullName
               changeRepositoryShortname = toLazy shortName
               changeAuthor = (Just $ maybe ghostIdent (toIdent . getAuthorUsername) author)
               changeOptionalMergedBy =
