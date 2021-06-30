@@ -93,7 +93,7 @@ let make = (~group: string, ~store: Store.t) => {
     <MStackItem> <Search.Top store /> </MStackItem>
     <MStackItem>
       <h3> {group->str} </h3>
-      {switch useAutoGet(() => WebApi.UserGroup.get(request)) {
+      {switch useAutoGetOn(() => WebApi.UserGroup.get(request), state.query) {
       | None => <Spinner />
       | Some(Error(title)) => <Alert variant=#Danger title />
       | Some(Ok(group)) => <GroupTable group />
