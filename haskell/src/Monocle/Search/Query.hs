@@ -4,7 +4,7 @@
 
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (Query (..), queryWithMods, query, fields, load) where
+module Monocle.Search.Query (Query (..), queryWithMods, query, ensureMinBound, fields, load) where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
@@ -135,7 +135,7 @@ toRangeOp expr = case expr of
   LtExpr _ _ -> Lt
   GtEqExpr _ _ -> Gte
   LtEqExpr _ _ -> Lte
-  _anyOtherExpr -> error $ "Unsupported range expression"
+  _anyOtherExpr -> error "Unsupported range expression"
 
 -- | dropTime ensures the encoded date does not have millisecond.
 -- This actually discard hour differences
@@ -297,7 +297,7 @@ query expr = case expr of
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now' username indexM baseExprM =
   case exprM of
-    Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now)
+    Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now) False
     Just expr -> do
       (query', (boundM, bound)) <-
         runExcept
@@ -305,7 +305,7 @@ queryWithMods now' username indexM baseExprM =
           . runReaderT (query expr)
           $ Env now username index
       pure $
-        Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound)
+        Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound) (isJust boundM)
   where
     now = dropTime now'
     index = fromMaybe (error "need index") indexM
@@ -323,3 +323,17 @@ load nowM username indexM code = case P.parse code >>= queryWithMods now usernam
   Left err -> error (show err)
   where
     now = fromMaybe (error "need time") nowM
+
+-- | Ensure a minimum range bound is set
+ensureMinBound :: Query -> Text -> Query
+ensureMinBound query' field
+  | queryMinBoundsSet query' = query'
+  | otherwise = query' {queryBH = Just newQueryBH}
+  where
+    newQueryBH = case queryBH query' of
+      Just currentQuery -> BH.QueryBoolQuery $ BH.mkBoolQuery [boundQuery, currentQuery] [] [] []
+      Nothing -> boundQuery
+    boundQuery =
+      BH.QueryRangeQuery $
+        BH.mkRangeQuery (BH.FieldName field) $
+          BH.RangeDateGte (BH.GreaterThanEqD $ fst (queryBounds query'))

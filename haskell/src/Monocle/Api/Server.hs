@@ -70,7 +70,10 @@ userGroupGet request = do
         query <-
           Q.queryWithMods now mempty (Just index) expr
 
-        pure (index, users, query)
+        -- Date histogram needs explicit bound to be set:
+        let queryWithBound = Q.ensureMinBound query "created_at"
+
+        pure (index, users, queryWithBound)
 
   case requestE of
     Right (index, users, query) -> runTenantQueryM index query $ getGroupStats users

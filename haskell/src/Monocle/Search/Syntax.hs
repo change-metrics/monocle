@@ -50,7 +50,9 @@ data Query = Query
     -- It keeps the maximum minbound and minimum maxbound, e.g.
     --  `date>2020 and date>2021` results in (2021, now).
     -- The goal is to get an approximate bound for histo grams queries.
-    queryBounds :: (UTCTime, UTCTime)
+    queryBounds :: (UTCTime, UTCTime),
+    -- | queryBoundsSet indicate when a minimum bound has been set by the user.
+    queryMinBoundsSet :: Bool
   }
   deriving (Show)
 
