@@ -116,12 +116,12 @@ getChangeNumber iid =
 getChangeId :: Text -> Text -> LText
 getChangeId fullName iid = toLazy . removeSpace $ TE.replace "/" "@" fullName <> "@" <> toText iid
 
-toCommit :: MRCommit -> Commit
-toCommit MRCommit {..} =
+toCommit :: Text -> MRCommit -> Commit
+toCommit host MRCommit {..} =
   Commit
     (toLazy sha)
-    (Just . toIdent $ getAuthor cauthor)
-    (Just . toIdent $ getAuthor cauthor)
+    (Just . toIdent host $ getAuthor cauthor)
+    (Just . toIdent host $ getAuthor cauthor)
     (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
     (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
     0
@@ -132,11 +132,11 @@ toCommit MRCommit {..} =
     getAuthor (Just MRUserCore {..}) = username
     getAuthor Nothing = nobody
 
-toIdent :: Text -> Ident
-toIdent username = Ident (toLazy $ "gitlab.com" <> "/" <> username) (toLazy username)
+toIdent :: Text -> Text -> Ident
+toIdent host username = Ident (toLazy $ host <> "/" <> username) (toLazy username)
 
-ghostIdent :: Ident
-ghostIdent = toIdent nobody
+ghostIdent :: Text -> Ident
+ghostIdent host = toIdent host nobody
 
 diffTime :: UTCTime -> UTCTime -> Int
 diffTime l e =

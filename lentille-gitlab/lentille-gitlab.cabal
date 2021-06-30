@@ -41,6 +41,7 @@ library
                      , time                       < 1.12
                      , vector
                      , morpheus-graphql-client    ^>= 0.17
+                     , network-uri                < 2.6.5
   exposed-modules:     Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Adapter

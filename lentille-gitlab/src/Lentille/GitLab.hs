@@ -11,6 +11,7 @@ import Data.Morpheus.Client
 import Data.Time.Clock
 import Monocle.Api.Client.Worker (mkManager)
 import qualified Network.HTTP.Client as HTTP
+import qualified Network.URI as URI
 import Relude
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
@@ -24,13 +25,19 @@ schemaLocation = "./gitlab-schema/schema.graphql"
 data GitLabGraphClient = GitLabGraphClient
   { manager :: HTTP.Manager,
     url :: Text,
-    token :: Text
+    token :: Text,
+    host :: Text
   }
 
 newGitLabGraphClientWithKey :: MonadIO m => Text -> Text -> m GitLabGraphClient
 newGitLabGraphClientWithKey url' token' = do
   manager' <- mkManager
-  pure $ GitLabGraphClient manager' url' token'
+  let host' =
+        maybe
+          (error "Unable to parse provided gitlab_url")
+          (toText . URI.uriRegName)
+          (URI.uriAuthority =<< URI.parseURI (toString url'))
+  pure $ GitLabGraphClient manager' url' token' host'
 
 newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
 newGitLabGraphClient url' = do
@@ -41,7 +48,7 @@ newGitLabGraphClient url' = do
   newGitLabGraphClientWithKey url' token'
 
 runGitLabGraphRequest :: MonadIO m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString
-runGitLabGraphRequest (GitLabGraphClient manager' url' token') jsonBody = do
+runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
   -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
   let initRequest = HTTP.parseRequest_ (toString url')
       request =
