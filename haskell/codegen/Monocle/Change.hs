@@ -2321,44 +2321,44 @@ instance HsJSONPB.ToSchema ChangeReviewedEvent where
             }
         )
 
-data ChangeForcePushedEvent = ChangeForcePushedEvent {}
+data ChangeCommitForcePushedEvent = ChangeCommitForcePushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangeForcePushedEvent where
-  nameOf _ = (Hs.fromString "ChangeForcePushedEvent")
+instance HsProtobuf.Named ChangeCommitForcePushedEvent where
+  nameOf _ = (Hs.fromString "ChangeCommitForcePushedEvent")
 
-instance HsProtobuf.HasDefault ChangeForcePushedEvent
+instance HsProtobuf.HasDefault ChangeCommitForcePushedEvent
 
-instance HsProtobuf.Message ChangeForcePushedEvent where
-  encodeMessage _ ChangeForcePushedEvent {} = (Hs.mconcat [])
-  decodeMessage _ = (Hs.pure ChangeForcePushedEvent)
+instance HsProtobuf.Message ChangeCommitForcePushedEvent where
+  encodeMessage _ ChangeCommitForcePushedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeCommitForcePushedEvent)
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB ChangeForcePushedEvent where
-  toJSONPB (ChangeForcePushedEvent) = (HsJSONPB.object [])
-  toEncodingPB (ChangeForcePushedEvent) = (HsJSONPB.pairs [])
+instance HsJSONPB.ToJSONPB ChangeCommitForcePushedEvent where
+  toJSONPB (ChangeCommitForcePushedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeCommitForcePushedEvent) = (HsJSONPB.pairs [])
 
-instance HsJSONPB.FromJSONPB ChangeForcePushedEvent where
+instance HsJSONPB.FromJSONPB ChangeCommitForcePushedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangeForcePushedEvent"
-        (\obj -> (Hs.pure ChangeForcePushedEvent))
+        "ChangeCommitForcePushedEvent"
+        (\obj -> (Hs.pure ChangeCommitForcePushedEvent))
     )
 
-instance HsJSONPB.ToJSON ChangeForcePushedEvent where
+instance HsJSONPB.ToJSON ChangeCommitForcePushedEvent where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangeForcePushedEvent where
+instance HsJSONPB.FromJSON ChangeCommitForcePushedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeForcePushedEvent where
+instance HsJSONPB.ToSchema ChangeCommitForcePushedEvent where
   declareNamedSchema _ =
     do
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeForcePushedEvent",
+                Hs.Just "ChangeCommitForcePushedEvent",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -2372,44 +2372,44 @@ instance HsJSONPB.ToSchema ChangeForcePushedEvent where
             }
         )
 
-data ChangePushedEvent = ChangePushedEvent {}
+data ChangeCommitPushedEvent = ChangeCommitPushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangePushedEvent where
-  nameOf _ = (Hs.fromString "ChangePushedEvent")
+instance HsProtobuf.Named ChangeCommitPushedEvent where
+  nameOf _ = (Hs.fromString "ChangeCommitPushedEvent")
 
-instance HsProtobuf.HasDefault ChangePushedEvent
+instance HsProtobuf.HasDefault ChangeCommitPushedEvent
 
-instance HsProtobuf.Message ChangePushedEvent where
-  encodeMessage _ ChangePushedEvent {} = (Hs.mconcat [])
-  decodeMessage _ = (Hs.pure ChangePushedEvent)
+instance HsProtobuf.Message ChangeCommitPushedEvent where
+  encodeMessage _ ChangeCommitPushedEvent {} = (Hs.mconcat [])
+  decodeMessage _ = (Hs.pure ChangeCommitPushedEvent)
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB ChangePushedEvent where
-  toJSONPB (ChangePushedEvent) = (HsJSONPB.object [])
-  toEncodingPB (ChangePushedEvent) = (HsJSONPB.pairs [])
+instance HsJSONPB.ToJSONPB ChangeCommitPushedEvent where
+  toJSONPB (ChangeCommitPushedEvent) = (HsJSONPB.object [])
+  toEncodingPB (ChangeCommitPushedEvent) = (HsJSONPB.pairs [])
 
-instance HsJSONPB.FromJSONPB ChangePushedEvent where
+instance HsJSONPB.FromJSONPB ChangeCommitPushedEvent where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangePushedEvent"
-        (\obj -> (Hs.pure ChangePushedEvent))
+        "ChangeCommitPushedEvent"
+        (\obj -> (Hs.pure ChangeCommitPushedEvent))
     )
 
-instance HsJSONPB.ToJSON ChangePushedEvent where
+instance HsJSONPB.ToJSON ChangeCommitPushedEvent where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangePushedEvent where
+instance HsJSONPB.FromJSON ChangeCommitPushedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangePushedEvent where
+instance HsJSONPB.ToSchema ChangeCommitPushedEvent where
   declareNamedSchema _ =
     do
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangePushedEvent",
+                Hs.Just "ChangeCommitPushedEvent",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -2629,19 +2629,20 @@ instance HsProtobuf.Message ChangeEvent where
                             (Hs.Just y)
                         )
                     )
-                  ChangeEventTypeChangeForcePushed y ->
+                  ChangeEventTypeChangeCommitForcePushed y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 19)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeForcePushedEvent)
-                            @(HsProtobuf.Nested Monocle.Change.ChangeForcePushedEvent)
+                        ( Hs.coerce
+                            @(Hs.Maybe Monocle.Change.ChangeCommitForcePushedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeCommitForcePushedEvent)
                             (Hs.Just y)
                         )
                     )
-                  ChangeEventTypeChangePushed y ->
+                  ChangeEventTypeChangeCommitPushed y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 20)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangePushedEvent)
-                            @(HsProtobuf.Nested Monocle.Change.ChangePushedEvent)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Change.ChangeCommitPushedEvent)
+                            @(HsProtobuf.Nested Monocle.Change.ChangeCommitPushedEvent)
                             (Hs.Just y)
                         )
                     )
@@ -2766,18 +2767,18 @@ instance HsProtobuf.Message ChangeEvent where
                         )
                 ),
                 ( (HsProtobuf.FieldNumber 19),
-                  (Hs.pure (Hs.fmap ChangeEventTypeChangeForcePushed))
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeCommitForcePushed))
                     <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeForcePushedEvent))
-                            @(_ (Hs.Maybe Monocle.Change.ChangeForcePushedEvent))
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeCommitForcePushedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeCommitForcePushedEvent))
                             HsProtobuf.decodeMessageField
                         )
                 ),
                 ( (HsProtobuf.FieldNumber 20),
-                  (Hs.pure (Hs.fmap ChangeEventTypeChangePushed))
+                  (Hs.pure (Hs.fmap ChangeEventTypeChangeCommitPushed))
                     <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Change.ChangePushedEvent))
-                            @(_ (Hs.Maybe Monocle.Change.ChangePushedEvent))
+                            @(_ (HsProtobuf.Nested Monocle.Change.ChangeCommitPushedEvent))
+                            @(_ (Hs.Maybe Monocle.Change.ChangeCommitPushedEvent))
                             HsProtobuf.decodeMessageField
                         )
                 ),
@@ -2950,10 +2951,10 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                           (HsJSONPB.pair "ChangeAbandoned" f17)
                         Hs.Just (ChangeEventTypeChangeReviewed f18) ->
                           (HsJSONPB.pair "ChangeReviewed" f18)
-                        Hs.Just (ChangeEventTypeChangeForcePushed f19) ->
-                          (HsJSONPB.pair "ChangeForcePushed" f19)
-                        Hs.Just (ChangeEventTypeChangePushed f20) ->
-                          (HsJSONPB.pair "ChangePushed" f20)
+                        Hs.Just (ChangeEventTypeChangeCommitForcePushed f19) ->
+                          (HsJSONPB.pair "ChangeCommitForcePushed" f19)
+                        Hs.Just (ChangeEventTypeChangeCommitPushed f20) ->
+                          (HsJSONPB.pair "ChangeCommitPushed" f20)
                         Hs.Just (ChangeEventTypeChangeMerged f21) ->
                           (HsJSONPB.pair "ChangeMerged" f21)
                         Hs.Nothing -> Hs.mempty
@@ -3008,10 +3009,10 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                           (HsJSONPB.pair "ChangeAbandoned" f17)
                         Hs.Just (ChangeEventTypeChangeReviewed f18) ->
                           (HsJSONPB.pair "ChangeReviewed" f18)
-                        Hs.Just (ChangeEventTypeChangeForcePushed f19) ->
-                          (HsJSONPB.pair "ChangeForcePushed" f19)
-                        Hs.Just (ChangeEventTypeChangePushed f20) ->
-                          (HsJSONPB.pair "ChangePushed" f20)
+                        Hs.Just (ChangeEventTypeChangeCommitForcePushed f19) ->
+                          (HsJSONPB.pair "ChangeCommitForcePushed" f19)
+                        Hs.Just (ChangeEventTypeChangeCommitPushed f20) ->
+                          (HsJSONPB.pair "ChangeCommitPushed" f20)
                         Hs.Just (ChangeEventTypeChangeMerged f21) ->
                           (HsJSONPB.pair "ChangeMerged" f21)
                         Hs.Nothing -> Hs.mempty
@@ -3052,10 +3053,10 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
                                 <$> (HsJSONPB.parseField parseObj "ChangeAbandoned"),
                               Hs.Just Hs.. ChangeEventTypeChangeReviewed
                                 <$> (HsJSONPB.parseField parseObj "ChangeReviewed"),
-                              Hs.Just Hs.. ChangeEventTypeChangeForcePushed
-                                <$> (HsJSONPB.parseField parseObj "ChangeForcePushed"),
-                              Hs.Just Hs.. ChangeEventTypeChangePushed
-                                <$> (HsJSONPB.parseField parseObj "ChangePushed"),
+                              Hs.Just Hs.. ChangeEventTypeChangeCommitForcePushed
+                                <$> (HsJSONPB.parseField parseObj "ChangeCommitForcePushed"),
+                              Hs.Just Hs.. ChangeEventTypeChangeCommitPushed
+                                <$> (HsJSONPB.parseField parseObj "ChangeCommitPushed"),
                               Hs.Just Hs.. ChangeEventTypeChangeMerged
                                 <$> (HsJSONPB.parseField parseObj "ChangeMerged"),
                               Hs.pure Hs.Nothing
@@ -3172,8 +3173,8 @@ data ChangeEventType
   | ChangeEventTypeChangeCommented Monocle.Change.ChangeCommentedEvent
   | ChangeEventTypeChangeAbandoned Monocle.Change.ChangeAbandonedEvent
   | ChangeEventTypeChangeReviewed Monocle.Change.ChangeReviewedEvent
-  | ChangeEventTypeChangeForcePushed Monocle.Change.ChangeForcePushedEvent
-  | ChangeEventTypeChangePushed Monocle.Change.ChangePushedEvent
+  | ChangeEventTypeChangeCommitForcePushed Monocle.Change.ChangeCommitForcePushedEvent
+  | ChangeEventTypeChangeCommitPushed Monocle.Change.ChangeCommitPushedEvent
   | ChangeEventTypeChangeMerged Monocle.Change.ChangeMergedEvent
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -3207,18 +3208,20 @@ instance HsJSONPB.ToSchema ChangeEventType where
       let _ =
             Hs.pure ChangeEventTypeChangeReviewed
               <*> HsJSONPB.asProxy declare_ChangeReviewed
-      let declare_ChangeForcePushed = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeForcePushed <-
-        declare_ChangeForcePushed
+      let declare_ChangeCommitForcePushed = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeCommitForcePushed <-
+        declare_ChangeCommitForcePushed
           Proxy.Proxy
       let _ =
-            Hs.pure ChangeEventTypeChangeForcePushed
-              <*> HsJSONPB.asProxy declare_ChangeForcePushed
-      let declare_ChangePushed = HsJSONPB.declareSchemaRef
-      changeEventTypeChangePushed <- declare_ChangePushed Proxy.Proxy
+            Hs.pure ChangeEventTypeChangeCommitForcePushed
+              <*> HsJSONPB.asProxy declare_ChangeCommitForcePushed
+      let declare_ChangeCommitPushed = HsJSONPB.declareSchemaRef
+      changeEventTypeChangeCommitPushed <-
+        declare_ChangeCommitPushed
+          Proxy.Proxy
       let _ =
-            Hs.pure ChangeEventTypeChangePushed
-              <*> HsJSONPB.asProxy declare_ChangePushed
+            Hs.pure ChangeEventTypeChangeCommitPushed
+              <*> HsJSONPB.asProxy declare_ChangeCommitPushed
       let declare_ChangeMerged = HsJSONPB.declareSchemaRef
       changeEventTypeChangeMerged <- declare_ChangeMerged Proxy.Proxy
       let _ =
@@ -3249,11 +3252,11 @@ instance HsJSONPB.ToSchema ChangeEventType where
                           ( "ChangeReviewed",
                             changeEventTypeChangeReviewed
                           ),
-                          ( "ChangeForcePushed",
-                            changeEventTypeChangeForcePushed
+                          ( "ChangeCommitForcePushed",
+                            changeEventTypeChangeCommitForcePushed
                           ),
-                          ( "ChangePushed",
-                            changeEventTypeChangePushed
+                          ( "ChangeCommitPushed",
+                            changeEventTypeChangeCommitPushed
                           ),
                           ( "ChangeMerged",
                             changeEventTypeChangeMerged
