@@ -36,6 +36,8 @@ import Relude hiding (id, state)
 import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
+newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+
 -- https://docs.gitlab.com/ee/api/graphql/reference/index.html#projectmergerequests
 defineByDocumentFile
   schemaLocation
@@ -102,6 +104,7 @@ defineByDocumentFile
             }
             notes {
               nodes {
+                id
                 author {
                   username
                 }
@@ -205,7 +208,7 @@ transformResponse result =
 
         getChange :: ProjectMergeRequestsNodesMergeRequest -> Change
         getChange ProjectMergeRequestsNodesMergeRequest {..} =
-          let changeId = (toLazy $ unpackID id)
+          let changeId = (toLazy . sanitizeID $ unpackID id)
               changeNumber = getChangeNumber iid
               changeChangeId = getChangeId fullName iid
               changeTitle = toLazy title
@@ -263,11 +266,13 @@ transformResponse result =
           where
             toNotesNodes (ProjectMergeRequestsNodesNotesNoteConnection nodes) = cleanMaybeMNodes nodes
             toMRComment :: ProjectMergeRequestsNodesNotesNodesNote -> MRComment
-            toMRComment (ProjectMergeRequestsNodesNotesNodesNote author' commentedAt ntype) =
+            toMRComment (ProjectMergeRequestsNodesNotesNodesNote nId author' commentedAt ntype) =
               let ProjectMergeRequestsNodesNotesNodesAuthorUserCore author'' = author'
                   commentType = getCommentType ntype
+                  NoteID noteIDT = nId
                in MRComment
-                    { coAuthor = toIdent author'',
+                    { coId = sanitizeID noteIDT,
+                      coAuthor = toIdent author'',
                       coAuthoredAt = commentedAt,
                       coType = commentType
                     }
@@ -339,7 +344,7 @@ transformResponse result =
           where
             mkCommentEvent MRComment {..} =
               (getBaseEvent change)
-                { changeEventId = "ChangeCommentedEvent-" <> changeId change,
+                { changeEventId = "ChangeCommentedEvent-" <> changeId change <> "-" <> toLazy coId,
                   changeEventType = Just $ ChangeEventTypeChangeCommented ChangeCommentedEvent,
                   changeEventAuthor = Just coAuthor,
                   changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
@@ -354,7 +359,7 @@ transformResponse result =
                     CoApproval approval' -> approval'
                     _ -> error "Runtime error"
                in (getBaseEvent change)
-                    { changeEventId = "ChangeReviewedEvent-" <> changeId change,
+                    { changeEventId = "ChangeReviewedEvent-" <> changeId change <> "-" <> toLazy coId,
                       changeEventType =
                         Just
                           . ChangeEventTypeChangeReviewed

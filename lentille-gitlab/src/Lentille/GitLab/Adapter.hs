@@ -48,7 +48,8 @@ data MRCommit = MRCommit
 data CommentType = CoApproval Text | CoComment | CoOther deriving (Show)
 
 data MRComment = MRComment
-  { coAuthor :: Ident,
+  { coId :: Text,
+    coAuthor :: Ident,
     coAuthoredAt :: Time,
     coType :: CommentType
   }
@@ -72,6 +73,9 @@ fromIntToInt32 = fromInteger . toInteger
 
 removeSpace :: Text -> Text
 removeSpace = TE.replace " " ""
+
+sanitizeID :: Text -> Text
+sanitizeID = TE.replace ":" "@" . TE.replace "/" "@"
 
 fromMTtoLT :: (LazyStrict l s, IsString s) => Maybe s -> l
 fromMTtoLT t = toLazy $ fromMaybe "" t
