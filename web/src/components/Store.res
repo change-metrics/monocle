@@ -19,38 +19,42 @@ module UrlData = {
 module Store = {
   type suggestionsR = RemoteData.t<SearchTypes.search_suggestions_response>
   type fieldsRespR = RemoteData.t<SearchTypes.fields_response>
+  type userGroupsR = RemoteData.t<UserGroupTypes.list_response>
 
   type t = {
     index: string,
     query: string,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
+    user_groups: userGroupsR,
   }
   type action =
     | ChangeIndex(string)
     | SetQuery(string)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
+    | FetchUserGroups(userGroupsR)
   type dispatch = action => unit
+
+  let create = index => {
+    index: index,
+    query: UrlData.getQuery(),
+    suggestions: None,
+    fields: None,
+    user_groups: None,
+  }
 
   let reducer = (state: t, action: action) =>
     switch action {
-    | ChangeIndex(index) => {...state, index: index}
+    | ChangeIndex(index) => create(index)
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
       }
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
+    | FetchUserGroups(res) => {...state, user_groups: res}
     }
-
-  // TODO: replace static index with a SetIndex action, after the LegacyApp is removed
-  let create = index => {
-    index: index,
-    query: UrlData.getQuery(),
-    suggestions: None,
-    fields: None,
-  }
 }
 
 module Fetch = {
@@ -93,6 +97,15 @@ module Fetch = {
       state.fields,
       () => WebApi.Search.fields({version: "1"}),
       res => Store.FetchFields(res),
+      dispatch,
+    )
+  }
+
+  let user_groups = ((state: Store.t, dispatch)) => {
+    fetch(
+      state.user_groups,
+      () => WebApi.UserGroup.list({UserGroupTypes.index: state.index}),
+      res => Store.FetchUserGroups(res),
       dispatch,
     )
   }

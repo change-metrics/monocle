@@ -6,11 +6,35 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The api configuration environment
-module Monocle.Servant.Env (Env (..), AppM (..), TenantM, runTenantM, runTenantM', tenantIndexName, getIndexName, getIndexConfig) where
+module Monocle.Servant.Env
+  ( -- * AppM : the global environment
+    Env (..),
+    AppM (..),
+
+    -- * TenantM : the request environment
+    TenantM,
+    runTenantM,
+    runTenantM',
+    tenantIndexName,
+    getIndexName,
+    getIndexConfig,
+
+    -- * QueryM : the query environment
+    QueryM,
+    runQueryM,
+    getQuery,
+    getQueryBH,
+    getQueryBH',
+    liftTenantM,
+    withFilter,
+    runTenantQueryM,
+  )
+where
 
 import Control.Monad.Catch (MonadThrow)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
+import qualified Monocle.Search.Syntax as Q
 import Relude
 import Servant (Handler)
 
@@ -66,3 +90,41 @@ getIndexConfig = asks tenant
 
 instance MonadFail AppM where
   fail = error . toText
+
+-- | 'QueryM' is the query context
+type QueryM = ReaderT Q.Query TenantM
+
+-- | 'runQueryM' run the query context
+runQueryM :: Q.Query -> QueryM a -> TenantM a
+runQueryM query qm = runReaderT qm query
+
+-- | 'runTenantQueryM' combine runTenantM and runQueryM
+runTenantQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
+runTenantQueryM config query qm = runTenantM config (runQueryM query qm)
+
+-- | 'getQuery' provides the query from the context
+getQuery :: QueryM Q.Query
+getQuery = ask
+
+getQueryBH :: QueryM (Maybe BH.Query)
+getQueryBH = Q.queryBH <$> getQuery
+
+getQueryBH' :: QueryM [BH.Query]
+getQueryBH' = maybeToList <$> getQueryBH
+
+-- | 'liftTenantM' run a TenantM in the QueryM
+liftTenantM :: TenantM a -> QueryM a
+liftTenantM = lift
+
+-- | 'withFilter' run a queryM with a modified filter query
+withFilter :: [BH.Query] -> QueryM a -> QueryM a
+withFilter extraQueries qm = do
+  -- get the current queryBH from the context
+  queryBH <- getQueryBH'
+
+  -- create a new queryBH
+  let newQueryBH = BH.QueryBoolQuery $ BH.mkBoolQuery (extraQueries <> queryBH) [] [] []
+
+  -- replace the current query with the new one using 'local'
+  let mkNewQuery query = query {Q.queryBH = Just newQueryBH}
+  local mkNewQuery qm

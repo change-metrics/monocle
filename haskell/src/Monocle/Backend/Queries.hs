@@ -34,21 +34,19 @@ doSearch indexName search = do
 simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
-runQuery :: Text -> Q.Query -> TenantM [ELKChange]
-runQuery docType queryBase = do
-  index <- getIndexName
-  resp <- fmap BH.hitSource <$> simpleSearch index search
-  pure $ catMaybes resp
+runQuery :: Text -> QueryM [ELKChange]
+runQuery docType = withFilter [BH.TermQuery (BH.Term "type" docType) Nothing] $ do
+  query <- getQuery
+  let search =
+        (BH.mkSearch (Q.queryBH query) Nothing)
+          { BH.size = BH.Size (Q.queryLimit query),
+            BH.sortBody = toSortBody <$> Q.queryOrder query
+          }
+  liftTenantM $ do
+    index <- getIndexName
+    resp <- fmap BH.hitSource <$> simpleSearch index search
+    pure $ catMaybes resp
   where
-    queryBH = maybeToList $ Q.queryBH queryBase
-    query =
-      BH.QueryBoolQuery $
-        BH.mkBoolQuery ([BH.TermQuery (BH.Term "type" docType) Nothing] <> queryBH) [] [] []
-    search =
-      (BH.mkSearch (Just query) Nothing)
-        { BH.size = BH.Size (Q.queryLimit queryBase),
-          BH.sortBody = toSortBody <$> Q.queryOrder queryBase
-        }
     toSortBody (field', order) =
       [ BH.DefaultSortSpec
           ( BH.DefaultSort (BH.FieldName field') (sortOrder order) Nothing Nothing Nothing Nothing
@@ -58,7 +56,7 @@ runQuery docType queryBase = do
       Asc -> BH.Ascending
       Desc -> BH.Descending
 
-changes :: Q.Query -> TenantM [ELKChange]
+changes :: QueryM [ELKChange]
 changes = runQuery "Change"
 
 countEvents :: BH.Query -> TenantM Word32
@@ -69,8 +67,28 @@ countEvents query = do
     Left e -> error (show e)
     Right x -> pure (fromInteger . toInteger . BH.crCount $ x)
 
+-- | The change created / review ratio
+changeReviewRatio :: QueryM Float
+changeReviewRatio = do
+  query <- getQueryBH'
+  liftTenantM $ do
+    commitCount <- countEvents (documentType query "ChangeCreatedEvent")
+    reviewCount <- countEvents (documentType query "ChangeReviewedEvent")
+    commentCount <- countEvents (documentType query "ChangeCommentedEvent")
+    let total, commitCountF, reviewCountF :: Float
+        total = reviewCountF + commitCountF
+        reviewCountF = fromIntegral $ reviewCount + commentCount
+        commitCountF = fromIntegral $ commitCount
+    pure (reviewCountF * 100 / total)
+
 mkAnd :: [BH.Query] -> BH.Query
 mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
+
+mkOr :: [BH.Query] -> BH.Query
+mkOr orQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [] orQ
+
+mkTerm :: Text -> Text -> BH.Query
+mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
 
 -- | Add a change state filter to the query
 changeState :: BH.Query -> Text -> BH.Query
@@ -82,12 +100,14 @@ changeState baseQuery state' =
     ]
 
 -- | Add a document type filter to the query
-documentType :: BH.Query -> Text -> BH.Query
+documentType :: [BH.Query] -> Text -> BH.Query
 documentType baseQuery type' =
   mkAnd
-    [ BH.TermQuery (BH.Term "type" type') Nothing,
-      baseQuery
-    ]
+    ([BH.TermQuery (BH.Term "type" type') Nothing] <> baseQuery)
+
+-- | User query
+toUserTerm :: Text -> BH.Query
+toUserTerm user = BH.TermQuery (BH.Term "author.muid" user) Nothing
 
 -- | Handle aggregate requests
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
@@ -257,3 +277,32 @@ getProjectAgg query = do
             ]
         )
       ]
+
+getReviewHisto :: QueryM (V.Vector HistoEventBucket)
+getReviewHisto = do
+  query <- getQuery
+
+  let (minBound', maxBound') = Q.queryBounds query
+      bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
+      date_histo =
+        Aeson.object
+          [ "field" .= ("created_at" :: Text),
+            "calendar_interval" .= ("day" :: Text),
+            "min_doc_count" .= (0 :: Word),
+            "extended_bounds" .= bound
+          ]
+      agg =
+        Aeson.object
+          [ "agg1" .= Aeson.object ["date_histogram" .= date_histo]
+          ]
+      search =
+        Aeson.object
+          [ "aggregations" .= agg,
+            "size" .= (0 :: Word),
+            "query" .= fromMaybe (error "need query") (Q.queryBH query)
+          ]
+
+  liftTenantM $ do
+    index <- getIndexName
+    res <- toAggRes <$> BHR.search index search
+    pure $ heBuckets $ parseAggregationResults "agg1" res

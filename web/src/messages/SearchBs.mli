@@ -24,6 +24,9 @@ val encode_fields_response : SearchTypes.fields_response -> Js.Json.t Js.Dict.t
 val encode_query_error : SearchTypes.query_error -> Js.Json.t Js.Dict.t
 (** [encode_query_error v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_query_request_query_type : SearchTypes.query_request_query_type -> string
+(** [encode_query_request_query_type v] returns JSON string*)
+
 val encode_query_request : SearchTypes.query_request -> Js.Json.t Js.Dict.t
 (** [encode_query_request v dict] encodes [v] int the given JSON [dict] *)
 
@@ -83,6 +86,9 @@ val decode_fields_response : Js.Json.t Js.Dict.t -> SearchTypes.fields_response
 
 val decode_query_error : Js.Json.t Js.Dict.t -> SearchTypes.query_error
 (** [decode_query_error decoder] decodes a [query_error] value from [decoder] *)
+
+val decode_query_request_query_type : Js.Json.t -> SearchTypes.query_request_query_type
+(** [decode_query_request_query_type value] decodes a [query_request_query_type] from a Json value*)
 
 val decode_query_request : Js.Json.t Js.Dict.t -> SearchTypes.query_request
 (** [decode_query_request decoder] decodes a [query_request] value from [decoder] *)

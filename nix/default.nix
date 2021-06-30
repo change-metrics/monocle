@@ -46,6 +46,12 @@ let
   gnostic = pkgs.buildGoModule rec {
     pname = "gnostic";
     version = "0.5.5";
+    patches = [
+      (pkgs.fetchpatch {
+        url = "https://github.com/TristanCacqueray/gnostic/commit/d0c924cdb08c0c0667cca033841807cfc84776f2.patch";
+        sha256 = "15wb2fr5iqy2zygl3svzyq72w9gpqsb7whmwqy43l3hph28bmvwb";
+      })
+    ];
     src = pkgs.fetchFromGitHub {
       owner = "google";
       repo = "gnostic";

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
+MESSAGES_V2 = monocle/user_group.proto
 BACKEND_ONLY = monocle/change.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
@@ -16,7 +17,7 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	sh -c 'for pb in $(MESSAGES) $(MESSAGES_V2) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
@@ -25,7 +26,7 @@ codegen-python:
 
 codegen-javascript:
 	rm -f web/src/messages/*
-	sh -c 'for pb in $(MESSAGES); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ protos/$${pb}; done'
+	sh -c 'for pb in $(MESSAGES) $(MESSAGES_V2); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ protos/$${pb}; done'
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 
 codegen-openapi:

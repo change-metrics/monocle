@@ -45,6 +45,8 @@ import Indices from './components/Indices.bs.js'
 import ChangesView from './components/ChangesView.bs.js'
 import Board from './components/Board.bs.js'
 import Store from './components/Store.bs.js'
+import GroupsView from './components/GroupsView.bs.js'
+import GroupView from './components/GroupView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -346,6 +348,16 @@ const App = () => {
         <Route
           path="/:index/board"
           render={() => <BoardView store={store} />}
+        />
+        <Route
+          path="/:index/user_groups/:group"
+          render={(prop) => (
+            <GroupView group={prop.match.params.group} store={store} />
+          )}
+        />
+        <Route
+          path="/:index/user_groups"
+          render={() => <GroupsView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>

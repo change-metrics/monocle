@@ -33,6 +33,15 @@ module Monocle.Prelude
     getIndexName,
     getIndexConfig,
     fromPBEnum,
+
+    -- * Query context
+    QueryM,
+    runQueryM,
+    getQuery,
+    getQueryBH',
+    liftTenantM,
+    getQueryBH,
+    withFilter,
   )
 where
 
@@ -44,6 +53,7 @@ import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Monocle.Api.Client.Internal (MonocleClient)
 import qualified Monocle.Api.Config as Config
+import Monocle.Search (QueryRequest_QueryType (..))
 import Monocle.Search.Syntax
 import Monocle.Servant.Env
 import Proto3.Suite (Enumerated (..))
@@ -72,7 +82,7 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 data MonocleEvent
   = AddingChange LText Int Int
   | UpdatingEntity LText Entity UTCTime
-  | Searching LText LText Query
+  | Searching QueryRequest_QueryType LText Query
 
 eventToText :: MonocleEvent -> Text
 eventToText ev = case ev of
@@ -80,9 +90,9 @@ eventToText ev = case ev of
     toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
-  Searching name queryText query ->
+  Searching queryType queryText query ->
     let jsonQuery = decodeUtf8 . encode $ queryBH query
-     in "searching " <> toStrict name <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
+     in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
 
 monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do

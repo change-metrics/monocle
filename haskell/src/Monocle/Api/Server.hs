@@ -7,6 +7,7 @@
 module Monocle.Api.Server where
 
 import Data.Fixed (Deci)
+import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
@@ -23,6 +24,7 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
+import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
 -- | /health endpoint
@@ -30,6 +32,84 @@ configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
 configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
+
+-- | /api/2/user_group/list endpoint
+userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
+userGroupList request = do
+  Env {tenants = tenants} <- ask
+  let UserGroupPB.ListRequest {..} = request
+
+  pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
+    Just index -> toGroupCounts <$> Config.getTenantGroups index
+    Nothing -> []
+  where
+    toGroupCounts :: (Text, [Text]) -> UserGroupPB.GroupDefinition
+    toGroupCounts (name, users) =
+      let groupDefinitionName = toLazy name
+          groupDefinitionMembers = fromInteger . toInteger $ length users
+       in UserGroupPB.GroupDefinition {..}
+
+-- | /api/2/user_group/get endpoint
+userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
+userGroupGet request = do
+  Env {tenants = tenants} <- ask
+  let UserGroupPB.GetRequest {..} = request
+  now <- liftIO getCurrentTime
+
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict getRequestIndex)
+            `orDie` ParseError "unknown index" 0
+
+        users <-
+          lookup (toStrict getRequestName) (Config.getTenantGroups index)
+            `orDie` ParseError "unknown group" 0
+
+        expr <- P.parse (toStrict getRequestQuery)
+
+        query <-
+          Q.queryWithMods now mempty (Just index) expr
+
+        -- Date histogram needs explicit bound to be set:
+        let queryWithBound = Q.ensureMinBound query "created_at"
+
+        pure (index, users, queryWithBound)
+
+  case requestE of
+    Right (index, users, query) -> runTenantQueryM index query $ getGroupStats users
+    Left err -> error (show err)
+  where
+    getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
+    getGroupStats users = do
+      let allQuery = Q.mkOr $ map Q.toUserTerm users
+
+      allStats <- withFilter [allQuery] $ do
+        UserGroupPB.GroupStat
+          <$> Q.changeReviewRatio
+          <*> pure 0
+          <*> pure mempty
+
+      userStats <- traverse getUserStat users
+
+      pure $ UserGroupPB.GetResponse (Just allStats) (V.fromList userStats)
+
+    getUserStat :: Text -> QueryM UserGroupPB.UserStat
+    getUserStat name = do
+      let userQuery = Q.toUserTerm name
+          reviewQuery = Q.mkOr $ map (Q.mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+
+      userStats <- withFilter [userQuery] $ do
+        reviewHisto <- withFilter [reviewQuery] Q.getReviewHisto
+
+        UserGroupPB.GroupStat
+          <$> Q.changeReviewRatio
+          <*> pure 0
+          <*> pure (toReviewHisto <$> reviewHisto)
+
+      pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
+
+    toReviewHisto :: Q.HistoEventBucket -> UserGroupPB.ReviewHisto
+    toReviewHisto Q.HistoEventBucket {..} = UserGroupPB.ReviewHisto heKey heCount
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
@@ -172,33 +252,36 @@ crawlerCommitInfo request = do
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   Env {tenants = tenants} <- ask
-  let (SearchPB.QueryRequest indexName queryText) = request
+  let (SearchPB.QueryRequest {..}) = request
   now <- liftIO getCurrentTime
 
   let requestE =
         do
-          expr <- P.parse (toStrict queryText)
+          expr <- P.parse (toStrict queryRequestQuery)
 
           tenant <-
-            Config.lookupTenant tenants (toStrict indexName)
+            Config.lookupTenant tenants (toStrict queryRequestIndex)
               `orDie` ParseError "unknown tenant" 0
 
-          -- TODO: add field to the protobuf message
-          let username = mempty
+          query <-
+            Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
 
-          query <- Q.queryWithMods now username (Just tenant) expr
-
-          pure (tenant, query)
+          pure (tenant, query, fromPBEnum queryRequestQueryType)
 
   case requestE of
-    Right (tenant, query) -> runTenantM tenant $ do
-      monocleLogEvent $ Searching "changes" queryText query
-      SearchPB.QueryResponse . Just
-        . SearchPB.QueryResponseResultItems
-        . SearchPB.Changes
-        . V.fromList
-        . map toResult
-        <$> Q.changes query
+    Right (tenant, query, queryType) -> runTenantQueryM tenant query $ do
+      liftTenantM $ monocleLogEvent $ Searching queryType queryRequestQuery query
+
+      case queryType of
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChanges
+            . SearchPB.Changes
+            . V.fromList
+            . map toResult
+            <$> Q.changes
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
+          error "LifeCycle Not Implemented"
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -300,7 +383,7 @@ searchChangesLifecycle indexName queryText = do
         let -- Helper functions ready to be applied
             bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
             count = Q.countEvents
-            queryType = Q.documentType bhQuery
+            queryType = Q.documentType [bhQuery]
 
         -- get events count
         eventCounts <- Q.getEventCounts bhQuery

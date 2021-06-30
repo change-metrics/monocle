@@ -17,6 +17,9 @@ open Prelude
 module Fixture = {
   @module external changeJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/change.json"
   let change: SearchTypes.change = SearchBs.decode_change(changeJson)
+
+  @module external groupGetJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/user_group_get.json"
+  let group_get: UserGroupTypes.get_response = UserGroupBs.decode_get_response(groupGetJson)
 }
 
 module App = {
@@ -24,6 +27,7 @@ module App = {
   let make = () => <>
     {[
       ("title", <h2> {"Monocle designer mode"->str} </h2>),
+      ("group", <GroupView.GroupTable group={Fixture.group_get} />),
       (
         "change",
         <div className="container">
@@ -37,7 +41,12 @@ module App = {
   </>
 }
 
+module BrowserRouter = {
+  @react.component @module("react-router-dom")
+  external make: (~children: 'children) => React.element = "BrowserRouter"
+}
+
 switch ReactDOM.querySelector("#root") {
-| Some(root) => ReactDOM.render(<App />, root)
+| Some(root) => ReactDOM.render(<BrowserRouter> <App /> </BrowserRouter>, root)
 | None => Js.log("Can't find #root element!")
 }

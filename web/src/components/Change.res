@@ -115,24 +115,24 @@ module ProjectLink = {
       list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
     <span style={horizontalSpacing}>
       {"["->str}
-      <a
+      <Link
         style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-        href={"/" ++ index ++ "/changes?project=" ++ project}>
+        _to={"/" ++ index ++ "/changes?project=" ++ project}>
         {name->str}
-      </a>
+      </Link>
       {"]"->str}
     </span>
   }
 }
 module ChangeLink = {
   @react.component
-  let make = (~index, ~id, ~title) => <a href={"/" ++ index ++ "/change/" ++ id}> {title->str} </a>
+  let make = (~index, ~id, ~title) => <Link _to={"/" ++ index ++ "/change/" ++ id}> {title->str} </Link>
 }
 
 module AuthorLink = {
   @react.component
   let make = (~index, ~title, ~author) => {
-    <> {title->str} <a href={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </a> </>
+    <> {title->str} <Link _to={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </Link> </>
   }
 }
 
@@ -200,6 +200,7 @@ module RowItem = {
           <th role="columnheader"> {"Status"->str} </th>
           <th role="columnheader"> {"Owner"->str} </th>
           <th role="columnheader"> {"Repo"->str} </th>
+          <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
           <th role="columnheader"> {"Approvals"->str} </th>
@@ -216,6 +217,7 @@ module RowItem = {
         <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
       </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
+      <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
       <td role="cell"> <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge> </td>
       <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
     </tr>

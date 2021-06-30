@@ -64,12 +64,16 @@ let default_query_error_mutable () : query_error_mutable = {
 
 type query_request_mutable = {
   mutable index : string;
+  mutable username : string;
   mutable query : string;
+  mutable query_type : SearchTypes.query_request_query_type;
 }
 
 let default_query_request_mutable () : query_request_mutable = {
   index = "";
+  username = "";
   query = "";
+  query_type = SearchTypes.default_query_request_query_type ();
 }
 
 type file_mutable = {
@@ -425,6 +429,13 @@ let rec decode_query_error json =
     SearchTypes.position = v.position;
   } : SearchTypes.query_error)
 
+let rec decode_query_request_query_type (json:Js.Json.t) =
+  match Pbrt_bs.string json "query_request_query_type" "value" with
+  | "QUERY_CHANGE" -> (SearchTypes.Query_change : SearchTypes.query_request_query_type)
+  | "QUERY_CHANGE_LIFECYCLE" -> (SearchTypes.Query_change_lifecycle : SearchTypes.query_request_query_type)
+  | "" -> SearchTypes.Query_change
+  | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
+
 let rec decode_query_request json =
   let v = default_query_request_mutable () in
   let keys = Js.Dict.keys json in
@@ -434,15 +445,23 @@ let rec decode_query_request json =
     | "index" -> 
       let json = Js.Dict.unsafeGet json "index" in
       v.index <- Pbrt_bs.string json "query_request" "index"
+    | "username" -> 
+      let json = Js.Dict.unsafeGet json "username" in
+      v.username <- Pbrt_bs.string json "query_request" "username"
     | "query" -> 
       let json = Js.Dict.unsafeGet json "query" in
       v.query <- Pbrt_bs.string json "query_request" "query"
+    | "query_type" -> 
+      let json = Js.Dict.unsafeGet json "query_type" in
+      v.query_type <- (decode_query_request_query_type json)
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.index = v.index;
+    SearchTypes.username = v.username;
     SearchTypes.query = v.query;
+    SearchTypes.query_type = v.query_type;
   } : SearchTypes.query_request)
 
 let rec decode_file json =
@@ -707,9 +726,9 @@ let rec decode_query_response json =
       | "error" -> 
         let json = Js.Dict.unsafeGet json "error" in
         (SearchTypes.Error ((decode_query_error (Pbrt_bs.object_ json "query_response" "Error"))) : SearchTypes.query_response)
-      | "items" -> 
-        let json = Js.Dict.unsafeGet json "items" in
-        (SearchTypes.Items ((decode_changes (Pbrt_bs.object_ json "query_response" "Items"))) : SearchTypes.query_response)
+      | "changes" -> 
+        let json = Js.Dict.unsafeGet json "changes" in
+        (SearchTypes.Changes ((decode_changes (Pbrt_bs.object_ json "query_response" "Changes"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -974,10 +993,17 @@ let rec encode_query_error (v:SearchTypes.query_error) =
   Js.Dict.set json "position" (Js.Json.number (Int32.to_float v.SearchTypes.position));
   json
 
+let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type) : string = 
+  match v with
+  | SearchTypes.Query_change -> "QUERY_CHANGE"
+  | SearchTypes.Query_change_lifecycle -> "QUERY_CHANGE_LIFECYCLE"
+
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
+  Js.Dict.set json "username" (Js.Json.string v.SearchTypes.username);
   Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
+  Js.Dict.set json "query_type" (Js.Json.string (encode_query_request_query_type v.SearchTypes.query_type));
   json
 
 let rec encode_file (v:SearchTypes.file) = 
@@ -1130,10 +1156,10 @@ let rec encode_query_response (v:SearchTypes.query_response) =
       let json' = encode_query_error v in
       Js.Dict.set json "error" (Js.Json.object_ json');
     end;
-  | SearchTypes.Items v ->
-    begin (* items field *)
+  | SearchTypes.Changes v ->
+    begin (* changes field *)
       let json' = encode_changes v in
-      Js.Dict.set json "items" (Js.Json.object_ json');
+      Js.Dict.set json "changes" (Js.Json.object_ json');
     end;
   end;
   json

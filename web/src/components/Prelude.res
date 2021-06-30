@@ -43,6 +43,17 @@ let setLocationSearch = %raw(`
   }
 `)
 
+// Bindings for react router
+module Link = {
+  @react.component @module("react-router-dom")
+  external make: (
+    ~_to: string,
+    ~children: 'children,
+    ~style: option<'style>=?,
+    ~onClick: option<'cb>=?,
+  ) => React.element = "Link"
+}
+
 // A temporary module to provide runtime setting
 module Env = {
   type t = {
@@ -111,7 +122,7 @@ module URLSearchParams = {
 // useAutoGet perform the 'get' effect when the calling component is mounted.
 type result<'a, 'b> = Belt.Result.t<'a, 'b>
 type auto<'data> = option<result<'data, string>>
-let useAutoGet = (get: axiosGetCallback<'data>): option<result<'data, string>> => {
+let useAutoGetOn = (get: axiosGetCallback<'data>, key: string): option<result<'data, string>> => {
   let (state, set') = React.useState(_ => None)
   let set = x => set'(_ => x->Some)->Js.Promise.resolve
   let handleErr = err => {
@@ -119,12 +130,13 @@ let useAutoGet = (get: axiosGetCallback<'data>): option<result<'data, string>> =
     "Network error"->Error->set
   }
   let handleOk = resp => resp.data->Ok->set
-  React.useEffect0(() => {
+  React.useEffect1(() => {
     (get() |> Js.Promise.then_(handleOk) |> Js.Promise.catch(handleErr))->ignore
     None
-  })
+  }, [key])
   state
 }
+let useAutoGet = x => x->useAutoGetOn("")
 
 // Convenient functions
 

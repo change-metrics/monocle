@@ -1,7 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | The Monocle Search Language Syntax
-module Monocle.Search.Syntax (Expr (..), SortOrder (..), ParseError (..), Query (..)) where
+module Monocle.Search.Syntax
+  ( Expr (..),
+    SortOrder (..),
+    ParseError (..),
+    Query (..),
+    toBHQuery,
+    setQueryBH,
+  )
+where
 
 import Data.Time.Clock (UTCTime)
 import qualified Database.Bloodhound as BH
@@ -42,6 +50,14 @@ data Query = Query
     -- It keeps the maximum minbound and minimum maxbound, e.g.
     --  `date>2020 and date>2021` results in (2021, now).
     -- The goal is to get an approximate bound for histo grams queries.
-    queryBounds :: (UTCTime, UTCTime)
+    queryBounds :: (UTCTime, UTCTime),
+    -- | queryBoundsSet indicate when a minimum bound has been set by the user.
+    queryMinBoundsSet :: Bool
   }
   deriving (Show)
+
+toBHQuery :: Query -> [BH.Query]
+toBHQuery = maybeToList . queryBH
+
+setQueryBH :: BH.Query -> Query -> Query
+setQueryBH queryBH' query = query {queryBH = Just queryBH'}

@@ -56,6 +56,8 @@ module Column = {
             WebApi.Search.query({
               index: index,
               query: query,
+              username: "",
+              query_type: SearchTypes.Query_change,
             }) |> Js.Promise.then_(handleOk),
           )
         }
@@ -67,7 +69,7 @@ module Column = {
         <Alert
           title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
         />
-      | Some(SearchTypes.Items(items)) => {
+      | Some(SearchTypes.Changes(items)) => {
           let changes = items.changes->Belt.List.toArray
           switch changes->Belt.Array.length {
           | 0 => <p> {"No changes matched"->str} </p>
@@ -95,6 +97,8 @@ module Column = {
           WebApi.Search.query({
             index: index,
             query: query,
+            username: "",
+            query_type: SearchTypes.Query_change,
           }) |> Js.Promise.then_(handleOk),
         )
       }
@@ -111,7 +115,7 @@ module Column = {
             title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))}
             variant=#Danger
           />
-        | Some(SearchTypes.Items(items)) => {
+        | Some(SearchTypes.Changes(items)) => {
             let changes = items.changes->Belt.List.toArray
             switch changes->Belt.Array.length {
             | 0 => <p> {"No changes matched"->str} </p>

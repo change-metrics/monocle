@@ -62,6 +62,27 @@ module Search = {
     )
 }
 
+module UserGroup = {
+  @module("axios")
+  external listRaw: (string, 'a) => axios<'b> = "post"
+
+  let list = (request: UserGroupTypes.list_request): axios<UserGroupTypes.list_response> =>
+    request->UserGroupBs.encode_list_request
+    |> listRaw(serverUrl ++ "/api/2/user_group/list")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->UserGroupBs.decode_list_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external getRaw: (string, 'a) => axios<'b> = "post"
+
+  let get = (request: UserGroupTypes.get_request): axios<UserGroupTypes.get_response> =>
+    request->UserGroupBs.encode_get_request
+    |> getRaw(serverUrl ++ "/api/2/user_group/get")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->UserGroupBs.decode_get_response}->Js.Promise.resolve
+    )
+}
+
 module TaskData = {
   @module("axios")
   external commitRaw: (string, 'a) => axios<'b> = "post"

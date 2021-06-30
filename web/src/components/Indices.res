@@ -10,10 +10,11 @@ module Indice = {
   let make = (~store, ~name) => {
     let onClick = _ => {
       store->Store.changeIndex(name)
-      RescriptReactRouter.push(name)
+      // We can't use ReactRouter until react-router-dom is in use.
+      // RescriptReactRouter.push(name)
     }
     <Tooltip position=#Bottom content={"Click to get the metric"}>
-      <a href="" onClick> {name->React.string} </a>
+      <Link _to={name} onClick> {name->React.string} </Link>
     </Tooltip>
   }
   let card: (Store.t, string) => React.element = (store, name) =>

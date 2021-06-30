@@ -1,0 +1,132 @@
+{
+  "all": {
+    "change_review_ratio": 59.574467,
+    "author_review_ratio": 0.0,
+    "review_histo": []
+  },
+  "users": [
+    {
+      "name": "Alice",
+      "stat": {
+        "change_review_ratio": 59.52381,
+        "author_review_ratio": 0.0,
+        "review_histo": [
+          {
+            "date": "1624060800000",
+            "count": 0
+          },
+          {
+            "date": "1624147200000",
+            "count": 1
+          },
+          {
+            "date": "1624233600000",
+            "count": 6
+          },
+          {
+            "date": "1624320000000",
+            "count": 2
+          },
+          {
+            "date": "1624406400000",
+            "count": 8
+          },
+          {
+            "date": "1624492800000",
+            "count": 8
+          },
+          {
+            "date": "1624579200000",
+            "count": 0
+          },
+          {
+            "date": "1624665600000",
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Bob",
+      "stat": {
+        "change_review_ratio": 33.333332,
+        "author_review_ratio": 0.0,
+        "review_histo": [
+          {
+            "date": "1624060800000",
+            "count": 0
+          },
+          {
+            "date": "1624147200000",
+            "count": 0
+          },
+          {
+            "date": "1624233600000",
+            "count": 0
+          },
+          {
+            "date": "1624320000000",
+            "count": 1
+          },
+          {
+            "date": "1624406400000",
+            "count": 0
+          },
+          {
+            "date": "1624492800000",
+            "count": 0
+          },
+          {
+            "date": "1624579200000",
+            "count": 0
+          },
+          {
+            "date": "1624665600000",
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "Eve",
+      "stat": {
+        "change_review_ratio": 100.0,
+        "author_review_ratio": 0.0,
+        "review_histo": [
+          {
+            "date": "1624060800000",
+            "count": 0
+          },
+          {
+            "date": "1624147200000",
+            "count": 0
+          },
+          {
+            "date": "1624233600000",
+            "count": 0
+          },
+          {
+            "date": "1624320000000",
+            "count": 0
+          },
+          {
+            "date": "1624406400000",
+            "count": 0
+          },
+          {
+            "date": "1624492800000",
+            "count": 2
+          },
+          {
+            "date": "1624579200000",
+            "count": 0
+          },
+          {
+            "date": "1624665600000",
+            "count": 0
+          }
+        ]
+      }
+    }
+  ]
+}
