@@ -25,7 +25,8 @@ import PropTypes from 'prop-types'
 import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
 
-const TITLE = window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
+const TITLE =
+  window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
 
 class IndexMenu extends React.Component {
   render() {
@@ -48,18 +49,26 @@ class IndexMenu extends React.Component {
           >
             Board
           </Link>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/user_groups'}
-          >
-            User Groups
-          </Link>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/people' + search}
-          >
-            People
-          </Link>
+          <NavDropdown title="People" id="peropl-nav-dropdown">
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/people' + search
+                )
+              }
+            >
+              People
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/user_groups'
+                )
+              }
+            >
+              Groups
+            </NavDropdown.Item>
+          </NavDropdown>
           <Link
             className="nav-link"
             to={'/' + this.props.match.params.index + '/repos' + search}
