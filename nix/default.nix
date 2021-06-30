@@ -2,8 +2,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/8d0340aee5caac3807c58ad7fa4ebdbbdd9134d6.tar.gz";
-    sha256 = "0r00azbz64fz8yylm8x37imnrsm5cdzshd5ma8gwfwjyw166n3r1";
+      "https://github.com/NixOS/nixpkgs/archive/db6e089456cdddcd7e2c1d8dac37a505c797e8fa.tar.gz";
+    sha256 = "02yk20i9n5nhn6zgll3af7kp3q5flgrpg1h5vcqfdqcck8iikx4b";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -158,20 +158,74 @@ let
     ++ base-req;
 
   # define the haskell toolchain
-  grpc-haskell-src = pkgs.fetchFromGitHub {
-    owner = "awakesecurity";
-    repo = "gRPC-haskell";
-    rev = "d821e58c2b72f127ce5b74b69dac8cf3d7f558ad";
-    sha256 = "1ms6v58rznkqk4807n9yr888lf0bbn7p7a9mjwmbdckc1pa1gxdv";
-  };
-  grpc-overlay = (import "${grpc-haskell-src}/release.nix").overlay;
-  grpc-nixpkgs = (import "${grpc-haskell-src}/nixpkgs.nix");
-  grpc-pkgs = grpc-nixpkgs {
-    overlays = [ grpc-overlay ];
-    config = { allowBroken = true; };
-  };
-  hsPkgs = grpc-pkgs.haskellPackages;
-  ghc = hsPkgs.ghcWithPackages (p: [ p.language-protobuf p.relude ]);
+  hsPkgs = pkgs.haskellPackages.extend (self: super: {
+    # Unbreak proto3-suite
+    range-set-list = pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.overrideCabal super.range-set-list { broken = false; });
+    proto3-suite = pkgs.haskell.lib.dontCheck super.proto3-suite;
+
+    # relude>1 featuer exposed modules
+    relude = pkgs.haskell.lib.overrideCabal super.relude {
+      version = "1.0.0.1";
+      sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
+    };
+
+    # bloodhound needs a new release, use current master for now
+    bloodhound = pkgs.haskell.lib.overrideCabal super.bloodhound {
+      src = pkgs.fetchFromGitHub {
+        owner = "bitemyapp";
+        repo = "bloodhound";
+        rev = "4775ebb759fe1b7cb5f880e4a41044b2363d98af";
+        sha256 = "00wzaj4slvdxanm0krbc6mfn96mi5c6hhd3sywd3gq5m2ff59ggn";
+      };
+      broken = false;
+    };
+  });
+  # haskell dependencies from monocle.cabal and lentille.cabal
+  ghc = hsPkgs.ghcWithPackages (p:
+    with p; [
+      MonadRandom
+      aeson
+      aeson-casing
+      binary
+      bloodhound
+      bytestring
+      connection
+      dhall
+      dhall-yaml
+      either
+      exceptions
+      file-embed
+      http-client
+      http-client-openssl
+      http-types
+      language-protobuf
+      megaparsec
+      morpheus-graphql-client
+      parser-combinators
+      proto3-suite
+      relude
+      retry
+      say
+      servant
+      servant-options
+      servant-server
+      semver
+      streaming
+      time
+      transformers
+      vector
+      wai
+      wai-cors
+      wai-logger
+      warp
+
+      # tests
+      doctest
+      http-mock
+      tasty
+      tasty-hunit
+    ]);
   hs-req =
     [ ghc hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
