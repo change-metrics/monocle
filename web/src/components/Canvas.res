@@ -7,6 +7,7 @@
 type t
 
 @send external getContext: (Dom.element, string) => t = "getContext"
+@send external clearRect: (t, int, int, int, int) => unit = "clearRect"
 @send external beginPath: t => unit = "beginPath"
 @send external arc: (t, int, int, int, int, float) => unit = "arc"
 @send external rect: (t, float, float, float, float) => unit = "rect"
@@ -22,6 +23,7 @@ type t
 
 let drawScale = (pos, width, height, ctx) => {
   let padding = 5
+  ctx->clearRect(0, 0, width, height)
   // ctx->setFillStyle("lightgrey")
   // ctx->fillRect(0, 0, width, height)
 
