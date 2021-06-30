@@ -332,7 +332,7 @@ transformResponse result =
           where
             mkPushEvent Commit {..} =
               (getBaseEvent change)
-                { changeEventId = "ChangePushedEvent-" <> changeId change,
+                { changeEventId = "ChangeCommitPushedEvent-" <> changeId change <> "-" <> commitSha,
                   changeEventType = Just $ ChangeEventTypeChangePushed ChangePushedEvent,
                   changeEventAuthor = commitAuthor,
                   changeEventCreatedAt = commitAuthoredAt
