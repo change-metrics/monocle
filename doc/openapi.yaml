@@ -394,6 +394,10 @@ components:
             properties: {}
         ChangeCommentedEvent:
             properties: {}
+        ChangeCommitForcePushedEvent:
+            properties: {}
+        ChangeCommitPushedEvent:
+            properties: {}
         ChangeCreatedEvent:
             properties: {}
         ChangeEvent:
@@ -439,17 +443,13 @@ components:
                     $ref: '#/components/schemas/ChangeAbandonedEvent'
                 ChangeReviewed:
                     $ref: '#/components/schemas/ChangeReviewedEvent'
-                ChangeForcePushed:
-                    $ref: '#/components/schemas/ChangeForcePushedEvent'
-                ChangePushed:
-                    $ref: '#/components/schemas/ChangePushedEvent'
+                ChangeCommitForcePushed:
+                    $ref: '#/components/schemas/ChangeCommitForcePushedEvent'
+                ChangeCommitPushed:
+                    $ref: '#/components/schemas/ChangeCommitPushedEvent'
                 ChangeMerged:
                     $ref: '#/components/schemas/ChangeMergedEvent'
-        ChangeForcePushedEvent:
-            properties: {}
         ChangeMergedEvent:
-            properties: {}
-        ChangePushedEvent:
             properties: {}
         ChangeReviewedEvent:
             properties:

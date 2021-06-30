@@ -92,9 +92,9 @@ message ChangeReviewedEvent {
   repeated string approvals = 1;
 }
 
-message ChangeForcePushedEvent {}
+message ChangeCommitForcePushedEvent {}
 
-message ChangePushedEvent {}
+message ChangeCommitPushedEvent {}
 
 message ChangeMergedEvent {}
 
@@ -118,8 +118,8 @@ message ChangeEvent {
     ChangeCommentedEvent ChangeCommented = 16;
     ChangeAbandonedEvent ChangeAbandoned = 17;
     ChangeReviewedEvent ChangeReviewed = 18;
-    ChangeForcePushedEvent ChangeForcePushed = 19;
-    ChangePushedEvent ChangePushed = 20;
+    ChangeCommitForcePushedEvent ChangeCommitForcePushed = 19;
+    ChangeCommitPushedEvent ChangeCommitPushed = 20;
     ChangeMergedEvent ChangeMerged = 21;
   }
 }

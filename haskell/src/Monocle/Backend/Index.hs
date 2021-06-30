@@ -296,8 +296,8 @@ toELKChangeEvent ChangeEvent {..} =
         ChangeEventTypeChangeCommented ChangeCommentedEvent -> "ChangeCommentedEvent"
         ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> "ChangeAbandonedEvent"
         ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> "ChangeReviewedEvent"
-        ChangeEventTypeChangeForcePushed ChangeForcePushedEvent -> "ChangeForcePushedEvent"
-        ChangeEventTypeChangePushed ChangePushedEvent -> "ChangePushedEvent"
+        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
+        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
         ChangeEventTypeChangeMerged ChangeMergedEvent -> "ChangeMergedEvent"
       Nothing -> error "changeEventType field is mandatory"
 
