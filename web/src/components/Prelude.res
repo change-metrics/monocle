@@ -50,6 +50,7 @@ module Link = {
     ~_to: string,
     ~children: 'children,
     ~style: option<'style>=?,
+    ~target: option<string>=?,
     ~onClick: option<'cb>=?,
   ) => React.element = "Link"
 }

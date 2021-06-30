@@ -20,6 +20,10 @@ module Fixture = {
 
   @module external groupGetJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/user_group_get.json"
   let group_get: UserGroupTypes.get_response = UserGroupBs.decode_get_response(groupGetJson)
+
+  @module
+  external searchFieldsJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/search_fields.json"
+  let fields: SearchTypes.fields_response = SearchBs.decode_fields_response(searchFieldsJson)
 }
 
 module App = {
@@ -35,6 +39,13 @@ module App = {
         </div>,
       ),
       ("table", <Change.Table index={"test"} changes={list{Fixture.change, Fixture.change}} />),
+      (
+        "search help",
+        <>
+          <div className="container"> <HelpSearch.Tooltip /> {"test"->str} </div>
+          <div className="container"> <HelpSearch.Content fields={Fixture.fields.fields} /> </div>
+        </>,
+      ),
     ]
     ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}

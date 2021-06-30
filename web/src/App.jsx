@@ -47,6 +47,7 @@ import Board from './components/Board.bs.js'
 import Store from './components/Store.bs.js'
 import GroupsView from './components/GroupsView.bs.js'
 import GroupView from './components/GroupView.bs.js'
+import HelpSearch from './components/HelpSearch.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -345,6 +346,10 @@ const App = () => {
     <React.Fragment>
       <TopMenu />
       <Switch>
+        <Route
+          path="/help/search"
+          render={() => <HelpSearch store={store} />}
+        />
         <Route
           path="/:index/board"
           render={() => <BoardView store={store} />}
