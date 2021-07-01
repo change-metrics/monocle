@@ -5,16 +5,7 @@
 Follow the [Architectural Decision Records](doc/adr/index.md) to
 understand the choices made by the project.
 
-## To deploy from source code
-
-To use `docker-compose` from source code, use the
-`docker-compose.yml.dev` file instead of the image based one:
-
-```ShellSession
-$ ln -sf docker-compose.yml.dev docker-compose.yml
-```
-
-## To run the tests
+## Run the APIv1 test (Python)
 
 Tests rely on the Elasticsearch service so first you need to ensure the Elasticsearch container is running.
 You can run the "docker-compose up -d" or you can only run the Elasticsearch container by running "docker-compose start elastic".
@@ -31,7 +22,7 @@ Then the tests can be executed using:
 $ tox
 ```
 
-## To update the API
+## Update the APIv2 (protobuf)
 
 The new APIs are defined using protobuf. To change them, first you need to update the
 protobuf definitions present in the [./protos/ folder](./protos). Then you need to update
@@ -41,7 +32,18 @@ the api and web client by running the protoc command using the Makefile:
 $ make codegen
 ```
 
-## Reloading code
+## Deploy from source code
+
+### Using docker-compose
+
+To use `docker-compose` from source code, use the
+`docker-compose.yml.dev` file instead of the image based one:
+
+```ShellSession
+$ ln -sf docker-compose.yml.dev docker-compose.yml
+```
+
+#### Reloading code
 
 This section explains how you can hack the Monocle code. The idea is to use
 the docker deployment to avoid complex development methods.
@@ -53,7 +55,7 @@ rebuild and re-spawn the changed containers:
 $ docker-compose up -d --build
 ```
 
-### auto-reloading the web UI code
+#### auto-reloading the web UI code
 
 To have your code automatically reloaded on each change, just run it
 outside the container:
@@ -65,46 +67,7 @@ $ npm install
 $ npm start
 ```
 
-## Git hooks
-
-Before submitting a [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork),
-make sure to configure the git hooks locally to avoid proposing broken code
-or not well formatted code.
-
-### pre-push
-
-To be sure to push correct branches, you have to configure the
-`pre-push` git hook by creating `.git/hooks/pre-push` with the
-following content:
-
-```Shell
-#!/bin/bash
-
-exec ./contrib/pre-push "$@"
-```
-
-and making it executable with `chmod +x .git/hooks/pre-push`.
-
-### pre-commit
-
-To be sure to have correctly formatted code, enable the `pre-commit`
-git hook to reformat your code by creating `.git/hooks/pre-commit`
-with the following content:
-
-```Shell
-#!/bin/bash
-
-exec ./contrib/pre-commit "$@"
-```
-
-and making it executable with `chmod +x .git/hooks/pre-commit`.
-
-## Contributing a new driver
-
-Please refer to the file `dummy/change.py` that contain a Dummy driver and
-some comments to help you get started.
-
-## Using podman to build a development environment for Monocle
+### Using podman to build a development environment for Monocle
 
 Docker and Docker-compose might not be available so podman can
 be used to start a Monocle deployment environment.
@@ -120,18 +83,18 @@ firefox http://localhost:8080
 
 See the `usage` section in the script.
 
-## Running the services manually
+### Running the services manually
 
 This section describes how to start the Monocle services directly on your host without using containers.
 This can be used to better understand how the system works and to enable fast reload of local changes.
 
-### Requirements
+#### Requirements
 
 ```ShellSession
 sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
 ```
 
-### HTTP gateway
+#### HTTP gateway (nginx)
 
 Adjust and copy this configuration to `/etc/nginx/conf.d/monocle.conf`
 
@@ -170,26 +133,25 @@ server {
 }
 ```
 
-
-### Elastic
+#### Elastic
 
 ```ShellSession
 ./contrib/start-elk.sh 9200
 ```
 
-### APIv1
+#### APIv1
 
 ```ShellSession
 ./contrib/start-apiv1.sh 9878
 ```
 
-### Web
+#### Web
 
 ```ShellSession
 ./contrib/start-web.sh
 ```
 
-### APIv2
+#### APIv2
 
 ```ShellSession
 cd haskell
@@ -197,3 +159,50 @@ cabal repl
 λ> import Monocle.Api.CLI
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
+
+### Running the services manually using nix
+
+This section describes how to start the Monocle services directly on your host using nix.
+
+#### Elastic
+
+```ShellSession
+nix-shell
+elk-start
+```
+
+#### Nginx
+
+```ShellSession
+nix-shell
+nginx-start
+```
+
+#### APIv1
+
+```ShellSession
+nix-shell
+monocle-api-start
+```
+
+#### APIv2
+
+```ShellSession
+nix-shell
+monocle-api2-start
+λ> import Monocle.Api.CLI
+λ> run 9879 "http://localhost:9200" "
+```
+
+#### Web
+
+```ShellSession
+nix-shell
+monocle-web-start
+firefox http://localhost:13000
+```
+
+## Contributing a new driver
+
+Please refer to the file `dummy/change.py` that contain a Dummy driver and
+some comments to help you get started.

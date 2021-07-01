@@ -21,7 +21,6 @@ let
   # DB
   elk = pkgsNonFree.elasticsearch7;
   elk-home = "/tmp/es-home";
-  # elk-port = 9200;
   elkConf = pkgs.writeTextFile {
     name = "elasticsearch.yml";
     text = ''
@@ -57,6 +56,7 @@ let
     name = "nginx.conf";
     text = ''
       error_log /dev/stdout info;
+      pid ${nginx-home}/nginx.pid;
 
       events {
           worker_connections 1024;
@@ -146,6 +146,8 @@ let
     fi
 
     export WEB_PORT=${toString web-port}
+    export REACT_APP_API_URL=http://localhost:${toString web-port}
+    export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
