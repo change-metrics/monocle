@@ -32,6 +32,7 @@ crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
 -- | 'run' is the entrypoint of the macroscope process
+-- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
 runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
