@@ -146,7 +146,7 @@ let
     fi
 
     export WEB_PORT=${toString web-port}
-    export REACT_APP_API_URL=http://localhost:${toString web-port}
+    export REACT_APP_API_URL=http://localhost:${toString nginx-port}
     export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
   '';
