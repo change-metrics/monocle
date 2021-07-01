@@ -276,13 +276,14 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventType = getEventType changeEventType,
       elkchangeeventChangeId = changeEventChangeId,
       elkchangeeventUrl = changeEventUrl,
-      elkchangeeventChangedFiles = Just $ map changedFilePathPath $ toList changeEventChangedFiles,
+      elkchangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
       elkchangeeventRepositoryPrefix = changeEventRepositoryPrefix,
       elkchangeeventRepositoryFullname = changeEventRepositoryFullname,
       elkchangeeventRepositoryShortname = changeEventRepositoryShortname,
       elkchangeeventAuthor = toAuthor changeEventAuthor,
       elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
       elkchangeeventBranch = changeEventBranch,
+      elkchangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
       elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       elkchangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
@@ -386,12 +387,12 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
     ensureType change = change {elkchangeType = "Change"}
 
 getEventDocId :: ELKChangeEvent -> BH.DocId
-getEventDocId event = BH.DocId . toStrict $ elkchangeeventChangeId event
+getEventDocId event = BH.DocId . toStrict $ elkchangeeventId event
 
 indexEvents :: [ELKChangeEvent] -> TenantM ()
 indexEvents events = indexDocs (fmap toDoc events)
   where
-    toDoc ev = (toJSON ev, BH.DocId . toStrict $ elkchangeeventChangeId ev)
+    toDoc ev = (toJSON ev, getEventDocId ev)
 
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
