@@ -176,7 +176,7 @@ testProjectCrawlerMetadata = withTenant doTest
     doTest :: TenantM ()
     doTest = do
       -- Init default crawler metadata and Ensure we get the default updated date
-      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      I.initCrawlerMetadata worker
       lastUpdated <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
@@ -192,7 +192,7 @@ testProjectCrawlerMetadata = withTenant doTest
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      I.initCrawlerMetadata worker
       lastUpdated''' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
@@ -221,19 +221,36 @@ testOrganizationCrawlerMetadata = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      I.setProjectCrawlerMetadata worker ["nova", "neutron"]
-      projectA <- I.checkDocExists $ getDocId "nova"
-      projectB <- I.checkDocExists $ getDocId "neutron"
+      -- Init crawler entities metadata and check we get the default date
+      I.initCrawlerMetadata worker
+      lastUpdated <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+
+      -- TODO(fbo) extract Server.AddProjects and use it directly
+      I.initCrawlerEntities (Project <$> ["nova", "neutron"]) worker
+      projectA <- I.checkDocExists $ getProjectCrawlerDocId "nova"
+      projectB <- I.checkDocExists $ getProjectCrawlerDocId "neutron"
       assertEqual' "Check crawler metadata for projectA present" True projectA
       assertEqual' "Check crawler metadata for projectB present" True projectB
+
+      -- Update the crawler metadata
+      I.setLastUpdated crawlerName fakeDateA $ Organization "gitlab-org"
+      lastUpdated' <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" ("gitlab-org", fakeDateA) lastUpdated'
       where
-        entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
+        entityType = CrawlerPB.CommitInfoRequest_EntityTypeOrganization
         fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
+        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
+        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
         crawlerName = "test-crawler"
-        getDocId = I.getCrawlerMetadataDocId crawlerName (I.getCrawlerTypeAsText entityType)
+        getProjectCrawlerDocId =
+          I.getCrawlerMetadataDocId
+            crawlerName
+            ( I.getCrawlerTypeAsText CrawlerPB.CommitInfoRequest_EntityTypeProject
+            )
         worker =
           let name = crawlerName
-              update_since = fakeDefaultDateStr
+              update_since = toText fakeDefaultDateStr
               provider =
                 let gitlab_url = "https://localhost"
                     gitlab_api_key = "key"

@@ -156,7 +156,7 @@ crawlerAddDoc request = do
   case requestE of
     Right (index, crawler) -> runTenantM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
-      Organization organizationName -> addProjects crawler organizationName $ projectNames projects
+      Organization organizationName -> addProjects crawler organizationName projects
     Left err -> pure $ toErrorResponse err
   where
     addChanges crawlerName changes events = do
@@ -166,7 +166,7 @@ crawlerAddDoc request = do
       pure $ CrawlerPB.AddDocResponse Nothing
     addProjects crawler organizationName projects = do
       monocleLogEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
-      I.setProjectCrawlerMetadata crawler projects
+      I.initCrawlerEntities (Project <$> projectNames projects) crawler
       pure $ CrawlerPB.AddDocResponse Nothing
     projectNames projectsV = toList (toText . ProjectPB.projectFullPath <$> projectsV)
 

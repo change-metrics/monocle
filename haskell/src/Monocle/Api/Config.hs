@@ -145,6 +145,11 @@ getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
   otherProvider -> error $ "Provider not supported: " <> show otherProvider
 
+getCrawlerOrganization :: Crawler -> [Text]
+getCrawlerOrganization Crawler {..} = case provider of
+  GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_organizations
+  otherProvider -> error $ "Provider not supported: " <> show otherProvider
+
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =
   let crawlers_api_key = Nothing

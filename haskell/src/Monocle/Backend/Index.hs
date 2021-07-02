@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -253,9 +254,10 @@ ensureIndex = do
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ initCrawlerLastUpdatedFromWorkerConfig (fromMaybe [] (Config.crawlers config))
+  traverse_ initCrawlerMetadata (getCrawlers config)
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+    getCrawlers config = fromMaybe [] (Config.crawlers config)
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =
@@ -394,12 +396,6 @@ indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, getEventDocId ev)
 
-setProjectCrawlerMetadata :: Config.Crawler -> [Text] -> TenantM ()
-setProjectCrawlerMetadata worker projectNames = traverse_ run entities
-  where
-    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
-    entities = Project <$> projectNames
-
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 
@@ -453,7 +449,13 @@ getLastUpdated crawler entity = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> Q.simpleSearch index search
   case catMaybes resp of
-    [] -> error "Unsupported"
+    [] ->
+      error
+        ( "Unable to find crawler metadata of type:"
+            <> getCrawlerTypeAsText entity
+            <> " for crawler:"
+            <> getWorkerName crawler
+        )
     (x : _) -> pure $ getRespFromMetadata x
   where
     search =
@@ -474,6 +476,7 @@ getLastUpdated crawler entity = do
 getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
+  CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
@@ -499,15 +502,28 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
               lastUpdatedDate
         }
     getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
-    crawlerType entity' = case entity' of
+    crawlerType = \case
       Project _ -> "project"
-      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
+      Organization _ -> "organization"
 
 setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: Config.Crawler -> TenantM ()
-initCrawlerLastUpdatedFromWorkerConfig worker = traverse_ run entities
+initCrawlerEntities :: [Entity] -> Config.Crawler -> TenantM ()
+initCrawlerEntities enitities worker = traverse_ run enitities
   where
     run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
-    entities = Project <$> Config.getCrawlerProject worker
+
+getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
+getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
+
+getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
+getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
+
+initCrawlerMetadata :: Config.Crawler -> TenantM ()
+initCrawlerMetadata crawler =
+  initCrawlerEntities
+    ( getProjectEntityFromCrawler crawler
+        <> getOrganizationEntityFromCrawler crawler
+    )
+    crawler
