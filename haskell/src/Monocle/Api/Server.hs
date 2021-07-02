@@ -114,6 +114,9 @@ userGroupGet request = do
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
 
+pattern OrganizationEntity organization =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
+
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
@@ -252,7 +255,7 @@ crawlerCommitInfo request = do
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   Env {tenants = tenants} <- ask
-  let (SearchPB.QueryRequest {..}) = request
+  let SearchPB.QueryRequest {..} = request
   now <- liftIO getCurrentTime
 
   let requestE =
