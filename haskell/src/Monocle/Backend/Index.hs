@@ -394,6 +394,12 @@ indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, getEventDocId ev)
 
+setProjectCrawlerMetadata :: Config.Crawler -> [Text] -> TenantM ()
+setProjectCrawlerMetadata worker projectNames = traverse_ run entities
+  where
+    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
+    entities = Project <$> projectNames
+
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 
@@ -437,6 +443,10 @@ type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
+
+getWorkerUpdatedSince :: Config.Crawler -> UTCTime
+getWorkerUpdatedSince Config.Crawler {..} =
+  fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
 
 getLastUpdated :: Config.Crawler -> EntityType -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity = do
@@ -500,5 +510,3 @@ initCrawlerLastUpdatedFromWorkerConfig worker = traverse_ run entities
   where
     run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
     entities = Project <$> Config.getCrawlerProject worker
-    getWorkerUpdatedSince Config.Crawler {..} =
-      fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
