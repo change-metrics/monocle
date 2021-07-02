@@ -3,7 +3,7 @@
 
 MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
 MESSAGES_V2 = monocle/user_group.proto
-BACKEND_ONLY = monocle/change.proto monocle/crawler.proto
+BACKEND_ONLY = monocle/change.proto monocle/project.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell

@@ -7,6 +7,7 @@ option go_package = "monocle/crawler";
 
 import "google/protobuf/timestamp.proto";
 import "monocle/change.proto";
+import "monocle/project.proto";
 
 message Entity {
   oneof entity {
@@ -24,6 +25,7 @@ message AddDocRequest {
   Entity entity = 4;
   repeated monocle_change.Change changes = 5;
   repeated monocle_change.ChangeEvent events = 6;
+  repeated monocle_project.Project projects = 7;
 }
 
 enum AddDocError {

@@ -123,7 +123,7 @@ toEntity entityPB = case entityPB of
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {tenants = tenants} <- ask
-  let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
+  let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events _) = request
 
   let requestE = do
         index <-

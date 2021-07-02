@@ -464,6 +464,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_ChangeEvent'
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_project_Project'
         monocle_crawler_AddDocResponse:
             properties:
                 error:
@@ -515,6 +519,10 @@ components:
                 change_commit_name:
                     type: string
                 change_event_name:
+                    type: string
+        monocle_project_Project:
+            properties:
+                full_path:
                     type: string
         monocle_search_Change:
             properties:
