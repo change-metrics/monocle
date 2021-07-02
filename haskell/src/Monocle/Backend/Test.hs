@@ -88,13 +88,20 @@ emptyConfig name =
       index = name
    in Config.Index {..}
 
+getElasticURL :: IO Text
+getElasticURL = do
+  envM <- liftIO (lookupEnv "ELASTIC_URL")
+  pure . toText $ fromMaybe "http://localhost:9200" envM
+
 withTenant :: TenantM () -> IO ()
-withTenant cb = bracket create delete toTenantM
+withTenant cb = do
+  elasticURL <- getElasticURL
+  bracket (create elasticURL) delete toTenantM
   where
     -- todo: generate random name
     testName = "test-tenant"
-    create = do
-      bhEnv <- I.mkEnv "http://localhost:9200"
+    create url = do
+      bhEnv <- I.mkEnv url
       let config = emptyConfig testName
       _ <- runTenantM' bhEnv config I.ensureIndex
       pure (bhEnv, config)
@@ -163,8 +170,8 @@ testIndexChanges = withTenant doTest
 assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
 assertEqual' n a b = liftIO $ assertEqual n a b
 
-testCrawlerMetadata :: Assertion
-testCrawlerMetadata = withTenant doTest
+testProjectCrawlerMetadata :: Assertion
+testProjectCrawlerMetadata = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
@@ -208,6 +215,32 @@ testCrawlerMetadata = withTenant doTest
         fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
         fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
         fakeDateC = fromMaybe (error "nop") (readMaybe "2021-06-02 23:00:00 Z" :: Maybe UTCTime)
+
+testOrganizationCrawlerMetadata :: Assertion
+testOrganizationCrawlerMetadata = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      I.setProjectCrawlerMetadata worker ["nova", "neutron"]
+      projectA <- I.checkDocExists $ getDocId "nova"
+      projectB <- I.checkDocExists $ getDocId "neutron"
+      assertEqual' "Check crawler metadata for projectA present" True projectA
+      assertEqual' "Check crawler metadata for projectB present" True projectB
+      where
+        entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
+        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
+        crawlerName = "test-crawler"
+        getDocId = I.getCrawlerMetadataDocId crawlerName (I.getCrawlerTypeAsText entityType)
+        worker =
+          let name = crawlerName
+              update_since = fakeDefaultDateStr
+              provider =
+                let gitlab_url = "https://localhost"
+                    gitlab_api_key = "key"
+                    gitlab_repositories = Nothing
+                    gitlab_organizations = Just ["gitlab-org"]
+                 in Config.GitlabProvider Config.Gitlab {..}
+           in Config.Crawler {..}
 
 scenarioProject :: ScenarioProject
 scenarioProject =

@@ -466,14 +466,15 @@ getLastUpdated crawler entity = do
     query =
       Q.mkAnd
         [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
-          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
+          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
         ]
-    crawlerType :: EntityType -> Text
-    crawlerType entity' = case entity' of
-      CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+
+getCrawlerTypeAsText :: EntityType -> Text
+getCrawlerTypeAsText entity' = case entity' of
+  CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
+  otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
 setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
