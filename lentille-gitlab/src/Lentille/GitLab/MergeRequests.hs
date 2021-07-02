@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -270,7 +271,7 @@ transformResponse host result =
                       coAuthoredAt = commentedAt,
                       coType = commentType
                     }
-            getCommentType ntypeM' = case ntypeM' of
+            getCommentType = \case
               Just "approval" -> CoApproval "Approved"
               Just "unapproval" -> CoApproval "Unapproved"
               Just _ -> CoOther
