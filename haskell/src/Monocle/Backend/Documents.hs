@@ -34,6 +34,17 @@ instance ToJSON File where
 instance FromJSON File where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+newtype SimpleFile = SimpleFile
+  { simplefilePath :: LText
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON SimpleFile where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON SimpleFile where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data Commit = Commit
   { elkcommitSha :: LText,
     elkcommitAuthor :: Author,
@@ -122,7 +133,7 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventType :: LText,
     elkchangeeventChangeId :: LText,
     elkchangeeventUrl :: LText,
-    elkchangeeventChangedFiles :: Maybe [LText],
+    elkchangeeventChangedFiles :: [SimpleFile],
     elkchangeeventRepositoryPrefix :: LText,
     elkchangeeventRepositoryShortname :: LText,
     elkchangeeventRepositoryFullname :: LText,
@@ -130,6 +141,7 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventOnAuthor :: Author,
     elkchangeeventBranch :: LText,
     elkchangeeventOnCreatedAt :: UTCTime,
+    elkchangeeventCreatedAt :: UTCTime,
     elkchangeeventApproval :: Maybe [LText]
   }
   deriving (Show, Eq, Generic)

@@ -258,6 +258,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventAuthor = fakeAuthor
     elkchangeeventOnAuthor = fakeAuthor
     elkchangeeventBranch = mempty
+    elkchangeeventCreatedAt = fakeDate
     elkchangeeventOnCreatedAt = fakeDate
     elkchangeeventApproval = Nothing
 
