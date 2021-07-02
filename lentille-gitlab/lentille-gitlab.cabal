@@ -44,6 +44,7 @@ library
                      , network-uri                < 2.6.5
   exposed-modules:     Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
+                     , Lentille.GitLab.Group
                      , Lentille.GitLab.Adapter
 
 executable lentille-gitlab

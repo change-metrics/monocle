@@ -166,7 +166,7 @@ transformResponse host result =
                 )
             )
         ) ->
-        ( PageInfo hasNextPage endCursor count,
+        ( PageInfo hasNextPage endCursor (Just count),
           [],
           extract shortName fullName <$> catMaybes nodes
         )
