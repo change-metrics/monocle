@@ -18,6 +18,7 @@ module Macroscope.Worker
   )
 where
 
+import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Client.Api
@@ -101,9 +102,9 @@ processBatch postFunc docs = do
     AddDocResponse (Just err) -> AddError (show err)
 
 -- | 'process' post to the monocle api a stream of document
-process :: (MonadIO m, MonadLog m) => ([DocumentType] -> m AddDocResponse) -> Stream (Of DocumentType) m () -> m ()
+process :: (MonadIO m, MonadLog m) => ([DocumentType] -> m AddDocResponse) -> Stream (Of DocumentType) m () -> m [ProcessResult]
 process postFunc =
-  S.print
+  S.toList_
     . S.mapM (processBatch postFunc)
     . S.mapped S.toList
     . S.chunksOf 500
@@ -133,15 +134,25 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
         then log LogEnded
         else do
           -- Run the document stream for that entity
-          process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)
-          -- Post the commit date
-          res <- retry $ commitTimestamp oldestEntity startTime
+          postResult <- process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)
 
-          if not res
-            then log LogFailed
-            else do
-              putTextLn "Continuing..."
-              drainEntities
+          case foldr collectPostFailure [] postResult of
+            [] -> do
+              -- Post the commit date
+              res <- retry $ commitTimestamp oldestEntity startTime
+
+              if not res
+                then log LogFailed
+                else do
+                  putTextLn "Continuing..."
+                  drainEntities
+            xs -> do
+              log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
+
+    collectPostFailure :: ProcessResult -> [Text] -> [Text]
+    collectPostFailure res acc = case res of
+      AddOk -> acc
+      AddError err -> err : acc
 
     oldestEntityDate oe = case oe of
       CommitInfoResponse_OldestEntity _ (Just tc) -> Timestamp.toUTCTime tc
