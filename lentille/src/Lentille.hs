@@ -9,14 +9,14 @@ module Lentille
     LentilleM,
     LentilleStream,
     runLentilleM,
-    throwError,
+    stopLentille,
 
     -- * Lentille Errors
     LentilleError (..),
   )
 where
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError, throwError)
 import Monocle.Api.Client.Worker (MonadLog (..), MonadTime (..), getCurrentTime, logEvent)
 import Monocle.Prelude (MonadThrow)
 import Relude
@@ -27,6 +27,7 @@ import Streaming (Of, Stream)
 
 newtype LentilleM a = LentilleM {unLentille :: ExceptT LentilleError IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
+  deriving newtype (MonadError LentilleError)
 
 instance MonadTime LentilleM where
   getTime = liftIO getCurrentTime
@@ -36,10 +37,13 @@ instance MonadLog LentilleM where
   log = void . log'
 
 data LentilleError
-  = DecodeError
+  = DecodeError [Text]
   deriving (Show)
 
 type LentilleStream a = Stream (Of a) LentilleM ()
 
 runLentilleM :: MonadIO m => LentilleM a -> m (Either LentilleError a)
 runLentilleM = liftIO . runExceptT . unLentille
+
+stopLentille :: LentilleError -> LentilleStream a
+stopLentille = throwError

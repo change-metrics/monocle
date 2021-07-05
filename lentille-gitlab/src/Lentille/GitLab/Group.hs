@@ -18,6 +18,7 @@ module Lentille.GitLab.Group where
 
 import Data.Morpheus.Client
 import Data.Time.Clock
+import Lentille (LentilleStream)
 import Lentille.GitLab
   ( GitLabGraphClient,
     PageInfo (..),
@@ -53,16 +54,14 @@ fetchGroupProjects :: MonadIO m => GitLabGraphClient -> Text -> m (Either String
 fetchGroupProjects client fullPath =
   fetch (runGitLabGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
-streamGroupProjects ::
-  MonadIO m => GitLabGraphClient -> Text -> Stream (Of Project) m ()
+streamGroupProjects :: GitLabGraphClient -> Text -> LentilleStream Project
 streamGroupProjects client fullPath =
-  streamFetch client Nothing mkArgs transformResponse break
+  streamFetch client Nothing mkArgs transformResponse id
   where
     mkArgs cursor = GetGroupProjectsArgs (ID fullPath) $ toCursorM cursor
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
-    break = fmap (pure ()) . S.break (const False)
 
 transformResponse :: GetGroupProjects -> (PageInfo, [Text], [Project])
 transformResponse result =
@@ -80,6 +79,10 @@ transformResponse result =
           [],
           getFullPath <$> cleanMaybeMNodes nodes
         )
-    otherWise -> error ("Invalid response: " <> show otherwise)
+    _anyOtherResponse ->
+      ( PageInfo False Nothing Nothing,
+        ["Unknown project response: " <> show result],
+        []
+      )
   where
     getFullPath GroupProjectsNodesProject {..} = Project . toLazy $ unpackID fullPath

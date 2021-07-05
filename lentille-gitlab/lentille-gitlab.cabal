@@ -34,6 +34,7 @@ library
                      , relude                     > 1.0 && < 1.1
                      , aeson                      < 1.6
                      , monocle
+                     , lentille
                      , streaming                  < 0.3
                      , http-client                < 0.8
                      , proto3-suite               >= 0.4.2

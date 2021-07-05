@@ -81,8 +81,8 @@ runMacroscope verbose confPath interval client = do
         getIdentByAliasCB :: Text -> Maybe Text
         getIdentByAliasCB = Config.getIdentByAliasFromIdents idents
 
-    glMRCrawler :: MonadIO m => GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream m
+    glMRCrawler :: GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-    glOrgCrawler :: MonadIO m => GitLabGraphClient -> DocumentStream m
+    glOrgCrawler :: GitLabGraphClient -> DocumentStream
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient

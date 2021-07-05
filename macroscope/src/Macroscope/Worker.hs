@@ -21,6 +21,7 @@ where
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
+import Lentille (LentilleStream, runLentilleM)
 import Monocle.Api.Client.Api
 import Monocle.Api.Client.Worker hiding (run)
 import Monocle.Change (Change, ChangeEvent)
@@ -34,13 +35,13 @@ import qualified Streaming as S
 import qualified Streaming.Prelude as S
 
 -- | A crawler is defined as a DocumentStream:
-data DocumentStream m
+data DocumentStream
   = -- | Fetch project for a organization name
-    Projects (Text -> Stream (Of Project) m ())
+    Projects (Text -> LentilleStream Project)
   | -- | Fetch recent changes from a project
-    Changes (UTCTime -> Text -> Stream (Of (Change, [ChangeEvent])) m ())
+    Changes (UTCTime -> Text -> LentilleStream (Change, [ChangeEvent]))
   | -- | Fetch recent task data
-    TaskDatas (UTCTime -> Stream (Of TaskData) m ())
+    TaskDatas (UTCTime -> LentilleStream TaskData)
 
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
@@ -117,7 +118,7 @@ runStream ::
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream m ->
+  DocumentStream ->
   m ()
 runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities
   where
@@ -134,20 +135,29 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
         then log LogEnded
         else do
           -- Run the document stream for that entity
-          postResult <- process (crawlerAddDoc monocleClient . mkRequest oldestEntity) (getStream oldestEntity)
+          postResultE <-
+            runLentilleM $
+              process
+                (crawlerAddDoc monocleClient . mkRequest oldestEntity)
+                (getStream oldestEntity)
 
-          case foldr collectPostFailure [] postResult of
-            [] -> do
-              -- Post the commit date
-              res <- retry $ commitTimestamp oldestEntity startTime
+          case postResultE of
+            Right postResult ->
+              case foldr collectPostFailure [] postResult of
+                [] -> do
+                  -- Post the commit date
+                  res <- retry $ commitTimestamp oldestEntity startTime
 
-              if not res
-                then log LogFailed
-                else do
-                  putTextLn "Continuing..."
-                  drainEntities
-            xs -> do
-              log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
+                  if not res
+                    then log LogFailed
+                    else do
+                      putTextLn "Continuing..."
+                      drainEntities
+                xs -> do
+                  log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
+            Left _err -> do
+              -- TODO: report decoding error
+              log LogFailed
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]
     collectPostFailure res acc = case res of

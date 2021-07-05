@@ -45,6 +45,7 @@ library
   import:              common-options
   hs-source-dirs:      src
   build-depends:       base                       < 5
+                     , lentille
                      , lentille-gitlab
                      , monocle
                      , proto3-suite               >= 0.4.2

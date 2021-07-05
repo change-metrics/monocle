@@ -9,11 +9,11 @@ import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
+import Lentille (LentilleError (DecodeError), LentilleStream, stopLentille)
 import Monocle.Api.Client.Worker (mkManager)
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.URI as URI
 import Relude
-import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
 schemaLocation :: String
@@ -69,7 +69,7 @@ data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCou
   deriving (Show)
 
 streamFetch ::
-  (MonadIO m, Fetch a, FromJSON a) =>
+  (Fetch a, FromJSON a) =>
   GitLabGraphClient ->
   -- | MR updatedAt date until we need to fetch
   Maybe UTCTime ->
@@ -78,8 +78,8 @@ streamFetch ::
   -- | query result adapter
   (a -> (PageInfo, [Text], [b])) ->
   -- | check for limit ->
-  (Stream (Of b) m () -> Stream (Of b) m ()) ->
-  Stream (Of b) m ()
+  (LentilleStream b -> LentilleStream b) ->
+  LentilleStream b
 streamFetch client untilDate mkArgs transformResponse checkLimit = go Nothing
   where
     logStatus (PageInfo hasNextPage' _ totalCount') =
@@ -99,13 +99,13 @@ streamFetch client untilDate mkArgs transformResponse checkLimit = go Nothing
             Left err -> error (toText err)
             Right resp -> transformResponse resp
 
-      -- TODO: report decoding error
-      unless (null decodingErrors) (error ("Decoding failed: " <> show decodingErrors))
-
       logStatus pageInfo
 
       -- Yield the results
       checkLimit (S.each xs)
+
+      -- Abort the stream when there are errors
+      unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
 
       -- TODO: implement throttle
       when (hasNextPage pageInfo) (go (Just pageInfo))
