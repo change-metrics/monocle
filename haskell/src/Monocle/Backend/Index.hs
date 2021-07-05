@@ -510,7 +510,7 @@ setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> TenantM ()
-initCrawlerEntities enitities worker = traverse_ run enitities
+initCrawlerEntities entities worker = traverse_ run entities
   where
     run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
 

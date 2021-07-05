@@ -89,9 +89,8 @@ emptyConfig name =
    in Config.Index {..}
 
 getElasticURL :: IO Text
-getElasticURL = do
-  envM <- liftIO (lookupEnv "ELASTIC_URL")
-  pure . toText $ fromMaybe "http://localhost:9200" envM
+getElasticURL =
+  toText . fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
 
 withTenant :: TenantM () -> IO ()
 withTenant cb = do
