@@ -172,6 +172,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           addDocRequestEntity = commitInfoResponse_OldestEntityEntity oe
           addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
           addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
+          addDocRequestProjects = V.fromList []
        in AddDocRequest {..}
       where
         getEvents x = case x of

@@ -27,7 +27,8 @@ import Lentille.GitLab
     streamFetch,
   )
 import Lentille.GitLab.Adapter
-import Streaming (Of, Stream)
+import Relude hiding (id, state)
+import Streaming (MonadIO, Of, Stream)
 import qualified Streaming.Prelude as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup
