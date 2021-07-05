@@ -17,6 +17,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
+import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
@@ -114,23 +115,35 @@ userGroupGet request = do
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
 
+pattern OrganizationEntity organization =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
+
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
+  OrganizationEntity organizationName -> Organization $ toStrict organizationName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
   Env {tenants = tenants} <- ask
-  let (CrawlerPB.AddDocRequest indexName crawlerName apiKey entity changes events) = request
+  let ( CrawlerPB.AddDocRequest
+          indexName
+          crawlerName
+          apiKey
+          entity
+          changes
+          events
+          projects
+        ) = request
 
   let requestE = do
         index <-
           Config.lookupTenant tenants (toStrict indexName)
             `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
 
-        _crawler <-
+        crawler <-
           Config.lookupCrawler index (toStrict crawlerName)
             `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
 
@@ -138,12 +151,12 @@ crawlerAddDoc request = do
           (Config.crawlers_api_key index /= Just (toStrict apiKey))
           (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
 
-        pure index
+        pure (index, crawler)
 
   case requestE of
-    Right index -> runTenantM index $ case toEntity entity of
+    Right (index, crawler) -> runTenantM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
-      Organization _ -> error "Organization entity not yet supported"
+      Organization organizationName -> addProjects crawler organizationName projects
     Left err -> pure $ toErrorResponse err
   where
     addChanges crawlerName changes events = do
@@ -151,6 +164,11 @@ crawlerAddDoc request = do
       I.indexChanges (map I.toELKChange $ toList changes)
       I.indexEvents (map I.toELKChangeEvent $ toList events)
       pure $ CrawlerPB.AddDocResponse Nothing
+    addProjects crawler organizationName projects = do
+      monocleLogEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
+      I.initCrawlerEntities (Project <$> projectNames projects) crawler
+      pure $ CrawlerPB.AddDocResponse Nothing
+    projectNames projectsV = toList (toText . ProjectPB.projectFullPath <$> projectsV)
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
@@ -252,7 +270,7 @@ crawlerCommitInfo request = do
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   Env {tenants = tenants} <- ask
-  let (SearchPB.QueryRequest {..}) = request
+  let SearchPB.QueryRequest {..} = request
   now <- liftIO getCurrentTime
 
   let requestE =

@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -253,9 +254,10 @@ ensureIndex = do
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ initCrawlerLastUpdatedFromWorkerConfig (fromMaybe [] (Config.crawlers config))
+  traverse_ initCrawlerMetadata (getCrawlers config)
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+    getCrawlers config = fromMaybe [] (Config.crawlers config)
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =
@@ -438,12 +440,22 @@ type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
 
+getWorkerUpdatedSince :: Config.Crawler -> UTCTime
+getWorkerUpdatedSince Config.Crawler {..} =
+  fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
+
 getLastUpdated :: Config.Crawler -> EntityType -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> Q.simpleSearch index search
   case catMaybes resp of
-    [] -> error "Unsupported"
+    [] ->
+      error
+        ( "Unable to find crawler metadata of type:"
+            <> getCrawlerTypeAsText entity
+            <> " for crawler:"
+            <> getWorkerName crawler
+        )
     (x : _) -> pure $ getRespFromMetadata x
   where
     search =
@@ -456,14 +468,16 @@ getLastUpdated crawler entity = do
     query =
       Q.mkAnd
         [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
-          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (crawlerType entity)) Nothing
+          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
         ]
-    crawlerType :: EntityType -> Text
-    crawlerType entity' = case entity' of
-      CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
     getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
       (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+
+getCrawlerTypeAsText :: EntityType -> Text
+getCrawlerTypeAsText entity' = case entity' of
+  CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
+  CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> "organization"
+  otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
 setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
@@ -488,17 +502,28 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
               lastUpdatedDate
         }
     getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
-    crawlerType entity' = case entity' of
+    crawlerType = \case
       Project _ -> "project"
-      otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
+      Organization _ -> "organization"
 
 setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerLastUpdatedFromWorkerConfig :: Config.Crawler -> TenantM ()
-initCrawlerLastUpdatedFromWorkerConfig worker = traverse_ run entities
+initCrawlerEntities :: [Entity] -> Config.Crawler -> TenantM ()
+initCrawlerEntities entities worker = traverse_ run entities
   where
     run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
-    entities = Project <$> Config.getCrawlerProject worker
-    getWorkerUpdatedSince Config.Crawler {..} =
-      fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
+
+getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
+getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
+
+getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
+getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
+
+initCrawlerMetadata :: Config.Crawler -> TenantM ()
+initCrawlerMetadata crawler =
+  initCrawlerEntities
+    ( getProjectEntityFromCrawler crawler
+        <> getOrganizationEntityFromCrawler crawler
+    )
+    crawler

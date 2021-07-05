@@ -23,6 +23,9 @@ monocleIntegrationTests =
         testIndexChanges,
       testCase "Test achievement" testAchievements,
       testCase
-        "Index CrawlerMetadata"
-        testCrawlerMetadata
+        "Index ProjectCrawlerMetadata"
+        testProjectCrawlerMetadata,
+      testCase
+        "Index OrganizationCrawlerMetadata"
+        testOrganizationCrawlerMetadata
     ]

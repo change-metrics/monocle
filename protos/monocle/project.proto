@@ -1,0 +1,10 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_project;
+option go_package = "monocle/project";
+
+message Project {
+  string full_path = 1;
+}

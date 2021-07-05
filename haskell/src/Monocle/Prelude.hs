@@ -81,6 +81,7 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 data MonocleEvent
   = AddingChange LText Int Int
+  | AddingProject Text Text Int
   | UpdatingEntity LText Entity UTCTime
   | Searching QueryRequest_QueryType LText Query
 
@@ -88,6 +89,8 @@ eventToText :: MonocleEvent -> Text
 eventToText ev = case ev of
   AddingChange crawler changes events ->
     toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
+  AddingProject crawler organizationName projects ->
+    crawler <> " adding " <> show projects <> " changes for organization" <> organizationName
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->

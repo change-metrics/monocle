@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
@@ -29,6 +30,7 @@ import qualified GHC.Enum as Hs
 import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
 import qualified Monocle.Change
+import qualified Monocle.Project
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
@@ -276,7 +278,8 @@ data AddDocRequest = AddDocRequest
     addDocRequestApikey :: Hs.Text,
     addDocRequestEntity :: Hs.Maybe Monocle.Crawler.Entity,
     addDocRequestChanges :: Hs.Vector Monocle.Change.Change,
-    addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent
+    addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent,
+    addDocRequestProjects :: Hs.Vector Monocle.Project.Project
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -294,7 +297,8 @@ instance HsProtobuf.Message AddDocRequest where
         addDocRequestApikey = addDocRequestApikey,
         addDocRequestEntity = addDocRequestEntity,
         addDocRequestChanges = addDocRequestChanges,
-        addDocRequestEvents = addDocRequestEvents
+        addDocRequestEvents = addDocRequestEvents,
+        addDocRequestProjects = addDocRequestProjects
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -328,6 +332,13 @@ instance HsProtobuf.Message AddDocRequest where
                 ( Hs.coerce @(Hs.Vector Monocle.Change.ChangeEvent)
                     @(HsProtobuf.NestedVec Monocle.Change.ChangeEvent)
                     addDocRequestEvents
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 7)
+                ( Hs.coerce @(Hs.Vector Monocle.Project.Project)
+                    @(HsProtobuf.NestedVec Monocle.Project.Project)
+                    addDocRequestProjects
                 )
             )
           ]
@@ -365,6 +376,13 @@ instance HsProtobuf.Message AddDocRequest where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 6)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Project.Project))
+              @(_ (Hs.Vector Monocle.Project.Project))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 7)
               )
           )
   dotProto _ =
@@ -421,28 +439,43 @@ instance HsProtobuf.Message AddDocRequest where
           (HsProtobuf.Single "events")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 7)
+          ( HsProtobuf.Repeated
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_project" Hs.:| ["Project"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "projects")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB AddDocRequest where
-  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6) =
+  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.object
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
           "entity" .= f4,
           "changes" .= f5,
-          "events" .= f6
+          "events" .= f6,
+          "projects" .= f7
         ]
     )
-  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6) =
+  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.pairs
         [ "index" .= f1,
           "crawler" .= f2,
           "apikey" .= f3,
           "entity" .= f4,
           "changes" .= f5,
-          "events" .= f6
+          "events" .= f6,
+          "projects" .= f7
         ]
     )
 
@@ -456,6 +489,7 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
               <*> obj .: "entity"
               <*> obj .: "changes"
               <*> obj .: "events"
+              <*> obj .: "projects"
         )
     )
 
@@ -481,6 +515,8 @@ instance HsJSONPB.ToSchema AddDocRequest where
       addDocRequestChanges <- declare_changes Proxy.Proxy
       let declare_events = HsJSONPB.declareSchemaRef
       addDocRequestEvents <- declare_events Proxy.Proxy
+      let declare_projects = HsJSONPB.declareSchemaRef
+      addDocRequestProjects <- declare_projects Proxy.Proxy
       let _ =
             Hs.pure AddDocRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_crawler
@@ -488,6 +524,7 @@ instance HsJSONPB.ToSchema AddDocRequest where
               <*> HsJSONPB.asProxy declare_entity
               <*> HsJSONPB.asProxy declare_changes
               <*> HsJSONPB.asProxy declare_events
+              <*> HsJSONPB.asProxy declare_projects
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -506,7 +543,8 @@ instance HsJSONPB.ToSchema AddDocRequest where
                           ("apikey", addDocRequestApikey),
                           ("entity", addDocRequestEntity),
                           ("changes", addDocRequestChanges),
-                          ("events", addDocRequestEvents)
+                          ("events", addDocRequestEvents),
+                          ("projects", addDocRequestProjects)
                         ]
                   }
             }
