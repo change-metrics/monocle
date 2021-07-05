@@ -88,13 +88,19 @@ emptyConfig name =
       index = name
    in Config.Index {..}
 
+getElasticURL :: IO Text
+getElasticURL =
+  toText . fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+
 withTenant :: TenantM () -> IO ()
-withTenant cb = bracket create delete toTenantM
+withTenant cb = do
+  elasticURL <- getElasticURL
+  bracket (create elasticURL) delete toTenantM
   where
     -- todo: generate random name
     testName = "test-tenant"
-    create = do
-      bhEnv <- I.mkEnv "http://localhost:9200"
+    create url = do
+      bhEnv <- I.mkEnv url
       let config = emptyConfig testName
       _ <- runTenantM' bhEnv config I.ensureIndex
       pure (bhEnv, config)
@@ -163,13 +169,13 @@ testIndexChanges = withTenant doTest
 assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
 assertEqual' n a b = liftIO $ assertEqual n a b
 
-testCrawlerMetadata :: Assertion
-testCrawlerMetadata = withTenant doTest
+testProjectCrawlerMetadata :: Assertion
+testProjectCrawlerMetadata = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
       -- Init default crawler metadata and Ensure we get the default updated date
-      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      I.initCrawlerMetadata worker
       lastUpdated <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
@@ -185,7 +191,7 @@ testCrawlerMetadata = withTenant doTest
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      I.initCrawlerLastUpdatedFromWorkerConfig worker
+      I.initCrawlerMetadata worker
       lastUpdated''' <- I.getLastUpdated worker entityType
       assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
       where
@@ -208,6 +214,49 @@ testCrawlerMetadata = withTenant doTest
         fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
         fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
         fakeDateC = fromMaybe (error "nop") (readMaybe "2021-06-02 23:00:00 Z" :: Maybe UTCTime)
+
+testOrganizationCrawlerMetadata :: Assertion
+testOrganizationCrawlerMetadata = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Init crawler entities metadata and check we get the default date
+      I.initCrawlerMetadata worker
+      lastUpdated <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+
+      -- TODO(fbo) extract Server.AddProjects and use it directly
+      I.initCrawlerEntities (Project <$> ["nova", "neutron"]) worker
+      projectA <- I.checkDocExists $ getProjectCrawlerDocId "nova"
+      projectB <- I.checkDocExists $ getProjectCrawlerDocId "neutron"
+      assertEqual' "Check crawler metadata for projectA present" True projectA
+      assertEqual' "Check crawler metadata for projectB present" True projectB
+
+      -- Update the crawler metadata
+      I.setLastUpdated crawlerName fakeDateA $ Organization "gitlab-org"
+      lastUpdated' <- I.getLastUpdated worker entityType
+      assertEqual' "check got oldest updated entity" ("gitlab-org", fakeDateA) lastUpdated'
+      where
+        entityType = CrawlerPB.CommitInfoRequest_EntityTypeOrganization
+        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
+        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
+        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
+        crawlerName = "test-crawler"
+        getProjectCrawlerDocId =
+          I.getCrawlerMetadataDocId
+            crawlerName
+            ( I.getCrawlerTypeAsText CrawlerPB.CommitInfoRequest_EntityTypeProject
+            )
+        worker =
+          let name = crawlerName
+              update_since = toText fakeDefaultDateStr
+              provider =
+                let gitlab_url = "https://localhost"
+                    gitlab_api_key = "key"
+                    gitlab_repositories = Nothing
+                    gitlab_organizations = Just ["gitlab-org"]
+                 in Config.GitlabProvider Config.Gitlab {..}
+           in Config.Crawler {..}
 
 scenarioProject :: ScenarioProject
 scenarioProject =
@@ -258,6 +307,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventAuthor = fakeAuthor
     elkchangeeventOnAuthor = fakeAuthor
     elkchangeeventBranch = mempty
+    elkchangeeventCreatedAt = fakeDate
     elkchangeeventOnCreatedAt = fakeDate
     elkchangeeventApproval = Nothing
 
