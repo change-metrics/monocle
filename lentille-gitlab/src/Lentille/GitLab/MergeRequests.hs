@@ -111,7 +111,6 @@ defineByDocumentFile
                 systemNoteIconName
               }
             }
-            approved
             draft
           }
         }
@@ -245,7 +244,9 @@ transformResponse host result =
               changeMergeable = (if mergeable then "MERGEABLE" else "CONFLICT")
               changeLabels = (fromList $ getLabelTitle <$> maybe [] toLabelsNodes labels)
               changeAssignees = (fromList $ toIdent host . getAssigneesUsername <$> maybe [] toAssigneesNodes assignees)
-              changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
+              -- GitLab 13.12.X does not expose an approval attribute for mergeRequest
+              -- changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
+              changeApprovals = fromList []
               changeDraft = draft
               changeOptionalSelfMerged =
                 ( ChangeOptionalSelfMergedSelfMerged
