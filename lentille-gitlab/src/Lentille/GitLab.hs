@@ -72,7 +72,7 @@ streamFetch ::
   (MonadIO m, Fetch a, FromJSON a) =>
   GitLabGraphClient ->
   -- | MR updatedAt date until we need to fetch
-  UTCTime ->
+  Maybe UTCTime ->
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
   -- | query result adapter

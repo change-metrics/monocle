@@ -128,7 +128,7 @@ fetchMergeRequest client project mrID =
 streamMergeRequests ::
   MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Changes) m ()
 streamMergeRequests client untilDate project =
-  streamFetch client untilDate mkArgs (transformResponse $ host client) breakOnDate
+  streamFetch client (Just untilDate) mkArgs (transformResponse $ host client) breakOnDate
   where
     mkArgs cursor = GetProjectMergeRequestsArgs (ID project) Nothing $ toCursorM cursor
     toCursorM :: Text -> Maybe String

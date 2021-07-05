@@ -17,6 +17,7 @@
 module Lentille.GitLab.Group where
 
 import Data.Morpheus.Client
+import Data.Time.Clock
 import Lentille.GitLab
   ( GitLabGraphClient,
     PageInfo (..),
@@ -27,7 +28,8 @@ import Lentille.GitLab
     streamFetch,
   )
 import Lentille.GitLab.Adapter
-import Relude hiding (id, state)
+import Monocle.Project
+import Relude hiding (break)
 import Streaming (MonadIO, Of, Stream)
 import qualified Streaming.Prelude as S
 
@@ -51,7 +53,18 @@ fetchGroupProjects :: MonadIO m => GitLabGraphClient -> Text -> m (Either String
 fetchGroupProjects client fullPath =
   fetch (runGitLabGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
-transformResponse :: GetGroupProjects -> (PageInfo, [Text])
+streamGroupProjects ::
+  MonadIO m => GitLabGraphClient -> Text -> Stream (Of Project) m ()
+streamGroupProjects client fullPath =
+  streamFetch client Nothing mkArgs transformResponse break
+  where
+    mkArgs cursor = GetGroupProjectsArgs (ID fullPath) $ toCursorM cursor
+    toCursorM :: Text -> Maybe String
+    toCursorM "" = Nothing
+    toCursorM cursor'' = Just . toString $ cursor''
+    break = fmap (pure ()) . S.break (const False)
+
+transformResponse :: GetGroupProjects -> (PageInfo, [Text], [Project])
 transformResponse result =
   case result of
     GetGroupProjects
@@ -64,8 +77,9 @@ transformResponse result =
             )
         ) ->
         ( PageInfo hasNextPage endCursor Nothing,
+          [],
           getFullPath <$> cleanMaybeMNodes nodes
         )
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
-    getFullPath GroupProjectsNodesProject {..} = unpackID fullPath
+    getFullPath GroupProjectsNodesProject {..} = Project . toLazy $ unpackID fullPath
