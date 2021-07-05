@@ -49,7 +49,7 @@ newGitLabGraphClient url' = do
 
 runGitLabGraphRequest :: MonadIO m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString
 runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
-  putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
+  -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
   let initRequest = HTTP.parseRequest_ (toString url')
       request =
         initRequest
@@ -62,7 +62,7 @@ runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
   response <- liftIO $ HTTP.httpLbs request manager'
-  print response
+  -- print response
   pure (HTTP.responseBody response)
 
 data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
@@ -84,7 +84,7 @@ streamFetch client untilDate mkArgs transformResponse checkLimit = go Nothing
   where
     logStatus (PageInfo hasNextPage' _ totalCount') =
       putTextLn $
-        "[gitlab-graphql] got total count of MR: "
+        "[gitlab-graphql] got total count of documents: "
           <> show totalCount'
           <> " fetching until date: "
           <> show untilDate

@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -24,6 +25,7 @@ import Monocle.Api.Client.Worker hiding (run)
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Crawler
 import Monocle.Prelude
+import Monocle.Project (Project)
 import Monocle.TaskData (TaskData)
 import Proto3.Suite.Types (Enumerated (..))
 import Streaming (Of, Stream)
@@ -33,7 +35,7 @@ import qualified Streaming.Prelude as S
 -- | A crawler is defined as a DocumentStream:
 data DocumentStream m
   = -- | Fetch project for a organization name
-    Projects (Text -> Stream (Of Text) m ())
+    Projects (Text -> Stream (Of Project) m ())
   | -- | Fetch recent changes from a project
     Changes (UTCTime -> Text -> Stream (Of (Change, [ChangeEvent])) m ())
   | -- | Fetch recent task data
@@ -65,6 +67,15 @@ getProject oe = (getDate oe, toStrict project)
         Just (Entity (Just (EntityEntityProjectName name))) -> name
         _ -> error $ "Not a project: " <> show oe
 
+-- | 'getOrganization' gets the updated time and organization name from an 'OldestEntity'
+getOrganization :: OldestEntity -> (UTCTime, Text)
+getOrganization oe = (getDate oe, toStrict organization)
+  where
+    organization =
+      case commitInfoResponse_OldestEntityEntity oe of
+        Just (Entity (Just (EntityEntityOrganizationName name))) -> name
+        _ -> error $ "Not an organization: " <> show oe
+
 -------------------------------------------------------------------------------
 -- Worker implementation
 -------------------------------------------------------------------------------
@@ -72,7 +83,7 @@ getProject oe = (getDate oe, toStrict project)
 -- | The crawler stream is (locally) converted to a Stream (Of DocumentType)
 -- This intermediary representation enables generic processing with 'processBatch'
 data DocumentType
-  = DTProject Text
+  = DTProject Project
   | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
 
@@ -141,11 +152,14 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       Changes s ->
         let (untilDate, project) = getProject oldestEntity
          in S.map DTChanges (s untilDate project)
-      _ -> error "Not Implemeneted"
+      Projects s ->
+        let (_, organization) = getOrganization oldestEntity
+         in S.map DTProject (s organization)
+      _ -> error "Not Implemented"
 
     -- The type of the oldest entity for a given document stream
     entityType = case documentStream of
-      Projects _ -> error "Not Implemeneted"
+      Projects _ -> CommitInfoRequest_EntityTypeOrganization
       Changes _ -> CommitInfoRequest_EntityTypeProject
       TaskDatas _ -> error "Not Implemented"
 
@@ -172,14 +186,17 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           addDocRequestEntity = commitInfoResponse_OldestEntityEntity oe
           addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
           addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
-          addDocRequestProjects = V.fromList []
+          addDocRequestProjects = V.fromList $ mapMaybe getProject' xs
        in AddDocRequest {..}
       where
-        getEvents x = case x of
+        getEvents = \case
           DTChanges (_, events) -> Just events
           _ -> Nothing
-        getChanges x = case x of
+        getChanges = \case
           DTChanges (change, _) -> Just change
+          _ -> Nothing
+        getProject' = \case
+          DTProject p -> Just p
           _ -> Nothing
 
     -- 'commitTimestamp' post the commit date.

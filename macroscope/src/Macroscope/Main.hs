@@ -8,6 +8,7 @@ module Macroscope.Main (runMacroscope) where
 
 import Control.Concurrent (threadDelay)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
+import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Macroscope.Worker (DocumentStream (..), runStream)
 import Monocle.Api.Client
@@ -79,5 +80,5 @@ runMacroscope verbose confPath interval client = do
     glMRCrawler :: MonadIO m => GitLabGraphClient -> DocumentStream m
     glMRCrawler glClient = Changes $ streamMergeRequests glClient
 
-    glOrgCrawler :: GitLabGraphClient -> DocumentStream m
-    glOrgCrawler _glClient = Projects $ error "Org NotImplemented"
+    glOrgCrawler :: MonadIO m => GitLabGraphClient -> DocumentStream m
+    glOrgCrawler glClient = Projects $ streamGroupProjects glClient
