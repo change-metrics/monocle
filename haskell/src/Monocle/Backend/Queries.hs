@@ -146,11 +146,20 @@ getEventCounts query =
     selfMergedQ = mkAnd [query, BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
 -- $setup
--- >>> import Data.Aeson (encode)
+-- >>> import Data.Aeson.Encode.Pretty (encodePretty', Config (..), defConfig, compare)
 
 -- | The histo event query
--- >>> putTextLn $ decodeUtf8 $ encode histoEventAgg
--- {"date_histogram":{"interval":"day","field":"created_at"}}
+-- >>> :{
+--  let
+--    conf = defConfig {confCompare = compare}
+--  in putTextLn $ decodeUtf8 $ encodePretty' conf histoEventAgg
+-- :}
+-- {
+--     "date_histogram": {
+--         "field": "created_at",
+--         "interval": "day"
+--     }
+-- }
 data HistoEventBucket = HistoEventBucket
   { heKey :: Word64,
     heCount :: Word32

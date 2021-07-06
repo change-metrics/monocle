@@ -187,4 +187,5 @@ test-suite monocle-doctest
   ghc-options:        -threaded -Wall
   main-is:            Doctest.hs
   build-depends:      base
+                    , aeson-pretty < 0.8.9
                     , doctest >= 0.9.3
