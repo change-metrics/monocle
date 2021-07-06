@@ -1240,7 +1240,8 @@ data CommitInfoRequest = CommitInfoRequest
     commitInfoRequestCrawler :: Hs.Text,
     commitInfoRequestEntityType ::
       HsProtobuf.Enumerated
-        Monocle.Crawler.CommitInfoRequest_EntityType
+        Monocle.Crawler.CommitInfoRequest_EntityType,
+    commitInfoRequestOffset :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1255,7 +1256,8 @@ instance HsProtobuf.Message CommitInfoRequest where
     CommitInfoRequest
       { commitInfoRequestIndex = commitInfoRequestIndex,
         commitInfoRequestCrawler = commitInfoRequestCrawler,
-        commitInfoRequestEntityType = commitInfoRequestEntityType
+        commitInfoRequestEntityType = commitInfoRequestEntityType,
+        commitInfoRequestOffset = commitInfoRequestOffset
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -1269,6 +1271,10 @@ instance HsProtobuf.Message CommitInfoRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 commitInfoRequestEntityType
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                commitInfoRequestOffset
             )
           ]
       )
@@ -1285,6 +1291,10 @@ instance HsProtobuf.Message CommitInfoRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 4)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -1309,17 +1319,32 @@ instance HsProtobuf.Message CommitInfoRequest where
           (HsProtobuf.Single "entity_type")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "offset")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB CommitInfoRequest where
-  toJSONPB (CommitInfoRequest f1 f2 f3) =
+  toJSONPB (CommitInfoRequest f1 f2 f3 f4) =
     ( HsJSONPB.object
-        ["index" .= f1, "crawler" .= f2, "entity_type" .= f3]
+        [ "index" .= f1,
+          "crawler" .= f2,
+          "entity_type" .= f3,
+          "offset" .= f4
+        ]
     )
-  toEncodingPB (CommitInfoRequest f1 f2 f3) =
+  toEncodingPB (CommitInfoRequest f1 f2 f3 f4) =
     ( HsJSONPB.pairs
-        ["index" .= f1, "crawler" .= f2, "entity_type" .= f3]
+        [ "index" .= f1,
+          "crawler" .= f2,
+          "entity_type" .= f3,
+          "offset" .= f4
+        ]
     )
 
 instance HsJSONPB.FromJSONPB CommitInfoRequest where
@@ -1329,6 +1354,7 @@ instance HsJSONPB.FromJSONPB CommitInfoRequest where
         ( \obj ->
             (Hs.pure CommitInfoRequest) <*> obj .: "index" <*> obj .: "crawler"
               <*> obj .: "entity_type"
+              <*> obj .: "offset"
         )
     )
 
@@ -1348,11 +1374,14 @@ instance HsJSONPB.ToSchema CommitInfoRequest where
       commitInfoRequestCrawler <- declare_crawler Proxy.Proxy
       let declare_entity_type = HsJSONPB.declareSchemaRef
       commitInfoRequestEntityType <- declare_entity_type Proxy.Proxy
+      let declare_offset = HsJSONPB.declareSchemaRef
+      commitInfoRequestOffset <- declare_offset Proxy.Proxy
       let _ =
             Hs.pure CommitInfoRequest
               <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_crawler
               <*> HsJSONPB.asProxy declare_entity_type
+              <*> HsJSONPB.asProxy declare_offset
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -1370,7 +1399,8 @@ instance HsJSONPB.ToSchema CommitInfoRequest where
                           ("crawler", commitInfoRequestCrawler),
                           ( "entity_type",
                             commitInfoRequestEntityType
-                          )
+                          ),
+                          ("offset", commitInfoRequestOffset)
                         ]
                   }
             }

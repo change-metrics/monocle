@@ -444,23 +444,23 @@ getWorkerUpdatedSince :: Config.Crawler -> UTCTime
 getWorkerUpdatedSince Config.Crawler {..} =
   fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
 
-getLastUpdated :: Config.Crawler -> EntityType -> TenantM (Text, UTCTime)
-getLastUpdated crawler entity = do
+getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
+getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> Q.simpleSearch index search
-  case catMaybes resp of
-    [] ->
+  case nonEmpty (catMaybes resp) of
+    Nothing ->
       error
         ( "Unable to find crawler metadata of type:"
             <> getCrawlerTypeAsText entity
             <> " for crawler:"
             <> getWorkerName crawler
         )
-    (x : _) -> pure $ getRespFromMetadata x
+    Just xs -> pure $ getRespFromMetadata (last xs)
   where
     search =
       (BH.mkSearch (Just query) Nothing)
-        { BH.size = BH.Size 1,
+        { BH.size = BH.Size (fromInteger . toInteger $ offset + 1),
           BH.sortBody = Just [BH.DefaultSortSpec bhSort]
         }
 
