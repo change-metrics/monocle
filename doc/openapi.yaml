@@ -482,6 +482,9 @@ components:
                 entity_type:
                     type: integer
                     format: enum
+                offset:
+                    type: integer
+                    format: uint32
         monocle_crawler_CommitInfoResponse:
             properties:
                 error:

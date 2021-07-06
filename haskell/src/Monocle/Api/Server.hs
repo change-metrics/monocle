@@ -226,7 +226,7 @@ crawlerCommit request = do
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
   Env {tenants = tenants} <- ask
-  let (CrawlerPB.CommitInfoRequest indexName crawlerName entity) = request
+  let (CrawlerPB.CommitInfoRequest indexName crawlerName entity offset) = request
       entityType = fromPBEnum entity
 
   let requestE = do
@@ -242,7 +242,7 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker) -> runTenantM index $ do
-      (name, ts) <- I.getLastUpdated worker entityType
+      (name, ts) <- I.getLastUpdated worker entityType offset
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
