@@ -159,16 +159,16 @@ emptyTenant name idents' =
       index = name
    in Index {..}
 
-emptyIdent :: Text -> [Text] -> Ident
-emptyIdent name groups' =
+createIdent :: Text -> [Text] -> [Text] -> Ident
+createIdent name aliases' groups' =
   let ident = name
-      aliases = []
+      aliases = aliases'
       groups = Just groups'
    in Ident {..}
 
 -- | Get the list of group and members
 --
--- >>> getTenantGroups (emptyTenant "test" [emptyIdent "alice" ["core", "ptl"], emptyIdent "bob" ["core"]])
+-- >>> getTenantGroups (emptyTenant "test" [createIdent "alice" [] ["core", "ptl"], createIdent "bob" [] ["core"]])
 -- [("core",["bob","alice"]),("ptl",["alice"])]
 getTenantGroups :: Index -> [(Text, [Text])]
 getTenantGroups Index {..} = Map.toList $ foldr go mempty (fromMaybe [] idents)
@@ -179,3 +179,29 @@ getTenantGroups Index {..} = Map.toList $ foldr go mempty (fromMaybe [] idents)
     addUser name groupName acc =
       let users = fromMaybe [] (Map.lookup groupName acc)
        in Map.insert groupName (users <> [name]) acc
+
+-- | Get the Ident name for a Given alias
+--
+-- >>> :{
+--  let
+--    index = emptyTenant "test" [createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
+--  in getIdentByAlias index "github.com/alice89"
+-- :}
+-- Just "alice"
+
+-- >>> :{
+--  let
+--    index = emptyTenant "test" [createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
+--  in getIdentByAlias index "github.com/ghost"
+-- :}
+-- Nothing
+getIdentByAlias :: Index -> Text -> Maybe Text
+getIdentByAlias Index {..} alias = getIdentByAliasFromIdents alias =<< idents
+
+getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe Text
+getIdentByAliasFromIdents alias idents' = case isMatched <$> idents' of
+  [] -> Nothing
+  x : _ -> x
+  where
+    isMatched :: Ident -> Maybe Text
+    isMatched Ident {..} = if alias `elem` aliases then Just ident else Nothing
