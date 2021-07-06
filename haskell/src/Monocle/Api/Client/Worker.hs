@@ -15,9 +15,12 @@ module Monocle.Api.Client.Worker
   ( run,
     TaskDataFetcher (..),
     MonadLog (..),
+    MonadTime (..),
     LogEvent (..),
+    logEvent,
 
     -- * Utility function
+    getCurrentTime,
     retry,
     mkManager,
     MonadMask,
