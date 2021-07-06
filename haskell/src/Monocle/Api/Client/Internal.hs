@@ -49,10 +49,10 @@ mkManager :: MonadIO m => m Manager
 mkManager = do
   disableTlsM <- lookupEnv "TLS_NO_VERIFY"
   let managerSettings = case disableTlsM of
-        Nothing ->
+        Just _ ->
           let tlsSettings = Connection.TLSSettingsSimple True False False
            in HTTP.mkManagerSettings tlsSettings Nothing
-        Just _ -> HTTP.tlsManagerSettings
+        Nothing -> HTTP.tlsManagerSettings
   liftIO $ newManager managerSettings
 
 -- | Create the 'MonocleClient'
