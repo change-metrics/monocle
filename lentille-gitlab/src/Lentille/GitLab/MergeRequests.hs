@@ -125,9 +125,15 @@ fetchMergeRequest client project mrID =
   fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
-  MonadIO m => GitLabGraphClient -> UTCTime -> Text -> Stream (Of Changes) m ()
-streamMergeRequests client untilDate project =
-  streamFetch client (Just untilDate) mkArgs (transformResponse $ host client) breakOnDate
+  MonadIO m =>
+  GitLabGraphClient ->
+  -- A callback to get Ident ID from an alias
+  (Text -> Maybe Text) ->
+  UTCTime ->
+  Text ->
+  Stream (Of Changes) m ()
+streamMergeRequests client getIdentIdCb untilDate project =
+  streamFetch client (Just untilDate) mkArgs transformResponse' breakOnDate
   where
     mkArgs cursor = GetProjectMergeRequestsArgs (ID project) Nothing $ toCursorM cursor
     toCursorM :: Text -> Maybe String
@@ -148,8 +154,15 @@ streamMergeRequests client untilDate project =
     isDateOlderThan :: UTCTime -> UTCTime -> Bool
     isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
 
-transformResponse :: Text -> GetProjectMergeRequests -> (PageInfo, [Text], [(Change, [ChangeEvent])])
-transformResponse host result =
+    transformResponse' = transformResponse (host client) (Just getIdentIdCb)
+
+transformResponse ::
+  Text ->
+  -- A callback to get Ident ID from an alias
+  Maybe (Text -> Maybe Text) ->
+  GetProjectMergeRequests ->
+  (PageInfo, [Text], [(Change, [ChangeEvent])])
+transformResponse host getIdentIdCB result =
   case result of
     GetProjectMergeRequests
       ( Just
@@ -171,6 +184,8 @@ transformResponse host result =
         )
     otherWise -> error ("Invalid response: " <> show otherwise)
   where
+    toIdent' = toIdent host getIdentIdCB
+    toCommit' = toCommit host getIdentIdCB
     extract :: Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
     extract shortName fullName mr =
       let change = getChange mr
@@ -213,14 +228,14 @@ transformResponse host result =
               changeDeletions = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSDeletions)
               changeChangedFilesCount = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
               changeChangedFiles = (fromList $ getChangedFile . toDiffStats <$> fromMaybe [] diffStats)
-              changeCommits = (fromList $ toCommit host . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
+              changeCommits = (fromList $ toCommit' . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
               changeRepositoryPrefix = toLazy $ TE.replace ("/" <> shortName) "" $ removeSpace fullName
               changeRepositoryFullname = toLazy $ removeSpace fullName
               changeRepositoryShortname = toLazy shortName
-              changeAuthor = (Just $ maybe (ghostIdent host) (toIdent host . getAuthorUsername) author)
+              changeAuthor = Just (maybe (ghostIdent host) (toIdent' . getAuthorUsername) author)
               changeOptionalMergedBy =
                 ( Just . ChangeOptionalMergedByMergedBy $
-                    maybe (ghostIdent host) (toIdent host . getMergerUsername) mergeUser
+                    maybe (ghostIdent host) (toIdent' . getMergerUsername) mergeUser
                 )
               changeBranch = toLazy sourceBranch
               changeTargetBranch = toLazy targetBranch
@@ -243,7 +258,7 @@ transformResponse host result =
               -- TODO(fbo) Use the merge status : https://docs.gitlab.com/ee/api/graphql/reference/index.html#mergestatus
               changeMergeable = (if mergeable then "MERGEABLE" else "CONFLICT")
               changeLabels = (fromList $ getLabelTitle <$> maybe [] toLabelsNodes labels)
-              changeAssignees = (fromList $ toIdent host . getAssigneesUsername <$> maybe [] toAssigneesNodes assignees)
+              changeAssignees = (fromList $ toIdent' . getAssigneesUsername <$> maybe [] toAssigneesNodes assignees)
               -- GitLab 13.12.X does not expose an approval attribute for mergeRequest
               -- changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
               changeApprovals = fromList []
@@ -268,7 +283,7 @@ transformResponse host result =
                   NoteID noteIDT = nId
                in MRComment
                     { coId = sanitizeID noteIDT,
-                      coAuthor = toIdent host author'',
+                      coAuthor = toIdent' author'',
                       coAuthoredAt = commentedAt,
                       coType = commentType
                     }
