@@ -79,7 +79,7 @@ runMacroscope verbose confPath interval client = do
       traverse_ runner docStreams
       where
         getIdentByAliasCB :: Text -> Maybe Text
-        getIdentByAliasCB = Config.getIdentByAliasFromIdents idents
+        getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
     glMRCrawler :: GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb

@@ -192,6 +192,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
               indexName
               crawlerName
               (Enumerated $ Right entityType)
+              0
           )
       case resp of
         CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
