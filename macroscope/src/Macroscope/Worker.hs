@@ -120,15 +120,15 @@ runStream ::
   CrawlerName ->
   DocumentStream ->
   m ()
-runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities
+runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
-    drainEntities = do
+    drainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss
       -- document updated when we start
       startTime <- log' $ LogStartingEntity entityType
 
       -- Query the monocle api for the oldest entity to be updated.
-      oldestEntity <- getOldestEntity
+      oldestEntity <- getOldestEntity offset
       log $ LogOldestEntity oldestEntity
 
       if oldestEntityDate oldestEntity > startDate
@@ -152,12 +152,14 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
                     then log LogFailed
                     else do
                       putTextLn "Continuing..."
-                      drainEntities
+                      drainEntities offset
                 xs -> do
                   log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
-            Left _err -> do
+            Left err -> do
               -- TODO: report decoding error
+              putTextLn $ "Lentille error: " <> show err
               log LogFailed
+              drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]
     collectPostFailure res acc = case res of
@@ -184,7 +186,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       Changes _ -> CommitInfoRequest_EntityTypeProject
       TaskDatas _ -> error "Not Implemented"
 
-    getOldestEntity = do
+    getOldestEntity offset = do
       resp <-
         crawlerCommitInfo
           monocleClient
@@ -192,7 +194,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
               indexName
               crawlerName
               (Enumerated $ Right entityType)
-              0
+              offset
           )
       case resp of
         CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
