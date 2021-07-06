@@ -80,7 +80,7 @@ streamFetch ::
   -- | check for limit ->
   (LentilleStream b -> LentilleStream b) ->
   LentilleStream b
-streamFetch client untilDate mkArgs transformResponse checkLimit = go Nothing
+streamFetch client untilDate mkArgs transformResponse checkLimit = checkLimit $ go Nothing
   where
     logStatus (PageInfo hasNextPage' _ totalCount') =
       putTextLn $
@@ -102,7 +102,7 @@ streamFetch client untilDate mkArgs transformResponse checkLimit = go Nothing
       logStatus pageInfo
 
       -- Yield the results
-      checkLimit (S.each xs)
+      S.each xs
 
       -- Abort the stream when there are errors
       unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
