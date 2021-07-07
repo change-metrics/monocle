@@ -174,6 +174,30 @@ let default_changes_mutable () : changes_mutable = {
   changes = [];
 }
 
+type repo_summary_mutable = {
+  mutable fullname : string;
+  mutable total_changes : string;
+  mutable abandoned_changes : string;
+  mutable merged_changes : string;
+  mutable open_changes : string;
+}
+
+let default_repo_summary_mutable () : repo_summary_mutable = {
+  fullname = "";
+  total_changes = "";
+  abandoned_changes = "";
+  merged_changes = "";
+  open_changes = "";
+}
+
+type repos_summary_mutable = {
+  mutable repository_summary : SearchTypes.repo_summary list;
+}
+
+let default_repos_summary_mutable () : repos_summary_mutable = {
+  repository_summary = [];
+}
+
 type changes_histos_event_mutable = {
   mutable doc_count : int32;
   mutable key : int64;
@@ -433,6 +457,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   match Pbrt_bs.string json "query_request_query_type" "value" with
   | "QUERY_CHANGE" -> (SearchTypes.Query_change : SearchTypes.query_request_query_type)
   | "QUERY_CHANGE_LIFECYCLE" -> (SearchTypes.Query_change_lifecycle : SearchTypes.query_request_query_type)
+  | "QUERY_REPOS_SUMMARY" -> (SearchTypes.Query_repos_summary : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -717,6 +742,60 @@ let rec decode_changes json =
     SearchTypes.changes = v.changes;
   } : SearchTypes.changes)
 
+let rec decode_repo_summary json =
+  let v = default_repo_summary_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "fullname" -> 
+      let json = Js.Dict.unsafeGet json "fullname" in
+      v.fullname <- Pbrt_bs.string json "repo_summary" "fullname"
+    | "total_changes" -> 
+      let json = Js.Dict.unsafeGet json "total_changes" in
+      v.total_changes <- Pbrt_bs.string json "repo_summary" "total_changes"
+    | "abandoned_changes" -> 
+      let json = Js.Dict.unsafeGet json "abandoned_changes" in
+      v.abandoned_changes <- Pbrt_bs.string json "repo_summary" "abandoned_changes"
+    | "merged_changes" -> 
+      let json = Js.Dict.unsafeGet json "merged_changes" in
+      v.merged_changes <- Pbrt_bs.string json "repo_summary" "merged_changes"
+    | "open_changes" -> 
+      let json = Js.Dict.unsafeGet json "open_changes" in
+      v.open_changes <- Pbrt_bs.string json "repo_summary" "open_changes"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.fullname = v.fullname;
+    SearchTypes.total_changes = v.total_changes;
+    SearchTypes.abandoned_changes = v.abandoned_changes;
+    SearchTypes.merged_changes = v.merged_changes;
+    SearchTypes.open_changes = v.open_changes;
+  } : SearchTypes.repo_summary)
+
+let rec decode_repos_summary json =
+  let v = default_repos_summary_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "repository_summary" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "repository_summary" in 
+        Pbrt_bs.array_ a "repos_summary" "repository_summary"
+      in
+      v.repository_summary <- Array.map (fun json -> 
+        (decode_repo_summary (Pbrt_bs.object_ json "repos_summary" "repository_summary"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.repository_summary = v.repository_summary;
+  } : SearchTypes.repos_summary)
+
 let rec decode_query_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -729,6 +808,9 @@ let rec decode_query_response json =
       | "changes" -> 
         let json = Js.Dict.unsafeGet json "changes" in
         (SearchTypes.Changes ((decode_changes (Pbrt_bs.object_ json "query_response" "Changes"))) : SearchTypes.query_response)
+      | "repos_summary" -> 
+        let json = Js.Dict.unsafeGet json "repos_summary" in
+        (SearchTypes.Repos_summary ((decode_repos_summary (Pbrt_bs.object_ json "query_response" "Repos_summary"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -997,6 +1079,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   match v with
   | SearchTypes.Query_change -> "QUERY_CHANGE"
   | SearchTypes.Query_change_lifecycle -> "QUERY_CHANGE_LIFECYCLE"
+  | SearchTypes.Query_repos_summary -> "QUERY_REPOS_SUMMARY"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1148,6 +1231,30 @@ let rec encode_changes (v:SearchTypes.changes) =
   end;
   json
 
+let rec encode_repo_summary (v:SearchTypes.repo_summary) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "fullname" (Js.Json.string v.SearchTypes.fullname);
+  Js.Dict.set json "total_changes" (Js.Json.string v.SearchTypes.total_changes);
+  Js.Dict.set json "abandoned_changes" (Js.Json.string v.SearchTypes.abandoned_changes);
+  Js.Dict.set json "merged_changes" (Js.Json.string v.SearchTypes.merged_changes);
+  Js.Dict.set json "open_changes" (Js.Json.string v.SearchTypes.open_changes);
+  json
+
+let rec encode_repos_summary (v:SearchTypes.repos_summary) = 
+  let json = Js.Dict.empty () in
+  begin (* repositorySummary field *)
+    let (repository_summary':Js.Json.t) =
+      v.SearchTypes.repository_summary
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_repo_summary |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "repository_summary" repository_summary';
+  end;
+  json
+
 let rec encode_query_response (v:SearchTypes.query_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -1160,6 +1267,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* changes field *)
       let json' = encode_changes v in
       Js.Dict.set json "changes" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Repos_summary v ->
+    begin (* reposSummary field *)
+      let json' = encode_repos_summary v in
+      Js.Dict.set json "repos_summary" (Js.Json.object_ json');
     end;
   end;
   json
