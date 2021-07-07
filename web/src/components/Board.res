@@ -79,6 +79,7 @@ module Column = {
             ->React.array
           }
         }
+      | Some(SearchTypes.Repos_summary(_)) => React.null
       }
     }
   }
@@ -129,6 +130,7 @@ module Column = {
               </Patternfly.DataList>
             }
           }
+        | Some(SearchTypes.Repos_summary(_)) => React.null
         }}
       </Patternfly.CardBody>
     </Patternfly.Card>
