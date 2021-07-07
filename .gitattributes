@@ -9,3 +9,6 @@
 /haskell/src/Monocle/Api/Client/Api.hs linguist-generated=true
 # OpenAPI
 /doc/openapi.yaml linguist-generated=true
+# GraphQL
+/haskell/github-schema/schema.docs.graphql linguist-generated=true
+/haskell/gitlab-schema/schema.graphql linguist-generated=true

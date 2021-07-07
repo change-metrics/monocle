@@ -16,7 +16,7 @@ jobs:
           submodules: recursive
       - run: ln -s /root/.cabal /github/home/.cabal
       - run: cd haskell; cabal build --enable-tests all
-      - run: cd haskell; cabal test --test-show-details=direct test:monocle-test test:monocle-doctest
+      - run: cd haskell; cabal test --test-show-details=direct test:monocle-test test:monocle-doctest test:lentille-bugzilla-test
 # This adds quite a bit of build time and this should be using the pre build container
 #      - run: cabal v2-install stan --install-method=copy --overwrite-policy=always
 #      - run: cd haskell; ~/.cabal/bin/stan report || true
