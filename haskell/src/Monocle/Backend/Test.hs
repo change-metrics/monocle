@@ -279,6 +279,7 @@ testTermsAgg = withTenant doTest
       indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
       results <- Q.getRepos
       assertEqual' "Check buckets counts" 1 (length results)
+      assertEqual' "Check buckets names" ["openstack/nova"] results
 
 -- Tests scenario helpers
 
