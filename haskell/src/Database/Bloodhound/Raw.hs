@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | A module for low-level function unavailable in bloodhound
 module Database.Bloodhound.Raw (search, aggWithDocValues) where
 

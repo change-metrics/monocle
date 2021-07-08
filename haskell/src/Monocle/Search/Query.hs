@@ -1,7 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
 module Monocle.Search.Query (Query (..), queryWithMods, query, ensureMinBound, fields, load) where
@@ -71,11 +67,7 @@ lookupField :: Field -> Either Text (FieldType, Field, Text)
 lookupField name = maybe (Left $ "Unknown field: " <> name) Right (lookup name fields)
 
 parseDateValue :: Text -> Maybe UTCTime
-parseDateValue txt =
-  maybe
-    Nothing
-    pure
-    (tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y")
+parseDateValue txt = tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y"
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
 

@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | monocle-search CLI entry point
 module Monocle.Search.CLI (searchMain) where
 

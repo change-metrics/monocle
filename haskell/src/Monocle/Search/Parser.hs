@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Monocle search language parser
 -- The goal of this module is to transform a list of 'token'
 -- into a 'Expr'.

@@ -1,8 +1,3 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 -- TEMP, to remove when org and task data are migrated to this new system
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
@@ -112,7 +107,7 @@ process postFunc =
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadThrow m, MonadMask m, MonadLog m, MonadIO m) =>
+  (MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   UTCTime ->
   ApiKey ->

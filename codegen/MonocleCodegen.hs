@@ -73,7 +73,6 @@ protoToHaskell = fromProto ALL headers mkService
   where
     headers =
       [ "{-# OPTIONS_GHC -fno-warn-missing-export-lists -fno-warn-unused-imports #-}",
-        "{-# LANGUAGE OverloadedStrings #-}",
         "-- |",
         "-- Copyright: (c) 2021 Monocle authors",
         "-- SPDX-License-Identifier: AGPL-3.0-only",
@@ -197,8 +196,6 @@ protoToServant pb =
   where
     headers =
       [ "{-# LANGUAGE DataKinds #-}",
-        "{-# LANGUAGE TypeOperators #-}",
-        "{-# LANGUAGE NoImplicitPrelude #-}",
         "-- |",
         "-- Copyright: (c) 2021 Monocle authors",
         "-- SPDX-License-Identifier: AGPL-3.0-only",
