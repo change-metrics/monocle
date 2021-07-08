@@ -285,6 +285,10 @@ getProjectAgg query = do
       ]
 
 -- | The repos_summary query
+getQueryFromSL :: Text -> BH.Query
+getQueryFromSL query =
+  fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing query
+
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
@@ -295,20 +299,21 @@ getTermsAgg query onTerm = do
   pure $ filter isNotEmptyTerm $ unfilteredR search
   where
     aggs = BH.mkAggregations "singleTermAgg" $ BH.TermsAgg $ BH.mkTermsAggregation onTerm
-    toTermsResult bucket = BH.buckets bucket
-    unfilteredR search' = maybe [] toTermsResult (BH.toTerms "singleTermAgg" search')
+    unfilteredR search' = maybe [] BH.buckets (BH.toTerms "singleTermAgg" search')
     -- Terms agg returns empty terms in a buckets
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getRepos :: TenantM [Text]
+data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
+
+getRepos :: TenantM [TermResult]
 getRepos = do
   results <- runTermAgg
-  pure $ getRepoFullName <$> trace (show results) results
+  pure $ getSimpleTR <$> results
   where
-    query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "repo_regex: .*"
+    query = getQueryFromSL "repo_regex: .*"
     runTermAgg = getTermsAgg query "repository_fullname"
-    getRepoFullName tr = getTermKey tr
+    getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
 getReviewHisto = do

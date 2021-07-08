@@ -253,16 +253,16 @@ testOrganizationCrawlerMetadata = withTenant doTest
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 
-scenarioProject :: ScenarioProject
-scenarioProject =
-  SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+scenarioProject :: LText -> ScenarioProject
+scenarioProject name =
+  SProject name [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
 
 testAchievements :: Assertion
 testAchievements = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
+      indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
 
       -- Try query
       agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg query
@@ -276,10 +276,16 @@ testTermsAgg = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
-      indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
+      indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
+      indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
+      indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
       results <- Q.getRepos
-      assertEqual' "Check buckets counts" 1 (length results)
-      assertEqual' "Check buckets names" ["openstack/nova"] results
+      assertEqual'
+        "Check buckets names"
+        [ Q.TermResult "openstack/neutron" 2,
+          Q.TermResult "openstack/nova" 1
+        ]
+        results
 
 -- Tests scenario helpers
 
