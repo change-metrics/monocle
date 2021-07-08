@@ -344,7 +344,7 @@ const App = () => {
   const store = Store.use(index)
   return (
     <React.Fragment>
-      <TopMenu />
+      <TopMenu store={store} />
       <Switch>
         <Route
           path="/help/search"

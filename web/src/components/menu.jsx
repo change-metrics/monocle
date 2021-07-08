@@ -24,6 +24,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 import PropTypes from 'prop-types'
 import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
+import SearchTop from './SearchTop.bs.js'
 
 const TITLE =
   window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
@@ -129,9 +130,17 @@ IndexMenu.propTypes = {
   })
 }
 
+const renderSearch = (store) => (prop) =>
+  (
+    <Nav className="ml-auto">
+      <SearchTop store={store} />
+    </Nav>
+  )
+
 class TopMenu extends React.Component {
   render() {
     document.title = TITLE
+    const render = renderSearch(this.props.store)
     return (
       <React.Fragment>
         <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
@@ -145,6 +154,10 @@ class TopMenu extends React.Component {
             <Route exact path="/help/search" />
             <Route path="/:index" component={IndexMenu} />
           </Switch>
+          <Switch>
+            <Route path="/:index/board" render={render} />
+            <Route path="/:index/user_groups" render={render} />
+          </Switch>
           <Nav className="ml-auto">
             <CUserView />
           </Nav>
@@ -154,6 +167,10 @@ class TopMenu extends React.Component {
       </React.Fragment>
     )
   }
+}
+
+TopMenu.propTypes = {
+  store: PropTypes.object
 }
 
 export default TopMenu

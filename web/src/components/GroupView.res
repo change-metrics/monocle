@@ -90,7 +90,6 @@ let make = (~group: string, ~store: Store.t) => {
   let (state, _) = store
   let request: UserGroupTypes.get_request = {index: state.index, name: group, query: state.query}
   <MStack>
-    <MStackItem> <Search.Top store /> </MStackItem>
     <MStackItem>
       <h3> {group->str} </h3>
       {switch useAutoGetOn(() => WebApi.UserGroup.get(request), state.query) {

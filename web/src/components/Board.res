@@ -464,7 +464,6 @@ let make = (~store: Store.t) => {
   }
 
   <MStack>
-    <MStackItem> <Search.Top store withLimit={true} /> </MStackItem>
     <MStackItem>
       <Patternfly.Layout.Bullseye>
         <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>
