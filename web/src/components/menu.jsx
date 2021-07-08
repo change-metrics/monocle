@@ -43,12 +43,6 @@ class IndexMenu extends React.Component {
           >
             Activity
           </Link>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/board'}
-          >
-            Board
-          </Link>
           <NavDropdown title="People" id="peropl-nav-dropdown">
             <NavDropdown.Item
               onClick={() =>
@@ -69,12 +63,17 @@ class IndexMenu extends React.Component {
               Groups
             </NavDropdown.Item>
           </NavDropdown>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/repos' + search}
-          >
-            Repositories
-          </Link>
+          <NavDropdown title="Projects" id="changes-nav-dropdown">
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/repos' + search
+                )
+              }
+            >
+              Repositories
+            </NavDropdown.Item>
+          </NavDropdown>
           <NavDropdown title="Changes" id="changes-nav-dropdown">
             <NavDropdown.Item
               onClick={() =>
@@ -84,6 +83,15 @@ class IndexMenu extends React.Component {
               }
             >
               Browse changes
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/board'
+                )
+              }
+            >
+              Board
             </NavDropdown.Item>
             <NavDropdown.Item
               onClick={() =>
