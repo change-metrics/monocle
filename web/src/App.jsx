@@ -309,7 +309,6 @@ const LegacyApp = (data) => (
       <Route path="/:index/hot-changes" component={HotChangesView} />
       <Route path="/:index/cold-changes" component={ColdChangesView} />
       <Route path="/:index/change/:change" component={ChangeView} />
-      <Route path="/:index/board" component={BoardView} />
     </Switch>
     <Row>
       <Col>
