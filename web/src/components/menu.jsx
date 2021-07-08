@@ -41,7 +41,7 @@ class IndexMenu extends React.Component {
             className="nav-link"
             to={'/' + this.props.match.params.index + search}
           >
-            Main
+            Activity
           </Link>
           <Link
             className="nav-link"
