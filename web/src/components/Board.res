@@ -213,7 +213,7 @@ module Board = {
         query: "state:open and updated_at < now-3week",
       },
     },
-    style: Kanban,
+    style: Table,
   }
 
   let columnsArray = (board: t) => {
@@ -231,7 +231,7 @@ module Board = {
 
   let saveToUrl = (board: t, query: string) => {
     resetLocationSearch()->ignore
-    board.style == Table ? setLocationSearch("s", "table")->ignore : ignore()
+    board.style == Kanban ? setLocationSearch("s", "kanban")->ignore : ignore()
     setLocationSearch("t", board.title)->ignore
     setLocationSearch("q", query)->ignore
     Belt.List.mapWithIndex(board.columns, (index, column) => {
@@ -269,8 +269,8 @@ module Board = {
       }
     }
     let style = switch getP("s") {
-    | Some("table") => Table
-    | _ => Kanban
+    | Some("kanban") => Kanban
+    | _ => Table
     }
     switch (getP("t"), go(0)) {
     | (None, _)
