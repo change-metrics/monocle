@@ -145,6 +145,12 @@ let
     cd haskell; cabal repl monocle
   '';
 
+  monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
+    #!/bin/sh
+    set -ex
+    cd haskell; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
+  '';
+
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
     #!/bin/sh
     set -ex
@@ -211,6 +217,7 @@ let
     monocleApi2Start
     monocleWebStart
     monocleEmacsStart
+    monocleGhcid
   ];
 
   # define the base requirements
