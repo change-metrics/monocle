@@ -271,6 +271,18 @@ testAchievements = withTenant doTest
       where
         query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
+testTermsAgg :: Assertion
+testTermsAgg = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
+      resultsM <- Q.getTermsAgg query "repository_fullname"
+      let results = fromMaybe [] resultsM
+      assertEqual' "Check buckets counts" 1 (length results)
+      where
+        query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "repo_regex: .*"
+
 -- Tests scenario helpers
 
 -- $setup
