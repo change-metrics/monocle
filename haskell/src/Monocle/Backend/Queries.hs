@@ -12,7 +12,6 @@ import qualified Database.Bloodhound.Raw as BHR
 import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (SortOrder (..))
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -36,8 +35,9 @@ runQuery docType = withFilter [BH.TermQuery (BH.Term "type" docType) Nothing] $ 
   query <- getQuery
   let search =
         (BH.mkSearch (Q.queryBH query) Nothing)
-          { BH.size = BH.Size (Q.queryLimit query),
-            BH.sortBody = toSortBody <$> Q.queryOrder query
+          { -- TODO: provide limit and order by though the request
+            BH.size = BH.Size 100,
+            BH.sortBody = toSortBody <$> Nothing
           }
   liftTenantM $ do
     index <- getIndexName
@@ -49,9 +49,8 @@ runQuery docType = withFilter [BH.TermQuery (BH.Term "type" docType) Nothing] $ 
           ( BH.DefaultSort (BH.FieldName field') (sortOrder order) Nothing Nothing Nothing Nothing
           )
       ]
-    sortOrder order = case order of
-      Asc -> BH.Ascending
-      Desc -> BH.Descending
+    -- TODO: convert protobuf sort order
+    sortOrder _order = BH.Ascending
 
 changes :: QueryM [ELKChange]
 changes = runQuery "Change"

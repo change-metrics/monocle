@@ -27,12 +27,10 @@ let make = (~store: Store.t) => {
       <h3> {"Example"->str} </h3>
       <ul>
         {"state:open and review_count:0"->li}
-        {"(repo : openstack/nova or repo: openstack/neutron) and user_group:qa and updated_at > 2020 order by score"->li}
+        {"(repo : openstack/nova or repo: openstack/neutron) and user_group:qa and updated_at > 2020"->li}
       </ul>
       <h3> {"Available fields"->str} </h3>
       <ul> {fields->Belt.List.map(renderField)->Belt.List.toArray->React.array} </ul>
-      <h3> {"Search syntax"->str} </h3>
-      <ul> {"expr and expr"->li} {"expr order by field limit count"->li} </ul>
       <h3> {"Expr syntax"->str} </h3>
       <ul> {"field:value"->li} {"date_field>YYYY-MM-DD"->li} {"number_field>42"->li} </ul>
     </div>

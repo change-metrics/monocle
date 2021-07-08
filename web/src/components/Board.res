@@ -12,32 +12,9 @@ module Column = {
   type t = {name: string, query: string}
 
   let addQuery = (columnQuery, query) => {
-    // TODO: stop doing text combinaison of columnQuery and globalQuery
-    // instead, let the api combine both and correctly handle columnquery mod.
-    //
-    // In the meantime, if the global query is just a mod, e.g. `limit 5`, then append
-    // it correctly:
-    let queryL = query->Js.String.toLowerCase->Js.String.trim
-    let prefix =
-      Js.String.startsWith("limit ", queryL) || Js.String.startsWith("order by ", queryL)
-        ? " "
-        : " and "
-
-    // If the column query contains a order by mod, then move it to the global query
-    let queryModRe = %re("/order by .*$/")
-    let queryMod =
-      queryModRe
-      ->Js.Re.exec_(columnQuery)
-      ->Belt.Option.flatMap(res =>
-        res->Js.Re.captures->Js.Array.unsafe_get(0)->Js.Nullable.toOption
-      )
-    let (columnQuery, query) = switch queryMod {
-    | None
-    | Some("") => (columnQuery, query)
-    | Some(queryMod) => (Js.String.replace(queryMod, "", columnQuery), query ++ " " ++ queryMod)
-    }
-
-    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
+    let isGlobalQueryEmpty = query->Js.String.toLowerCase->Js.String.trim == ""
+    let query = isGlobalQueryEmpty ? "" : " and " ++ query
+    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ query : query
   }
 
   module Row = {
@@ -188,24 +165,26 @@ module Board = {
     columns: list{
       {
         Column.name: "To Review",
+        // order: mkOrder("created_at", None)
         query: "state: open and updated_at < now-1week and updated_at > now-3week " ++
         defaultPositiveApprovals ++
         " and not " ++
-        defaultNegativeApprovals ++ " order by created_at",
+        defaultNegativeApprovals,
       },
       {
         Column.name: "To Approve",
-        query: "state:open and updated_at > now-1week " ++
-        "not " ++
-        defaultNegativeApprovals ++ " order by created_at desc",
+        // order: mkOrder("created_at", Desc->Some),
+        query: "state:open and updated_at > now-1week " ++ "not " ++ defaultNegativeApprovals,
       },
       {
         Column.name: "Done",
-        query: "state:merged and updated_at > now-1week order by updated_at desc",
+        // order: mkOrder("updated_at", Desc->Some)
+        query: "state:merged and updated_at > now-1week",
       },
       {
         Column.name: "Oldies",
-        query: "state:open and updated_at < now-3week order by updated_at desc",
+        // order: mkOrder("updated_at", Desc->Some)
+        query: "state:open and updated_at < now-3week",
       },
     },
     style: Kanban,

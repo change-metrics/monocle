@@ -6,7 +6,7 @@ This document introduces the Monocle Query Language standard.
 Example queries:
 
 - `state:open and review_count:0`
-- `(repo : openstack/nova or repo: openstack/neutron) and user_group:qa and updated_at > 2020 order by score`
+- `(repo : openstack/nova or repo: openstack/neutron) and user_group:qa and updated_at > 2020`
 
 
 # Backus–Naur form
@@ -64,11 +64,6 @@ ge = ">="
 lt = "<"
 le = "<="
 
-; search operator
-order-by = "order by" / "ORDER BY"
-order-by-sort = "asc" / "ASC" / "desc" / "DESC"
-limit = "limit" / "LIMIT"
-
 expression =
     ; boolean operator
       expression whsp1 and whsp1 expression
@@ -82,11 +77,6 @@ expression =
     / field whsp ge whsp value
     / field whsp lt whsp value
     / field whsp le whsp value
-
-    ; search operator
-    / expression whsp1 order-by whsp1 field whsp1 order-by-sort
-    / expression whsp1 order-by whsp1 field
-    / expression whsp1 limit whsp1 1*digit
 
     ; priority operator
     / "(" whsp expression whsp ")"
@@ -111,9 +101,6 @@ data Expr =
   | LtExpr   Field Value
   | GtEqExpr Field Value
   | LtEqExpr Field Value
-  -- Search operator
-  | OrderByExpr Field Expr
-  | LimitExpr   Int   Expr
 ```
 
 Thus, the example queries are represented like this:
@@ -156,7 +143,6 @@ fields = [
 
 - DateField must follow one of these syntaxs: YYYY, YYYY-MM, YYYY-MM-DD
 - Greater and Lower field operator must only be used with date or number fields.
-- Search operator (OrderBy and Limit) may only appear once at the outer layer.
 
 # Compilation to ElasticeSearch query
 

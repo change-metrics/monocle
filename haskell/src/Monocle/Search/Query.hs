@@ -305,13 +305,11 @@ query expr = case expr of
   e@(GtEqExpr field value) -> mkRangeQuery e field value
   e@(LtExpr field value) -> mkRangeQuery e field value
   e@(LtEqExpr field value) -> mkRangeQuery e field value
-  LimitExpr {} -> lift . lift $ throwE (ParseError "Limit must be global" 0)
-  OrderByExpr {} -> lift . lift $ throwE (ParseError "Order by must be global" 0)
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
-queryWithMods now' username indexM baseExprM =
+queryWithMods now' username indexM exprM =
   case exprM of
-    Nothing -> pure $ Query order limit Nothing (threeWeeksAgo now, now) False
+    Nothing -> pure $ Query Nothing (threeWeeksAgo now, now) False
     Just expr -> do
       (query', (boundM, bound)) <-
         runExcept
@@ -319,16 +317,12 @@ queryWithMods now' username indexM baseExprM =
           . runReaderT (query expr)
           $ Env now username index
       pure $
-        Query order limit (Just query') (fromMaybe (threeWeeksAgo bound) boundM, bound) (isJust boundM)
+        let bound' = (fromMaybe (threeWeeksAgo bound) boundM, bound)
+         in Query (Just query') bound' (isJust boundM)
   where
     now = dropTime now'
     index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
-    (order, limit, exprM) = case baseExprM of
-      (Just (OrderByExpr order' sortOrder (Just (LimitExpr limit' expr')))) -> (Just (order', sortOrder), limit', expr')
-      (Just (LimitExpr limit' (Just (OrderByExpr order' sortOrder expr')))) -> (Just (order', sortOrder), limit', expr')
-      (Just (LimitExpr limit' expr')) -> (Nothing, limit', expr')
-      expr' -> (Nothing, 100, expr')
 
 -- | Utility function to simply create a query
 load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query

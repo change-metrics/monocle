@@ -9,10 +9,7 @@ module RemoteData = {
 module UrlData = {
   let getQuery = () => {
     let params = Prelude.URLSearchParams.current()
-    switch params->Prelude.URLSearchParams.get("q")->Js.Nullable.toOption {
-    | Some(expr) => expr
-    | None => "limit 5"
-    }
+    params->Prelude.URLSearchParams.get("q")->Js.Nullable.toOption->Belt.Option.getWithDefault("")
   }
 }
 

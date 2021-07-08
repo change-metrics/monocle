@@ -9,7 +9,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import Monocle.Search.Lexer (Token (..), lex)
 import qualified Monocle.Search.Lexer as L
-import Monocle.Search.Syntax (Expr (..), ParseError (..), SortOrder (..))
+import Monocle.Search.Syntax (Expr (..), ParseError (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
 
@@ -67,35 +67,6 @@ exprParser aliases = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
       -- Here it is safe to run 'exprParser' because 'parenExpr' first parses an 'OpenParenthesis'
       Combinators.between (token OpenParenthesis) (token CloseParenthesis) (exprParser aliases)
 
-exprParserWithMods :: [(Text, Expr)] -> Parser (Maybe Expr)
-exprParserWithMods aliases = do
-  expr <- Combinators.optional (exprParser aliases)
-  modifiers <- Combinators.many modExpr
-  pure $ foldr (\modifier acc -> Just $ modifier acc) expr modifiers
-  where
-    -- 'modExpr' is a trailing expression modifiers
-    modExpr = do
-      operatorToken <- tokens [OrderBy, Limit]
-      case operatorToken of
-        OrderBy -> OrderByExpr <$> literal <*> orderSort
-        Limit -> LimitExpr <$> intLiteral
-        x -> error $ "this should not happen, see the expression before the case statement: " <> show x
-
-    orderSort = do
-      sortToken <- Combinators.optional $ tokens [SortAsc, SortDesc]
-      pure $ case fromMaybe SortAsc sortToken of
-        SortAsc -> Asc
-        SortDesc -> Desc
-        x -> error $ "this should not happen, see the expression before the case statement: " <> show x
-
--- | 'intLiteral' parses a number
-intLiteral :: Parser Int
-intLiteral = do
-  strLiteral <- toString <$> literal
-  case readMaybe strLiteral of
-    Just int -> pure int
-    Nothing -> Megaparsec.failure Nothing Set.empty
-
 -- | 'literal' parses a literal token, returning it's value
 literal :: Parser Text
 literal = Megaparsec.token isLiteral Set.empty
@@ -119,7 +90,7 @@ tokens = Combinators.choice . map token
 parse :: [(Text, Expr)] -> Text -> Either ParseError (Maybe Expr)
 parse aliases code = do
   tokens' <- lex code
-  case Megaparsec.parse (exprParserWithMods aliases <* Megaparsec.eof) "<input>" tokens' of
+  case Megaparsec.parse (Combinators.optional (exprParser aliases) <* Megaparsec.eof) "<input>" tokens' of
     Left err -> Left (mkErr err)
     Right expr -> Right expr
   where
