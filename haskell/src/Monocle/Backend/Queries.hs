@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Monocle queries
 -- The goal of this module is to transform 'Query' into list of items
 module Monocle.Backend.Queries where

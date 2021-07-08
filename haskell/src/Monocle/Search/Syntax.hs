@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | The Monocle Search Language Syntax
 module Monocle.Search.Syntax
   ( Expr (..),

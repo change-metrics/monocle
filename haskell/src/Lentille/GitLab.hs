@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 -- TMP
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 

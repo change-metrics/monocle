@@ -1,7 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
 module Monocle.Search.Query (Query (..), queryWithMods, query, ensureMinBound, fields, load) where

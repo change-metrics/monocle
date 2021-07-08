@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -- | A custom mime render type for pbjson
 -- The goal is to make the oneOf encoding compatible with the
@@ -10,6 +9,7 @@ module Monocle.Servant.PBJSON (PBJSON) where
 import Data.Aeson.Encoding (fromEncoding)
 import Data.Binary.Builder (toLazyByteString)
 import Proto3.Suite.JSONPB (ToJSONPB, defaultOptions, optEmitNamedOneof, toEncodingPB)
+import Relude
 import Servant.API.ContentTypes (Accept (..), MimeRender (..))
 
 -- | PBJSON is a new data to be used in servant api definition

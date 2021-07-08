@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- |
 module Lentille.BugzillaMock (bugzillaMockClient, bugzillaMockApplication) where
 

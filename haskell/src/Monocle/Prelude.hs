@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Utility functions
 module Monocle.Prelude
   ( module Relude,

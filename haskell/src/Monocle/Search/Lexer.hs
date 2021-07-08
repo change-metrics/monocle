@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-
 -- | Monocle search language lexer
 -- The goal of this module is to transform a 'Text'
 -- into a list of 'Token'.
