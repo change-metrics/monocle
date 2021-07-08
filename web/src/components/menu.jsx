@@ -157,6 +157,7 @@ class TopMenu extends React.Component {
           <Switch>
             <Route path="/:index/board" render={render} />
             <Route path="/:index/user_groups" render={render} />
+            <Route path="/:index/changes" render={render} />
           </Switch>
           <Nav className="ml-auto">
             <CUserView />
