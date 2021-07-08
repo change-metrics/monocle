@@ -31,6 +31,7 @@ let
     '';
   };
   elkStart = pkgs.writeScriptBin "elk-start" ''
+    #!/bin/sh
     # todo: only set max_map_count when necessary
     ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144
     set -ex
@@ -43,8 +44,12 @@ let
     cat ${elkConf} > $ES_HOME/config/elasticsearch.yml
     exec ${elk}/bin/elasticsearch -p $ES_HOME/pid
   '';
-  elkStop = pkgs.writeScriptBin "elk-stop" "kill $(cat /tmp/es-home/pid)";
+  elkStop = pkgs.writeScriptBin "elk-stop" ''
+    #!/bin/sh
+    kill $(cat /tmp/es-home/pid)
+  '';
   elkDestroy = pkgs.writeScriptBin "elk-destroy" ''
+    #!/bin/sh
     set -x
     [ -f ${elk-home}/pid ] && (${elkStop}/bin/elkstop; sleep 5)
     rm -Rf ${elk-home}/
@@ -108,6 +113,7 @@ let
     '';
   };
   nginxStart = pkgs.writeScriptBin "nginx-start" ''
+    #!/bin/sh
     set -ex
     mkdir -p ${nginx-home};
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
@@ -115,6 +121,7 @@ let
 
   monocle-home = "/tmp/monocle-home";
   monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
+    #!/bin/sh
     set -ex
     if ! test -d ${monocle-home}; then
         ${pkgs.python3}/bin/python -mvenv ${monocle-home}
@@ -133,11 +140,13 @@ let
   '';
 
   monocleApi2Start = pkgs.writeScriptBin "monocle-api2-start" ''
+    #!/bin/sh
     set -ex
-    cd haskell; cabal repl
+    cd haskell; cabal repl monocle
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
+    #!/bin/sh
     set -ex
     cd web
 
@@ -151,8 +160,58 @@ let
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  services-req =
-    [ elkStart nginxStart monocleApiStart monocleApi2Start monocleWebStart ];
+  monocleEmacsLauncher = pkgs.writeTextFile {
+    name = "monocle.el";
+    text = ''
+      ;;; monocle.el --- Functions to operate Monocle
+
+      ;; This file is not part of GNU Emacs.
+
+      ;;; Code:
+
+      ;; Start a process in a buffer with ansi colors
+      (require 'comint)
+      (defun start-worker-process (name program &rest args)
+        (let ((buffer-name (concat "*" name "*")))
+          (message "Starting %s %s" buffer-name program)
+          (let ((*buffer* (get-buffer-create buffer-name)))
+            (if (get-buffer-process *buffer*)
+                (message "Process already running!")
+              (with-current-buffer *buffer*
+                (let ((*proc* (apply 'start-process name buffer-name program args)))
+                  (ansi-color-for-comint-mode-on)
+                  (comint-mode)
+                  (set-process-filter *proc* 'comint-output-filter))))
+            (switch-to-buffer-other-window *buffer*))))
+
+      (defun monocle-startp (name command)
+        (start-worker-process (concat "monocle-" name) (concat command "/bin/" name "-start")))
+
+      (defun monocle-start ()
+        (monocle-startp "elk" "${elkStart}" )
+        (monocle-startp "nginx" "${nginxStart}" )
+        (monocle-startp "monocle-api" "${monocleApiStart}" )
+        (monocle-startp "monocle-api2" "${monocleApi2Start}" )
+        (monocle-startp "monocle-web" "${monocleWebStart}" ))
+
+      (monocle-start)
+    '';
+  };
+
+  monocleEmacsStart = pkgs.writeScriptBin "launch-monocle-with-emacs" ''
+    #!/bin/sh
+    set -ex
+    ${pkgs.emacs-nox}/bin/emacs --quick --load ${monocleEmacsLauncher}
+  '';
+
+  services-req = [
+    elkStart
+    nginxStart
+    monocleApiStart
+    monocleApi2Start
+    monocleWebStart
+    monocleEmacsStart
+  ];
 
   # define the base requirements
   base-req = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnumake ];
