@@ -19,9 +19,9 @@ FROM quay.io/change-metrics/builder
 
 # Build project
 COPY haskell/ /build
-RUN cabal v2-install -v1 exe:monocle-api
+RUN cabal v2-install -v1 exe:monocle-api exe:macroscope
 
 ################################################################################
 FROM registry.fedoraproject.org/fedora:33
 
-COPY --from=0 /root/.cabal/bin/monocle-api /bin
+COPY --from=0 /root/.cabal/bin/monocle-api /root/.cabal/bin/macroscope /bin/

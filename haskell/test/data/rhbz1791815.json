@@ -1,0 +1,215 @@
+{
+  "bugs": [
+    {
+      "priority": "unspecified",
+      "cf_last_closed": null,
+      "assigned_to_detail": {
+        "email": "ksambor",
+        "real_name": "Kamil Sambor",
+        "name": "ksambor",
+        "id": 424824
+      },
+      "blocks": [],
+      "creator": "Lucas Alvares Gomes",
+      "last_change_time": "2021-02-17T19:15:46Z",
+      "dependent_products": [],
+      "is_cc_accessible": true,
+      "comments": [
+        {
+          "is_private": false,
+          "count": 0,
+          "attachment_id": null,
+          "creator": "lmartins",
+          "time": "2020-01-16T14:09:47Z",
+          "bug_id": 1791815,
+          "tags": [],
+          "text": "Core OVN supports IGMP",
+          "id": 13524818,
+          "creation_time": "2020-01-16T14:09:47Z",
+          "creator_id": 363653
+        },
+        {
+          "is_private": false,
+          "count": 2,
+          "attachment_id": null,
+          "creator": "rsafrono",
+          "time": "2020-11-18T09:22:56Z",
+          "bug_id": 1791815,
+          "tags": [],
+          "text": "I tested igmp snooping basic scenario",
+          "id": 14518070,
+          "creation_time": "2020-11-18T09:22:56Z",
+          "creator_id": 427989
+        },
+        {
+          "is_private": false,
+          "count": 3,
+          "attachment_id": null,
+          "creator": "rsafrono",
+          "time": "2020-11-18T09:28:51Z",
+          "bug_id": 1791815,
+          "tags": [],
+          "text": "A small addition to the previous comment.",
+          "id": 14518096,
+          "creation_time": "2020-11-18T09:28:51Z",
+          "creator_id": 427989
+        }
+      ],
+      "keywords": [
+        "FutureFeature"
+      ],
+      "creator_detail": {
+        "email": "lmartins",
+        "real_name": "Lucas Alvares Gomes",
+        "name": "lmartins",
+        "id": 363653
+      },
+      "cc": [
+        "Assaf Muller",
+        "Anita Tragler",
+        "Chris Wright",
+        "Haresh Khandelwal",
+        "Kamil Sambor",
+        "Roman Safronov",
+        "Sean Cohen"
+      ],
+      "duplicates": [],
+      "url": "",
+      "assigned_to": "Kamil Sambor",
+      "groups": [],
+      "see_also": [],
+      "id": 1791815,
+      "whiteboard": "",
+      "creation_time": "2020-01-16T14:09:47Z",
+      "qa_contact": "Eran Kuris",
+      "depends_on": [
+        1575512,
+        1791787
+      ],
+      "dupe_of": null,
+      "docs_contact": "",
+      "cf_target_upstream_version": "",
+      "duplicate_ids": [],
+      "description": "Core OVN supports IGMP",
+      "clone_ids": [],
+      "qa_contact_detail": {
+        "email": "ekuris",
+        "real_name": "Eran Kuris",
+        "name": "ekuris",
+        "id": 377448
+      },
+      "resolution": "",
+      "classification": "Red Hat",
+      "alias": [],
+      "cf_doc_type": "If docs needed, set a value",
+      "op_sys": "Unspecified",
+      "depends_on_all": [
+        1575512,
+        1672278,
+        1791787,
+        1886314,
+        1898052
+      ],
+      "target_release": [
+        "---"
+      ],
+      "status": "ASSIGNED",
+      "cc_detail": [
+        {
+          "email": "amuller",
+          "real_name": "Assaf Muller",
+          "name": "amuller",
+          "id": 345995
+        },
+        {
+          "email": "atragler",
+          "real_name": "Anita Tragler",
+          "name": "atragler",
+          "id": 392058
+        },
+        {
+          "email": "chrisw",
+          "real_name": "Chris Wright",
+          "name": "chrisw",
+          "id": 168427
+        },
+        {
+          "email": "hakhande",
+          "real_name": "Haresh Khandelwal",
+          "name": "hakhande",
+          "id": 418262
+        },
+        {
+          "email": "ksambor",
+          "real_name": "Kamil Sambor",
+          "name": "ksambor",
+          "id": 424824
+        },
+        {
+          "email": "rsafrono",
+          "real_name": "Roman Safronov",
+          "name": "rsafrono",
+          "id": 427989
+        },
+        {
+          "email": "scohen",
+          "real_name": "Sean Cohen",
+          "name": "scohen",
+          "id": 344603
+        }
+      ],
+      "cf_clone_of": null,
+      "summary": "[RFE][OVN] Enable querier for multicast (IGMP) in OVN",
+      "external_bugs": [
+        {
+          "ext_description": "Enable querier for multicast (IGMP) in OVN",
+          "ext_bz_id": 85,
+          "ext_priority": "None",
+          "bug_id": 1791815,
+          "ext_bz_bug_id": "764427",
+          "id": 1717044,
+          "ext_status": "NEW",
+          "type": {
+            "must_send": false,
+            "can_send": false,
+            "description": "OpenStack gerrit",
+            "can_get": true,
+            "url": "https://review.opendev.org/",
+            "id": 85,
+            "send_once": false,
+            "type": "Gerrit",
+            "full_url": "https://review.opendev.org/%id%"
+          }
+        }
+      ],
+      "pool": {
+      },
+      "is_open": true,
+      "blocks_all": [],
+      "platform": "Unspecified",
+      "severity": "unspecified",
+      "attachments": [],
+      "flags": [],
+      "cf_environment": "",
+      "version": [
+        "17.0 (Wallaby)"
+      ],
+      "deadline": null,
+      "tags": [],
+      "clones": [],
+      "component": [
+        "openstack-neutron"
+      ],
+      "sub_components": {
+      },
+      "cf_fixed_in": "",
+      "is_creator_accessible": true,
+      "is_confirmed": true,
+      "target_milestone": "---",
+      "product": "Red Hat OpenStack",
+      "cf_release_notes": "",
+      "cf_pm_score": "9001"
+    }
+  ],
+  "faults": []
+}

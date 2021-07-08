@@ -1,0 +1,172 @@
+{
+    "bugs": [
+        {
+            "priority": "medium",
+            "cf_last_closed": null,
+            "assigned_to_detail": {
+                "email": "jkreger",
+                "real_name": "Julia Kreger",
+                "name": "jkreger",
+                "id": 417322
+            },
+            "blocks": [],
+            "creator": "Jaison Raju",
+            "last_change_time": "2021-04-08T18:12:35Z",
+            "dependent_products": [],
+            "is_cc_accessible": true,
+            "comments": [
+                {
+                    "is_private": false,
+                    "count": 2,
+                    "attachment_id": null,
+                    "creator": "sbaker",
+                    "time": "2021-03-02T20:47:43Z",
+                    "bug_id": 1933256,
+                    "tags": [],
+                    "text": "Could you attach the agent logs for this?",
+                    "id": 14834794,
+                    "creation_time": "2021-03-02T20:47:43Z",
+                    "creator_id": 337757
+                }
+            ],
+            "keywords": [
+                "Triaged"
+            ],
+            "creator_detail": {
+                "email": "jraju",
+                "real_name": "Jaison Raju",
+                "name": "jraju",
+                "id": 326133
+            },
+            "cc": [
+                "Jaison Raju",
+                "Steve Baker"
+            ],
+            "duplicates": [],
+            "url": "",
+            "assigned_to": "Julia Kreger",
+            "groups": [],
+            "see_also": [],
+            "id": 1933256,
+            "whiteboard": "",
+            "creation_time": "2021-02-26T10:30:56Z",
+            "qa_contact": "",
+            "depends_on": [],
+            "dupe_of": null,
+            "docs_contact": "",
+            "cf_target_upstream_version": "",
+            "duplicate_ids": [],
+            "description": "Description of problem:\nOn nodes...",
+            "clone_ids": [],
+            "resolution": "",
+            "classification": "Red Hat",
+            "alias": [],
+            "cf_doc_type": "If docs needed, set a value",
+            "op_sys": "Linux",
+            "depends_on_all": [],
+            "target_release": [
+                "---"
+            ],
+            "status": "ASSIGNED",
+            "cc_detail": [
+                {
+                    "email": "jraju",
+                    "real_name": "Jaison Raju",
+                    "name": "jraju",
+                    "id": 326133
+                },
+                {
+                    "email": "sbaker",
+                    "real_name": "Steve Baker",
+                    "name": "sbaker",
+                    "id": 337757
+                }
+            ],
+            "cf_clone_of": null,
+            "summary": "_get_partition does not get the right root_partition on nodes with software raid devices",
+            "external_bugs": [
+                {
+                    "ext_description": "Software RAID: Identify the root fs via its UUID from image metadata",
+                    "ext_bz_id": 85,
+                    "ext_priority": "None",
+                    "bug_id": 1933256,
+                    "ext_bz_bug_id": "686580",
+                    "id": 1765835,
+                    "ext_status": "MERGED",
+                    "type": {
+                        "must_send": false,
+                        "can_send": false,
+                        "description": "OpenStack gerrit",
+                        "can_get": true,
+                        "url": "https://review.opendev.org/",
+                        "id": 85,
+                        "send_once": false,
+                        "type": "Gerrit",
+                        "full_url": "https://review.opendev.org/%id%"
+                    }
+                },
+                {
+                    "ext_description": "Software RAID: Use UUID to find root fs",
+                    "ext_bz_id": 85,
+                    "ext_priority": "None",
+                    "bug_id": 1933256,
+                    "ext_bz_bug_id": "686585",
+                    "id": 1765834,
+                    "ext_status": "MERGED",
+                    "type": {
+                        "must_send": false,
+                        "can_send": false,
+                        "description": "OpenStack gerrit",
+                        "can_get": true,
+                        "url": "https://review.opendev.org/",
+                        "id": 85,
+                        "send_once": false,
+                        "type": "Gerrit",
+                        "full_url": "https://review.opendev.org/%id%"
+                    }
+                }
+            ],
+            "pool": {},
+            "is_open": true,
+            "blocks_all": [],
+            "platform": "x86_64",
+            "severity": "low",
+            "attachments": [
+                {
+                    "is_private": 0,
+                    "creator": "jraju",
+                    "flags": [],
+                    "bug_id": 1933256,
+                    "last_change_time": "2021-02-26T10:30:56Z",
+                    "data": "KFBkYikgbG9jYWxzK",
+                    "size": 26983,
+                    "content_type": "text/plain",
+                    "summary": "pdb data",
+                    "file_name": "ipa-bug",
+                    "creation_time": "2021-02-26T10:30:56Z",
+                    "is_patch": 0,
+                    "id": 1759463,
+                    "is_obsolete": 0
+                }
+            ],
+            "flags": [],
+            "cf_environment": "",
+            "version": [
+                "16.1 (Train)"
+            ],
+            "deadline": null,
+            "tags": [],
+            "clones": [],
+            "component": [
+                "openstack-ironic-python-agent"
+            ],
+            "sub_components": {},
+            "cf_fixed_in": "",
+            "is_creator_accessible": true,
+            "is_confirmed": true,
+            "target_milestone": "---",
+            "product": "Red Hat OpenStack",
+            "cf_release_notes": ""
+        }
+    ]
+}
