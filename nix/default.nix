@@ -19,7 +19,18 @@ let
   web-port = 13000;
 
   # DB
-  elk = pkgsNonFree.elasticsearch7;
+  info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
+  arch = pkgs.lib.elemAt info 0;
+  plat = pkgs.lib.elemAt info 1;
+  elk = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
+    version = "7.10.1";
+    name = "elasticsearch-${version}";
+    src = pkgs.fetchurl {
+      url =
+        "https://artifacts.elastic.co/downloads/elasticsearch/${name}-${plat}-${arch}.tar.gz";
+      sha256 = "1r62afmpmwyxifr4kjlannj44zbh67gdcch5czh4fllv459ajf7f";
+    };
+  });
   elk-home = "/tmp/es-home";
   elkConf = pkgs.writeTextFile {
     name = "elasticsearch.yml";
