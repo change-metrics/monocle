@@ -271,19 +271,31 @@ testAchievements = withTenant doTest
       where
         query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
 
-testTermsAgg :: Assertion
-testTermsAgg = withTenant doTest
+testReposSummary :: Assertion
+testReposSummary = withTenant doTest
   where
     doTest :: TenantM ()
     doTest = do
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
-      results <- Q.getRepos
+      results <- Q.getReposSummary []
       assertEqual'
         "Check buckets names"
-        [ Q.TermResult "openstack/neutron" 2,
-          Q.TermResult "openstack/nova" 1
+        [ Q.RepoSummary
+            { fullname = "openstack/neutron",
+              totalChanges = 2,
+              abandonedChanges = 0,
+              mergedChanges = 2,
+              openChanges = 0
+            },
+          Q.RepoSummary
+            { fullname = "openstack/nova",
+              totalChanges = 1,
+              abandonedChanges = 0,
+              mergedChanges = 1,
+              openChanges = 0
+            }
         ]
         results
 
@@ -352,48 +364,46 @@ data ScenarioEvent
   | SReview ELKChangeEvent
   | SMerge ELKChangeEvent
 
-toDoc :: ScenarioEvent -> (Value, BH.DocId)
-toDoc se = case se of
-  SChange e -> (toJSON e, I.getChangeDocId e)
-  SCreation e -> (toJSON e, I.getEventDocId e)
-  SReview e -> (toJSON e, I.getEventDocId e)
-  SMerge e -> (toJSON e, I.getEventDocId e)
-
 indexScenario :: [ScenarioEvent] -> TenantM ()
-indexScenario xs = I.indexDocs $ fmap toDoc xs
+indexScenario xs = sequence_ $ indexDoc <$> xs
+  where
+    indexDoc = \case
+      SChange d -> I.indexChanges [d]
+      SCreation d -> I.indexEvents [d]
+      SReview d -> I.indexEvents [d]
+      SMerge d -> I.indexEvents [d]
 
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
 -- >>> showEvents $ nominalMerge project "42" now (3600*24)
--- "Change[2021-06-10 change-2218 created by eve], Change[change-2218], Merged[2021-06-11], Reviewed[alice]"
+-- "Change[2021-06-10 change-42 created by eve], Change[change-42], Merged[2021-06-11], Reviewed[alice]"
 nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
-nominalMerge SProject {..} elkchangeId start duration = evalRand scenario stdGen
+nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
   where
     -- The random number generator is based on the name
     stdGen = mkStdGen (Text.length (toStrict name))
 
     scenario = do
       -- The base change
-      changeId <- getRandomR (1000, 9999)
       let mkDate elapsed =
             addUTCTime (secondsToNominalDiffTime (fromInteger elapsed)) start
           mkChange ts author =
             emptyChange
               { elkchangeType = "Change",
-                elkchangeId = elkchangeId,
+                elkchangeId = changeId,
                 elkchangeRepositoryFullname = name,
                 elkchangeCreatedAt = mkDate ts,
                 elkchangeAuthor = author,
-                elkchangeChangeId =
-                  "change-" <> show @LText @Int changeId
+                elkchangeChangeId = "change-" <> changeId
               }
           mkEvent ts etype author =
             emptyEvent
               { elkchangeeventAuthor = author,
-                elkchangeeventId = etype,
+                elkchangeeventType = etype,
+                elkchangeeventRepositoryFullname = name,
+                elkchangeeventId = etype <> "-" <> changeId,
                 elkchangeeventOnCreatedAt = mkDate ts,
-                elkchangeeventChangeId =
-                  toLazy $ "change-" <> show @Text @Int changeId
+                elkchangeeventChangeId = "change-" <> changeId
               }
 
       -- The change creation

@@ -58,6 +58,7 @@ changes = runQuery "Change"
 
 countEvents :: BH.Query -> TenantM Word32
 countEvents query = do
+  -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
   case resp of
@@ -285,9 +286,10 @@ getProjectAgg query = do
       ]
 
 -- | The repos_summary query
-getQueryFromSL :: Text -> BH.Query
-getQueryFromSL query =
-  fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing query
+getQueryFromSL :: Text -> [BH.Query]
+getQueryFromSL query = case Q.queryBH $ Q.load Nothing mempty Nothing query of
+  Just q -> [q]
+  Nothing -> []
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
@@ -306,15 +308,41 @@ getTermsAgg query onTerm = do
 
 data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 
-getRepos :: TenantM [TermResult]
-getRepos = do
+getRepos :: [BH.Query] -> TenantM [TermResult]
+getRepos basequery = do
   results <- runTermAgg
   pure $ getSimpleTR <$> results
   where
-    query = getQueryFromSL "repo_regex: .*"
+    query = mkAnd $ basequery <> getQueryE
+    getQueryE = getQueryFromSL "repo_regex: .*"
     runTermAgg = getTermsAgg query "repository_fullname"
     getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
+data RepoSummary = RepoSummary
+  { fullname :: Text,
+    totalChanges :: Word32,
+    abandonedChanges :: Word32,
+    mergedChanges :: Word32,
+    openChanges :: Word32
+  }
+  deriving (Show, Eq)
+
+getReposSummary :: [BH.Query] -> TenantM [RepoSummary]
+getReposSummary basequery = do
+  rlist <- getRepos basequery
+  let names = term <$> rlist
+  sequence $ getRepoSummary <$> names
+  where
+    getRepoSummary fn = do
+      let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
+      totalChanges' <- countEvent query "ChangeCreatedEvent"
+      abandonedChanges' <- countEvent query "ChangeClosedEvent"
+      mergedChanges' <- countEvent query "ChangeMergedEvent"
+      let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
+      pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
+    countEvent query docType = countEvents (documentType [query] docType)
+
+-- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
 getReviewHisto = do
   query <- getQuery
