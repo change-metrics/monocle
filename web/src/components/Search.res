@@ -116,7 +116,7 @@ module Bar = {
       <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendField} />
       <HelpSearch.Tooltip />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
-        {"Add field"->str}
+        {"Add filter"->str}
       </Patternfly.Button>
       <Patternfly.TextInput
         id="col-search"
