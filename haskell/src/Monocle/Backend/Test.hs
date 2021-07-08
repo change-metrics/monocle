@@ -277,11 +277,8 @@ testTermsAgg = withTenant doTest
     doTest :: TenantM ()
     doTest = do
       indexScenario (nominalMerge scenarioProject "42" fakeDate 3600)
-      resultsM <- Q.getTermsAgg query "repository_fullname"
-      let results = fromMaybe [] resultsM
+      results <- Q.getRepos
       assertEqual' "Check buckets counts" 1 (length results)
-      where
-        query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "repo_regex: .*"
 
 -- Tests scenario helpers
 

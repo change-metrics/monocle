@@ -285,15 +285,20 @@ getProjectAgg query = do
       ]
 
 -- | The repos_summary query
-getTermsAgg :: BH.Query -> Text -> TenantM (Maybe [BH.TermsResult])
+getTermsAgg :: BH.Query -> Text -> TenantM [BH.TermsResult]
 getTermsAgg query onTerm = do
   search <- aggSearch query aggs
-  pure $ filter isEmptyTerm . toTermsResult <$> BH.toTerms "singleTermAgg" search
+  pure $ maybe [] (filter isEmptyTerm . toTermsResult) (BH.toTerms "singleTermAgg" search)
   where
     aggs = BH.mkAggregations "singleTermAgg" $ BH.TermsAgg $ BH.mkTermsAggregation onTerm
     toTermsResult bucket = BH.buckets bucket
     -- Terms agg returns empty terms in a buckets
     isEmptyTerm tr = show @Text (BH.termKey tr) == show (BH.TextValue "")
+
+getRepos :: TenantM [BH.TermsResult]
+getRepos = getTermsAgg query "repository_fullname"
+  where
+    query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "repo_regex: .*"
 
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
 getReviewHisto = do
