@@ -200,6 +200,13 @@ monocleSearchLanguage =
       Config.Index
         { Config.index = "test",
           Config.projects = (Just [testProjects]),
+          Config.search_aliases =
+            ( Just
+                [ let name = "sprint42"
+                      alias = "from:2021-01-01 to:2021-01-21"
+                   in Config.SearchAlias {..}
+                ]
+            ),
           Config.crawlers = Nothing,
           Config.crawlers_api_key = Nothing,
           Config.idents = Nothing

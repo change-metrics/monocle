@@ -24,6 +24,7 @@ Dhall.TH.makeHaskellTypes
         main name = Dhall.TH.SingleConstructor name name $ mainPath name
      in [ main "Project",
           main "Ident",
+          main "SearchAlias",
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
@@ -70,6 +71,10 @@ deriving instance Eq Ident
 
 deriving instance Show Ident
 
+deriving instance Eq SearchAlias
+
+deriving instance Show SearchAlias
+
 deriving instance Eq Index
 
 deriving instance Show Index
@@ -94,7 +99,8 @@ loadConfig fp = do
     Failure err -> Left $ show err
   where
     -- when updating the dhall-monocle schema, the config needs to be
-    -- regenerated using:
+    -- regenerated, otherwise the loader abort with 'Exception: Error: Invalid Dhall.Decoder'
+    -- to fix that, run:
     -- `dhall <<< ./dhall-monocle/Monocle/Config.dhall > test/data/Config.dhall`
     configType = $(embedFile "./test/data/Config.dhall")
     loadOpt = Dhall.defaultOptions $ Just $ decodeUtf8 configType
@@ -136,7 +142,9 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
       Nothing -> acc
 
 getAliases :: Index -> [(Text, Text)]
-getAliases _index = [] -- TODO implement with https://github.com/change-metrics/dhall-monocle/pull/8
+getAliases index = maybe [] (fmap toTuple) (search_aliases index)
+  where
+    toTuple SearchAlias {..} = (name, alias)
 
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
@@ -154,6 +162,7 @@ emptyTenant name idents' =
       crawlers = Nothing
       projects = Nothing
       idents = Just idents'
+      search_aliases = Nothing
       index = name
    in Index {..}
 

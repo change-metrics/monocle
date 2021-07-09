@@ -80,6 +80,7 @@ emptyConfig name =
       crawlers = Nothing
       projects = Nothing
       idents = Nothing
+      search_aliases = Nothing
       index = name
    in Config.Index {..}
 
