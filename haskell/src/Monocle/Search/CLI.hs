@@ -20,7 +20,7 @@ parseQuery now code = either show decodeUtf8 query
 printQuery :: MonadIO m => UTCTime -> Text -> Text -> Text -> m ()
 printQuery now elkUrl index code = do
   bhEnv <- I.mkEnv elkUrl
-  changes <- liftIO $ runTenantM' bhEnv (emptyConfig index) $ runQueryM query $ Q.changes
+  changes <- liftIO $ runTenantM' bhEnv (emptyConfig index) $ runQueryM query $ Q.changes Nothing 10
   mapM_ (putTextLn . show) (take 2 changes)
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where

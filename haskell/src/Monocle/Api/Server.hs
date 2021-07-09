@@ -291,7 +291,7 @@ searchQuery request = do
             . SearchPB.Changes
             . V.fromList
             . map toResult
-            <$> Q.changes
+            <$> Q.changes queryRequestOrder queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
           error "LifeCycle Not Implemented"
         SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
