@@ -27,7 +27,7 @@ module Column = {
   module Row = {
     // TODO: merge common code with Column
     @react.component
-    let make = (~index, ~column, ~query: string) => {
+    let make = (~index, ~column, ~query: string, ~limit: int) => {
       let (result, setResult) = React.useState(_ => None)
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
         setResult(_ => resp.data->Some)->Js.Promise.resolve
@@ -42,13 +42,13 @@ module Column = {
               query: query,
               username: "",
               query_type: SearchTypes.Query_change,
-              limit: 0->Int32.of_int,
+              limit: limit->Int32.of_int,
               order: column.order,
             }) |> Js.Promise.then_(handleOk),
           )
         }
         None
-      }, [query, column.order->orderToString])
+      }, [query, column.order->orderToString, limit->string_of_int])
       switch result {
       | None => React.null
       | Some(SearchTypes.Error(err)) =>
@@ -71,7 +71,7 @@ module Column = {
   }
 
   @react.component
-  let make = (~index, ~column, ~query: string) => {
+  let make = (~index, ~column, ~query: string, ~limit: int) => {
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
@@ -86,13 +86,13 @@ module Column = {
             query: query,
             username: "",
             query_type: SearchTypes.Query_change,
-            limit: 0->Int32.of_int,
+            limit: limit->Int32.of_int,
             order: column.order,
           }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [query, column.order->orderToString])
+    }, [query, column.order->orderToString, limit->string_of_int])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -431,7 +431,7 @@ let make = (~store: Store.t) => {
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column index column query={state.query} />
+          <Column index column query={state.query} limit={state.limit} />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
@@ -450,7 +450,7 @@ let make = (~store: Store.t) => {
                 <i> {(" : " ++ column.query)->str} </i>
               </td>
             </tr>
-            <Column.Row index column query={state.query} />
+            <Column.Row index column query={state.query} limit={state.limit} />
           </tbody>
         </React.Fragment>
       )
@@ -459,7 +459,7 @@ let make = (~store: Store.t) => {
   }
 
   <MStack>
-    <MStackItem> <Search.Top store /> </MStackItem>
+    <MStackItem> <Search.Top store withLimit={true} /> </MStackItem>
     <MStackItem>
       <Patternfly.Layout.Bullseye>
         <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>

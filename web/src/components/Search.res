@@ -245,10 +245,11 @@ module Order = {
 
 module Top = {
   @react.component
-  let make = (~store: Store.t) => {
+  let make = (~store: Store.t, ~withLimit: bool=false) => {
     let (state, dispatch) = store
     // The local state
     let (value, setValue') = React.useState(() => state.query)
+    let (limit, setLimit') = React.useState(() => state.limit)
     let (savedValue, setSavedValue) = React.useState(() => state.query)
     let setValue = v => setValue'(_ => v)
 
@@ -257,12 +258,28 @@ module Top = {
       setSavedValue(_ => value)
       value->Store.Store.SetQuery->dispatch
     }
+    let setLimit = str => {
+      let v = str == "" ? 0 : str->int_of_string
+      setLimit'(_ => v)
+      v->Store.Store.SetLimit->dispatch
+    }
 
     <Patternfly.Layout.Bullseye>
       <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
         <Bar value setValue store />
         {value != savedValue
           ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+          : React.null}
+        {withLimit
+          ? <div style={ReactDOM.Style.make(~width="170px", ())}>
+              <MSelect
+                placeholder={"Set limit"}
+                options={list{5, 10, 50, 100}->Belt.List.map(string_of_int)}
+                multi={false}
+                value={limit > 0 ? limit->string_of_int : ""}
+                valueChanged={setLimit}
+              />
+            </div>
           : React.null}
       </div>
     </Patternfly.Layout.Bullseye>
