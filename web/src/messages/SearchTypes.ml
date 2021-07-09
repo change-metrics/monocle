@@ -39,6 +39,15 @@ type query_error = {
   position : int32;
 }
 
+type order_direction =
+  | Asc 
+  | Desc 
+
+type order = {
+  field : string;
+  direction : order_direction;
+}
+
 type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
@@ -49,6 +58,8 @@ type query_request = {
   username : string;
   query : string;
   query_type : query_request_query_type;
+  order : order option;
+  limit : int32;
 }
 
 type file = {
@@ -214,6 +225,16 @@ let rec default_query_error
   position;
 }
 
+let rec default_order_direction () = (Asc:order_direction)
+
+let rec default_order 
+  ?field:((field:string) = "")
+  ?direction:((direction:order_direction) = default_order_direction ())
+  () : order  = {
+  field;
+  direction;
+}
+
 let rec default_query_request_query_type () = (Query_change:query_request_query_type)
 
 let rec default_query_request 
@@ -221,11 +242,15 @@ let rec default_query_request
   ?username:((username:string) = "")
   ?query:((query:string) = "")
   ?query_type:((query_type:query_request_query_type) = default_query_request_query_type ())
+  ?order:((order:order option) = None)
+  ?limit:((limit:int32) = 0l)
   () : query_request  = {
   index;
   username;
   query;
   query_type;
+  order;
+  limit;
 }
 
 let rec default_file 

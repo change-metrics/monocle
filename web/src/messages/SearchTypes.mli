@@ -42,6 +42,15 @@ type query_error = {
   position : int32;
 }
 
+type order_direction =
+  | Asc 
+  | Desc 
+
+type order = {
+  field : string;
+  direction : order_direction;
+}
+
 type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
@@ -52,6 +61,8 @@ type query_request = {
   username : string;
   query : string;
   query_type : query_request_query_type;
+  order : order option;
+  limit : int32;
 }
 
 type file = {
@@ -214,6 +225,16 @@ val default_query_error :
   query_error
 (** [default_query_error ()] is the default value for type [query_error] *)
 
+val default_order_direction : unit -> order_direction
+(** [default_order_direction ()] is the default value for type [order_direction] *)
+
+val default_order : 
+  ?field:string ->
+  ?direction:order_direction ->
+  unit ->
+  order
+(** [default_order ()] is the default value for type [order] *)
+
 val default_query_request_query_type : unit -> query_request_query_type
 (** [default_query_request_query_type ()] is the default value for type [query_request_query_type] *)
 
@@ -222,6 +243,8 @@ val default_query_request :
   ?username:string ->
   ?query:string ->
   ?query_type:query_request_query_type ->
+  ?order:order option ->
+  ?limit:int32 ->
   unit ->
   query_request
 (** [default_query_request ()] is the default value for type [query_request] *)

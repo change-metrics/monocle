@@ -656,6 +656,13 @@ components:
                     format: uint32
                 path:
                     type: string
+        monocle_search_Order:
+            properties:
+                field:
+                    type: string
+                direction:
+                    type: integer
+                    format: enum
         monocle_search_QueryError:
             properties:
                 message:
@@ -674,6 +681,11 @@ components:
                 query_type:
                     type: integer
                     format: enum
+                order:
+                    $ref: '#/components/schemas/monocle_search_Order'
+                limit:
+                    type: integer
+                    format: uint32
         monocle_search_QueryResponse:
             properties:
                 error:

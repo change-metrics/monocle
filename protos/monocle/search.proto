@@ -47,6 +47,15 @@ message QueryError {
   uint32 position = 2;
 }
 
+message Order {
+  string field = 1;
+  enum Direction {
+    ASC = 0;
+    DESC = 1;
+  }
+  Direction direction = 2;
+}
+
 message QueryRequest {
   string index = 1;
   string username = 2;
@@ -57,6 +66,10 @@ message QueryRequest {
     QUERY_REPOS_SUMMARY = 2;
   }
   QueryType query_type = 4;
+
+  // Only used for certain queries
+  Order order = 5;
+  uint32 limit = 6;
 }
 
 message File {
