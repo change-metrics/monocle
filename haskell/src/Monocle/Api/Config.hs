@@ -135,6 +135,9 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
         | otherwise -> acc
       Nothing -> acc
 
+getAliases :: Index -> [(Text, Text)]
+getAliases _index = [] -- TODO implement with https://github.com/change-metrics/dhall-monocle/pull/8
+
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories

@@ -67,6 +67,14 @@ monocleSearchLanguage =
             )
         ),
       testCase
+        "Parser aliases"
+        ( parseMatch'
+            [("sprint42", S.GtExpr "date" "2021-07-01")]
+            "status:open sprint42"
+            ( (S.AndExpr (S.EqExpr "status" "open")) (S.GtExpr "date" "2021-07-01")
+            )
+        ),
+      testCase
         "Parser implicit and"
         ( parseMatch
             "state:open author:foo"
@@ -173,17 +181,20 @@ monocleSearchLanguage =
     threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 00:00:00 Z")
     now = fromMaybe (error "nop") (readMaybe "2021-05-31 00:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
-    parseMatch code expr = assertEqual "match" (Right (Just expr)) (P.parse code)
-    queryDoMatch field code query =
+    parseMatch = parseMatch' []
+    parseMatch' aliases code expr =
+      assertEqual "match" (Right (Just expr)) (P.parse aliases code)
+    queryDoMatch = queryDoMatch' []
+    queryDoMatch' aliases field code query =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
+        (P.parse aliases code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
     encodePretty =
       Aeson.encodePretty'
         ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
         )
-    queryMatch = queryDoMatch (encodePretty . Q.queryBH)
+    queryMatch = queryDoMatch' [] (encodePretty . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index

@@ -1,6 +1,16 @@
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (Query (..), queryWithMods, query, ensureMinBound, fields, load) where
+module Monocle.Search.Query
+  ( Query (..),
+    queryWithMods,
+    query,
+    ensureMinBound,
+    fields,
+    loadAliases,
+    loadAliases',
+    load,
+  )
+where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
@@ -322,11 +332,42 @@ queryWithMods now' username indexM baseExprM =
 
 -- | Utility function to simply create a query
 load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query
-load nowM username indexM code = case P.parse code >>= queryWithMods now username indexM of
+load nowM username indexM code = case P.parse [] code >>= queryWithMods now username indexM of
   Right x -> x
   Left err -> error (show err)
   where
     now = fromMaybe (error "need time") nowM
+
+loadAliases' :: Config.Index -> [(Text, Expr)]
+loadAliases' = fromRight (error "Alias loading failed") . loadAliases
+
+loadAliases :: Config.Index -> Either [Text] [(Text, Expr)]
+loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases index) of
+  ([], xs) -> Right xs
+  (xs, _) -> Left xs
+  where
+    fakeNow :: UTCTime
+    fakeNow = fromMaybe (error "not utctime?") $ readMaybe "2021-06-02 23:00:00 Z"
+    loadAlias :: (Text, Text) -> Either Text (Text, Expr)
+    loadAlias (name, code) = do
+      let toError :: Either ParseError a -> Either Text a
+          toError = \case
+            -- TODO: improve error reporting
+            Left e -> Left $ "Invalid alias " <> name <> ": " <> show e
+            Right x -> Right x
+
+      exprM <- toError $ P.parse [] code
+
+      -- Try to evaluate the alias with fake value
+      _testQuery <-
+        toError $
+          queryWithMods fakeNow "self" (Just index) exprM
+
+      case exprM of
+        Just expr ->
+          -- We now know the alias can be converted to a bloodhound query
+          Right (name, expr)
+        Nothing -> Left $ "Empty alias " <> name
 
 -- | Ensure a minimum range bound is set
 ensureMinBound :: Query -> Text -> Query

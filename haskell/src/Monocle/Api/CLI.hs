@@ -5,6 +5,7 @@ import Monocle.Api.Client.Worker (MonadLog, retry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
 import Monocle.Prelude
+import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.Env
 import Monocle.Servant.HTTP (MonocleAPI, server)
 import qualified Network.Wai as Wai
@@ -26,6 +27,16 @@ app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
 run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   tenants' <- getExn <$> Config.loadConfig configFile
+
+  -- Check alias and abort if they are not usable
+  case lefts $ map loadAliases tenants' of
+    [] -> pure ()
+    xs -> do
+      liftIO $ traverse_ print (concat xs)
+      error $ "Invalid aliases"
+
+  -- TODO: add the aliases to the AppM env to avoid parsing them for each request
+
   bhEnv' <- I.mkEnv elkUrl
   retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv' tenant I.ensureIndex) tenants'
   liftIO $
