@@ -47,6 +47,8 @@ fields :: [(Field, (FieldType, Field, Text))]
 fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
     ("created_at", (fieldDate, "created_at", "Change creation")),
+    ("from", (fieldDate, "created_at", "Range starting date")),
+    ("to", (fieldDate, "created_at", "Range ending date")),
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
@@ -163,7 +165,7 @@ mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue op field fieldType value = do
   now <- asks envNow
   case fieldType of
-    Field_TypeFIELD_DATE -> do
+    Field_TypeFIELD_DATE | field `notElem` ["from", "to"] -> do
       date <-
         dropTime
           <$> ( toParseError
@@ -177,6 +179,15 @@ mkRangeValue op field fieldType value = do
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
     _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
+mkRangeQuery' :: RangeOp -> Field -> FieldType -> Text -> Parser BH.Query
+mkRangeQuery' op field fieldType value =
+  BH.QueryRangeQuery
+    . BH.mkRangeQuery (BH.FieldName field)
+    <$> mkRangeValue op field fieldType value
+
+mkRangeAlias :: RangeOp -> Text -> Parser BH.Query
+mkRangeAlias op = mkRangeQuery' op "created_at" fieldDate
+
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
   Left msg -> lift . lift $ throwE (ParseError msg 0)
@@ -185,9 +196,7 @@ toParseError e = case e of
 mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
 mkRangeQuery expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
-  BH.QueryRangeQuery
-    . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> mkRangeValue (toRangeOp expr) field fieldType value
+  mkRangeQuery' (toRangeOp expr) fieldName fieldType value
 
 mkProjectQuery :: Config.Project -> BH.Query
 mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
@@ -208,6 +217,8 @@ mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   case (field, fieldType) of
+    ("from", _) -> mkRangeAlias Gt value
+    ("to", _) -> mkRangeAlias Lt value
     ("state", _) -> do
       (field', value') <-
         toParseError
