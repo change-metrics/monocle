@@ -77,6 +77,7 @@ subUTCTimeSecond date sec =
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
 parseRelativeDateValue now txt
+  | "now" == txt = Just now
   | Text.isPrefixOf "now-" txt = tryParseRange (Text.drop 4 txt)
   | otherwise = Nothing
   where
