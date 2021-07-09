@@ -1,6 +1,6 @@
 module Main (main) where
 
-import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Encode.Pretty as Aeson
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
@@ -89,13 +89,13 @@ monocleSearchLanguage =
         "Query date"
         ( queryMatch
             "updated_at>2021-05-27"
-            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-27T00:00:00Z\",\"boost\":1}}}"
+            "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-27T00:00:00Z\"}}}"
         ),
       testCase
         "Query number"
         ( queryMatch
             "score>200"
-            "{\"range\":{\"tasks_data.score\":{\"gt\":200,\"boost\":1}}}"
+            "{\"range\":{\"tasks_data.score\":{\"boost\":1,\"gt\":200}}}"
         ),
       testCase
         "Query boolean"
@@ -119,13 +119,13 @@ monocleSearchLanguage =
         "Query date"
         ( queryMatch
             "updated_at > 2021 and updated_at < 2021-05"
-            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"gt\":\"2021-01-01T00:00:00Z\",\"boost\":1}}},{\"range\":{\"updated_at\":{\"lt\":\"2021-05-01T00:00:00Z\",\"boost\":1}}}]}}"
+            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"updated_at\":{\"boost\":1,\"lt\":\"2021-05-01T00:00:00Z\"}}}]}}"
         ),
       testCase
         "Query relative date"
         ( queryMatch
             "updated_at > now-3weeks"
-            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
+            "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
         ),
       testCase
         "Query project"
@@ -167,7 +167,11 @@ monocleSearchLanguage =
         "match"
         (Right query)
         (P.parse code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
-    queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
+    encodePretty =
+      Aeson.encodePretty'
+        ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
+        )
+    queryMatch = queryDoMatch (encodePretty . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index
