@@ -100,6 +100,14 @@ module Approvals = {
   }
 }
 
+module Mergeable = {
+  @react.component
+  let make = (~mergeable: bool) =>
+    <Patternfly.Label color={mergeable ? #Green : #Orange}>
+        {(mergeable ? "Mergeable" : "Conflicting")->str}
+    </Patternfly.Label>
+}
+
 let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5px", ())
 
 module ExternalLink = {
@@ -149,14 +157,14 @@ module State = {
   let make = (~state) => <Label> {state->str} </Label>
 }
 
-module DataItem = {
-  let oneLineStyle = ReactDOM.Style.make(
-    ~overflow="hidden",
-    ~textOverflow="ellipsis",
-    ~whiteSpace="nowrap",
-    (),
-  )
+let oneLineStyle = ReactDOM.Style.make(
+  ~overflow="hidden",
+  ~textOverflow="ellipsis",
+  ~whiteSpace="nowrap",
+  (),
+)
 
+module DataItem = {
   @react.component
   let make = (~index: string, ~change: SearchTypes.change) =>
     <DataListItemRow key={change.url}>
@@ -164,6 +172,7 @@ module DataItem = {
         <Card isCompact={true}>
           <CardHeader>
             <State state={change.state} />
+            <Mergeable mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
             <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
@@ -211,7 +220,11 @@ module RowItem = {
   let make = (~index: string, ~change: SearchTypes.change) =>
     <tr role="row">
       <td role="cell"> <ChangeLink index id={change.change_id} title={change.title} /> </td>
-      <td role="cell"> <State state={change.state} /> </td>
+      <td role="cell">
+        <div style={oneLineStyle}>
+          <State state={change.state} /> <Mergeable mergeable={change.mergeable} />
+        </div>
+      </td>
       <td role="cell"> <AuthorLink index title="" author={change.author} /> </td>
       <td role="cell">
         <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
