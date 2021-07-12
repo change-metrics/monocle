@@ -193,6 +193,13 @@ let useToggle = default => {
   (value, toggle, set)
 }
 
+// Combine two queries
+let addQuery = (baseQuery, extraQuery) => {
+  let isEmpty = s => s->Js.String.trim == ""
+  let (query, sep) = baseQuery->isEmpty ? ("", "") : ("(" ++ baseQuery ++ ")", " and ")
+  query ++ (extraQuery->isEmpty ? "" : sep ++ extraQuery)
+}
+
 // Monocle style:
 // an expandable panel
 module MExpandablePanel = {

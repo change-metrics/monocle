@@ -116,31 +116,48 @@ module ExternalLink = {
     <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}> {`🔗`->str} </a>
 }
 
+module FilterLink = {
+  @react.component
+  let make = (~store: Store.t, ~queryField: string, ~queryValue: string, ~name: string) => {
+    let (state, dispatch) = store
+    let newFilter = queryField ++ ":\"" ++ queryValue ++ "\""
+    let filter = Js.String.includes(newFilter, state.filter) ?
+      state.filter : addQuery(state.filter, newFilter)
+    let onClick = _ => filter->Store.Store.SetFilter->dispatch
+    <Link onClick
+          style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
+_to={"/" ++ state.index ++ "/changes?q=" ++ state.query ++ "&f=" ++ filter}> {name->str} </Link>
+  }
+}
+
 module ProjectLink = {
   @react.component
-  let make = (~index, ~project, ~branch) => {
+  let make = (~store, ~project, ~branch) => {
     let name =
       list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
     <span style={horizontalSpacing}>
       {"["->str}
-      <Link
-        style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-        _to={"/" ++ index ++ "/changes?project=" ++ project}>
-        {name->str}
-      </Link>
+      <FilterLink store queryField="repo" queryValue={project} name />
       {"]"->str}
     </span>
   }
 }
+
 module ChangeLink = {
   @react.component
-  let make = (~index, ~id, ~title) => <Link _to={"/" ++ index ++ "/change/" ++ id}> {title->str} </Link>
+  let make = (~store: Store.t, ~id, ~title) => {
+    let (state, _) = store
+    <Link _to={"/" ++ state.index ++ "/change/" ++ id}> {title->str} </Link>
+  }
 }
 
 module AuthorLink = {
   @react.component
-  let make = (~index, ~title, ~author) => {
-    <> {title->str} <Link _to={"/" ++ index ++ "/changes?author=" ++ author}> {author->str} </Link> </>
+  let make = (~store: Store.t, ~title, ~author) => {
+    <>
+      {title->str}
+      <FilterLink store queryField="author" queryValue={author} name={author} />
+    </>
   }
 }
 
@@ -174,7 +191,7 @@ let oneLineStyle = ReactDOM.Style.make(
 
 module DataItem = {
   @react.component
-  let make = (~index: string, ~change: SearchTypes.change) =>
+  let make = (~store: Store.t, ~change: SearchTypes.change) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
         <Card isCompact={true}>
@@ -182,18 +199,18 @@ module DataItem = {
             <State state={change.state} draft={change.draft} />
             <Mergeable mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
-            <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
+            <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
               {"Complexicity: "->str} <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
             </span>
           </CardHeader>
           <CardBody>
             <div style={oneLineStyle}>
-              {"Title: "->str} <ChangeLink index id={change.change_id} title={change.title} />
+              {"Title: "->str} <ChangeLink store id={change.change_id} title={change.title} />
             </div>
             <div style={oneLineStyle}>
               <RelativeDate title="Created " date={change.created_at->getDate} />
-              <AuthorLink index title=" by " author={change.author} />
+              <AuthorLink store title=" by " author={change.author} />
               <RelativeDate title=", updated " date={change.updated_at->getDate} />
             </div>
             <Approvals withGroup={true} approvals={change.approval} />
@@ -225,17 +242,17 @@ module RowItem = {
       </thead>
   }
   @react.component
-  let make = (~index: string, ~change: SearchTypes.change) =>
+  let make = (~store: Store.t, ~change: SearchTypes.change) =>
     <tr role="row">
-      <td role="cell"> <ChangeLink index id={change.change_id} title={change.title} /> </td>
+      <td role="cell"> <ChangeLink store id={change.change_id} title={change.title} /> </td>
       <td role="cell">
         <div style={oneLineStyle}>
           <State state={change.state} draft={change.draft} /> <Mergeable mergeable={change.mergeable} />
         </div>
       </td>
-      <td role="cell"> <AuthorLink index title="" author={change.author} /> </td>
+      <td role="cell"> <AuthorLink store title="" author={change.author} /> </td>
       <td role="cell">
-        <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
+        <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
       </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
@@ -246,12 +263,12 @@ module RowItem = {
 
 module Table = {
   @react.component
-  let make = (~index: string, ~changes: list<SearchTypes.change>) =>
+  let make = (~store: Store.t, ~changes: list<SearchTypes.change>) =>
     <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
       <RowItem.Head />
       <tbody role="rowgroup">
         {changes
-        ->Belt.List.mapWithIndex((idx, change) => <RowItem key={string_of_int(idx)} index change />)
+        ->Belt.List.mapWithIndex((idx, change) => <RowItem key={string_of_int(idx)} store change />)
         ->Belt.List.toArray
         ->React.array}
       </tbody>

@@ -28,17 +28,19 @@ module Fixture = {
 
 module App = {
   @react.component
-  let make = () => <>
+  let make = () => {
+  let store = Store.use("test")
+  <>
     {[
       ("title", <h2> {"Monocle designer mode"->str} </h2>),
       ("group", <GroupView.GroupTable group={Fixture.group_get} />),
       (
         "change",
         <div className="container">
-          <Change.DataItem index={"test"} change={Fixture.change} />
+          <Change.DataItem store change={Fixture.change} />
         </div>,
       ),
-      ("table", <Change.Table index={"test"} changes={list{Fixture.change, Fixture.change}} />),
+      ("table", <Change.Table store changes={list{Fixture.change, Fixture.change}} />),
       (
         "search help",
         <>
@@ -50,6 +52,7 @@ module App = {
     ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
     ->React.array}
   </>
+  }
 }
 
 module BrowserRouter = {

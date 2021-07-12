@@ -4,15 +4,19 @@ open Prelude
 let make = (~store: Store.t) => {
   let (state, _) = store
   let index = state.index
+  let query = addQuery(state.query, state.filter)
   let request = {
     SearchTypes.index: index,
-    query: state.query,
+    query: query,
     username: "",
     query_type: SearchTypes.Query_change,
+    limit: 50->Int32.of_int,
+    order: None,
   }
 
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+    <Patternfly.Layout.Bullseye> <Search.Filter store /> </Patternfly.Layout.Bullseye>
+    {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
@@ -26,11 +30,12 @@ let make = (~store: Store.t) => {
         | _ =>
           <Patternfly.DataList isCompact={true}>
             {changes
-            ->Belt.Array.map(change => <Change.DataItem index key={change.url} change={change} />)
+            ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
             ->React.array}
           </Patternfly.DataList>
         }
       }
+    | Some(Ok(_)) => <Alert title={"Invalid response"} />
     }}
   </div>
 }

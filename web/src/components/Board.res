@@ -11,12 +11,6 @@ let startWithEditorOpen = false
 module Column = {
   type t = {name: string, query: string, order: option<SearchTypes.order>}
 
-  let addQuery = (columnQuery, query) => {
-    let isGlobalQueryEmpty = query->Js.String.toLowerCase->Js.String.trim == ""
-    let query = isGlobalQueryEmpty ? "" : " and " ++ query
-    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ query : query
-  }
-
   // Convert order to a string representation to trigger useEffect1 refresh
   let orderToString = (order: option<SearchTypes.order>) =>
     switch order {
@@ -27,28 +21,29 @@ module Column = {
   module Row = {
     // TODO: merge common code with Column
     @react.component
-    let make = (~index, ~column, ~query: string, ~limit: int) => {
+    let make = (~store: Store.t, ~column) => {
+      let (state, _dispatch) = store
       let (result, setResult) = React.useState(_ => None)
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
         setResult(_ => resp.data->Some)->Js.Promise.resolve
-      let query = addQuery(column.query, query)
+      let query = addQuery(column.query, state.query)
       React.useEffect1(() => {
         switch query {
         | "" => ignore()
         | _ =>
           ignore(
             WebApi.Search.query({
-              index: index,
-              query: query,
+              index: state.index,
+              query: state.query,
               username: "",
               query_type: SearchTypes.Query_change,
-              limit: limit->Int32.of_int,
+              limit: state.limit->Int32.of_int,
               order: column.order,
             }) |> Js.Promise.then_(handleOk),
           )
         }
         None
-      }, [query, column.order->orderToString, limit->string_of_int])
+      }, [query, column.order->orderToString, state.limit->string_of_int])
       switch result {
       | None => React.null
       | Some(SearchTypes.Error(err)) =>
@@ -61,7 +56,7 @@ module Column = {
           | 0 => <p> {"No changes matched"->str} </p>
           | _ =>
             changes
-            ->Belt.Array.map(change => <Change.RowItem index key={change.url} change={change} />)
+            ->Belt.Array.map(change => <Change.RowItem store key={change.url} change={change} />)
             ->React.array
           }
         }
@@ -71,28 +66,29 @@ module Column = {
   }
 
   @react.component
-  let make = (~index, ~column, ~query: string, ~limit: int) => {
+  let make = (~store: Store.t, ~column) => {
+    let (state, _) = store
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
-    let query = addQuery(column.query, query)
+    let query = addQuery(column.query, state.query)
     React.useEffect1(() => {
       switch query {
       | "" => ignore()
       | _ =>
         ignore(
           WebApi.Search.query({
-            index: index,
-            query: query,
+            index: state.index,
+            query: state.query,
             username: "",
             query_type: SearchTypes.Query_change,
-            limit: limit->Int32.of_int,
+            limit: state.limit->Int32.of_int,
             order: column.order,
           }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [query, column.order->orderToString, limit->string_of_int])
+    }, [query, column.order->orderToString, state.limit->string_of_int])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -112,7 +108,7 @@ module Column = {
               <Patternfly.DataList isCompact={true}>
                 {changes
                 ->Belt.Array.map(change =>
-                  <Change.DataItem index key={change.url} change={change} />
+                  <Change.DataItem store key={change.url} change={change} />
                 )
                 ->React.array}
               </Patternfly.DataList>
@@ -420,9 +416,6 @@ module Board = {
 
 @react.component
 let make = (~store: Store.t) => {
-  let (state, _) = store
-  let index = state.index
-
   // Load from url and store the column state
   let (board, dispatch) = Board.use()
   // let (board, setBoard) = React.useState(Board.loadFromUrl)
@@ -436,7 +429,7 @@ let make = (~store: Store.t) => {
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column index column query={state.query} limit={state.limit} />
+          <Column store column />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
@@ -455,7 +448,7 @@ let make = (~store: Store.t) => {
                 <i> {(" : " ++ column.query)->str} </i>
               </td>
             </tr>
-            <Column.Row index column query={state.query} limit={state.limit} />
+            <Column.Row store column />
           </tbody>
         </React.Fragment>
       )

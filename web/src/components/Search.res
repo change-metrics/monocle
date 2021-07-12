@@ -255,6 +255,17 @@ module Top = {
     let (savedValue, setSavedValue) = React.useState(() => state.query)
     let setValue = v => setValue'(_ => v)
 
+    // Update changed value
+    React.useEffect1(() => {
+      state.query != value
+        ? {
+            setValue'(_ => state.query)
+            setSavedValue(_ => state.query)
+          }
+        : ignore()
+      None
+    }, [state.query])
+
     // Dispatch the value upstream
     let onClick = _ => {
       setSavedValue(_ => value)
@@ -285,5 +296,20 @@ module Top = {
           : React.null}
       </div>
     </Patternfly.Layout.Bullseye>
+  }
+}
+
+module Filter = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, dispatch) = store
+    state.filter == ""
+      ? React.null
+      : <div style={ReactDOM.Style.make(~width="1024px", ~whiteSpace="nowrap", ())}>
+          <Button onClick={_ => ""->Store.Store.SetFilter->dispatch}> {"Clear"->str} </Button>
+          <Patternfly.TextInput
+            id="col-filter" value={state.filter} _type=#Text iconVariant=#Search isDisabled={true}
+          />
+        </div>
   }
 }

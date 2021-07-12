@@ -7,10 +7,12 @@ module RemoteData = {
 }
 
 module UrlData = {
-  let getQuery = () => {
+  let getParam = name => {
     let params = Prelude.URLSearchParams.current()
-    params->Prelude.URLSearchParams.get("q")->Js.Nullable.toOption->Belt.Option.getWithDefault("")
+    params->Prelude.URLSearchParams.get(name)->Js.Nullable.toOption->Belt.Option.getWithDefault("")
   }
+  let getQuery = () => getParam("q")
+  let getFilter = () => getParam("f")
   let getLimit = () => {
     let params = Prelude.URLSearchParams.current()
     params
@@ -29,6 +31,7 @@ module Store = {
   type t = {
     index: string,
     query: string,
+    filter: string,
     limit: int,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
@@ -37,6 +40,7 @@ module Store = {
   type action =
     | ChangeIndex(string)
     | SetQuery(string)
+    | SetFilter(string)
     | SetLimit(int)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
@@ -46,6 +50,7 @@ module Store = {
   let create = index => {
     index: index,
     query: UrlData.getQuery(),
+    filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     suggestions: None,
     fields: None,
@@ -58,6 +63,10 @@ module Store = {
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
+      }
+    | SetFilter(query) => {
+        Prelude.setLocationSearch("f", query)->ignore
+        {...state, filter: query}
       }
     | SetLimit(limit) => {
         Prelude.setLocationSearch("l", limit->string_of_int)->ignore
