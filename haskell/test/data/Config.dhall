@@ -51,5 +51,6 @@
                 , repository_regex : Optional Text
                 }
             )
+      , search_aliases : Optional (List { alias : Text, name : Text })
       }
 }

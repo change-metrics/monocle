@@ -61,7 +61,7 @@ userGroupGet request = do
           lookup (toStrict getRequestName) (Config.getTenantGroups index)
             `orDie` ParseError "unknown group" 0
 
-        expr <- P.parse (toStrict getRequestQuery)
+        expr <- P.parse (Q.loadAliases' index) (toStrict getRequestQuery)
 
         query <-
           Q.queryWithMods now mempty (Just index) expr
@@ -269,11 +269,11 @@ searchQuery request = do
 
   let requestE =
         do
-          expr <- P.parse (toStrict queryRequestQuery)
-
           tenant <-
             Config.lookupTenant tenants (toStrict queryRequestIndex)
               `orDie` ParseError "unknown tenant" 0
+
+          expr <- P.parse (Q.loadAliases' tenant) (toStrict queryRequestQuery)
 
           query <-
             Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
@@ -391,7 +391,7 @@ searchChangesLifecycle indexName queryText = do
     -- TODO: add field to the protobuf message
     username = mempty
 
-    response now = case P.parse queryText >>= Q.queryWithMods now username Nothing of
+    response now = case P.parse [] queryText >>= Q.queryWithMods now username Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied

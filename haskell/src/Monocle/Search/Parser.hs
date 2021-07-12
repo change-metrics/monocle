@@ -4,6 +4,7 @@
 module Monocle.Search.Parser (parse) where
 
 import qualified Control.Monad.Combinators as Combinators
+import Data.List (lookup)
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import Monocle.Search.Lexer (Token (..), lex)
@@ -20,10 +21,10 @@ type Parser = Megaparsec.Parsec Void [L.LocatedToken]
 
 -- | 'exprParser' parses an expression
 --
--- >>> Megaparsec.parse exprParser "" (toLocated [L.Literal "status", L.Equal, L.Literal "open"])
+-- >>> Megaparsec.parse (exprParser []) "" (toLocated [L.Literal "status", L.Equal, L.Literal "open"])
 -- Right (EqExpr "status" "open")
-exprParser :: Parser Expr
-exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
+exprParser :: [(Text, Expr)] -> Parser Expr
+exprParser aliases = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
   where
     -- 'boolExpr' combines multiple expression
     boolExpr = do
@@ -33,8 +34,8 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
       operatorToken <- fromMaybe And <$> Combinators.optional (tokens [And, Or])
       case operatorToken of
         -- For the right expression, it is safe to run 'exprParser'
-        And -> AndExpr leftExpr <$> exprParser
-        Or -> OrExpr leftExpr <$> exprParser
+        And -> AndExpr leftExpr <$> exprParser aliases
+        Or -> OrExpr leftExpr <$> exprParser aliases
         x -> error $ "this should not happen, see the expression before the case statement: " <> show x
 
     -- 'closedExpr' is a single expression
@@ -46,6 +47,11 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
 
     fieldExpr = do
       field <- literal
+      case lookup field aliases of
+        Just expr -> pure expr
+        Nothing -> fieldExprWithOperator field
+
+    fieldExprWithOperator field = do
       operator <- do
         operatorToken <- tokens [Equal, Greater, Lower, GreaterEqual, LowerEqual]
         pure $ case operatorToken of
@@ -59,11 +65,11 @@ exprParser = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
 
     parenExpr =
       -- Here it is safe to run 'exprParser' because 'parenExpr' first parses an 'OpenParenthesis'
-      Combinators.between (token OpenParenthesis) (token CloseParenthesis) exprParser
+      Combinators.between (token OpenParenthesis) (token CloseParenthesis) (exprParser aliases)
 
-exprParserWithMods :: Parser (Maybe Expr)
-exprParserWithMods = do
-  expr <- Combinators.optional exprParser
+exprParserWithMods :: [(Text, Expr)] -> Parser (Maybe Expr)
+exprParserWithMods aliases = do
+  expr <- Combinators.optional (exprParser aliases)
   modifiers <- Combinators.many modExpr
   pure $ foldr (\modifier acc -> Just $ modifier acc) expr modifiers
   where
@@ -110,10 +116,10 @@ tokens :: [Token] -> Parser Token
 tokens = Combinators.choice . map token
 
 -- | 'parse' parses the code into an 'Expr'
-parse :: Text -> Either ParseError (Maybe Expr)
-parse code = do
+parse :: [(Text, Expr)] -> Text -> Either ParseError (Maybe Expr)
+parse aliases code = do
   tokens' <- lex code
-  case Megaparsec.parse (exprParserWithMods <* Megaparsec.eof) "<input>" tokens' of
+  case Megaparsec.parse (exprParserWithMods aliases <* Megaparsec.eof) "<input>" tokens' of
     Left err -> Left (mkErr err)
     Right expr -> Right expr
   where

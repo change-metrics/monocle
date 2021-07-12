@@ -1,6 +1,6 @@
 module Main (main) where
 
-import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Encode.Pretty as Aeson
 import Google.Protobuf.Timestamp
 import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
@@ -67,6 +67,14 @@ monocleSearchLanguage =
             )
         ),
       testCase
+        "Parser aliases"
+        ( parseMatch'
+            [("sprint42", S.GtExpr "date" "2021-07-01")]
+            "status:open sprint42"
+            ( (S.AndExpr (S.EqExpr "status" "open")) (S.GtExpr "date" "2021-07-01")
+            )
+        ),
+      testCase
         "Parser implicit and"
         ( parseMatch
             "state:open author:foo"
@@ -89,13 +97,13 @@ monocleSearchLanguage =
         "Query date"
         ( queryMatch
             "updated_at>2021-05-27"
-            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-27T00:00:00Z\",\"boost\":1}}}"
+            "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-27T00:00:00Z\"}}}"
         ),
       testCase
         "Query number"
         ( queryMatch
             "score>200"
-            "{\"range\":{\"tasks_data.score\":{\"gt\":200,\"boost\":1}}}"
+            "{\"range\":{\"tasks_data.score\":{\"boost\":1,\"gt\":200}}}"
         ),
       testCase
         "Query boolean"
@@ -119,13 +127,25 @@ monocleSearchLanguage =
         "Query date"
         ( queryMatch
             "updated_at > 2021 and updated_at < 2021-05"
-            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"gt\":\"2021-01-01T00:00:00Z\",\"boost\":1}}},{\"range\":{\"updated_at\":{\"lt\":\"2021-05-01T00:00:00Z\",\"boost\":1}}}]}}"
+            "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"updated_at\":{\"boost\":1,\"lt\":\"2021-05-01T00:00:00Z\"}}}]}}"
         ),
       testCase
         "Query relative date"
         ( queryMatch
             "updated_at > now-3weeks"
-            "{\"range\":{\"updated_at\":{\"gt\":\"2021-05-10T00:00:00Z\",\"boost\":1}}}"
+            "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
+        ),
+      testCase
+        "Query from field"
+        ( queryMatch
+            "from:now-3weeks"
+            "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
+        ),
+      testCase
+        "Query from to field"
+        ( queryMatch
+            "from:now-3weeks to:now"
+            "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"range\":{\"created_at\":{\"boost\":1,\"lt\":\"2021-05-31T00:00:00Z\"}}}]}}"
         ),
       testCase
         "Query project"
@@ -161,18 +181,32 @@ monocleSearchLanguage =
     threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 00:00:00 Z")
     now = fromMaybe (error "nop") (readMaybe "2021-05-31 00:00:00 Z")
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
-    parseMatch code expr = assertEqual "match" (Right (Just expr)) (P.parse code)
-    queryDoMatch field code query =
+    parseMatch = parseMatch' []
+    parseMatch' aliases code expr =
+      assertEqual "match" (Right (Just expr)) (P.parse aliases code)
+    queryDoMatch = queryDoMatch' []
+    queryDoMatch' aliases field code query =
       assertEqual
         "match"
         (Right query)
-        (P.parse code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
-    queryMatch = queryDoMatch (Aeson.encode . Q.queryBH)
+        (P.parse aliases code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
+    encodePretty =
+      Aeson.encodePretty'
+        ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
+        )
+    queryMatch = queryDoMatch' [] (encodePretty . Q.queryBH)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index
         { Config.index = "test",
           Config.projects = (Just [testProjects]),
+          Config.search_aliases =
+            ( Just
+                [ let name = "sprint42"
+                      alias = "from:2021-01-01 to:2021-01-21"
+                   in Config.SearchAlias {..}
+                ]
+            ),
           Config.crawlers = Nothing,
           Config.crawlers_api_key = Nothing,
           Config.idents = Nothing

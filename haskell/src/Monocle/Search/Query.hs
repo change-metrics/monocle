@@ -1,6 +1,16 @@
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query (Query (..), queryWithMods, query, ensureMinBound, fields, load) where
+module Monocle.Search.Query
+  ( Query (..),
+    queryWithMods,
+    query,
+    ensureMinBound,
+    fields,
+    loadAliases,
+    loadAliases',
+    load,
+  )
+where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
@@ -47,6 +57,8 @@ fields :: [(Field, (FieldType, Field, Text))]
 fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
     ("created_at", (fieldDate, "created_at", "Change creation")),
+    ("from", (fieldDate, "created_at", "Range starting date")),
+    ("to", (fieldDate, "created_at", "Range ending date")),
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
@@ -77,6 +89,7 @@ subUTCTimeSecond date sec =
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
 parseRelativeDateValue now txt
+  | "now" == txt = Just now
   | Text.isPrefixOf "now-" txt = tryParseRange (Text.drop 4 txt)
   | otherwise = Nothing
   where
@@ -162,7 +175,7 @@ mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue op field fieldType value = do
   now <- asks envNow
   case fieldType of
-    Field_TypeFIELD_DATE -> do
+    Field_TypeFIELD_DATE | field `notElem` ["from", "to"] -> do
       date <-
         dropTime
           <$> ( toParseError
@@ -176,6 +189,15 @@ mkRangeValue op field fieldType value = do
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
     _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
+mkRangeQuery' :: RangeOp -> Field -> FieldType -> Text -> Parser BH.Query
+mkRangeQuery' op field fieldType value =
+  BH.QueryRangeQuery
+    . BH.mkRangeQuery (BH.FieldName field)
+    <$> mkRangeValue op field fieldType value
+
+mkRangeAlias :: RangeOp -> Text -> Parser BH.Query
+mkRangeAlias op = mkRangeQuery' op "created_at" fieldDate
+
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
   Left msg -> lift . lift $ throwE (ParseError msg 0)
@@ -184,9 +206,7 @@ toParseError e = case e of
 mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
 mkRangeQuery expr field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
-  BH.QueryRangeQuery
-    . BH.mkRangeQuery (BH.FieldName fieldName)
-    <$> mkRangeValue (toRangeOp expr) field fieldType value
+  mkRangeQuery' (toRangeOp expr) fieldName fieldType value
 
 mkProjectQuery :: Config.Project -> BH.Query
 mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
@@ -207,6 +227,8 @@ mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value = do
   (fieldType, fieldName, _desc) <- toParseError $ lookupField field
   case (field, fieldType) of
+    ("from", _) -> mkRangeAlias Gt value
+    ("to", _) -> mkRangeAlias Lt value
     ("state", _) -> do
       (field', value') <-
         toParseError
@@ -310,11 +332,42 @@ queryWithMods now' username indexM baseExprM =
 
 -- | Utility function to simply create a query
 load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query
-load nowM username indexM code = case P.parse code >>= queryWithMods now username indexM of
+load nowM username indexM code = case P.parse [] code >>= queryWithMods now username indexM of
   Right x -> x
   Left err -> error (show err)
   where
     now = fromMaybe (error "need time") nowM
+
+loadAliases' :: Config.Index -> [(Text, Expr)]
+loadAliases' = fromRight (error "Alias loading failed") . loadAliases
+
+loadAliases :: Config.Index -> Either [Text] [(Text, Expr)]
+loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases index) of
+  ([], xs) -> Right xs
+  (xs, _) -> Left xs
+  where
+    fakeNow :: UTCTime
+    fakeNow = fromMaybe (error "not utctime?") $ readMaybe "2021-06-02 23:00:00 Z"
+    loadAlias :: (Text, Text) -> Either Text (Text, Expr)
+    loadAlias (name, code) = do
+      let toError :: Either ParseError a -> Either Text a
+          toError = \case
+            -- TODO: improve error reporting
+            Left e -> Left $ "Invalid alias " <> name <> ": " <> show e
+            Right x -> Right x
+
+      exprM <- toError $ P.parse [] code
+
+      -- Try to evaluate the alias with fake value
+      _testQuery <-
+        toError $
+          queryWithMods fakeNow "self" (Just index) exprM
+
+      case exprM of
+        Just expr ->
+          -- We now know the alias can be converted to a bloodhound query
+          Right (name, expr)
+        Nothing -> Left $ "Empty alias " <> name
 
 -- | Ensure a minimum range bound is set
 ensureMinBound :: Query -> Text -> Query

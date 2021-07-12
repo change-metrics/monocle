@@ -228,7 +228,7 @@ test-suite monocle-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       aeson
+  build-depends:       aeson-pretty
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
