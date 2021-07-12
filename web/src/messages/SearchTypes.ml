@@ -116,10 +116,10 @@ type changes = {
 
 type repo_summary = {
   fullname : string;
-  total_changes : string;
-  abandoned_changes : string;
-  merged_changes : string;
-  open_changes : string;
+  total_changes : int32;
+  abandoned_changes : int32;
+  merged_changes : int32;
+  open_changes : int32;
 }
 
 type repos_summary = {
@@ -347,10 +347,10 @@ let rec default_changes
 
 let rec default_repo_summary 
   ?fullname:((fullname:string) = "")
-  ?total_changes:((total_changes:string) = "")
-  ?abandoned_changes:((abandoned_changes:string) = "")
-  ?merged_changes:((merged_changes:string) = "")
-  ?open_changes:((open_changes:string) = "")
+  ?total_changes:((total_changes:int32) = 0l)
+  ?abandoned_changes:((abandoned_changes:int32) = 0l)
+  ?merged_changes:((merged_changes:int32) = 0l)
+  ?open_changes:((open_changes:int32) = 0l)
   () : repo_summary  = {
   fullname;
   total_changes;

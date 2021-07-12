@@ -699,13 +699,17 @@ components:
                 fullname:
                     type: string
                 total_changes:
-                    type: string
+                    type: integer
+                    format: uint32
                 abandoned_changes:
-                    type: string
+                    type: integer
+                    format: uint32
                 merged_changes:
-                    type: string
+                    type: integer
+                    format: uint32
                 open_changes:
-                    type: string
+                    type: integer
+                    format: uint32
         monocle_search_ReposSummary:
             properties:
                 RepositorySummary:

@@ -13,6 +13,7 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (toBHQuery)
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -327,20 +328,22 @@ data RepoSummary = RepoSummary
   }
   deriving (Show, Eq)
 
-getReposSummary :: [BH.Query] -> TenantM [RepoSummary]
-getReposSummary basequery = do
-  rlist <- getRepos basequery
+getReposSummary :: QueryM [RepoSummary]
+getReposSummary = do
+  basequery_ <- getQuery
+  let basequery = toBHQuery basequery_
+  rlist <- liftTenantM $ getRepos basequery
   let names = term <$> rlist
-  sequence $ getRepoSummary <$> names
+  sequence $ getRepoSummary basequery <$> names
   where
-    getRepoSummary fn = do
+    getRepoSummary basequery fn = do
       let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
       totalChanges' <- countEvent query "ChangeCreatedEvent"
       abandonedChanges' <- countEvent query "ChangeClosedEvent"
       mergedChanges' <- countEvent query "ChangeMergedEvent"
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
-    countEvent query docType = countEvents (documentType [query] docType)
+    countEvent query docType = liftTenantM $ countEvents (documentType [query] docType)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)

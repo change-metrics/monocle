@@ -119,10 +119,10 @@ type changes = {
 
 type repo_summary = {
   fullname : string;
-  total_changes : string;
-  abandoned_changes : string;
-  merged_changes : string;
-  open_changes : string;
+  total_changes : int32;
+  abandoned_changes : int32;
+  merged_changes : int32;
+  open_changes : int32;
 }
 
 type repos_summary = {
@@ -311,10 +311,10 @@ val default_changes :
 
 val default_repo_summary : 
   ?fullname:string ->
-  ?total_changes:string ->
-  ?abandoned_changes:string ->
-  ?merged_changes:string ->
-  ?open_changes:string ->
+  ?total_changes:int32 ->
+  ?abandoned_changes:int32 ->
+  ?merged_changes:int32 ->
+  ?open_changes:int32 ->
   unit ->
   repo_summary
 (** [default_repo_summary ()] is the default value for type [repo_summary] *)

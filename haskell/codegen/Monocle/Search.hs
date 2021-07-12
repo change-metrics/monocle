@@ -4026,10 +4026,10 @@ instance HsJSONPB.ToSchema ChangesLifecycle_Ratios where
 
 data RepoSummary = RepoSummary
   { repoSummaryFullname :: Hs.Text,
-    repoSummaryTotalChanges :: Hs.Text,
-    repoSummaryAbandonedChanges :: Hs.Text,
-    repoSummaryMergedChanges :: Hs.Text,
-    repoSummaryOpenChanges :: Hs.Text
+    repoSummaryTotalChanges :: Hs.Word32,
+    repoSummaryAbandonedChanges :: Hs.Word32,
+    repoSummaryMergedChanges :: Hs.Word32,
+    repoSummaryOpenChanges :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -4103,28 +4103,28 @@ instance HsProtobuf.Message RepoSummary where
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "total_changes")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "abandoned_changes")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "merged_changes")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "open_changes")
           []
           ""

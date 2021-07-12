@@ -109,6 +109,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -290,12 +291,17 @@ searchQuery request = do
             . SearchPB.QueryResponseResultChanges
             . SearchPB.Changes
             . V.fromList
-            . map toResult
+            . map toChangeResult
             <$> Q.changes queryRequestOrder queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
           error "LifeCycle Not Implemented"
         SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
-          error "ReposSummary Not Implemented"
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultReposSummary
+            . SearchPB.ReposSummary
+            . V.fromList
+            . map toRSumResult
+            <$> Q.getReposSummary
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -306,8 +312,17 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    toResult :: ELKChange -> SearchPB.Change
-    toResult change =
+    toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
+    toRSumResult Q.RepoSummary {..} =
+      let repoSummaryFullname = toLazy fullname
+          repoSummaryTotalChanges = totalChanges
+          repoSummaryAbandonedChanges = abandonedChanges
+          repoSummaryMergedChanges = mergedChanges
+          repoSummaryOpenChanges = openChanges
+       in SearchPB.RepoSummary {..}
+
+    toChangeResult :: ELKChange -> SearchPB.Change
+    toChangeResult change =
       let changeTitle = elkchangeTitle change
           changeUrl = elkchangeUrl change
           changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
