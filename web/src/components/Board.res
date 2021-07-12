@@ -147,23 +147,29 @@ module ColumnEditor = {
     let setQuery = (v, _) => setAndRender(queryRef, v)
     let setOrder = (v, _) => setAndRender(orderRef, v)
 
-    <span style={ReactDOM.Style.make(~display="flex", ())}>
-      <Patternfly.TextInput
-        style={ReactDOM.Style.make(~width="200px", ())}
-        id="col-name"
-        value={nameRef.contents}
-        onChange={setName}
-        _type=#Text
-      />
-      <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
-      <Search.Order store value={orderRef.contents} setValue={v => setOrder(v, ())} />
-      {maybeRender(
-        count > 1,
-        <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-          {"Remove"->str}
-        </Patternfly.Button>,
-      )}
-    </span>
+    <div style={ReactDOM.Style.make(~paddingTop="5px", ~paddingBottom="5px", ())}>
+      <div style={ReactDOM.Style.make(~display="flex", ())}>
+        <Patternfly.TextInput
+          style={ReactDOM.Style.make(~width="200px", ())}
+          id="col-name"
+          value={nameRef.contents}
+          onChange={setName}
+          _type=#Text
+        />
+        <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
+      </div>
+      <div style={ReactDOM.Style.make(~display="inline-block", ())}>
+        <span style={ReactDOM.Style.make(~width="200px", ~display="inline-block", ())}>
+          {maybeRender(
+            count > 1,
+            <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
+              {"Remove"->str}
+            </Patternfly.Button>,
+          )}
+        </span>
+        <Search.Order store value={orderRef.contents} setValue={v => setOrder(v, ())} />
+      </div>
+    </div>
   }
 }
 
@@ -378,13 +384,12 @@ module Board = {
 
       let bottomRow =
         <>
-          <SearchToolTip store />
           <Patternfly.Button
             onClick={_ => {
               doSave()
               AddColumn->dispatch
             }}>
-            {"AddColumn"->str}
+            {"Add Column"->str}
           </Patternfly.Button>
         </>
 

@@ -229,17 +229,17 @@ module Order = {
       setShowOrderSelector(_ => false)
     }
     let onClick = _ => setShowOrderSelector(_ => true)
-    <div style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}>
+    <>
       <OrderSelectorModal store value isOpen={showOrderSelector} onClose={setOrder} />
       {switch value {
       | None => <Patternfly.Button onClick> {"Set order"->str} </Patternfly.Button>
       | Some(order) =>
         <span>
-          {("order by " ++ order.field ++ order.direction->toStr)->str}
           <Patternfly.Button variant=#Tertiary onClick> {"Change Order"} </Patternfly.Button>
+          {("order by " ++ order.field ++ order.direction->toStr)->str}
         </span>
       }}
-    </div>
+    </>
   }
 }
 
