@@ -155,7 +155,7 @@ server {
 
 ```ShellSession
 cd haskell
-cabal repl
+cabal repl monocle
 λ> import Monocle.Api.CLI
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
@@ -167,29 +167,25 @@ This section describes how to start the Monocle services directly on your host u
 #### Elastic
 
 ```ShellSession
-nix-shell
-elk-start
+nix-shell --command elk-start
 ```
 
 #### Nginx
 
 ```ShellSession
-nix-shell
-nginx-start
+nix-shell --command nginx-start
 ```
 
 #### APIv1
 
 ```ShellSession
-nix-shell
-monocle-api-start
+nix-shell --command monocle-api-start
 ```
 
 #### APIv2
 
 ```ShellSession
-nix-shell
-monocle-api2-start
+nix-shell --command monocle-api2-start
 λ> import Monocle.Api.CLI
 λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
 ```
@@ -197,9 +193,16 @@ monocle-api2-start
 #### Web
 
 ```ShellSession
-nix-shell
-monocle-web-start
+nix-shell --command monocle-web-start
 firefox http://localhost:13000
+```
+
+#### Launch with emacs lisp
+
+The above commands can be started in emacs buffer using:
+
+```ShellSession
+nix-shell --command launch-monocle-with-emacs
 ```
 
 ## Contributing a new driver
