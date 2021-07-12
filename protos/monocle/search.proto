@@ -54,6 +54,7 @@ message QueryRequest {
   enum QueryType {
     QUERY_CHANGE = 0;
     QUERY_CHANGE_LIFECYCLE = 1;
+    QUERY_REPOS_SUMMARY = 2;
   }
   QueryType query_type = 4;
 }
@@ -125,6 +126,7 @@ message QueryResponse {
   oneof result {
     QueryError error = 1;
     Changes changes = 2;
+    ReposSummary repos_summary = 3;
   }
 }
 
@@ -164,4 +166,16 @@ message ChangesLifecycle {
   Ratios ratios = 11;
   uint32 self_merged = 12;
   float tests = 13;
+}
+
+message RepoSummary {
+  string fullname = 1;
+  string total_changes = 2;
+  string abandoned_changes = 3;
+  string merged_changes = 4;
+  string open_changes = 5;
+}
+
+message ReposSummary {
+  repeated RepoSummary RepositorySummary = 1;
 }

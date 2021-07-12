@@ -42,6 +42,7 @@ type query_error = {
 type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
+  | Query_repos_summary 
 
 type query_request = {
   index : string;
@@ -102,9 +103,22 @@ type changes = {
   changes : change list;
 }
 
+type repo_summary = {
+  fullname : string;
+  total_changes : string;
+  abandoned_changes : string;
+  merged_changes : string;
+  open_changes : string;
+}
+
+type repos_summary = {
+  repository_summary : repo_summary list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
+  | Repos_summary of repos_summary
 
 type changes_histos_event = {
   doc_count : int32;
@@ -304,6 +318,26 @@ let rec default_changes
   ?changes:((changes:change list) = [])
   () : changes  = {
   changes;
+}
+
+let rec default_repo_summary 
+  ?fullname:((fullname:string) = "")
+  ?total_changes:((total_changes:string) = "")
+  ?abandoned_changes:((abandoned_changes:string) = "")
+  ?merged_changes:((merged_changes:string) = "")
+  ?open_changes:((open_changes:string) = "")
+  () : repo_summary  = {
+  fullname;
+  total_changes;
+  abandoned_changes;
+  merged_changes;
+  open_changes;
+}
+
+let rec default_repos_summary 
+  ?repository_summary:((repository_summary:repo_summary list) = [])
+  () : repos_summary  = {
+  repository_summary;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())

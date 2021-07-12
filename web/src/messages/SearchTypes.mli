@@ -45,6 +45,7 @@ type query_error = {
 type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
+  | Query_repos_summary 
 
 type query_request = {
   index : string;
@@ -105,9 +106,22 @@ type changes = {
   changes : change list;
 }
 
+type repo_summary = {
+  fullname : string;
+  total_changes : string;
+  abandoned_changes : string;
+  merged_changes : string;
+  open_changes : string;
+}
+
+type repos_summary = {
+  repository_summary : repo_summary list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
+  | Repos_summary of repos_summary
 
 type changes_histos_event = {
   doc_count : int32;
@@ -271,6 +285,22 @@ val default_changes :
   unit ->
   changes
 (** [default_changes ()] is the default value for type [changes] *)
+
+val default_repo_summary : 
+  ?fullname:string ->
+  ?total_changes:string ->
+  ?abandoned_changes:string ->
+  ?merged_changes:string ->
+  ?open_changes:string ->
+  unit ->
+  repo_summary
+(** [default_repo_summary ()] is the default value for type [repo_summary] *)
+
+val default_repos_summary : 
+  ?repository_summary:repo_summary list ->
+  unit ->
+  repos_summary
+(** [default_repos_summary ()] is the default value for type [repos_summary] *)
 
 val default_query_response : unit -> query_response
 (** [default_query_response ()] is the default value for type [query_response] *)

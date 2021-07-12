@@ -45,6 +45,12 @@ val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 val encode_changes : SearchTypes.changes -> Js.Json.t Js.Dict.t
 (** [encode_changes v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_repo_summary : SearchTypes.repo_summary -> Js.Json.t Js.Dict.t
+(** [encode_repo_summary v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_repos_summary : SearchTypes.repos_summary -> Js.Json.t Js.Dict.t
+(** [encode_repos_summary v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 (** [encode_query_response v dict] encodes [v] int the given JSON [dict] *)
 
@@ -107,6 +113,12 @@ val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 
 val decode_changes : Js.Json.t Js.Dict.t -> SearchTypes.changes
 (** [decode_changes decoder] decodes a [changes] value from [decoder] *)
+
+val decode_repo_summary : Js.Json.t Js.Dict.t -> SearchTypes.repo_summary
+(** [decode_repo_summary decoder] decodes a [repo_summary] value from [decoder] *)
+
+val decode_repos_summary : Js.Json.t Js.Dict.t -> SearchTypes.repos_summary
+(** [decode_repos_summary decoder] decodes a [repos_summary] value from [decoder] *)
 
 val decode_query_response : Js.Json.t Js.Dict.t -> SearchTypes.query_response
 (** [decode_query_response decoder] decodes a [query_response] value from [decoder] *)
