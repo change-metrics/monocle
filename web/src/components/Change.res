@@ -154,7 +154,15 @@ module RelativeDate = {
 
 module State = {
   @react.component
-  let make = (~state) => <Label> {state->str} </Label>
+  let make = (~state, ~draft) => {
+    let (color, value) = draft ? (#Grey, "Draft") : switch state {
+      | "OPEN" => (#Green, "Open")
+      | "Merged" => (#Blue, "Merged")
+      | "Closed" => (#Purple, "Closed")
+      | _ => (#Red, state)
+    }
+    <Label color> {value->str} </Label>
+  }
 }
 
 let oneLineStyle = ReactDOM.Style.make(
@@ -171,7 +179,7 @@ module DataItem = {
       <DataListCell>
         <Card isCompact={true}>
           <CardHeader>
-            <State state={change.state} />
+            <State state={change.state} draft={change.draft} />
             <Mergeable mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
             <ProjectLink index project={change.repository_fullname} branch={change.target_branch} />
@@ -222,7 +230,7 @@ module RowItem = {
       <td role="cell"> <ChangeLink index id={change.change_id} title={change.title} /> </td>
       <td role="cell">
         <div style={oneLineStyle}>
-          <State state={change.state} /> <Mergeable mergeable={change.mergeable} />
+          <State state={change.state} draft={change.draft} /> <Mergeable mergeable={change.mergeable} />
         </div>
       </td>
       <td role="cell"> <AuthorLink index title="" author={change.author} /> </td>
