@@ -3,7 +3,7 @@ open Prelude
 module GroupItem = {
   @react.component
   let make = (~store: Store.t, ~group: UserGroupTypes.group_definition) => {
-    let (state, dispatch) = store
+    let (state, _dispatch) = store
     <MSimpleCard>
       <Link _to={"/" ++ state.index ++ "/user_groups/" ++ group.name}>
         {(group.name ++ " (" ++ group.members->Int32.to_int->string_of_int ++ " member)")->str}

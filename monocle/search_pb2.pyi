@@ -185,10 +185,12 @@ class QueryRequest(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         QUERY_CHANGE = QueryRequest.QueryType.V(0)
         QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
+        QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
     class QueryType(metaclass=_QueryType):
         V = typing.NewType("V", builtins.int)
     QUERY_CHANGE = QueryRequest.QueryType.V(0)
     QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
+    QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
 
     INDEX_FIELD_NUMBER: builtins.int
     USERNAME_FIELD_NUMBER: builtins.int
@@ -517,31 +519,49 @@ class QueryResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ERROR_FIELD_NUMBER: builtins.int
     CHANGES_FIELD_NUMBER: builtins.int
+    REPOS_SUMMARY_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
     def changes(self) -> global___Changes: ...
+    @property
+    def repos_summary(self) -> global___ReposSummary: ...
     def __init__(
         self,
         *,
         error: typing.Optional[global___QueryError] = ...,
         changes: typing.Optional[global___Changes] = ...,
+        repos_summary: typing.Optional[global___ReposSummary] = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
-            "changes", b"changes", "error", b"error", "result", b"result"
+            "changes",
+            b"changes",
+            "error",
+            b"error",
+            "repos_summary",
+            b"repos_summary",
+            "result",
+            b"result",
         ],
     ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "changes", b"changes", "error", b"error", "result", b"result"
+            "changes",
+            b"changes",
+            "error",
+            b"error",
+            "repos_summary",
+            b"repos_summary",
+            "result",
+            b"result",
         ],
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error", "changes"]: ...
+    ) -> typing_extensions.Literal["error", "changes", "repos_summary"]: ...
 
 global___QueryResponse = QueryResponse
 
@@ -794,3 +814,65 @@ class ChangesLifecycle(google.protobuf.message.Message):
     ) -> None: ...
 
 global___ChangesLifecycle = ChangesLifecycle
+
+class RepoSummary(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    FULLNAME_FIELD_NUMBER: builtins.int
+    TOTAL_CHANGES_FIELD_NUMBER: builtins.int
+    ABANDONED_CHANGES_FIELD_NUMBER: builtins.int
+    MERGED_CHANGES_FIELD_NUMBER: builtins.int
+    OPEN_CHANGES_FIELD_NUMBER: builtins.int
+    fullname: typing.Text = ...
+    total_changes: typing.Text = ...
+    abandoned_changes: typing.Text = ...
+    merged_changes: typing.Text = ...
+    open_changes: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        fullname: typing.Text = ...,
+        total_changes: typing.Text = ...,
+        abandoned_changes: typing.Text = ...,
+        merged_changes: typing.Text = ...,
+        open_changes: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "abandoned_changes",
+            b"abandoned_changes",
+            "fullname",
+            b"fullname",
+            "merged_changes",
+            b"merged_changes",
+            "open_changes",
+            b"open_changes",
+            "total_changes",
+            b"total_changes",
+        ],
+    ) -> None: ...
+
+global___RepoSummary = RepoSummary
+
+class ReposSummary(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    REPOSITORYSUMMARY_FIELD_NUMBER: builtins.int
+    @property
+    def RepositorySummary(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___RepoSummary
+    ]: ...
+    def __init__(
+        self,
+        *,
+        RepositorySummary: typing.Optional[typing.Iterable[global___RepoSummary]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "RepositorySummary", b"RepositorySummary"
+        ],
+    ) -> None: ...
+
+global___ReposSummary = ReposSummary

@@ -294,6 +294,8 @@ searchQuery request = do
             <$> Q.changes
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
           error "LifeCycle Not Implemented"
+        SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
+          error "ReposSummary Not Implemented"
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse

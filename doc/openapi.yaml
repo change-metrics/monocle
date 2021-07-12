@@ -680,6 +680,26 @@ components:
                     $ref: '#/components/schemas/monocle_search_QueryError'
                 changes:
                     $ref: '#/components/schemas/monocle_search_Changes'
+                repos_summary:
+                    $ref: '#/components/schemas/monocle_search_ReposSummary'
+        monocle_search_RepoSummary:
+            properties:
+                fullname:
+                    type: string
+                total_changes:
+                    type: string
+                abandoned_changes:
+                    type: string
+                merged_changes:
+                    type: string
+                open_changes:
+                    type: string
+        monocle_search_ReposSummary:
+            properties:
+                RepositorySummary:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_RepoSummary'
         monocle_search_SearchSuggestionsRequest:
             properties:
                 index:

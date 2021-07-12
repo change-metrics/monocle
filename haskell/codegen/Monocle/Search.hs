@@ -1010,6 +1010,7 @@ instance HsJSONPB.ToSchema QueryRequest where
 data QueryRequest_QueryType
   = QueryRequest_QueryTypeQUERY_CHANGE
   | QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
+  | QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1019,7 +1020,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
+  maxBound = QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1031,9 +1032,12 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
   toProtoEnumMay 0 = Hs.Just QueryRequest_QueryTypeQUERY_CHANGE
   toProtoEnumMay 1 =
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
+  toProtoEnumMay 2 =
+    Hs.Just QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE) = 1
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_REPOS_SUMMARY) = 2
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1044,6 +1048,8 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGE
   parseJSONPB (HsJSONPB.String "QUERY_CHANGE_LIFECYCLE") =
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
+  parseJSONPB (HsJSONPB.String "QUERY_REPOS_SUMMARY") =
+    Hs.pure QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -2472,6 +2478,14 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultReposSummary y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 3)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ReposSummary)
+                            @(HsProtobuf.Nested Monocle.Search.ReposSummary)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2491,19 +2505,28 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.Changes))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 3),
+                  (Hs.pure (Hs.fmap QueryResponseResultReposSummary))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ReposSummary))
+                            @(_ (Hs.Maybe Monocle.Search.ReposSummary))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB QueryResponse where
-  toJSONPB (QueryResponse f1_or_f2) =
+  toJSONPB (QueryResponse f1_or_f2_or_f3) =
     ( HsJSONPB.object
         [ ( let encodeResult =
-                  ( case f1_or_f2 of
+                  ( case f1_or_f2_or_f3 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
+                      Hs.Just (QueryResponseResultReposSummary f3) ->
+                        (HsJSONPB.pair "repos_summary" f3)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2515,13 +2538,15 @@ instance HsJSONPB.ToJSONPB QueryResponse where
           )
         ]
     )
-  toEncodingPB (QueryResponse f1_or_f2) =
+  toEncodingPB (QueryResponse f1_or_f2_or_f3) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
-                  ( case f1_or_f2 of
+                  ( case f1_or_f2_or_f3 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
+                      Hs.Just (QueryResponseResultReposSummary f3) ->
+                        (HsJSONPB.pair "repos_summary" f3)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2544,6 +2569,8 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "error"),
                               Hs.Just Hs.. QueryResponseResultChanges
                                 <$> (HsJSONPB.parseField parseObj "changes"),
+                              Hs.Just Hs.. QueryResponseResultReposSummary
+                                <$> (HsJSONPB.parseField parseObj "repos_summary"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -2588,6 +2615,7 @@ instance HsJSONPB.ToSchema QueryResponse where
 data QueryResponseResult
   = QueryResponseResultError Monocle.Search.QueryError
   | QueryResponseResultChanges Monocle.Search.Changes
+  | QueryResponseResultReposSummary Monocle.Search.ReposSummary
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -2606,6 +2634,13 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultChanges
               <*> HsJSONPB.asProxy declare_changes
+      let declare_repos_summary = HsJSONPB.declareSchemaRef
+      queryResponseResultReposSummary <-
+        declare_repos_summary
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultReposSummary
+              <*> HsJSONPB.asProxy declare_repos_summary
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2620,7 +2655,10 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("error", queryResponseResultError),
-                          ("changes", queryResponseResultChanges)
+                          ("changes", queryResponseResultChanges),
+                          ( "repos_summary",
+                            queryResponseResultReposSummary
+                          )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
                     HsJSONPB._schemaMaxProperties = Hs.Just 1
@@ -3774,6 +3812,301 @@ instance HsJSONPB.ToSchema ChangesLifecycle_Ratios where
                           ("merged", changesLifecycle_RatiosMerged),
                           ( "self_merged",
                             changesLifecycle_RatiosSelfMerged
+                          )
+                        ]
+                  }
+            }
+        )
+
+data RepoSummary = RepoSummary
+  { repoSummaryFullname :: Hs.Text,
+    repoSummaryTotalChanges :: Hs.Text,
+    repoSummaryAbandonedChanges :: Hs.Text,
+    repoSummaryMergedChanges :: Hs.Text,
+    repoSummaryOpenChanges :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named RepoSummary where
+  nameOf _ = (Hs.fromString "RepoSummary")
+
+instance HsProtobuf.HasDefault RepoSummary
+
+instance HsProtobuf.Message RepoSummary where
+  encodeMessage
+    _
+    RepoSummary
+      { repoSummaryFullname = repoSummaryFullname,
+        repoSummaryTotalChanges = repoSummaryTotalChanges,
+        repoSummaryAbandonedChanges = repoSummaryAbandonedChanges,
+        repoSummaryMergedChanges = repoSummaryMergedChanges,
+        repoSummaryOpenChanges = repoSummaryOpenChanges
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                repoSummaryFullname
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                repoSummaryTotalChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                repoSummaryAbandonedChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                repoSummaryMergedChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                repoSummaryOpenChanges
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure RepoSummary)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 4)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 5)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "fullname")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "total_changes")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "abandoned_changes")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "merged_changes")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "open_changes")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB RepoSummary where
+  toJSONPB (RepoSummary f1 f2 f3 f4 f5) =
+    ( HsJSONPB.object
+        [ "fullname" .= f1,
+          "total_changes" .= f2,
+          "abandoned_changes" .= f3,
+          "merged_changes" .= f4,
+          "open_changes" .= f5
+        ]
+    )
+  toEncodingPB (RepoSummary f1 f2 f3 f4 f5) =
+    ( HsJSONPB.pairs
+        [ "fullname" .= f1,
+          "total_changes" .= f2,
+          "abandoned_changes" .= f3,
+          "merged_changes" .= f4,
+          "open_changes" .= f5
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB RepoSummary where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "RepoSummary"
+        ( \obj ->
+            (Hs.pure RepoSummary) <*> obj .: "fullname"
+              <*> obj .: "total_changes"
+              <*> obj .: "abandoned_changes"
+              <*> obj .: "merged_changes"
+              <*> obj .: "open_changes"
+        )
+    )
+
+instance HsJSONPB.ToJSON RepoSummary where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON RepoSummary where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema RepoSummary where
+  declareNamedSchema _ =
+    do
+      let declare_fullname = HsJSONPB.declareSchemaRef
+      repoSummaryFullname <- declare_fullname Proxy.Proxy
+      let declare_total_changes = HsJSONPB.declareSchemaRef
+      repoSummaryTotalChanges <- declare_total_changes Proxy.Proxy
+      let declare_abandoned_changes = HsJSONPB.declareSchemaRef
+      repoSummaryAbandonedChanges <-
+        declare_abandoned_changes
+          Proxy.Proxy
+      let declare_merged_changes = HsJSONPB.declareSchemaRef
+      repoSummaryMergedChanges <- declare_merged_changes Proxy.Proxy
+      let declare_open_changes = HsJSONPB.declareSchemaRef
+      repoSummaryOpenChanges <- declare_open_changes Proxy.Proxy
+      let _ =
+            Hs.pure RepoSummary <*> HsJSONPB.asProxy declare_fullname
+              <*> HsJSONPB.asProxy declare_total_changes
+              <*> HsJSONPB.asProxy declare_abandoned_changes
+              <*> HsJSONPB.asProxy declare_merged_changes
+              <*> HsJSONPB.asProxy declare_open_changes
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "RepoSummary",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("fullname", repoSummaryFullname),
+                          ("total_changes", repoSummaryTotalChanges),
+                          ( "abandoned_changes",
+                            repoSummaryAbandonedChanges
+                          ),
+                          ( "merged_changes",
+                            repoSummaryMergedChanges
+                          ),
+                          ("open_changes", repoSummaryOpenChanges)
+                        ]
+                  }
+            }
+        )
+
+newtype ReposSummary = ReposSummary
+  { reposSummaryRepositorySummary ::
+      Hs.Vector Monocle.Search.RepoSummary
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ReposSummary where
+  nameOf _ = (Hs.fromString "ReposSummary")
+
+instance HsProtobuf.HasDefault ReposSummary
+
+instance HsProtobuf.Message ReposSummary where
+  encodeMessage
+    _
+    ReposSummary
+      { reposSummaryRepositorySummary =
+          reposSummaryRepositorySummary
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.RepoSummary)
+                    @(HsProtobuf.NestedVec Monocle.Search.RepoSummary)
+                    reposSummaryRepositorySummary
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ReposSummary)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.RepoSummary))
+              @(_ (Hs.Vector Monocle.Search.RepoSummary))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "RepoSummary"))
+          )
+          (HsProtobuf.Single "RepositorySummary")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ReposSummary where
+  toJSONPB (ReposSummary f1) =
+    (HsJSONPB.object ["RepositorySummary" .= f1])
+  toEncodingPB (ReposSummary f1) =
+    (HsJSONPB.pairs ["RepositorySummary" .= f1])
+
+instance HsJSONPB.FromJSONPB ReposSummary where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ReposSummary"
+        (\obj -> (Hs.pure ReposSummary) <*> obj .: "RepositorySummary")
+    )
+
+instance HsJSONPB.ToJSON ReposSummary where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ReposSummary where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ReposSummary where
+  declareNamedSchema _ =
+    do
+      let declare_RepositorySummary = HsJSONPB.declareSchemaRef
+      reposSummaryRepositorySummary <-
+        declare_RepositorySummary
+          Proxy.Proxy
+      let _ =
+            Hs.pure ReposSummary
+              <*> HsJSONPB.asProxy declare_RepositorySummary
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ReposSummary",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "RepositorySummary",
+                            reposSummaryRepositorySummary
                           )
                         ]
                   }
