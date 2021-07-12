@@ -151,11 +151,12 @@ module OrderSelectorModal = {
             SearchTypes.Asc
           }
         )
+      let sortable = (f: SearchTypes.field) => f.type_ != SearchTypes.Field_regex
       switch Store.Fetch.fields(store) {
       | Some(Ok(fields)) => <>
           <MSelect
             placeholder={"Pick a field"}
-            options={fields->Belt.List.map(f => f.name)}
+            options={fields->Belt.List.keep(sortable)->Belt.List.map(f => f.name)}
             multi={false}
             value={fieldName}
             valueChanged={v => setFieldName(_ => v)}
