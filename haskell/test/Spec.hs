@@ -82,18 +82,6 @@ monocleSearchLanguage =
             )
         ),
       testCase
-        "Parser order by"
-        ( parseMatch
-            "state:open order by review_date"
-            (S.OrderByExpr "review_date" S.Asc (Just $ S.EqExpr "state" "open"))
-        ),
-      testCase
-        "Parser order by sort"
-        ( parseMatch
-            "state:open order by review_date desc"
-            (S.OrderByExpr "review_date" S.Desc (Just $ S.EqExpr "state" "open"))
-        ),
-      testCase
         "Query date"
         ( queryMatch
             "updated_at>2021-05-27"

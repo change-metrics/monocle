@@ -11,8 +11,8 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
+import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (SortOrder (..))
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -31,30 +31,30 @@ doSearch indexName search = do
 simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
-runQuery :: Text -> QueryM [ELKChange]
-runQuery docType = withFilter [BH.TermQuery (BH.Term "type" docType) Nothing] $ do
+changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
+changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothing] $ do
   query <- getQuery
   let search =
         (BH.mkSearch (Q.queryBH query) Nothing)
-          { BH.size = BH.Size (Q.queryLimit query),
-            BH.sortBody = toSortBody <$> Q.queryOrder query
+          { BH.size = BH.Size (if limit > 0 then limitInt else 50),
+            BH.sortBody = toSortBody <$> orderM
           }
   liftTenantM $ do
     index <- getIndexName
     resp <- fmap BH.hitSource <$> simpleSearch index search
     pure $ catMaybes resp
   where
-    toSortBody (field', order) =
-      [ BH.DefaultSortSpec
-          ( BH.DefaultSort (BH.FieldName field') (sortOrder order) Nothing Nothing Nothing Nothing
-          )
-      ]
-    sortOrder order = case order of
-      Asc -> BH.Ascending
-      Desc -> BH.Descending
-
-changes :: QueryM [ELKChange]
-changes = runQuery "Change"
+    limitInt = fromInteger . toInteger $ limit
+    toSortBody SearchPB.Order {..} =
+      let field' = BH.FieldName $ toStrict orderField
+          order = sortOrder orderDirection
+       in [ BH.DefaultSortSpec
+              ( BH.DefaultSort field' order Nothing Nothing Nothing Nothing
+              )
+          ]
+    sortOrder order = case fromPBEnum order of
+      SearchPB.Order_DirectionASC -> BH.Ascending
+      SearchPB.Order_DirectionDESC -> BH.Descending
 
 countEvents :: BH.Query -> TenantM Word32
 countEvents query = do

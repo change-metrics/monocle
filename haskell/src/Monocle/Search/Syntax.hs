@@ -1,7 +1,6 @@
 -- | The Monocle Search Language Syntax
 module Monocle.Search.Syntax
   ( Expr (..),
-    SortOrder (..),
     ParseError (..),
     Query (..),
     toBHQuery,
@@ -17,8 +16,6 @@ type Field = Text
 
 type Value = Text
 
-data SortOrder = Asc | Desc deriving (Show, Eq)
-
 data Expr
   = AndExpr Expr Expr
   | OrExpr Expr Expr
@@ -29,18 +26,13 @@ data Expr
   | LtExpr Field Value
   | GtEqExpr Field Value
   | LtEqExpr Field Value
-  | -- Search operator
-    OrderByExpr Field SortOrder (Maybe Expr)
-  | LimitExpr Int (Maybe Expr)
   deriving (Show, Eq)
 
 data ParseError = ParseError Text Int
   deriving (Show, Eq)
 
 data Query = Query
-  { queryOrder :: Maybe (Text, SortOrder),
-    queryLimit :: Int,
-    queryBH :: Maybe BH.Query,
+  { queryBH :: Maybe BH.Query,
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).

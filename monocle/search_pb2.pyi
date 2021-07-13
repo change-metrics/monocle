@@ -176,6 +176,39 @@ class QueryError(google.protobuf.message.Message):
 
 global___QueryError = QueryError
 
+class Order(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class _Direction(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Direction.V],
+        builtins.type,
+    ):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
+        ASC = Order.Direction.V(0)
+        DESC = Order.Direction.V(1)
+    class Direction(metaclass=_Direction):
+        V = typing.NewType("V", builtins.int)
+    ASC = Order.Direction.V(0)
+    DESC = Order.Direction.V(1)
+
+    FIELD_FIELD_NUMBER: builtins.int
+    DIRECTION_FIELD_NUMBER: builtins.int
+    field: typing.Text = ...
+    direction: global___Order.Direction.V = ...
+    def __init__(
+        self,
+        *,
+        field: typing.Text = ...,
+        direction: global___Order.Direction.V = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "direction", b"direction", "field", b"field"
+        ],
+    ) -> None: ...
+
+global___Order = Order
+
 class QueryRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     class _QueryType(
@@ -196,10 +229,15 @@ class QueryRequest(google.protobuf.message.Message):
     USERNAME_FIELD_NUMBER: builtins.int
     QUERY_FIELD_NUMBER: builtins.int
     QUERY_TYPE_FIELD_NUMBER: builtins.int
+    ORDER_FIELD_NUMBER: builtins.int
+    LIMIT_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     username: typing.Text = ...
     query: typing.Text = ...
     query_type: global___QueryRequest.QueryType.V = ...
+    limit: builtins.int = ...
+    @property
+    def order(self) -> global___Order: ...
     def __init__(
         self,
         *,
@@ -207,12 +245,21 @@ class QueryRequest(google.protobuf.message.Message):
         username: typing.Text = ...,
         query: typing.Text = ...,
         query_type: global___QueryRequest.QueryType.V = ...,
+        order: typing.Optional[global___Order] = ...,
+        limit: builtins.int = ...,
     ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["order", b"order"]
+    ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
             "index",
             b"index",
+            "limit",
+            b"limit",
+            "order",
+            b"order",
             "query",
             b"query",
             "query_type",

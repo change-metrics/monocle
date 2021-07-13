@@ -840,12 +840,166 @@ instance HsJSONPB.ToSchema QueryError where
             }
         )
 
+data Order = Order
+  { orderField :: Hs.Text,
+    orderDirection ::
+      HsProtobuf.Enumerated Monocle.Search.Order_Direction
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Order where
+  nameOf _ = (Hs.fromString "Order")
+
+instance HsProtobuf.HasDefault Order
+
+instance HsProtobuf.Message Order where
+  encodeMessage
+    _
+    Order {orderField = orderField, orderDirection = orderDirection} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                orderField
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                orderDirection
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure Order)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "field")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "Direction"))
+          )
+          (HsProtobuf.Single "direction")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Order where
+  toJSONPB (Order f1 f2) =
+    (HsJSONPB.object ["field" .= f1, "direction" .= f2])
+  toEncodingPB (Order f1 f2) =
+    (HsJSONPB.pairs ["field" .= f1, "direction" .= f2])
+
+instance HsJSONPB.FromJSONPB Order where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Order"
+        ( \obj ->
+            (Hs.pure Order) <*> obj .: "field" <*> obj .: "direction"
+        )
+    )
+
+instance HsJSONPB.ToJSON Order where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Order where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Order where
+  declareNamedSchema _ =
+    do
+      let declare_field = HsJSONPB.declareSchemaRef
+      orderField <- declare_field Proxy.Proxy
+      let declare_direction = HsJSONPB.declareSchemaRef
+      orderDirection <- declare_direction Proxy.Proxy
+      let _ =
+            Hs.pure Order <*> HsJSONPB.asProxy declare_field
+              <*> HsJSONPB.asProxy declare_direction
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Order",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("field", orderField),
+                          ("direction", orderDirection)
+                        ]
+                  }
+            }
+        )
+
+data Order_Direction
+  = Order_DirectionASC
+  | Order_DirectionDESC
+  deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Order_Direction where
+  nameOf _ = (Hs.fromString "Order_Direction")
+
+instance HsProtobuf.HasDefault Order_Direction
+
+instance Hs.Bounded Order_Direction where
+  minBound = Order_DirectionASC
+  maxBound = Order_DirectionDESC
+
+instance Hs.Ord Order_Direction where
+  compare x y =
+    Hs.compare
+      (HsProtobuf.fromProtoEnum x)
+      (HsProtobuf.fromProtoEnum y)
+
+instance HsProtobuf.ProtoEnum Order_Direction where
+  toProtoEnumMay 0 = Hs.Just Order_DirectionASC
+  toProtoEnumMay 1 = Hs.Just Order_DirectionDESC
+  toProtoEnumMay _ = Hs.Nothing
+  fromProtoEnum (Order_DirectionASC) = 0
+  fromProtoEnum (Order_DirectionDESC) = 1
+
+instance HsJSONPB.ToJSONPB Order_Direction where
+  toJSONPB x _ = HsJSONPB.enumFieldString x
+  toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
+
+instance HsJSONPB.FromJSONPB Order_Direction where
+  parseJSONPB (HsJSONPB.String "ASC") = Hs.pure Order_DirectionASC
+  parseJSONPB (HsJSONPB.String "DESC") = Hs.pure Order_DirectionDESC
+  parseJSONPB v = (HsJSONPB.typeMismatch "Order_Direction" v)
+
+instance HsJSONPB.ToJSON Order_Direction where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Order_Direction where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsProtobuf.Finite Order_Direction
+
 data QueryRequest = QueryRequest
   { queryRequestIndex :: Hs.Text,
     queryRequestUsername :: Hs.Text,
     queryRequestQuery :: Hs.Text,
     queryRequestQueryType ::
-      HsProtobuf.Enumerated Monocle.Search.QueryRequest_QueryType
+      HsProtobuf.Enumerated Monocle.Search.QueryRequest_QueryType,
+    queryRequestOrder :: Hs.Maybe Monocle.Search.Order,
+    queryRequestLimit :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -861,7 +1015,9 @@ instance HsProtobuf.Message QueryRequest where
       { queryRequestIndex = queryRequestIndex,
         queryRequestUsername = queryRequestUsername,
         queryRequestQuery = queryRequestQuery,
-        queryRequestQueryType = queryRequestQueryType
+        queryRequestQueryType = queryRequestQueryType,
+        queryRequestOrder = queryRequestOrder,
+        queryRequestLimit = queryRequestLimit
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -879,6 +1035,17 @@ instance HsProtobuf.Message QueryRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 queryRequestQueryType
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.Order)
+                    @(HsProtobuf.Nested Monocle.Search.Order)
+                    queryRequestOrder
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                queryRequestLimit
             )
           ]
       )
@@ -899,6 +1066,17 @@ instance HsProtobuf.Message QueryRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 4)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.Order))
+              @(_ (Hs.Maybe Monocle.Search.Order))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 5)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 6)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -930,24 +1108,42 @@ instance HsProtobuf.Message QueryRequest where
           (HsProtobuf.Single "query_type")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Order")))
+          (HsProtobuf.Single "order")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "limit")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB QueryRequest where
-  toJSONPB (QueryRequest f1 f2 f3 f4) =
+  toJSONPB (QueryRequest f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.object
         [ "index" .= f1,
           "username" .= f2,
           "query" .= f3,
-          "query_type" .= f4
+          "query_type" .= f4,
+          "order" .= f5,
+          "limit" .= f6
         ]
     )
-  toEncodingPB (QueryRequest f1 f2 f3 f4) =
+  toEncodingPB (QueryRequest f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.pairs
         [ "index" .= f1,
           "username" .= f2,
           "query" .= f3,
-          "query_type" .= f4
+          "query_type" .= f4,
+          "order" .= f5,
+          "limit" .= f6
         ]
     )
 
@@ -959,6 +1155,8 @@ instance HsJSONPB.FromJSONPB QueryRequest where
             (Hs.pure QueryRequest) <*> obj .: "index" <*> obj .: "username"
               <*> obj .: "query"
               <*> obj .: "query_type"
+              <*> obj .: "order"
+              <*> obj .: "limit"
         )
     )
 
@@ -980,11 +1178,17 @@ instance HsJSONPB.ToSchema QueryRequest where
       queryRequestQuery <- declare_query Proxy.Proxy
       let declare_query_type = HsJSONPB.declareSchemaRef
       queryRequestQueryType <- declare_query_type Proxy.Proxy
+      let declare_order = HsJSONPB.declareSchemaRef
+      queryRequestOrder <- declare_order Proxy.Proxy
+      let declare_limit = HsJSONPB.declareSchemaRef
+      queryRequestLimit <- declare_limit Proxy.Proxy
       let _ =
             Hs.pure QueryRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_username
               <*> HsJSONPB.asProxy declare_query
               <*> HsJSONPB.asProxy declare_query_type
+              <*> HsJSONPB.asProxy declare_order
+              <*> HsJSONPB.asProxy declare_limit
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -1001,7 +1205,9 @@ instance HsJSONPB.ToSchema QueryRequest where
                         [ ("index", queryRequestIndex),
                           ("username", queryRequestUsername),
                           ("query", queryRequestQuery),
-                          ("query_type", queryRequestQueryType)
+                          ("query_type", queryRequestQueryType),
+                          ("order", queryRequestOrder),
+                          ("limit", queryRequestLimit)
                         ]
                   }
             }

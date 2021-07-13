@@ -5,45 +5,29 @@
 //
 open Prelude
 
+// Set to true during development
 let startWithEditorOpen = false
-let startWithFieldModalOpen = false
 
 module Column = {
-  type t = {name: string, query: string}
+  type t = {name: string, query: string, order: option<SearchTypes.order>}
 
   let addQuery = (columnQuery, query) => {
-    // TODO: stop doing text combinaison of columnQuery and globalQuery
-    // instead, let the api combine both and correctly handle columnquery mod.
-    //
-    // In the meantime, if the global query is just a mod, e.g. `limit 5`, then append
-    // it correctly:
-    let queryL = query->Js.String.toLowerCase->Js.String.trim
-    let prefix =
-      Js.String.startsWith("limit ", queryL) || Js.String.startsWith("order by ", queryL)
-        ? " "
-        : " and "
-
-    // If the column query contains a order by mod, then move it to the global query
-    let queryModRe = %re("/order by .*$/")
-    let queryMod =
-      queryModRe
-      ->Js.Re.exec_(columnQuery)
-      ->Belt.Option.flatMap(res =>
-        res->Js.Re.captures->Js.Array.unsafe_get(0)->Js.Nullable.toOption
-      )
-    let (columnQuery, query) = switch queryMod {
-    | None
-    | Some("") => (columnQuery, query)
-    | Some(queryMod) => (Js.String.replace(queryMod, "", columnQuery), query ++ " " ++ queryMod)
-    }
-
-    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ prefix ++ query : query
+    let isGlobalQueryEmpty = query->Js.String.toLowerCase->Js.String.trim == ""
+    let query = isGlobalQueryEmpty ? "" : " and " ++ query
+    columnQuery->Js.String.trim != "" ? "(" ++ columnQuery ++ ")" ++ query : query
   }
+
+  // Convert order to a string representation to trigger useEffect1 refresh
+  let orderToString = (order: option<SearchTypes.order>) =>
+    switch order {
+    | None => ""
+    | Some({field, direction}) => field ++ Search.Order.toStr(direction)
+    }
 
   module Row = {
     // TODO: merge common code with Column
     @react.component
-    let make = (~index, ~column, ~query: string) => {
+    let make = (~index, ~column, ~query: string, ~limit: int) => {
       let (result, setResult) = React.useState(_ => None)
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
         setResult(_ => resp.data->Some)->Js.Promise.resolve
@@ -58,11 +42,13 @@ module Column = {
               query: query,
               username: "",
               query_type: SearchTypes.Query_change,
+              limit: limit->Int32.of_int,
+              order: column.order,
             }) |> Js.Promise.then_(handleOk),
           )
         }
         None
-      }, [query])
+      }, [query, column.order->orderToString, limit->string_of_int])
       switch result {
       | None => React.null
       | Some(SearchTypes.Error(err)) =>
@@ -85,7 +71,7 @@ module Column = {
   }
 
   @react.component
-  let make = (~index, ~column, ~query: string) => {
+  let make = (~index, ~column, ~query: string, ~limit: int) => {
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
@@ -100,11 +86,13 @@ module Column = {
             query: query,
             username: "",
             query_type: SearchTypes.Query_change,
+            limit: limit->Int32.of_int,
+            order: column.order,
           }) |> Js.Promise.then_(handleOk),
         )
       }
       None
-    }, [query])
+    }, [query, column.order->orderToString, limit->string_of_int])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -136,7 +124,7 @@ module Column = {
     </Patternfly.Card>
   }
 
-  let mk = str => {name: str, query: ""}
+  let mk = str => {name: str, query: "", order: None}
 }
 
 module ColumnEditor = {
@@ -147,6 +135,7 @@ module ColumnEditor = {
     ~count: int,
     ~nameRef: ref<string>,
     ~queryRef: ref<string>,
+    ~orderRef: ref<option<SearchTypes.order>>,
     ~onRemove: int => unit,
   ) => {
     let (_, doRender) = React.useState(_ => 0)
@@ -156,23 +145,31 @@ module ColumnEditor = {
     }
     let setName = (v, _) => setAndRender(nameRef, v)
     let setQuery = (v, _) => setAndRender(queryRef, v)
+    let setOrder = (v, _) => setAndRender(orderRef, v)
 
-    <span style={ReactDOM.Style.make(~display="flex", ())}>
-      <Patternfly.TextInput
-        style={ReactDOM.Style.make(~width="200px", ())}
-        id="col-name"
-        value={nameRef.contents}
-        onChange={setName}
-        _type=#Text
-      />
-      <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
-      {maybeRender(
-        count > 1,
-        <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-          {"Remove"->str}
-        </Patternfly.Button>,
-      )}
-    </span>
+    <div style={ReactDOM.Style.make(~paddingTop="5px", ~paddingBottom="5px", ())}>
+      <div style={ReactDOM.Style.make(~display="flex", ())}>
+        <Patternfly.TextInput
+          style={ReactDOM.Style.make(~width="200px", ())}
+          id="col-name"
+          value={nameRef.contents}
+          onChange={setName}
+          _type=#Text
+        />
+        <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
+      </div>
+      <div style={ReactDOM.Style.make(~display="inline-block", ())}>
+        <span style={ReactDOM.Style.make(~width="200px", ~display="inline-block", ())}>
+          {maybeRender(
+            count > 1,
+            <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
+              {"Remove"->str}
+            </Patternfly.Button>,
+          )}
+        </span>
+        <Search.Order store value={orderRef.contents} setValue={v => setOrder(v, ())} />
+      </div>
+    </div>
   }
 }
 
@@ -183,29 +180,37 @@ module Board = {
   let defaultNegativeApprovals = "(approval:Workflow-1 or approval:Code-Review-1 or approval:Code-Review-2)"
   let defaultPositiveApprovals = "approval:Verified+1"
 
+  let mkOrder = (field, dirM) =>
+    {
+      SearchTypes.field: field,
+      direction: dirM->Belt.Option.getWithDefault(SearchTypes.Asc),
+    }->Some
+
   let default = {
     title: "Reviewer Board",
     columns: list{
       {
         Column.name: "To Review",
+        order: mkOrder("created_at", None),
         query: "state: open and updated_at < now-1week and updated_at > now-3week " ++
         defaultPositiveApprovals ++
         " and not " ++
-        defaultNegativeApprovals ++ " order by created_at",
+        defaultNegativeApprovals,
       },
       {
         Column.name: "To Approve",
-        query: "state:open and updated_at > now-1week " ++
-        "not " ++
-        defaultNegativeApprovals ++ " order by created_at desc",
+        order: mkOrder("created_at", Desc->Some),
+        query: "state:open and updated_at > now-1week " ++ "not " ++ defaultNegativeApprovals,
       },
       {
         Column.name: "Done",
-        query: "state:merged and updated_at > now-1week order by updated_at desc",
+        order: mkOrder("updated_at", Desc->Some),
+        query: "state:merged and updated_at > now-1week",
       },
       {
         Column.name: "Oldies",
-        query: "state:open and updated_at < now-3week order by updated_at desc",
+        order: mkOrder("updated_at", Desc->Some),
+        query: "state:open and updated_at < now-3week",
       },
     },
     style: Kanban,
@@ -216,6 +221,14 @@ module Board = {
     (arr, arr->Belt.Array.length)
   }
 
+  let orderToQS = (order: SearchTypes.order) =>
+    order.field ++
+    "#" ++
+    switch order.direction {
+    | Asc => "A"
+    | Desc => "D"
+    }
+
   let saveToUrl = (board: t, query: string) => {
     resetLocationSearch()->ignore
     board.style == Table ? setLocationSearch("s", "table")->ignore : ignore()
@@ -225,17 +238,33 @@ module Board = {
       let posStr = string_of_int(index)
       setLocationSearch("n" ++ posStr, column.name)->ignore
       setLocationSearch("q" ++ posStr, column.query)->ignore
+      switch column.order {
+      | None => ignore()
+      | Some(order) => setLocationSearch("o" ++ posStr, order->orderToQS)->ignore
+      }
     })->ignore
     board
   }
+
+  let orderFromQS: string => option<SearchTypes.order> = queryString =>
+    switch Js.String.split("#", queryString) {
+    | [field, "A"] => {field: field, direction: Asc}->Some
+    | [field, "D"] => {field: field, direction: Desc}->Some
+    | _ => None
+    }
 
   let loadFromUrl: unit => t = () => {
     let params = URLSearchParams.current()
     let getP = name => params->URLSearchParams.get(name)->Js.Nullable.toOption
     let rec go = pos => {
       let posStr = string_of_int(pos)
-      switch (getP("n" ++ posStr), getP("q" ++ posStr)) {
-      | (Some(name), Some(query)) => go(pos + 1)->Belt.List.add({Column.name: name, query: query})
+      switch (getP("n" ++ posStr), getP("q" ++ posStr), getP("o" ++ posStr)) {
+      | (Some(name), Some(query), orderM) =>
+        go(pos + 1)->Belt.List.add({
+          Column.name: name,
+          query: query,
+          order: orderM->Belt.Option.flatMap(orderFromQS),
+        })
       | _ => list{}
       }
     }
@@ -258,7 +287,7 @@ module Board = {
     | AddColumn
     | RemoveColumn(int)
     | SetStyle(style)
-    | Save(string, string, array<(ref<string>, ref<string>)>)
+    | Save(string, string, array<(ref<string>, ref<string>, ref<option<SearchTypes.order>>)>)
 
   let reducer = (board: t, action: action) =>
     switch action {
@@ -279,9 +308,10 @@ module Board = {
         style: board.style,
         title: title,
         columns: columnsRefs
-        ->Belt.Array.map(((nameRef, queryRef)) => {
+        ->Belt.Array.map(((nameRef, queryRef, orderRef)) => {
           Column.name: nameRef.contents,
           query: queryRef.contents,
+          order: orderRef.contents,
         })
         ->Belt.List.fromArray,
       }->saveToUrl(query)
@@ -298,8 +328,8 @@ module Board = {
       let columnsCount = columns->Belt.Array.length
       // We store a ref for each columns name and query, so that individual update doesn't
       // refresh the whole editor.
-      let columnsRefs: array<(ref<string>, ref<string>)> =
-        columns->Belt.Array.map(column => (ref(column.name), ref(column.query)))
+      let columnsRefs: array<(ref<string>, ref<string>, ref<option<SearchTypes.order>>)> =
+        columns->Belt.Array.map(column => (ref(column.name), ref(column.query), ref(column.order)))
 
       let (currentStyle, setStyle) = React.useState(_ => board.style == Table)
       let toggleStyle = () => {
@@ -354,26 +384,26 @@ module Board = {
 
       let bottomRow =
         <>
-          <SearchToolTip store />
           <Patternfly.Button
             onClick={_ => {
               doSave()
               AddColumn->dispatch
             }}>
-            {"AddColumn"->str}
+            {"Add Column"->str}
           </Patternfly.Button>
         </>
 
       let columnsEditor = showColumnEditor
         ? <>
             {columnsRefs
-            ->Belt.Array.mapWithIndex((pos, (nameRef, queryRef)) =>
+            ->Belt.Array.mapWithIndex((pos, (nameRef, queryRef, orderRef)) =>
               <ColumnEditor
                 key={nameRef.contents ++ string_of_int(pos)}
                 store
                 pos
                 nameRef
                 queryRef
+                orderRef
                 onRemove
                 count={columnsCount}
               />
@@ -406,7 +436,7 @@ let make = (~store: Store.t) => {
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column index column query={state.query} />
+          <Column index column query={state.query} limit={state.limit} />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
@@ -425,7 +455,7 @@ let make = (~store: Store.t) => {
                 <i> {(" : " ++ column.query)->str} </i>
               </td>
             </tr>
-            <Column.Row index column query={state.query} />
+            <Column.Row index column query={state.query} limit={state.limit} />
           </tbody>
         </React.Fragment>
       )
@@ -434,7 +464,7 @@ let make = (~store: Store.t) => {
   }
 
   <MStack>
-    <MStackItem> <Search.Top store /> </MStackItem>
+    <MStackItem> <Search.Top store withLimit={true} /> </MStackItem>
     <MStackItem>
       <Patternfly.Layout.Bullseye>
         <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>

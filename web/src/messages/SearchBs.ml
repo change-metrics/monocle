@@ -62,11 +62,23 @@ let default_query_error_mutable () : query_error_mutable = {
   position = 0l;
 }
 
+type order_mutable = {
+  mutable field : string;
+  mutable direction : SearchTypes.order_direction;
+}
+
+let default_order_mutable () : order_mutable = {
+  field = "";
+  direction = SearchTypes.default_order_direction ();
+}
+
 type query_request_mutable = {
   mutable index : string;
   mutable username : string;
   mutable query : string;
   mutable query_type : SearchTypes.query_request_query_type;
+  mutable order : SearchTypes.order option;
+  mutable limit : int32;
 }
 
 let default_query_request_mutable () : query_request_mutable = {
@@ -74,6 +86,8 @@ let default_query_request_mutable () : query_request_mutable = {
   username = "";
   query = "";
   query_type = SearchTypes.default_query_request_query_type ();
+  order = None;
+  limit = 0l;
 }
 
 type file_mutable = {
@@ -453,6 +467,33 @@ let rec decode_query_error json =
     SearchTypes.position = v.position;
   } : SearchTypes.query_error)
 
+let rec decode_order_direction (json:Js.Json.t) =
+  match Pbrt_bs.string json "order_direction" "value" with
+  | "ASC" -> (SearchTypes.Asc : SearchTypes.order_direction)
+  | "DESC" -> (SearchTypes.Desc : SearchTypes.order_direction)
+  | "" -> SearchTypes.Asc
+  | _ -> Pbrt_bs.E.malformed_variant "order_direction"
+
+let rec decode_order json =
+  let v = default_order_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "field" -> 
+      let json = Js.Dict.unsafeGet json "field" in
+      v.field <- Pbrt_bs.string json "order" "field"
+    | "direction" -> 
+      let json = Js.Dict.unsafeGet json "direction" in
+      v.direction <- (decode_order_direction json)
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.field = v.field;
+    SearchTypes.direction = v.direction;
+  } : SearchTypes.order)
+
 let rec decode_query_request_query_type (json:Js.Json.t) =
   match Pbrt_bs.string json "query_request_query_type" "value" with
   | "QUERY_CHANGE" -> (SearchTypes.Query_change : SearchTypes.query_request_query_type)
@@ -479,6 +520,12 @@ let rec decode_query_request json =
     | "query_type" -> 
       let json = Js.Dict.unsafeGet json "query_type" in
       v.query_type <- (decode_query_request_query_type json)
+    | "order" -> 
+      let json = Js.Dict.unsafeGet json "order" in
+      v.order <- Some ((decode_order (Pbrt_bs.object_ json "query_request" "order")))
+    | "limit" -> 
+      let json = Js.Dict.unsafeGet json "limit" in
+      v.limit <- Pbrt_bs.int32 json "query_request" "limit"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -487,6 +534,8 @@ let rec decode_query_request json =
     SearchTypes.username = v.username;
     SearchTypes.query = v.query;
     SearchTypes.query_type = v.query_type;
+    SearchTypes.order = v.order;
+    SearchTypes.limit = v.limit;
   } : SearchTypes.query_request)
 
 let rec decode_file json =
@@ -1075,6 +1124,17 @@ let rec encode_query_error (v:SearchTypes.query_error) =
   Js.Dict.set json "position" (Js.Json.number (Int32.to_float v.SearchTypes.position));
   json
 
+let rec encode_order_direction (v:SearchTypes.order_direction) : string = 
+  match v with
+  | SearchTypes.Asc -> "ASC"
+  | SearchTypes.Desc -> "DESC"
+
+let rec encode_order (v:SearchTypes.order) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "field" (Js.Json.string v.SearchTypes.field);
+  Js.Dict.set json "direction" (Js.Json.string (encode_order_direction v.SearchTypes.direction));
+  json
+
 let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type) : string = 
   match v with
   | SearchTypes.Query_change -> "QUERY_CHANGE"
@@ -1087,6 +1147,15 @@ let rec encode_query_request (v:SearchTypes.query_request) =
   Js.Dict.set json "username" (Js.Json.string v.SearchTypes.username);
   Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
   Js.Dict.set json "query_type" (Js.Json.string (encode_query_request_query_type v.SearchTypes.query_type));
+  begin match v.SearchTypes.order with
+  | None -> ()
+  | Some v ->
+    begin (* order field *)
+      let json' = encode_order v in
+      Js.Dict.set json "order" (Js.Json.object_ json');
+    end;
+  end;
+  Js.Dict.set json "limit" (Js.Json.number (Int32.to_float v.SearchTypes.limit));
   json
 
 let rec encode_file (v:SearchTypes.file) = 

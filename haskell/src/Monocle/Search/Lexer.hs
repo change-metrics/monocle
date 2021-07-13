@@ -26,11 +26,6 @@ data Token
   | GreaterEqual
   | Lower
   | LowerEqual
-  | -- search operator
-    OrderBy
-  | SortAsc
-  | SortDesc
-  | Limit
   | -- piority operator
     OpenParenthesis
   | CloseParenthesis
@@ -52,10 +47,6 @@ tokenParser =
       Or <$ keyword ["or", "OR"] ["∨", "||"],
       Not <$ keyword ["not", "NOT"] ["¬", "!"],
       Equal <$ keyword [] [":", "=", "=="],
-      OrderBy <$ keyword ["order by", "ORDER BY"] [],
-      SortAsc <$ keyword ["asc", "ASC"] [],
-      SortDesc <$ keyword ["desc", "DESC"] [],
-      Limit <$ keyword ["limit", "LIMIT"] [],
       Greater <$ symbol ">",
       GreaterEqual <$ symbol ">=",
       Lower <$ symbol "<",

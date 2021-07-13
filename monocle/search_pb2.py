@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\016monocle/search",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17monocle/task_data.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"\xce\x01\n\x0cQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12:\n\nquery_type\x18\x04 \x01(\x0e\x32&.monocle_search.QueryRequest.QueryType"R\n\tQueryType\x12\x10\n\x0cQUERY_CHANGE\x10\x00\x12\x1a\n\x16QUERY_CHANGE_LIFECYCLE\x10\x01\x12\x17\n\x13QUERY_REPOS_SUMMARY\x10\x02":\n\x04\x46ile\x12\x11\n\tadditions\x18\x01 \x01(\r\x12\x11\n\tdeletions\x18\x02 \x01(\r\x12\x0c\n\x04path\x18\x03 \x01(\t"\xd0\x01\n\x06\x43ommit\x12\x0b\n\x03sha\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\x12/\n\x0b\x61uthored_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tcommitter\x18\x05 \x01(\t\x12\x30\n\x0c\x63ommitted_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tadditions\x18\n \x01(\r\x12\x11\n\tdeletions\x18\x0b \x01(\r"\x91\x05\n\x06\x43hange\x12\x11\n\tchange_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0b\n\x03url\x18\x04 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x05 \x01(\t\x12\r\n\x05state\x18\x06 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x07 \x01(\t\x12\x15\n\rtarget_branch\x18\x08 \x01(\t\x12.\n\ncreated_at\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\tmerged_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x13\n\tmerged_by\x18\x0c \x01(\tH\x00\x12\x0c\n\x04text\x18\x0f \x01(\t\x12\x11\n\tadditions\x18\x14 \x01(\r\x12\x11\n\tdeletions\x18\x15 \x01(\r\x12\x10\n\x08\x61pproval\x18\x19 \x03(\t\x12\x11\n\tassignees\x18\x1a \x03(\t\x12\x0e\n\x06labels\x18\x1b \x03(\t\x12\r\n\x05\x64raft\x18\x1e \x01(\x08\x12\x11\n\tmergeable\x18  \x01(\x08\x12+\n\rchanged_files\x18\x32 \x03(\x0b\x32\x14.monocle_search.File\x12\x1b\n\x13\x63hanged_files_count\x18\x33 \x01(\r\x12\'\n\x07\x63ommits\x18< \x03(\x0b\x32\x16.monocle_search.Commit\x12\x15\n\rcommits_count\x18= \x01(\r\x12.\n\ttask_data\x18\x46 \x03(\x0b\x32\x1b.monocle_task_data.TaskDataB\x0c\n\nmerged_byM"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"\xa9\x01\n\rQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12*\n\x07\x63hanges\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x12\x35\n\rrepos_summary\x18\x03 \x01(\x0b\x32\x1c.monocle_search.ReposSummaryH\x00\x42\x08\n\x06result"\xa4\x03\n\rChangesHistos\x12\x41\n\x14\x43hangeAbandonedEvent\x18\x01 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12I\n\x1c\x43hangeCommitForcePushedEvent\x18\x02 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12\x44\n\x17\x43hangeCommitPushedEvent\x18\x03 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12?\n\x12\x43hangeCreatedEvent\x18\x04 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12>\n\x11\x43hangeMergedEvent\x18\x05 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x1a>\n\x05\x45vent\x12\x11\n\tdoc_count\x18\x01 \x01(\r\x12\x0b\n\x03key\x18\x02 \x01(\x04\x12\x15\n\rkey_as_string\x18\x03 \x01(\t"\xf9\x04\n\x10\x43hangesLifecycle\x12L\n\x1c\x43hangeCommitForcePushedEvent\x18\x01 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12G\n\x17\x43hangeCommitPushedEvent\x18\x02 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12\x42\n\x12\x43hangeCreatedEvent\x18\x03 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12\x11\n\tabandoned\x18\x04 \x01(\r\x12\x0f\n\x07\x63ommits\x18\x05 \x01(\x02\x12\x10\n\x08\x64uration\x18\x06 \x01(\x02\x12\x1c\n\x14\x64uration_variability\x18\x07 \x01(\x02\x12-\n\x06histos\x18\x08 \x01(\x0b\x32\x1d.monocle_search.ChangesHistos\x12\x0e\n\x06merged\x18\t \x01(\r\x12\x0e\n\x06opened\x18\n \x01(\r\x12\x37\n\x06ratios\x18\x0b \x01(\x0b\x32\'.monocle_search.ChangesLifecycle.Ratios\x12\x13\n\x0bself_merged\x18\x0c \x01(\r\x12\r\n\x05tests\x18\r \x01(\x02\x1a\x34\n\x05\x45vent\x12\x15\n\rauthors_count\x18\x01 \x01(\r\x12\x14\n\x0c\x65vents_count\x18\x02 \x01(\r\x1aT\n\x06Ratios\x12\x11\n\tabandoned\x18\x01 \x01(\x02\x12\x12\n\niterations\x18\x02 \x01(\x02\x12\x0e\n\x06merged\x18\x03 \x01(\x02\x12\x13\n\x0bself_merged\x18\x04 \x01(\x02"\x7f\n\x0bRepoSummary\x12\x10\n\x08\x66ullname\x18\x01 \x01(\t\x12\x15\n\rtotal_changes\x18\x02 \x01(\t\x12\x19\n\x11\x61\x62\x61ndoned_changes\x18\x03 \x01(\t\x12\x16\n\x0emerged_changes\x18\x04 \x01(\t\x12\x14\n\x0copen_changes\x18\x05 \x01(\t"F\n\x0cReposSummary\x12\x36\n\x11RepositorySummary\x18\x01 \x03(\x0b\x32\x1b.monocle_search.RepoSummaryB\x10Z\x0emonocle/searchb\x06proto3',
+    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17monocle/task_data.proto")\n\x18SearchSuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"{\n\x19SearchSuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r"j\n\x05Order\x12\r\n\x05\x66ield\x18\x01 \x01(\t\x12\x32\n\tdirection\x18\x02 \x01(\x0e\x32\x1f.monocle_search.Order.Direction"\x1e\n\tDirection\x12\x07\n\x03\x41SC\x10\x00\x12\x08\n\x04\x44\x45SC\x10\x01"\x83\x02\n\x0cQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12:\n\nquery_type\x18\x04 \x01(\x0e\x32&.monocle_search.QueryRequest.QueryType\x12$\n\x05order\x18\x05 \x01(\x0b\x32\x15.monocle_search.Order\x12\r\n\x05limit\x18\x06 \x01(\r"R\n\tQueryType\x12\x10\n\x0cQUERY_CHANGE\x10\x00\x12\x1a\n\x16QUERY_CHANGE_LIFECYCLE\x10\x01\x12\x17\n\x13QUERY_REPOS_SUMMARY\x10\x02":\n\x04\x46ile\x12\x11\n\tadditions\x18\x01 \x01(\r\x12\x11\n\tdeletions\x18\x02 \x01(\r\x12\x0c\n\x04path\x18\x03 \x01(\t"\xd0\x01\n\x06\x43ommit\x12\x0b\n\x03sha\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\x12/\n\x0b\x61uthored_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tcommitter\x18\x05 \x01(\t\x12\x30\n\x0c\x63ommitted_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tadditions\x18\n \x01(\r\x12\x11\n\tdeletions\x18\x0b \x01(\r"\x91\x05\n\x06\x43hange\x12\x11\n\tchange_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0b\n\x03url\x18\x04 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x05 \x01(\t\x12\r\n\x05state\x18\x06 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x07 \x01(\t\x12\x15\n\rtarget_branch\x18\x08 \x01(\t\x12.\n\ncreated_at\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\tmerged_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x13\n\tmerged_by\x18\x0c \x01(\tH\x00\x12\x0c\n\x04text\x18\x0f \x01(\t\x12\x11\n\tadditions\x18\x14 \x01(\r\x12\x11\n\tdeletions\x18\x15 \x01(\r\x12\x10\n\x08\x61pproval\x18\x19 \x03(\t\x12\x11\n\tassignees\x18\x1a \x03(\t\x12\x0e\n\x06labels\x18\x1b \x03(\t\x12\r\n\x05\x64raft\x18\x1e \x01(\x08\x12\x11\n\tmergeable\x18  \x01(\x08\x12+\n\rchanged_files\x18\x32 \x03(\x0b\x32\x14.monocle_search.File\x12\x1b\n\x13\x63hanged_files_count\x18\x33 \x01(\r\x12\'\n\x07\x63ommits\x18< \x03(\x0b\x32\x16.monocle_search.Commit\x12\x15\n\rcommits_count\x18= \x01(\r\x12.\n\ttask_data\x18\x46 \x03(\x0b\x32\x1b.monocle_task_data.TaskDataB\x0c\n\nmerged_byM"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"\xa9\x01\n\rQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12*\n\x07\x63hanges\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x12\x35\n\rrepos_summary\x18\x03 \x01(\x0b\x32\x1c.monocle_search.ReposSummaryH\x00\x42\x08\n\x06result"\xa4\x03\n\rChangesHistos\x12\x41\n\x14\x43hangeAbandonedEvent\x18\x01 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12I\n\x1c\x43hangeCommitForcePushedEvent\x18\x02 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12\x44\n\x17\x43hangeCommitPushedEvent\x18\x03 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12?\n\x12\x43hangeCreatedEvent\x18\x04 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x12>\n\x11\x43hangeMergedEvent\x18\x05 \x03(\x0b\x32#.monocle_search.ChangesHistos.Event\x1a>\n\x05\x45vent\x12\x11\n\tdoc_count\x18\x01 \x01(\r\x12\x0b\n\x03key\x18\x02 \x01(\x04\x12\x15\n\rkey_as_string\x18\x03 \x01(\t"\xf9\x04\n\x10\x43hangesLifecycle\x12L\n\x1c\x43hangeCommitForcePushedEvent\x18\x01 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12G\n\x17\x43hangeCommitPushedEvent\x18\x02 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12\x42\n\x12\x43hangeCreatedEvent\x18\x03 \x01(\x0b\x32&.monocle_search.ChangesLifecycle.Event\x12\x11\n\tabandoned\x18\x04 \x01(\r\x12\x0f\n\x07\x63ommits\x18\x05 \x01(\x02\x12\x10\n\x08\x64uration\x18\x06 \x01(\x02\x12\x1c\n\x14\x64uration_variability\x18\x07 \x01(\x02\x12-\n\x06histos\x18\x08 \x01(\x0b\x32\x1d.monocle_search.ChangesHistos\x12\x0e\n\x06merged\x18\t \x01(\r\x12\x0e\n\x06opened\x18\n \x01(\r\x12\x37\n\x06ratios\x18\x0b \x01(\x0b\x32\'.monocle_search.ChangesLifecycle.Ratios\x12\x13\n\x0bself_merged\x18\x0c \x01(\r\x12\r\n\x05tests\x18\r \x01(\x02\x1a\x34\n\x05\x45vent\x12\x15\n\rauthors_count\x18\x01 \x01(\r\x12\x14\n\x0c\x65vents_count\x18\x02 \x01(\r\x1aT\n\x06Ratios\x12\x11\n\tabandoned\x18\x01 \x01(\x02\x12\x12\n\niterations\x18\x02 \x01(\x02\x12\x0e\n\x06merged\x18\x03 \x01(\x02\x12\x13\n\x0bself_merged\x18\x04 \x01(\x02"\x7f\n\x0bRepoSummary\x12\x10\n\x08\x66ullname\x18\x01 \x01(\t\x12\x15\n\rtotal_changes\x18\x02 \x01(\t\x12\x19\n\x11\x61\x62\x61ndoned_changes\x18\x03 \x01(\t\x12\x16\n\x0emerged_changes\x18\x04 \x01(\t\x12\x14\n\x0copen_changes\x18\x05 \x01(\t"F\n\x0cReposSummary\x12\x36\n\x11RepositorySummary\x18\x01 \x03(\x0b\x32\x1b.monocle_search.RepoSummaryB\x10Z\x0emonocle/searchb\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
         monocle_dot_task__data__pb2.DESCRIPTOR,
@@ -85,6 +85,37 @@ _FIELD_TYPE = _descriptor.EnumDescriptor(
 )
 _sym_db.RegisterEnumDescriptor(_FIELD_TYPE)
 
+_ORDER_DIRECTION = _descriptor.EnumDescriptor(
+    name="Direction",
+    full_name="monocle_search.Order.Direction",
+    filename=None,
+    file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
+    values=[
+        _descriptor.EnumValueDescriptor(
+            name="ASC",
+            index=0,
+            number=0,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="DESC",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    containing_type=None,
+    serialized_options=None,
+    serialized_start=660,
+    serialized_end=690,
+)
+_sym_db.RegisterEnumDescriptor(_ORDER_DIRECTION)
+
 _QUERYREQUEST_QUERYTYPE = _descriptor.EnumDescriptor(
     name="QueryType",
     full_name="monocle_search.QueryRequest.QueryType",
@@ -119,8 +150,8 @@ _QUERYREQUEST_QUERYTYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=709,
-    serialized_end=791,
+    serialized_start=870,
+    serialized_end=952,
 )
 _sym_db.RegisterEnumDescriptor(_QUERYREQUEST_QUERYTYPE)
 
@@ -506,6 +537,68 @@ _QUERYERROR = _descriptor.Descriptor(
 )
 
 
+_ORDER = _descriptor.Descriptor(
+    name="Order",
+    full_name="monocle_search.Order",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="field",
+            full_name="monocle_search.Order.field",
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="direction",
+            full_name="monocle_search.Order.direction",
+            index=1,
+            number=2,
+            type=14,
+            cpp_type=8,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[
+        _ORDER_DIRECTION,
+    ],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=584,
+    serialized_end=690,
+)
+
+
 _QUERYREQUEST = _descriptor.Descriptor(
     name="QueryRequest",
     full_name="monocle_search.QueryRequest",
@@ -590,6 +683,44 @@ _QUERYREQUEST = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="order",
+            full_name="monocle_search.QueryRequest.order",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="limit",
+            full_name="monocle_search.QueryRequest.limit",
+            index=5,
+            number=6,
+            type=13,
+            cpp_type=3,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -601,8 +732,8 @@ _QUERYREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=585,
-    serialized_end=791,
+    serialized_start=693,
+    serialized_end=952,
 )
 
 
@@ -680,8 +811,8 @@ _FILE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=793,
-    serialized_end=851,
+    serialized_start=954,
+    serialized_end=1012,
 )
 
 
@@ -854,8 +985,8 @@ _COMMIT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=854,
-    serialized_end=1062,
+    serialized_start=1015,
+    serialized_end=1223,
 )
 
 
@@ -1360,8 +1491,8 @@ _CHANGE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=1065,
-    serialized_end=1722,
+    serialized_start=1226,
+    serialized_end=1883,
 )
 
 
@@ -1401,8 +1532,8 @@ _CHANGES = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1724,
-    serialized_end=1774,
+    serialized_start=1885,
+    serialized_end=1935,
 )
 
 
@@ -1489,8 +1620,8 @@ _QUERYRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=1777,
-    serialized_end=1946,
+    serialized_start=1938,
+    serialized_end=2107,
 )
 
 
@@ -1568,8 +1699,8 @@ _CHANGESHISTOS_EVENT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2307,
-    serialized_end=2369,
+    serialized_start=2468,
+    serialized_end=2530,
 )
 
 _CHANGESHISTOS = _descriptor.Descriptor(
@@ -1686,8 +1817,8 @@ _CHANGESHISTOS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1949,
-    serialized_end=2369,
+    serialized_start=2110,
+    serialized_end=2530,
 )
 
 
@@ -1746,8 +1877,8 @@ _CHANGESLIFECYCLE_EVENT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2867,
-    serialized_end=2919,
+    serialized_start=3028,
+    serialized_end=3080,
 )
 
 _CHANGESLIFECYCLE_RATIOS = _descriptor.Descriptor(
@@ -1843,8 +1974,8 @@ _CHANGESLIFECYCLE_RATIOS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2921,
-    serialized_end=3005,
+    serialized_start=3082,
+    serialized_end=3166,
 )
 
 _CHANGESLIFECYCLE = _descriptor.Descriptor(
@@ -2114,8 +2245,8 @@ _CHANGESLIFECYCLE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2372,
-    serialized_end=3005,
+    serialized_start=2533,
+    serialized_end=3166,
 )
 
 
@@ -2231,8 +2362,8 @@ _REPOSUMMARY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3007,
-    serialized_end=3134,
+    serialized_start=3168,
+    serialized_end=3295,
 )
 
 
@@ -2272,14 +2403,17 @@ _REPOSSUMMARY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3136,
-    serialized_end=3206,
+    serialized_start=3297,
+    serialized_end=3367,
 )
 
 _FIELD.fields_by_name["type"].enum_type = _FIELD_TYPE
 _FIELD_TYPE.containing_type = _FIELD
 _FIELDSRESPONSE.fields_by_name["fields"].message_type = _FIELD
+_ORDER.fields_by_name["direction"].enum_type = _ORDER_DIRECTION
+_ORDER_DIRECTION.containing_type = _ORDER
 _QUERYREQUEST.fields_by_name["query_type"].enum_type = _QUERYREQUEST_QUERYTYPE
+_QUERYREQUEST.fields_by_name["order"].message_type = _ORDER
 _QUERYREQUEST_QUERYTYPE.containing_type = _QUERYREQUEST
 _COMMIT.fields_by_name[
     "authored_at"
@@ -2359,6 +2493,7 @@ DESCRIPTOR.message_types_by_name["FieldsRequest"] = _FIELDSREQUEST
 DESCRIPTOR.message_types_by_name["Field"] = _FIELD
 DESCRIPTOR.message_types_by_name["FieldsResponse"] = _FIELDSRESPONSE
 DESCRIPTOR.message_types_by_name["QueryError"] = _QUERYERROR
+DESCRIPTOR.message_types_by_name["Order"] = _ORDER
 DESCRIPTOR.message_types_by_name["QueryRequest"] = _QUERYREQUEST
 DESCRIPTOR.message_types_by_name["File"] = _FILE
 DESCRIPTOR.message_types_by_name["Commit"] = _COMMIT
@@ -2436,6 +2571,17 @@ QueryError = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(QueryError)
+
+Order = _reflection.GeneratedProtocolMessageType(
+    "Order",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _ORDER,
+        "__module__": "monocle.search_pb2"
+        # @@protoc_insertion_point(class_scope:monocle_search.Order)
+    },
+)
+_sym_db.RegisterMessage(Order)
 
 QueryRequest = _reflection.GeneratedProtocolMessageType(
     "QueryRequest",
