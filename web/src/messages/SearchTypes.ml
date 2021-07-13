@@ -123,7 +123,7 @@ type repo_summary = {
 }
 
 type repos_summary = {
-  repository_summary : repo_summary list;
+  reposum : repo_summary list;
 }
 
 type query_response =
@@ -360,9 +360,9 @@ let rec default_repo_summary
 }
 
 let rec default_repos_summary 
-  ?repository_summary:((repository_summary:repo_summary list) = [])
+  ?reposum:((reposum:repo_summary list) = [])
   () : repos_summary  = {
-  repository_summary;
+  reposum;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())

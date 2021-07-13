@@ -205,11 +205,11 @@ let default_repo_summary_mutable () : repo_summary_mutable = {
 }
 
 type repos_summary_mutable = {
-  mutable repository_summary : SearchTypes.repo_summary list;
+  mutable reposum : SearchTypes.repo_summary list;
 }
 
 let default_repos_summary_mutable () : repos_summary_mutable = {
-  repository_summary = [];
+  reposum = [];
 }
 
 type changes_histos_event_mutable = {
@@ -829,20 +829,20 @@ let rec decode_repos_summary json =
   let last_key_index = Array.length keys - 1 in
   for i = 0 to last_key_index do
     match Array.unsafe_get keys i with
-    | "repository_summary" -> begin
+    | "reposum" -> begin
       let a = 
-        let a = Js.Dict.unsafeGet json "repository_summary" in 
-        Pbrt_bs.array_ a "repos_summary" "repository_summary"
+        let a = Js.Dict.unsafeGet json "reposum" in 
+        Pbrt_bs.array_ a "repos_summary" "reposum"
       in
-      v.repository_summary <- Array.map (fun json -> 
-        (decode_repo_summary (Pbrt_bs.object_ json "repos_summary" "repository_summary"))
+      v.reposum <- Array.map (fun json -> 
+        (decode_repo_summary (Pbrt_bs.object_ json "repos_summary" "reposum"))
       ) a |> Array.to_list;
     end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
-    SearchTypes.repository_summary = v.repository_summary;
+    SearchTypes.reposum = v.reposum;
   } : SearchTypes.repos_summary)
 
 let rec decode_query_response json =
@@ -1311,16 +1311,16 @@ let rec encode_repo_summary (v:SearchTypes.repo_summary) =
 
 let rec encode_repos_summary (v:SearchTypes.repos_summary) = 
   let json = Js.Dict.empty () in
-  begin (* repositorySummary field *)
-    let (repository_summary':Js.Json.t) =
-      v.SearchTypes.repository_summary
+  begin (* reposum field *)
+    let (reposum':Js.Json.t) =
+      v.SearchTypes.reposum
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_repo_summary |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "repository_summary" repository_summary';
+    Js.Dict.set json "reposum" reposum';
   end;
   json
 

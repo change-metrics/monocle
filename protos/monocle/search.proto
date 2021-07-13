@@ -190,5 +190,5 @@ message RepoSummary {
 }
 
 message ReposSummary {
-  repeated RepoSummary RepositorySummary = 1;
+  repeated RepoSummary reposum = 1;
 }

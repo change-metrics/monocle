@@ -126,7 +126,7 @@ type repo_summary = {
 }
 
 type repos_summary = {
-  repository_summary : repo_summary list;
+  reposum : repo_summary list;
 }
 
 type query_response =
@@ -320,7 +320,7 @@ val default_repo_summary :
 (** [default_repo_summary ()] is the default value for type [repo_summary] *)
 
 val default_repos_summary : 
-  ?repository_summary:repo_summary list ->
+  ?reposum:repo_summary list ->
   unit ->
   repos_summary
 (** [default_repos_summary ()] is the default value for type [repos_summary] *)

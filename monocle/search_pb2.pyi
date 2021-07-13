@@ -903,9 +903,9 @@ global___RepoSummary = RepoSummary
 
 class ReposSummary(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    REPOSITORYSUMMARY_FIELD_NUMBER: builtins.int
+    REPOSUM_FIELD_NUMBER: builtins.int
     @property
-    def RepositorySummary(
+    def reposum(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___RepoSummary
@@ -913,13 +913,10 @@ class ReposSummary(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        RepositorySummary: typing.Optional[typing.Iterable[global___RepoSummary]] = ...,
+        reposum: typing.Optional[typing.Iterable[global___RepoSummary]] = ...,
     ) -> None: ...
     def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "RepositorySummary", b"RepositorySummary"
-        ],
+        self, field_name: typing_extensions.Literal["reposum", b"reposum"]
     ) -> None: ...
 
 global___ReposSummary = ReposSummary

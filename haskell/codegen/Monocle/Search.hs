@@ -4220,7 +4220,7 @@ instance HsJSONPB.ToSchema RepoSummary where
         )
 
 newtype ReposSummary = ReposSummary
-  { reposSummaryRepositorySummary ::
+  { reposSummaryReposum ::
       Hs.Vector Monocle.Search.RepoSummary
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -4233,16 +4233,13 @@ instance HsProtobuf.HasDefault ReposSummary
 instance HsProtobuf.Message ReposSummary where
   encodeMessage
     _
-    ReposSummary
-      { reposSummaryRepositorySummary =
-          reposSummaryRepositorySummary
-      } =
+    ReposSummary {reposSummaryReposum = reposSummaryReposum} =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 ( Hs.coerce @(Hs.Vector Monocle.Search.RepoSummary)
                     @(HsProtobuf.NestedVec Monocle.Search.RepoSummary)
-                    reposSummaryRepositorySummary
+                    reposSummaryReposum
                 )
             )
           ]
@@ -4262,23 +4259,21 @@ instance HsProtobuf.Message ReposSummary where
           ( HsProtobuf.Repeated
               (HsProtobuf.Named (HsProtobuf.Single "RepoSummary"))
           )
-          (HsProtobuf.Single "RepositorySummary")
+          (HsProtobuf.Single "reposum")
           []
           ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB ReposSummary where
-  toJSONPB (ReposSummary f1) =
-    (HsJSONPB.object ["RepositorySummary" .= f1])
-  toEncodingPB (ReposSummary f1) =
-    (HsJSONPB.pairs ["RepositorySummary" .= f1])
+  toJSONPB (ReposSummary f1) = (HsJSONPB.object ["reposum" .= f1])
+  toEncodingPB (ReposSummary f1) = (HsJSONPB.pairs ["reposum" .= f1])
 
 instance HsJSONPB.FromJSONPB ReposSummary where
   parseJSONPB =
     ( HsJSONPB.withObject
         "ReposSummary"
-        (\obj -> (Hs.pure ReposSummary) <*> obj .: "RepositorySummary")
+        (\obj -> (Hs.pure ReposSummary) <*> obj .: "reposum")
     )
 
 instance HsJSONPB.ToJSON ReposSummary where
@@ -4291,13 +4286,9 @@ instance HsJSONPB.FromJSON ReposSummary where
 instance HsJSONPB.ToSchema ReposSummary where
   declareNamedSchema _ =
     do
-      let declare_RepositorySummary = HsJSONPB.declareSchemaRef
-      reposSummaryRepositorySummary <-
-        declare_RepositorySummary
-          Proxy.Proxy
-      let _ =
-            Hs.pure ReposSummary
-              <*> HsJSONPB.asProxy declare_RepositorySummary
+      let declare_reposum = HsJSONPB.declareSchemaRef
+      reposSummaryReposum <- declare_reposum Proxy.Proxy
+      let _ = Hs.pure ReposSummary <*> HsJSONPB.asProxy declare_reposum
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -4311,10 +4302,7 @@ instance HsJSONPB.ToSchema ReposSummary where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ( "RepositorySummary",
-                            reposSummaryRepositorySummary
-                          )
-                        ]
+                        [("reposum", reposSummaryReposum)]
                   }
             }
         )

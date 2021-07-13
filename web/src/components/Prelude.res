@@ -154,6 +154,7 @@ let maybeRenderList = (xs: list<'a>, component) =>
   | _ => component
   }
 let lower = s => s->Js.String.toLowerCase
+let int32_str = i32 => string_of_int(Int32.to_int(i32))->str
 
 // the take from haskell prelude
 let rec take: (list<'a>, int) => list<'a> = (xs, count) =>
