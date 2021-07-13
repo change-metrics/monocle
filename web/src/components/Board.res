@@ -11,13 +11,6 @@ let startWithEditorOpen = false
 module Column = {
   type t = {name: string, query: string, order: option<SearchTypes.order>}
 
-  // Convert order to a string representation to trigger useEffect1 refresh
-  let orderToString = (order: option<SearchTypes.order>) =>
-    switch order {
-    | None => ""
-    | Some({field, direction}) => field ++ Search.Order.toStr(direction)
-    }
-
   module Row = {
     // TODO: merge common code with Column
     @react.component
@@ -43,7 +36,7 @@ module Column = {
           )
         }
         None
-      }, [query, column.order->orderToString, state.limit->string_of_int])
+      }, [query, column.order->orderToQS, state.limit->string_of_int])
       switch result {
       | None => React.null
       | Some(SearchTypes.Error(err)) =>
@@ -88,7 +81,7 @@ module Column = {
         )
       }
       None
-    }, [query, column.order->orderToString, state.limit->string_of_int])
+    }, [query, column.order->orderToQS, state.limit->string_of_int])
 
     <Patternfly.Card>
       <Patternfly.CardHeader> {column.name->str} </Patternfly.CardHeader>
@@ -241,13 +234,6 @@ module Board = {
     })->ignore
     board
   }
-
-  let orderFromQS: string => option<SearchTypes.order> = queryString =>
-    switch Js.String.split("#", queryString) {
-    | [field, "A"] => {field: field, direction: Asc}->Some
-    | [field, "D"] => {field: field, direction: Desc}->Some
-    | _ => None
-    }
 
   let loadFromUrl: unit => t = () => {
     let params = URLSearchParams.current()

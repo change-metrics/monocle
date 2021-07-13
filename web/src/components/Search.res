@@ -214,11 +214,6 @@ module OrderSelectorModal = {
 }
 
 module Order = {
-  let toStr = (dir: SearchTypes.order_direction) =>
-    switch dir {
-    | Asc => ""
-    | Desc => " DESC"
-    }
   @react.component
   let make = (
     ~store: Store.t,
@@ -238,7 +233,7 @@ module Order = {
       | Some(order) =>
         <span>
           <Patternfly.Button variant=#Tertiary onClick> {"Change Order"} </Patternfly.Button>
-          {("order by " ++ order.field ++ order.direction->toStr)->str}
+          {("order by " ++ order.field ++ order.direction->orderDirToString)->str}
         </span>
       }}
     </>
@@ -303,13 +298,23 @@ module Filter = {
   @react.component
   let make = (~store: Store.t) => {
     let (state, dispatch) = store
-    state.filter == ""
-      ? React.null
-      : <div style={ReactDOM.Style.make(~width="1024px", ~whiteSpace="nowrap", ())}>
-          <Button onClick={_ => ""->Store.Store.SetFilter->dispatch}> {"Clear"->str} </Button>
-          <Patternfly.TextInput
-            id="col-filter" value={state.filter} _type=#Text iconVariant=#Search isDisabled={true}
-          />
-        </div>
+    let (order, setOrder) = React.useState(_ => state.order)
+    let setValue = v => {
+      v->Store.Store.SetOrder->dispatch
+      setOrder(_ => v)
+    }
+    <div style={ReactDOM.Style.make(~width="1024px", ~whiteSpace="nowrap", ())}>
+      <Order store value={order} setValue />
+      {state.filter == ""
+        ? React.null
+        : <>
+            <Button onClick={_ => ""->Store.Store.SetFilter->dispatch}>
+              {"Clear Filter"->str}
+            </Button>
+            <Patternfly.TextInput
+              id="col-filter" value={state.filter} _type=#Text iconVariant=#Search isDisabled={true}
+            />
+          </>}
+    </div>
   }
 }

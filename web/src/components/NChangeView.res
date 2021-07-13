@@ -11,12 +11,12 @@ let make = (~store: Store.t) => {
     username: "",
     query_type: SearchTypes.Query_change,
     limit: 50->Int32.of_int,
-    order: None,
+    order: state.order,
   }
 
   <div>
     <Patternfly.Layout.Bullseye> <Search.Filter store /> </Patternfly.Layout.Bullseye>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
+    {switch useAutoGetOn(() => WebApi.Search.query(request), query ++ state.order->orderToQS) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
