@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@patternfly/react-core": "^4.115.2",
+    "@patternfly/react-table": "^4.29.12",
     "@rescript/react": "^0.10.2",
     "@softwarefactory-project/re-patternfly": "^2.1.1",
     "axios": "^0.21.1",

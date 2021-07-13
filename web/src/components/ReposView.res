@@ -6,44 +6,35 @@
 
 open Prelude
 
-module RowItem = {
-  module Head = {
-    @react.component
-    let make = () =>
-      <thead>
-        <tr role="row">
-          <th role="columnheader"> {"Repository"->str} </th>
-          <th role="columnheader"> {"Total changes"->str} </th>
-          <th role="columnheader"> {"Open changes"->str} </th>
-          <th role="columnheader"> {"Merged changes"->str} </th>
-          <th role="columnheader"> {"Abandoned changes"->str} </th>
-        </tr>
-      </thead>
-  }
+module RepoSummaryTable = {
   @react.component
-  let make = (~repo: SearchTypes.repo_summary) => {
-    <tr role="row">
-      <td role="cell"> {repo.fullname->str} </td>
-      <td role="cell"> {repo.total_changes->int32_str} </td>
-      <td role="cell"> {repo.open_changes->int32_str} </td>
-      <td role="cell"> {repo.merged_changes->int32_str} </td>
-      <td role="cell"> {repo.abandoned_changes->int32_str} </td>
-    </tr>
-  }
-}
+  let make = (~repos: list<SearchTypes.repo_summary>) => {
+    let columns = [
+      {title: "Repository", transforms: [sortable]},
+      {title: "Total changes", transforms: [sortable]},
+      {title: "Open changes", transforms: [sortable]},
+      {title: "Merged changes", transforms: [sortable]},
+      {title: "Abandoned changes", transforms: [sortable]},
+    ]
+    let makeCells = (repo: SearchTypes.repo_summary) => {
+      {
+        cells: [
+          repo.fullname,
+          repo.total_changes->int32_str,
+          repo.open_changes->int32_str,
+          repo.merged_changes->int32_str,
+          repo.abandoned_changes->int32_str,
+        ],
+      }
+    }
+    let (rows, setRows) = React.useState(_ => repos->Belt.List.map(makeCells)->Belt.List.toArray)
+    let onSort = _ => {
+      setRows(_ => Belt.Array.reverse(rows))
+    }
 
-module ReposSumTable = {
-  @react.component
-  let make = (~repos: SearchTypes.repos_summary) => {
-    <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
-      <RowItem.Head />
-      <tbody role="rowgroup">
-        {repos.reposum
-        ->Belt.List.mapWithIndex((idx, repo) => <RowItem key={string_of_int(idx)} repo />)
-        ->Belt.List.toArray
-        ->React.array}
-      </tbody>
-    </table>
+    <Table caption="Repository summary" rows cells=columns onSort>
+      <TableHeader /> <TableBody />
+    </Table>
   }
 }
 
@@ -68,9 +59,10 @@ let make = (~store: Store.t) => {
       />
     | Some(Ok(SearchTypes.Changes(_))) => React.null
     | Some(Ok(SearchTypes.Repos_summary(repos))) =>
-      switch repos.reposum->Belt.List.length {
+      let reposum = repos.reposum
+      switch reposum->Belt.List.length {
       | 0 => <p> {"No repository matched"->str} </p>
-      | _ => <ReposSumTable repos />
+      | _ => <RepoSummaryTable repos=reposum />
       }
     }}
   </div>
