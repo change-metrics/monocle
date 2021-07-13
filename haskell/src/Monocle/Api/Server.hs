@@ -142,7 +142,7 @@ crawlerAddDoc request = do
             `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
 
         when
-          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Config.crawlers_api_key index /= toStrict apiKey)
           (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
 
         pure (index, crawler)
@@ -188,7 +188,7 @@ crawlerCommit request = do
             `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
 
         when
-          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Config.crawlers_api_key index /= toStrict apiKey)
           (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
 
         ts <-

@@ -195,8 +195,9 @@ monocleSearchLanguage =
                    in Config.SearchAlias {..}
                 ]
             ),
-          Config.crawlers = Nothing,
-          Config.crawlers_api_key = Nothing,
+          Config.crawlers = [],
+          Config.crawlers_api_key = "",
+          Config.users = Nothing,
           Config.idents = Nothing
         }
     testProjects =
