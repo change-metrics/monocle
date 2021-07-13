@@ -10,7 +10,9 @@ let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
   ts->Belt.Option.getExn->Belt.Option.getExn
 
 let complexicity = (change: SearchTypes.change) =>
-  Int32.to_int(change.changed_files_count) + Int32.to_int(change.additions) + Int32.to_int(change.deletions)
+  Int32.to_int(change.changed_files_count) +
+  Int32.to_int(change.additions) +
+  Int32.to_int(change.deletions)
 
 module TaskData = {
   type t = TaskDataTypes.task_data
@@ -104,7 +106,7 @@ module Mergeable = {
   @react.component
   let make = (~mergeable: bool) =>
     <Patternfly.Label color={mergeable ? #Green : #Orange}>
-        {(mergeable ? "Mergeable" : "Conflicting")->str}
+      {(mergeable ? "Mergeable" : "Conflicting")->str}
     </Patternfly.Label>
 }
 
@@ -121,12 +123,16 @@ module FilterLink = {
   let make = (~store: Store.t, ~queryField: string, ~queryValue: string, ~name: string) => {
     let (state, dispatch) = store
     let newFilter = queryField ++ ":\"" ++ queryValue ++ "\""
-    let filter = Js.String.includes(newFilter, state.filter) ?
-      state.filter : addQuery(state.filter, newFilter)
+    let filter = Js.String.includes(newFilter, state.filter)
+      ? state.filter
+      : addQuery(state.filter, newFilter)
     let onClick = _ => filter->Store.Store.SetFilter->dispatch
-    <Link onClick
-          style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-_to={"/" ++ state.index ++ "/changes?q=" ++ state.query ++ "&f=" ++ filter}> {name->str} </Link>
+    <Link
+      onClick
+      style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
+      _to={"/" ++ state.index ++ "/changes?q=" ++ state.query ++ "&f=" ++ filter}>
+      {name->str}
+    </Link>
   }
 }
 
@@ -136,9 +142,7 @@ module ProjectLink = {
     let name =
       list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
     <span style={horizontalSpacing}>
-      {"["->str}
-      <FilterLink store queryField="repo" queryValue={project} name />
-      {"]"->str}
+      {"["->str} <FilterLink store queryField="repo" queryValue={project} name /> {"]"->str}
     </span>
   }
 }
@@ -154,10 +158,7 @@ module ChangeLink = {
 module AuthorLink = {
   @react.component
   let make = (~store: Store.t, ~title, ~author) => {
-    <>
-      {title->str}
-      <FilterLink store queryField="author" queryValue={author} name={author} />
-    </>
+    <> {title->str} <FilterLink store queryField="author" queryValue={author} name={author} /> </>
   }
 }
 
@@ -172,12 +173,14 @@ module RelativeDate = {
 module State = {
   @react.component
   let make = (~state, ~draft) => {
-    let (color, value) = draft ? (#Grey, "Draft") : switch state {
-      | "OPEN" => (#Green, "Open")
-      | "Merged" => (#Blue, "Merged")
-      | "Closed" => (#Purple, "Closed")
-      | _ => (#Red, state)
-    }
+    let (color, value) = draft
+      ? (#Grey, "Draft")
+      : switch state {
+        | "OPEN" => (#Green, "Open")
+        | "Merged" => (#Blue, "Merged")
+        | "Closed" => (#Purple, "Closed")
+        | _ => (#Red, state)
+        }
     <Label color> {value->str} </Label>
   }
 }
@@ -201,7 +204,8 @@ module DataItem = {
             <ExternalLink href={change.url} />
             <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
-              {"Complexicity: "->str} <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
+              {"Complexicity: "->str}
+              <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
             </span>
           </CardHeader>
           <CardBody>
@@ -247,7 +251,8 @@ module RowItem = {
       <td role="cell"> <ChangeLink store id={change.change_id} title={change.title} /> </td>
       <td role="cell">
         <div style={oneLineStyle}>
-          <State state={change.state} draft={change.draft} /> <Mergeable mergeable={change.mergeable} />
+          <State state={change.state} draft={change.draft} />
+          <Mergeable mergeable={change.mergeable} />
         </div>
       </td>
       <td role="cell"> <AuthorLink store title="" author={change.author} /> </td>
@@ -256,7 +261,9 @@ module RowItem = {
       </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
-      <td role="cell"> <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge> </td>
+      <td role="cell">
+        <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
+      </td>
       <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
     </tr>
 }
