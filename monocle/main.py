@@ -214,7 +214,7 @@ def main() -> None:
         if not os.path.isfile(realpath):
             log.error("Unable to access config: %s" % realpath)
             sys.exit(1)
-        configdata = yaml.safe_load(open(realpath).read())
+        configdata = config.load(open(realpath).read())
         config.validate(configdata, config.schema)
         tpool: List[Union[Crawler, GroupCrawler]] = []
         group = {}
