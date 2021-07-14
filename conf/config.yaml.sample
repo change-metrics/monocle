@@ -1,17 +1,19 @@
----
 tenants:
   - index: tenant1
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: tektoncd
-          updated_since: "2020-03-15"
-          token: "123"
-          base_url: https://github.com
+    crawlers_api_key: CHANGE_ME
+    crawlers:
+      - name: github-tektoncd
+        provider:
+          github_organization: tektoncd
+          github_token: <github_token>
+        update_since: '2020-03-15'
+
   - index: tenant2
-    crawler:
-      loop_delay: 10
-      gerrit_repositories:
-        - name: ^zuul/.*
-          updated_since: "2020-03-15"
-          base_url: https://review.opendev.org
+    crawlers_api_key: CHANGE_ME
+    crawlers:
+      - name: gerrit-opendev
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^zuul/.*
+        update_since: '2020-03-15'
