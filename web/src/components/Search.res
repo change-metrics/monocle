@@ -114,8 +114,9 @@ module Bar = {
     }
     <>
       <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendField} />
+      <HelpSearch.Tooltip />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
-        {"Add field"->str}
+        {"Add filter"->str}
       </Patternfly.Button>
       <Patternfly.TextInput
         id="col-search"
@@ -213,11 +214,6 @@ module OrderSelectorModal = {
 }
 
 module Order = {
-  let toStr = (dir: SearchTypes.order_direction) =>
-    switch dir {
-    | Asc => ""
-    | Desc => " DESC"
-    }
   @react.component
   let make = (
     ~store: Store.t,
@@ -237,7 +233,7 @@ module Order = {
       | Some(order) =>
         <span>
           <Patternfly.Button variant=#Tertiary onClick> {"Change Order"} </Patternfly.Button>
-          {("order by " ++ order.field ++ order.direction->toStr)->str}
+          {("order by " ++ order.field ++ order.direction->orderDirToString)->str}
         </span>
       }}
     </>
@@ -253,6 +249,17 @@ module Top = {
     let (limit, setLimit') = React.useState(() => state.limit)
     let (savedValue, setSavedValue) = React.useState(() => state.query)
     let setValue = v => setValue'(_ => v)
+
+    // Update changed value
+    React.useEffect1(() => {
+      state.query != value
+        ? {
+            setValue'(_ => state.query)
+            setSavedValue(_ => state.query)
+          }
+        : ignore()
+      None
+    }, [state.query])
 
     // Dispatch the value upstream
     let onClick = _ => {
@@ -284,5 +291,30 @@ module Top = {
           : React.null}
       </div>
     </Patternfly.Layout.Bullseye>
+  }
+}
+
+module Filter = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, dispatch) = store
+    let (order, setOrder) = React.useState(_ => state.order)
+    let setValue = v => {
+      v->Store.Store.SetOrder->dispatch
+      setOrder(_ => v)
+    }
+    <div style={ReactDOM.Style.make(~width="1024px", ~whiteSpace="nowrap", ())}>
+      <Order store value={order} setValue />
+      {state.filter == ""
+        ? React.null
+        : <>
+            <Button onClick={_ => ""->Store.Store.SetFilter->dispatch}>
+              {"Clear Filter"->str}
+            </Button>
+            <Patternfly.TextInput
+              id="col-filter" value={state.filter} _type=#Text iconVariant=#Search isDisabled={true}
+            />
+          </>}
+    </div>
   }
 }

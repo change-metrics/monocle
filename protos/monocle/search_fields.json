@@ -1,0 +1,59 @@
+{
+  "fields": [
+    {
+      "name": "updated_at",
+      "description": "Last update",
+      "type": "FIELD_DATE"
+    },
+    {
+      "name": "created_at",
+      "description": "Change creation",
+      "type": "FIELD_DATE"
+    },
+    {
+      "name": "state",
+      "description": "Change state, one of: open, merged, self_merged, abandoned",
+      "type": "FIELD_TEXT"
+    },
+    { "name": "repo", "description": "Repository name", "type": "FIELD_TEXT" },
+    {
+      "name": "repo_regex",
+      "description": "Repository regex",
+      "type": "FIELD_REGEX"
+    },
+    {
+      "name": "project",
+      "description": "Project definition name",
+      "type": "FIELD_TEXT"
+    },
+    { "name": "author", "description": "Author name", "type": "FIELD_TEXT" },
+    {
+      "name": "author_regex",
+      "description": "Author regex",
+      "type": "FIELD_REGEX"
+    },
+    {
+      "name": "group",
+      "description": "Group definition name",
+      "type": "FIELD_TEXT"
+    },
+    { "name": "branch", "description": "Branch name", "type": "FIELD_TEXT" },
+    {
+      "name": "approval",
+      "description": "Approval name",
+      "type": "FIELD_TEXT"
+    },
+    {
+      "name": "priority",
+      "description": "Task priority",
+      "type": "FIELD_TEXT"
+    },
+    {
+      "name": "severity",
+      "description": "Task severity",
+      "type": "FIELD_TEXT"
+    },
+    { "name": "task", "description": "Task type", "type": "FIELD_TEXT" },
+    { "name": "score", "description": "PM score", "type": "FIELD_NUMBER" }
+  ]
+}

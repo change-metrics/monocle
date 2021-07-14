@@ -47,6 +47,8 @@ import Board from './components/Board.bs.js'
 import Store from './components/Store.bs.js'
 import GroupsView from './components/GroupsView.bs.js'
 import GroupView from './components/GroupView.bs.js'
+import HelpSearch from './components/HelpSearch.bs.js'
+import NChangeView from './components/NChangeView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -304,11 +306,9 @@ const LegacyApp = (data) => (
       <Route exact path="/:index/people" component={PeopleView} />
       <Route exact path="/:index/repos" component={ReposView} />
       <Route exact path="/:index" component={RootView} />
-      <Route path="/:index/changes" component={ChangesViewRoute} />
       <Route path="/:index/hot-changes" component={HotChangesView} />
       <Route path="/:index/cold-changes" component={ColdChangesView} />
       <Route path="/:index/change/:change" component={ChangeView} />
-      <Route path="/:index/board" component={BoardView} />
     </Switch>
     <Row>
       <Col>
@@ -343,8 +343,12 @@ const App = () => {
   const store = Store.use(index)
   return (
     <React.Fragment>
-      <TopMenu />
+      <TopMenu store={store} />
       <Switch>
+        <Route
+          path="/help/search"
+          render={() => <HelpSearch store={store} />}
+        />
         <Route
           path="/:index/board"
           render={() => <BoardView store={store} />}
@@ -354,6 +358,10 @@ const App = () => {
           render={(prop) => (
             <GroupView group={prop.match.params.group} store={store} />
           )}
+        />
+        <Route
+          path="/:index/changes"
+          render={(prop) => <NChangeView store={store} />}
         />
         <Route
           path="/:index/user_groups"

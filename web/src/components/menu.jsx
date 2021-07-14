@@ -24,6 +24,7 @@ import NavDropdown from 'react-bootstrap/NavDropdown'
 import PropTypes from 'prop-types'
 import { CUserView } from './user'
 import { SmallSizeWarning } from './common'
+import SearchTop from './SearchTop.bs.js'
 
 const TITLE =
   window.TITLE !== '__TITLE__' ? window.TITLE : process.env.REACT_APP_TITLE
@@ -41,13 +42,7 @@ class IndexMenu extends React.Component {
             className="nav-link"
             to={'/' + this.props.match.params.index + search}
           >
-            Main
-          </Link>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/board'}
-          >
-            Board
+            Activity
           </Link>
           <NavDropdown title="People" id="peropl-nav-dropdown">
             <NavDropdown.Item
@@ -69,12 +64,17 @@ class IndexMenu extends React.Component {
               Groups
             </NavDropdown.Item>
           </NavDropdown>
-          <Link
-            className="nav-link"
-            to={'/' + this.props.match.params.index + '/repos' + search}
-          >
-            Repositories
-          </Link>
+          <NavDropdown title="Projects" id="changes-nav-dropdown">
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/repos' + search
+                )
+              }
+            >
+              Repositories
+            </NavDropdown.Item>
+          </NavDropdown>
           <NavDropdown title="Changes" id="changes-nav-dropdown">
             <NavDropdown.Item
               onClick={() =>
@@ -84,6 +84,15 @@ class IndexMenu extends React.Component {
               }
             >
               Browse changes
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
+                  '/' + this.props.match.params.index + '/board'
+                )
+              }
+            >
+              Board
             </NavDropdown.Item>
             <NavDropdown.Item
               onClick={() =>
@@ -121,9 +130,17 @@ IndexMenu.propTypes = {
   })
 }
 
+const renderSearch = (store) => (prop) =>
+  (
+    <Nav className="ml-auto">
+      <SearchTop store={store} />
+    </Nav>
+  )
+
 class TopMenu extends React.Component {
   render() {
     document.title = TITLE
+    const render = renderSearch(this.props.store)
     return (
       <React.Fragment>
         <Navbar bg="light" expand="lg" sticky="top" className="fixed-top">
@@ -134,7 +151,13 @@ class TopMenu extends React.Component {
           </Navbar.Brand>
           <Switch>
             <Route exact path="/" />
+            <Route exact path="/help/search" />
             <Route path="/:index" component={IndexMenu} />
+          </Switch>
+          <Switch>
+            <Route path="/:index/board" render={render} />
+            <Route path="/:index/user_groups" render={render} />
+            <Route path="/:index/changes" render={render} />
           </Switch>
           <Nav className="ml-auto">
             <CUserView />
@@ -145,6 +168,10 @@ class TopMenu extends React.Component {
       </React.Fragment>
     )
   }
+}
+
+TopMenu.propTypes = {
+  store: PropTypes.object
 }
 
 export default TopMenu

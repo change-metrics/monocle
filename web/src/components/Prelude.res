@@ -50,6 +50,7 @@ module Link = {
     ~_to: string,
     ~children: 'children,
     ~style: option<'style>=?,
+    ~target: option<string>=?,
     ~onClick: option<'cb>=?,
   ) => React.element = "Link"
 }
@@ -191,6 +192,39 @@ let useToggle = default => {
   let set = x => setValue(_ => x)
   (value, toggle, set)
 }
+
+// Combine two queries
+let addQuery = (baseQuery, extraQuery) => {
+  let isEmpty = s => s->Js.String.trim == ""
+  let (query, sep) = baseQuery->isEmpty ? ("", "") : ("(" ++ baseQuery ++ ")", " and ")
+  query ++ (extraQuery->isEmpty ? "" : sep ++ extraQuery)
+}
+
+// Decode/encode order
+let orderFromQS: string => option<SearchTypes.order> = queryString =>
+  switch Js.String.split("#", queryString) {
+  | [field, "A"] => {field: field, direction: Asc}->Some
+  | [field, "D"] => {field: field, direction: Desc}->Some
+  | _ => None
+  }
+
+let orderDirToQS = (dir: SearchTypes.order_direction) =>
+  switch dir {
+  | Asc => "#A"
+  | Desc => "#D"
+  }
+
+let orderToQS = (order: option<SearchTypes.order>) =>
+  switch order {
+  | None => ""
+  | Some({field, direction}) => field ++ direction->orderDirToQS
+  }
+
+let orderDirToString = (dir: SearchTypes.order_direction) =>
+  switch dir {
+  | Asc => ""
+  | Desc => " DESC"
+  }
 
 // Monocle style:
 // an expandable panel
