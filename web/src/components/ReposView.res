@@ -28,11 +28,29 @@ module RepoSummaryTable = {
       }
     }
     let (rows, setRows) = React.useState(_ => repos->Belt.List.map(makeCells)->Belt.List.toArray)
-    let onSort = _ => {
-      setRows(_ => Belt.Array.reverse(rows))
+    let (sortBy, setSortBy) = React.useState(_ => {index: 0, direction: #desc})
+    let doSort = (index, direction) => {
+      setRows(_ =>
+        rows |> Js.Array.sortInPlaceWith((a, b) => {
+          let (first, second) = switch direction {
+          | #desc => (a.cells[index], b.cells[index])
+          | #asc => (b.cells[index], a.cells[index])
+          }
+          first < second ? -1 : first == second ? 0 : 1
+        })
+      )
     }
+    let runSort = (index, direction) => {
+      setSortBy(_ => {index: index, direction: direction})
+      doSort(index, direction)
+    }
+    let onSort = (_, index, direction) => runSort(index, direction)
 
-    <Table caption="Repository summary" rows cells=columns onSort>
+    React.useEffect0(() => {
+      runSort(2, #asc)
+      None
+    })
+    <Table caption="Repository summary" rows cells=columns sortBy onSort>
       <TableHeader /> <TableBody />
     </Table>
   }
