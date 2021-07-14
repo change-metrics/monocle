@@ -168,8 +168,18 @@ def removeEmpty(obj):
         return obj
 
 
+migrate_command = "monocle migrate-config --config <config-path>"
+
+
 def downgrade(tenant):
     """Take a v1.0 configuration and return a v0.9 (for existing crawler)"""
+    if tenant.get("crawlers", None) is None:
+        print(
+            "[WARNING] tenant %s still use v0.9 config format, migrate using %s"
+            % (tenant["index"], migrate_command)
+        )
+        tenant = upgrade(tenant)
+
     crawlers = tenant.pop("crawlers", [])
     tenant["task_crawlers"] = []
     tenant["crawler"] = dict(loop_delay=300, github_orgs=[], gerrit_repositories=[])
@@ -285,6 +295,8 @@ def loadUpgrade(content):
 
 def load(content):
     conf = yaml.safe_load(content)
+    # We always downgrade the config for the apiv1 so that we can keep the
+    # existing crawler unmodified.
     return dict(tenants=[downgrade(tenant) for tenant in conf.get("tenants", [])])
 
 
