@@ -13,7 +13,7 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (toBHQuery)
+import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), toBHQueryWithFlavor)
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -312,7 +312,7 @@ data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 getRepos :: QueryM [TermResult]
 getRepos = do
   -- Prepare the query
-  basequery <- toBHQuery <$> getQuery
+  basequery <- toBHQueryWithFlavor (QueryFlavor Author CreatedAt) <$> getQuery
   let query = mkAnd $ basequery <> getQueryE
 
   -- Run the aggregation
@@ -341,7 +341,7 @@ getReposSummary = do
   where
     getRepoSummary fn = do
       -- Prepare the queries
-      basequery <- toBHQuery <$> getQuery
+      basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor UpdatedAt) <$> getQuery
       let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
           countEvent docType = liftTenantM $ countEvents (documentType [query] docType)
 

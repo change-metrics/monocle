@@ -303,6 +303,7 @@ testReposSummary = withTenant doTest
     query :: Q.Query
     query =
       let queryBH = Nothing
+          queryBHWithFlavor = const Nothing
           queryBounds =
             ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
               fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
