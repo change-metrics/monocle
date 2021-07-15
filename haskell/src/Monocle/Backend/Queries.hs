@@ -309,14 +309,20 @@ getTermsAgg query onTerm = do
 
 data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 
-getRepos :: [BH.Query] -> TenantM [TermResult]
-getRepos basequery = do
-  results <- runTermAgg
+getRepos :: QueryM [TermResult]
+getRepos = do
+  -- Prepare the query
+  basequery <- toBHQuery <$> getQuery
+  let query = mkAnd $ basequery <> getQueryE
+
+  -- Run the aggregation
+  results <- liftTenantM (runTermAgg query)
+
+  -- Return the result
   pure $ getSimpleTR <$> results
   where
-    query = mkAnd $ basequery <> getQueryE
     getQueryE = getQueryFromSL "repo_regex: .*"
-    runTermAgg = getTermsAgg query "repository_fullname"
+    runTermAgg query = getTermsAgg query "repository_fullname"
     getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
 data RepoSummary = RepoSummary
@@ -330,20 +336,23 @@ data RepoSummary = RepoSummary
 
 getReposSummary :: QueryM [RepoSummary]
 getReposSummary = do
-  basequery_ <- getQuery
-  let basequery = toBHQuery basequery_
-  rlist <- liftTenantM $ getRepos basequery
-  let names = term <$> rlist
-  sequence $ getRepoSummary basequery <$> names
+  names <- fmap term <$> getRepos
+  traverse getRepoSummary names
   where
-    getRepoSummary basequery fn = do
+    getRepoSummary fn = do
+      -- Prepare the queries
+      basequery <- toBHQuery <$> getQuery
       let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
-      totalChanges' <- countEvent query "ChangeCreatedEvent"
-      abandonedChanges' <- countEvent query "ChangeClosedEvent"
-      mergedChanges' <- countEvent query "ChangeMergedEvent"
+          countEvent docType = liftTenantM $ countEvents (documentType [query] docType)
+
+      -- Count the events
+      totalChanges' <- countEvent "ChangeCreatedEvent"
+      abandonedChanges' <- countEvent "ChangeClosedEvent"
+      mergedChanges' <- countEvent "ChangeMergedEvent"
+
+      -- Return summary
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
-    countEvent query docType = liftTenantM $ countEvents (documentType [query] docType)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
