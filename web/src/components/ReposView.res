@@ -59,35 +59,40 @@ module RepoSummaryTable = {
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
+  let index = state.index
+  let query = addQuery(state.query, state.filter)
   let request = {
-    SearchTypes.index: state.index,
-    query: state.query,
+    SearchTypes.index: index,
+    query: query,
     username: "",
     query_type: SearchTypes.Query_repos_summary,
+    // order and limit are not handled server side
     order: None,
-    limit: 100->Int32.of_int,
+    limit: 0->Int32.of_int,
   }
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+    {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
       <Alert
         title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
       />
-    | Some(Ok(SearchTypes.Changes(_))) => React.null
     | Some(Ok(SearchTypes.Repos_summary(repos))) =>
       let reposum = repos.reposum
       switch reposum->Belt.List.length {
       | 0 => <p> {"No repository matched"->str} </p>
-      | _ =>
-        <MCenteredContent>
-          <Card isCompact=true>
-            <CardTitle> {"Repository summary"->str} </CardTitle>
-            <CardBody> <RepoSummaryTable repos=reposum /> </CardBody>
-          </Card>
-        </MCenteredContent>
+      | n => {
+          Js.log("Render: " ++ n->string_of_int)
+          <MCenteredContent>
+            <Card isCompact=true>
+              <CardTitle> {"Repository summary"->str} </CardTitle>
+              <CardBody> <RepoSummaryTable repos=reposum /> </CardBody>
+            </Card>
+          </MCenteredContent>
+        }
       }
+    | Some(Ok(_)) => React.null
     }}
   </div>
 }

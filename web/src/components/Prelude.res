@@ -285,7 +285,7 @@ module MCenteredContent = {
       <MStackItem>
         <MGrid>
           <Patternfly.Layout.GridItem xl=Column._1 />
-          <Patternfly.Layout.GridItem xl=Column._10> [children] </Patternfly.Layout.GridItem>
+          <Patternfly.Layout.GridItem xl=Column._10> {children} </Patternfly.Layout.GridItem>
           <Patternfly.Layout.GridItem xl=Column._1 />
         </MGrid>
       </MStackItem>
