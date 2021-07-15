@@ -6,7 +6,7 @@
     "@patternfly/react-core": "^4.115.2",
     "@patternfly/react-table": "^4.29.12",
     "@rescript/react": "^0.10.2",
-    "@softwarefactory-project/re-patternfly": "^2.2.0",
+    "@softwarefactory-project/re-patternfly": "^3.0.0",
     "axios": "^0.21.1",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.1",

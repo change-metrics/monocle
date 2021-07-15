@@ -9,6 +9,9 @@ open Prelude
 module RepoSummaryTable = {
   @react.component
   let make = (~repos: list<SearchTypes.repo_summary>) => {
+    let (rows, setRows) = React.useState(_ => [])
+    let (sortBy, setSortBy) = React.useState(_ => {index: 2, direction: #asc})
+
     let columns = [
       {title: "Repository", transforms: [sortable]},
       {title: "Total changes", transforms: [sortable]},
@@ -16,40 +19,33 @@ module RepoSummaryTable = {
       {title: "Merged changes", transforms: [sortable]},
       {title: "Abandoned changes", transforms: [sortable]},
     ]
-    let makeCells = (repo: SearchTypes.repo_summary) => {
-      {
-        cells: [
-          repo.fullname,
-          repo.total_changes->int32_str,
-          repo.open_changes->int32_str,
-          repo.merged_changes->int32_str,
-          repo.abandoned_changes->int32_str,
-        ],
+    let isOrdered = (first: SearchTypes.repo_summary, second: SearchTypes.repo_summary, index) =>
+      switch index {
+      | 0 => first.fullname < second.fullname
+      | 1 => first.total_changes < second.total_changes
+      | 2 => first.open_changes < second.open_changes
+      | 3 => first.merged_changes < second.merged_changes
+      | 4 => first.abandoned_changes < second.abandoned_changes
+      | _ => false
       }
+    let formatters: list<SearchTypes.repo_summary => React.element> = list{
+      repo => repo.fullname->str,
+      repo => repo.total_changes->int32_str->str,
+      repo => repo.open_changes->int32_str->str,
+      repo => repo.merged_changes->int32_str->str,
+      repo => repo.abandoned_changes->int32_str->str,
     }
-    let (rows, setRows) = React.useState(_ => repos->Belt.List.map(makeCells)->Belt.List.toArray)
-    let (sortBy, setSortBy) = React.useState(_ => {index: 0, direction: #desc})
-    let doSort = (index, direction) => {
-      setRows(_ =>
-        rows |> Js.Array.sortInPlaceWith((a, b) => {
-          let (first, second) = switch direction {
-          | #desc => (a.cells[index], b.cells[index])
-          | #asc => (b.cells[index], a.cells[index])
-          }
-          first < second ? -1 : first == second ? 0 : 1
-        })
-      )
-    }
-    let runSort = (index, direction) => {
-      setSortBy(_ => {index: index, direction: direction})
-      doSort(index, direction)
-    }
-    let onSort = (_, index, direction) => runSort(index, direction)
 
-    React.useEffect0(() => {
-      runSort(2, #asc)
+    let doSort = rows => rows->sortRows(isOrdered)
+    let onSort = (_, index, direction) => {
+      setRows(_ => doSort(rows, index, direction))
+      setSortBy(_ => {index: index, direction: direction})
+    }
+
+    React.useEffect1(() => {
+      setRows(_ => repos->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
       None
-    })
+    }, [repos])
     <Table caption="Repository summary" rows cells=columns sortBy onSort>
       <TableHeader /> <TableBody />
     </Table>
@@ -70,6 +66,7 @@ let make = (~store: Store.t) => {
     order: None,
     limit: 0->Int32.of_int,
   }
+  Js.log2("HERE", query)
   <div>
     {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
