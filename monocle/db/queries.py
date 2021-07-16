@@ -50,7 +50,6 @@ public_queries = (
     "repos_top",
     "authors_top",
     "approvals_top",
-    "repos_summary",
     "peers_exchange_strength",
     "change_merged_count_by_duration",
     "changes_closed_ratios",
@@ -1042,22 +1041,3 @@ def authors_by_file_map(es, index, repository_fullname, params):
                 authors[key] = set()
                 authors[key].add(change["author"]["muid"])
     return {"authors": authors}
-
-
-def repos_summary(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    # Override the size default an set a higher value
-    params["size"] = 10000
-    repos = dict(
-        [
-            (item["key"], {"changes": item["doc_count"]})
-            for item in repos_top(es, index, repository_fullname, params)["items"]
-        ]
-    )
-    for name in repos:
-        repos[name]["changes_open"] = count_opened_changes(es, index, name, params)
-        repos[name]["changes_abandoned"] = count_abandoned_changes(
-            es, index, name, params
-        )
-        repos[name]["changes_merged"] = count_merged_changes(es, index, name, params)
-    return {"summary": repos}
