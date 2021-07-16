@@ -6,6 +6,7 @@ module Monocle.Search.Syntax
     QueryFlavor (..),
     AuthorFlavor (..),
     RangeFlavor (..),
+    rangeField,
     defaultQueryFlavor,
     toBHQuery,
     toBHQueryWithFlavor,
@@ -40,6 +41,11 @@ data ParseError = ParseError Text Int
 data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 
 data RangeFlavor = CreatedAt | UpdatedAt deriving (Show, Eq)
+
+rangeField :: RangeFlavor -> Text
+rangeField = \case
+  CreatedAt -> "created_at"
+  UpdatedAt -> "updated_at"
 
 data QueryFlavor = QueryFlavor
   { qfAuthor :: AuthorFlavor,

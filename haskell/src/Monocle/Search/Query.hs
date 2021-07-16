@@ -85,9 +85,7 @@ getFlavoredField QueryFlavor {..} field
   | field `elem` ["author", "author_regex", "group"] = Just $ case qfAuthor of
     Author -> "author"
     OnAuthor -> "on_author"
-  | field `elem` ["from", "to"] = Just $ case qfRange of
-    CreatedAt -> "created_at"
-    UpdatedAt -> "updated_at"
+  | field `elem` ["from", "to"] = Just $ rangeField qfRange
   | otherwise = Nothing
 
 -- | 'lookupField' return a field type and actual field name
