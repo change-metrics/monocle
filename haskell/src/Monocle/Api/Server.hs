@@ -394,6 +394,7 @@ lookupTenant name = do
   Env {tenants = tenants} <- ask
   pure $ Config.lookupTenant tenants name
 
+-- TODO: change context from AppM to QueryM
 searchChangesLifecycle :: Text -> Text -> AppM SearchPB.ChangesLifecycle
 searchChangesLifecycle indexName queryText = do
   now <- liftIO getCurrentTime
@@ -407,17 +408,18 @@ searchChangesLifecycle indexName queryText = do
 
     response now = case P.parse [] queryText >>= Q.queryWithMods now username Nothing of
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
-      Right query -> do
+      Right query -> runQueryM query $ do
+        -- TODO: use flavored query
         let -- Helper functions ready to be applied
             bhQuery = Q.queryBH query defaultQueryFlavor
-            count = Q.countEvents
-            queryType = Q.documentType bhQuery
+            count = Q.countEvents'
+            queryType = Q.documentType
 
         -- get events count
-        eventCounts <- Q.getEventCounts bhQuery
+        eventCounts <- Q.getEventCounts
 
         -- histos
-        let histo = Q.getHistoEventAgg
+        let histo = liftTenantM . Q.getHistoEventAgg
             histos =
               toHisto
                 <$> histo (queryType "ChangeCreatedEvent")
@@ -429,13 +431,13 @@ searchChangesLifecycle indexName queryText = do
         -- ratios
         let ratios =
               toRatio eventCounts
-                <$> count (queryType "ChangeCreatedEvent")
-                <*> count (queryType "ChangeCommitPushedEvent")
-                <*> count (queryType "ChangeCommitForcePushedEvent")
+                <$> count [queryType "ChangeCreatedEvent"]
+                <*> count [queryType "ChangeCommitPushedEvent"]
+                <*> count [queryType "ChangeCommitForcePushedEvent"]
 
         -- duration aggregate
         let durationAgg =
-              Q.changeMergedStatsDuration bhQuery
+              liftTenantM $ Q.changeMergedStatsDuration bhQuery
 
         -- create final result
         let result =

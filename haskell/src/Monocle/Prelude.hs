@@ -37,6 +37,7 @@ module Monocle.Prelude
     getQuery,
     liftTenantM,
     getQueryBH,
+    getQueryBHWithFlavor,
     withFilter,
   )
 where
