@@ -44,14 +44,13 @@ jobs:
           ---
           tenants:
             - index: monocle
-              crawler:
-                loop_delay: 10
-                github_orgs:
-                  - name: tektoncd
-                    repository: pipeline
-                    updated_since: "2020-01-01"
-                    token: "fake token"
-                    base_url: https://github.com
+              crawlers_api_key: "CHANGE_ME"
+              crawlers:
+                - name: github-tekton
+                  update_since: "2020-01-01"
+                  provider:
+                    github_token: "123"
+                    github_organization: tekton
           EOL
 
       - name: Start containers
@@ -61,7 +60,7 @@ jobs:
         run: sleep 15
 
       - name: Display docker-compose ps
-        run: docker-compose ps
+        run: docker-compose ps; docker-compose logs
 
       - name: Check elastic service
         run: docker-compose ps elastic | grep Up
@@ -70,6 +69,12 @@ jobs:
         run: |
           docker-compose ps api | grep Up
           curl -s http://localhost:9876/api/0/indices
+
+      - name: Check api-ng server
+        run: docker-compose logs api-ng
+
+      - name: Check web server
+        run: docker-compose logs web
 
       - name: Check crawler service
         run: docker-compose ps crawler | grep Up
