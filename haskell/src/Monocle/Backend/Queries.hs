@@ -312,7 +312,7 @@ data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 getRepos :: QueryM [TermResult]
 getRepos = do
   -- Prepare the query
-  basequery <- toBHQueryWithFlavor (QueryFlavor Author CreatedAt) <$> getQuery
+  basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor CreatedAt) <$> getQuery
   let query = mkAnd $ basequery <> getQueryE
 
   -- Run the aggregation
