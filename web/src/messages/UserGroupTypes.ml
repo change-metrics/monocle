@@ -22,6 +22,7 @@ type review_histo = {
 type group_stat = {
   change_review_ratio : float;
   author_review_ratio : float;
+  commit_histo : review_histo list;
   review_histo : review_histo list;
 }
 
@@ -72,10 +73,12 @@ let rec default_review_histo
 let rec default_group_stat 
   ?change_review_ratio:((change_review_ratio:float) = 0.)
   ?author_review_ratio:((author_review_ratio:float) = 0.)
+  ?commit_histo:((commit_histo:review_histo list) = [])
   ?review_histo:((review_histo:review_histo list) = [])
   () : group_stat  = {
   change_review_ratio;
   author_review_ratio;
+  commit_histo;
   review_histo;
 }
 

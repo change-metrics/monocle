@@ -419,6 +419,7 @@ instance HsJSONPB.ToSchema ReviewHisto where
 data GroupStat = GroupStat
   { groupStatChangeReviewRatio :: Hs.Float,
     groupStatAuthorReviewRatio :: Hs.Float,
+    groupStatCommitHisto :: Hs.Vector Monocle.UserGroup.ReviewHisto,
     groupStatReviewHisto :: Hs.Vector Monocle.UserGroup.ReviewHisto
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -434,6 +435,7 @@ instance HsProtobuf.Message GroupStat where
     GroupStat
       { groupStatChangeReviewRatio = groupStatChangeReviewRatio,
         groupStatAuthorReviewRatio = groupStatAuthorReviewRatio,
+        groupStatCommitHisto = groupStatCommitHisto,
         groupStatReviewHisto = groupStatReviewHisto
       } =
       ( Hs.mconcat
@@ -447,6 +449,13 @@ instance HsProtobuf.Message GroupStat where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Monocle.UserGroup.ReviewHisto)
+                    @(HsProtobuf.NestedVec Monocle.UserGroup.ReviewHisto)
+                    groupStatCommitHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
                 ( Hs.coerce @(Hs.Vector Monocle.UserGroup.ReviewHisto)
                     @(HsProtobuf.NestedVec Monocle.UserGroup.ReviewHisto)
                     groupStatReviewHisto
@@ -472,6 +481,14 @@ instance HsProtobuf.Message GroupStat where
                   (HsProtobuf.FieldNumber 3)
               )
           )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.UserGroup.ReviewHisto))
+              @(_ (Hs.Vector Monocle.UserGroup.ReviewHisto))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 4)
+              )
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -492,6 +509,15 @@ instance HsProtobuf.Message GroupStat where
           ( HsProtobuf.Repeated
               (HsProtobuf.Named (HsProtobuf.Single "ReviewHisto"))
           )
+          (HsProtobuf.Single "commit_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "ReviewHisto"))
+          )
           (HsProtobuf.Single "review_histo")
           []
           ""
@@ -499,18 +525,20 @@ instance HsProtobuf.Message GroupStat where
     ]
 
 instance HsJSONPB.ToJSONPB GroupStat where
-  toJSONPB (GroupStat f1 f2 f3) =
+  toJSONPB (GroupStat f1 f2 f3 f4) =
     ( HsJSONPB.object
         [ "change_review_ratio" .= f1,
           "author_review_ratio" .= f2,
-          "review_histo" .= f3
+          "commit_histo" .= f3,
+          "review_histo" .= f4
         ]
     )
-  toEncodingPB (GroupStat f1 f2 f3) =
+  toEncodingPB (GroupStat f1 f2 f3 f4) =
     ( HsJSONPB.pairs
         [ "change_review_ratio" .= f1,
           "author_review_ratio" .= f2,
-          "review_histo" .= f3
+          "commit_histo" .= f3,
+          "review_histo" .= f4
         ]
     )
 
@@ -521,6 +549,7 @@ instance HsJSONPB.FromJSONPB GroupStat where
         ( \obj ->
             (Hs.pure GroupStat) <*> obj .: "change_review_ratio"
               <*> obj .: "author_review_ratio"
+              <*> obj .: "commit_histo"
               <*> obj .: "review_histo"
         )
     )
@@ -543,12 +572,15 @@ instance HsJSONPB.ToSchema GroupStat where
       groupStatAuthorReviewRatio <-
         declare_author_review_ratio
           Proxy.Proxy
+      let declare_commit_histo = HsJSONPB.declareSchemaRef
+      groupStatCommitHisto <- declare_commit_histo Proxy.Proxy
       let declare_review_histo = HsJSONPB.declareSchemaRef
       groupStatReviewHisto <- declare_review_histo Proxy.Proxy
       let _ =
             Hs.pure GroupStat
               <*> HsJSONPB.asProxy declare_change_review_ratio
               <*> HsJSONPB.asProxy declare_author_review_ratio
+              <*> HsJSONPB.asProxy declare_commit_histo
               <*> HsJSONPB.asProxy declare_review_histo
       Hs.return
         ( HsJSONPB.NamedSchema
@@ -569,6 +601,7 @@ instance HsJSONPB.ToSchema GroupStat where
                           ( "author_review_ratio",
                             groupStatAuthorReviewRatio
                           ),
+                          ("commit_histo", groupStatCommitHisto),
                           ("review_histo", groupStatReviewHisto)
                         ]
                   }
