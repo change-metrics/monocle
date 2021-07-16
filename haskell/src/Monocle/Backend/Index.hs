@@ -249,10 +249,9 @@ ensureIndex = do
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ initCrawlerMetadata (getCrawlers config)
+  traverse_ initCrawlerMetadata $ Config.crawlers config
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
-    getCrawlers config = fromMaybe [] (Config.crawlers config)
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =

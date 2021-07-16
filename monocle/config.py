@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import yaml
+
 from typing import Dict, List, Optional
 from jsonschema import validate as schema_validate
 from jsonschema import draft7_format_checker
@@ -25,68 +27,68 @@ from monocle.config_pb2 import ProjectDefinition
 schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
-        "github_organization": {
-            "$id": "http://monocle/github_org.schema.json",
-            "title": "Github organization",
-            "description": "A github organization description for the crawler",
+        "github_provider": {
+            "title": "Github provider",
             "type": "object",
-            "required": ["name", "updated_since", "base_url"],
+            "required": ["github_token", "github_organization"],
             "properties": {
-                "name": {"description": "The organization name", "type": "string"},
-                "repository": {
-                    "description": "The repository name within the organization",
+                "github_token": {"type": "string"},
+                "github_organization": {
+                    "description": "The organization name",
                     "type": "string",
                 },
-                "updated_since": {
-                    "description": "The change updated since date (YYYY-mm-dd)",
-                    "type": "string",
-                    "format": "date",
+                "github_repositories": {
+                    "type": "array",
+                    "items": {"type": "string"},
                 },
-                "base_url": {
-                    "description": "Base url of the Github instance",
+            },
+        },
+        "gitlab_provider": {
+            "title": "Gitlab provider",
+            "type": "object",
+            "required": ["gitlab_token"],
+            "properties": {
+                "gitlab_token": {"type": "string"},
+            },
+        },
+        "gerrit_provider": {
+            "title": "Gerrit provider",
+            "type": "object",
+            "required": ["gerrit_url"],
+            "properties": {
+                "gerrit_url": {
+                    "description": "The repository name or regexp",
                     "type": "string",
                 },
-                "token": {
-                    "description": "The API token to access the API",
+                "gerrit_url_insecure": {
+                    "description": "Set to true to bypass the HTTP X509 certificate verification",
+                    "type": "boolean",
+                },
+                "gerrit_repositories": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "gerrit_prefix": {
+                    "description": "Repository name prefix in case of name collision",
                     "type": "string",
                 },
             },
         },
-        "gerrit_repository": {
-            "$id": "http://monocle/gerrit_repository.schema.json",
-            "title": "Gerrit repository",
-            "description": "A gerrit repository description for the crawler",
+        "crawler": {
+            "title": "Monocle crawler",
+            "description": "A crawler definition",
             "type": "object",
-            "required": ["name", "updated_since", "base_url"],
+            "required": ["name", "update_since", "provider"],
             "properties": {
-                "name": {
-                    "description": "The repository name or regexp",
-                    "type": "string",
-                },
-                "updated_since": {
-                    "description": "The change updated since date (YYYY-mm-dd)",
-                    "type": "string",
-                    "format": "date",
-                },
-                "base_url": {
-                    "description": "Base url of the Gerrit instance",
-                    "type": "string",
-                },
-                "prefix": {
-                    "description": "Repository name prefix in case of name collision",
-                    "type": "string",
-                },
-                "insecure": {
-                    "description": "Set to true to bypass the HTTP X509 certificate verification",
-                    "type": "boolean",
-                },
-                "login": {
-                    "description": "Login to use to authenticate on Gerrit",
-                    "type": "string",
-                },
-                "password": {
-                    "description": "Password to use to authenticate on Gerrit",
-                    "type": "string",
+                "name": {"type": "string"},
+                "update_since": {"type": "string", "format": "date"},
+                "provider": {
+                    "oneOf": [
+                        {"$ref": "#/definitions/gerrit_provider"},
+                        {"$ref": "#/definitions/github_provider"},
+                        {"$ref": "#/definitions/gitlab_provider"},
+                        {"type": "string"},
+                    ],
                 },
             },
         },
@@ -124,32 +126,10 @@ schema = {
                             },
                         },
                     },
-                    "task_crawlers": {
-                        "description": "Task tracker crawlers authorized to act on that index",
+                    "crawlers_api_key": {"type": "string"},
+                    "crawlers": {
                         "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["name", "api_key", "updated_since"],
-                            "properties": {
-                                "name": {"type": "string"},
-                                "updated_since": {"type": "string", "format": "date"},
-                                "api_key": {"type": "string"},
-                            },
-                        },
-                    },
-                    "crawler": {
-                        "type": "object",
-                        "properties": {
-                            "loop_delay": {"type": "integer"},
-                            "github_orgs": {
-                                "type": "array",
-                                "items": {"$ref": "#/definitions/github_organization"},
-                            },
-                            "gerrit_repositories": {
-                                "type": "array",
-                                "items": {"$ref": "#/definitions/gerrit_repository"},
-                            },
-                        },
+                        "items": {"$ref": "#/definitions/crawler"},
                     },
                     "projects": {
                         "description": "Project definition",
@@ -170,66 +150,154 @@ schema = {
     },
 }
 
-config_sample_yaml = """
----
-tenants:
-  - index: default
-    task_crawlers:
-      - name: crawler
-        updated_since: "2020-01-01"
-        api_key: 1a2b3c4d5e
-    users:
-      - john
-      - jane
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: git
-          updated_since: "2020-01-01"
-          token: "123"
-          base_url: https://github.com
-        - name: bitcoin
-          updated_since: "2020-01-01"
-          token: "123"
-          base_url: https://github.com
-  - index: tenant1
-    idents:
-      - ident: john
-        aliases:
-          - github.com/john
-          - github.domain.org/john
-          - review.opendev.org/John Doe/12345
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: docker
-          updated_since: "2020-01-01"
-          token: "123"
-          base_url: https://github.com
-        - name: tekton
-          updated_since: "2020-01-01"
-          token: "123"
-          base_url: https://github.com
-      gerrit_repositories:
-        - name: ^soft.*
-          updated_since: "2020-01-01"
-          base_url: https://softwarefactory-project.io/r
-        - name: ^rpms/.*
-          updated_since: "2020-01-01"
-          base_url: https://softwarefactory-project.io/r
-          insecure: true
-          login: fabien
-          password: secure
-          prefix: namespace/
-    projects:
-      - name: infra
-        repository_regex: "config|infra|openstack/.*"
-        branch_regex: "master|devel"
-      - name: infra-doc
-        repository_regex: "config|infra|openstack/.*"
-        branch_regex: "master|devel"
-        file_regex: "doc[s]/.*"
-"""
+
+def maybeToList(maybe):
+    return [maybe] if maybe else None
+
+
+def listFromMaybe(maybe):
+    return maybe if maybe else []
+
+
+def removeEmpty(obj):
+    if isinstance(obj, list):
+        return [removeEmpty(x) for x in obj if x]
+    elif isinstance(obj, dict):
+        return dict([(k, removeEmpty(v)) for k, v in obj.items() if v])
+    else:
+        return obj
+
+
+migrate_command = "monocle migrate-config --config <config-path>"
+
+
+def downgrade(tenant):
+    """Take a v1.0 configuration and return a v0.9 (for existing crawler)"""
+    if tenant.get("crawlers", None) is None:
+        print(
+            "[WARNING] tenant %s still use v0.9 config format, migrate using %s"
+            % (tenant["index"], migrate_command)
+        )
+        tenant = upgrade(tenant)
+
+    crawlers = tenant.pop("crawlers", [])
+    tenant["task_crawlers"] = []
+    tenant["crawler"] = dict(loop_delay=300, github_orgs=[], gerrit_repositories=[])
+
+    for crawler in crawlers:
+        provider = crawler["provider"]
+        if provider == "TaskDataProvider":
+            tenant["task_crawlers"].append(
+                dict(
+                    name=crawler["name"],
+                    updated_since=crawler["update_since"],
+                    api_key=tenant["crawlers_api_key"],
+                )
+            )
+        elif provider.get("github_token"):
+            for repo in provider.get("github_repositories", [None]):
+                tenant["crawler"]["github_orgs"].append(
+                    dict(
+                        updated_since=crawler["update_since"],
+                        name=provider["github_organization"],
+                        token=provider["github_token"],
+                        repository=repo,
+                        base_url=provider["github_url"]
+                        if provider.get("github_url")
+                        else "https://github.com",
+                    )
+                )
+        elif provider.get("gerrit_url"):
+            for repo in listFromMaybe(provider.get("gerrit_repositories")):
+                tenant["crawler"]["gerrit_repositories"].append(
+                    dict(
+                        updated_since=crawler["update_since"],
+                        name=repo,
+                        base_url=provider["gerrit_url"],
+                        insecure=provider.get("gerrit_url_insecure"),
+                        login=provider.get("gerrit_login"),
+                        password=provider.get("gerrit_password"),
+                        prefix=provider.get("gerrit_prefix"),
+                    )
+                )
+
+    tenant.pop("crawlers_api_key", None)
+    return removeEmpty(tenant)
+
+
+def upgrade(tenant):
+    """Take a v0.9 configuration and return a v1.0"""
+    crawlers = tenant.get("crawlers", [])
+
+    # Add github crawlers
+    legacy_crawler = tenant.pop("crawler", {})
+    for crawler in legacy_crawler.get("github_orgs", []):
+        if crawler.get("base_url", "") == "https://github.com":
+            crawler.pop("base_url")
+        crawlers.append(
+            dict(
+                name="github-" + crawler["name"],
+                update_since=crawler["updated_since"],
+                provider=dict(
+                    github_url=crawler.get("base_url"),
+                    github_token=crawler["token"],
+                    github_organization=crawler["name"],
+                    github_repositories=maybeToList(crawler.get("repository")),
+                ),
+            )
+        )
+
+    # Add gerrit crawlers
+    for (pos, crawler) in enumerate(legacy_crawler.get("gerrit_repositories", [])):
+        crawlers.append(
+            dict(
+                name="gerrit-" + str(pos + 1),
+                update_since=crawler["updated_since"],
+                provider=dict(
+                    gerrit_url=crawler["base_url"],
+                    gerrit_login=crawler.get("login"),
+                    gerrit_password=crawler.get("password"),
+                    gerrit_url_insecure=crawler.get("insecure"),
+                    gerrit_prefix=crawler.get("prefix"),
+                    gerrit_repositories=maybeToList(crawler.get("name")),
+                ),
+            )
+        )
+
+    # Add tasks crawlers
+    for crawler in tenant.pop("task_crawlers", []):
+        if (
+            tenant.get("crawlers_api_key")
+            and tenant["crawlers_api_key"] != crawler["api_key"]
+        ):
+            print("[WARNING]: Could not migrate multiple tasks crawlers api key")
+            print("Only one crawlers_api_key is now supported per tenant.")
+            # TODO: should we fail here?
+        tenant["crawlers_api_key"] = crawler["api_key"]
+        crawlers.append(
+            dict(
+                name=crawler["name"],
+                update_since=crawler["updated_since"],
+                provider="TaskDataProvider",
+            )
+        )
+
+    tenant["crawlers"] = crawlers
+    if not tenant.get("crawlers_api_key"):
+        tenant["crawlers_api_key"] = "CHANGE_ME"
+    return removeEmpty(tenant)
+
+
+def loadUpgrade(content):
+    conf = yaml.safe_load(content)
+    return dict(tenants=[upgrade(tenant) for tenant in conf.get("tenants", [])])
+
+
+def load(content):
+    conf = yaml.safe_load(content)
+    # We always downgrade the config for the apiv1 so that we can keep the
+    # existing crawler unmodified.
+    return dict(tenants=[downgrade(tenant) for tenant in conf.get("tenants", [])])
 
 
 def validate(data, schema):

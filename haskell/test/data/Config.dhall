@@ -1,38 +1,39 @@
 { tenants :
     List
       { crawlers :
-          Optional
-            ( List
-                { name : Text
-                , provider :
-                    < BugzillaProvider :
-                        { bugzilla_api_key : Text
-                        , bugzilla_url : Text
-                        , products : List Text
-                        }
-                    | GerritProvider :
-                        { gerrit_http_password : Text
-                        , gerrit_url : Text
-                        , repositories : Optional (List Text)
-                        , repositories_regex : Optional (List Text)
-                        }
-                    | GithubProvider :
-                        { github_api_key : Text
-                        , github_organizations : Optional (List Text)
-                        , github_repositories : Optional (List Text)
-                        , github_url : Text
-                        }
-                    | GitlabProvider :
-                        { gitlab_api_key : Text
-                        , gitlab_organizations : Optional (List Text)
-                        , gitlab_repositories : Optional (List Text)
-                        , gitlab_url : Text
-                        }
-                    >
-                , update_since : Text
-                }
-            )
-      , crawlers_api_key : Optional Text
+          List
+            { name : Text
+            , provider :
+                < BugzillaProvider :
+                    { bugzilla_products : Optional (List Text)
+                    , bugzilla_token : Text
+                    , bugzilla_url : Text
+                    }
+                | GerritProvider :
+                    { gerrit_login : Optional Text
+                    , gerrit_password : Optional Text
+                    , gerrit_prefix : Optional Text
+                    , gerrit_repositories : Optional (List Text)
+                    , gerrit_url : Text
+                    , gerrit_url_insecure : Bool
+                    }
+                | GithubProvider :
+                    { github_organization : Text
+                    , github_repositories : Optional (List Text)
+                    , github_token : Text
+                    , github_url : Optional Text
+                    }
+                | GitlabProvider :
+                    { gitlab_organizations : Optional (List Text)
+                    , gitlab_repositories : Optional (List Text)
+                    , gitlab_token : Text
+                    , gitlab_url : Optional Text
+                    }
+                | TaskDataProvider
+                >
+            , update_since : Text
+            }
+      , crawlers_api_key : Text
       , idents :
           Optional
             ( List
@@ -52,5 +53,6 @@
                 }
             )
       , search_aliases : Optional (List { alias : Text, name : Text })
+      , users : Optional (List Text)
       }
 }

@@ -90,14 +90,12 @@ Then create the config file `etc/config.yaml`. Here is an example your could sta
 ---
 tenants:
   - index: monocle
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: tektoncd
-          repository: pipeline
-          updated_since: "2020-05-01"
-          token: <github_token>
-          base_url: https://github.com
+    crawlers:
+      - name: github-tektoncd
+        provider:
+          github_token: <github_token>
+          github_organization: tektoncd
+        update_since: '2020-05-01'
 ```
 
 To crawl the full tektoncd GitHub organization then remove the _repository_ entry from the file.
@@ -262,12 +260,13 @@ Here is an example of configuration.
 ```YAML
 tenants:
   - index: example
-    crawler:
-      loop_delay: 300
-      gerrit_repositories:
-        - name: ^openstack/.*
-          updated_since: "2000-01-01"
-          base_url: https://review.opendev.org
+    crawlers:
+      - name: openstack
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^openstack/.*
+        updated_since: "2000-01-01"
     projects:
       - name: compute
         repository_regex: ".*nova.*"
@@ -301,16 +300,19 @@ tenants:
         aliases:
           - github.com/john-doe
           - review.opendev.org/John Doe/12345
-    crawler:
-      loop_delay: 300
-      github_orgs:
-        - name: containers
-          updated_since: "2000-01-01"
-          base_url: https://github.com
-      gerrit_repositories:
-        - name: ^openstack/.*
-          updated_since: "2000-01-01"
-          base_url: https://review.opendev.org
+    crawlers:
+      - name: github-containers
+        provider:
+          github_organization: containers
+          github_token: <github_token>
+        update_since: '2000-01-01'
+
+      - name: gerrit-opendev
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^openstack/.*
+        update_since: '2000-01-01'
 ```
 
 A contributor id on github.com or a GitHub enterprise instance is formated as `<domain>/<login>`.
@@ -343,10 +345,11 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 ```YAML
 tenants:
   - index: default
-    task_crawlers:
+    crawlers_api_key: 1a2b3c4d5e
+    crawlers:
       - name: crawler_name
         updated_since: "2020-01-01"
-        api_key: 1a2b3c4d5e
+        provider: TaskDataProvider
 ```
 
 The `updated_since` date is the initial date the crawler needs to crawl from. Without any prior commit, a `GET` call on `/api/0/task_data` returns
@@ -362,59 +365,67 @@ the initial date.
 ---
 tenants:
   - index: monocle
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: tektoncd
-          repository: pipeline
-          updated_since: "2020-03-15"
-          token: <github_token>
-          base_url: https://github.com
-        - name: spinnaker
-          updated_since: "2020-03-15"
-          token: <github_token>
-          base_url: https://github.com
+    crawlers:
+      - name: tektoncd
+        provider:
+          github_token: <github_token>
+          github_organization: tektoncd
+          github_repositories:
+            - pipeline
+        updated_since: "2020-03-15"
+      - name: spinnaker
+        updated_since: "2020-03-15"
+        provider:
+          github_token: <github_token>
+          github_organization: spinnaker
+          github_repositories:
+            - pipeline
   - index: zuul
-    crawler:
-      loop_delay: 600
-      gerrit_repositories:
-        - name: ^zuul/.*
-          updated_since: "2020-03-15"
-          base_url: https://review.opendev.org
+    crawlers:
+      - name: gerrit-opendev
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^zuul/.*
+        update_since: '2020-03-15'
   - index: openstack
     idents:
       - ident: "Fabien Boucher"
         aliases:
           - "review.opendev.org/Fabien Boucher/6889"
           - "review.rdoproject.org/Fabien Boucher/112"
-    task_crawlers:
+    crawlers_api_key: 1a2b3c4d5e
+    crawlers:
       - name: bz-crawler
         updated_since: "2021-01-01"
-        api_key: 1a2b3c4d5e
-    crawler:
-      loop_delay: 600
-      gerrit_repositories:
-        - name: "^openstack/.*"
-          updated_since: "2021-01-01"
-          base_url: https://review.opendev.org/
-        - name: "^openstack/.*"
-          updated_since: "2021-01-01"
-          base_url: https://review.rdoproject.org/r/
-          prefix: "rdo/"
+        provider: TaskDataProvider
+      - name: gerrit-opendev
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^openstack/.*
+        update_since: '2020-03-15'
+      - name: gerrit-rdo
+        provider:
+          gerrit_url: https://review.rdoproject.org/r/
+          gerrit_repositories:
+            - ^openstack/.*
+        update_since: '2020-03-15'
+
   # A private index. Only whitelisted users are authorized to access
   # See "Advanced deployment configuration" section
   - index: monocle-private
     users:
       - <github_login1>
       - <github_login2>
-    crawler:
-      loop_delay: 10
-      github_orgs:
-        - name: containers
-          repository: libpod
-          updated_since: "2020-03-15"
-          token: <github_token>
-          base_url: https://github.com
+    crawlers:
+      - name: libpod
+        updated_since: "2020-03-15"
+        provider:
+          github_token: <github_token>
+          github_organization: containers
+          github_repositories:
+            - libpod
 ```
 
 ## Database migration

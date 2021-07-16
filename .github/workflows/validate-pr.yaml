@@ -73,14 +73,13 @@ jobs:
           ---
           tenants:
             - index: monocle
-              crawler:
-                loop_delay: 10
-                github_orgs:
-                  - name: tektoncd
-                    repository: pipeline
-                    updated_since: "2020-01-01"
-                    token: "fake token"
-                    base_url: https://github.com
+              crawlers_api_key: "CHANGE_ME"
+              crawlers:
+                - name: github-tekton
+                  update_since: "2020-01-01"
+                  provider:
+                    github_token: "123"
+                    github_organization: tekton
           EOL
 
       - name: Start containers
