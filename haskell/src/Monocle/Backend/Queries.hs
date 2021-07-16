@@ -13,7 +13,7 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, toBHQueryWithFlavor)
+import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField, toBHQueryWithFlavor)
 import Monocle.Servant.Env (mkFinalQuery)
 
 -- | Helper search func that can be replaced by a scanSearch
@@ -423,16 +423,16 @@ getMostCommentedAuthor limit =
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
-getReviewHisto :: QueryM (V.Vector HistoEventBucket)
-getReviewHisto = do
+getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getHisto qf = do
   query <- getQuery
-  queryBH <- getQueryBH
+  queryBH <- getQueryBHWithFlavor qf
 
   let (minBound', maxBound') = Q.queryBounds query
       bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
       date_histo =
         Aeson.object
-          [ "field" .= ("created_at" :: Text),
+          [ "field" .= (rangeField $ qfRange qf),
             "calendar_interval" .= ("day" :: Text),
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound

@@ -17,7 +17,7 @@ import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryRe
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (ParseError (..), defaultQueryFlavor)
+import Monocle.Search.Syntax (AuthorFlavor (..), ParseError (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor)
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Monocle.UserGroup as UserGroupPB
@@ -78,7 +78,7 @@ userGroupGet request = do
           Q.queryWithMods now mempty (Just index) expr
 
         -- Date histogram needs explicit bound to be set:
-        let queryWithBound = Q.ensureMinBound query "created_at"
+        let queryWithBound = Q.ensureMinBound query
 
         pure (index, users, queryWithBound)
 
@@ -95,6 +95,7 @@ userGroupGet request = do
           <$> Q.changeReviewRatio
           <*> pure 0
           <*> pure mempty
+          <*> pure mempty
 
       userStats <- traverse getUserStat users
 
@@ -104,13 +105,24 @@ userGroupGet request = do
     getUserStat name = do
       let userQuery = Q.toUserTerm name
           reviewQuery = Q.mkOr $ map (Q.mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+          commitQuery =
+            Q.mkOr $
+              map
+                (Q.mkTerm "type")
+                [ "ChangeCommitPushedEvent",
+                  "ChangeCommitForcePushedEvent"
+                ]
+
+          qf = QueryFlavor Monocle.Search.Syntax.Author CreatedAt
 
       userStats <- withFilter [userQuery] $ do
-        reviewHisto <- withFilter [reviewQuery] Q.getReviewHisto
+        reviewHisto <- withFilter [reviewQuery] $ Q.getHisto qf
+        commitHisto <- withFilter [commitQuery] $ Q.getHisto qf
 
         UserGroupPB.GroupStat
           <$> Q.changeReviewRatio
           <*> pure 0
+          <*> pure (toReviewHisto <$> commitHisto)
           <*> pure (toReviewHisto <$> reviewHisto)
 
       pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
@@ -120,7 +132,6 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
