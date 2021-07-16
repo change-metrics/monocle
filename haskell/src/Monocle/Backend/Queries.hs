@@ -347,7 +347,7 @@ getReposSummary = do
 
       -- Count the events
       totalChanges' <- countEvent "ChangeCreatedEvent"
-      abandonedChanges' <- countEvent "ChangeClosedEvent"
+      abandonedChanges' <- countEvent "ChangeAbandonedEvent"
       mergedChanges' <- countEvent "ChangeMergedEvent"
 
       -- Return summary
