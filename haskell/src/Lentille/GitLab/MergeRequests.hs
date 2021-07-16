@@ -185,6 +185,7 @@ transformResponse host getIdentIdCB result =
             getChangeCreatedEvent change
               <> getChangePushedEvent change
               <> getChangeMergedEvent change
+              <> getChangeAbandonedEvent change
               <> getChangeCommentedEvent change comments
               <> getChangeReviewedEvent change comments
           )
@@ -329,6 +330,18 @@ transformResponse host getIdentIdCB result =
           where
             getMergedByIdent (ChangeOptionalMergedByMergedBy ident) = ident
             getMergedAt (ChangeOptionalMergedAtMergedAt ts) = ts
+
+        getChangeAbandonedEvent :: Change -> [ChangeEvent]
+        getChangeAbandonedEvent change =
+          [ (getBaseEvent change)
+              { changeEventId = "ChangeAbandonedEvent-" <> changeId change,
+                changeEventType = Just $ ChangeEventTypeChangeAbandoned ChangeAbandonedEvent,
+                -- GitLab Graph API does not report who closed a MR
+                changeEventAuthor = changeAuthor change,
+                changeEventCreatedAt = changeUpdatedAt change
+              }
+            | isClosed $ changeState change
+          ]
 
         getChangePushedEvent :: Change -> [ChangeEvent]
         getChangePushedEvent change = toList $ mkPushEvent <$> changeCommits change
