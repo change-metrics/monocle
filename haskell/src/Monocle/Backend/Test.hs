@@ -14,6 +14,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (defaultQueryFlavor)
 import Monocle.Servant.Env
 import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
@@ -271,7 +272,9 @@ testAchievements = withTenant doTest
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
+        query = case (Q.queryBH $ Q.load Nothing mempty Nothing "state:open") defaultQueryFlavor of
+          [x] -> x
+          _ -> error "Could not compile query"
 
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
@@ -303,8 +306,7 @@ testReposSummary = withTenant doTest
         results
     query :: Q.Query
     query =
-      let queryBH = Nothing
-          queryBHWithFlavor = const Nothing
+      let queryBH _ = []
           queryBounds =
             ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
               fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")

@@ -17,7 +17,7 @@ import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryRe
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (ParseError (..))
+import Monocle.Search.Syntax (ParseError (..), defaultQueryFlavor)
 import Monocle.Servant.Env
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Monocle.UserGroup as UserGroupPB
@@ -109,7 +109,6 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -410,9 +409,9 @@ searchChangesLifecycle indexName queryText = do
       Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
       Right query -> do
         let -- Helper functions ready to be applied
-            bhQuery = fromMaybe (error "Need query") $ Q.queryBH query
+            bhQuery = Q.queryBH query defaultQueryFlavor
             count = Q.countEvents
-            queryType = Q.documentType [bhQuery]
+            queryType = Q.documentType bhQuery
 
         -- get events count
         eventCounts <- Q.getEventCounts bhQuery

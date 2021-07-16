@@ -309,15 +309,13 @@ mkNotQuery e1 = do
   q1 <- query e1
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
 
--- TODO(fbo) Reactivate that test (CI issue)
-
 -- | 'query' creates an elastic search query
 --
 -- >>> :{
 --  let query = load Nothing mempty Nothing "state:open"
---   in putTextLn . decodeUtf8 . Aeson.encode $ (queryBH query)
+--   in putTextLn . decodeUtf8 . Aeson.encode $ (queryBH query defaultQueryFlavor)
 -- :}
--- {"term":{"state":{"value":"OPEN"}}}
+-- [{"term":{"state":{"value":"OPEN"}}}]
 query :: Expr -> Parser BH.Query
 query expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery And e1 e2
@@ -332,20 +330,20 @@ query expr = case expr of
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now' username indexM exprM =
   case exprM of
-    Nothing -> pure $ Query Nothing (const Nothing) (threeWeeksAgo now, now) False
+    Nothing -> pure $ Query (const []) (threeWeeksAgo now, now) False
     Just expr -> do
-      (query', (boundM, bound)) <-
+      (_, (boundM, bound)) <-
         runParser expr defaultQueryFlavor
       let getWithFlavor flavor =
             let (queryFlavored, (_, _)) =
                   fromRight
                     (error "That is not possible, the query already compiled")
                     (runParser expr flavor)
-             in Just queryFlavored
+             in [queryFlavored]
 
       pure $
         let bound' = (fromMaybe (threeWeeksAgo bound) boundM, bound)
-         in Query (Just query') getWithFlavor bound' (isJust boundM)
+         in Query getWithFlavor bound' (isJust boundM)
   where
     runParser expr flavor =
       runExcept
@@ -399,11 +397,9 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases ind
 ensureMinBound :: Query -> Text -> Query
 ensureMinBound query' field
   | queryMinBoundsSet query' = query'
-  | otherwise = query' {queryBH = Just newQueryBH}
+  | otherwise = query' {queryBH = newQueryBH}
   where
-    newQueryBH = case queryBH query' of
-      Just currentQuery -> BH.QueryBoolQuery $ BH.mkBoolQuery [boundQuery, currentQuery] [] [] []
-      Nothing -> boundQuery
+    newQueryBH flavor = [boundQuery] <> queryBH query' flavor
     boundQuery =
       BH.QueryRangeQuery $
         BH.mkRangeQuery (BH.FieldName field) $
