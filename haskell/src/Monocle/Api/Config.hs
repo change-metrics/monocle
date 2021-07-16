@@ -8,9 +8,10 @@ module Monocle.Api.Config where
 
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
-import Data.FileEmbed (embedFile)
 import qualified Data.Map as Map
 import qualified Dhall
+import qualified Dhall.Core
+import qualified Dhall.Src
 import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
 import Relude
@@ -38,6 +39,10 @@ Dhall.TH.makeHaskellTypes
           Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
         ]
   )
+
+-- | Embed the expected configuration schema
+configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
+configurationSchema = $(Dhall.TH.staticDhallExpression "./dhall-monocle/Monocle/Config.dhall")
 
 deriving instance Eq Gerrit
 
@@ -98,12 +103,8 @@ loadConfig fp = do
     Success config -> Right $ tenants config
     Failure err -> Left $ show err
   where
-    -- when updating the dhall-monocle schema, the config needs to be
-    -- regenerated, otherwise the loader abort with 'Exception: Error: Invalid Dhall.Decoder'
-    -- to fix that, run:
-    -- `dhall <<< ./dhall-monocle/Monocle/Config.dhall > test/data/Config.dhall`
-    configType = $(embedFile "./test/data/Config.dhall")
-    loadOpt = Dhall.defaultOptions $ Just $ decodeUtf8 configType
+    configType = Dhall.Core.pretty configurationSchema
+    loadOpt = Dhall.defaultOptions $ Just configType
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
