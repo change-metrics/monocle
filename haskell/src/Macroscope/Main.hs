@@ -19,10 +19,10 @@ instance MacroM IO
 getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
 getCrawlers xs = do
   index <- xs
-  crawler <- fromMaybe [] (Config.crawlers index)
+  crawler <- Config.crawlers index
   let idents = fromMaybe [] (Config.idents index)
   let name = Config.index index
-      key = fromMaybe (error "Api key is missing") (Config.crawlers_api_key index)
+      key = Config.crawlers_api_key index
   pure (name, key, crawler, idents)
 
 crawlerName :: Config.Crawler -> Text
@@ -59,7 +59,10 @@ runMacroscope verbose confPath interval client = do
       docStreams <- case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
           -- TODO: the client may be created once for each api key
-          glClient <- newGitLabGraphClientWithKey gitlab_url gitlab_api_key
+          glClient <-
+            newGitLabGraphClientWithKey
+              (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
+              gitlab_token
           pure $
             -- When organizations are configured, we need to index its project first
             [glOrgCrawler glClient | isJust gitlab_organizations]

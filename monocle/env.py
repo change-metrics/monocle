@@ -16,7 +16,6 @@
 
 import os
 import sys
-import yaml
 from typing import Dict, List
 from monocle import config
 
@@ -31,7 +30,7 @@ else:
         print("Unable to access %s." % config_path, file=sys.stderr)
         sys.exit(1)
     else:
-        rawconfig = yaml.safe_load(open(config_path))
+        rawconfig = config.load(open(config_path))
         indexes_acl = config.build_index_acl(rawconfig)
         project_defs = config.build_project_definitions(rawconfig)
         indexes_task_crawlers = config.build_index_task_crawlers(rawconfig)

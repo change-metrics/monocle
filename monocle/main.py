@@ -196,6 +196,13 @@ def main() -> None:
         help="Scope to changes related to task score '<op>: <val>'",
     )
 
+    parser_migrate_config = subparsers.add_parser(
+        "migrate-config", help="Migrate monocle v0.9 configuration"
+    )
+    parser_migrate_config.add_argument(
+        "--config", help="Configuration file path", required=True
+    )
+
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -209,12 +216,21 @@ def main() -> None:
         parser.print_usage()
         sys.exit(1)
 
+    if args.command == "migrate-config":
+        cfg = open(args.config).read()
+        raw = yaml.safe_load(cfg)
+        new = config.loadUpgrade(cfg)
+        if raw != new:
+            with open(args.config, "w") as f:
+                f.write(yaml.dump(new))
+            print("%s: migrated" % args.config)
+
     if args.command == "crawler":
         realpath = os.path.expanduser(args.config)
         if not os.path.isfile(realpath):
             log.error("Unable to access config: %s" % realpath)
             sys.exit(1)
-        configdata = yaml.safe_load(open(realpath).read())
+        configdata = config.load(open(realpath).read())
         config.validate(configdata, config.schema)
         tpool: List[Union[Crawler, GroupCrawler]] = []
         group = {}
