@@ -292,6 +292,11 @@ getProjectAgg query = do
         )
       ]
 
+getSimpleTR :: BH.TermsResult -> TermResult
+getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
+
+data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
+
 -- | The repos_summary query
 getQueryFromSL :: Text -> [BH.Query]
 getQueryFromSL query =
@@ -312,8 +317,6 @@ getTermsAgg query onTerm = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
-
 getRepos :: QueryM [TermResult]
 getRepos = do
   -- Prepare the query
@@ -328,7 +331,6 @@ getRepos = do
   where
     getQueryE = getQueryFromSL "repo_regex: .*"
     runTermAgg query = getTermsAgg query "repository_fullname"
-    getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
@@ -358,6 +360,35 @@ getReposSummary = do
       -- Return summary
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
+
+-- | getTops
+getDocTypeTopCountByField :: Text -> Text -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField doctype attr qflavor = do
+  -- Prepare the query
+  basequery <- toBHQueryWithFlavor qflavor <$> getQuery
+  let query = documentType basequery doctype
+
+  -- Run the aggregation
+  results <- liftTenantM (runTermAgg query)
+
+  -- Return the result
+  pure $ getSimpleTR <$> results
+  where
+    runTermAgg query = getTermsAgg query attr
+
+getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
+getMostActiveAuthorByChangeCreated =
+  getDocTypeTopCountByField
+    "ChangeCreatedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
+getMostActiveAuthorByChangeMerged =
+  getDocTypeTopCountByField
+    "ChangeMergedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)

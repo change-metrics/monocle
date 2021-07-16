@@ -276,6 +276,16 @@ testAchievements = withTenant doTest
           [x] -> x
           _ -> error "Could not compile query"
 
+defaultQuery :: Q.Query
+defaultQuery =
+  let queryBH _ = []
+      queryBounds =
+        ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
+          fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+        )
+      queryMinBoundsSet = False
+   in Q.Query {..}
+
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
   where
@@ -285,7 +295,7 @@ testReposSummary = withTenant doTest
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
 
-      results <- runQueryM query Q.getReposSummary
+      results <- runQueryM defaultQuery Q.getReposSummary
       assertEqual'
         "Check buckets names"
         [ Q.RepoSummary
@@ -304,15 +314,31 @@ testReposSummary = withTenant doTest
             }
         ]
         results
-    query :: Q.Query
-    query =
-      let queryBH _ = []
-          queryBounds =
-            ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
-              fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
-            )
-          queryMinBoundsSet = False
-       in Q.Query {..}
+
+testTopAuthors :: Assertion
+testTopAuthors = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let nova = SProject "openstack/nova" [Author "alice" "a"] [Author "eve" "e"]
+      let neutron = SProject "openstack/neutron" [Author "bob" "b"] [Author "eve" "e"]
+      traverse_ (indexScenario' nova) ["42", "43"]
+      traverse_ (indexScenarioNoMerged neutron) ["142", "143"]
+
+      -- Check for expected metrics
+      results <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeCreated
+      assertEqual' "Check ChangeCreatedEvent count" [Q.TermResult {term = "eve", count = 4}] results
+      results' <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeMerged
+      assertEqual' "Check ChangeMergedEvent count" [Q.TermResult {term = "eve", count = 2}] results'
+      where
+        indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
+        indexScenarioNoMerged project cid =
+          indexScenario
+            [ s | s <- nominalMerge project cid fakeDate 3600, case s of
+                                                                 SMerge _ -> False
+                                                                 _anyOther -> True
+            ]
 
 -- Tests scenario helpers
 
@@ -411,9 +437,10 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
                 elkchangeAuthor = author,
                 elkchangeChangeId = "change-" <> changeId
               }
-          mkEvent ts etype author =
+          mkEvent ts etype author onAuthor =
             emptyEvent
               { elkchangeeventAuthor = author,
+                elkchangeeventOnAuthor = onAuthor,
                 elkchangeeventType = etype,
                 elkchangeeventRepositoryFullname = name,
                 elkchangeeventId = etype <> "-" <> changeId,
@@ -423,16 +450,16 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent 0 "ChangeCreatedEvent" author
+      let create = mkEvent 0 "ChangeCreatedEvent" author author
           change = mkChange 0 author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent (duration `div` 2) "ChangeCommentedEvent" reviewer
+      let review = mkEvent (duration `div` 2) "ChangeCommentedEvent" reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent duration "ChangeMergedEvent" approver
+      let merge = mkEvent duration "ChangeMergedEvent" approver author
 
       -- The event lists
       pure [SChange change, SCreation create, SReview review, SMerge merge]
