@@ -49,6 +49,7 @@ import GroupsView from './components/GroupsView.bs.js'
 import GroupView from './components/GroupView.bs.js'
 import HelpSearch from './components/HelpSearch.bs.js'
 import NChangeView from './components/NChangeView.bs.js'
+import NReposView from './components/ReposView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -304,7 +305,6 @@ const LegacyApp = (data) => (
       <Route exact path="/login" component={LoginView} />
       <Route exact path="/user" component={CUserView} />
       <Route exact path="/:index/people" component={PeopleView} />
-      <Route exact path="/:index/repos" component={ReposView} />
       <Route exact path="/:index" component={RootView} />
       <Route path="/:index/hot-changes" component={HotChangesView} />
       <Route path="/:index/cold-changes" component={ColdChangesView} />
@@ -366,6 +366,10 @@ const App = () => {
         <Route
           path="/:index/user_groups"
           render={() => <GroupsView store={store} />}
+        />
+        <Route
+          path="/:index/repos"
+          render={() => <NReposView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>

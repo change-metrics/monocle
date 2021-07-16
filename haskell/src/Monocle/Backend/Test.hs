@@ -280,7 +280,8 @@ testReposSummary = withTenant doTest
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
-      results <- Q.getReposSummary []
+
+      results <- runQueryM query Q.getReposSummary
       assertEqual'
         "Check buckets names"
         [ Q.RepoSummary
@@ -299,6 +300,16 @@ testReposSummary = withTenant doTest
             }
         ]
         results
+    query :: Q.Query
+    query =
+      let queryBH = Nothing
+          queryBHWithFlavor = const Nothing
+          queryBounds =
+            ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
+              fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+            )
+          queryMinBoundsSet = False
+       in Q.Query {..}
 
 -- Tests scenario helpers
 

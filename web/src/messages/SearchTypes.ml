@@ -116,14 +116,14 @@ type changes = {
 
 type repo_summary = {
   fullname : string;
-  total_changes : string;
-  abandoned_changes : string;
-  merged_changes : string;
-  open_changes : string;
+  total_changes : int32;
+  abandoned_changes : int32;
+  merged_changes : int32;
+  open_changes : int32;
 }
 
 type repos_summary = {
-  repository_summary : repo_summary list;
+  reposum : repo_summary list;
 }
 
 type query_response =
@@ -347,10 +347,10 @@ let rec default_changes
 
 let rec default_repo_summary 
   ?fullname:((fullname:string) = "")
-  ?total_changes:((total_changes:string) = "")
-  ?abandoned_changes:((abandoned_changes:string) = "")
-  ?merged_changes:((merged_changes:string) = "")
-  ?open_changes:((open_changes:string) = "")
+  ?total_changes:((total_changes:int32) = 0l)
+  ?abandoned_changes:((abandoned_changes:int32) = 0l)
+  ?merged_changes:((merged_changes:int32) = 0l)
+  ?open_changes:((open_changes:int32) = 0l)
   () : repo_summary  = {
   fullname;
   total_changes;
@@ -360,9 +360,9 @@ let rec default_repo_summary
 }
 
 let rec default_repos_summary 
-  ?repository_summary:((repository_summary:repo_summary list) = [])
+  ?reposum:((reposum:repo_summary list) = [])
   () : repos_summary  = {
-  repository_summary;
+  reposum;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())

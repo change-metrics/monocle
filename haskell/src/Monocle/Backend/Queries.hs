@@ -13,6 +13,7 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), toBHQueryWithFlavor)
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -308,14 +309,20 @@ getTermsAgg query onTerm = do
 
 data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 
-getRepos :: [BH.Query] -> TenantM [TermResult]
-getRepos basequery = do
-  results <- runTermAgg
+getRepos :: QueryM [TermResult]
+getRepos = do
+  -- Prepare the query
+  basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor CreatedAt) <$> getQuery
+  let query = mkAnd $ basequery <> getQueryE
+
+  -- Run the aggregation
+  results <- liftTenantM (runTermAgg query)
+
+  -- Return the result
   pure $ getSimpleTR <$> results
   where
-    query = mkAnd $ basequery <> getQueryE
     getQueryE = getQueryFromSL "repo_regex: .*"
-    runTermAgg = getTermsAgg query "repository_fullname"
+    runTermAgg query = getTermsAgg query "repository_fullname"
     getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
 data RepoSummary = RepoSummary
@@ -327,20 +334,25 @@ data RepoSummary = RepoSummary
   }
   deriving (Show, Eq)
 
-getReposSummary :: [BH.Query] -> TenantM [RepoSummary]
-getReposSummary basequery = do
-  rlist <- getRepos basequery
-  let names = term <$> rlist
-  sequence $ getRepoSummary <$> names
+getReposSummary :: QueryM [RepoSummary]
+getReposSummary = do
+  names <- fmap term <$> getRepos
+  traverse getRepoSummary names
   where
     getRepoSummary fn = do
+      -- Prepare the queries
+      basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor UpdatedAt) <$> getQuery
       let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
-      totalChanges' <- countEvent query "ChangeCreatedEvent"
-      abandonedChanges' <- countEvent query "ChangeClosedEvent"
-      mergedChanges' <- countEvent query "ChangeMergedEvent"
+          countEvent docType = liftTenantM $ countEvents (documentType [query] docType)
+
+      -- Count the events
+      totalChanges' <- countEvent "ChangeCreatedEvent"
+      abandonedChanges' <- countEvent "ChangeAbandonedEvent"
+      mergedChanges' <- countEvent "ChangeMergedEvent"
+
+      -- Return summary
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
-    countEvent query docType = countEvents (documentType [query] docType)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)

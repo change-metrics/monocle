@@ -870,18 +870,18 @@ class RepoSummary(google.protobuf.message.Message):
     MERGED_CHANGES_FIELD_NUMBER: builtins.int
     OPEN_CHANGES_FIELD_NUMBER: builtins.int
     fullname: typing.Text = ...
-    total_changes: typing.Text = ...
-    abandoned_changes: typing.Text = ...
-    merged_changes: typing.Text = ...
-    open_changes: typing.Text = ...
+    total_changes: builtins.int = ...
+    abandoned_changes: builtins.int = ...
+    merged_changes: builtins.int = ...
+    open_changes: builtins.int = ...
     def __init__(
         self,
         *,
         fullname: typing.Text = ...,
-        total_changes: typing.Text = ...,
-        abandoned_changes: typing.Text = ...,
-        merged_changes: typing.Text = ...,
-        open_changes: typing.Text = ...,
+        total_changes: builtins.int = ...,
+        abandoned_changes: builtins.int = ...,
+        merged_changes: builtins.int = ...,
+        open_changes: builtins.int = ...,
     ) -> None: ...
     def ClearField(
         self,
@@ -903,9 +903,9 @@ global___RepoSummary = RepoSummary
 
 class ReposSummary(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    REPOSITORYSUMMARY_FIELD_NUMBER: builtins.int
+    REPOSUM_FIELD_NUMBER: builtins.int
     @property
-    def RepositorySummary(
+    def reposum(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___RepoSummary
@@ -913,13 +913,10 @@ class ReposSummary(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        RepositorySummary: typing.Optional[typing.Iterable[global___RepoSummary]] = ...,
+        reposum: typing.Optional[typing.Iterable[global___RepoSummary]] = ...,
     ) -> None: ...
     def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "RepositorySummary", b"RepositorySummary"
-        ],
+        self, field_name: typing_extensions.Literal["reposum", b"reposum"]
     ) -> None: ...
 
 global___ReposSummary = ReposSummary
