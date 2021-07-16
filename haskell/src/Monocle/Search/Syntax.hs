@@ -3,14 +3,20 @@ module Monocle.Search.Syntax
   ( Expr (..),
     ParseError (..),
     Query (..),
+    QueryFlavor (..),
+    AuthorFlavor (..),
+    RangeFlavor (..),
+    defaultQueryFlavor,
     toBHQuery,
+    toBHQueryWithFlavor,
     setQueryBH,
   )
 where
 
 import Data.Time.Clock (UTCTime)
 import qualified Database.Bloodhound as BH
-import Relude
+import Relude hiding (show)
+import Prelude (show)
 
 type Field = Text
 
@@ -31,8 +37,22 @@ data Expr
 data ParseError = ParseError Text Int
   deriving (Show, Eq)
 
+data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
+
+data RangeFlavor = CreatedAt | UpdatedAt deriving (Show, Eq)
+
+data QueryFlavor = QueryFlavor
+  { qfAuthor :: AuthorFlavor,
+    qfRange :: RangeFlavor
+  }
+  deriving (Show, Eq)
+
+defaultQueryFlavor :: QueryFlavor
+defaultQueryFlavor = QueryFlavor Author CreatedAt
+
 data Query = Query
   { queryBH :: Maybe BH.Query,
+    queryBHWithFlavor :: QueryFlavor -> Maybe BH.Query,
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -44,10 +64,15 @@ data Query = Query
     -- | queryBoundsSet indicate when a minimum bound has been set by the user.
     queryMinBoundsSet :: Bool
   }
-  deriving (Show)
+
+instance Show Query where
+  show Query {..} = "Query {" <> show queryBH <> ", " <> show queryBounds <> "}"
 
 toBHQuery :: Query -> [BH.Query]
 toBHQuery = maybeToList . queryBH
+
+toBHQueryWithFlavor :: QueryFlavor -> Query -> [BH.Query]
+toBHQueryWithFlavor qf q = maybeToList $ queryBHWithFlavor q qf
 
 setQueryBH :: BH.Query -> Query -> Query
 setQueryBH queryBH' query = query {queryBH = Just queryBH'}

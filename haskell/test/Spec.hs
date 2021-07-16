@@ -130,6 +130,13 @@ monocleSearchLanguage =
             "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
         ),
       testCase
+        "Query from flavor"
+        ( queryMatchFlavor
+            (S.QueryFlavor S.Author S.UpdatedAt)
+            "from:now-3weeks"
+            "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
+        ),
+      testCase
         "Query from to field"
         ( queryMatch
             "from:now-3weeks to:now"
@@ -140,6 +147,20 @@ monocleSearchLanguage =
         ( queryMatch
             "project:zuul"
             "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}}]}}"
+        ),
+      testCase
+        "Query author"
+        ( queryMatchFlavor
+            (S.QueryFlavor S.Author S.UpdatedAt)
+            "author:alice"
+            "{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}"
+        ),
+      testCase
+        "Query on author"
+        ( queryMatchFlavor
+            (S.QueryFlavor S.OnAuthor S.UpdatedAt)
+            "author:alice"
+            "{\"term\":{\"on_author.muid\":{\"value\":\"alice\"}}}"
         ),
       testCase
         "Query default bound"
@@ -183,6 +204,7 @@ monocleSearchLanguage =
         ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
         )
     queryMatch = queryDoMatch' [] (encodePretty . Q.queryBH)
+    queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . flip Q.queryBHWithFlavor flavor)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index

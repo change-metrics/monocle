@@ -154,6 +154,7 @@ let maybeRenderList = (xs: list<'a>, component) =>
   | _ => component
   }
 let lower = s => s->Js.String.toLowerCase
+let int32_str = i32 => string_of_int(Int32.to_int(i32))
 
 // the take from haskell prelude
 let rec take: (list<'a>, int) => list<'a> = (xs, count) =>
@@ -274,6 +275,21 @@ module MStack = {
 module MStackItem = {
   @react.component
   let make = (~children) => <Patternfly.Layout.StackItem> {children} </Patternfly.Layout.StackItem>
+}
+
+module MCenteredContent = {
+  @react.component
+  let make = (~children) =>
+    <MStack>
+      <MStackItem> {""->str} </MStackItem>
+      <MStackItem>
+        <MGrid>
+          <Patternfly.Layout.GridItem xl=Column._1 />
+          <Patternfly.Layout.GridItem xl=Column._10> {children} </Patternfly.Layout.GridItem>
+          <Patternfly.Layout.GridItem xl=Column._1 />
+        </MGrid>
+      </MStackItem>
+    </MStack>
 }
 
 module MSelect = {

@@ -5,6 +5,7 @@
 //
 
 open Prelude
+open MLink
 
 let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
   ts->Belt.Option.getExn->Belt.Option.getExn
@@ -121,18 +122,13 @@ module ExternalLink = {
 module FilterLink = {
   @react.component
   let make = (~store: Store.t, ~queryField: string, ~queryValue: string, ~name: string) => {
-    let (state, dispatch) = store
+    let (state, _) = store
     let newFilter = queryField ++ ":\"" ++ queryValue ++ "\""
     let filter = Js.String.includes(newFilter, state.filter)
       ? state.filter
       : addQuery(state.filter, newFilter)
-    let onClick = _ => filter->Store.Store.SetFilter->dispatch
-    <Link
-      onClick
-      style={ReactDOM.Style.make(~whiteSpace="nowrap", ())}
-      _to={"/" ++ state.index ++ "/changes?q=" ++ state.query ++ "&f=" ++ filter}>
-      {name->str}
-    </Link>
+    let path = "changes"
+    <MonoLink store filter path name />
   }
 }
 

@@ -36,7 +36,8 @@ type Bound = (Maybe UTCTime, UTCTime)
 data Env = Env
   { envNow :: UTCTime,
     envUsername :: Text,
-    envIndex :: Config.Index
+    envIndex :: Config.Index,
+    envFlavor :: QueryFlavor
   }
 
 type Parser a = ReaderT Env (StateT Bound (Except ParseError)) a
@@ -52,20 +53,24 @@ fieldText = Field_TypeFIELD_TEXT
 -- fieldBoolean = Field_TypeFIELD_BOOL
 fieldRegex = Field_TypeFIELD_REGEX
 
+-- | A fake field to ensure a field name is resolved using the flavor
+flavoredField :: Field
+flavoredField = error "Field name should be set at runtime"
+
 -- | 'fields' specifies how to handle field value
 fields :: [(Field, (FieldType, Field, Text))]
 fields =
   [ ("updated_at", (fieldDate, "updated_at", "Last update")),
     ("created_at", (fieldDate, "created_at", "Change creation")),
-    ("from", (fieldDate, "created_at", "Range starting date")),
-    ("to", (fieldDate, "created_at", "Range ending date")),
+    ("from", (fieldDate, flavoredField, "Range starting date")),
+    ("to", (fieldDate, flavoredField, "Range ending date")),
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldText, "repository_fullname", "Repository name")),
     ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
     ("project", (fieldText, "project_def", "Project definition name")),
-    ("author", (fieldText, "author.muid", "Author name")),
-    ("author_regex", (fieldRegex, "author.muid", "Author regex")),
-    ("group", (fieldText, "group_def", "Group definition name")),
+    ("author", (fieldText, flavoredField, "Author name")),
+    ("author_regex", (fieldRegex, flavoredField, "Author regex")),
+    ("group", (fieldText, flavoredField, "Group definition name")),
     ("branch", (fieldText, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
@@ -74,9 +79,24 @@ fields =
     ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
 
+-- | Resolves the actual document field for a given flavor
+getFlavoredField :: QueryFlavor -> Field -> Maybe Field
+getFlavoredField QueryFlavor {..} field
+  | field `elem` ["author", "author_regex", "group"] = Just $ case qfAuthor of
+    Author -> "author"
+    OnAuthor -> "on_author"
+  | field `elem` ["from", "to"] = Just $ case qfRange of
+    CreatedAt -> "created_at"
+    UpdatedAt -> "updated_at"
+  | otherwise = Nothing
+
 -- | 'lookupField' return a field type and actual field name
-lookupField :: Field -> Either Text (FieldType, Field, Text)
-lookupField name = maybe (Left $ "Unknown field: " <> name) Right (lookup name fields)
+lookupField :: Field -> Parser (FieldType, Field, Text)
+lookupField name = case lookup name fields of
+  Just (fieldType, field, desc) -> do
+    flavor <- asks envFlavor
+    pure (fieldType, fromMaybe field $ getFlavoredField flavor name, desc)
+  Nothing -> toParseError (Left $ "Unknown field: " <> name)
 
 parseDateValue :: Text -> Maybe UTCTime
 parseDateValue txt = tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y"
@@ -195,8 +215,8 @@ mkRangeQuery' op field fieldType value =
     . BH.mkRangeQuery (BH.FieldName field)
     <$> mkRangeValue op field fieldType value
 
-mkRangeAlias :: RangeOp -> Text -> Parser BH.Query
-mkRangeAlias op = mkRangeQuery' op "created_at" fieldDate
+mkRangeAlias :: RangeOp -> Field -> Text -> Parser BH.Query
+mkRangeAlias op field = mkRangeQuery' op field fieldDate
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
@@ -205,7 +225,7 @@ toParseError e = case e of
 
 mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
 mkRangeQuery expr field value = do
-  (fieldType, fieldName, _desc) <- toParseError $ lookupField field
+  (fieldType, fieldName, _desc) <- lookupField field
   mkRangeQuery' (toRangeOp expr) fieldName fieldType value
 
 mkProjectQuery :: Config.Project -> BH.Query
@@ -223,14 +243,30 @@ mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] 
     -- TODO: check how to regexp match nested list
     file = const [] -- mkRegexpQ "changed_files"
 
+-- | Resolve the author field name and value.
+getAuthorField :: Field -> Text -> Parser (Field, Text)
+getAuthorField fieldName = \case
+  "self" -> do
+    index <- asks envIndex
+    username <- asks envUsername
+    when (username == mempty) (toParseError $ Left "You need to be logged in to use the self value")
+    pure $ case Config.lookupIdent index username of
+      Just muid -> (fieldName <> ".muid", muid)
+      Nothing -> (fieldName <> ".id", username)
+  value -> pure $ (fieldName <> ".muid", value)
+
 mkEqQuery :: Field -> Text -> Parser BH.Query
-mkEqQuery field value = do
-  (fieldType, fieldName, _desc) <- toParseError $ lookupField field
+mkEqQuery field value' = do
+  (fieldType, fieldName', _desc) <- lookupField field
+  (fieldName, value) <-
+    if fieldName' `elem` ["author", "on_author"]
+      then getAuthorField fieldName' value'
+      else pure (fieldName', value')
   case (field, fieldType) of
-    ("from", _) -> mkRangeAlias Gt value
-    ("to", _) -> mkRangeAlias Lt value
+    ("from", _) -> mkRangeAlias Gt fieldName value
+    ("to", _) -> mkRangeAlias Lt fieldName value
     ("state", _) -> do
-      (field', value') <-
+      (stateField, stateValue) <-
         toParseError
           ( case value of
               "open" -> Right ("state", "OPEN")
@@ -239,18 +275,7 @@ mkEqQuery field value = do
               "abandoned" -> Right ("state", "CLOSED")
               _ -> Left $ "Invalid value for state: " <> value
           )
-      pure $ BH.TermQuery (BH.Term field' value') Nothing
-    ("author", _) -> do
-      (field', value') <- case value of
-        "self" -> do
-          index <- asks envIndex
-          username <- asks envUsername
-          when (username == mempty) (toParseError $ Left "You need to be logged in to use the self value")
-          pure $ case Config.lookupIdent index username of
-            Just muid -> ("author.muid", muid)
-            Nothing -> ("author.id", username)
-        _ -> pure ("author.muid", value)
-      pure $ BH.TermQuery (BH.Term field' value') Nothing
+      pure $ BH.TermQuery (BH.Term stateField stateValue) Nothing
     ("project", _) -> do
       index <- asks envIndex
       project <-
@@ -262,7 +287,7 @@ mkEqQuery field value = do
       groupMembers <-
         toParseError $
           Config.lookupGroupMembers index value `orDie` ("Unknown group: " <> value)
-      pure $ BH.TermsQuery "author.muid" groupMembers
+      pure $ BH.TermsQuery fieldName groupMembers
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
       pure
@@ -309,17 +334,26 @@ query expr = case expr of
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now' username indexM exprM =
   case exprM of
-    Nothing -> pure $ Query Nothing (threeWeeksAgo now, now) False
+    Nothing -> pure $ Query Nothing (const Nothing) (threeWeeksAgo now, now) False
     Just expr -> do
       (query', (boundM, bound)) <-
-        runExcept
-          . flip runStateT (Nothing, now)
-          . runReaderT (query expr)
-          $ Env now username index
+        runParser expr defaultQueryFlavor
+      let getWithFlavor flavor =
+            let (queryFlavored, (_, _)) =
+                  fromRight
+                    (error "That is not possible, the query already compiled")
+                    (runParser expr flavor)
+             in Just queryFlavored
+
       pure $
         let bound' = (fromMaybe (threeWeeksAgo bound) boundM, bound)
-         in Query (Just query') bound' (isJust boundM)
+         in Query (Just query') getWithFlavor bound' (isJust boundM)
   where
+    runParser expr flavor =
+      runExcept
+        . flip runStateT (Nothing, now)
+        . runReaderT (query expr)
+        $ Env now username index flavor
     now = dropTime now'
     index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
