@@ -80,15 +80,18 @@ countEvents' = countEvents defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  -- TODO: ensure the right flavor is used
-  commitCount <- countEvents' [documentType "ChangeCreatedEvent"]
-  reviewCount <- countEvents' [documentType "ChangeReviewedEvent"]
-  commentCount <- countEvents' [documentType "ChangeCommentedEvent"]
+  commitCount <- countEvents qf [documentType "ChangeCreatedEvent"]
+  reviewCount <- countEvents qf [documentType "ChangeReviewedEvent"]
+  commentCount <- countEvents qf [documentType "ChangeCommentedEvent"]
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral $ reviewCount + commentCount
       commitCountF = fromIntegral $ commitCount
   pure (reviewCountF * 100 / total)
+  where
+    -- Author makes query author match the change event author, not the receiver of the event.
+    -- CreatedAt is necessary for change event.
+    qf = QueryFlavor Author CreatedAt
 
 mkAnd :: [BH.Query] -> BH.Query
 mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
