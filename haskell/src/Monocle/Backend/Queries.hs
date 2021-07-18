@@ -317,11 +317,11 @@ getTermsAgg query onTerm = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getDocTypeTopCountByField :: Text -> Text -> [BH.Query] -> QueryFlavor -> QueryM [TermResult]
-getDocTypeTopCountByField doctype attr eQuery qflavor = do
+getDocTypeTopCountByField :: Text -> Text -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField doctype attr qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = documentType (basequery <> eQuery) doctype
+  let query = mkAnd $ basequery <> [documentType doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query)
@@ -337,10 +337,7 @@ getRepos =
   getDocTypeTopCountByField
     "Change"
     "repository_fullname"
-    getQueryE
     (QueryFlavor Author CreatedAt)
-  where
-    getQueryE = getQueryFromSL "repo_regex: .*"
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
@@ -377,7 +374,6 @@ getMostActiveAuthorByChangeCreated =
   getDocTypeTopCountByField
     "ChangeCreatedEvent"
     "author.muid"
-    []
     (QueryFlavor Author CreatedAt)
 
 getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
@@ -385,7 +381,6 @@ getMostActiveAuthorByChangeMerged =
   getDocTypeTopCountByField
     "ChangeMergedEvent"
     "on_author.muid"
-    []
     (QueryFlavor OnAuthor CreatedAt)
 
 getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
@@ -393,7 +388,6 @@ getMostActiveAuthorByChangeReviewed =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "author.muid"
-    []
     (QueryFlavor Author CreatedAt)
 
 getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
@@ -401,7 +395,6 @@ getMostActiveAuthorByChangeCommented =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "author.muid"
-    []
     (QueryFlavor Author CreatedAt)
 
 getMostReviewedAuthor :: QueryM [TermResult]
@@ -409,7 +402,6 @@ getMostReviewedAuthor =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "on_author.muid"
-    []
     (QueryFlavor OnAuthor CreatedAt)
 
 getMostCommentedAuthor :: QueryM [TermResult]
@@ -417,7 +409,6 @@ getMostCommentedAuthor =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "on_author.muid"
-    []
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
