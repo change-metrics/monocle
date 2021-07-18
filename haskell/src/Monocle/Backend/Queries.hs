@@ -292,10 +292,15 @@ getProjectAgg query = do
         )
       ]
 
--- | The repos_summary query
 getQueryFromSL :: Text -> [BH.Query]
 getQueryFromSL query =
   flip Q.queryBH defaultQueryFlavor $ Q.load Nothing mempty Nothing query
+
+-- | TopTerm agg query utils
+getSimpleTR :: BH.TermsResult -> TermResult
+getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
+
+data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
@@ -312,13 +317,11 @@ getTermsAgg query onTerm = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
-
-getRepos :: QueryM [TermResult]
-getRepos = do
+getDocTypeTopCountByField :: Text -> Text -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField doctype attr qflavor = do
   -- Prepare the query
-  basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor CreatedAt) <$> getQuery
-  let query = mkAnd $ basequery <> getQueryE
+  basequery <- toBHQueryWithFlavor qflavor <$> getQuery
+  let query = mkAnd $ basequery <> [documentType doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query)
@@ -326,9 +329,15 @@ getRepos = do
   -- Return the result
   pure $ getSimpleTR <$> results
   where
-    getQueryE = getQueryFromSL "repo_regex: .*"
-    runTermAgg query = getTermsAgg query "repository_fullname"
-    getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
+    runTermAgg query = getTermsAgg query attr
+
+-- | The repos_summary query
+getRepos :: QueryM [TermResult]
+getRepos =
+  getDocTypeTopCountByField
+    "Change"
+    "repository_fullname"
+    (QueryFlavor Author CreatedAt)
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
@@ -358,6 +367,49 @@ getReposSummary = do
       -- Return summary
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
+
+-- | get authors tops
+getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
+getMostActiveAuthorByChangeCreated =
+  getDocTypeTopCountByField
+    "ChangeCreatedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
+getMostActiveAuthorByChangeMerged =
+  getDocTypeTopCountByField
+    "ChangeMergedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
+
+getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed =
+  getDocTypeTopCountByField
+    "ChangeReviewedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
+getMostActiveAuthorByChangeCommented =
+  getDocTypeTopCountByField
+    "ChangeCommentedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostReviewedAuthor :: QueryM [TermResult]
+getMostReviewedAuthor =
+  getDocTypeTopCountByField
+    "ChangeReviewedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
+
+getMostCommentedAuthor :: QueryM [TermResult]
+getMostCommentedAuthor =
+  getDocTypeTopCountByField
+    "ChangeCommentedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
