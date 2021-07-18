@@ -16,8 +16,7 @@ extra-source-files:  dhall-monocle/Monocle/**/*.dhall,
                      github-schema/schema.docs.graphql,
                      gitlab-schema/schema.graphql,
                      test/data/*.yaml,
-                     test/data/*.json,
-                     test/data/*.dhall
+                     test/data/*.json
 
 source-repository head
   type:                git
@@ -94,7 +93,6 @@ library
                      , dhall-yaml                 ^>= 1.2
                      , either                     ^>= 5
                      , exceptions                 < 0.11
-                     , file-embed                 >= 0.0.14
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , http-types                 ^>=0.12
