@@ -102,6 +102,9 @@ jobs:
       - name: Check api-ng server
         run: docker-compose logs api-ng
 
+      - name: Check web server
+        run: docker-compose logs web
+
       - name: Check crawler service
         run: docker-compose ps crawler | grep Up
 
