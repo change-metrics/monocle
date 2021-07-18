@@ -17,7 +17,8 @@ module Monocle.Servant.Env
     runQueryM,
     getQuery,
     getQueryBH,
-    getQueryBH',
+    getQueryBHWithFlavor,
+    mkFinalQuery,
     liftTenantM,
     withFilter,
     runTenantQueryM,
@@ -99,11 +100,19 @@ runTenantQueryM config query qm = runTenantM config (runQueryM query qm)
 getQuery :: QueryM Q.Query
 getQuery = ask
 
-getQueryBH :: QueryM (Maybe BH.Query)
-getQueryBH = Q.queryBH <$> getQuery
+mkFinalQuery :: [BH.Query] -> Maybe BH.Query
+mkFinalQuery = \case
+  [] -> Nothing
+  [x] -> Just x
+  xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
 
-getQueryBH' :: QueryM [BH.Query]
-getQueryBH' = maybeToList <$> getQueryBH
+getQueryBHWithFlavor :: Q.QueryFlavor -> QueryM (Maybe BH.Query)
+getQueryBHWithFlavor flavor = do
+  query <- getQuery
+  pure $ mkFinalQuery $ Q.queryBH query flavor
+
+getQueryBH :: QueryM (Maybe BH.Query)
+getQueryBH = getQueryBHWithFlavor Q.defaultQueryFlavor
 
 -- | 'liftTenantM' run a TenantM in the QueryM
 liftTenantM :: TenantM a -> QueryM a
@@ -111,13 +120,9 @@ liftTenantM = lift
 
 -- | 'withFilter' run a queryM with a modified filter query
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
-withFilter extraQueries qm = do
-  -- get the current queryBH from the context
-  queryBH <- getQueryBH'
-
-  -- create a new queryBH
-  let newQueryBH = BH.QueryBoolQuery $ BH.mkBoolQuery (extraQueries <> queryBH) [] [] []
-
-  -- replace the current query with the new one using 'local'
-  let mkNewQuery query = query {Q.queryBH = Just newQueryBH}
-  local mkNewQuery qm
+withFilter extraQueries = local addFilter
+  where
+    addFilter query =
+      -- create a new queryBH
+      let newQueryBH qf = extraQueries <> Q.queryBH query qf
+       in query {Q.queryBH = newQueryBH}

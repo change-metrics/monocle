@@ -48,11 +48,10 @@ search (BH.IndexName index) body = do
       monocleLog (show resp)
       error "Elastic response failed"
 
-aggWithDocValues :: [(Text, Value)] -> BH.Query -> Value
+aggWithDocValues :: [(Text, Value)] -> Maybe BH.Query -> Value
 aggWithDocValues agg query =
-  Aeson.object
+  Aeson.object $
     [ "aggregations" .= Aeson.object agg,
-      "query" .= Aeson.toJSON query,
       "size"
         .= Aeson.Number 0,
       "docvalue_fields"
@@ -65,3 +64,6 @@ aggWithDocValues agg query =
               ]
           )
     ]
+      <> case query of
+        Just q -> ["query" .= Aeson.toJSON q]
+        Nothing -> []

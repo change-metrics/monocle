@@ -13,7 +13,8 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), toBHQueryWithFlavor)
+import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, toBHQueryWithFlavor)
+import Monocle.Servant.Env (mkFinalQuery)
 
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
@@ -34,9 +35,9 @@ simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName s
 
 changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
 changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothing] $ do
-  query <- getQuery
+  query <- getQueryBH
   let search =
-        (BH.mkSearch (Q.queryBH query) Nothing)
+        (BH.mkSearch query Nothing)
           { BH.size = BH.Size (if limit > 0 then limitInt else 50),
             BH.sortBody = toSortBody <$> orderM
           }
@@ -57,8 +58,8 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
-countEvents :: BH.Query -> TenantM Word32
-countEvents query = do
+doCountEvents :: BH.Query -> TenantM Word32
+doCountEvents query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
@@ -66,19 +67,28 @@ countEvents query = do
     Left e -> error (show e)
     Right x -> pure (fromInteger . toInteger . BH.crCount $ x)
 
+countEvents :: QueryFlavor -> [BH.Query] -> QueryM Word32
+countEvents qf queries = withFilter queries $ do
+  bhQuery <-
+    fromMaybe (error "Query shall exist because of withFilter")
+      <$> getQueryBHWithFlavor qf
+  liftTenantM $ doCountEvents bhQuery
+
+countEvents' :: [BH.Query] -> QueryM Word32
+countEvents' = countEvents defaultQueryFlavor
+
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  query <- getQueryBH'
-  liftTenantM $ do
-    commitCount <- countEvents (documentType query "ChangeCreatedEvent")
-    reviewCount <- countEvents (documentType query "ChangeReviewedEvent")
-    commentCount <- countEvents (documentType query "ChangeCommentedEvent")
-    let total, commitCountF, reviewCountF :: Float
-        total = reviewCountF + commitCountF
-        reviewCountF = fromIntegral $ reviewCount + commentCount
-        commitCountF = fromIntegral $ commitCount
-    pure (reviewCountF * 100 / total)
+  -- TODO: ensure the right flavor is used
+  commitCount <- countEvents' [documentType "ChangeCreatedEvent"]
+  reviewCount <- countEvents' [documentType "ChangeReviewedEvent"]
+  commentCount <- countEvents' [documentType "ChangeCommentedEvent"]
+  let total, commitCountF, reviewCountF :: Float
+      total = reviewCountF + commitCountF
+      reviewCountF = fromIntegral $ reviewCount + commentCount
+      commitCountF = fromIntegral $ commitCount
+  pure (reviewCountF * 100 / total)
 
 mkAnd :: [BH.Query] -> BH.Query
 mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
@@ -90,19 +100,15 @@ mkTerm :: Text -> Text -> BH.Query
 mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
 
 -- | Add a change state filter to the query
-changeState :: BH.Query -> Text -> BH.Query
-changeState baseQuery state' =
-  mkAnd
-    [ BH.TermQuery (BH.Term "type" "Change") Nothing,
-      BH.TermQuery (BH.Term "state" state') Nothing,
-      baseQuery
-    ]
+changeState :: Text -> [BH.Query]
+changeState state' =
+  [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+    BH.TermQuery (BH.Term "state" state') Nothing
+  ]
 
 -- | Add a document type filter to the query
-documentType :: [BH.Query] -> Text -> BH.Query
-documentType baseQuery type' =
-  mkAnd
-    ([BH.TermQuery (BH.Term "type" type') Nothing] <> baseQuery)
+documentType :: Text -> BH.Query
+documentType type' = BH.TermQuery (BH.Term "type" type') Nothing
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -132,17 +138,16 @@ data EventCounts = EventCounts
   }
   deriving (Eq, Show)
 
-getEventCounts :: BH.Query -> TenantM EventCounts
-getEventCounts query =
+getEventCounts :: QueryM EventCounts
+getEventCounts =
+  -- TODO: ensure the right flavor is used
   EventCounts
-    <$> countEvents (queryState "OPEN")
-      <*> countEvents (queryState "MERGED")
-      <*> countEvents (queryState "ABANDONED")
-      <*> countEvents selfMergedQ
+    <$> countEvents' (changeState "OPEN")
+      <*> countEvents' (changeState "MERGED")
+      <*> countEvents' (changeState "ABANDONED")
+      <*> countEvents' selfMergedQ
   where
-    bhQuery = query
-    queryState = changeState bhQuery
-    selfMergedQ = mkAnd [query, BH.TermQuery (BH.Term "self_merged" "true") Nothing]
+    selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
 -- $setup
 -- >>> import Data.Aeson.Encode.Pretty (encodePretty', Config (..), defConfig, compare)
@@ -210,10 +215,11 @@ data MergedStatsDuration = MergedStatsDuration
 field :: Text -> Value
 field name = Aeson.object ["field" .= name]
 
-changeMergedStatsDuration :: BH.Query -> TenantM MergedStatsDuration
+changeMergedStatsDuration :: [BH.Query] -> TenantM MergedStatsDuration
 changeMergedStatsDuration query = do
   index <- getIndexName
-  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg query)
+  let finalQuery = mkFinalQuery query
+  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg finalQuery)
   pure $ MergedStatsDuration (getAggValue "avg" res) (getAggValue "variability" res)
   where
     agg =
@@ -269,7 +275,7 @@ instance FromJSON EventProjectBucketAggs where
 getProjectAgg :: BH.Query -> TenantM [EventProjectBucketAgg]
 getProjectAgg query = do
   index <- getIndexName
-  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg query)
+  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg (Just query))
   pure $ unEPBuckets (parseAggregationResults "agg" res)
   where
     agg =
@@ -286,11 +292,15 @@ getProjectAgg query = do
         )
       ]
 
--- | The repos_summary query
 getQueryFromSL :: Text -> [BH.Query]
-getQueryFromSL query = case Q.queryBH $ Q.load Nothing mempty Nothing query of
-  Just q -> [q]
-  Nothing -> []
+getQueryFromSL query =
+  flip Q.queryBH defaultQueryFlavor $ Q.load Nothing mempty Nothing query
+
+-- | TopTerm agg query utils
+getSimpleTR :: BH.TermsResult -> TermResult
+getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
+
+data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
@@ -307,13 +317,11 @@ getTermsAgg query onTerm = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
-
-getRepos :: QueryM [TermResult]
-getRepos = do
+getDocTypeTopCountByField :: Text -> Text -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField doctype attr qflavor = do
   -- Prepare the query
-  basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor CreatedAt) <$> getQuery
-  let query = mkAnd $ basequery <> getQueryE
+  basequery <- toBHQueryWithFlavor qflavor <$> getQuery
+  let query = mkAnd $ basequery <> [documentType doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query)
@@ -321,9 +329,15 @@ getRepos = do
   -- Return the result
   pure $ getSimpleTR <$> results
   where
-    getQueryE = getQueryFromSL "repo_regex: .*"
-    runTermAgg query = getTermsAgg query "repository_fullname"
-    getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
+    runTermAgg query = getTermsAgg query attr
+
+-- | The repos_summary query
+getRepos :: QueryM [TermResult]
+getRepos =
+  getDocTypeTopCountByField
+    "Change"
+    "repository_fullname"
+    (QueryFlavor Author CreatedAt)
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
@@ -341,9 +355,9 @@ getReposSummary = do
   where
     getRepoSummary fn = do
       -- Prepare the queries
-      basequery <- toBHQueryWithFlavor (QueryFlavor OnAuthor UpdatedAt) <$> getQuery
-      let query = mkAnd $ basequery <> getQueryFromSL ("repo: " <> fn)
-          countEvent docType = liftTenantM $ countEvents (documentType [query] docType)
+      let query = getQueryFromSL ("repo: " <> fn)
+          qf = QueryFlavor OnAuthor UpdatedAt
+          countEvent docType = countEvents qf (query <> [documentType docType])
 
       -- Count the events
       totalChanges' <- countEvent "ChangeCreatedEvent"
@@ -354,10 +368,54 @@ getReposSummary = do
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
+-- | get authors tops
+getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
+getMostActiveAuthorByChangeCreated =
+  getDocTypeTopCountByField
+    "ChangeCreatedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
+getMostActiveAuthorByChangeMerged =
+  getDocTypeTopCountByField
+    "ChangeMergedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
+
+getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed =
+  getDocTypeTopCountByField
+    "ChangeReviewedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
+getMostActiveAuthorByChangeCommented =
+  getDocTypeTopCountByField
+    "ChangeCommentedEvent"
+    "author.muid"
+    (QueryFlavor Author CreatedAt)
+
+getMostReviewedAuthor :: QueryM [TermResult]
+getMostReviewedAuthor =
+  getDocTypeTopCountByField
+    "ChangeReviewedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
+
+getMostCommentedAuthor :: QueryM [TermResult]
+getMostCommentedAuthor =
+  getDocTypeTopCountByField
+    "ChangeCommentedEvent"
+    "on_author.muid"
+    (QueryFlavor OnAuthor CreatedAt)
+
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
 getReviewHisto = do
   query <- getQuery
+  queryBH <- getQueryBH
 
   let (minBound', maxBound') = Q.queryBounds query
       bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
@@ -376,7 +434,7 @@ getReviewHisto = do
         Aeson.object
           [ "aggregations" .= agg,
             "size" .= (0 :: Word),
-            "query" .= fromMaybe (error "need query") (Q.queryBH query)
+            "query" .= fromMaybe (error "need query") queryBH
           ]
 
   liftTenantM $ do

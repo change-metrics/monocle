@@ -203,8 +203,11 @@ monocleSearchLanguage =
       Aeson.encodePretty'
         ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
         )
-    queryMatch = queryDoMatch' [] (encodePretty . Q.queryBH)
-    queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . flip Q.queryBHWithFlavor flavor)
+    headS = \case
+      [x] -> x
+      _ -> error "Not a list"
+    queryMatch = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH S.defaultQueryFlavor)
+    queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH flavor)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index

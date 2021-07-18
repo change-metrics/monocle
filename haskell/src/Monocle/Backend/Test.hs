@@ -14,6 +14,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (defaultQueryFlavor)
 import Monocle.Servant.Env
 import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
@@ -255,9 +256,21 @@ testOrganizationCrawlerMetadata = withTenant doTest
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 
+alice :: Author
+alice = Author "alice" "a"
+
+bob :: Author
+bob = Author "bob" "b"
+
+eve :: Author
+eve = Author "eve" "e"
+
+reviewers :: [Author]
+reviewers = [alice, bob]
+
 scenarioProject :: LText -> ScenarioProject
 scenarioProject name =
-  SProject name [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+  SProject name reviewers [alice] [eve]
 
 testAchievements :: Assertion
 testAchievements = withTenant doTest
@@ -271,7 +284,19 @@ testAchievements = withTenant doTest
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = fromMaybe (error "oops") $ Q.queryBH $ Q.load Nothing mempty Nothing "state:open"
+        query = case (Q.queryBH $ Q.load Nothing mempty Nothing "state:open") defaultQueryFlavor of
+          [x] -> x
+          _ -> error "Could not compile query"
+
+defaultQuery :: Q.Query
+defaultQuery =
+  let queryBH _ = []
+      queryBounds =
+        ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
+          fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+        )
+      queryMinBoundsSet = False
+   in Q.Query {..}
 
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
@@ -282,7 +307,7 @@ testReposSummary = withTenant doTest
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
 
-      results <- runQueryM query Q.getReposSummary
+      results <- runQueryM defaultQuery Q.getReposSummary
       assertEqual'
         "Check buckets names"
         [ Q.RepoSummary
@@ -301,16 +326,55 @@ testReposSummary = withTenant doTest
             }
         ]
         results
-    query :: Q.Query
-    query =
-      let queryBH = Nothing
-          queryBHWithFlavor = const Nothing
-          queryBounds =
-            ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
-              fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
-            )
-          queryMinBoundsSet = False
-       in Q.Query {..}
+
+testTopAuthors :: Assertion
+testTopAuthors = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
+      traverse_ (indexScenario' nova) ["42", "43"]
+      traverse_ (indexScenarioNoMerged neutron) ["142", "143"]
+
+      -- Check for expected metrics
+      runQueryM defaultQuery $ do
+        results <- Q.getMostActiveAuthorByChangeCreated
+        assertEqual' "Check getMostActiveAuthorByChangeCreated count" [Q.TermResult {term = "eve", count = 4}] results
+        results' <- Q.getMostActiveAuthorByChangeMerged
+        assertEqual' "Check getMostActiveAuthorByChangeMerged count" [Q.TermResult {term = "eve", count = 2}] results'
+        results'' <- Q.getMostActiveAuthorByChangeReviewed
+        assertEqual'
+          "Check getMostActiveAuthorByChangeReviewed count"
+          [ Q.TermResult {term = "alice", count = 2},
+            Q.TermResult {term = "bob", count = 2}
+          ]
+          results''
+        results''' <- Q.getMostActiveAuthorByChangeCommented
+        assertEqual'
+          "Check getMostActiveAuthorByChangeCommented count"
+          [Q.TermResult {term = "alice", count = 2}]
+          results'''
+        results'''' <- Q.getMostReviewedAuthor
+        assertEqual'
+          "Check getMostReviewedAuthor count"
+          [Q.TermResult {term = "eve", count = 4}]
+          results''''
+        results''''' <- Q.getMostCommentedAuthor
+        assertEqual'
+          "Check getMostCommentedAuthor count"
+          [Q.TermResult {term = "eve", count = 2}]
+          results'''''
+      where
+        indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
+        indexScenarioNoMerged project cid =
+          indexScenario
+            [ s | s <- nominalMerge project cid fakeDate 3600, case s of
+                                                                 SMerge _ -> False
+                                                                 SComment _ -> False
+                                                                 _anyOther -> True
+            ]
 
 -- Tests scenario helpers
 
@@ -358,6 +422,7 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
         ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
           <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
           <> "]"
+      SComment ELKChangeEvent {..} -> "Commented[" <> author elkchangeeventAuthor <> "]"
       SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
       SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
 
@@ -367,14 +432,31 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
 data ScenarioProject = SProject
   { name :: LText,
     maintainers :: [Author],
+    commenters :: [Author],
     contributors :: [Author]
   }
 
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
+data EventType
+  = ChangeCreated
+  | ChangeMerged
+  | ChangeReviewed
+  | ChangeCommented
+  | ChangeAbandoned
+
+eventTypeToText :: EventType -> LText
+eventTypeToText = \case
+  ChangeCreated -> "ChangeCreatedEvent"
+  ChangeMerged -> "ChangeMergedEvent"
+  ChangeReviewed -> "ChangeReviewedEvent"
+  ChangeCommented -> "ChangeCommentedEvent"
+  ChangeAbandoned -> "ChangeAbandonedEvent"
+
 data ScenarioEvent
   = SChange ELKChange
   | SCreation ELKChangeEvent
   | SReview ELKChangeEvent
+  | SComment ELKChangeEvent
   | SMerge ELKChangeEvent
 
 indexScenario :: [ScenarioEvent] -> TenantM ()
@@ -384,12 +466,13 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SChange d -> I.indexChanges [d]
       SCreation d -> I.indexEvents [d]
       SReview d -> I.indexEvents [d]
+      SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
 
 -- | 'nominalMerge' is the most simple scenario
--- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+-- >>> let project = SProject "openstack/nova" [alice, bob] [alice] [eve]
 -- >>> showEvents $ nominalMerge project "42" now (3600*24)
--- "Change[2021-06-10 change-42 created by eve], Change[change-42], Merged[2021-06-11], Reviewed[alice]"
+-- "Change[2021-06-10 change-42 created by eve], Change[change-42], Commented[alice], Merged[2021-06-11], Reviewed[alice]"
 nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
 nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
   where
@@ -409,28 +492,33 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
                 elkchangeAuthor = author,
                 elkchangeChangeId = "change-" <> changeId
               }
-          mkEvent ts etype author =
+          mkEvent ts etype author onAuthor =
             emptyEvent
               { elkchangeeventAuthor = author,
-                elkchangeeventType = etype,
+                elkchangeeventOnAuthor = onAuthor,
+                elkchangeeventType = eventTypeToText etype,
                 elkchangeeventRepositoryFullname = name,
-                elkchangeeventId = etype <> "-" <> changeId,
+                elkchangeeventId = eventTypeToText etype <> "-" <> changeId,
                 elkchangeeventOnCreatedAt = mkDate ts,
                 elkchangeeventChangeId = "change-" <> changeId
               }
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent 0 "ChangeCreatedEvent" author
+      let create = mkEvent 0 ChangeCreated author author
           change = mkChange 0 author
+
+      -- The comment
+      commenter <- randomAuthor $ maintainers <> commenters
+      let comment = mkEvent (duration `div` 2) ChangeCommented commenter author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent (duration `div` 2) "ChangeCommentedEvent" reviewer
+      let review = mkEvent (duration `div` 2) ChangeReviewed reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent duration "ChangeMergedEvent" approver
+      let merge = mkEvent duration ChangeMerged approver author
 
       -- The event lists
-      pure [SChange change, SCreation create, SReview review, SMerge merge]
+      pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]
