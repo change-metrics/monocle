@@ -327,17 +327,18 @@ testTopAuthors = withTenant doTest
       traverse_ (indexScenarioNoMerged neutron) ["142", "143"]
 
       -- Check for expected metrics
-      results <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeCreated
-      assertEqual' "Check getMostActiveAuthorByChangeCreated count" [Q.TermResult {term = "eve", count = 4}] results
-      results' <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeMerged
-      assertEqual' "Check getMostActiveAuthorByChangeMerged count" [Q.TermResult {term = "eve", count = 2}] results'
-      results'' <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeReviewed
-      assertEqual'
-        "Check getMostActiveAuthorByChangeReviewed count"
-        [ Q.TermResult {term = "alice", count = 2},
-          Q.TermResult {term = "bob", count = 2}
-        ]
-        results''
+      runQueryM defaultQuery $ do
+        results <- Q.getMostActiveAuthorByChangeCreated
+        assertEqual' "Check getMostActiveAuthorByChangeCreated count" [Q.TermResult {term = "eve", count = 4}] results
+        results' <- Q.getMostActiveAuthorByChangeMerged
+        assertEqual' "Check getMostActiveAuthorByChangeMerged count" [Q.TermResult {term = "eve", count = 2}] results'
+        results'' <- Q.getMostActiveAuthorByChangeReviewed
+        assertEqual'
+          "Check getMostActiveAuthorByChangeReviewed count"
+          [ Q.TermResult {term = "alice", count = 2},
+            Q.TermResult {term = "bob", count = 2}
+          ]
+          results''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
         indexScenarioNoMerged project cid =
