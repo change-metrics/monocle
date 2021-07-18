@@ -356,6 +356,11 @@ testTopAuthors = withTenant doTest
           "Check getMostActiveAuthorByChangeCommented count"
           [Q.TermResult {term = "alice", count = 4}]
           results'''
+        results'''' <- Q.getMostReviewedAuthor
+        assertEqual'
+          "Check getMostReviewedAuthor count"
+          [Q.TermResult {term = "eve", count = 4}]
+          results''''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
         indexScenarioNoMerged project cid =
