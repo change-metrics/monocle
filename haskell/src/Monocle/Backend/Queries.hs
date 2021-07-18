@@ -396,6 +396,14 @@ getMostActiveAuthorByChangeReviewed =
     []
     (QueryFlavor Author CreatedAt)
 
+getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
+getMostActiveAuthorByChangeCommented =
+  getDocTypeTopCountByField
+    "ChangeCommentedEvent"
+    "author.muid"
+    []
+    (QueryFlavor Author CreatedAt)
+
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
 getReviewHisto = do

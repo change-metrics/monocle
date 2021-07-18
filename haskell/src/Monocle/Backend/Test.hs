@@ -256,9 +256,21 @@ testOrganizationCrawlerMetadata = withTenant doTest
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 
+alice :: Author
+alice = Author "alice" "a"
+
+bob :: Author
+bob = Author "bob" "b"
+
+eve :: Author
+eve = Author "eve" "e"
+
+reviewers :: [Author]
+reviewers = [alice, bob]
+
 scenarioProject :: LText -> ScenarioProject
 scenarioProject name =
-  SProject name [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+  SProject name reviewers [alice] [eve]
 
 testAchievements :: Assertion
 testAchievements = withTenant doTest
@@ -321,8 +333,8 @@ testTopAuthors = withTenant doTest
     doTest :: TenantM ()
     doTest = do
       -- Prapare data
-      let nova = SProject "openstack/nova" [Author "alice" "a"] [Author "eve" "e"]
-      let neutron = SProject "openstack/neutron" [Author "bob" "b"] [Author "eve" "e"]
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
       traverse_ (indexScenario' nova) ["42", "43"]
       traverse_ (indexScenarioNoMerged neutron) ["142", "143"]
 
@@ -339,6 +351,11 @@ testTopAuthors = withTenant doTest
             Q.TermResult {term = "bob", count = 2}
           ]
           results''
+        results''' <- Q.getMostActiveAuthorByChangeCommented
+        assertEqual'
+          "Check getMostActiveAuthorByChangeCommented count"
+          [Q.TermResult {term = "alice", count = 4}]
+          results'''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
         indexScenarioNoMerged project cid =
@@ -404,6 +421,7 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
 data ScenarioProject = SProject
   { name :: LText,
     maintainers :: [Author],
+    commenters :: [Author],
     contributors :: [Author]
   }
 
@@ -420,7 +438,7 @@ eventTypeToText = \case
   ChangeCreated -> "ChangeCreatedEvent"
   ChangeMerged -> "ChangeMergedEvent"
   ChangeReviewed -> "ChangeReviewedEvent"
-  ChangeCommented -> "ChangeCommenetedEvent"
+  ChangeCommented -> "ChangeCommentedEvent"
   ChangeAbandoned -> "ChangeAbandonedEvent"
 
 data ScenarioEvent
@@ -479,9 +497,12 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
       let create = mkEvent 0 ChangeCreated author author
           change = mkChange 0 author
 
+      -- The comment
+      commenter <- randomAuthor commenters
+      let comment = mkEvent (duration `div` 2) ChangeCommented commenter author
+
       -- The review
       reviewer <- randomAuthor maintainers
-      let comment = mkEvent (duration `div` 2) ChangeCommented reviewer author
       let review = mkEvent (duration `div` 2) ChangeReviewed reviewer author
 
       -- The change merged event
