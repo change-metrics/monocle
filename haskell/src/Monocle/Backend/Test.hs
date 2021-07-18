@@ -470,7 +470,7 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SMerge d -> I.indexEvents [d]
 
 -- | 'nominalMerge' is the most simple scenario
--- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
+-- >>> let project = SProject "openstack/nova" [alice, bob] [alice] [eve]
 -- >>> showEvents $ nominalMerge project "42" now (3600*24)
 -- "Change[2021-06-10 change-42 created by eve], Change[change-42], Commented[alice], Merged[2021-06-11], Reviewed[alice]"
 nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
@@ -509,7 +509,7 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
           change = mkChange 0 author
 
       -- The comment
-      commenter <- randomAuthor commenters
+      commenter <- randomAuthor $ maintainers <> commenters
       let comment = mkEvent (duration `div` 2) ChangeCommented commenter author
 
       -- The review
