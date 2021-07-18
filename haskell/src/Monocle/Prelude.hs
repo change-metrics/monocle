@@ -35,9 +35,9 @@ module Monocle.Prelude
     QueryM,
     runQueryM,
     getQuery,
-    getQueryBH',
     liftTenantM,
     getQueryBH,
+    getQueryBHWithFlavor,
     withFilter,
   )
 where
@@ -91,7 +91,7 @@ eventToText ev = case ev of
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->
-    let jsonQuery = decodeUtf8 . encode $ queryBH query
+    let jsonQuery = decodeUtf8 . encode $ queryBH query defaultQueryFlavor
      in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
 
 monocleLogEvent :: MonocleEvent -> TenantM ()

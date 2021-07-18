@@ -6,10 +6,10 @@ module Monocle.Search.Syntax
     QueryFlavor (..),
     AuthorFlavor (..),
     RangeFlavor (..),
+    rangeField,
     defaultQueryFlavor,
     toBHQuery,
     toBHQueryWithFlavor,
-    setQueryBH,
   )
 where
 
@@ -41,6 +41,11 @@ data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 
 data RangeFlavor = CreatedAt | UpdatedAt deriving (Show, Eq)
 
+rangeField :: RangeFlavor -> Text
+rangeField = \case
+  CreatedAt -> "created_at"
+  UpdatedAt -> "updated_at"
+
 data QueryFlavor = QueryFlavor
   { qfAuthor :: AuthorFlavor,
     qfRange :: RangeFlavor
@@ -51,8 +56,9 @@ defaultQueryFlavor :: QueryFlavor
 defaultQueryFlavor = QueryFlavor Author CreatedAt
 
 data Query = Query
-  { queryBH :: Maybe BH.Query,
-    queryBHWithFlavor :: QueryFlavor -> Maybe BH.Query,
+  { -- | queryBH is the bloodhound query
+    -- it is a list to be combine as a bool query
+    queryBH :: QueryFlavor -> [BH.Query],
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -66,13 +72,10 @@ data Query = Query
   }
 
 instance Show Query where
-  show Query {..} = "Query {" <> show queryBH <> ", " <> show queryBounds <> "}"
+  show Query {..} = "Query {" <> show queryBounds <> "}"
 
 toBHQuery :: Query -> [BH.Query]
-toBHQuery = maybeToList . queryBH
+toBHQuery = flip queryBH defaultQueryFlavor
 
 toBHQueryWithFlavor :: QueryFlavor -> Query -> [BH.Query]
-toBHQueryWithFlavor qf q = maybeToList $ queryBHWithFlavor q qf
-
-setQueryBH :: BH.Query -> Query -> Query
-setQueryBH queryBH' query = query {queryBH = Just queryBH'}
+toBHQueryWithFlavor = flip queryBH
