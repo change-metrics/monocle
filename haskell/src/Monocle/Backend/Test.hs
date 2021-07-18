@@ -328,9 +328,16 @@ testTopAuthors = withTenant doTest
 
       -- Check for expected metrics
       results <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeCreated
-      assertEqual' "Check ChangeCreatedEvent count" [Q.TermResult {term = "eve", count = 4}] results
+      assertEqual' "Check getMostActiveAuthorByChangeCreated count" [Q.TermResult {term = "eve", count = 4}] results
       results' <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeMerged
-      assertEqual' "Check ChangeMergedEvent count" [Q.TermResult {term = "eve", count = 2}] results'
+      assertEqual' "Check getMostActiveAuthorByChangeMerged count" [Q.TermResult {term = "eve", count = 2}] results'
+      results'' <- runQueryM defaultQuery Q.getMostActiveAuthorByChangeReviewed
+      assertEqual'
+        "Check getMostActiveAuthorByChangeReviewed count"
+        [ Q.TermResult {term = "alice", count = 2},
+          Q.TermResult {term = "bob", count = 2}
+        ]
+        results''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
         indexScenarioNoMerged project cid =
@@ -386,6 +393,7 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
         ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
           <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
           <> "]"
+      SComment ELKChangeEvent {..} -> "Commented[" <> author elkchangeeventAuthor <> "]"
       SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
       SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
 
@@ -399,10 +407,26 @@ data ScenarioProject = SProject
   }
 
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
+data EventType
+  = ChangeCreated
+  | ChangeMerged
+  | ChangeReviewed
+  | ChangeCommented
+  | ChangeAbandoned
+
+eventTypeToText :: EventType -> LText
+eventTypeToText = \case
+  ChangeCreated -> "ChangeCreatedEvent"
+  ChangeMerged -> "ChangeMergedEvent"
+  ChangeReviewed -> "ChangeReviewedEvent"
+  ChangeCommented -> "ChangeCommenetedEvent"
+  ChangeAbandoned -> "ChangeAbandonedEvent"
+
 data ScenarioEvent
   = SChange ELKChange
   | SCreation ELKChangeEvent
   | SReview ELKChangeEvent
+  | SComment ELKChangeEvent
   | SMerge ELKChangeEvent
 
 indexScenario :: [ScenarioEvent] -> TenantM ()
@@ -412,12 +436,13 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SChange d -> I.indexChanges [d]
       SCreation d -> I.indexEvents [d]
       SReview d -> I.indexEvents [d]
+      SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
 
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [Author "alice" "a", Author "bob" "b"] [Author "eve" "e"]
 -- >>> showEvents $ nominalMerge project "42" now (3600*24)
--- "Change[2021-06-10 change-42 created by eve], Change[change-42], Merged[2021-06-11], Reviewed[alice]"
+-- "Change[2021-06-10 change-42 created by eve], Change[change-42], Commented[alice], Merged[2021-06-11], Reviewed[alice]"
 nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
 nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
   where
@@ -441,25 +466,26 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
             emptyEvent
               { elkchangeeventAuthor = author,
                 elkchangeeventOnAuthor = onAuthor,
-                elkchangeeventType = etype,
+                elkchangeeventType = eventTypeToText etype,
                 elkchangeeventRepositoryFullname = name,
-                elkchangeeventId = etype <> "-" <> changeId,
+                elkchangeeventId = eventTypeToText etype <> "-" <> changeId,
                 elkchangeeventOnCreatedAt = mkDate ts,
                 elkchangeeventChangeId = "change-" <> changeId
               }
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent 0 "ChangeCreatedEvent" author author
+      let create = mkEvent 0 ChangeCreated author author
           change = mkChange 0 author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent (duration `div` 2) "ChangeCommentedEvent" reviewer author
+      let comment = mkEvent (duration `div` 2) ChangeCommented reviewer author
+      let review = mkEvent (duration `div` 2) ChangeReviewed reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent duration "ChangeMergedEvent" approver author
+      let merge = mkEvent duration ChangeMerged approver author
 
       -- The event lists
-      pure [SChange change, SCreation create, SReview review, SMerge merge]
+      pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]

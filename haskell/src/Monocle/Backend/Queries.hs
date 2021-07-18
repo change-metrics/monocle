@@ -371,7 +371,7 @@ getReposSummary = do
       let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
--- | getTops
+-- | get authors tops
 getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
 getMostActiveAuthorByChangeCreated =
   getDocTypeTopCountByField
@@ -387,6 +387,14 @@ getMostActiveAuthorByChangeMerged =
     "on_author.muid"
     []
     (QueryFlavor OnAuthor CreatedAt)
+
+getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed =
+  getDocTypeTopCountByField
+    "ChangeReviewedEvent"
+    "author.muid"
+    []
+    (QueryFlavor Author CreatedAt)
 
 -- | getReviewHisto
 getReviewHisto :: QueryM (V.Vector HistoEventBucket)
