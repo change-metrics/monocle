@@ -9,23 +9,25 @@ join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle
 > We are currently working on the
 [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
 
+
 ## Components
 
-Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
-provides a set of crawlers designed to fetch Pull Requests and Reviews
-data from the GitHub or Gerrit APIs and to store changes and changes
-related events into Elasticsearch. These changes and events are exposed
-via a JSON API. Furthermore Monocle implements ready to use queries
-and a React based web UI.
+![architecture](./doc/architecture.png)
 
-To summarize we have the following components in Monocle:
+Monocle is composed of the following services:
 
 1. an Elasticsearch data store.
-2. an api service.
-3. a crawler service.
-4. a web UI.
+2. an api service to perform user query and index crawler output.
+3. a crawler service to retrive change from provider.
+4. a web proxy and single page web application.
 
-OpenAPI definitions are availables: [Monocle OpenAPI][monocle-openapi].
+The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
+
+Some legacy component are still required until they are migrated to the new OpenAPI (see the related issues):
+
+5. a api service to perform filter based query [issue 468](https://github.com/change-metrics/monocle/issues/468).
+6. a crawler service to index github and gerrit changes [issue 458](https://github.com/change-metrics/monocle/issues/458).
+
 
 ## Installation
 
@@ -66,10 +68,13 @@ workspaces:
         provider:
           github_token: <github_token>
           github_organization: tektoncd
+          github_repositories:
+            - operator
+            - pipeline
         update_since: '2020-05-01'
 ```
 
-To crawl the full tektoncd GitHub organization then remove the _repository_ entry from the file.
+To crawl the full tektoncd GitHub organization then remove the _github_repositories_ entry from the file.
 A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
@@ -405,4 +410,5 @@ curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
 
 Follow [our contributing guide](CONTRIBUTING.md).
 
+[monocle-protobuf]: ./protos/monocle
 [monocle-openapi]: ./doc/openapi.yaml
