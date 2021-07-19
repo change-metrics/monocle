@@ -185,6 +185,35 @@ let createApiNgService =
                                          }
                                    )
 
+let createCrawlerNgService =
+      \(dev : Bool) ->
+        let service =
+              { depends_on = Some [ "api-ng" ]
+              , command = Some (Compose.StringOrList.String "macroscope")
+              , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , environment = Some
+                  ( Compose.ListOrDict.Dict
+                      [ { mapKey = "CONFIG"
+                        , mapValue = "/etc/monocle/config.yaml"
+                        }
+                      ]
+                  )
+              }
+
+        in  if    dev
+            then  Compose.Service::(     service
+                                     //  { build = Some
+                                             ( Compose.Build.Object
+                                                 (buildContext "api")
+                                             )
+                                         }
+                                   )
+            else  Compose.Service::(     service
+                                     //  { image = Some (monocleImage "api")
+                                         , restart = Some "unless-stopped"
+                                         }
+                                   )
+
 let createCrawlerService =
       \(dev : Bool) ->
         let service =
@@ -261,6 +290,7 @@ let createServices =
           , api-ng = createApiNgService dev
           , web = createWebService dev
           , crawler = createCrawlerService dev
+          , crawler-ng = createCrawlerNgService dev
           , elastic = createElasticService dev
           }
 

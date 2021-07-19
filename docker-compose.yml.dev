@@ -48,6 +48,18 @@ services:
     volumes:
       - "./etc:/etc/monocle:z"
       - "./dump:/var/lib/crawler:Z"
+  crawler-ng:
+    build:
+      args: {}
+      context: '.'
+      dockerfile: Dockerfile-api
+    command: macroscope
+    depends_on:
+      - api-ng
+    environment:
+      CONFIG: /etc/monocle/config.yaml
+    volumes:
+      - "./etc:/etc/monocle:z"
   elastic:
     environment:
       ES_JAVA_OPTS: "-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"

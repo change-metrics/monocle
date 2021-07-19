@@ -9,8 +9,8 @@ import Options.Generic
 import Relude
 
 data Macroscope w = Macroscope
-  { monocleUrl :: w ::: Text <?> "The monocle API",
-    config :: w ::: FilePath <?> "The monocle configuration",
+  { monocleUrl :: w ::: Maybe Text <?> "The monocle API",
+    config :: w ::: Maybe FilePath <?> "The monocle configuration",
     debug :: w ::: Bool <?> "Verbose mode",
     interval :: w ::: Maybe Word32 <?> "Interval in seconds, default to 600"
   }
@@ -22,9 +22,10 @@ instance ParseRecord (Macroscope Wrapped) where
 main :: IO ()
 main = do
   args <- unwrapRecord "Macroscope lentille runner"
-  withClient (monocleUrl args) Nothing $ \client ->
+  config' <- fromMaybe (error "--config or CONFIG env is required") <$> lookupEnv "CONFIG"
+  withClient (fromMaybe "http://api:9898" $ monocleUrl args) Nothing $ \client ->
     runMacroscope
       (debug args)
-      (config args)
+      (fromMaybe config' $ config args)
       (fromMaybe 600 (interval args))
       client
