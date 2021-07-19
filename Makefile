@@ -1,5 +1,6 @@
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
+.PHONY: up-stage
 
 MESSAGES = monocle/search.proto monocle/task_data.proto
 MESSAGES_V2 = monocle/config.proto monocle/user_group.proto
@@ -48,3 +49,6 @@ compose-up:
 	docker-compose up
 
 compose-restart: compose-down codegen-compose compose-up
+
+up-stage:
+	oc -n monocle-stage apply -f deployment/
