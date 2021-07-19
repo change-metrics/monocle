@@ -76,13 +76,6 @@ function getProjects(request) {
   return axios.post(baseurl + '/get_projects', request)
 }
 
-function getIndices() {
-  const url = baseurl + '/indices'
-  return axios.get(url, {
-    withCredentials: true
-  })
-}
-
 function getLoggedUser() {
   const url = baseurl + '/whoami'
 
@@ -92,11 +85,4 @@ function getLoggedUser() {
   })
 }
 
-export {
-  getQueryResults,
-  getIndices,
-  getLoggedUser,
-  baseurl,
-  getProjects,
-  server
-}
+export { getQueryResults, getLoggedUser, baseurl, getProjects, server }

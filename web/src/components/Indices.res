@@ -17,23 +17,23 @@ module Indice = {
       <Link _to={name} onClick> {name->React.string} </Link>
     </Tooltip>
   }
-  let card: (Store.t, string) => React.element = (store, name) =>
-    <MSimpleCard key={name}> {make({"store": store, "name": name})} </MSimpleCard>
+  let card: (Store.t, ConfigTypes.workspace) => React.element = (store, ws) =>
+    <MSimpleCard key={ws.name}> {make({"store": store, "name": ws.name})} </MSimpleCard>
 }
 
 module Indices = {
   @react.component
   let make = (~store: Store.t) => {
-    let indices = useAutoGet(getIndices)
+    let indices = useAutoGet(() => WebApi.Config.getWorkspaces({void: ""}))
     <>
-      <h2> {"Available Indices"->React.string} </h2>
+      <h2> {"Available Workspaces"->React.string} </h2>
       <Layout.Stack>
         {switch indices {
         | None => <Spinner />
         | Some(Error(title)) => <Alert variant=#Danger title />
-        | Some(Ok(indices)) if indices->Array.length > 0 =>
-          indices->Belt.Array.map(Indice.card(store))->React.array
-        | _ => <Alert variant=#Warning title={"Please create an index."} />
+        | Some(Ok({workspaces})) if workspaces->Belt.List.length > 0 =>
+          workspaces->Belt.List.map(Indice.card(store))->Belt.List.toArray->React.array
+        | _ => <Alert variant=#Warning title={"Please create a workspace."} />
         }}
       </Layout.Stack>
     </>
