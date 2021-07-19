@@ -306,25 +306,30 @@ getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
 
-getTermsAgg :: BH.Query -> Text -> TenantM [BH.TermsResult]
-getTermsAgg query onTerm = do
+getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM [BH.TermsResult]
+getTermsAgg query onTerm maxBuckets = do
   search <- aggSearch query aggs
   pure $ filter isNotEmptyTerm $ unfilteredR search
   where
-    aggs = BH.mkAggregations "singleTermAgg" $ BH.TermsAgg $ BH.mkTermsAggregation onTerm
+    aggs =
+      BH.mkAggregations "singleTermAgg" $
+        BH.TermsAgg $
+          (BH.mkTermsAggregation onTerm)
+            { BH.termSize = maxBuckets
+            }
     unfilteredR search' = maybe [] BH.buckets (BH.toTerms "singleTermAgg" search')
     -- Terms agg returns empty terms in a buckets
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getDocTypeTopCountByField :: Text -> Text -> QueryFlavor -> QueryM [TermResult]
-getDocTypeTopCountByField doctype attr qflavor = do
+getDocTypeTopCountByField :: Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
   let query = mkAnd $ basequery <> [documentType doctype]
 
   -- Run the aggregation
-  results <- liftTenantM (runTermAgg query)
+  results <- liftTenantM (runTermAgg query size)
 
   -- Return the result
   pure $ getSimpleTR <$> results
@@ -337,6 +342,7 @@ getRepos =
   getDocTypeTopCountByField
     "Change"
     "repository_fullname"
+    (Just 5000)
     (QueryFlavor Author CreatedAt)
 
 data RepoSummary = RepoSummary
@@ -374,6 +380,7 @@ getMostActiveAuthorByChangeCreated =
   getDocTypeTopCountByField
     "ChangeCreatedEvent"
     "author.muid"
+    Nothing
     (QueryFlavor Author CreatedAt)
 
 getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
@@ -381,6 +388,7 @@ getMostActiveAuthorByChangeMerged =
   getDocTypeTopCountByField
     "ChangeMergedEvent"
     "on_author.muid"
+    Nothing
     (QueryFlavor OnAuthor CreatedAt)
 
 getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
@@ -388,6 +396,7 @@ getMostActiveAuthorByChangeReviewed =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "author.muid"
+    Nothing
     (QueryFlavor Author CreatedAt)
 
 getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
@@ -395,6 +404,7 @@ getMostActiveAuthorByChangeCommented =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "author.muid"
+    Nothing
     (QueryFlavor Author CreatedAt)
 
 getMostReviewedAuthor :: QueryM [TermResult]
@@ -402,6 +412,7 @@ getMostReviewedAuthor =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "on_author.muid"
+    Nothing
     (QueryFlavor OnAuthor CreatedAt)
 
 getMostCommentedAuthor :: QueryM [TermResult]
@@ -409,6 +420,7 @@ getMostCommentedAuthor =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "on_author.muid"
+    Nothing
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
