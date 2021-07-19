@@ -27,6 +27,18 @@ type health_response = {
   status : string;
 }
 
+type workspace = {
+  name : string;
+}
+
+type get_workspaces_request = {
+  void : string;
+}
+
+type get_workspaces_response = {
+  workspaces : workspace list;
+}
+
 
 (** {2 Default values} *)
 
@@ -62,3 +74,21 @@ val default_health_response :
   unit ->
   health_response
 (** [default_health_response ()] is the default value for type [health_response] *)
+
+val default_workspace : 
+  ?name:string ->
+  unit ->
+  workspace
+(** [default_workspace ()] is the default value for type [workspace] *)
+
+val default_get_workspaces_request : 
+  ?void:string ->
+  unit ->
+  get_workspaces_request
+(** [default_get_workspaces_request ()] is the default value for type [get_workspaces_request] *)
+
+val default_get_workspaces_response : 
+  ?workspaces:workspace list ->
+  unit ->
+  get_workspaces_response
+(** [default_get_workspaces_response ()] is the default value for type [get_workspaces_response] *)

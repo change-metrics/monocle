@@ -24,6 +24,18 @@ type health_response = {
   status : string;
 }
 
+type workspace = {
+  name : string;
+}
+
+type get_workspaces_request = {
+  void : string;
+}
+
+type get_workspaces_response = {
+  workspaces : workspace list;
+}
+
 let rec default_project_definition 
   ?name:((name:string) = "")
   ?repository_regex:((repository_regex:string) = "")
@@ -58,4 +70,22 @@ let rec default_health_response
   ?status:((status:string) = "")
   () : health_response  = {
   status;
+}
+
+let rec default_workspace 
+  ?name:((name:string) = "")
+  () : workspace  = {
+  name;
+}
+
+let rec default_get_workspaces_request 
+  ?void:((void:string) = "")
+  () : get_workspaces_request  = {
+  void;
+}
+
+let rec default_get_workspaces_response 
+  ?workspaces:((workspaces:workspace list) = [])
+  () : get_workspaces_response  = {
+  workspaces;
 }

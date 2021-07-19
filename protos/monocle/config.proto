@@ -27,3 +27,15 @@ message HealthRequest {
 message HealthResponse {
   string status = 1;
 }
+
+message Workspace {
+  string name = 1;
+}
+
+message GetWorkspacesRequest {
+  string void = 1;
+}
+
+message GetWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+}

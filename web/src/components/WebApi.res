@@ -9,6 +9,17 @@ type axios<'data> = Js.Promise.t<axiosResponse<'data>>
 
 module Config = {
   @module("axios")
+  external getWorkspacesRaw: (string, 'a) => axios<'b> = "post"
+
+  let getWorkspaces = (request: ConfigTypes.get_workspaces_request): axios<
+    ConfigTypes.get_workspaces_response,
+  > =>
+    request->ConfigBs.encode_get_workspaces_request
+    |> getWorkspacesRaw(serverUrl ++ "/api/2/get_workspaces")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->ConfigBs.decode_get_workspaces_response}->Js.Promise.resolve
+    )
+  @module("axios")
   external getProjectsRaw: (string, 'a) => axios<'b> = "post"
 
   let getProjects = (request: ConfigTypes.get_projects_request): axios<

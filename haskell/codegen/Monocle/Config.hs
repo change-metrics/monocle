@@ -558,3 +558,263 @@ instance HsJSONPB.ToSchema HealthResponse where
                   }
             }
         )
+
+newtype Workspace = Workspace {workspaceName :: Hs.Text}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Workspace where
+  nameOf _ = (Hs.fromString "Workspace")
+
+instance HsProtobuf.HasDefault Workspace
+
+instance HsProtobuf.Message Workspace where
+  encodeMessage _ Workspace {workspaceName = workspaceName} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              workspaceName
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure Workspace)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Workspace where
+  toJSONPB (Workspace f1) = (HsJSONPB.object ["name" .= f1])
+  toEncodingPB (Workspace f1) = (HsJSONPB.pairs ["name" .= f1])
+
+instance HsJSONPB.FromJSONPB Workspace where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Workspace"
+        (\obj -> (Hs.pure Workspace) <*> obj .: "name")
+    )
+
+instance HsJSONPB.ToJSON Workspace where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Workspace where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Workspace where
+  declareNamedSchema _ =
+    do
+      let declare_name = HsJSONPB.declareSchemaRef
+      workspaceName <- declare_name Proxy.Proxy
+      let _ = Hs.pure Workspace <*> HsJSONPB.asProxy declare_name
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "Workspace",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("name", workspaceName)]
+                  }
+            }
+        )
+
+newtype GetWorkspacesRequest = GetWorkspacesRequest
+  { getWorkspacesRequestVoid ::
+      Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetWorkspacesRequest where
+  nameOf _ = (Hs.fromString "GetWorkspacesRequest")
+
+instance HsProtobuf.HasDefault GetWorkspacesRequest
+
+instance HsProtobuf.Message GetWorkspacesRequest where
+  encodeMessage
+    _
+    GetWorkspacesRequest
+      { getWorkspacesRequestVoid =
+          getWorkspacesRequestVoid
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                getWorkspacesRequestVoid
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetWorkspacesRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "void")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetWorkspacesRequest where
+  toJSONPB (GetWorkspacesRequest f1) =
+    (HsJSONPB.object ["void" .= f1])
+  toEncodingPB (GetWorkspacesRequest f1) =
+    (HsJSONPB.pairs ["void" .= f1])
+
+instance HsJSONPB.FromJSONPB GetWorkspacesRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetWorkspacesRequest"
+        (\obj -> (Hs.pure GetWorkspacesRequest) <*> obj .: "void")
+    )
+
+instance HsJSONPB.ToJSON GetWorkspacesRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetWorkspacesRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetWorkspacesRequest where
+  declareNamedSchema _ =
+    do
+      let declare_void = HsJSONPB.declareSchemaRef
+      getWorkspacesRequestVoid <- declare_void Proxy.Proxy
+      let _ =
+            Hs.pure GetWorkspacesRequest
+              <*> HsJSONPB.asProxy declare_void
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetWorkspacesRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("void", getWorkspacesRequestVoid)]
+                  }
+            }
+        )
+
+newtype GetWorkspacesResponse = GetWorkspacesResponse
+  { getWorkspacesResponseWorkspaces ::
+      Hs.Vector Monocle.Config.Workspace
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetWorkspacesResponse where
+  nameOf _ = (Hs.fromString "GetWorkspacesResponse")
+
+instance HsProtobuf.HasDefault GetWorkspacesResponse
+
+instance HsProtobuf.Message GetWorkspacesResponse where
+  encodeMessage
+    _
+    GetWorkspacesResponse
+      { getWorkspacesResponseWorkspaces =
+          getWorkspacesResponseWorkspaces
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Config.Workspace)
+                    @(HsProtobuf.NestedVec Monocle.Config.Workspace)
+                    getWorkspacesResponseWorkspaces
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetWorkspacesResponse)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Config.Workspace))
+              @(_ (Hs.Vector Monocle.Config.Workspace))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Workspace"))
+          )
+          (HsProtobuf.Single "workspaces")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetWorkspacesResponse where
+  toJSONPB (GetWorkspacesResponse f1) =
+    (HsJSONPB.object ["workspaces" .= f1])
+  toEncodingPB (GetWorkspacesResponse f1) =
+    (HsJSONPB.pairs ["workspaces" .= f1])
+
+instance HsJSONPB.FromJSONPB GetWorkspacesResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetWorkspacesResponse"
+        (\obj -> (Hs.pure GetWorkspacesResponse) <*> obj .: "workspaces")
+    )
+
+instance HsJSONPB.ToJSON GetWorkspacesResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetWorkspacesResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetWorkspacesResponse where
+  declareNamedSchema _ =
+    do
+      let declare_workspaces = HsJSONPB.declareSchemaRef
+      getWorkspacesResponseWorkspaces <- declare_workspaces Proxy.Proxy
+      let _ =
+            Hs.pure GetWorkspacesResponse
+              <*> HsJSONPB.asProxy declare_workspaces
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetWorkspacesResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "workspaces",
+                            getWorkspacesResponseWorkspaces
+                          )
+                        ]
+                  }
+            }
+        )
