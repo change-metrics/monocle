@@ -188,7 +188,7 @@ let createApiNgService =
 let createCrawlerNgService =
       \(dev : Bool) ->
         let service =
-              { depends_on = Some [ "api-ng" ]
+              { depends_on = Some [ "api" ]
               , command = Some (Compose.StringOrList.String "macroscope")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
               , environment = Some
@@ -286,11 +286,11 @@ let createWebService =
 let createServices =
       \(dev : Bool) ->
         toMap
-          { api = createApiService dev
-          , api-ng = createApiNgService dev
+          { api-legacy = createApiService dev
+          , api = createApiNgService dev
           , web = createWebService dev
-          , crawler = createCrawlerService dev
-          , crawler-ng = createCrawlerNgService dev
+          , crawler-legacy = createCrawlerService dev
+          , crawler = createCrawlerNgService dev
           , elastic = createElasticService dev
           }
 
