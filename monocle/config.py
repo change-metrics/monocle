@@ -322,16 +322,6 @@ def get_project_by_name(
         return None
 
 
-def build_index_acl(config: dict) -> Dict[str, List[Username]]:
-    indexes_acl: Dict[str, List[Username]] = {}
-    for tenant in config["tenants"]:
-        if "users" not in tenant.keys():
-            indexes_acl[tenant["index"]] = []
-        else:
-            indexes_acl[tenant["index"]] = tenant["users"]
-    return indexes_acl
-
-
 def build_index_task_crawlers(
     config: dict,
 ) -> Dict[str, List[TaskCrawler]]:
@@ -342,19 +332,6 @@ def build_index_task_crawlers(
                 createTaskCrawler(entry) for entry in tenant["task_crawlers"]
             ]
     return ret
-
-
-def is_public_index(indexes_acl: Dict[str, List[Username]], index_name: str) -> bool:
-    if not indexes_acl.get(index_name, []):
-        return True
-    else:
-        return False
-
-
-def get_authorized_users(
-    indexes_acl: Dict[str, List[Username]], index_name: str
-) -> List[Username]:
-    return indexes_acl.get(index_name, [])
 
 
 def get_idents_config(config: dict, index_name: str) -> IdentsConfig:

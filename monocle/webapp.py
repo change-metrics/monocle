@@ -40,7 +40,6 @@ from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
 from monocle.task_data import TaskCrawler
 from monocle.webapi import config_service, search_service, task_data_service
-from monocle import config
 from monocle import env
 
 
@@ -128,13 +127,6 @@ def get_index(req):
 @app.route("/api/0/query/<name>", methods=["GET"])
 def query(name):
     index = get_index(request)
-    if not config.is_public_index(env.indexes_acl, index):
-        user = session.get("username") or request.headers.get("Remote-User")
-        if user:
-            if user not in config.get_authorized_users(env.indexes_acl, index):
-                returnAPIError("Unauthorized to access index %s" % index, 403)
-        else:
-            returnAPIError("Unauthorized to access index %s" % index, 403)
     repository_fullname = request.args.get("repository")
     try:
         ret = do_query(index, repository_fullname, request.args, name)
@@ -185,13 +177,7 @@ def indices():
     _indices = db.get_indices()
     indices = []
     for indice in _indices:
-        if config.is_public_index(env.indexes_acl, indice):
-            indices.append(indice)
-        else:
-            user = session.get("username")
-            if user:
-                if user in config.get_authorized_users(env.indexes_acl, indice):
-                    indices.append(indice)
+        indices.append(indice)
     return jsonify(indices)
 
 

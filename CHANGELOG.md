@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- [api] Index acl authentication using the `users` settings is removed. To protect an index use an authentication proxy instead.
+
 ### Fixed
 
 ### Upgrade

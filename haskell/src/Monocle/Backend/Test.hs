@@ -81,7 +81,6 @@ emptyConfig name =
       crawlers = []
       projects = Nothing
       idents = Nothing
-      users = Nothing
       search_aliases = Nothing
       index = name
    in Config.Index {..}
