@@ -725,6 +725,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_Changes'
                 repos_summary:
                     $ref: '#/components/schemas/monocle_search_ReposSummary'
+                top_authors:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
         monocle_search_RepoSummary:
             properties:
                 fullname:
@@ -773,6 +775,19 @@ components:
                     type: array
                     items:
                         type: string
+        monocle_search_TermCount:
+            properties:
+                term:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
+        monocle_search_TermsCount:
+            properties:
+                termcount:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_TermCount'
         monocle_task_data_AddRequest:
             properties:
                 index:

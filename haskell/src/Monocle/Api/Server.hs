@@ -120,6 +120,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -312,6 +313,13 @@ searchQuery request = do
             . V.fromList
             . map toRSumResult
             <$> Q.getReposSummary
+    -- SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED  ->
+    --   SearchPB.QueryResponse . Just
+    --     . SearchPB.QueryResponseResult
+    --     . SearchPB.ReposSummary
+    --     . V.fromList
+    --     . map toRSumResult
+    --     <$> Q.getReposSummary
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse

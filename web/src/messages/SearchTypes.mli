@@ -55,6 +55,12 @@ type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
   | Query_repos_summary 
+  | Query_top_authors_changes_created 
+  | Query_top_authors_changes_merged 
+  | Query_top_authors_changes_reviewed 
+  | Query_top_authors_changes_commented 
+  | Query_top_reviewed_authors 
+  | Query_top_commented_authors 
 
 type query_request = {
   index : string;
@@ -129,10 +135,20 @@ type repos_summary = {
   reposum : repo_summary list;
 }
 
+type term_count = {
+  term : string;
+  count : int32;
+}
+
+type terms_count = {
+  termcount : term_count list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
+  | Top_authors of terms_count
 
 type changes_histos_event = {
   doc_count : int32;
@@ -324,6 +340,19 @@ val default_repos_summary :
   unit ->
   repos_summary
 (** [default_repos_summary ()] is the default value for type [repos_summary] *)
+
+val default_term_count : 
+  ?term:string ->
+  ?count:int32 ->
+  unit ->
+  term_count
+(** [default_term_count ()] is the default value for type [term_count] *)
+
+val default_terms_count : 
+  ?termcount:term_count list ->
+  unit ->
+  terms_count
+(** [default_terms_count ()] is the default value for type [terms_count] *)
 
 val default_query_response : unit -> query_response
 (** [default_query_response ()] is the default value for type [query_response] *)

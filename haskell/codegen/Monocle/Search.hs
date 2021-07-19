@@ -1217,6 +1217,12 @@ data QueryRequest_QueryType
   = QueryRequest_QueryTypeQUERY_CHANGE
   | QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   | QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
+  | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED
+  | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED
+  | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED
+  | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED
+  | QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
+  | QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1226,7 +1232,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
+  maxBound = QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1240,10 +1246,34 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   toProtoEnumMay 2 =
     Hs.Just QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
+  toProtoEnumMay 3 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED
+  toProtoEnumMay 4 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED
+  toProtoEnumMay 5 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED
+  toProtoEnumMay 6 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED
+  toProtoEnumMay 7 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
+  toProtoEnumMay 8 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE) = 1
   fromProtoEnum (QueryRequest_QueryTypeQUERY_REPOS_SUMMARY) = 2
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED) = 3
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED) = 4
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED) = 5
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED) = 6
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS) =
+    7
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS) =
+    8
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1256,6 +1286,18 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   parseJSONPB (HsJSONPB.String "QUERY_REPOS_SUMMARY") =
     Hs.pure QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_CHANGES_CREATED") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_CHANGES_MERGED") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_CHANGES_REVIEWED") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_CHANGES_COMMENTED") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_REVIEWED_AUTHORS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_COMMENTED_AUTHORS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -2692,6 +2734,14 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultTopAuthors y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 4)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                            @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2718,21 +2768,30 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.ReposSummary))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 4),
+                  (Hs.pure (Hs.fmap QueryResponseResultTopAuthors))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+                            @(_ (Hs.Maybe Monocle.Search.TermsCount))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB QueryResponse where
-  toJSONPB (QueryResponse f1_or_f2_or_f3) =
+  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4) =
     ( HsJSONPB.object
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3 of
+                  ( case f1_or_f2_or_f3_or_f4 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
                       Hs.Just (QueryResponseResultReposSummary f3) ->
                         (HsJSONPB.pair "repos_summary" f3)
+                      Hs.Just (QueryResponseResultTopAuthors f4) ->
+                        (HsJSONPB.pair "top_authors" f4)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2744,15 +2803,17 @@ instance HsJSONPB.ToJSONPB QueryResponse where
           )
         ]
     )
-  toEncodingPB (QueryResponse f1_or_f2_or_f3) =
+  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3 of
+                  ( case f1_or_f2_or_f3_or_f4 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
                       Hs.Just (QueryResponseResultReposSummary f3) ->
                         (HsJSONPB.pair "repos_summary" f3)
+                      Hs.Just (QueryResponseResultTopAuthors f4) ->
+                        (HsJSONPB.pair "top_authors" f4)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2777,6 +2838,8 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "changes"),
                               Hs.Just Hs.. QueryResponseResultReposSummary
                                 <$> (HsJSONPB.parseField parseObj "repos_summary"),
+                              Hs.Just Hs.. QueryResponseResultTopAuthors
+                                <$> (HsJSONPB.parseField parseObj "top_authors"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -2822,6 +2885,7 @@ data QueryResponseResult
   = QueryResponseResultError Monocle.Search.QueryError
   | QueryResponseResultChanges Monocle.Search.Changes
   | QueryResponseResultReposSummary Monocle.Search.ReposSummary
+  | QueryResponseResultTopAuthors Monocle.Search.TermsCount
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -2847,6 +2911,11 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultReposSummary
               <*> HsJSONPB.asProxy declare_repos_summary
+      let declare_top_authors = HsJSONPB.declareSchemaRef
+      queryResponseResultTopAuthors <- declare_top_authors Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultTopAuthors
+              <*> HsJSONPB.asProxy declare_top_authors
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2864,6 +2933,9 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ("changes", queryResponseResultChanges),
                           ( "repos_summary",
                             queryResponseResultReposSummary
+                          ),
+                          ( "top_authors",
+                            queryResponseResultTopAuthors
                           )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
@@ -4303,6 +4375,202 @@ instance HsJSONPB.ToSchema ReposSummary where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [("reposum", reposSummaryReposum)]
+                  }
+            }
+        )
+
+data TermCount = TermCount
+  { termCountTerm :: Hs.Text,
+    termCountCount :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named TermCount where
+  nameOf _ = (Hs.fromString "TermCount")
+
+instance HsProtobuf.HasDefault TermCount
+
+instance HsProtobuf.Message TermCount where
+  encodeMessage
+    _
+    TermCount
+      { termCountTerm = termCountTerm,
+        termCountCount = termCountCount
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                termCountTerm
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                termCountCount
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure TermCount)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "term")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "count")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB TermCount where
+  toJSONPB (TermCount f1 f2) =
+    (HsJSONPB.object ["term" .= f1, "count" .= f2])
+  toEncodingPB (TermCount f1 f2) =
+    (HsJSONPB.pairs ["term" .= f1, "count" .= f2])
+
+instance HsJSONPB.FromJSONPB TermCount where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "TermCount"
+        ( \obj ->
+            (Hs.pure TermCount) <*> obj .: "term" <*> obj .: "count"
+        )
+    )
+
+instance HsJSONPB.ToJSON TermCount where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON TermCount where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema TermCount where
+  declareNamedSchema _ =
+    do
+      let declare_term = HsJSONPB.declareSchemaRef
+      termCountTerm <- declare_term Proxy.Proxy
+      let declare_count = HsJSONPB.declareSchemaRef
+      termCountCount <- declare_count Proxy.Proxy
+      let _ =
+            Hs.pure TermCount <*> HsJSONPB.asProxy declare_term
+              <*> HsJSONPB.asProxy declare_count
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "TermCount",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("term", termCountTerm),
+                          ("count", termCountCount)
+                        ]
+                  }
+            }
+        )
+
+newtype TermsCount = TermsCount
+  { termsCountTermcount ::
+      Hs.Vector Monocle.Search.TermCount
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named TermsCount where
+  nameOf _ = (Hs.fromString "TermsCount")
+
+instance HsProtobuf.HasDefault TermsCount
+
+instance HsProtobuf.Message TermsCount where
+  encodeMessage
+    _
+    TermsCount {termsCountTermcount = termsCountTermcount} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.TermCount)
+                    @(HsProtobuf.NestedVec Monocle.Search.TermCount)
+                    termsCountTermcount
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure TermsCount)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.TermCount))
+              @(_ (Hs.Vector Monocle.Search.TermCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "TermCount"))
+          )
+          (HsProtobuf.Single "termcount")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB TermsCount where
+  toJSONPB (TermsCount f1) = (HsJSONPB.object ["termcount" .= f1])
+  toEncodingPB (TermsCount f1) = (HsJSONPB.pairs ["termcount" .= f1])
+
+instance HsJSONPB.FromJSONPB TermsCount where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "TermsCount"
+        (\obj -> (Hs.pure TermsCount) <*> obj .: "termcount")
+    )
+
+instance HsJSONPB.ToJSON TermsCount where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON TermsCount where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema TermsCount where
+  declareNamedSchema _ =
+    do
+      let declare_termcount = HsJSONPB.declareSchemaRef
+      termsCountTermcount <- declare_termcount Proxy.Proxy
+      let _ = Hs.pure TermsCount <*> HsJSONPB.asProxy declare_termcount
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "TermsCount",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("termcount", termsCountTermcount)]
                   }
             }
         )

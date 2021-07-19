@@ -52,6 +52,12 @@ type query_request_query_type =
   | Query_change 
   | Query_change_lifecycle 
   | Query_repos_summary 
+  | Query_top_authors_changes_created 
+  | Query_top_authors_changes_merged 
+  | Query_top_authors_changes_reviewed 
+  | Query_top_authors_changes_commented 
+  | Query_top_reviewed_authors 
+  | Query_top_commented_authors 
 
 type query_request = {
   index : string;
@@ -126,10 +132,20 @@ type repos_summary = {
   reposum : repo_summary list;
 }
 
+type term_count = {
+  term : string;
+  count : int32;
+}
+
+type terms_count = {
+  termcount : term_count list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
+  | Top_authors of terms_count
 
 type changes_histos_event = {
   doc_count : int32;
@@ -363,6 +379,20 @@ let rec default_repos_summary
   ?reposum:((reposum:repo_summary list) = [])
   () : repos_summary  = {
   reposum;
+}
+
+let rec default_term_count 
+  ?term:((term:string) = "")
+  ?count:((count:int32) = 0l)
+  () : term_count  = {
+  term;
+  count;
+}
+
+let rec default_terms_count 
+  ?termcount:((termcount:term_count list) = [])
+  () : terms_count  = {
+  termcount;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())

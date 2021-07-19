@@ -64,6 +64,12 @@ message QueryRequest {
     QUERY_CHANGE = 0;
     QUERY_CHANGE_LIFECYCLE = 1;
     QUERY_REPOS_SUMMARY = 2;
+    QUERY_TOP_AUTHORS_CHANGES_CREATED = 3;
+    QUERY_TOP_AUTHORS_CHANGES_MERGED = 4;
+    QUERY_TOP_AUTHORS_CHANGES_REVIEWED = 5;
+    QUERY_TOP_AUTHORS_CHANGES_COMMENTED = 6;
+    QUERY_TOP_REVIEWED_AUTHORS = 7;
+    QUERY_TOP_COMMENTED_AUTHORS = 8;
   }
   QueryType query_type = 4;
 
@@ -140,6 +146,7 @@ message QueryResponse {
     QueryError error = 1;
     Changes changes = 2;
     ReposSummary repos_summary = 3;
+    TermsCount top_authors = 4;
   }
 }
 
@@ -191,4 +198,13 @@ message RepoSummary {
 
 message ReposSummary {
   repeated RepoSummary reposum = 1;
+}
+
+message TermCount {
+  string term = 1;
+  uint32 count = 2;
+}
+
+message TermsCount {
+  repeated TermCount termcount = 1;
 }
