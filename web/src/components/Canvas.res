@@ -48,7 +48,7 @@ let drawScale = (pos, width, height, ctx) => {
 
   // the pos
   let axisWidth = width - 2 * padding
-  let posX = Belt.Int.toFloat(pos * axisWidth) /. 100.0
+  let posX = Belt.Int.toFloat(padding) +. Belt.Int.toFloat(pos * axisWidth) /. 100.0
   let posPadding = 1.5
 
   ctx->setLineWidth(1.0)
