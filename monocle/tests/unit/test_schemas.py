@@ -85,7 +85,7 @@ tenants:
 config_sample_yaml = """
 ---
 workspaces:
-  - index: default
+  - name: default
     users:
       - john
       - jane
@@ -107,7 +107,7 @@ workspaces:
         update_since: "2020-01-01"
         provider: TaskDataProvider
 
-  - index: tenant1
+  - name: tenant1
     crawlers_api_key: "CHANGE_ME"
     crawlers:
       - name: github-docker

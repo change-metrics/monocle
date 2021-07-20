@@ -182,6 +182,7 @@ def downgrade(tenant):
     crawlers = tenant.pop("crawlers", [])
     tenant["task_crawlers"] = []
     tenant["crawler"] = dict(loop_delay=300, github_orgs=[], gerrit_repositories=[])
+    tenant["index"] = tenant.pop("name")
 
     for crawler in crawlers:
         provider = crawler["provider"]
@@ -284,6 +285,7 @@ def upgrade(tenant):
     tenant["crawlers"] = crawlers
     if not tenant.get("crawlers_api_key"):
         tenant["crawlers_api_key"] = "CHANGE_ME"
+    tenant["name"] = tenant.pop("index")
     return removeEmpty(tenant)
 
 

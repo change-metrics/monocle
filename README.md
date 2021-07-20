@@ -60,7 +60,7 @@ Then create the config file `etc/config.yaml`. Here is an example your could sta
 ```YAML
 ---
 workspaces:
-  - index: monocle
+  - name: monocle
     crawlers:
       - name: github-tektoncd
         provider:
@@ -126,18 +126,18 @@ or make the data directory writable for other:
 $ chmod o+w data
 ```
 
-You might want to wipe a Monocle index:
+You might want to wipe a Monocle project:
 
 ```
 docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --index <index-name> --delete-repository ".*"
+--elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
 ```
 
-or delete an index:
+or delete an workspace:
 
 ```
 docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --index <index-name> --delete-index
+--elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
 ```
 
 ## Advanced deployment configuration
@@ -168,24 +168,6 @@ The following settings are available in the `.env` file:
   ElasticSearch service is listening to (default `0.0.0.0`). This is
   only exposed in the development version of the docker-compose
   (`docker-compose.yml.dev`).
-
-### GitHub authentication
-
-If you want to protect the access to your indices, you can require a
-GitHub login to access and the people able to use the indices will be
-the ones listed in the `users` section in `config.yaml`.
-
-Configure the GitHub Oauth authentication to secure private indexes
-
-1. [Create an Oauth APP in your GitHub user settings page](https://developer.github.com/apps/building-oauth-apps/creating-an-oauth-app/)
-2. Add "http://$MONOCLE_HOST:9876/api/0/authorize" in "User authorization callback URL"
-3. Save the `CLIENT_ID` and `CLIENT_SECRET` into `.env` as `GITHUB_CLIENT_ID=<CLIENT_ID>` and `GITHUB_CLIENT_SECRET=<CLIENT_SECRET>`.
-
-The authentication and authorization support is new and only provides
-a solution to control access to private indexes. Only login users
-part of `users` will be authorized to access the related index.
-
-Note that the GitHub application can be also used as a Oauth APP.
 
 ### GitHub application
 
@@ -220,7 +202,7 @@ with the "repo" scope.
 
 ### Projects definition
 
-Projects could be defined within an index configuration. A project is identified by a name and allows to set the following filter attributes:
+Projects could be defined within a workspace configuration. A project is identified by a name and allows to set the following filter attributes:
 
 - repository_regex
 - branch_regex
@@ -230,7 +212,7 @@ Here is an example of configuration.
 
 ```YAML
 workspaces:
-  - index: example
+  - name: example
     crawlers:
       - name: openstack
         provider:
@@ -250,7 +232,7 @@ workspaces:
 ```
 
 The monocle API endpoint `api/1/get_projects` can be queried to
-retrieved the list defined projects for a given index. See the
+retrieved the list defined projects for a given workspace. See the
 [Monocle OpenAPI][monocle-openapi].
 
 The monocle query endpoint handles the query parameter: `project`.
@@ -261,11 +243,11 @@ Monocle is able to index changes from multiple code review systems. A contributo
 might get different identities across code review systems. Thus Monocle provides
 a configuration section to define aliases for contributors.
 
-Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
+Let say a Monocle workspace is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
 
 ```YAML
 workspaces:
-  - index: example
+  - name: example
     idents:
       - ident: John Doe
         aliases:
@@ -296,7 +278,7 @@ Database objects must be updated to reflect the configuration. Once `config.yaml
 
 ```bash
 docker-compose stop crawler
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --config /etc/monocle/config.yaml --update-idents
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
 docker-compose restart api
 docker-compose start crawler
 ```
@@ -315,7 +297,7 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 
 ```YAML
 workspaces:
-  - index: default
+  - name: default
     crawlers_api_key: 1a2b3c4d5e
     crawlers:
       - name: crawler_name
@@ -335,7 +317,7 @@ the initial date.
 ```YAML
 ---
 workspaces:
-  - index: monocle
+  - name: monocle
     crawlers:
       - name: tektoncd
         provider:
@@ -351,7 +333,7 @@ workspaces:
           github_organization: spinnaker
           github_repositories:
             - pipeline
-  - index: zuul
+  - name: zuul
     crawlers:
       - name: gerrit-opendev
         provider:
@@ -359,7 +341,7 @@ workspaces:
           gerrit_repositories:
             - ^zuul/.*
         update_since: '2020-03-15'
-  - index: openstack
+  - name: openstack
     idents:
       - ident: "Fabien Boucher"
         aliases:
@@ -382,21 +364,6 @@ workspaces:
           gerrit_repositories:
             - ^openstack/.*
         update_since: '2020-03-15'
-
-  # A private index. Only whitelisted users are authorized to access
-  # See "Advanced deployment configuration" section
-  - index: monocle-private
-    users:
-      - <github_login1>
-      - <github_login2>
-    crawlers:
-      - name: libpod
-        updated_since: "2020-03-15"
-        provider:
-          github_token: <github_token>
-          github_organization: containers
-          github_repositories:
-            - libpod
 ```
 
 ## Database migration
@@ -405,13 +372,13 @@ workspaces:
 
 Identities are consolidated in the database, to enable multiple code review identities (across code review systems) to be grouped.
 
-1. Run the migration process for each index
+1. Run the migration process for each workspace
 
 ```
 docker-compose stop
 docker-compose start elastic
-# For each indexes
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate from-0.8-to-last-stable
+# For each workspace
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --run-migrate from-0.8-to-last-stable
 docker-compose up -d
 ```
 
@@ -420,7 +387,7 @@ docker-compose up -d
 A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --index <index-name> --run-migrate self-merge
+docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <index-name> --run-migrate self-merge
 ```
 
 ## Using external authentication system
