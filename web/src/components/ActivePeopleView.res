@@ -32,9 +32,10 @@ module TopTermsTable = {
 let make = (~store: Store.t) => {
   let (state, _) = store
   let index = state.index
+  let query = state.query
   let request = {
     SearchTypes.index: index,
-    query: state.query,
+    query: query,
     username: "",
     query_type: SearchTypes.Query_top_authors_changes_created,
     // order and limit are not handled server side
@@ -42,7 +43,7 @@ let make = (~store: Store.t) => {
     limit: 10->Int32.of_int,
   }
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+    {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
