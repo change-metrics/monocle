@@ -237,7 +237,7 @@ def main() -> None:
         app = None
         if os.getenv("APP_ID") and os.getenv("APP_KEY_PATH"):
             app = application.get_app(os.getenv("APP_ID"), os.getenv("APP_KEY_PATH"))
-        for tenant in configdata["tenants"]:
+        for tenant in config.get_workspaces(configdata):
             idents_config = config.get_idents_config(configdata, tenant["index"])
             for crawler_item in tenant.get("crawler", {}).get("github_orgs", []):
                 tg = pullrequest.TokenGetter(

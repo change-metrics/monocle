@@ -18,12 +18,9 @@ instance MacroM IO
 -- | Utility function to create a flat list of crawler from the whole configuration
 getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
 getCrawlers xs = do
-  index <- xs
-  crawler <- Config.crawlers index
-  let idents = fromMaybe [] (Config.idents index)
-  let name = Config.index index
-      key = Config.crawlers_api_key index
-  pure (name, key, crawler, idents)
+  Config.Index {..} <- xs
+  crawler <- crawlers
+  pure (name, crawlers_api_key, crawler, fromMaybe [] idents)
 
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name

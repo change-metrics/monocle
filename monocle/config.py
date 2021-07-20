@@ -94,7 +94,6 @@ schema = {
         },
     },
     "type": "object",
-    "required": ["tenants"],
     "properties": {
         "tenants": {
             "type": "array",
@@ -288,16 +287,20 @@ def upgrade(tenant):
     return removeEmpty(tenant)
 
 
+def get_workspaces(conf):
+    return conf.get("workspaces", conf.get("tenants", []))
+
+
 def loadUpgrade(content):
     conf = yaml.safe_load(content)
-    return dict(tenants=[upgrade(tenant) for tenant in conf.get("tenants", [])])
+    return dict(workspaces=[upgrade(ws) for ws in get_workspaces(conf)])
 
 
 def load(content):
     conf = yaml.safe_load(content)
     # We always downgrade the config for the apiv1 so that we can keep the
     # existing crawler unmodified.
-    return dict(tenants=[downgrade(tenant) for tenant in conf.get("tenants", [])])
+    return dict(tenants=[downgrade(ws) for ws in get_workspaces(conf)])
 
 
 def validate(data, schema):
@@ -326,7 +329,7 @@ def build_index_task_crawlers(
     config: dict,
 ) -> Dict[str, List[TaskCrawler]]:
     ret = {}
-    for tenant in config["tenants"]:
+    for tenant in get_workspaces(config):
         if "task_crawlers" in tenant.keys():
             ret[tenant["index"]] = [
                 createTaskCrawler(entry) for entry in tenant["task_crawlers"]
@@ -346,7 +349,7 @@ def get_idents_config(config: dict, index_name: str) -> IdentsConfig:
 
 def build_project_definitions(config: dict) -> Dict[str, List[ProjectDefinition]]:
     indexes_project_def: Dict[str, List[ProjectDefinition]] = {}
-    for tenant in config["tenants"]:
+    for tenant in get_workspaces(config):
         if "projects" not in tenant.keys():
             indexes_project_def[tenant["index"]] = []
         else:

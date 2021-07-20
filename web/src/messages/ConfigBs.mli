@@ -18,6 +18,15 @@ val encode_health_request : ConfigTypes.health_request -> Js.Json.t Js.Dict.t
 val encode_health_response : ConfigTypes.health_response -> Js.Json.t Js.Dict.t
 (** [encode_health_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_workspace : ConfigTypes.workspace -> Js.Json.t Js.Dict.t
+(** [encode_workspace v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_workspaces_request : ConfigTypes.get_workspaces_request -> Js.Json.t Js.Dict.t
+(** [encode_get_workspaces_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_workspaces_response : ConfigTypes.get_workspaces_response -> Js.Json.t Js.Dict.t
+(** [encode_get_workspaces_response v dict] encodes [v] int the given JSON [dict] *)
+
 
 (** {2 BS Decoding} *)
 
@@ -35,3 +44,12 @@ val decode_health_request : Js.Json.t Js.Dict.t -> ConfigTypes.health_request
 
 val decode_health_response : Js.Json.t Js.Dict.t -> ConfigTypes.health_response
 (** [decode_health_response decoder] decodes a [health_response] value from [decoder] *)
+
+val decode_workspace : Js.Json.t Js.Dict.t -> ConfigTypes.workspace
+(** [decode_workspace decoder] decodes a [workspace] value from [decoder] *)
+
+val decode_get_workspaces_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_workspaces_request
+(** [decode_get_workspaces_request decoder] decodes a [get_workspaces_request] value from [decoder] *)
+
+val decode_get_workspaces_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_workspaces_response
+(** [decode_get_workspaces_response decoder] decodes a [get_workspaces_response] value from [decoder] *)

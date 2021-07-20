@@ -1,4 +1,4 @@
-tenants:
+workspaces:
   - index: tenant1
     crawlers_api_key: CHANGE_ME
     crawlers:

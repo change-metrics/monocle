@@ -17,6 +17,14 @@ import "monocle/crawler.proto";
 import "monocle/user_group.proto";
 
 service Config {
+  // Return the list of workspaces
+  rpc GetWorkspaces(monocle_config.GetWorkspacesRequest) returns (monocle_config.GetWorkspacesResponse) {
+    option (google.api.http) = {
+      post: "/api/2/get_workspaces"
+      body: "*"
+    };
+  }
+
   // Return the list of projects
   rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
     option (google.api.http) = {

@@ -55,7 +55,7 @@ newtype TenantM a = TenantM {unTenant :: ReaderT TenantEnv IO a}
   deriving newtype (MonadReader TenantEnv)
 
 tenantIndexName :: Config.Index -> BH.IndexName
-tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> index
+tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | 'runTenantM' is the only way to run an 'TenantM' computation
 runTenantM :: Config.Index -> TenantM a -> AppM a

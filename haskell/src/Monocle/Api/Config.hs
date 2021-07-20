@@ -35,7 +35,7 @@ Dhall.TH.makeHaskellTypes
             "Provider"
             "./dhall-monocle/Monocle/Crawler/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
-          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Tenant",
+          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace",
           Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
         ]
   )
@@ -100,7 +100,7 @@ loadConfig fp = do
   -- the first constructor that fit.
   expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile fp
   pure $ case Dhall.extract Dhall.auto expr of
-    Success config -> Right $ tenants config
+    Success config -> Right $ workspaces config
     Failure err -> Left $ show err
   where
     configType = Dhall.Core.pretty configurationSchema
@@ -109,16 +109,16 @@ loadConfig fp = do
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
   where
-    isTenant Index {..} = index == tenantName
+    isTenant Index {..} = name == tenantName
 
 lookupProject :: Index -> Text -> Maybe Project
-lookupProject Index {..} projectName = find isProject (fromMaybe [] projects)
+lookupProject index projectName = find isProject (fromMaybe [] (projects index))
   where
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
 
 lookupCrawler :: Index -> Text -> Maybe Crawler
-lookupCrawler Index {..} crawlerName = find isProject crawlers
+lookupCrawler index crawlerName = find isProject (crawlers index)
   where
     isProject Crawler {..} = name == crawlerName
 
@@ -164,7 +164,6 @@ emptyTenant name idents' =
       projects = Nothing
       idents = Just idents'
       search_aliases = Nothing
-      index = name
    in Index {..}
 
 createIdent :: Text -> [Text] -> [Text] -> Ident
@@ -179,7 +178,7 @@ createIdent name aliases' groups' =
 -- >>> getTenantGroups (emptyTenant "test" [createIdent "alice" [] ["core", "ptl"], createIdent "bob" [] ["core"]])
 -- [("core",["bob","alice"]),("ptl",["alice"])]
 getTenantGroups :: Index -> [(Text, [Text])]
-getTenantGroups Index {..} = Map.toList $ foldr go mempty (fromMaybe [] idents)
+getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index))
   where
     go :: Ident -> Map Text [Text] -> Map Text [Text]
     go Ident {..} acc = foldr (addUser ident) acc (fromMaybe [] groups)

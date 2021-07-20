@@ -1,8 +1,8 @@
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-MESSAGES = monocle/config.proto monocle/search.proto monocle/task_data.proto
-MESSAGES_V2 = monocle/user_group.proto
+MESSAGES = monocle/search.proto monocle/task_data.proto
+MESSAGES_V2 = monocle/config.proto monocle/user_group.proto
 BACKEND_ONLY = monocle/change.proto monocle/project.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 

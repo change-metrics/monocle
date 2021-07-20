@@ -1,6 +1,6 @@
 ---
-tenants:
-  - index: zuul
+workspaces:
+  - name: zuul
     crawlers_api_key: "secret"
     crawlers:
       - name: taskdata

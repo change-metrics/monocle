@@ -29,6 +29,17 @@ configHealth = const $ pure response
   where
     response = ConfigPB.HealthResponse "api running"
 
+-- | /api/2/get_workspaces endpoint
+configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
+configGetWorkspaces = const response
+  where
+    response = do
+      Env {tenants = tenants} <- ask
+      pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
+    toWorkspace Config.Index {..} =
+      let workspaceName = toLazy name
+       in ConfigPB.Workspace {..}
+
 -- | /api/2/user_group/list endpoint
 userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
 userGroupList request = do

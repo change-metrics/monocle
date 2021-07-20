@@ -16,6 +16,9 @@ import Monocle.Search
 import Monocle.TaskData
 import Monocle.UserGroup
 
+configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
+configGetWorkspaces = monocleReq "api/2/get_workspaces"
+
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/1/get_projects"
 

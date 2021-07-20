@@ -211,8 +211,8 @@ monocleSearchLanguage =
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index
-        { Config.index = "test",
-          Config.projects = (Just [testProjects]),
+        { Config.name = "test",
+          Config.projects = Just [testProjects],
           Config.search_aliases =
             ( Just
                 [ let name = "sprint42"

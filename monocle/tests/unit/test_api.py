@@ -49,7 +49,7 @@ class TestWebAPI(unittest.TestCase):
         self.client = webapp.app.test_client()
         self.apikey = "1a2b3c4d5e"
         config_data = {
-            "tenants": [
+            "workspaces": [
                 {
                     "index": self.index1,
                 },
@@ -102,7 +102,7 @@ class TestWebAPI(unittest.TestCase):
         "Test get project definitions"
         config_example = """
 ---
-tenants:
+workspaces:
   - index: testindex
     crawler: []
     projects:

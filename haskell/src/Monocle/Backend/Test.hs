@@ -82,7 +82,6 @@ emptyConfig name =
       projects = Nothing
       idents = Nothing
       search_aliases = Nothing
-      index = name
    in Config.Index {..}
 
 getElasticURL :: IO Text
