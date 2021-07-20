@@ -264,6 +264,12 @@ module MGridItem = {
     <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
 
+module MGridItemXl6 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._6> {children} </Patternfly.Layout.GridItem>
+}
+
 module MStack = {
   @react.component
   let make = (~children) =>
@@ -294,7 +300,6 @@ module SortableTable = {
   @react.component
   let make = (
     ~items: list<'a>,
-    ~caption: string,
     ~defaultSortedColumn: int,
     ~columnNames: array<string>,
     ~isOrdered: ('a, 'a, int) => bool,
@@ -314,7 +319,9 @@ module SortableTable = {
       setRows(_ => items->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
       None
     }, [items])
-    <Table caption rows cells=columns sortBy onSort> <TableHeader /> <TableBody /> </Table>
+    <Table caption="sort table" rows cells=columns sortBy onSort>
+      <TableHeader /> <TableBody />
+    </Table>
   }
 }
 
