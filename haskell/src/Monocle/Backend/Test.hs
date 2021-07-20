@@ -341,34 +341,34 @@ testTopAuthors = withTenant doTest
         results <- Q.getMostActiveAuthorByChangeCreated 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCreated count"
-          [Q.TermResult {tRterm = "eve", tRcount = 4}]
+          [Q.TermResult {trTerm = "eve", trCount = 4}]
           results
         results' <- Q.getMostActiveAuthorByChangeMerged 10
         assertEqual'
           "Check getMostActiveAuthorByChangeMerged count"
-          [Q.TermResult {tRterm = "eve", tRcount = 2}]
+          [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'
         results'' <- Q.getMostActiveAuthorByChangeReviewed 10
         assertEqual'
           "Check getMostActiveAuthorByChangeReviewed count"
-          [ Q.TermResult {tRterm = "alice", tRcount = 2},
-            Q.TermResult {tRterm = "bob", tRcount = 2}
+          [ Q.TermResult {trTerm = "alice", trCount = 2},
+            Q.TermResult {trTerm = "bob", trCount = 2}
           ]
           results''
         results''' <- Q.getMostActiveAuthorByChangeCommented 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCommented count"
-          [Q.TermResult {tRterm = "alice", tRcount = 2}]
+          [Q.TermResult {trTerm = "alice", trCount = 2}]
           results'''
         results'''' <- Q.getMostReviewedAuthor 10
         assertEqual'
           "Check getMostReviewedAuthor count"
-          [Q.TermResult {tRterm = "eve", tRcount = 4}]
+          [Q.TermResult {trTerm = "eve", trCount = 4}]
           results''''
         results''''' <- Q.getMostCommentedAuthor 10
         assertEqual'
           "Check getMostCommentedAuthor count"
-          [Q.TermResult {tRterm = "eve", tRcount = 2}]
+          [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'''''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)

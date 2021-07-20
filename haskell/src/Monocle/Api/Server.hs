@@ -349,8 +349,8 @@ searchQuery request = do
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =
       SearchPB.TermCount
-        (toLazy tRterm)
-        (fromInteger $ toInteger tRcount)
+        (toLazy trTerm)
+        (fromInteger $ toInteger trCount)
 
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =
