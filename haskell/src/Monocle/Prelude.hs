@@ -96,8 +96,8 @@ eventToText ev = case ev of
 
 monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
-  tenant <- getIndexConfig
-  sayErr $ Config.index tenant <> ": " <> eventToText ev
+  Config.Index {..} <- getIndexConfig
+  sayErr $ name <> ": " <> eventToText ev
 
 fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x

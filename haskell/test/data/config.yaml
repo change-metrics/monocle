@@ -1,6 +1,6 @@
 ---
 workspaces:
-  - index: zuul
+  - name: zuul
     crawlers_api_key: "secret"
     crawlers:
       - name: taskdata

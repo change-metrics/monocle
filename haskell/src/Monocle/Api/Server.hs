@@ -37,7 +37,7 @@ configGetWorkspaces = const response
       Env {tenants = tenants} <- ask
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
-      let workspaceName = toLazy index
+      let workspaceName = toLazy name
        in ConfigPB.Workspace {..}
 
 -- | /api/2/user_group/list endpoint
