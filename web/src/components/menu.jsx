@@ -57,6 +57,15 @@ class IndexMenu extends React.Component {
             <NavDropdown.Item
               onClick={() =>
                 this.props.history.push(
+                  '/' + this.props.match.params.index + '/active_authors' + search
+                )
+              }
+            >
+              Active authors
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
                   '/' + this.props.match.params.index + '/user_groups'
                 )
               }
