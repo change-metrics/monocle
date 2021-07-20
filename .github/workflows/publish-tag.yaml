@@ -42,7 +42,7 @@ jobs:
         run: |
           cat > etc/config.yaml << EOL
           ---
-          tenants:
+          workspaces:
             - index: monocle
               crawlers_api_key: "CHANGE_ME"
               crawlers:

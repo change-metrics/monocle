@@ -59,7 +59,7 @@ Then create the config file `etc/config.yaml`. Here is an example your could sta
 
 ```YAML
 ---
-tenants:
+workspaces:
   - index: monocle
     crawlers:
       - name: github-tektoncd
@@ -229,7 +229,7 @@ Projects could be defined within an index configuration. A project is identified
 Here is an example of configuration.
 
 ```YAML
-tenants:
+workspaces:
   - index: example
     crawlers:
       - name: openstack
@@ -264,7 +264,7 @@ a configuration section to define aliases for contributors.
 Let say a Monocle index is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
 
 ```YAML
-tenants:
+workspaces:
   - index: example
     idents:
       - ident: John Doe
@@ -314,7 +314,7 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 #### Task data crawler configuration
 
 ```YAML
-tenants:
+workspaces:
   - index: default
     crawlers_api_key: 1a2b3c4d5e
     crawlers:
@@ -334,7 +334,7 @@ the initial date.
 
 ```YAML
 ---
-tenants:
+workspaces:
   - index: monocle
     crawlers:
       - name: tektoncd

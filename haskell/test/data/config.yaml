@@ -1,5 +1,5 @@
 ---
-tenants:
+workspaces:
   - index: zuul
     crawlers_api_key: "secret"
     crawlers:

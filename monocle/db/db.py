@@ -18,6 +18,7 @@ import logging
 import socket
 import time
 from datetime import datetime
+from os import environ
 
 from typing import List, Optional, Literal, Dict, Union, Tuple
 from dataclasses import dataclass, asdict
@@ -176,7 +177,7 @@ class ELmonocleDB:
 
     def __init__(
         self,
-        elastic_conn="localhost:9200",
+        elastic_conn=environ.get("ELASTIC_CONN", "localhost:9200"),
         index=None,
         timeout=10,
         prefix=CHANGE_PREFIX,

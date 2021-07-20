@@ -84,7 +84,7 @@ tenants:
 
 config_sample_yaml = """
 ---
-tenants:
+workspaces:
   - index: default
     users:
       - john
