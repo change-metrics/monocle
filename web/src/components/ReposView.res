@@ -43,16 +43,14 @@ module ChangeLink = {
 module RepoSummaryTable = {
   @react.component
   let make = (~store: Store.t, ~repos: list<SearchTypes.repo_summary>) => {
-    let (rows, setRows) = React.useState(_ => [])
-    let (sortBy, setSortBy) = React.useState(_ => {index: 2, direction: #asc})
-
-    let columns = [
-      {title: "Repository", transforms: [sortable]},
-      {title: "Total changes", transforms: [sortable]},
-      {title: "Open changes", transforms: [sortable]},
-      {title: "Merged changes", transforms: [sortable]},
-      {title: "Abandoned changes", transforms: [sortable]},
+    let columnNames = [
+      "Repository",
+      "Total changes",
+      "Open changes",
+      "Merged changes",
+      "Abandoned changes",
     ]
+
     let isOrdered = (first: SearchTypes.repo_summary, second: SearchTypes.repo_summary, index) =>
       switch index {
       | 0 => first.fullname < second.fullname
@@ -62,6 +60,7 @@ module RepoSummaryTable = {
       | 4 => first.abandoned_changes < second.abandoned_changes
       | _ => false
       }
+
     let mkLink = (entity: ChangeLink.t, label: string) => <ChangeLink store entity name={label} />
     let formatters: list<SearchTypes.repo_summary => React.element> = list{
       repo => repo.fullname->str,
@@ -71,19 +70,7 @@ module RepoSummaryTable = {
       repo => ChangeLink.AbandonedChanges(repo.fullname)->mkLink(repo.abandoned_changes->int32_str),
     }
 
-    let doSort = rows => rows->sortRows(isOrdered)
-    let onSort = (_, index, direction) => {
-      setRows(_ => doSort(rows, index, direction))
-      setSortBy(_ => {index: index, direction: direction})
-    }
-
-    React.useEffect1(() => {
-      setRows(_ => repos->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
-      None
-    }, [repos])
-    <Table caption="Repository summary" rows cells=columns sortBy onSort>
-      <TableHeader /> <TableBody />
-    </Table>
+    <SortableTable items=repos defaultSortedColumn=2 columnNames isOrdered formatters />
   }
 }
 

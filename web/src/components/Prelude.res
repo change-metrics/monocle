@@ -319,7 +319,7 @@ module SortableTable = {
       setRows(_ => items->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
       None
     }, [items])
-    <Table caption="sort table" rows cells=columns sortBy onSort>
+    <Table caption=" " variant=#compact rows cells=columns sortBy onSort>
       <TableHeader /> <TableBody />
     </Table>
   }
