@@ -34,7 +34,7 @@ jobs:
           cat > etc/config.yaml << EOL
           ---
           workspaces:
-            - index: monocle
+            - name: monocle
               crawlers_api_key: "CHANGE_ME"
               crawlers:
                 - name: github-tekton

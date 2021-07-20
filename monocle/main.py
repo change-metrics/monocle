@@ -89,12 +89,12 @@ def main() -> None:
         help="Delete events related to a repository (regexp)",
     )
     parser_dbmanage.add_argument(
-        "--delete-index",
-        help="Delete the index",
+        "--delete-workspace",
+        help="Delete the workspace",
         action="store_true",
     )
     parser_dbmanage.add_argument(
-        "--index", help="The Elastisearch index name", required=True
+        "--workspace", help="The workspace name", required=True
     )
     parser_dbmanage.add_argument(
         "--run-migrate",
@@ -110,9 +110,7 @@ def main() -> None:
     parser_dbquery = subparsers.add_parser(
         "dbquery", help="Run an existsing query on stored events"
     )
-    parser_dbquery.add_argument(
-        "--index", help="The Elastisearch index name", required=True
-    )
+    parser_dbquery.add_argument("--workspace", help="The workspace name", required=True)
     parser_dbquery.add_argument("--name", help="The query name", required=True)
     parser_dbquery.add_argument(
         "--repository", help="Scope to events of repositories (regexp)", required=True
@@ -326,6 +324,9 @@ def main() -> None:
 
     if args.command == "dbmanage":
 
+        args.index = args.workspace
+        args.delete_index = args.delete_workspace
+
         if args.update_idents and not args.config:
             log.error("Please provide the --config option")
             sys.exit(1)
@@ -362,7 +363,7 @@ def main() -> None:
     if args.command == "dbquery":
         db = ELmonocleDB(
             elastic_conn=args.elastic_conn,
-            index=args.index,
+            index=args.workspace,
             user=args.elastic_user,
             password=args.elastic_password,
             use_ssl=args.use_ssl,
