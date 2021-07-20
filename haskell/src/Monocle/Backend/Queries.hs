@@ -300,7 +300,7 @@ getQueryFromSL query =
 getSimpleTR :: BH.TermsResult -> TermResult
 getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
-data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
+data TermResult = TermResult {trTerm :: Text, trCount :: Int} deriving (Show, Eq)
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
@@ -356,7 +356,7 @@ data RepoSummary = RepoSummary
 
 getReposSummary :: QueryM [RepoSummary]
 getReposSummary = do
-  names <- fmap term <$> getRepos
+  names <- fmap trTerm <$> getRepos
   traverse getRepoSummary names
   where
     getRepoSummary fn = do
@@ -375,52 +375,52 @@ getReposSummary = do
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
 -- | get authors tops
-getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
-getMostActiveAuthorByChangeCreated =
+getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
     "ChangeCreatedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
-getMostActiveAuthorByChangeMerged =
+getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
     "ChangeMergedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
-getMostActiveAuthorByChangeReviewed =
+getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
-getMostActiveAuthorByChangeCommented =
+getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostReviewedAuthor :: QueryM [TermResult]
-getMostReviewedAuthor =
+getMostReviewedAuthor :: Int -> QueryM [TermResult]
+getMostReviewedAuthor limit =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostCommentedAuthor :: QueryM [TermResult]
-getMostCommentedAuthor =
+getMostCommentedAuthor :: Int -> QueryM [TermResult]
+getMostCommentedAuthor limit =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto

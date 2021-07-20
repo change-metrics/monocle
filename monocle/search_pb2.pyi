@@ -219,11 +219,23 @@ class QueryRequest(google.protobuf.message.Message):
         QUERY_CHANGE = QueryRequest.QueryType.V(0)
         QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
         QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
+        QUERY_TOP_AUTHORS_CHANGES_CREATED = QueryRequest.QueryType.V(3)
+        QUERY_TOP_AUTHORS_CHANGES_MERGED = QueryRequest.QueryType.V(4)
+        QUERY_TOP_AUTHORS_CHANGES_REVIEWED = QueryRequest.QueryType.V(5)
+        QUERY_TOP_AUTHORS_CHANGES_COMMENTED = QueryRequest.QueryType.V(6)
+        QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
+        QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
     class QueryType(metaclass=_QueryType):
         V = typing.NewType("V", builtins.int)
     QUERY_CHANGE = QueryRequest.QueryType.V(0)
     QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
     QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
+    QUERY_TOP_AUTHORS_CHANGES_CREATED = QueryRequest.QueryType.V(3)
+    QUERY_TOP_AUTHORS_CHANGES_MERGED = QueryRequest.QueryType.V(4)
+    QUERY_TOP_AUTHORS_CHANGES_REVIEWED = QueryRequest.QueryType.V(5)
+    QUERY_TOP_AUTHORS_CHANGES_COMMENTED = QueryRequest.QueryType.V(6)
+    QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
+    QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
 
     INDEX_FIELD_NUMBER: builtins.int
     USERNAME_FIELD_NUMBER: builtins.int
@@ -567,18 +579,22 @@ class QueryResponse(google.protobuf.message.Message):
     ERROR_FIELD_NUMBER: builtins.int
     CHANGES_FIELD_NUMBER: builtins.int
     REPOS_SUMMARY_FIELD_NUMBER: builtins.int
+    TOP_AUTHORS_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
     def changes(self) -> global___Changes: ...
     @property
     def repos_summary(self) -> global___ReposSummary: ...
+    @property
+    def top_authors(self) -> global___TermsCount: ...
     def __init__(
         self,
         *,
         error: typing.Optional[global___QueryError] = ...,
         changes: typing.Optional[global___Changes] = ...,
         repos_summary: typing.Optional[global___ReposSummary] = ...,
+        top_authors: typing.Optional[global___TermsCount] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -591,6 +607,8 @@ class QueryResponse(google.protobuf.message.Message):
             b"repos_summary",
             "result",
             b"result",
+            "top_authors",
+            b"top_authors",
         ],
     ) -> builtins.bool: ...
     def ClearField(
@@ -604,11 +622,15 @@ class QueryResponse(google.protobuf.message.Message):
             b"repos_summary",
             "result",
             b"result",
+            "top_authors",
+            b"top_authors",
         ],
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error", "changes", "repos_summary"]: ...
+    ) -> typing_extensions.Literal[
+        "error", "changes", "repos_summary", "top_authors"
+    ]: ...
 
 global___QueryResponse = QueryResponse
 
@@ -920,3 +942,41 @@ class ReposSummary(google.protobuf.message.Message):
     ) -> None: ...
 
 global___ReposSummary = ReposSummary
+
+class TermCount(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    TERM_FIELD_NUMBER: builtins.int
+    COUNT_FIELD_NUMBER: builtins.int
+    term: typing.Text = ...
+    count: builtins.int = ...
+    def __init__(
+        self,
+        *,
+        term: typing.Text = ...,
+        count: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["count", b"count", "term", b"term"]
+    ) -> None: ...
+
+global___TermCount = TermCount
+
+class TermsCount(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    TERMCOUNT_FIELD_NUMBER: builtins.int
+    @property
+    def termcount(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___TermCount
+    ]: ...
+    def __init__(
+        self,
+        *,
+        termcount: typing.Optional[typing.Iterable[global___TermCount]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["termcount", b"termcount"]
+    ) -> None: ...
+
+global___TermsCount = TermsCount

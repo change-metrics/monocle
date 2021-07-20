@@ -264,6 +264,12 @@ module MGridItem = {
     <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
 
+module MGridItemXl6 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._6> {children} </Patternfly.Layout.GridItem>
+}
+
 module MStack = {
   @react.component
   let make = (~children) =>
@@ -288,6 +294,35 @@ module MCenteredContent = {
         </MGrid>
       </MStackItem>
     </MStack>
+}
+
+module SortableTable = {
+  @react.component
+  let make = (
+    ~items: list<'a>,
+    ~defaultSortedColumn: int,
+    ~columnNames: array<string>,
+    ~isOrdered: ('a, 'a, int) => bool,
+    ~formatters: list<'a => React.element>,
+  ) => {
+    let (rows, setRows) = React.useState(_ => [])
+    let (sortBy, setSortBy) = React.useState(_ => {index: defaultSortedColumn, direction: #asc})
+    let doSort = rows => rows->sortRows(isOrdered)
+    let onSort = (_, index, direction) => {
+      setRows(_ => doSort(rows, index, direction))
+      setSortBy(_ => {index: index, direction: direction})
+    }
+
+    let columns = columnNames->Belt.Array.map(name => {title: name, transforms: [sortable]})
+
+    React.useEffect1(() => {
+      setRows(_ => items->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
+      None
+    }, [items])
+    <Table caption="sort table" rows cells=columns sortBy onSort>
+      <TableHeader /> <TableBody />
+    </Table>
+  }
 }
 
 module MSelect = {

@@ -212,6 +212,24 @@ let default_repos_summary_mutable () : repos_summary_mutable = {
   reposum = [];
 }
 
+type term_count_mutable = {
+  mutable term : string;
+  mutable count : int32;
+}
+
+let default_term_count_mutable () : term_count_mutable = {
+  term = "";
+  count = 0l;
+}
+
+type terms_count_mutable = {
+  mutable termcount : SearchTypes.term_count list;
+}
+
+let default_terms_count_mutable () : terms_count_mutable = {
+  termcount = [];
+}
+
 type changes_histos_event_mutable = {
   mutable doc_count : int32;
   mutable key : int64;
@@ -499,6 +517,12 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_CHANGE" -> (SearchTypes.Query_change : SearchTypes.query_request_query_type)
   | "QUERY_CHANGE_LIFECYCLE" -> (SearchTypes.Query_change_lifecycle : SearchTypes.query_request_query_type)
   | "QUERY_REPOS_SUMMARY" -> (SearchTypes.Query_repos_summary : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_AUTHORS_CHANGES_CREATED" -> (SearchTypes.Query_top_authors_changes_created : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_AUTHORS_CHANGES_MERGED" -> (SearchTypes.Query_top_authors_changes_merged : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_AUTHORS_CHANGES_REVIEWED" -> (SearchTypes.Query_top_authors_changes_reviewed : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_AUTHORS_CHANGES_COMMENTED" -> (SearchTypes.Query_top_authors_changes_commented : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_REVIEWED_AUTHORS" -> (SearchTypes.Query_top_reviewed_authors : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_COMMENTED_AUTHORS" -> (SearchTypes.Query_top_commented_authors : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -845,6 +869,48 @@ let rec decode_repos_summary json =
     SearchTypes.reposum = v.reposum;
   } : SearchTypes.repos_summary)
 
+let rec decode_term_count json =
+  let v = default_term_count_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "term" -> 
+      let json = Js.Dict.unsafeGet json "term" in
+      v.term <- Pbrt_bs.string json "term_count" "term"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.int32 json "term_count" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.term = v.term;
+    SearchTypes.count = v.count;
+  } : SearchTypes.term_count)
+
+let rec decode_terms_count json =
+  let v = default_terms_count_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "termcount" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "termcount" in 
+        Pbrt_bs.array_ a "terms_count" "termcount"
+      in
+      v.termcount <- Array.map (fun json -> 
+        (decode_term_count (Pbrt_bs.object_ json "terms_count" "termcount"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.termcount = v.termcount;
+  } : SearchTypes.terms_count)
+
 let rec decode_query_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -860,6 +926,9 @@ let rec decode_query_response json =
       | "repos_summary" -> 
         let json = Js.Dict.unsafeGet json "repos_summary" in
         (SearchTypes.Repos_summary ((decode_repos_summary (Pbrt_bs.object_ json "query_response" "Repos_summary"))) : SearchTypes.query_response)
+      | "top_authors" -> 
+        let json = Js.Dict.unsafeGet json "top_authors" in
+        (SearchTypes.Top_authors ((decode_terms_count (Pbrt_bs.object_ json "query_response" "Top_authors"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1140,6 +1209,12 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_change -> "QUERY_CHANGE"
   | SearchTypes.Query_change_lifecycle -> "QUERY_CHANGE_LIFECYCLE"
   | SearchTypes.Query_repos_summary -> "QUERY_REPOS_SUMMARY"
+  | SearchTypes.Query_top_authors_changes_created -> "QUERY_TOP_AUTHORS_CHANGES_CREATED"
+  | SearchTypes.Query_top_authors_changes_merged -> "QUERY_TOP_AUTHORS_CHANGES_MERGED"
+  | SearchTypes.Query_top_authors_changes_reviewed -> "QUERY_TOP_AUTHORS_CHANGES_REVIEWED"
+  | SearchTypes.Query_top_authors_changes_commented -> "QUERY_TOP_AUTHORS_CHANGES_COMMENTED"
+  | SearchTypes.Query_top_reviewed_authors -> "QUERY_TOP_REVIEWED_AUTHORS"
+  | SearchTypes.Query_top_commented_authors -> "QUERY_TOP_COMMENTED_AUTHORS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1324,6 +1399,27 @@ let rec encode_repos_summary (v:SearchTypes.repos_summary) =
   end;
   json
 
+let rec encode_term_count (v:SearchTypes.term_count) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "term" (Js.Json.string v.SearchTypes.term);
+  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.SearchTypes.count));
+  json
+
+let rec encode_terms_count (v:SearchTypes.terms_count) = 
+  let json = Js.Dict.empty () in
+  begin (* termcount field *)
+    let (termcount':Js.Json.t) =
+      v.SearchTypes.termcount
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_term_count |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "termcount" termcount';
+  end;
+  json
+
 let rec encode_query_response (v:SearchTypes.query_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -1341,6 +1437,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* reposSummary field *)
       let json' = encode_repos_summary v in
       Js.Dict.set json "repos_summary" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Top_authors v ->
+    begin (* topAuthors field *)
+      let json' = encode_terms_count v in
+      Js.Dict.set json "top_authors" (Js.Json.object_ json');
     end;
   end;
   json
