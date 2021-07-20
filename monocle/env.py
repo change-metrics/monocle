@@ -22,7 +22,6 @@ from monocle import config
 config_path = os.getenv("CONFIG", None)
 if not config_path:
     print("CONFIG env is missing.", file=sys.stderr)
-    indexes_acl: Dict[str, List[config.Username]] = {}
     project_defs: Dict[str, List[config.ProjectDefinition]] = {}
     indexes_task_crawlers = {}
 else:
@@ -31,6 +30,5 @@ else:
         sys.exit(1)
     else:
         rawconfig = config.load(open(config_path))
-        indexes_acl = config.build_index_acl(rawconfig)
         project_defs = config.build_project_definitions(rawconfig)
         indexes_task_crawlers = config.build_index_task_crawlers(rawconfig)

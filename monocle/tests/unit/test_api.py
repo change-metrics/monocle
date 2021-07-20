@@ -51,12 +51,9 @@ class TestWebAPI(unittest.TestCase):
         config_data = {
             "tenants": [
                 {
-                    # Private index
                     "index": self.index1,
-                    "users": ["jane", "john"],
                 },
                 {
-                    # Public index
                     "index": self.index2,
                     "task_crawlers": [
                         {
@@ -68,7 +65,6 @@ class TestWebAPI(unittest.TestCase):
                 },
             ]
         }
-        env.indexes_acl = config.build_index_acl(config_data)
         env.indexes_task_crawlers = config.build_index_task_crawlers(config_data)
 
     def test_health(self):
@@ -80,46 +76,12 @@ class TestWebAPI(unittest.TestCase):
     def test_get_indices(self):
         "Test indices endpoint"
         resp = self.client.get("/api/0/indices")
-        self.assertListEqual(["unittest-2"], json.loads(resp.data))
-
-    def test_get_indices_with_acl(self):
-        "Test indices endpoint with acl"
-        with self.client.session_transaction() as sess:
-            sess["username"] = "jane"
-        resp = self.client.get("/api/0/indices")
-        self.assertListEqual(
-            ["unittest-1", "unittest-2"],
-            json.loads(resp.data),
-        )
+        self.assertListEqual(["unittest-1", "unittest-2"], json.loads(resp.data))
 
     def test_query(self):
         "Test we can run query via the api"
         resp = self.client.get(
             "/api/0/query/count_events?index=%s&repository=.*" % self.index2
-        )
-        self.assertEqual(5, json.loads(resp.data))
-
-    def test_query_with_acl(self):
-        "Test we can run query via the api with acl"
-        resp = self.client.get(
-            "/api/0/query/count_events?index=%s&repository=.*" % self.index1
-        )
-        self.assertEqual(403, resp.status_code)
-        with self.client.session_transaction() as sess:
-            sess["username"] = "jane"
-        resp = self.client.get(
-            "/api/0/query/count_events?index=%s&repository=.*" % self.index1
-        )
-        self.assertEqual(5, json.loads(resp.data))
-        resp = self.client.get(
-            "/api/0/query/count_events?index=%s&repository=.*" % self.index2
-        )
-        self.assertEqual(5, json.loads(resp.data))
-        with self.client.session_transaction() as sess:
-            sess["remote_user"] = "jane"
-        resp = self.client.get(
-            "/api/0/query/count_events?index=%s&repository=.*" % self.index1,
-            headers={"REMOTE_USER": "jane"},
         )
         self.assertEqual(5, json.loads(resp.data))
 

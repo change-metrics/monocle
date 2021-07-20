@@ -17,8 +17,6 @@
 import unittest
 
 import yaml
-from deepdiff import DeepDiff
-from .common import DiffException
 
 from monocle import config
 
@@ -175,19 +173,6 @@ class TestSchemas(unittest.TestCase):
         """test adapting config into legacy_config"""
         new_config = config.load(config_sample_yaml)
         self.assertEqual(new_config, yaml.safe_load(legacy_config_sample_yaml))
-
-    def test_indexes_acl(self):
-        indexes_acl = config.build_index_acl(yaml.safe_load(legacy_config_sample_yaml))
-        expected = {"default": ["john", "jane"], "tenant1": []}
-        ddiff = DeepDiff(indexes_acl, expected)
-        if ddiff:
-            raise DiffException(ddiff)
-
-        self.assertTrue(config.is_public_index(indexes_acl, "tenant1"))
-        self.assertFalse(config.is_public_index(indexes_acl, "default"))
-
-        users = config.get_authorized_users(indexes_acl, "default")
-        self.assertListEqual(users, ["john", "jane"])
 
     def test_get_ident_config(self):
         idents_config = config.get_idents_config(

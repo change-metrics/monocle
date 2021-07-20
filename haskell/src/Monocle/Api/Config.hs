@@ -162,7 +162,6 @@ emptyTenant name idents' =
   let crawlers_api_key = ""
       crawlers = []
       projects = Nothing
-      users = Nothing
       idents = Just idents'
       search_aliases = Nothing
       index = name
