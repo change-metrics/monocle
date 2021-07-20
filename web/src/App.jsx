@@ -50,6 +50,7 @@ import GroupView from './components/GroupView.bs.js'
 import HelpSearch from './components/HelpSearch.bs.js'
 import NChangeView from './components/NChangeView.bs.js'
 import NReposView from './components/ReposView.bs.js'
+import ActivePeopleView from './components/ActivePeopleView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -370,6 +371,10 @@ const App = () => {
         <Route
           path="/:index/repos"
           render={() => <NReposView store={store} />}
+        />
+        <Route
+          path="/:index/active_authors"
+          render={() => <ActivePeopleView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>
