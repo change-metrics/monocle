@@ -1,19 +1,18 @@
 # Monocle
 
 The main idea behind Monocle is to detect anomalies in the way changes
-are produced in your project on GitHub and Gerrit.
+are produced in your project on GitHub, Gerrit and GitLab.
 
-Checkout the new [changemetrics.io website](https://changemetrics.io) and
+Checkout the [changemetrics.io website](https://changemetrics.io) and
 join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
 
-> We are currently working on the
-[version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
+We are currently working on the [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
 
 ## Components
 
-Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
-provides a set of crawlers designed to fetch Pull Requests and Reviews
-data from the GitHub or Gerrit APIs and to store changes and changes
+Monocle supports GitHub Pull Requests, Gerrit Reviews and GitLab Merge Requests.
+Monocle provides a set of crawlers designed to fetch Pull Requests and Reviews
+data from the GitHub, Gerrit or GitLab APIs and to store changes and changes
 related events into Elasticsearch. These changes and events are exposed
 via a JSON API. Furthermore Monocle implements ready to use queries
 and a React based web UI.
@@ -60,7 +59,7 @@ Then create the config file `etc/config.yaml`. Here is an example your could sta
 ```YAML
 ---
 workspaces:
-  - index: monocle
+  - name: monocle
     crawlers:
       - name: github-tektoncd
         provider:
@@ -230,7 +229,7 @@ Here is an example of configuration.
 
 ```YAML
 workspaces:
-  - index: example
+  - name: example
     crawlers:
       - name: openstack
         provider:
@@ -265,7 +264,7 @@ Let say a Monocle index is configured to fetch changes from github.com and revie
 
 ```YAML
 workspaces:
-  - index: example
+  - name: example
     idents:
       - ident: John Doe
         aliases:
@@ -315,7 +314,7 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 
 ```YAML
 workspaces:
-  - index: default
+  - name: default
     crawlers_api_key: 1a2b3c4d5e
     crawlers:
       - name: crawler_name
@@ -335,7 +334,7 @@ the initial date.
 ```YAML
 ---
 workspaces:
-  - index: monocle
+  - name: monocle
     crawlers:
       - name: tektoncd
         provider:
@@ -351,7 +350,7 @@ workspaces:
           github_organization: spinnaker
           github_repositories:
             - pipeline
-  - index: zuul
+  - name: zuul
     crawlers:
       - name: gerrit-opendev
         provider:
@@ -359,7 +358,7 @@ workspaces:
           gerrit_repositories:
             - ^zuul/.*
         update_since: '2020-03-15'
-  - index: openstack
+  - name: openstack
     idents:
       - ident: "Fabien Boucher"
         aliases:
@@ -385,7 +384,7 @@ workspaces:
 
   # A private index. Only whitelisted users are authorized to access
   # See "Advanced deployment configuration" section
-  - index: monocle-private
+  - name: monocle-private
     users:
       - <github_login1>
       - <github_login2>
