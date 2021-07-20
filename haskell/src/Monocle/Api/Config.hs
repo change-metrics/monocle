@@ -150,12 +150,12 @@ getAliases index = maybe [] (fmap toTuple) (search_aliases index)
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
-  otherProvider -> error $ "Provider not supported: " <> show otherProvider
+  _anyOtherProvider -> []
 
 getCrawlerOrganization :: Crawler -> [Text]
 getCrawlerOrganization Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_organizations
-  otherProvider -> error $ "Provider not supported: " <> show otherProvider
+  _anyOtherProvider -> []
 
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =
