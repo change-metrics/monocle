@@ -313,13 +313,18 @@ searchQuery request = do
             . V.fromList
             . map toRSumResult
             <$> Q.getReposSummary
-    -- SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED  ->
-    --   SearchPB.QueryResponse . Just
-    --     . SearchPB.QueryResponseResult
-    --     . SearchPB.ReposSummary
-    --     . V.fromList
-    --     . map toRSumResult
-    --     <$> Q.getReposSummary
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
+          handleTopAuthorsQ Q.getMostActiveAuthorByChangeCommented
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
+          handleTopAuthorsQ Q.getMostActiveAuthorByChangeReviewed
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
+          handleTopAuthorsQ Q.getMostActiveAuthorByChangeCreated
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
+          handleTopAuthorsQ Q.getMostActiveAuthorByChangeMerged
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
+          handleTopAuthorsQ Q.getMostReviewedAuthor
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
+          handleTopAuthorsQ Q.getMostCommentedAuthor
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -329,6 +334,21 @@ searchQuery request = do
         $ SearchPB.QueryError
           (toLazy msg)
           (fromInteger . toInteger $ offset)
+
+    handleTopAuthorsQ :: QueryM [Q.TermResult] -> QueryM QueryResponse
+    handleTopAuthorsQ cb = do
+      SearchPB.QueryResponse . Just
+        . SearchPB.QueryResponseResultTopAuthors
+        . SearchPB.TermsCount
+        . V.fromList
+        . map toTTResult
+        <$> cb
+
+    toTTResult :: Q.TermResult -> SearchPB.TermCount
+    toTTResult Q.TermResult {..} =
+      SearchPB.TermCount
+        (toLazy tRterm)
+        (fromInteger $ toInteger tRcount)
 
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =

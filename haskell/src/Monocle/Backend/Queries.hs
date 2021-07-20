@@ -300,7 +300,7 @@ getQueryFromSL query =
 getSimpleTR :: BH.TermsResult -> TermResult
 getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
-data TermResult = TermResult {term :: Text, count :: Int} deriving (Show, Eq)
+data TermResult = TermResult {tRterm :: Text, tRcount :: Int} deriving (Show, Eq)
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
@@ -356,7 +356,7 @@ data RepoSummary = RepoSummary
 
 getReposSummary :: QueryM [RepoSummary]
 getReposSummary = do
-  names <- fmap term <$> getRepos
+  names <- fmap tRterm <$> getRepos
   traverse getRepoSummary names
   where
     getRepoSummary fn = do

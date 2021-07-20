@@ -339,30 +339,36 @@ testTopAuthors = withTenant doTest
       -- Check for expected metrics
       runQueryM defaultQuery $ do
         results <- Q.getMostActiveAuthorByChangeCreated
-        assertEqual' "Check getMostActiveAuthorByChangeCreated count" [Q.TermResult {term = "eve", count = 4}] results
+        assertEqual'
+          "Check getMostActiveAuthorByChangeCreated count"
+          [Q.TermResult {tRterm = "eve", tRcount = 4}]
+          results
         results' <- Q.getMostActiveAuthorByChangeMerged
-        assertEqual' "Check getMostActiveAuthorByChangeMerged count" [Q.TermResult {term = "eve", count = 2}] results'
+        assertEqual'
+          "Check getMostActiveAuthorByChangeMerged count"
+          [Q.TermResult {tRterm = "eve", tRcount = 2}]
+          results'
         results'' <- Q.getMostActiveAuthorByChangeReviewed
         assertEqual'
           "Check getMostActiveAuthorByChangeReviewed count"
-          [ Q.TermResult {term = "alice", count = 2},
-            Q.TermResult {term = "bob", count = 2}
+          [ Q.TermResult {tRterm = "alice", tRcount = 2},
+            Q.TermResult {tRterm = "bob", tRcount = 2}
           ]
           results''
         results''' <- Q.getMostActiveAuthorByChangeCommented
         assertEqual'
           "Check getMostActiveAuthorByChangeCommented count"
-          [Q.TermResult {term = "alice", count = 2}]
+          [Q.TermResult {tRterm = "alice", tRcount = 2}]
           results'''
         results'''' <- Q.getMostReviewedAuthor
         assertEqual'
           "Check getMostReviewedAuthor count"
-          [Q.TermResult {term = "eve", count = 4}]
+          [Q.TermResult {tRterm = "eve", tRcount = 4}]
           results''''
         results''''' <- Q.getMostCommentedAuthor
         assertEqual'
           "Check getMostCommentedAuthor count"
-          [Q.TermResult {term = "eve", count = 2}]
+          [Q.TermResult {tRterm = "eve", tRcount = 2}]
           results'''''
       where
         indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
