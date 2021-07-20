@@ -30,7 +30,7 @@ module LimitSelector = {
   @react.component
   let make = (~limit: int, ~setLimit: (int => int) => unit) => {
     let setLimit' = str => {
-      let v = str == "" ? 0 : str->int_of_string
+      let v = str == "" ? 10 : str->int_of_string
       setLimit(_ => v)
     }
     <Patternfly.Layout.Bullseye>
