@@ -338,34 +338,34 @@ testTopAuthors = withTenant doTest
 
       -- Check for expected metrics
       runQueryM defaultQuery $ do
-        results <- Q.getMostActiveAuthorByChangeCreated
+        results <- Q.getMostActiveAuthorByChangeCreated 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCreated count"
           [Q.TermResult {tRterm = "eve", tRcount = 4}]
           results
-        results' <- Q.getMostActiveAuthorByChangeMerged
+        results' <- Q.getMostActiveAuthorByChangeMerged 10
         assertEqual'
           "Check getMostActiveAuthorByChangeMerged count"
           [Q.TermResult {tRterm = "eve", tRcount = 2}]
           results'
-        results'' <- Q.getMostActiveAuthorByChangeReviewed
+        results'' <- Q.getMostActiveAuthorByChangeReviewed 10
         assertEqual'
           "Check getMostActiveAuthorByChangeReviewed count"
           [ Q.TermResult {tRterm = "alice", tRcount = 2},
             Q.TermResult {tRterm = "bob", tRcount = 2}
           ]
           results''
-        results''' <- Q.getMostActiveAuthorByChangeCommented
+        results''' <- Q.getMostActiveAuthorByChangeCommented 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCommented count"
           [Q.TermResult {tRterm = "alice", tRcount = 2}]
           results'''
-        results'''' <- Q.getMostReviewedAuthor
+        results'''' <- Q.getMostReviewedAuthor 10
         assertEqual'
           "Check getMostReviewedAuthor count"
           [Q.TermResult {tRterm = "eve", tRcount = 4}]
           results''''
-        results''''' <- Q.getMostCommentedAuthor
+        results''''' <- Q.getMostCommentedAuthor 10
         assertEqual'
           "Check getMostCommentedAuthor count"
           [Q.TermResult {tRterm = "eve", tRcount = 2}]

@@ -375,52 +375,52 @@ getReposSummary = do
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
 -- | get authors tops
-getMostActiveAuthorByChangeCreated :: QueryM [TermResult]
-getMostActiveAuthorByChangeCreated =
+getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
     "ChangeCreatedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeMerged :: QueryM [TermResult]
-getMostActiveAuthorByChangeMerged =
+getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
     "ChangeMergedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostActiveAuthorByChangeReviewed :: QueryM [TermResult]
-getMostActiveAuthorByChangeReviewed =
+getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeCommented :: QueryM [TermResult]
-getMostActiveAuthorByChangeCommented =
+getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostReviewedAuthor :: QueryM [TermResult]
-getMostReviewedAuthor =
+getMostReviewedAuthor :: Int -> QueryM [TermResult]
+getMostReviewedAuthor limit =
   getDocTypeTopCountByField
     "ChangeReviewedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostCommentedAuthor :: QueryM [TermResult]
-getMostCommentedAuthor =
+getMostCommentedAuthor :: Int -> QueryM [TermResult]
+getMostCommentedAuthor limit =
   getDocTypeTopCountByField
     "ChangeCommentedEvent"
     "on_author.muid"
-    Nothing
+    (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto

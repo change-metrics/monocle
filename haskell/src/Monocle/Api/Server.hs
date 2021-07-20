@@ -314,17 +314,17 @@ searchQuery request = do
             . map toRSumResult
             <$> Q.getReposSummary
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-          handleTopAuthorsQ Q.getMostActiveAuthorByChangeCommented
+          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-          handleTopAuthorsQ Q.getMostActiveAuthorByChangeReviewed
+          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-          handleTopAuthorsQ Q.getMostActiveAuthorByChangeCreated
+          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-          handleTopAuthorsQ Q.getMostActiveAuthorByChangeMerged
+          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-          handleTopAuthorsQ Q.getMostReviewedAuthor
+          handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-          handleTopAuthorsQ Q.getMostCommentedAuthor
+          handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -335,14 +335,16 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: QueryM [Q.TermResult] -> QueryM QueryResponse
-    handleTopAuthorsQ cb = do
+    handleTopAuthorsQ :: Word32 -> (Int -> QueryM [Q.TermResult]) -> QueryM QueryResponse
+    handleTopAuthorsQ limit cb = do
       SearchPB.QueryResponse . Just
         . SearchPB.QueryResponseResultTopAuthors
         . SearchPB.TermsCount
         . V.fromList
         . map toTTResult
-        <$> cb
+        <$> cb limit'
+      where
+        limit' = fromInteger $ toInteger limit
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =
