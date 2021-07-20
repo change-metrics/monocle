@@ -33,8 +33,6 @@ import { CChangesReviewStats } from './components/changes_review'
 import { CAuthorsHistoStats } from './components/authors_histo'
 import {
   CNewContributorsStats,
-  CMostActiveAuthorsStats,
-  CMostReviewedAuthorsStats,
   CAuthorsPeersStats
 } from './components/top'
 import { CHotChanges, CColdChanges } from './components/changes'
@@ -118,29 +116,6 @@ class PeopleView extends React.Component {
         <Row>
           <Col>
             <CAuthorsHistoStats index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CMostActiveAuthorsStats
-              search={this.props.location.search}
-              index={this.props.match.params.index}
-            />
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CMostReviewedAuthorsStats index={this.props.match.params.index} />
           </Col>
         </Row>
         <Row>

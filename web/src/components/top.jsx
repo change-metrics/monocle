@@ -98,111 +98,6 @@ TopEventsTable.propTypes = {
   })
 }
 
-class MostActiveAuthorsStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'most_active_authors_stats'
-    this.state.graph_type = 'most_active_authors_stats'
-  }
-
-  render() {
-    if (!this.props.most_active_authors_stats_loading) {
-      if (this.props.most_active_authors_stats_error) {
-        return <ErrorBox error={this.props.most_active_authors_stats_error} />
-      }
-      const data = this.props.most_active_authors_stats_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Most active authors stats</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md>
-                    <TopEventsTable
-                      data={data.ChangeCreatedEvent}
-                      title="By Created Changes"
-                    />
-                  </Col>
-                  <Col md>
-                    <TopEventsTable
-                      data={data.ChangeMergedEvent}
-                      title="By Merged Changes"
-                    />
-                  </Col>
-                </Row>
-                <Row>
-                  <Col>
-                    <p></p>
-                  </Col>
-                </Row>
-                <Row>
-                  <Col md>
-                    <TopEventsTable
-                      data={data.ChangeReviewedEvent}
-                      title="By Reviewed Changes"
-                    />
-                  </Col>
-                  <Col md>
-                    <TopEventsTable
-                      data={data.ChangeCommentedEvent}
-                      title="By Commented Changes"
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-class MostReviewedAuthorsStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'most_reviewed_authors_stats'
-    this.state.graph_type = 'most_reviewed_authors_stats'
-  }
-
-  render() {
-    if (!this.props.most_reviewed_authors_stats_loading) {
-      if (this.props.most_reviewed_authors_stats_error) {
-        return <ErrorBox error={this.props.most_reviewed_authors_stats_error} />
-      }
-      const data = this.props.most_reviewed_authors_stats_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Most reviewed authors stats</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md>
-                    <TopEventsTable data={data.reviewed} title="Reviews" />
-                  </Col>
-                  <Col md>
-                    <TopEventsTable data={data.commented} title="Comments" />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
 class NewContributorsStats extends BaseQueryComponent {
   constructor(props) {
     super(props)
@@ -323,21 +218,13 @@ const mapStateToProps = (state) => {
   const map = {}
 
   addMap(map, state.QueryReducer, 'new_contributors')
-  addMap(map, state.QueryReducer, 'most_active_authors_stats')
-  addMap(map, state.QueryReducer, 'most_reviewed_authors_stats')
   addMap(map, state.QueryReducer, 'authors_peers_stats')
 
   return map
 }
 
-const CMostActiveAuthorsStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(MostActiveAuthorsStats)
-)
 const CNewContributorsStats = withRouter(
   connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats)
-)
-const CMostReviewedAuthorsStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(MostReviewedAuthorsStats)
 )
 const CAuthorsPeersStats = withRouter(
   connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
@@ -345,7 +232,5 @@ const CAuthorsPeersStats = withRouter(
 
 export {
   CNewContributorsStats,
-  CMostActiveAuthorsStats,
-  CMostReviewedAuthorsStats,
   CAuthorsPeersStats
 }
