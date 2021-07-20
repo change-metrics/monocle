@@ -8,14 +8,9 @@ open Prelude
 
 module TopTermsTable = {
   @react.component
-  let make = (~store: Store.t, ~terms: list<SearchTypes.term_count>) => {
-    let (rows, setRows) = React.useState(_ => [])
-    let (sortBy, setSortBy) = React.useState(_ => {index: 1, direction: #asc})
+  let make = (~terms: list<SearchTypes.term_count>) => {
+    let columnNames = ["Name", "Count"]
 
-    let columns = [
-      {title: "Name", transforms: [sortable]},
-      {title: "Count", transforms: [sortable]},
-    ]
     let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
       switch index {
       | 0 => first.term < second.term
@@ -27,19 +22,9 @@ module TopTermsTable = {
       item => item.count->int32_str->str,
     }
 
-    let doSort = rows => rows->sortRows(isOrdered)
-    let onSort = (_, index, direction) => {
-      setRows(_ => doSort(rows, index, direction))
-      setSortBy(_ => {index: index, direction: direction})
-    }
-
-    React.useEffect1(() => {
-      setRows(_ => terms->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
-      None
-    }, [terms])
-    <Table caption="Top terms" rows cells=columns sortBy onSort>
-      <TableHeader /> <TableBody />
-    </Table>
+    <SortableTable
+      items=terms caption="Top terms" defaultSortedColumn=1 columnNames isOrdered formatters
+    />
   }
 }
 
@@ -68,7 +53,7 @@ let make = (~store: Store.t) => {
       <MCenteredContent>
         <Card isCompact=true>
           <CardTitle> {"Most active authors - Changes Created"->str} </CardTitle>
-          <CardBody> <TopTermsTable store terms=tsc.termcount /> </CardBody>
+          <CardBody> <TopTermsTable terms=tsc.termcount /> </CardBody>
         </Card>
       </MCenteredContent>
     | Some(Ok(_)) => React.null

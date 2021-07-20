@@ -290,6 +290,34 @@ module MCenteredContent = {
     </MStack>
 }
 
+module SortableTable = {
+  @react.component
+  let make = (
+    ~items: list<'a>,
+    ~caption: string,
+    ~defaultSortedColumn: int,
+    ~columnNames: array<string>,
+    ~isOrdered: ('a, 'a, int) => bool,
+    ~formatters: list<'a => React.element>,
+  ) => {
+    let (rows, setRows) = React.useState(_ => [])
+    let (sortBy, setSortBy) = React.useState(_ => {index: defaultSortedColumn, direction: #asc})
+    let doSort = rows => rows->sortRows(isOrdered)
+    let onSort = (_, index, direction) => {
+      setRows(_ => doSort(rows, index, direction))
+      setSortBy(_ => {index: index, direction: direction})
+    }
+
+    let columns = columnNames->Belt.Array.map(name => {title: name, transforms: [sortable]})
+
+    React.useEffect1(() => {
+      setRows(_ => items->mkRows(formatters)->doSort(sortBy.index, sortBy.direction))
+      None
+    }, [items])
+    <Table caption rows cells=columns sortBy onSort> <TableHeader /> <TableBody /> </Table>
+  }
+}
+
 module MSelect = {
   let maxCount = 20
 
