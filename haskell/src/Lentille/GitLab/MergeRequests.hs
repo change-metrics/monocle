@@ -173,7 +173,11 @@ transformResponse host getIdentIdCB result =
           [],
           extract shortName fullName <$> catMaybes nodes
         )
-    otherWise -> error ("Invalid response: " <> show otherwise)
+    _anyOtherResponse ->
+      ( PageInfo False Nothing Nothing,
+        ["Unknown GetProjectMergeRequests response: " <> show result],
+        []
+      )
   where
     toIdent' = toIdent host getIdentIdCB
     toCommit' = toCommit host getIdentIdCB
