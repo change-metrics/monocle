@@ -95,7 +95,7 @@ let createElasticService =
                                          }
                                    )
 
-let createApiService =
+let createApiLegacyService =
       \(dev : Bool) ->
         let service =
               { ports = Some [ mkPort "API" 9876 9876 ]
@@ -145,7 +145,7 @@ let createApiService =
                                          }
                                    )
 
-let createApiNgService =
+let createApiService =
       \(dev : Bool) ->
         let service =
               { ports = Some [ mkPort "API" 9898 9898 ]
@@ -185,7 +185,7 @@ let createApiNgService =
                                          }
                                    )
 
-let createCrawlerNgService =
+let createCrawlerService =
       \(dev : Bool) ->
         let service =
               { depends_on = Some [ "api" ]
@@ -214,7 +214,7 @@ let createCrawlerNgService =
                                          }
                                    )
 
-let createCrawlerService =
+let createCrawlerLegacyService =
       \(dev : Bool) ->
         let service =
               { depends_on = Some [ "elastic" ]
@@ -286,11 +286,11 @@ let createWebService =
 let createServices =
       \(dev : Bool) ->
         toMap
-          { api-legacy = createApiService dev
-          , api = createApiNgService dev
+          { api-legacy = createApiLegacyService dev
+          , api = createApiService dev
           , web = createWebService dev
-          , crawler-legacy = createCrawlerService dev
-          , crawler = createCrawlerNgService dev
+          , crawler-legacy = createCrawlerLegacyService dev
+          , crawler = createCrawlerService dev
           , elastic = createElasticService dev
           }
 

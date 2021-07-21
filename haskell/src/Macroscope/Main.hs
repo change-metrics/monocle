@@ -65,7 +65,7 @@ runMacroscope verbose confPath interval client = do
             [glOrgCrawler glClient | isJust gitlab_organizations]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
-        _ -> error "NotImplemented"
+        _ -> pure []
 
       -- Consume each stream
       let runner =
