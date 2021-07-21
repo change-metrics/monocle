@@ -98,8 +98,12 @@ countEvents' = countEvents defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countEvents qf [documentType "ChangeCreatedEvent"]
-  reviewCount <- countEvents qf [mkOr [documentType "ChangeReviewedEvent", documentType "ChangeCommentedEvent"]]
+  commitCount <- countEvents qf [documentType $ "ChangeCreatedEvent" :| []]
+  reviewCount <-
+    countEvents
+      qf
+      [ documentType $ fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+      ]
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral reviewCount
@@ -127,8 +131,8 @@ changeState state' =
   ]
 
 -- | Add a document type filter to the query
-documentType :: Text -> BH.Query
-documentType type' = BH.TermQuery (BH.Term "type" type') Nothing
+documentType :: NonEmpty Text -> BH.Query
+documentType = BH.TermsQuery "type"
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -346,7 +350,7 @@ getDocTypeTopCountByField :: Text -> Text -> Maybe Int -> QueryFlavor -> QueryM 
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = mkAnd $ basequery <> [documentType doctype]
+  let query = mkAnd $ basequery <> [documentType $ doctype :| []]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query size)
@@ -385,9 +389,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countEvents eventQF [documentType "ChangeCreatedEvent"]
+      totalChanges' <- countEvents eventQF [documentType $ "ChangeCreatedEvent" :| []]
       openChanges' <- countEvents changeQF $ changeState "OPEN"
-      mergedChanges' <- countEvents eventQF [documentType "ChangeMergedEvent"]
+      mergedChanges' <- countEvents eventQF [documentType $ "ChangeMergedEvent" :| []]
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')

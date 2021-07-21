@@ -475,18 +475,18 @@ searchChangesLifecycle indexName queryText = do
         let histo = liftTenantM . Q.getHistoEventAgg
             histos =
               toHisto
-                <$> histo (queryType "ChangeCreatedEvent")
-                <*> histo (queryType "ChangeMergedEvent")
-                <*> histo (queryType "ChangeAbandonedEvent")
-                <*> histo (queryType "ChangeCommitPushedEvent")
-                <*> histo (queryType "ChangeCommitForcePushedEvent")
+                <$> histo (queryType $ "ChangeCreatedEvent" :| [])
+                <*> histo (queryType $ "ChangeMergedEvent" :| [])
+                <*> histo (queryType $ "ChangeAbandonedEvent" :| [])
+                <*> histo (queryType $ "ChangeCommitPushedEvent" :| [])
+                <*> histo (queryType $ "ChangeCommitForcePushedEvent" :| [])
 
         -- ratios
         let ratios =
               toRatio eventCounts
-                <$> count [queryType "ChangeCreatedEvent"]
-                <*> count [queryType "ChangeCommitPushedEvent"]
-                <*> count [queryType "ChangeCommitForcePushedEvent"]
+                <$> count [queryType $ "ChangeCreatedEvent" :| []]
+                <*> count [queryType $ "ChangeCommitPushedEvent" :| []]
+                <*> count [queryType $ "ChangeCommitForcePushedEvent" :| []]
 
         -- duration aggregate
         let durationAgg =
