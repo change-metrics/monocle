@@ -23,7 +23,7 @@ main :: IO ()
 main = do
   args <- unwrapRecord "Macroscope lentille runner"
   config' <- fromMaybe (error "--config or CONFIG env is required") <$> lookupEnv "CONFIG"
-  withClient (fromMaybe "http://api:9898" $ monocleUrl args) Nothing $ \client ->
+  withClient (fromMaybe "http://web:8080" $ monocleUrl args) Nothing $ \client ->
     runMacroscope
       (debug args)
       (fromMaybe config' $ config args)

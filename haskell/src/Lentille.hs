@@ -11,9 +11,10 @@ module Lentille
   )
 where
 
+import Control.Monad.Catch (MonadCatch)
 import Control.Monad.Except (MonadError, throwError)
 import Monocle.Api.Client.Worker (MonadLog (..), MonadTime (..), getCurrentTime, logEvent)
-import Monocle.Prelude (MonadThrow)
+import Monocle.Prelude (MonadMask, MonadThrow)
 import Relude
 import Streaming (Of, Stream)
 
@@ -21,7 +22,7 @@ import Streaming (Of, Stream)
 -- The Lentille context
 
 newtype LentilleM a = LentilleM {unLentille :: ExceptT LentilleError IO a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
   deriving newtype (MonadError LentilleError)
 
 instance MonadTime LentilleM where
