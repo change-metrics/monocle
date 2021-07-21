@@ -9,12 +9,14 @@ module Monocle.Api.Config where
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import qualified Data.Map as Map
+import Data.Time.Clock (UTCTime)
 import qualified Dhall
 import qualified Dhall.Core
 import qualified Dhall.Src
 import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
 import Relude
+import System.Directory (getModificationTime)
 
 -- | Generate Haskell Type from Dhall Type
 -- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
@@ -89,8 +91,8 @@ pname :: Project -> Text
 pname = name
 
 -- | Load the YAML config file
-loadConfig :: MonadIO m => FilePath -> m (Either Text [Index])
-loadConfig fp = do
+loadConfig :: MonadIO m => FilePath -> m ReloadableConfig
+loadConfig configPath = do
   -- Here we use the yaml-to-dhall logic to correctly decode Union value.
   -- Otherwise the decoder may fail with:
   -- AesonException "Error in $.tenants[1].crawlers[0].provider: parsing "
@@ -98,13 +100,31 @@ loadConfig fp = do
   --
   -- dhallFromYaml is able to infer the sum type by its value and it picks
   -- the first constructor that fit.
-  expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile fp
+  configTS <- liftIO $ getModificationTime configPath
+  expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile configPath
   pure $ case Dhall.extract Dhall.auto expr of
-    Success config -> Right $ workspaces config
-    Failure err -> Left $ show err
+    Success config ->
+      let configWorkspaces = workspaces config
+       in ReloadableConfig {..}
+    Failure err -> error $ "Invalid configuration: " <> show err
   where
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
+
+data ReloadableConfig = ReloadableConfig {configTS :: UTCTime, configPath :: FilePath, configWorkspaces :: [Index]}
+
+reloadConfig :: MonadIO m => IORef ReloadableConfig -> m [Index]
+reloadConfig configRef = liftIO $ do
+  config <- readIORef configRef
+  newConfigTs <- getModificationTime (configPath config)
+  configWorkspaces
+    <$> if newConfigTs > configTS config
+      then do
+        putTextLn $ toText (configPath config) <> ": reloading config"
+        newConfig <- loadConfig (configPath config)
+        writeIORef configRef newConfig
+        pure newConfig
+      else pure config
 
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs

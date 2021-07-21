@@ -26,7 +26,9 @@ app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
 
 run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
-  tenants' <- getExn <$> Config.loadConfig configFile
+  reloadableConfig <- Config.loadConfig configFile
+  confRef <- newIORef reloadableConfig
+  let tenants' = Config.configWorkspaces reloadableConfig
 
   -- Check alias and abort if they are not usable
   case lefts $ map loadAliases tenants' of
@@ -48,7 +50,7 @@ run port elkUrl configFile = do
         settings
         . cors (const $ Just policy)
         . provideOptions monocleAPI
-        $ app (Env tenants' bhEnv')
+        $ app (Env confRef bhEnv')
   where
     policy =
       simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

@@ -89,6 +89,7 @@ library
                      , bytestring                 >= 0.10
                      , connection
                      , containers                 ^>= 0.6
+                     , directory
                      , dhall                      ^>= 1.39
                      , dhall-yaml                 ^>= 1.2
                      , either                     ^>= 5
