@@ -53,15 +53,17 @@ module RowItem = {
     <tr role="row">
       <td role="cell"> {user.name->str} </td>
       <td role="cell">
-        <Canvas.Dom
-          width=100
-          height=20
-          onDraw={Canvas.drawScale(stat.change_review_ratio->Js.Math.unsafe_round)}
-        />
+        {stat.change_review_ratio >= 0.0
+          ? <Canvas.Dom
+              width=100
+              height=20
+              onDraw={Canvas.drawScale(stat.change_review_ratio->Js.Math.unsafe_round)}
+            />
+          : React.null}
       </td>
       <td role="cell">
         <Layout.Grid>
-          <Layout.GridItem md=Column._1> {"Change: "->str} </Layout.GridItem>
+          <Layout.GridItem md=Column._1> {"Commit: "->str} </Layout.GridItem>
           <Layout.GridItem md=Column._11>
             {stat.commit_histo
             ->Belt.List.mapWithIndex((index, bucket) =>
