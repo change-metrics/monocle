@@ -346,11 +346,11 @@ getTermsAgg query onTerm maxBuckets = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getDocTypeTopCountByField :: Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField :: NonEmpty Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = mkAnd $ basequery <> [documentType $ doctype :| []]
+  let query = mkAnd $ basequery <> [documentType doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query size)
@@ -364,7 +364,7 @@ getDocTypeTopCountByField doctype attr size qflavor = do
 getRepos :: QueryM [TermResult]
 getRepos =
   getDocTypeTopCountByField
-    "Change"
+    ("Change" :| [])
     "repository_fullname"
     (Just 5000)
     (QueryFlavor Author CreatedAt)
@@ -401,7 +401,7 @@ getReposSummary = do
 getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
-    "ChangeCreatedEvent"
+    ("ChangeCreatedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -409,7 +409,7 @@ getMostActiveAuthorByChangeCreated limit =
 getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
-    "ChangeMergedEvent"
+    ("ChangeMergedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -417,7 +417,7 @@ getMostActiveAuthorByChangeMerged limit =
 getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
-    "ChangeReviewedEvent"
+    ("ChangeReviewedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -425,7 +425,7 @@ getMostActiveAuthorByChangeReviewed limit =
 getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
-    "ChangeCommentedEvent"
+    ("ChangeCommentedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -433,7 +433,7 @@ getMostActiveAuthorByChangeCommented limit =
 getMostReviewedAuthor :: Int -> QueryM [TermResult]
 getMostReviewedAuthor limit =
   getDocTypeTopCountByField
-    "ChangeReviewedEvent"
+    ("ChangeReviewedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -441,10 +441,48 @@ getMostReviewedAuthor limit =
 getMostCommentedAuthor :: Int -> QueryM [TermResult]
 getMostCommentedAuthor limit =
   getDocTypeTopCountByField
-    "ChangeCommentedEvent"
+    ("ChangeCommentedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
+
+-- | peer strength authors
+data PeerStrengthResult = PeerStrengthResult
+  { psrAuthor :: Text,
+    psrPeer :: Text,
+    psrStrength :: Int
+  }
+  deriving (Show, Eq)
+
+getAuthorsPeersStrength :: QueryM [PeerStrengthResult]
+getAuthorsPeersStrength = do
+  peers <-
+    getDocTypeTopCountByField
+      eventTypes
+      "author.muid"
+      (Just 5000)
+      qf
+  authors_peers <- traverse (getAuthorPeers . trTerm) peers
+  pure $
+    filter (\psr -> psrAuthor psr /= psrPeer psr) $
+      concatMap transform authors_peers
+  where
+    eventTypes :: NonEmpty Text
+    eventTypes = fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+    qf = QueryFlavor Author CreatedAt
+    getAuthorPeers :: Text -> QueryM (Text, [TermResult])
+    getAuthorPeers peer = withFilter (getQueryFromSL $ "author: " <> peer) $ do
+      change_authors <-
+        getDocTypeTopCountByField
+          eventTypes
+          "on_author.muid"
+          (Just 5000)
+          qf
+      pure (peer, change_authors)
+    transform :: (Text, [TermResult]) -> [PeerStrengthResult]
+    transform (peer, change_authors) = toPSR <$> change_authors
+      where
+        toPSR tr = PeerStrengthResult (trTerm tr) peer (trCount tr)
 
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)

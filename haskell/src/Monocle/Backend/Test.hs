@@ -371,7 +371,6 @@ testTopAuthors = withTenant doTest
           [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'''''
       where
-        indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
         indexScenarioNoMerged project cid =
           indexScenario
             [ s | s <- nominalMerge project cid fakeDate 3600, case s of
@@ -379,6 +378,37 @@ testTopAuthors = withTenant doTest
                                                                  SComment _ -> False
                                                                  _anyOther -> True
             ]
+
+testGetAuthorsPeersStrength :: Assertion
+testGetAuthorsPeersStrength = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let nova = SProject "openstack/nova" [bob] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [alice] [eve] [bob]
+      let horizon = SProject "openstack/horizon" [alice] [alice] [alice]
+      traverse_ (indexScenario' nova) ["42", "43"]
+      traverse_ (indexScenario' neutron) ["142"]
+      traverse_ (indexScenario' horizon) ["242"]
+
+      -- Check for expected metrics
+      runQueryM defaultQuery $ do
+        results <- Q.getAuthorsPeersStrength
+        assertEqual'
+          "Check getAuthorsPeersStrength results"
+          [ Q.PeerStrengthResult
+              { psrAuthor = "bob",
+                psrPeer = "alice",
+                psrStrength = 2
+              },
+            Q.PeerStrengthResult
+              { psrAuthor = "eve",
+                psrPeer = "bob",
+                psrStrength = 4
+              }
+          ]
+          results
 
 -- Tests scenario helpers
 
@@ -472,6 +502,9 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SReview d -> I.indexEvents [d]
       SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
+
+indexScenario' :: ScenarioProject -> LText -> TenantM ()
+indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
 
 mkDate :: Integer -> UTCTime -> UTCTime
 mkDate elapsed = addUTCTime (secondsToNominalDiffTime (fromInteger elapsed))
