@@ -39,6 +39,7 @@ The process below describes how to index changes from a GitHub repository, a ful
 
 ```Shell
 $ git clone https://github.com/change-metrics/monocle.git
+$ git submodule update --init --recursive
 $ cd monocle
 $ ln -s docker-compose.yml.img docker-compose.yml
 ```
