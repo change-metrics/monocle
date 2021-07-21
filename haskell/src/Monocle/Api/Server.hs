@@ -34,7 +34,7 @@ configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspa
 configGetWorkspaces = const response
   where
     response = do
-      Env {tenants = tenants} <- ask
+      tenants <- getConfig
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
       let workspaceName = toLazy name
@@ -43,7 +43,7 @@ configGetWorkspaces = const response
 -- | /api/2/user_group/list endpoint
 userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
 userGroupList request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let UserGroupPB.ListRequest {..} = request
 
   pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
@@ -59,7 +59,7 @@ userGroupList request = do
 -- | /api/2/user_group/get endpoint
 userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
 userGroupGet request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let UserGroupPB.GetRequest {..} = request
   now <- liftIO getCurrentTime
 
@@ -133,7 +133,7 @@ toEntity entityPB = case entityPB of
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let ( CrawlerPB.AddDocRequest
           indexName
           crawlerName
@@ -187,7 +187,7 @@ crawlerAddDoc request = do
 -- | /crawler/commit endpoint
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
   let requestE = do
@@ -231,7 +231,7 @@ crawlerCommit request = do
 -- | /crawler/get_commit_info endpoint
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entity offset) = request
       entityType = fromPBEnum entity
 
@@ -275,7 +275,7 @@ crawlerCommitInfo request = do
 -- | /search/query endpoint
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   let SearchPB.QueryRequest {..} = request
   now <- liftIO getCurrentTime
 
@@ -432,7 +432,7 @@ searchFields = const $ pure response
 
 lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
-  Env {tenants = tenants} <- ask
+  tenants <- getConfig
   pure $ Config.lookupTenant tenants name
 
 -- TODO: change context from AppM to QueryM

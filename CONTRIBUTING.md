@@ -43,6 +43,19 @@ To use `docker-compose` from source code, use the
 $ ln -sf docker-compose.yml.dev docker-compose.yml
 ```
 
+### Using docker-compose with podman
+
+On fedora:
+
+```ShellSession
+$ dnf install -y podman podman-docker docker-compose
+$ sudo systemctl start podman.socket
+$ export DOCKER_HOST=///run/podman/podman.sock
+```
+
+You might have to use `sudo` to run the docker commands, or change
+the permissions of the socket.
+
 #### Reloading code
 
 This section explains how you can hack the Monocle code. The idea is to use
@@ -66,22 +79,6 @@ $ cd web
 $ npm install
 $ npm start
 ```
-
-### Using podman to build a development environment for Monocle
-
-Docker and Docker-compose might not be available so podman can
-be used to start a Monocle deployment environment.
-
-The helper script `contrib/start-with-podman.sh` can be used:
-
-```Shell
-contrib/start-with-podman.sh build
-contrib/start-with-podman.sh create
-contrib/start-with-podman.sh start
-firefox http://localhost:8080
-```
-
-See the `usage` section in the script.
 
 ### Running the services manually
 

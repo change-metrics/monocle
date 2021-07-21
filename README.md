@@ -9,23 +9,25 @@ join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle
 > We are currently working on the
 [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
 
+
 ## Components
 
-Monocle supports GitHub Pull Requests and Gerrit Reviews. Monocle
-provides a set of crawlers designed to fetch Pull Requests and Reviews
-data from the GitHub or Gerrit APIs and to store changes and changes
-related events into Elasticsearch. These changes and events are exposed
-via a JSON API. Furthermore Monocle implements ready to use queries
-and a React based web UI.
+![architecture](./doc/architecture.png)
 
-To summarize we have the following components in Monocle:
+Monocle is composed of the following services:
 
 1. an Elasticsearch data store.
-2. an api service.
-3. a crawler service.
-4. a web UI.
+2. an api service to perform user query and index crawler output.
+3. a crawler service to retrieve change from provider.
+4. a web proxy and web application to browse metrics.
 
-OpenAPI definitions are availables: [Monocle OpenAPI][monocle-openapi].
+The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
+
+Some legacy component are still required until they are migrated to the new OpenAPI (see the related issues):
+
+5. an api service to perform filter based query [issue 468](https://github.com/change-metrics/monocle/issues/468).
+6. a crawler service to index github and gerrit changes [issue 458](https://github.com/change-metrics/monocle/issues/458) and [issue 491](https://github.com/change-metrics/monocle/issues/491).
+
 
 ## Installation
 
@@ -37,6 +39,7 @@ The process below describes how to index changes from a GitHub repository, a ful
 
 ```Shell
 $ git clone https://github.com/change-metrics/monocle.git
+$ git submodule update --init --recursive
 $ cd monocle
 $ ln -s docker-compose.yml.img docker-compose.yml
 ```
@@ -66,10 +69,13 @@ workspaces:
         provider:
           github_token: <github_token>
           github_organization: tektoncd
+          github_repositories:
+            - operator
+            - pipeline
         update_since: '2020-05-01'
 ```
 
-To crawl the full tektoncd GitHub organization then remove the _repository_ entry from the file.
+To crawl the full tektoncd GitHub organization then remove the _github_repositories_ entry from the file.
 A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
@@ -84,16 +90,13 @@ Ensure services are running:
 
 ```ShellSession
 $ docker-compose ps
-monocle_api_1       uwsgi --uid guest --gid no ...   Up      0.0.0.0:9876->9876/tcp, 0.0.0.0:9877->9877/tcp
-monocle_crawler_1   monocle --elastic-conn ela ...   Up
-monocle_elastic_1   /usr/local/bin/docker-entr ...   Up      0.0.0.0:9200->9200/tcp, 9300/tcp
-monocle_web_1       docker-entrypoint.sh /bin/ ...   Up      0.0.0.0:8080->8080/tcp
 ```
 
 You might need to check the crawler logs to ensure the crawler started to fetch changes:
 
 ```ShellSession
 $ docker-compose logs -f crawler
+$ docker-compose logs -f crawler-legacy
 ```
 
 You should be able to access the web UI at <http://localhost:8080>.
@@ -101,8 +104,8 @@ You should be able to access the web UI at <http://localhost:8080>.
 After a change in the configuration file, the api and crawler services need to be restarted:
 
 ```ShellSession
-$ docker-compose restart api
-$ docker-compose restart crawler
+$ docker-compose restart api-legacy
+$ docker-compose restart crawler-legacy
 ```
 
 #### Troubleshooting
@@ -129,14 +132,14 @@ $ chmod o+w data
 You might want to wipe a Monocle project:
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
+docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
 --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
 ```
 
-or delete an workspace:
+or delete a workspace:
 
 ```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle \
+docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
 --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
 ```
 
@@ -277,10 +280,10 @@ A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerr
 Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
 
 ```bash
-docker-compose stop crawler
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
-docker-compose restart api
-docker-compose start crawler
+docker-compose stop crawler-legacy
+docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
+docker-compose restart api-legacy
+docker-compose start crawler-legacy
 ```
 
 ### Connect a tasks tracker crawler
@@ -308,9 +311,9 @@ workspaces:
 The `updated_since` date is the initial date the crawler needs to crawl from. Without any prior commit, a `GET` call on `/api/0/task_data` returns
 the initial date.
 
-#### Lentille - a task crawler library
+#### Task crawler library
 
-[Lentille](https://github.com/change-metrics/lentille) provides Haskell modules (Worker.hs and Client.hs) to ease the development of a task crawler for Monocle.
+[Monocle.Api.Client.Worker](./haskell/src/Monocle/Api/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
 
 ### Full configuration file example
 
@@ -405,4 +408,5 @@ curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
 
 Follow [our contributing guide](CONTRIBUTING.md).
 
+[monocle-protobuf]: ./protos/monocle
 [monocle-openapi]: ./doc/openapi.yaml

@@ -50,30 +50,22 @@ jobs:
       - name: Wait for services to start
         run: sleep 15
 
-      - name: Display docker-compose ps
-        run: docker-compose ps; docker-compose logs
+      - name: Display docker-compose information
+        run: |
+          docker-compose ps
+          docker-compose logs
 
-      - name: Check elastic service
-        run: docker-compose ps elastic | grep Up
+      - name: Check services are running
+        run: test -z "$(sudo docker-compose ps -a | grep Exit)"
+
+      - name: Check api-legacy service
+        run: curl -s http://localhost:9876/api/0/indices
 
       - name: Check api service
-        run: |
-          docker-compose ps api | grep Up
-          curl -s http://localhost:9876/api/0/indices
-
-      - name: Check api-ng server
-        run: docker-compose logs api-ng
-
-      - name: Check web server
-        run: docker-compose logs web
-
-      - name: Check crawler service
-        run: docker-compose ps crawler | grep Up
+        run: curl -s http://localhost:8080/api/2/get_workspaces
 
       - name: Check web service
-        run: |
-          docker-compose ps web | grep Up
-          curl -s http://localhost:8080/
+        run: curl -s http://localhost:8080/
 
       - name: Publish images to quay.io
         run: |

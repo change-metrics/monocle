@@ -123,7 +123,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       startTime <- log' $ LogStartingEntity entityType
 
       -- Query the monocle api for the oldest entity to be updated.
-      oldestEntity <- getOldestEntity offset
+      oldestEntity <- retry $ getOldestEntity offset
       log $ LogOldestEntity oldestEntity
 
       if oldestEntityDate oldestEntity > startDate
@@ -133,7 +133,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           postResultE <-
             runLentilleM $
               process
-                (crawlerAddDoc monocleClient . mkRequest oldestEntity)
+                (retry . crawlerAddDoc monocleClient . mkRequest oldestEntity)
                 (getStream oldestEntity)
 
           case postResultE of

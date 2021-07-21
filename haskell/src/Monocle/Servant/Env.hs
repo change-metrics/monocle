@@ -3,6 +3,7 @@ module Monocle.Servant.Env
   ( -- * AppM : the global environment
     Env (..),
     AppM (..),
+    getConfig,
 
     -- * TenantM : the request environment
     TenantM,
@@ -34,7 +35,7 @@ import Servant (Handler)
 
 -- | 'Env' is the global environment
 data Env = Env
-  { tenants :: [Config.Index],
+  { config :: IORef Config.ReloadableConfig,
     bhEnv :: BH.BHEnv
   }
 
@@ -42,6 +43,10 @@ data Env = Env
 newtype AppM a = AppM {unApp :: ReaderT Env Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
   deriving newtype (MonadReader Env)
+
+-- | 'getConfig' reload the config automatically from the env
+getConfig :: AppM [Config.Index]
+getConfig = Config.reloadConfig =<< asks config
 
 -- | 'TenantEnv' is the request environment, after validation
 data TenantEnv = TenantEnv
