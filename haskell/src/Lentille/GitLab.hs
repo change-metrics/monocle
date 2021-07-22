@@ -8,7 +8,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Lentille (LentilleError (DecodeError), LentilleStream, stopLentille)
-import Monocle.Api.Client.Worker (mkManager)
+import Monocle.Api.Client.Worker (mkManager, retry)
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.URI as URI
 import Relude
@@ -90,9 +90,11 @@ streamFetch client untilDate mkArgs transformResponse checkLimit = checkLimit $ 
     go pageInfoM = do
       -- Get current page results
       respE <-
-        fetch
-          (runGitLabGraphRequest client)
-          (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
+        lift
+          . retry
+          $ fetch
+            (runGitLabGraphRequest client)
+            (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
       let (pageInfo, decodingErrors, xs) = case respE of
             Left err -> error (toText err)
             Right resp -> transformResponse resp
