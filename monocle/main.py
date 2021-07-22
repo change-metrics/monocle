@@ -324,21 +324,18 @@ def main() -> None:
 
     if args.command == "dbmanage":
 
-        args.index = args.workspace
-        args.delete_index = args.delete_workspace
-
         if args.update_idents and not args.config:
             log.error("Please provide the --config option")
             sys.exit(1)
         if args.update_idents:
             idents_config = config.get_idents_config(
-                yaml.safe_load(open(args.config)), args.index
+                yaml.safe_load(open(args.config)), args.workspace
             )
         else:
             idents_config = []
         db = ELmonocleDB(
             elastic_conn=args.elastic_conn,
-            index=args.index,
+            index=args.workspace,
             idents_config=idents_config,
             user=args.elastic_user,
             password=args.elastic_password,
@@ -348,13 +345,13 @@ def main() -> None:
         )
         if args.delete_repository:
             db.delete_repository(args.delete_repository)
-        if args.delete_index:
+        if args.delete_workspace:
             db.delete_index()
         if args.update_idents:
             db.update_idents()
         if args.run_migrate:
             try:
-                migrate.run_migrate(args.run_migrate, args.elastic_conn, args.index)
+                migrate.run_migrate(args.run_migrate, args.elastic_conn, args.workspace)
             except migrate.NotAvailableException:
                 log.error(
                     "Error: %s is not a valid migration process" % args.run_migrate
