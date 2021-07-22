@@ -282,7 +282,7 @@ testAchievements = withTenant doTest
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = case (Q.queryBH $ Q.load Nothing mempty Nothing "state:open") defaultQueryFlavor of
+        query = case (Q.queryBH $ Q.load Nothing mempty Nothing "state:merged") defaultQueryFlavor of
           [x] -> x
           _ -> error "Could not compile query"
 
@@ -473,6 +473,61 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
 
+mkDate :: Integer -> UTCTime -> UTCTime
+mkDate elapsed = addUTCTime (secondsToNominalDiffTime (fromInteger elapsed))
+
+mkChange ::
+  -- Delta related to start time
+  Integer ->
+  -- Start time
+  UTCTime ->
+  -- Change Author
+  Author ->
+  -- Provider change ID
+  LText ->
+  -- Repository fullname
+  LText ->
+  -- Change State
+  LText ->
+  ELKChange
+mkChange ts start author changeId name state' =
+  emptyChange
+    { elkchangeType = "Change",
+      elkchangeId = changeId,
+      elkchangeState = state',
+      elkchangeRepositoryFullname = name,
+      elkchangeCreatedAt = mkDate ts start,
+      elkchangeAuthor = author,
+      elkchangeChangeId = "change-" <> changeId
+    }
+
+mkEvent ::
+  -- Delta related to start time
+  Integer ->
+  -- Start time
+  UTCTime ->
+  -- Type of Event
+  EventType ->
+  -- Author of the event
+  Author ->
+  -- Author of the related change
+  Author ->
+  -- Provider change ID of the related change
+  LText ->
+  -- Repository fullname
+  LText ->
+  ELKChangeEvent
+mkEvent ts start etype author onAuthor changeId name =
+  emptyEvent
+    { elkchangeeventAuthor = author,
+      elkchangeeventOnAuthor = onAuthor,
+      elkchangeeventType = eventTypeToText etype,
+      elkchangeeventRepositoryFullname = name,
+      elkchangeeventId = eventTypeToText etype <> "-" <> changeId,
+      elkchangeeventOnCreatedAt = mkDate ts start,
+      elkchangeeventChangeId = "change-" <> changeId
+    }
+
 -- | 'nominalMerge' is the most simple scenario
 -- >>> let project = SProject "openstack/nova" [alice, bob] [alice] [eve]
 -- >>> showEvents $ nominalMerge project "42" now (3600*24)
@@ -485,44 +540,52 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkDate elapsed =
-            addUTCTime (secondsToNominalDiffTime (fromInteger elapsed)) start
-          mkChange ts author =
-            emptyChange
-              { elkchangeType = "Change",
-                elkchangeId = changeId,
-                elkchangeRepositoryFullname = name,
-                elkchangeCreatedAt = mkDate ts,
-                elkchangeAuthor = author,
-                elkchangeChangeId = "change-" <> changeId
-              }
-          mkEvent ts etype author onAuthor =
-            emptyEvent
-              { elkchangeeventAuthor = author,
-                elkchangeeventOnAuthor = onAuthor,
-                elkchangeeventType = eventTypeToText etype,
-                elkchangeeventRepositoryFullname = name,
-                elkchangeeventId = eventTypeToText etype <> "-" <> changeId,
-                elkchangeeventOnCreatedAt = mkDate ts,
-                elkchangeeventChangeId = "change-" <> changeId
-              }
+      let mkChange' ts author = mkChange ts start author changeId name "MERGED"
+          mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent 0 ChangeCreated author author
-          change = mkChange 0 author
+      let create = mkEvent' 0 ChangeCreated author author
+          change = mkChange' 0 author
 
       -- The comment
       commenter <- randomAuthor $ maintainers <> commenters
-      let comment = mkEvent (duration `div` 2) ChangeCommented commenter author
+      let comment = mkEvent' (duration `div` 2) ChangeCommented commenter author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent (duration `div` 2) ChangeReviewed reviewer author
+      let review = mkEvent' (duration `div` 2) ChangeReviewed reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent duration ChangeMerged approver author
+      let merge = mkEvent' duration ChangeMerged approver author
 
       -- The event lists
       pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]
+
+nominalOpen :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
+nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
+  where
+    -- The random number generator is based on the name
+    stdGen = mkStdGen (Text.length (toStrict name))
+
+    scenario = do
+      -- The base change
+      let mkChange' ts author = mkChange ts start author changeId name "OPEN"
+          mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
+
+      -- The change creation
+      author <- randomAuthor contributors
+      let create = mkEvent' 0 ChangeCreated author author
+          change = mkChange' 0 author
+
+      -- The comment
+      commenter <- randomAuthor $ maintainers <> commenters
+      let comment = mkEvent' (duration `div` 2) ChangeCommented commenter author
+
+      -- The review
+      reviewer <- randomAuthor maintainers
+      let review = mkEvent' (duration `div` 2) ChangeReviewed reviewer author
+
+      -- The event lists
+      pure [SChange change, SCreation create, SComment comment, SReview review]
