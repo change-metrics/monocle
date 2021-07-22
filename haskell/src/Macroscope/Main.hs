@@ -30,12 +30,14 @@ crawlerName Config.Crawler {..} = name
 runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
-  confE <- Config.loadConfig confPath
-  case confE of
-    Left err -> error ("Unable to read the configuration file: " <> err)
-    Right conf -> loop conf
+  reloadableConfig <- Config.loadConfig confPath
+  confRef <- newIORef reloadableConfig
+  loop confRef
   where
-    loop conf = do
+    loop confRef = do
+      -- Reload config
+      conf <- Config.reloadConfig confRef
+
       -- Crawl each index
       traverse_ crawl (getCrawlers conf)
 
@@ -43,7 +45,7 @@ runMacroscope verbose confPath interval client = do
       liftIO $ threadDelay interval_usec
 
       -- Loop again
-      loop conf
+      loop confRef
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
@@ -65,7 +67,7 @@ runMacroscope verbose confPath interval client = do
             [glOrgCrawler glClient | isJust gitlab_organizations]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
-        _ -> error "NotImplemented"
+        _ -> pure []
 
       -- Consume each stream
       let runner =

@@ -95,7 +95,7 @@ let createElasticService =
                                          }
                                    )
 
-let createApiService =
+let createApiLegacyService =
       \(dev : Bool) ->
         let service =
               { ports = Some [ mkPort "API" 9876 9876 ]
@@ -145,7 +145,7 @@ let createApiService =
                                          }
                                    )
 
-let createApiNgService =
+let createApiService =
       \(dev : Bool) ->
         let service =
               { ports = Some [ mkPort "API" 9898 9898 ]
@@ -186,6 +186,35 @@ let createApiNgService =
                                    )
 
 let createCrawlerService =
+      \(dev : Bool) ->
+        let service =
+              { depends_on = Some [ "api" ]
+              , command = Some (Compose.StringOrList.String "macroscope")
+              , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , environment = Some
+                  ( Compose.ListOrDict.Dict
+                      [ { mapKey = "CONFIG"
+                        , mapValue = "/etc/monocle/config.yaml"
+                        }
+                      ]
+                  )
+              }
+
+        in  if    dev
+            then  Compose.Service::(     service
+                                     //  { build = Some
+                                             ( Compose.Build.Object
+                                                 (buildContext "api")
+                                             )
+                                         }
+                                   )
+            else  Compose.Service::(     service
+                                     //  { image = Some (monocleImage "api")
+                                         , restart = Some "unless-stopped"
+                                         }
+                                   )
+
+let createCrawlerLegacyService =
       \(dev : Bool) ->
         let service =
               { depends_on = Some [ "elastic" ]
@@ -257,9 +286,10 @@ let createWebService =
 let createServices =
       \(dev : Bool) ->
         toMap
-          { api = createApiService dev
-          , api-ng = createApiNgService dev
+          { api-legacy = createApiLegacyService dev
+          , api = createApiService dev
           , web = createWebService dev
+          , crawler-legacy = createCrawlerLegacyService dev
           , crawler = createCrawlerService dev
           , elastic = createElasticService dev
           }
