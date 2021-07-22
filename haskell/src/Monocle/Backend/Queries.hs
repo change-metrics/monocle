@@ -362,16 +362,17 @@ getReposSummary = do
     getRepoSummary fn = do
       -- Prepare the queries
       let query = getQueryFromSL ("repo: " <> fn)
-          qf = QueryFlavor OnAuthor UpdatedAt
-          countEvent docType = countEvents qf (query <> [documentType docType])
+          eventQF = QueryFlavor OnAuthor CreatedAt
+          changeQF = QueryFlavor Author UpdatedAt
+          countEvent docType = countEvents eventQF (query <> [documentType docType])
 
       -- Count the events
       totalChanges' <- countEvent "ChangeCreatedEvent"
-      abandonedChanges' <- countEvent "ChangeAbandonedEvent"
+      openChanges' <- countEvents changeQF (changeState "open")
       mergedChanges' <- countEvent "ChangeMergedEvent"
 
       -- Return summary
-      let openChanges' = totalChanges' - (abandonedChanges' + mergedChanges')
+      let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
 -- | get authors tops
