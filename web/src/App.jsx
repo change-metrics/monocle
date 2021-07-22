@@ -49,6 +49,7 @@ import HelpSearch from './components/HelpSearch.bs.js'
 import NChangeView from './components/NChangeView.bs.js'
 import NReposView from './components/ReposView.bs.js'
 import ActivePeopleView from './components/ActivePeopleView.bs.js'
+import PeersStengthView from './components/PeersStrengthView.bs.js'
 
 class RootView extends React.Component {
   render() {
@@ -350,6 +351,10 @@ const App = () => {
         <Route
           path="/:index/active_authors"
           render={() => <ActivePeopleView store={store} />}
+        />
+        <Route
+          path="/:index/peers_strength"
+          render={() => <PeersStengthView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>
