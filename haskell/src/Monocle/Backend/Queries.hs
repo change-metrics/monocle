@@ -450,7 +450,7 @@ getMostCommentedAuthor limit =
 data PeerStrengthResult = PeerStrengthResult
   { psrAuthor :: Text,
     psrPeer :: Text,
-    psrStrength :: Int
+    psrStrength :: Word32
   }
   deriving (Show, Eq)
 
@@ -482,7 +482,11 @@ getAuthorsPeersStrength = do
     transform :: (Text, [TermResult]) -> [PeerStrengthResult]
     transform (peer, change_authors) = toPSR <$> change_authors
       where
-        toPSR tr = PeerStrengthResult (trTerm tr) peer (trCount tr)
+        toPSR tr =
+          PeerStrengthResult
+            (trTerm tr)
+            peer
+            (fromInteger $ toInteger (trCount tr))
 
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)

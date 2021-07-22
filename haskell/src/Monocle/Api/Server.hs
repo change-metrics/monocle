@@ -337,6 +337,13 @@ searchQuery request = do
           handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
           handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
+        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultAuthorsPeers
+            . SearchPB.AuthorsPeers
+            . V.fromList
+            . map toAPeerResult
+            <$> Q.getAuthorsPeersStrength
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -357,6 +364,13 @@ searchQuery request = do
         <$> cb limit'
       where
         limit' = fromInteger $ toInteger limit
+
+    toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
+    toAPeerResult Q.PeerStrengthResult {..} =
+      SearchPB.AuthorPeer
+        (toLazy psrAuthor)
+        (toLazy psrPeer)
+        psrStrength
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =
