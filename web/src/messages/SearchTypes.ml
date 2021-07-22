@@ -58,6 +58,7 @@ type query_request_query_type =
   | Query_top_authors_changes_commented 
   | Query_top_reviewed_authors 
   | Query_top_commented_authors 
+  | Query_top_authors_peers 
 
 type query_request = {
   index : string;
@@ -141,11 +142,22 @@ type terms_count = {
   termcount : term_count list;
 }
 
+type author_peer = {
+  author : string;
+  peer : string;
+  strength : int32;
+}
+
+type authors_peers = {
+  author_peer : author_peer list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
   | Top_authors of terms_count
+  | Authors_peers of authors_peers
 
 type changes_histos_event = {
   doc_count : int32;
@@ -393,6 +405,22 @@ let rec default_terms_count
   ?termcount:((termcount:term_count list) = [])
   () : terms_count  = {
   termcount;
+}
+
+let rec default_author_peer 
+  ?author:((author:string) = "")
+  ?peer:((peer:string) = "")
+  ?strength:((strength:int32) = 0l)
+  () : author_peer  = {
+  author;
+  peer;
+  strength;
+}
+
+let rec default_authors_peers 
+  ?author_peer:((author_peer:author_peer list) = [])
+  () : authors_peers  = {
+  author_peer;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())

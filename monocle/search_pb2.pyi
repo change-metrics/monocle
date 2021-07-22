@@ -225,6 +225,7 @@ class QueryRequest(google.protobuf.message.Message):
         QUERY_TOP_AUTHORS_CHANGES_COMMENTED = QueryRequest.QueryType.V(6)
         QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
         QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
+        QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
     class QueryType(metaclass=_QueryType):
         V = typing.NewType("V", builtins.int)
     QUERY_CHANGE = QueryRequest.QueryType.V(0)
@@ -236,6 +237,7 @@ class QueryRequest(google.protobuf.message.Message):
     QUERY_TOP_AUTHORS_CHANGES_COMMENTED = QueryRequest.QueryType.V(6)
     QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
     QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
+    QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
 
     INDEX_FIELD_NUMBER: builtins.int
     USERNAME_FIELD_NUMBER: builtins.int
@@ -580,6 +582,7 @@ class QueryResponse(google.protobuf.message.Message):
     CHANGES_FIELD_NUMBER: builtins.int
     REPOS_SUMMARY_FIELD_NUMBER: builtins.int
     TOP_AUTHORS_FIELD_NUMBER: builtins.int
+    AUTHORS_PEERS_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
@@ -588,6 +591,8 @@ class QueryResponse(google.protobuf.message.Message):
     def repos_summary(self) -> global___ReposSummary: ...
     @property
     def top_authors(self) -> global___TermsCount: ...
+    @property
+    def authors_peers(self) -> global___AuthorsPeers: ...
     def __init__(
         self,
         *,
@@ -595,10 +600,13 @@ class QueryResponse(google.protobuf.message.Message):
         changes: typing.Optional[global___Changes] = ...,
         repos_summary: typing.Optional[global___ReposSummary] = ...,
         top_authors: typing.Optional[global___TermsCount] = ...,
+        authors_peers: typing.Optional[global___AuthorsPeers] = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
+            "authors_peers",
+            b"authors_peers",
             "changes",
             b"changes",
             "error",
@@ -614,6 +622,8 @@ class QueryResponse(google.protobuf.message.Message):
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
+            "authors_peers",
+            b"authors_peers",
             "changes",
             b"changes",
             "error",
@@ -629,7 +639,7 @@ class QueryResponse(google.protobuf.message.Message):
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
     ) -> typing_extensions.Literal[
-        "error", "changes", "repos_summary", "top_authors"
+        "error", "changes", "repos_summary", "top_authors", "authors_peers"
     ]: ...
 
 global___QueryResponse = QueryResponse
@@ -980,3 +990,47 @@ class TermsCount(google.protobuf.message.Message):
     ) -> None: ...
 
 global___TermsCount = TermsCount
+
+class AuthorPeer(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    AUTHOR_FIELD_NUMBER: builtins.int
+    PEER_FIELD_NUMBER: builtins.int
+    STRENGTH_FIELD_NUMBER: builtins.int
+    author: typing.Text = ...
+    peer: typing.Text = ...
+    strength: builtins.int = ...
+    def __init__(
+        self,
+        *,
+        author: typing.Text = ...,
+        peer: typing.Text = ...,
+        strength: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "author", b"author", "peer", b"peer", "strength", b"strength"
+        ],
+    ) -> None: ...
+
+global___AuthorPeer = AuthorPeer
+
+class AuthorsPeers(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    AUTHOR_PEER_FIELD_NUMBER: builtins.int
+    @property
+    def author_peer(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___AuthorPeer
+    ]: ...
+    def __init__(
+        self,
+        *,
+        author_peer: typing.Optional[typing.Iterable[global___AuthorPeer]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["author_peer", b"author_peer"]
+    ) -> None: ...
+
+global___AuthorsPeers = AuthorsPeers

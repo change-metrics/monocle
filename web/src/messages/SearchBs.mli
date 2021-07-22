@@ -63,6 +63,12 @@ val encode_term_count : SearchTypes.term_count -> Js.Json.t Js.Dict.t
 val encode_terms_count : SearchTypes.terms_count -> Js.Json.t Js.Dict.t
 (** [encode_terms_count v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_author_peer : SearchTypes.author_peer -> Js.Json.t Js.Dict.t
+(** [encode_author_peer v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_authors_peers : SearchTypes.authors_peers -> Js.Json.t Js.Dict.t
+(** [encode_authors_peers v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 (** [encode_query_response v dict] encodes [v] int the given JSON [dict] *)
 
@@ -143,6 +149,12 @@ val decode_term_count : Js.Json.t Js.Dict.t -> SearchTypes.term_count
 
 val decode_terms_count : Js.Json.t Js.Dict.t -> SearchTypes.terms_count
 (** [decode_terms_count decoder] decodes a [terms_count] value from [decoder] *)
+
+val decode_author_peer : Js.Json.t Js.Dict.t -> SearchTypes.author_peer
+(** [decode_author_peer decoder] decodes a [author_peer] value from [decoder] *)
+
+val decode_authors_peers : Js.Json.t Js.Dict.t -> SearchTypes.authors_peers
+(** [decode_authors_peers decoder] decodes a [authors_peers] value from [decoder] *)
 
 val decode_query_response : Js.Json.t Js.Dict.t -> SearchTypes.query_response
 (** [decode_query_response decoder] decodes a [query_response] value from [decoder] *)

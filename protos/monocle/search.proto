@@ -70,6 +70,7 @@ message QueryRequest {
     QUERY_TOP_AUTHORS_CHANGES_COMMENTED = 6;
     QUERY_TOP_REVIEWED_AUTHORS = 7;
     QUERY_TOP_COMMENTED_AUTHORS = 8;
+    QUERY_TOP_AUTHORS_PEERS = 9;
   }
   QueryType query_type = 4;
 
@@ -147,6 +148,7 @@ message QueryResponse {
     Changes changes = 2;
     ReposSummary repos_summary = 3;
     TermsCount top_authors = 4;
+    AuthorsPeers authors_peers = 5;
   }
 }
 
@@ -207,4 +209,14 @@ message TermCount {
 
 message TermsCount {
   repeated TermCount termcount = 1;
+}
+
+message AuthorPeer {
+  string author = 1;
+  string peer = 2;
+  uint32 strength = 3;
+}
+
+message AuthorsPeers {
+  repeated AuthorPeer author_peer = 1;
 }

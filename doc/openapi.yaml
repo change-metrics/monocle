@@ -558,6 +558,21 @@ components:
             properties:
                 full_path:
                     type: string
+        monocle_search_AuthorPeer:
+            properties:
+                author:
+                    type: string
+                peer:
+                    type: string
+                strength:
+                    type: integer
+                    format: uint32
+        monocle_search_AuthorsPeers:
+            properties:
+                author_peer:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_AuthorPeer'
         monocle_search_Change:
             properties:
                 change_id:
@@ -727,6 +742,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_ReposSummary'
                 top_authors:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
+                authors_peers:
+                    $ref: '#/components/schemas/monocle_search_AuthorsPeers'
         monocle_search_RepoSummary:
             properties:
                 fullname:

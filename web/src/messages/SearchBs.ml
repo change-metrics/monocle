@@ -230,6 +230,26 @@ let default_terms_count_mutable () : terms_count_mutable = {
   termcount = [];
 }
 
+type author_peer_mutable = {
+  mutable author : string;
+  mutable peer : string;
+  mutable strength : int32;
+}
+
+let default_author_peer_mutable () : author_peer_mutable = {
+  author = "";
+  peer = "";
+  strength = 0l;
+}
+
+type authors_peers_mutable = {
+  mutable author_peer : SearchTypes.author_peer list;
+}
+
+let default_authors_peers_mutable () : authors_peers_mutable = {
+  author_peer = [];
+}
+
 type changes_histos_event_mutable = {
   mutable doc_count : int32;
   mutable key : int64;
@@ -523,6 +543,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_TOP_AUTHORS_CHANGES_COMMENTED" -> (SearchTypes.Query_top_authors_changes_commented : SearchTypes.query_request_query_type)
   | "QUERY_TOP_REVIEWED_AUTHORS" -> (SearchTypes.Query_top_reviewed_authors : SearchTypes.query_request_query_type)
   | "QUERY_TOP_COMMENTED_AUTHORS" -> (SearchTypes.Query_top_commented_authors : SearchTypes.query_request_query_type)
+  | "QUERY_TOP_AUTHORS_PEERS" -> (SearchTypes.Query_top_authors_peers : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -911,6 +932,52 @@ let rec decode_terms_count json =
     SearchTypes.termcount = v.termcount;
   } : SearchTypes.terms_count)
 
+let rec decode_author_peer json =
+  let v = default_author_peer_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "author" -> 
+      let json = Js.Dict.unsafeGet json "author" in
+      v.author <- Pbrt_bs.string json "author_peer" "author"
+    | "peer" -> 
+      let json = Js.Dict.unsafeGet json "peer" in
+      v.peer <- Pbrt_bs.string json "author_peer" "peer"
+    | "strength" -> 
+      let json = Js.Dict.unsafeGet json "strength" in
+      v.strength <- Pbrt_bs.int32 json "author_peer" "strength"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.author = v.author;
+    SearchTypes.peer = v.peer;
+    SearchTypes.strength = v.strength;
+  } : SearchTypes.author_peer)
+
+let rec decode_authors_peers json =
+  let v = default_authors_peers_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "author_peer" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "author_peer" in 
+        Pbrt_bs.array_ a "authors_peers" "author_peer"
+      in
+      v.author_peer <- Array.map (fun json -> 
+        (decode_author_peer (Pbrt_bs.object_ json "authors_peers" "author_peer"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.author_peer = v.author_peer;
+  } : SearchTypes.authors_peers)
+
 let rec decode_query_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -929,6 +996,9 @@ let rec decode_query_response json =
       | "top_authors" -> 
         let json = Js.Dict.unsafeGet json "top_authors" in
         (SearchTypes.Top_authors ((decode_terms_count (Pbrt_bs.object_ json "query_response" "Top_authors"))) : SearchTypes.query_response)
+      | "authors_peers" -> 
+        let json = Js.Dict.unsafeGet json "authors_peers" in
+        (SearchTypes.Authors_peers ((decode_authors_peers (Pbrt_bs.object_ json "query_response" "Authors_peers"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1215,6 +1285,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_top_authors_changes_commented -> "QUERY_TOP_AUTHORS_CHANGES_COMMENTED"
   | SearchTypes.Query_top_reviewed_authors -> "QUERY_TOP_REVIEWED_AUTHORS"
   | SearchTypes.Query_top_commented_authors -> "QUERY_TOP_COMMENTED_AUTHORS"
+  | SearchTypes.Query_top_authors_peers -> "QUERY_TOP_AUTHORS_PEERS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1420,6 +1491,28 @@ let rec encode_terms_count (v:SearchTypes.terms_count) =
   end;
   json
 
+let rec encode_author_peer (v:SearchTypes.author_peer) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
+  Js.Dict.set json "peer" (Js.Json.string v.SearchTypes.peer);
+  Js.Dict.set json "strength" (Js.Json.number (Int32.to_float v.SearchTypes.strength));
+  json
+
+let rec encode_authors_peers (v:SearchTypes.authors_peers) = 
+  let json = Js.Dict.empty () in
+  begin (* authorPeer field *)
+    let (author_peer':Js.Json.t) =
+      v.SearchTypes.author_peer
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_author_peer |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "author_peer" author_peer';
+  end;
+  json
+
 let rec encode_query_response (v:SearchTypes.query_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -1442,6 +1535,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* topAuthors field *)
       let json' = encode_terms_count v in
       Js.Dict.set json "top_authors" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Authors_peers v ->
+    begin (* authorsPeers field *)
+      let json' = encode_authors_peers v in
+      Js.Dict.set json "authors_peers" (Js.Json.object_ json');
     end;
   end;
   json

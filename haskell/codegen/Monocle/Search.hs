@@ -1223,6 +1223,7 @@ data QueryRequest_QueryType
   | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED
   | QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
   | QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
+  | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1232,7 +1233,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
+  maxBound = QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1258,6 +1259,8 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
   toProtoEnumMay 8 =
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
+  toProtoEnumMay 9 =
+    Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE) = 1
@@ -1274,6 +1277,7 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     7
   fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS) =
     8
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS) = 9
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1298,6 +1302,8 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
   parseJSONPB (HsJSONPB.String "QUERY_TOP_COMMENTED_AUTHORS") =
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
+  parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_PEERS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -2742,6 +2748,14 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultAuthorsPeers y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 5)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.AuthorsPeers)
+                            @(HsProtobuf.Nested Monocle.Search.AuthorsPeers)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2775,16 +2789,23 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.TermsCount))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 5),
+                  (Hs.pure (Hs.fmap QueryResponseResultAuthorsPeers))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.AuthorsPeers))
+                            @(_ (Hs.Maybe Monocle.Search.AuthorsPeers))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB QueryResponse where
-  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4) =
+  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
     ( HsJSONPB.object
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4 of
+                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
@@ -2792,6 +2813,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                         (HsJSONPB.pair "repos_summary" f3)
                       Hs.Just (QueryResponseResultTopAuthors f4) ->
                         (HsJSONPB.pair "top_authors" f4)
+                      Hs.Just (QueryResponseResultAuthorsPeers f5) ->
+                        (HsJSONPB.pair "authors_peers" f5)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2803,10 +2826,10 @@ instance HsJSONPB.ToJSONPB QueryResponse where
           )
         ]
     )
-  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4) =
+  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4 of
+                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
@@ -2814,6 +2837,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                         (HsJSONPB.pair "repos_summary" f3)
                       Hs.Just (QueryResponseResultTopAuthors f4) ->
                         (HsJSONPB.pair "top_authors" f4)
+                      Hs.Just (QueryResponseResultAuthorsPeers f5) ->
+                        (HsJSONPB.pair "authors_peers" f5)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2840,6 +2865,8 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "repos_summary"),
                               Hs.Just Hs.. QueryResponseResultTopAuthors
                                 <$> (HsJSONPB.parseField parseObj "top_authors"),
+                              Hs.Just Hs.. QueryResponseResultAuthorsPeers
+                                <$> (HsJSONPB.parseField parseObj "authors_peers"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -2886,6 +2913,7 @@ data QueryResponseResult
   | QueryResponseResultChanges Monocle.Search.Changes
   | QueryResponseResultReposSummary Monocle.Search.ReposSummary
   | QueryResponseResultTopAuthors Monocle.Search.TermsCount
+  | QueryResponseResultAuthorsPeers Monocle.Search.AuthorsPeers
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -2916,6 +2944,13 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultTopAuthors
               <*> HsJSONPB.asProxy declare_top_authors
+      let declare_authors_peers = HsJSONPB.declareSchemaRef
+      queryResponseResultAuthorsPeers <-
+        declare_authors_peers
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultAuthorsPeers
+              <*> HsJSONPB.asProxy declare_authors_peers
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2936,6 +2971,9 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ),
                           ( "top_authors",
                             queryResponseResultTopAuthors
+                          ),
+                          ( "authors_peers",
+                            queryResponseResultAuthorsPeers
                           )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
@@ -4571,6 +4609,230 @@ instance HsJSONPB.ToSchema TermsCount where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [("termcount", termsCountTermcount)]
+                  }
+            }
+        )
+
+data AuthorPeer = AuthorPeer
+  { authorPeerAuthor :: Hs.Text,
+    authorPeerPeer :: Hs.Text,
+    authorPeerStrength :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named AuthorPeer where
+  nameOf _ = (Hs.fromString "AuthorPeer")
+
+instance HsProtobuf.HasDefault AuthorPeer
+
+instance HsProtobuf.Message AuthorPeer where
+  encodeMessage
+    _
+    AuthorPeer
+      { authorPeerAuthor = authorPeerAuthor,
+        authorPeerPeer = authorPeerPeer,
+        authorPeerStrength = authorPeerStrength
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                authorPeerAuthor
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                authorPeerPeer
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                authorPeerStrength
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure AuthorPeer)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "author")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "peer")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "strength")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB AuthorPeer where
+  toJSONPB (AuthorPeer f1 f2 f3) =
+    ( HsJSONPB.object
+        ["author" .= f1, "peer" .= f2, "strength" .= f3]
+    )
+  toEncodingPB (AuthorPeer f1 f2 f3) =
+    (HsJSONPB.pairs ["author" .= f1, "peer" .= f2, "strength" .= f3])
+
+instance HsJSONPB.FromJSONPB AuthorPeer where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "AuthorPeer"
+        ( \obj ->
+            (Hs.pure AuthorPeer) <*> obj .: "author" <*> obj .: "peer"
+              <*> obj .: "strength"
+        )
+    )
+
+instance HsJSONPB.ToJSON AuthorPeer where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON AuthorPeer where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema AuthorPeer where
+  declareNamedSchema _ =
+    do
+      let declare_author = HsJSONPB.declareSchemaRef
+      authorPeerAuthor <- declare_author Proxy.Proxy
+      let declare_peer = HsJSONPB.declareSchemaRef
+      authorPeerPeer <- declare_peer Proxy.Proxy
+      let declare_strength = HsJSONPB.declareSchemaRef
+      authorPeerStrength <- declare_strength Proxy.Proxy
+      let _ =
+            Hs.pure AuthorPeer <*> HsJSONPB.asProxy declare_author
+              <*> HsJSONPB.asProxy declare_peer
+              <*> HsJSONPB.asProxy declare_strength
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "AuthorPeer",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("author", authorPeerAuthor),
+                          ("peer", authorPeerPeer),
+                          ("strength", authorPeerStrength)
+                        ]
+                  }
+            }
+        )
+
+newtype AuthorsPeers = AuthorsPeers
+  { authorsPeersAuthorPeer ::
+      Hs.Vector Monocle.Search.AuthorPeer
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named AuthorsPeers where
+  nameOf _ = (Hs.fromString "AuthorsPeers")
+
+instance HsProtobuf.HasDefault AuthorsPeers
+
+instance HsProtobuf.Message AuthorsPeers where
+  encodeMessage
+    _
+    AuthorsPeers {authorsPeersAuthorPeer = authorsPeersAuthorPeer} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.AuthorPeer)
+                    @(HsProtobuf.NestedVec Monocle.Search.AuthorPeer)
+                    authorsPeersAuthorPeer
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure AuthorsPeers)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.AuthorPeer))
+              @(_ (Hs.Vector Monocle.Search.AuthorPeer))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "AuthorPeer"))
+          )
+          (HsProtobuf.Single "author_peer")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB AuthorsPeers where
+  toJSONPB (AuthorsPeers f1) =
+    (HsJSONPB.object ["author_peer" .= f1])
+  toEncodingPB (AuthorsPeers f1) =
+    (HsJSONPB.pairs ["author_peer" .= f1])
+
+instance HsJSONPB.FromJSONPB AuthorsPeers where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "AuthorsPeers"
+        (\obj -> (Hs.pure AuthorsPeers) <*> obj .: "author_peer")
+    )
+
+instance HsJSONPB.ToJSON AuthorsPeers where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON AuthorsPeers where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema AuthorsPeers where
+  declareNamedSchema _ =
+    do
+      let declare_author_peer = HsJSONPB.declareSchemaRef
+      authorsPeersAuthorPeer <- declare_author_peer Proxy.Proxy
+      let _ =
+            Hs.pure AuthorsPeers
+              <*> HsJSONPB.asProxy declare_author_peer
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "AuthorsPeers",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("author_peer", authorsPeersAuthorPeer)]
                   }
             }
         )
