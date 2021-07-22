@@ -73,7 +73,7 @@ transformResponse result =
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing,
-        ["Unknown project response: " <> show result],
+        ["Unknown GetGroupProjects response: " <> show result],
         []
       )
   where
