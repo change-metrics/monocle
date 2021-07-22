@@ -359,17 +359,15 @@ getReposSummary = do
   names <- fmap trTerm <$> getRepos
   traverse getRepoSummary names
   where
-    getRepoSummary fn = do
+    getRepoSummary fn = withFilter (getQueryFromSL ("repo: " <> fn)) $ do
       -- Prepare the queries
-      let query = getQueryFromSL ("repo: " <> fn)
-          eventQF = QueryFlavor OnAuthor CreatedAt
+      let eventQF = QueryFlavor OnAuthor CreatedAt
           changeQF = QueryFlavor Author UpdatedAt
-          countEvent docType = countEvents eventQF (query <> [documentType docType])
 
       -- Count the events
-      totalChanges' <- countEvent "ChangeCreatedEvent"
-      openChanges' <- countEvents changeQF (changeState "open")
-      mergedChanges' <- countEvent "ChangeMergedEvent"
+      totalChanges' <- countEvents eventQF [documentType "ChangeCreatedEvent"]
+      openChanges' <- countEvents changeQF $ changeState "OPEN"
+      mergedChanges' <- countEvents eventQF [documentType "ChangeMergedEvent"]
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
