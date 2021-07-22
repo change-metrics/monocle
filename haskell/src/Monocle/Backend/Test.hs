@@ -394,7 +394,7 @@ testGetAuthorsPeersStrength = withTenant doTest
 
       -- Check for expected metrics
       runQueryM defaultQuery $ do
-        results <- Q.getAuthorsPeersStrength
+        results <- Q.getAuthorsPeersStrength 10
         assertEqual'
           "Check getAuthorsPeersStrength results"
           [ Q.PeerStrengthResult

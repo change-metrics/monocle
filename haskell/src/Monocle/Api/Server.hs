@@ -343,7 +343,7 @@ searchQuery request = do
             . SearchPB.AuthorsPeers
             . V.fromList
             . map toAPeerResult
-            <$> Q.getAuthorsPeersStrength
+            <$> Q.getAuthorsPeersStrength queryRequestLimit
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse

@@ -28,11 +28,31 @@ module PeersStrengthTable = {
   }
 }
 
+module LimitSelector = {
+  @react.component
+  let make = (~limit: int, ~setLimit: (int => int) => unit) => {
+    let setLimit' = str => {
+      let v = str == "" ? 25 : str->int_of_string
+      setLimit(_ => v)
+    }
+    <Patternfly.Layout.Bullseye>
+      <MSelect
+        placeholder={"Set limit"}
+        options={list{10, 25, 50, 100, 500}->Belt.List.map(string_of_int)}
+        multi={false}
+        value={limit > 0 ? limit->string_of_int : ""}
+        valueChanged={setLimit'}
+      />
+    </Patternfly.Layout.Bullseye>
+  }
+}
+
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
   let index = state.index
   let query = state.query
+  let (limit, setLimit) = React.useState(() => 25)
   let request = {
     SearchTypes.index: index,
     query: query,
@@ -40,10 +60,10 @@ let make = (~store: Store.t) => {
     query_type: SearchTypes.Query_top_authors_peers,
     // Not hendled server side
     order: None,
-    limit: 0->Int32.of_int,
+    limit: limit->Int32.of_int,
   }
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), query) {
+    {switch useAutoGetOn(() => WebApi.Search.query(request), query ++ limit->string_of_int) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
@@ -56,7 +76,7 @@ let make = (~store: Store.t) => {
           <CardTitle>
             <MGrid>
               <MGridItem> {"Peers Strength"->str} </MGridItem>
-              // <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
+              <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
             </MGrid>
           </CardTitle>
           <CardBody> <PeersStrengthTable items={tps.author_peer} /> </CardBody>

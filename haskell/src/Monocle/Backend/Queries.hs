@@ -454,8 +454,12 @@ data PeerStrengthResult = PeerStrengthResult
   }
   deriving (Show, Eq)
 
-getAuthorsPeersStrength :: QueryM [PeerStrengthResult]
-getAuthorsPeersStrength = do
+instance Ord PeerStrengthResult where
+  (PeerStrengthResult _ _ x) `compare` (PeerStrengthResult _ _ y) =
+    x `compare` y
+
+getAuthorsPeersStrength :: Word32 -> QueryM [PeerStrengthResult]
+getAuthorsPeersStrength limit = do
   peers <-
     getDocTypeTopCountByField
       eventTypes
@@ -464,8 +468,11 @@ getAuthorsPeersStrength = do
       qf
   authors_peers <- traverse (getAuthorPeers . trTerm) peers
   pure $
-    filter (\psr -> psrAuthor psr /= psrPeer psr) $
-      concatMap transform authors_peers
+    take (fromInteger $ toInteger limit) $
+      reverse $
+        sort $
+          filter (\psr -> psrAuthor psr /= psrPeer psr) $
+            concatMap transform authors_peers
   where
     eventTypes :: NonEmpty Text
     eventTypes = fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
