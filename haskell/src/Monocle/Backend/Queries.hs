@@ -559,3 +559,27 @@ getHisto qf = do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
     pure $ heBuckets $ parseAggregationResults "agg1" res
+
+-- | changes review stats
+getReviewStats :: QueryM SearchPB.ReviewStats
+getReviewStats = do
+  reviewStatsCommentHisto <- getHisto' "ChangeCommentedEvent"
+  reviewStatsReviewHisto <- getHisto' "ChangeReviewedEvent"
+
+  let reviewStatsCommentCount = Just emptyReviewCount
+      reviewStatsReviewCount = Just emptyReviewCount
+
+  let reviewStatsCommentDelay = 0
+      reviewStatsReviewDelay = 0
+
+  pure $ SearchPB.ReviewStats {..}
+  where
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    emptyReviewCount = SearchPB.ReviewCount 0 0
+    getHisto' :: Text -> QueryM (V.Vector SearchPB.Histo)
+    getHisto' docType = fmap toPBHisto <$> withFilter [mkTerm "type" docType] (getHisto qf)
+    toPBHisto :: HistoEventBucket -> SearchPB.Histo
+    toPBHisto HistoEventBucket {..} =
+      let histoDate = heDate
+          histoCount = heCount
+       in SearchPB.Histo {..}

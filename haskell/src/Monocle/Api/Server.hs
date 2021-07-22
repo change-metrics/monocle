@@ -303,7 +303,10 @@ searchQuery request = do
           query <-
             Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
 
-          pure (tenant, query, fromPBEnum queryRequestQueryType)
+          -- Date histogram needs explicit bound to be set:
+          let queryWithBound = Q.ensureMinBound query
+
+          pure (tenant, queryWithBound, fromPBEnum queryRequestQueryType)
 
   case requestE of
     Right (tenant, query, queryType) -> runTenantQueryM tenant query $ do
@@ -326,6 +329,9 @@ searchQuery request = do
             . V.fromList
             . map toRSumResult
             <$> Q.getReposSummary
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
+            <$> Q.getReviewStats
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
           handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
