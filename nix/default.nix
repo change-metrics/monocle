@@ -87,6 +87,7 @@ let
         fastcgi_cache_path ${nginx-home}/fcache keys_zone=one1:10m;
         uwsgi_temp_path ${nginx-home}/uwsgi;
         scgi_temp_path ${nginx-home}/scgi;
+        client_max_body_size 1024M;
         server {
           listen ${toString nginx-port} default_server;
           proxy_cache one;

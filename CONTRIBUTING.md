@@ -100,8 +100,9 @@ server {
   listen 8081;
 
   gzip on;
-    gzip_min_length 1000;
-    gzip_types text/plain text/xml application/javascript text/css;
+  gzip_min_length 1000;
+  gzip_types text/plain text/xml application/javascript text/css;
+  client_max_body_size 1024M;
 
   location /api/ {
     proxy_pass http://localhost:9878/api/;
