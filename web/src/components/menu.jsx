@@ -173,6 +173,7 @@ class TopMenu extends React.Component {
             <Route path="/:index" component={IndexMenu} />
           </Switch>
           <Switch>
+            <Route exact path="/:index/" render={render} />
             <Route path="/:index/board" render={render} />
             <Route path="/:index/user_groups" render={render} />
             <Route path="/:index/changes" render={render} />
