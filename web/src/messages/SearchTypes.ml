@@ -60,6 +60,7 @@ type query_request_query_type =
   | Query_top_commented_authors 
   | Query_top_authors_peers 
   | Query_new_changes_authors 
+  | Query_changes_review_stats 
 
 type query_request = {
   index : string;
@@ -122,6 +123,25 @@ type changes = {
   changes : change list;
 }
 
+type review_count = {
+  authors_count : int32;
+  events_count : int32;
+}
+
+type histo = {
+  date : string;
+  count : int32;
+}
+
+type review_stats = {
+  comment_count : review_count option;
+  review_count : review_count option;
+  comment_delay : int32;
+  review_delay : int32;
+  comment_histo : histo list;
+  review_histo : histo list;
+}
+
 type repo_summary = {
   fullname : string;
   total_changes : int32;
@@ -160,6 +180,7 @@ type query_response =
   | Top_authors of terms_count
   | Authors_peers of authors_peers
   | New_authors of terms_count
+  | Review_stats of review_stats
 
 type changes_histos_event = {
   doc_count : int32;
@@ -373,6 +394,38 @@ let rec default_changes
   ?changes:((changes:change list) = [])
   () : changes  = {
   changes;
+}
+
+let rec default_review_count 
+  ?authors_count:((authors_count:int32) = 0l)
+  ?events_count:((events_count:int32) = 0l)
+  () : review_count  = {
+  authors_count;
+  events_count;
+}
+
+let rec default_histo 
+  ?date:((date:string) = "")
+  ?count:((count:int32) = 0l)
+  () : histo  = {
+  date;
+  count;
+}
+
+let rec default_review_stats 
+  ?comment_count:((comment_count:review_count option) = None)
+  ?review_count:((review_count:review_count option) = None)
+  ?comment_delay:((comment_delay:int32) = 0l)
+  ?review_delay:((review_delay:int32) = 0l)
+  ?comment_histo:((comment_histo:histo list) = [])
+  ?review_histo:((review_histo:histo list) = [])
+  () : review_stats  = {
+  comment_count;
+  review_count;
+  comment_delay;
+  review_delay;
+  comment_histo;
+  review_histo;
 }
 
 let rec default_repo_summary 

@@ -63,6 +63,7 @@ type query_request_query_type =
   | Query_top_commented_authors 
   | Query_top_authors_peers 
   | Query_new_changes_authors 
+  | Query_changes_review_stats 
 
 type query_request = {
   index : string;
@@ -125,6 +126,25 @@ type changes = {
   changes : change list;
 }
 
+type review_count = {
+  authors_count : int32;
+  events_count : int32;
+}
+
+type histo = {
+  date : string;
+  count : int32;
+}
+
+type review_stats = {
+  comment_count : review_count option;
+  review_count : review_count option;
+  comment_delay : int32;
+  review_delay : int32;
+  comment_histo : histo list;
+  review_histo : histo list;
+}
+
 type repo_summary = {
   fullname : string;
   total_changes : int32;
@@ -163,6 +183,7 @@ type query_response =
   | Top_authors of terms_count
   | Authors_peers of authors_peers
   | New_authors of terms_count
+  | Review_stats of review_stats
 
 type changes_histos_event = {
   doc_count : int32;
@@ -338,6 +359,31 @@ val default_changes :
   unit ->
   changes
 (** [default_changes ()] is the default value for type [changes] *)
+
+val default_review_count : 
+  ?authors_count:int32 ->
+  ?events_count:int32 ->
+  unit ->
+  review_count
+(** [default_review_count ()] is the default value for type [review_count] *)
+
+val default_histo : 
+  ?date:string ->
+  ?count:int32 ->
+  unit ->
+  histo
+(** [default_histo ()] is the default value for type [histo] *)
+
+val default_review_stats : 
+  ?comment_count:review_count option ->
+  ?review_count:review_count option ->
+  ?comment_delay:int32 ->
+  ?review_delay:int32 ->
+  ?comment_histo:histo list ->
+  ?review_histo:histo list ->
+  unit ->
+  review_stats
+(** [default_review_stats ()] is the default value for type [review_stats] *)
 
 val default_repo_summary : 
   ?fullname:string ->

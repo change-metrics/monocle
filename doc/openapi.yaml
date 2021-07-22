@@ -702,6 +702,13 @@ components:
                     format: uint32
                 path:
                     type: string
+        monocle_search_Histo:
+            properties:
+                date:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
         monocle_search_Order:
             properties:
                 field:
@@ -746,6 +753,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_AuthorsPeers'
                 new_authors:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
+                review_stats:
+                    $ref: '#/components/schemas/monocle_search_ReviewStats'
         monocle_search_RepoSummary:
             properties:
                 fullname:
@@ -768,6 +777,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_RepoSummary'
+        monocle_search_ReviewCount:
+            properties:
+                authors_count:
+                    type: integer
+                    format: uint32
+                events_count:
+                    type: integer
+                    format: uint32
+        monocle_search_ReviewStats:
+            properties:
+                comment_count:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                review_count:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                comment_delay:
+                    type: integer
+                    format: uint32
+                review_delay:
+                    type: integer
+                    format: uint32
+                comment_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                review_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
         monocle_search_SearchSuggestionsRequest:
             properties:
                 index:

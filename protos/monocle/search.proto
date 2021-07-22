@@ -72,6 +72,9 @@ message QueryRequest {
     QUERY_TOP_COMMENTED_AUTHORS = 8;
     QUERY_TOP_AUTHORS_PEERS = 9;
     QUERY_NEW_CHANGES_AUTHORS = 10;
+
+    // Activity page
+    QUERY_CHANGES_REVIEW_STATS = 20;
   }
   QueryType query_type = 4;
 
@@ -143,6 +146,25 @@ message Changes {
   repeated Change changes = 1;
 }
 
+message ReviewCount {
+  uint32 authors_count = 1;
+  uint32 events_count = 2;
+}
+
+message Histo {
+  string date = 1;
+  uint32 count = 2;
+}
+
+message ReviewStats {
+  ReviewCount comment_count = 1;
+  ReviewCount review_count = 2;
+  uint32 comment_delay = 5;
+  uint32 review_delay = 6;
+  repeated Histo comment_histo = 10;
+  repeated Histo review_histo = 11;
+}
+
 message QueryResponse {
   oneof result {
     QueryError error = 1;
@@ -151,6 +173,7 @@ message QueryResponse {
     TermsCount top_authors = 4;
     AuthorsPeers authors_peers = 5;
     TermsCount new_authors = 6;
+    ReviewStats review_stats = 20;
   }
 }
 
