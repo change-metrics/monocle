@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries (countToWord)
 import qualified Monocle.Backend.Queries as Q
@@ -394,7 +394,7 @@ searchQuery request = do
           changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
           changeUpdatedAt = (Just . Timestamp.fromUTCTime $ elkchangeUpdatedAt change)
           changeRepositoryFullname = elkchangeRepositoryFullname change
-          changeState = elkchangeState change
+          changeState = toLazy . changeStateToText $ elkchangeState change
           changeBranch = elkchangeBranch change
           changeTargetBranch = elkchangeTargetBranch change
           changeTaskData = V.fromList . maybe [] (map toTaskData) $ elkchangeTasksData change

@@ -41,7 +41,7 @@ fakeChange :: ELKChange
 fakeChange =
   ELKChange
     { elkchangeId = "",
-      elkchangeType = "Change",
+      elkchangeType = ElkChange,
       elkchangeNumber = 1,
       elkchangeChangeId = "change-id",
       elkchangeTitle = "",
@@ -68,7 +68,7 @@ fakeChange =
       elkchangeApproval = Just ["OK"],
       elkchangeSelfMerged = Nothing,
       elkchangeTasksData = Nothing,
-      elkchangeState = "OPEN",
+      elkchangeState = ElkChangeOpen,
       elkchangeMergeable = "",
       elkchangeLabels = [],
       elkchangeAssignees = [],
@@ -371,15 +371,6 @@ testTopAuthors = withTenant doTest
           [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'''''
 
--- where
---   indexScenarioNoMerged project cid =
---     indexScenario
---       [ s | s <- nominalMerge project cid fakeDate 3600, case s of
---                                                            SMerge _ -> False
---                                                            SComment _ -> False
---                                                            _anyOther -> True
---       ]
-
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
   where
@@ -432,8 +423,8 @@ emptyEvent = ELKChangeEvent {..}
   where
     elkchangeeventId = mempty
     elkchangeeventNumber = 0
-    elkchangeeventType = "ChangeMerged"
     elkchangeeventChangeId = mempty
+    elkchangeeventType = ElkChangeCreatedEvent
     elkchangeeventUrl = mempty
     elkchangeeventChangedFiles = mempty
     elkchangeeventRepositoryPrefix = mempty
@@ -472,21 +463,6 @@ data ScenarioProject = SProject
   }
 
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
-data EventType
-  = ChangeCreated
-  | ChangeMerged
-  | ChangeReviewed
-  | ChangeCommented
-  | ChangeAbandoned
-
-eventTypeToText :: EventType -> LText
-eventTypeToText = \case
-  ChangeCreated -> "ChangeCreatedEvent"
-  ChangeMerged -> "ChangeMergedEvent"
-  ChangeReviewed -> "ChangeReviewedEvent"
-  ChangeCommented -> "ChangeCommentedEvent"
-  ChangeAbandoned -> "ChangeAbandonedEvent"
-
 data ScenarioEvent
   = SChange ELKChange
   | SCreation ELKChangeEvent
@@ -525,11 +501,11 @@ mkChange ::
   -- Repository fullname
   LText ->
   -- Change State
-  LText ->
+  ELKChangeState ->
   ELKChange
 mkChange ts start author changeId name state' =
   emptyChange
-    { elkchangeType = "Change",
+    { elkchangeType = ElkChange,
       elkchangeId = changeId,
       elkchangeState = state',
       elkchangeRepositoryFullname = name,
@@ -544,7 +520,7 @@ mkEvent ::
   -- Start time
   UTCTime ->
   -- Type of Event
-  EventType ->
+  ELKDocType ->
   -- Author of the event
   Author ->
   -- Author of the related change
@@ -558,9 +534,9 @@ mkEvent ts start etype author onAuthor changeId name =
   emptyEvent
     { elkchangeeventAuthor = author,
       elkchangeeventOnAuthor = onAuthor,
-      elkchangeeventType = eventTypeToText etype,
+      elkchangeeventType = etype,
       elkchangeeventRepositoryFullname = name,
-      elkchangeeventId = eventTypeToText etype <> "-" <> changeId,
+      elkchangeeventId = docTypeToText etype <> "-" <> changeId,
       elkchangeeventOnCreatedAt = mkDate ts start,
       elkchangeeventChangeId = "change-" <> changeId
     }
@@ -577,25 +553,25 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name "MERGED"
+      let mkChange' ts author = mkChange ts start author changeId name ElkChangeMerged
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ChangeCreated author author
+      let create = mkEvent' 0 ElkChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The comment
       commenter <- randomAuthor $ maintainers <> commenters
-      let comment = mkEvent' (duration `div` 2) ChangeCommented commenter author
+      let comment = mkEvent' (duration `div` 2) ElkChangeCommentedEvent commenter author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ChangeReviewed reviewer author
+      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent' duration ChangeMerged approver author
+      let merge = mkEvent' duration ElkChangeMergedEvent approver author
 
       -- The event lists
       pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]
@@ -608,17 +584,17 @@ nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name "OPEN"
+      let mkChange' ts author = mkChange ts start author changeId name ElkChangeOpen
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ChangeCreated author author
+      let create = mkEvent' 0 ElkChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ChangeReviewed reviewer author
+      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
 
       -- The event lists
       pure [SChange change, SCreation create, SReview review]
