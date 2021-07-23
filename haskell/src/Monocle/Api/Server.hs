@@ -8,6 +8,7 @@ import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..))
 import Monocle.Backend.Index as I
+import Monocle.Backend.Queries (countToWord)
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
@@ -355,10 +356,10 @@ searchQuery request = do
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =
       let repoSummaryFullname = toLazy fullname
-          repoSummaryTotalChanges = totalChanges
-          repoSummaryAbandonedChanges = abandonedChanges
-          repoSummaryMergedChanges = mergedChanges
-          repoSummaryOpenChanges = openChanges
+          repoSummaryTotalChanges = countToWord totalChanges
+          repoSummaryAbandonedChanges = countToWord abandonedChanges
+          repoSummaryMergedChanges = countToWord mergedChanges
+          repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
 
     toChangeResult :: ELKChange -> SearchPB.Change
@@ -513,13 +514,15 @@ searchChangesLifecycle indexName queryText = do
 
     toRatio ::
       Q.EventCounts ->
-      Word32 ->
-      Word32 ->
-      Word32 ->
+      Q.Count ->
+      Q.Count ->
+      Q.Count ->
       SearchPB.ChangesLifecycle_Ratios
     toRatio Q.EventCounts {..} createdEvent pushedEvent forcePushedEvent =
-      let ratio :: Word32 -> Word32 -> Deci
-          ratio x y = if y == 0 then 0 else (fromInteger . toInteger $ x) / (fromInteger . toInteger $ y)
+      let ratio :: Q.Count -> Q.Count -> Deci
+          ratio (Q.MkCount x) (Q.MkCount y)
+            | y == 0 = 0
+            | otherwise = (fromInteger . toInteger $ x) / (fromInteger . toInteger $ y)
           ratioF x = fromFixed . ratio x
 
           changesLifecycle_RatiosMerged = mergedCount `ratioF` createdEvent
@@ -538,14 +541,14 @@ searchChangesLifecycle indexName queryText = do
       let changesLifecycleChangeCommitForcePushedEvent = Nothing
           changesLifecycleChangeCommitPushedEvent = Nothing
           changesLifecycleChangeCreatedEvent = Nothing
-          changesLifecycleAbandoned = abandonedCount
+          changesLifecycleAbandoned = countToWord abandonedCount
           changesLifecycleCommits = 0
           changesLifecycleDuration = double2Float (Q.avg msd)
           changesLifecycleDurationVariability = double2Float (Q.variability msd)
           changesLifecycleHistos = Just histos
-          changesLifecycleMerged = mergedCount
-          changesLifecycleOpened = openedCount
+          changesLifecycleMerged = countToWord mergedCount
+          changesLifecycleOpened = countToWord openedCount
           changesLifecycleRatios = Just ratios
-          changesLifecycleSelfMerged = selfMergedCount
+          changesLifecycleSelfMerged = countToWord selfMergedCount
           changesLifecycleTests = 0
        in SearchPB.ChangesLifecycle {..}
