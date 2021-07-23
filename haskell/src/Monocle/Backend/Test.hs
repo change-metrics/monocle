@@ -333,8 +333,8 @@ testTopAuthors = withTenant doTest
       -- Prapare data
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
       let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
-      traverse_ (indexScenario' nova) ["42", "43"]
-      traverse_ (indexScenarioNoMerged neutron) ["142", "143"]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
 
       -- Check for expected metrics
       runQueryM defaultQuery $ do
@@ -370,14 +370,15 @@ testTopAuthors = withTenant doTest
           "Check getMostCommentedAuthor count"
           [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'''''
-      where
-        indexScenarioNoMerged project cid =
-          indexScenario
-            [ s | s <- nominalMerge project cid fakeDate 3600, case s of
-                                                                 SMerge _ -> False
-                                                                 SComment _ -> False
-                                                                 _anyOther -> True
-            ]
+
+-- where
+--   indexScenarioNoMerged project cid =
+--     indexScenario
+--       [ s | s <- nominalMerge project cid fakeDate 3600, case s of
+--                                                            SMerge _ -> False
+--                                                            SComment _ -> False
+--                                                            _anyOther -> True
+--       ]
 
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
@@ -388,9 +389,9 @@ testGetAuthorsPeersStrength = withTenant doTest
       let nova = SProject "openstack/nova" [bob] [alice] [eve]
       let neutron = SProject "openstack/neutron" [alice] [eve] [bob]
       let horizon = SProject "openstack/horizon" [alice] [alice] [alice]
-      traverse_ (indexScenario' nova) ["42", "43"]
-      traverse_ (indexScenario' neutron) ["142"]
-      traverse_ (indexScenario' horizon) ["242"]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNM neutron) ["142"]
+      traverse_ (indexScenarioNM horizon) ["242"]
 
       -- Check for expected metrics
       runQueryM defaultQuery $ do
@@ -503,8 +504,11 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
 
-indexScenario' :: ScenarioProject -> LText -> TenantM ()
-indexScenario' project cid = indexScenario (nominalMerge project cid fakeDate 3600)
+indexScenarioNM :: ScenarioProject -> LText -> TenantM ()
+indexScenarioNM project cid = indexScenario (nominalMerge project cid fakeDate 3600)
+
+indexScenarioNO :: ScenarioProject -> LText -> TenantM ()
+indexScenarioNO project cid = indexScenario (nominalOpen project cid fakeDate 3600)
 
 mkDate :: Integer -> UTCTime -> UTCTime
 mkDate elapsed = addUTCTime (secondsToNominalDiffTime (fromInteger elapsed))
@@ -612,13 +616,9 @@ nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
       let create = mkEvent' 0 ChangeCreated author author
           change = mkChange' 0 author
 
-      -- The comment
-      commenter <- randomAuthor $ maintainers <> commenters
-      let comment = mkEvent' (duration `div` 2) ChangeCommented commenter author
-
       -- The review
       reviewer <- randomAuthor maintainers
       let review = mkEvent' (duration `div` 2) ChangeReviewed reviewer author
 
       -- The event lists
-      pure [SChange change, SCreation create, SComment comment, SReview review]
+      pure [SChange change, SCreation create, SReview review]
