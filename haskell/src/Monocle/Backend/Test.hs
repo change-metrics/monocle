@@ -398,14 +398,14 @@ testGetAuthorsPeersStrength = withTenant doTest
         assertEqual'
           "Check getAuthorsPeersStrength results"
           [ Q.PeerStrengthResult
-              { psrAuthor = "bob",
-                psrPeer = "alice",
-                psrStrength = 2
-              },
-            Q.PeerStrengthResult
               { psrAuthor = "eve",
                 psrPeer = "bob",
                 psrStrength = 4
+              },
+            Q.PeerStrengthResult
+              { psrAuthor = "bob",
+                psrPeer = "alice",
+                psrStrength = 2
               }
           ]
           results
