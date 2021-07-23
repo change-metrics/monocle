@@ -50,25 +50,22 @@ doCount query = do
     Left e -> error $ show e
     Right x -> pure $ naturalToCount (BH.crCount x)
 
-countDocs :: QueryFlavor -> [BH.Query] -> QueryM Count
-countDocs qf queries = withFilter queries $ do
+countDocs :: QueryFlavor -> QueryM Count
+countDocs qf = do
   bhQuery <-
-    fromMaybe (error "Query shall exist because of withFilter")
-      <$> getQueryBHWithFlavor qf
+    fromMaybe (error "Need a query to count") <$> getQueryBHWithFlavor qf
   liftTenantM $ doCount bhQuery
 
-countDocs' :: [BH.Query] -> QueryM Count
+countDocs' :: QueryM Count
 countDocs' = countDocs defaultQueryFlavor
 
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countDocs qf [documentType $ ElkChangeCreatedEvent :| []]
+  commitCount <- withFilter [documentType $ ElkChangeCreatedEvent :| []] $ countDocs qf
   reviewCount <-
-    countDocs
-      qf
-      [ documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
-      ]
+    withFilter [documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
+      countDocs qf
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral reviewCount
@@ -98,10 +95,10 @@ toUserTerm user = BH.TermQuery (BH.Term "author.muid" user) Nothing
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
 
-aggSearch :: BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
+aggSearch :: Maybe BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
 aggSearch query aggs = do
   indexName <- getIndexName
-  toAggRes <$> doSearch indexName (BH.mkAggregateSearch (Just query) aggs)
+  toAggRes <$> doSearch indexName (BH.mkAggregateSearch query aggs)
 
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
@@ -122,10 +119,10 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> countDocs' (changeState ElkChangeOpen)
-      <*> countDocs' (changeState ElkChangeMerged)
-      <*> countDocs' (changeState ElkChangeClosed)
-      <*> countDocs' selfMergedQ
+    <$> withFilter (changeState ElkChangeOpen) countDocs'
+      <*> withFilter (changeState ElkChangeMerged) countDocs'
+      <*> withFilter (changeState ElkChangeClosed) countDocs'
+      <*> withFilter selfMergedQ countDocs'
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
@@ -169,7 +166,7 @@ instance FromJSON HistoEventAgg where
 getHistoEventAgg :: BH.Query -> TenantM HistoEventAgg
 getHistoEventAgg query =
   parseAggregationResults "agg1"
-    <$> aggSearch query (Map.fromList [("agg1", histoEventAgg)])
+    <$> aggSearch (Just query) (Map.fromList [("agg1", histoEventAgg)])
 
 histoEventAgg :: BH.Aggregation
 histoEventAgg = BH.DateHistogramAgg dateAgg
@@ -287,7 +284,7 @@ getTermKey BH.TermsResult {} = error "Unexpected match"
 
 getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM [BH.TermsResult]
 getTermsAgg query onTerm maxBuckets = do
-  search <- aggSearch query aggs
+  search <- aggSearch (Just query) aggs
   pure $ filter isNotEmptyTerm $ unfilteredR search
   where
     aggs =
@@ -300,6 +297,28 @@ getTermsAgg query onTerm maxBuckets = do
     -- Terms agg returns empty terms in a buckets
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
+
+newtype CountValue = CountValue {unCountValue :: Count}
+
+instance FromJSON CountValue where
+  parseJSON (Object v) = CountValue <$> v .: "value"
+  parseJSON _ = mzero
+
+getCardinalityAgg :: BH.FieldName -> Maybe Int -> QueryFlavor -> QueryM Count
+getCardinalityAgg (BH.FieldName fieldName) threshold qf = do
+  bhQuery <- getQueryBHWithFlavor qf
+
+  let cardinality = Aeson.object ["field" .= fieldName, "precision_threshold" .= threshold]
+      agg = Aeson.object ["agg1" .= Aeson.object ["cardinality" .= cardinality]]
+      search = Aeson.object ["aggregations" .= agg, "size" .= (0 :: Word), "query" .= bhQuery]
+
+  liftTenantM $ do
+    index <- getIndexName
+    res <- toAggRes <$> BHR.search index search
+    pure $ unCountValue $ parseAggregationResults "agg1" res
+
+countAuthors :: QueryFlavor -> QueryM Count
+countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
 getDocTypeTopCountByField :: NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
 getDocTypeTopCountByField doctype attr size qflavor = do
@@ -344,9 +363,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countDocs eventQF [documentType $ ElkChangeCreatedEvent :| []]
-      openChanges' <- countDocs changeQF $ changeState ElkChangeOpen
-      mergedChanges' <- countDocs eventQF [documentType $ ElkChangeMergedEvent :| []]
+      totalChanges' <- withFilter [documentType $ ElkChangeCreatedEvent :| []] (countDocs eventQF)
+      openChanges' <- withFilter (changeState ElkChangeOpen) (countDocs changeQF)
+      mergedChanges' <- withFilter [documentType $ ElkChangeMergedEvent :| []] (countDocs eventQF)
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -563,11 +582,14 @@ getHisto qf = do
 -- | changes review stats
 getReviewStats :: QueryM SearchPB.ReviewStats
 getReviewStats = do
-  reviewStatsCommentHisto <- getHisto' "ChangeCommentedEvent"
-  reviewStatsReviewHisto <- getHisto' "ChangeReviewedEvent"
+  reviewStatsCommentHisto <- getHisto' ElkChangeCommentedEvent
+  reviewStatsReviewHisto <- getHisto' ElkChangeReviewedEvent
 
-  let reviewStatsCommentCount = Just emptyReviewCount
-      reviewStatsReviewCount = Just emptyReviewCount
+  commentCount <- withFilter [documentType $ ElkChangeCommentedEvent :| []] statCount
+  reviewCount <- withFilter [documentType $ ElkChangeReviewedEvent :| []] statCount
+
+  let reviewStatsCommentCount = Just commentCount
+      reviewStatsReviewCount = Just reviewCount
 
   let reviewStatsCommentDelay = 0
       reviewStatsReviewDelay = 0
@@ -575,9 +597,14 @@ getReviewStats = do
   pure $ SearchPB.ReviewStats {..}
   where
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    emptyReviewCount = SearchPB.ReviewCount 0 0
-    getHisto' :: Text -> QueryM (V.Vector SearchPB.Histo)
-    getHisto' docType = fmap toPBHisto <$> withFilter [mkTerm "type" docType] (getHisto qf)
+    statCount :: QueryM SearchPB.ReviewCount
+    statCount =
+      SearchPB.ReviewCount
+        <$> fmap countToWord (countAuthors qf)
+        <*> fmap countToWord (countDocs qf)
+
+    getHisto' :: ELKDocType -> QueryM (V.Vector SearchPB.Histo)
+    getHisto' docType = fmap toPBHisto <$> withFilter [mkTerm "type" (toText $ docTypeToText docType)] (getHisto qf)
     toPBHisto :: HistoEventBucket -> SearchPB.Histo
     toPBHisto HistoEventBucket {..} =
       let histoDate = heDate

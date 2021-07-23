@@ -486,7 +486,7 @@ searchChangesLifecycle indexName queryText = do
         -- TODO: use flavored query
         let -- Helper functions ready to be applied
             bhQuery = Q.queryBH query defaultQueryFlavor
-            count = Q.countDocs'
+            count q = withFilter q Q.countDocs'
             queryType = Q.documentType
 
         -- get events count

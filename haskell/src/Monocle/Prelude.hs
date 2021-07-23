@@ -74,7 +74,7 @@ formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatT
 
 -- | Numerical type to count documents
 newtype Count = MkCount Word32
-  deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
+  deriving newtype (Show, Eq, Ord, Enum, Real, Integral, FromJSON)
 
 countToWord :: Count -> Word32
 countToWord (MkCount x) = x
