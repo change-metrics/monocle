@@ -58,23 +58,41 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
-doCountEvents :: BH.Query -> TenantM Word32
+newtype Count = MkCount Word32
+  deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
+
+countToWord :: Count -> Word32
+countToWord (MkCount x) = x
+
+-- | A special Num instance that prevent arithmetic underflow
+instance Num Count where
+  MkCount a - MkCount b
+    | b > a = MkCount 0
+    | otherwise = MkCount $ a - b
+
+  MkCount a + MkCount b = MkCount $ a + b
+  MkCount a * MkCount b = MkCount $ a * b
+  signum (MkCount a) = MkCount $ signum a
+  fromInteger x = MkCount $ fromInteger x
+  abs x = x
+
+doCountEvents :: BH.Query -> TenantM Count
 doCountEvents query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
   case resp of
     Left e -> error (show e)
-    Right x -> pure (fromInteger . toInteger . BH.crCount $ x)
+    Right x -> pure (MkCount . fromInteger . toInteger . BH.crCount $ x)
 
-countEvents :: QueryFlavor -> [BH.Query] -> QueryM Word32
+countEvents :: QueryFlavor -> [BH.Query] -> QueryM Count
 countEvents qf queries = withFilter queries $ do
   bhQuery <-
     fromMaybe (error "Query shall exist because of withFilter")
       <$> getQueryBHWithFlavor qf
   liftTenantM $ doCountEvents bhQuery
 
-countEvents' :: [BH.Query] -> QueryM Word32
+countEvents' :: [BH.Query] -> QueryM Count
 countEvents' = countEvents defaultQueryFlavor
 
 -- | The change created / review ratio
@@ -133,10 +151,10 @@ parseAggregationResults key res = getExn $ do
 
 -- | Event counts
 data EventCounts = EventCounts
-  { openedCount :: Word32,
-    mergedCount :: Word32,
-    abandonedCount :: Word32,
-    selfMergedCount :: Word32
+  { openedCount :: Count,
+    mergedCount :: Count,
+    abandonedCount :: Count,
+    selfMergedCount :: Count
   }
   deriving (Eq, Show)
 
@@ -349,10 +367,10 @@ getRepos =
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
-    totalChanges :: Word32,
-    abandonedChanges :: Word32,
-    mergedChanges :: Word32,
-    openChanges :: Word32
+    totalChanges :: Count,
+    abandonedChanges :: Count,
+    mergedChanges :: Count,
+    openChanges :: Count
   }
   deriving (Show, Eq)
 
