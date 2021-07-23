@@ -68,7 +68,7 @@ fakeChange =
       elkchangeApproval = Just ["OK"],
       elkchangeSelfMerged = Nothing,
       elkchangeTasksData = Nothing,
-      elkchangeState = "OPEN",
+      elkchangeState = ElkChangeOpen,
       elkchangeMergeable = "",
       elkchangeLabels = [],
       elkchangeAssignees = [],
@@ -510,7 +510,7 @@ mkChange ::
   -- Repository fullname
   LText ->
   -- Change State
-  LText ->
+  ELKChangeState ->
   ELKChange
 mkChange ts start author changeId name state' =
   emptyChange
@@ -562,7 +562,7 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name "MERGED"
+      let mkChange' ts author = mkChange ts start author changeId name ElkChangeMerged
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
@@ -593,7 +593,7 @@ nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name "OPEN"
+      let mkChange' ts author = mkChange ts start author changeId name ElkChangeOpen
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation

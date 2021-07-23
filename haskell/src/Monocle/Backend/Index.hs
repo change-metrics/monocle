@@ -357,9 +357,9 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
     toState cstate = case cstate of
-      Change_ChangeStateOpen -> "OPEN"
-      Change_ChangeStateMerged -> "MERGED"
-      Change_ChangeStateClosed -> "CLOSED"
+      Change_ChangeStateOpen -> ElkChangeOpen
+      Change_ChangeStateMerged -> ElkChangeMerged
+      Change_ChangeStateClosed -> ElkChangeClosed
 
 indexDocs :: [(Value, BH.DocId)] -> TenantM ()
 indexDocs docs = do
