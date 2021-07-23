@@ -66,6 +66,15 @@ class IndexMenu extends React.Component {
             <NavDropdown.Item
               onClick={() =>
                 this.props.history.push(
+                  '/' + this.props.match.params.index + '/peers_strength' + search
+                )
+              }
+            >
+              Peers strength
+            </NavDropdown.Item>
+            <NavDropdown.Item
+              onClick={() =>
+                this.props.history.push(
                   '/' + this.props.match.params.index + '/user_groups'
                 )
               }
@@ -169,6 +178,7 @@ class TopMenu extends React.Component {
             <Route path="/:index/changes" render={render} />
             <Route path="/:index/repos" render={render} />
             <Route path="/:index/active_authors" render={render} />
+            <Route path="/:index/peers_strength" render={render} />
           </Switch>
           <Nav className="ml-auto">
             <CUserView />

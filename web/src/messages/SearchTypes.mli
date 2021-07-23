@@ -61,6 +61,7 @@ type query_request_query_type =
   | Query_top_authors_changes_commented 
   | Query_top_reviewed_authors 
   | Query_top_commented_authors 
+  | Query_top_authors_peers 
 
 type query_request = {
   index : string;
@@ -144,11 +145,22 @@ type terms_count = {
   termcount : term_count list;
 }
 
+type author_peer = {
+  author : string;
+  peer : string;
+  strength : int32;
+}
+
+type authors_peers = {
+  author_peer : author_peer list;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
   | Top_authors of terms_count
+  | Authors_peers of authors_peers
 
 type changes_histos_event = {
   doc_count : int32;
@@ -353,6 +365,20 @@ val default_terms_count :
   unit ->
   terms_count
 (** [default_terms_count ()] is the default value for type [terms_count] *)
+
+val default_author_peer : 
+  ?author:string ->
+  ?peer:string ->
+  ?strength:int32 ->
+  unit ->
+  author_peer
+(** [default_author_peer ()] is the default value for type [author_peer] *)
+
+val default_authors_peers : 
+  ?author_peer:author_peer list ->
+  unit ->
+  authors_peers
+(** [default_authors_peers ()] is the default value for type [authors_peers] *)
 
 val default_query_response : unit -> query_response
 (** [default_query_response ()] is the default value for type [query_response] *)

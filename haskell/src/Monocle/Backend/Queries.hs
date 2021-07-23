@@ -98,8 +98,12 @@ countEvents' = countEvents defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countEvents qf [documentType "ChangeCreatedEvent"]
-  reviewCount <- countEvents qf [mkOr [documentType "ChangeReviewedEvent", documentType "ChangeCommentedEvent"]]
+  commitCount <- countEvents qf [documentType $ "ChangeCreatedEvent" :| []]
+  reviewCount <-
+    countEvents
+      qf
+      [ documentType $ fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+      ]
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral reviewCount
@@ -127,8 +131,8 @@ changeState state' =
   ]
 
 -- | Add a document type filter to the query
-documentType :: Text -> BH.Query
-documentType type' = BH.TermQuery (BH.Term "type" type') Nothing
+documentType :: NonEmpty Text -> BH.Query
+documentType = BH.TermsQuery "type"
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -342,7 +346,7 @@ getTermsAgg query onTerm maxBuckets = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getDocTypeTopCountByField :: Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField :: NonEmpty Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
@@ -360,7 +364,7 @@ getDocTypeTopCountByField doctype attr size qflavor = do
 getRepos :: QueryM [TermResult]
 getRepos =
   getDocTypeTopCountByField
-    "Change"
+    ("Change" :| [])
     "repository_fullname"
     (Just 5000)
     (QueryFlavor Author CreatedAt)
@@ -385,9 +389,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countEvents eventQF [documentType "ChangeCreatedEvent"]
+      totalChanges' <- countEvents eventQF [documentType $ "ChangeCreatedEvent" :| []]
       openChanges' <- countEvents changeQF $ changeState "OPEN"
-      mergedChanges' <- countEvents eventQF [documentType "ChangeMergedEvent"]
+      mergedChanges' <- countEvents eventQF [documentType $ "ChangeMergedEvent" :| []]
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -397,7 +401,7 @@ getReposSummary = do
 getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
-    "ChangeCreatedEvent"
+    ("ChangeCreatedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -405,7 +409,7 @@ getMostActiveAuthorByChangeCreated limit =
 getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
-    "ChangeMergedEvent"
+    ("ChangeMergedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -413,7 +417,7 @@ getMostActiveAuthorByChangeMerged limit =
 getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
-    "ChangeReviewedEvent"
+    ("ChangeReviewedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -421,7 +425,7 @@ getMostActiveAuthorByChangeReviewed limit =
 getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
-    "ChangeCommentedEvent"
+    ("ChangeCommentedEvent" :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -429,7 +433,7 @@ getMostActiveAuthorByChangeCommented limit =
 getMostReviewedAuthor :: Int -> QueryM [TermResult]
 getMostReviewedAuthor limit =
   getDocTypeTopCountByField
-    "ChangeReviewedEvent"
+    ("ChangeReviewedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -437,10 +441,59 @@ getMostReviewedAuthor limit =
 getMostCommentedAuthor :: Int -> QueryM [TermResult]
 getMostCommentedAuthor limit =
   getDocTypeTopCountByField
-    "ChangeCommentedEvent"
+    ("ChangeCommentedEvent" :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
+
+-- | peer strength authors
+data PeerStrengthResult = PeerStrengthResult
+  { psrAuthor :: Text,
+    psrPeer :: Text,
+    psrStrength :: Word32
+  }
+  deriving (Show, Eq)
+
+instance Ord PeerStrengthResult where
+  (PeerStrengthResult _ _ x) `compare` (PeerStrengthResult _ _ y) =
+    x `compare` y
+
+getAuthorsPeersStrength :: Word32 -> QueryM [PeerStrengthResult]
+getAuthorsPeersStrength limit = do
+  peers <-
+    getDocTypeTopCountByField
+      eventTypes
+      "author.muid"
+      (Just 5000)
+      qf
+  authors_peers <- traverse (getAuthorPeers . trTerm) peers
+  pure $
+    take (fromInteger $ toInteger limit) $
+      reverse $
+        sort $
+          filter (\psr -> psrAuthor psr /= psrPeer psr) $
+            concatMap transform authors_peers
+  where
+    eventTypes :: NonEmpty Text
+    eventTypes = fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+    qf = QueryFlavor Author CreatedAt
+    getAuthorPeers :: Text -> QueryM (Text, [TermResult])
+    getAuthorPeers peer = withFilter (getQueryFromSL $ "author: " <> peer) $ do
+      change_authors <-
+        getDocTypeTopCountByField
+          eventTypes
+          "on_author.muid"
+          (Just 5000)
+          qf
+      pure (peer, change_authors)
+    transform :: (Text, [TermResult]) -> [PeerStrengthResult]
+    transform (peer, change_authors) = toPSR <$> change_authors
+      where
+        toPSR tr =
+          PeerStrengthResult
+            (trTerm tr)
+            peer
+            (fromInteger $ toInteger (trCount tr))
 
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
