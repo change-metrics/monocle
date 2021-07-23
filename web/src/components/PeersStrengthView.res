@@ -6,6 +6,17 @@
 
 open Prelude
 
+module ConnectionDiagram = {
+  type t = {a1: string, a2: string, s: int}
+  @react.component @module("./connection_diagram")
+  external make: (~data: array<t>) => React.element = "default"
+
+  let adapt = (xs: list<SearchTypes.author_peer>) =>
+    xs
+    ->Belt.List.map(x => {a1: x.author, a2: x.peer, s: x.strength->Int32.to_int})
+    ->Belt.List.toArray
+}
+
 module PeersStrengthTable = {
   @react.component
   let make = (~items: list<SearchTypes.author_peer>) => {
@@ -79,7 +90,10 @@ let make = (~store: Store.t) => {
               <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
             </MGrid>
           </CardTitle>
-          <CardBody> <PeersStrengthTable items={tps.author_peer} /> </CardBody>
+          <CardBody>
+            <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
+            <PeersStrengthTable items={tps.author_peer} />
+          </CardBody>
         </Card>
       </MCenteredContent>
     | Some(Ok(_)) => React.null
