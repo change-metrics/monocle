@@ -1,7 +1,7 @@
 # Monocle
 
 The main idea behind Monocle is to detect anomalies in the way changes
-are produced in your project on GitHub and Gerrit.
+are produced in your project on GitHub, GitLab and Gerrit.
 
 Checkout the new [changemetrics.io website](https://changemetrics.io) and
 join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
@@ -23,10 +23,10 @@ Monocle is composed of the following services:
 
 The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
 
-Some legacy component are still required until they are migrated to the new OpenAPI (see the related issues):
+Some legacy component are still required until they are migrated to the new OpenAPI (see the related [topic](https://github.com/change-metrics/monocle/labels/legacy)):
 
-5. an api service to perform filter based query [issue 468](https://github.com/change-metrics/monocle/issues/468).
-6. a crawler service to index github and gerrit changes [issue 458](https://github.com/change-metrics/monocle/issues/458) and [issue 491](https://github.com/change-metrics/monocle/issues/491).
+5. an api service to perform filter based query.
+6. a crawler service to index github and gerrit changes.
 
 
 ## Installation
