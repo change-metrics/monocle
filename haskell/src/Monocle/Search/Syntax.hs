@@ -37,8 +37,21 @@ data Expr
 data ParseError = ParseError Text Int
   deriving (Show, Eq)
 
+-- | Handle author filter:
+-- The event author of a comment event is the comment author.
+-- The change author is the author of a change.
+-- Change event also has on author attribute, which is the change author,
+-- e.g. the one who received event.
+--
+-- In other words, to get the amount of review received, use 'OnAuthor'
 data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 
+-- | Handle date filter:
+-- Change document has both createdAt and updatedAt.
+-- Event document only have createdAt.
+--
+-- In other words, to get all the change updated recently, use UpdatedAt.
+-- But to get all the event (such as review event), use CreatedAt.
 data RangeFlavor = CreatedAt | UpdatedAt deriving (Show, Eq)
 
 rangeField :: RangeFlavor -> Text

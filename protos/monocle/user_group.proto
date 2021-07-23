@@ -26,7 +26,8 @@ message ReviewHisto {
 message GroupStat {
   float change_review_ratio = 1;
   float author_review_ratio = 2;
-  repeated ReviewHisto review_histo = 3;
+  repeated ReviewHisto commit_histo = 3;
+  repeated ReviewHisto review_histo = 4;
 }
 
 message UserStat {

@@ -13,7 +13,7 @@ import Monocle.Backend.Documents (ELKChange (..))
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, toBHQueryWithFlavor)
+import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField, toBHQueryWithFlavor)
 import Monocle.Servant.Env (mkFinalQuery)
 
 -- | Helper search func that can be replaced by a scanSearch
@@ -98,15 +98,17 @@ countEvents' = countEvents defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  -- TODO: ensure the right flavor is used
-  commitCount <- countEvents' [documentType "ChangeCreatedEvent"]
-  reviewCount <- countEvents' [documentType "ChangeReviewedEvent"]
-  commentCount <- countEvents' [documentType "ChangeCommentedEvent"]
+  commitCount <- countEvents qf [documentType "ChangeCreatedEvent"]
+  reviewCount <- countEvents qf [mkOr [documentType "ChangeReviewedEvent", documentType "ChangeCommentedEvent"]]
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
-      reviewCountF = fromIntegral $ reviewCount + commentCount
-      commitCountF = fromIntegral $ commitCount
-  pure (reviewCountF * 100 / total)
+      reviewCountF = fromIntegral reviewCount
+      commitCountF = fromIntegral commitCount
+  pure (if total > 0 then reviewCountF * 100 / total else -1)
+  where
+    -- Author makes query author match the change event author, not the receiver of the event.
+    -- CreatedAt is necessary for change event.
+    qf = QueryFlavor Author CreatedAt
 
 mkAnd :: [BH.Query] -> BH.Query
 mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
@@ -441,16 +443,16 @@ getMostCommentedAuthor limit =
     (QueryFlavor OnAuthor CreatedAt)
 
 -- | getReviewHisto
-getReviewHisto :: QueryM (V.Vector HistoEventBucket)
-getReviewHisto = do
+getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getHisto qf = do
   query <- getQuery
-  queryBH <- getQueryBH
+  queryBH <- getQueryBHWithFlavor qf
 
   let (minBound', maxBound') = Q.queryBounds query
       bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
       date_histo =
         Aeson.object
-          [ "field" .= ("created_at" :: Text),
+          [ "field" .= (rangeField $ qfRange qf),
             "calendar_interval" .= ("day" :: Text),
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound

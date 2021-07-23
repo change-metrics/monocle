@@ -894,6 +894,10 @@ components:
                 author_review_ratio:
                     type: number
                     format: float
+                commit_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_user_group_ReviewHisto'
                 review_histo:
                     type: array
                     items:

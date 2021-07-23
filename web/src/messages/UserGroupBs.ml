@@ -39,12 +39,14 @@ let default_review_histo_mutable () : review_histo_mutable = {
 type group_stat_mutable = {
   mutable change_review_ratio : float;
   mutable author_review_ratio : float;
+  mutable commit_histo : UserGroupTypes.review_histo list;
   mutable review_histo : UserGroupTypes.review_histo list;
 }
 
 let default_group_stat_mutable () : group_stat_mutable = {
   change_review_ratio = 0.;
   author_review_ratio = 0.;
+  commit_histo = [];
   review_histo = [];
 }
 
@@ -171,6 +173,15 @@ let rec decode_group_stat json =
     | "author_review_ratio" -> 
       let json = Js.Dict.unsafeGet json "author_review_ratio" in
       v.author_review_ratio <- Pbrt_bs.float json "group_stat" "author_review_ratio"
+    | "commit_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "commit_histo" in 
+        Pbrt_bs.array_ a "group_stat" "commit_histo"
+      in
+      v.commit_histo <- Array.map (fun json -> 
+        (decode_review_histo (Pbrt_bs.object_ json "group_stat" "commit_histo"))
+      ) a |> Array.to_list;
+    end
     | "review_histo" -> begin
       let a = 
         let a = Js.Dict.unsafeGet json "review_histo" in 
@@ -186,6 +197,7 @@ let rec decode_group_stat json =
   ({
     UserGroupTypes.change_review_ratio = v.change_review_ratio;
     UserGroupTypes.author_review_ratio = v.author_review_ratio;
+    UserGroupTypes.commit_histo = v.commit_histo;
     UserGroupTypes.review_histo = v.review_histo;
   } : UserGroupTypes.group_stat)
 
@@ -295,6 +307,17 @@ let rec encode_group_stat (v:UserGroupTypes.group_stat) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "change_review_ratio" (Js.Json.number v.UserGroupTypes.change_review_ratio);
   Js.Dict.set json "author_review_ratio" (Js.Json.number v.UserGroupTypes.author_review_ratio);
+  begin (* commitHisto field *)
+    let (commit_histo':Js.Json.t) =
+      v.UserGroupTypes.commit_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_review_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "commit_histo" commit_histo';
+  end;
   begin (* reviewHisto field *)
     let (review_histo':Js.Json.t) =
       v.UserGroupTypes.review_histo
