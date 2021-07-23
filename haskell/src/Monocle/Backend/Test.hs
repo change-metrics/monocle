@@ -371,15 +371,6 @@ testTopAuthors = withTenant doTest
           [Q.TermResult {trTerm = "eve", trCount = 2}]
           results'''''
 
--- where
---   indexScenarioNoMerged project cid =
---     indexScenario
---       [ s | s <- nominalMerge project cid fakeDate 3600, case s of
---                                                            SMerge _ -> False
---                                                            SComment _ -> False
---                                                            _anyOther -> True
---       ]
-
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
   where
