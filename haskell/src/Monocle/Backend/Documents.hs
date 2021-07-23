@@ -1,7 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- |
 module Monocle.Backend.Documents where
 
-import Data.Aeson (FromJSON, ToJSON, genericParseJSON, genericToJSON, parseJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, Value (String), genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Clock (UTCTime)
 import Relude
@@ -81,10 +83,49 @@ instance ToJSON TaskData where
 instance FromJSON TaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+data ELKDocType
+  = ElkChangeCreatedEvent
+  | ElkChangeMergedEvent
+  | ElkChangeReviewedEvent
+  | ElkChangeCommentedEvent
+  | ElkChangeAbandonedEvent
+  | ElkChangeCommitForcePushedEvent
+  | ElkChangeCommitPushedEvent
+  | ElkChange
+  deriving (Eq, Show)
+
+docTypeToText :: ELKDocType -> LText
+docTypeToText = \case
+  ElkChangeCreatedEvent -> "ChangeCreatedEvent"
+  ElkChangeMergedEvent -> "ChangeMergedEvent"
+  ElkChangeReviewedEvent -> "ChangeReviewedEvent"
+  ElkChangeCommentedEvent -> "ChangeCommentedEvent"
+  ElkChangeAbandonedEvent -> "ChangeAbandonedEvent"
+  ElkChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
+  ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
+  ElkChange -> "Change"
+
+instance ToJSON ELKDocType where
+  toJSON v = String $ toText $ docTypeToText v
+
+instance FromJSON ELKDocType where
+  parseJSON =
+    withText
+      "ElkDocType"
+      ( \case
+          "ChangeCreatedEvent" -> pure ElkChangeCreatedEvent
+          "ChangeMergedEvent" -> pure ElkChangeMergedEvent
+          "ChangeReviewedEvent" -> pure ElkChangeReviewedEvent
+          "ChangeCommentedEvent" -> pure ElkChangeCommentedEvent
+          "ChangeAbandonedEvent" -> pure ElkChangeAbandonedEvent
+          "Change" -> pure ElkChange
+          _anyOtherValue -> fail "Unknown Monocle ELK doc type"
+      )
+
 data ELKChange = ELKChange
   { elkchangeId :: LText,
     elkchangeNumber :: Int,
-    elkchangeType :: LText,
+    elkchangeType :: ELKDocType,
     elkchangeChangeId :: LText,
     elkchangeTitle :: LText,
     elkchangeText :: LText,
@@ -127,7 +168,7 @@ instance FromJSON ELKChange where
 data ELKChangeEvent = ELKChangeEvent
   { elkchangeeventId :: LText,
     elkchangeeventNumber :: Word32,
-    elkchangeeventType :: LText,
+    elkchangeeventType :: ELKDocType,
     elkchangeeventChangeId :: LText,
     elkchangeeventUrl :: LText,
     elkchangeeventChangedFiles :: [SimpleFile],

@@ -286,23 +286,23 @@ toELKChangeEvent ChangeEvent {..} =
         _anyOtherApprovals -> Nothing
     }
   where
-    getEventType :: Maybe ChangeEventType -> LText
+    getEventType :: Maybe ChangeEventType -> ELKDocType
     getEventType eventTypeM = case eventTypeM of
       Just eventType -> case eventType of
-        ChangeEventTypeChangeCreated ChangeCreatedEvent -> "ChangeCreatedEvent"
-        ChangeEventTypeChangeCommented ChangeCommentedEvent -> "ChangeCommentedEvent"
-        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> "ChangeAbandonedEvent"
-        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> "ChangeReviewedEvent"
-        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
-        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
-        ChangeEventTypeChangeMerged ChangeMergedEvent -> "ChangeMergedEvent"
+        ChangeEventTypeChangeCreated ChangeCreatedEvent -> ElkChangeCreatedEvent
+        ChangeEventTypeChangeCommented ChangeCommentedEvent -> ElkChangeCommentedEvent
+        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> ElkChangeAbandonedEvent
+        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> ElkChangeReviewedEvent
+        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> ElkChangeCommitForcePushedEvent
+        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> ElkChangeCommitPushedEvent
+        ChangeEventTypeChangeMerged ChangeMergedEvent -> ElkChangeMergedEvent
       Nothing -> error "changeEventType field is mandatory"
 
 toELKChange :: Change -> ELKChange
 toELKChange Change {..} =
   ELKChange
     { elkchangeId = changeId,
-      elkchangeType = "Change",
+      elkchangeType = ElkChange,
       elkchangeTitle = changeTitle,
       elkchangeUrl = changeUrl,
       elkchangeCommitCount = fromInteger . toInteger $ changeCommitCount,
@@ -380,7 +380,7 @@ indexChanges :: [ELKChange] -> TenantM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
-    ensureType change = change {elkchangeType = "Change"}
+    ensureType change = change {elkchangeType = ElkChange}
 
 getEventDocId :: ELKChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ elkchangeeventId event
