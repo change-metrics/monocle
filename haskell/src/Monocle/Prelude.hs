@@ -9,7 +9,9 @@ module Monocle.Prelude
     MonadMask,
     Deci,
 
-    -- * usefull data types
+    -- * numerical
+    Fixed (..),
+    Pico,
     Count,
     countToWord,
     countToDeci,
@@ -22,6 +24,10 @@ module Monocle.Prelude
     -- * time
     UTCTime,
     getCurrentTime,
+    elapsedSeconds,
+    nominalDiffTimeToSeconds,
+    diffUTCTime,
+    formatTime',
 
     -- * aeson
     FromJSON (..),
@@ -44,14 +50,29 @@ where
 
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
-import Data.Fixed (Deci, Fixed (..), HasResolution (resolution))
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Proto3.Suite (Enumerated (..))
 import Relude
 import Say (sayErr)
 
+-- $setup
+-- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
+
+-- | Return the seconds elapsed between a and b
+-- >>> elapsedSeconds (mkDate "2000-01-01 00:00:00 Z") (mkDate "2000-01-01 01:00:00 Z")
+-- 3600.000000000000
+elapsedSeconds :: UTCTime -> UTCTime -> Pico
+elapsedSeconds a b = nominalDiffTimeToSeconds $ diffUTCTime b a
+
+-- | Helper to format time without timezone
+formatTime' :: Text -> UTCTime -> Text
+formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatText)
+
+-- | Numerical type to count documents
 newtype Count = MkCount Word32
   deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
 

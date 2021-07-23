@@ -146,12 +146,15 @@ getEventCounts =
 -- }
 data HistoEventBucket = HistoEventBucket
   { heKey :: Word64,
+    heDate :: LText,
     heCount :: Word32
   }
   deriving (Eq, Show)
 
 instance FromJSON HistoEventBucket where
-  parseJSON (Object v) = HistoEventBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON (Object v) =
+    HistoEventBucket
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count"
   parseJSON _ = mzero
 
 newtype HistoEventAgg = HistoEventAgg
@@ -447,6 +450,47 @@ getAuthorsPeersStrength limit = do
             peer
             (fromInteger $ toInteger (trCount tr))
 
+data HistoInterval = Hour | Day | Week | Month | Year deriving (Eq, Show)
+
+-- | Convert a duration to an interval that spans over maximum 24 buckets (31 for days)
+durationToHistoInterval :: Pico -> HistoInterval
+durationToHistoInterval sec
+  | sec / day <= 1 = Hour
+  | sec / month <= 1 = Day
+  | sec / month <= 6 = Week
+  | sec / year <= 2 = Month
+  | otherwise = Year
+  where
+    year = month * 12
+    month = day * 31
+    day = 24 * 3600
+
+histoIntervalToFormat :: HistoInterval -> Text
+histoIntervalToFormat = \case
+  Hour -> "yyyy-MM-dd HH:mm"
+  Day -> "yyyy-MM-dd"
+  Week -> "yyyy-MM-dd"
+  Month -> "yyyy-MM"
+  Year -> "yyyy"
+
+calendarInterval :: HistoInterval -> Text
+calendarInterval = \case
+  Hour -> "hour"
+  Day -> "day"
+  Week -> "week"
+  Month -> "month"
+  Year -> "year"
+
+dateInterval :: HistoInterval -> UTCTime -> Text
+dateInterval hi = formatTime' formatStr
+  where
+    formatStr = case hi of
+      Hour -> "%F %R"
+      Day -> "%F"
+      Week -> "%F"
+      Month -> "%Y-%m"
+      Year -> "%Y"
+
 getNewContributors :: QueryM [TermResult]
 getNewContributors = do
   -- Get query min bound
@@ -483,12 +527,20 @@ getHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
 
-  let (minBound', maxBound') = Q.queryBounds query
-      bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
+  let (minDate, maxDate) = Q.queryBounds query
+      duration = elapsedSeconds minDate maxDate
+      interval = durationToHistoInterval duration
+
+      bound =
+        Aeson.object
+          [ "min" .= dateInterval interval minDate,
+            "max" .= dateInterval interval maxDate
+          ]
       date_histo =
         Aeson.object
-          [ "field" .= (rangeField $ qfRange qf),
-            "calendar_interval" .= ("day" :: Text),
+          [ "field" .= rangeField (qfRange qf),
+            "calendar_interval" .= calendarInterval interval,
+            "format" .= histoIntervalToFormat interval,
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound
           ]
