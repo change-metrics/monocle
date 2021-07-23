@@ -150,37 +150,6 @@ class TopStrengthsTable extends React.Component {
                   <ConnectionDiagram data={this.props.data} />
                 </Col>
               </Row>
-              <Row>
-                <Col>
-                  <Table striped responsive bordered hover size="sm">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Peers</th>
-                        <th>Strength</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {this.props.data.slice(0, 15).map((x, index) => (
-                        <tr key={index}>
-                          <td>{index + 1}</td>
-                          <td>
-                            <Link
-                              to={addUrlField(
-                                'authors',
-                                x[0][0] + ',' + x[0][1]
-                              )}
-                            >
-                              {x[0][0]} and {x[0][1]}
-                            </Link>
-                          </td>
-                          <td>{x[1]}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Col>
-              </Row>
             </Card.Body>
           </Card>
         </Col>
