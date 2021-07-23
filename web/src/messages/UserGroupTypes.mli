@@ -25,6 +25,7 @@ type review_histo = {
 type group_stat = {
   change_review_ratio : float;
   author_review_ratio : float;
+  commit_histo : review_histo list;
   review_histo : review_histo list;
 }
 
@@ -76,6 +77,7 @@ val default_review_histo :
 val default_group_stat : 
   ?change_review_ratio:float ->
   ?author_review_ratio:float ->
+  ?commit_histo:review_histo list ->
   ?review_histo:review_histo list ->
   unit ->
   group_stat

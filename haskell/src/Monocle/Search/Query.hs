@@ -394,13 +394,13 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases ind
         Nothing -> Left $ "Empty alias " <> name
 
 -- | Ensure a minimum range bound is set
-ensureMinBound :: Query -> Text -> Query
-ensureMinBound query' field
+ensureMinBound :: Query -> Query
+ensureMinBound query'
   | queryMinBoundsSet query' = query'
   | otherwise = query' {queryBH = newQueryBH}
   where
-    newQueryBH flavor = [boundQuery] <> queryBH query' flavor
-    boundQuery =
+    newQueryBH flavor = [boundQuery flavor] <> queryBH query' flavor
+    boundQuery QueryFlavor {..} =
       BH.QueryRangeQuery $
-        BH.mkRangeQuery (BH.FieldName field) $
+        BH.mkRangeQuery (BH.FieldName (rangeField qfRange)) $
           BH.RangeDateGte (BH.GreaterThanEqD $ fst (queryBounds query'))
