@@ -13,7 +13,20 @@ module ConnectionDiagram = {
 
   let adapt = (xs: list<SearchTypes.author_peer>) =>
     xs
-    ->Belt.List.map(x => {a1: x.author, a2: x.peer, s: x.strength->Int32.to_int})
+    ->Belt.List.reduce(list{}, (acc, item) => {
+      let match_reversed = xs->Belt.List.keep(e => e.author == item.peer && e.peer == item.author)
+      let nitem = switch match_reversed->Belt.List.get(0) {
+      | None => {a1: item.author, a2: item.peer, s: item.strength->Int32.to_int}
+      | Some(match) => {
+          a1: item.author,
+          a2: item.peer,
+          s: item.strength->Int32.to_int + match.strength->Int32.to_int,
+        }
+      }
+      acc->Belt.List.has(nitem, (a, b) => a.a1 == b.a1 && a.a2 == b.a2)
+        ? acc
+        : Belt.List.add(acc, nitem)
+    })
     ->Belt.List.toArray
 }
 
