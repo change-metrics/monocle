@@ -52,7 +52,7 @@ let make = (~store: Store.t) => {
     query: query,
     username: "",
     query_type: SearchTypes.Query_top_authors_peers,
-    // Not hendled server side
+    // Not handled server side
     order: None,
     limit: limit->Int32.of_int,
   }
