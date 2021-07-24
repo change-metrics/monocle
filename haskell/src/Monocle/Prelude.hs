@@ -5,13 +5,21 @@ module Monocle.Prelude
     double2Float,
     orDie,
     getExn,
+
+    -- * exceptions
     MonadThrow,
     MonadMask,
-    Deci,
 
-    -- * numerical
+    -- * relude extra
+    groupBy,
+    average,
+
+    -- * data.fixed
     Fixed (..),
+    Deci,
     Pico,
+
+    -- * custom numerical newtype
     Count,
     countToWord,
     countToDeci,
@@ -57,6 +65,8 @@ import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Proto3.Suite (Enumerated (..))
 import Relude
+import Relude.Extra.Foldable (average)
+import Relude.Extra.Group (groupBy)
 import Say (sayErr)
 
 -- $setup

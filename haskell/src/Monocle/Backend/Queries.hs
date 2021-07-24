@@ -5,11 +5,12 @@ module Monocle.Backend.Queries where
 import Data.Aeson (Value (Object), (.:), (.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..), ELKChangeState (..), ELKDocType (..), changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -197,6 +198,65 @@ data MergedStatsDuration = MergedStatsDuration
 
 field :: Text -> Value
 field name = Aeson.object ["field" .= name]
+
+data FirstEvent = FirstEvent
+  { feChangeCreatedAt :: UTCTime,
+    feCreatedAt :: UTCTime,
+    feAuthor :: LText
+  }
+  deriving (Show)
+
+firstEventDuration :: FirstEvent -> Pico
+firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedAt
+
+firstEventAverageDuration :: [FirstEvent] -> Word32
+firstEventAverageDuration = truncate . fromMaybe 0 . average . map firstEventDuration
+
+firstEventOnChanges :: QueryM [FirstEvent]
+firstEventOnChanges = do
+  query <- getQueryBHWithFlavor (QueryFlavor Author CreatedAt)
+  (minDate, _) <- Q.queryBounds <$> getQuery
+  let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 10000}
+
+  -- Collect all the events
+  result <- liftTenantM $ do
+    index <- getIndexName
+    resp <- fmap BH.hitSource <$> BH.scanSearch index search
+    pure $ catMaybes resp
+
+  -- Group by change_id
+  let changeMap :: [NonEmpty ELKChangeEvent]
+      changeMap = HM.elems $ groupBy elkchangeeventChangeId result
+
+  -- Remove old change where we may not have the first event
+  let keepRecent :: NonEmpty ELKChangeEvent -> Bool
+      keepRecent (ELKChangeEvent {..} :| _)
+        | elkchangeeventOnCreatedAt > minDate = True
+        | otherwise = False
+
+  now <- liftIO getCurrentTime
+
+  -- For each change, get the detail of the first event
+  pure $ foldr toFirstEvent (initEvent now) <$> filter keepRecent changeMap
+  where
+    initEvent :: UTCTime -> FirstEvent
+    initEvent now =
+      let feChangeCreatedAt = now
+          feCreatedAt = now
+          feAuthor = ""
+       in FirstEvent {..}
+    toFirstEvent :: ELKChangeEvent -> FirstEvent -> FirstEvent
+    toFirstEvent ELKChangeEvent {..} acc =
+      let (createdAt, author) =
+            -- If the event is older update the info
+            if elkchangeeventCreatedAt < feCreatedAt acc
+              then (elkchangeeventCreatedAt, authorMuid elkchangeeventAuthor)
+              else (feCreatedAt acc, feAuthor acc)
+       in FirstEvent
+            { feChangeCreatedAt = elkchangeeventOnCreatedAt,
+              feCreatedAt = createdAt,
+              feAuthor = author
+            }
 
 changeMergedStatsDuration :: [BH.Query] -> TenantM MergedStatsDuration
 changeMergedStatsDuration query = do
@@ -594,8 +654,11 @@ getReviewStats = do
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount
 
-  let reviewStatsCommentDelay = 0
-      reviewStatsReviewDelay = 0
+  firstComments <- withFilter [documentType ElkChangeCommentedEvent] firstEventOnChanges
+  firstReviews <- withFilter [documentType ElkChangeReviewedEvent] firstEventOnChanges
+
+  let reviewStatsCommentDelay = firstEventAverageDuration firstComments
+      reviewStatsReviewDelay = firstEventAverageDuration firstReviews
 
   pure $ SearchPB.ReviewStats {..}
   where
