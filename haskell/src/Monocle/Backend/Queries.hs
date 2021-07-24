@@ -62,9 +62,9 @@ countDocs' = countDocs defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- withFilter [documentType $ ElkChangeCreatedEvent :| []] $ countDocs qf
+  commitCount <- withFilter [documentType ElkChangeCreatedEvent] $ countDocs qf
   reviewCount <-
-    withFilter [documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
+    withFilter [documentTypes $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
       countDocs qf
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
@@ -84,8 +84,11 @@ changeState state' =
   ]
 
 -- | Add a document type filter to the query
-documentType :: NonEmpty ELKDocType -> BH.Query
-documentType doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
+documentTypes :: NonEmpty ELKDocType -> BH.Query
+documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
+
+documentType :: ELKDocType -> BH.Query
+documentType x = documentTypes (x :| [])
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -324,7 +327,7 @@ getDocTypeTopCountByField :: NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFl
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = mkAnd $ basequery <> [documentType doctype]
+  let query = mkAnd $ basequery <> [documentTypes doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query size)
@@ -363,9 +366,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- withFilter [documentType $ ElkChangeCreatedEvent :| []] (countDocs eventQF)
+      totalChanges' <- withFilter [documentType ElkChangeCreatedEvent] (countDocs eventQF)
       openChanges' <- withFilter (changeState ElkChangeOpen) (countDocs changeQF)
-      mergedChanges' <- withFilter [documentType $ ElkChangeMergedEvent :| []] (countDocs eventQF)
+      mergedChanges' <- withFilter [documentType ElkChangeMergedEvent] (countDocs eventQF)
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -585,8 +588,8 @@ getReviewStats = do
   reviewStatsCommentHisto <- getHisto' ElkChangeCommentedEvent
   reviewStatsReviewHisto <- getHisto' ElkChangeReviewedEvent
 
-  commentCount <- withFilter [documentType $ ElkChangeCommentedEvent :| []] statCount
-  reviewCount <- withFilter [documentType $ ElkChangeReviewedEvent :| []] statCount
+  commentCount <- withFilter [documentType ElkChangeCommentedEvent] statCount
+  reviewCount <- withFilter [documentType ElkChangeReviewedEvent] statCount
 
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount

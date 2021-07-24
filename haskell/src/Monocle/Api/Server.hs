@@ -133,7 +133,6 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -496,18 +495,18 @@ searchChangesLifecycle indexName queryText = do
         let histo = liftTenantM . Q.getHistoEventAgg
             histos =
               toHisto
-                <$> histo (queryType $ ElkChangeCreatedEvent :| [])
-                <*> histo (queryType $ ElkChangeMergedEvent :| [])
-                <*> histo (queryType $ ElkChangeAbandonedEvent :| [])
-                <*> histo (queryType $ ElkChangeCommitPushedEvent :| [])
-                <*> histo (queryType $ ElkChangeCommitForcePushedEvent :| [])
+                <$> histo (queryType ElkChangeCreatedEvent)
+                <*> histo (queryType ElkChangeMergedEvent)
+                <*> histo (queryType ElkChangeAbandonedEvent)
+                <*> histo (queryType ElkChangeCommitPushedEvent)
+                <*> histo (queryType ElkChangeCommitForcePushedEvent)
 
         -- ratios
         let ratios =
               toRatio eventCounts
-                <$> count [queryType $ ElkChangeCreatedEvent :| []]
-                <*> count [queryType $ ElkChangeCommitPushedEvent :| []]
-                <*> count [queryType $ ElkChangeCommitForcePushedEvent :| []]
+                <$> count [queryType ElkChangeCreatedEvent]
+                <*> count [queryType ElkChangeCommitPushedEvent]
+                <*> count [queryType ElkChangeCommitForcePushedEvent]
 
         -- duration aggregate
         let durationAgg =
