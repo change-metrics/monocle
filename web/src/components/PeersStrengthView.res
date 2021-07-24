@@ -39,31 +39,14 @@ module PeersStrengthTable = {
   }
 }
 
-module LimitSelector = {
-  @react.component
-  let make = (~limit: int, ~setLimit: (int => int) => unit) => {
-    let setLimit' = str => {
-      let v = str == "" ? 25 : str->int_of_string
-      setLimit(_ => v)
-    }
-    <Patternfly.Layout.Bullseye>
-      <MSelect
-        placeholder={"Set limit"}
-        options={list{10, 25, 50, 100, 500}->Belt.List.map(string_of_int)}
-        multi={false}
-        value={limit > 0 ? limit->string_of_int : ""}
-        valueChanged={setLimit'}
-      />
-    </Patternfly.Layout.Bullseye>
-  }
-}
-
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
   let index = state.index
   let query = state.query
   let (limit, setLimit) = React.useState(() => 25)
+  let limit_values = list{10, 25, 50, 100, 500}
+  let tooltip_content = "This shows the strength between change authors and peer reviewers"
   let request = {
     SearchTypes.index: index,
     query: query,
@@ -86,13 +69,24 @@ let make = (~store: Store.t) => {
         <Card isCompact=true>
           <CardTitle>
             <MGrid>
-              <MGridItem> {"Peers Strength"->str} </MGridItem>
-              <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
+              <MGridItemXl9>
+                <Title headingLevel=#H3>
+                  <Tooltip content=tooltip_content> <Patternfly.Icons.Integration /> </Tooltip>
+                  {(" " ++ "Peers Strength")->str}
+                </Title>
+              </MGridItemXl9>
+              <MGridItemXl3>
+                <LimitSelector limit setLimit default=25 values=limit_values />
+              </MGridItemXl3>
             </MGrid>
           </CardTitle>
           <CardBody>
-            <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
-            <PeersStrengthTable items={tps.author_peer} />
+            <MGrid>
+              <MGridItemXl5> <PeersStrengthTable items={tps.author_peer} /> </MGridItemXl5>
+              <MGridItemXl7>
+                <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
+              </MGridItemXl7>
+            </MGrid>
           </CardBody>
         </Card>
       </MCenteredContent>
