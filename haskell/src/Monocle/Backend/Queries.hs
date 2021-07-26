@@ -657,6 +657,42 @@ getHistoPB qf = fmap toPBHisto <$> getHisto qf
           histoCount = heCount
        in SearchPB.Histo {..}
 
+searchBody :: QueryFlavor -> Value -> QueryM Value
+searchBody qf agg = do
+  queryBH <- getQueryBHWithFlavor qf
+  pure $
+    Aeson.object
+      [ "aggregations" .= Aeson.object ["agg1" .= agg],
+        "size" .= (0 :: Word),
+        "docvalue_fields"
+          .= [ Aeson.object
+                 [ "field" .= ("created_at" :: Text),
+                   "format" .= ("date_time" :: Text)
+                 ]
+             ],
+        "query" .= fromMaybe (error "need query") queryBH
+      ]
+
+queryAggValue :: Value -> QueryM Double
+queryAggValue search = liftTenantM $ do
+  index <- getIndexName
+  res <- toAggRes <$> BHR.search index search
+  pure $ getAggValue "agg1" res
+
+averageDuration :: QueryFlavor -> QueryM Double
+averageDuration qf = queryAggValue =<< searchBody qf avg
+  where
+    avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("duration" :: Text)]]
+
+medianDeviationDuration :: QueryFlavor -> QueryM Double
+medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
+  where
+    deviation =
+      Aeson.object
+        [ "median_absolute_deviation"
+            .= Aeson.object ["field" .= ("duration" :: Text)]
+        ]
+
 withDocTypes :: [ELKDocType] -> QueryM a -> QueryM a
 withDocTypes docTypes = withFilter [mkOr $ toTermQuery <$> docTypes]
   where
@@ -723,8 +759,12 @@ getLifecycleStats = do
       lifecycleStatsAbandoned = countToWord abandoned
       lifecycleStatsAbandonedRatio = abandoned `ratioF` created
 
-  lifecycleStatsTtmMean <- pure 0
-  lifecycleStatsTtmVariability <- pure 0
+  lifecycleStatsTtmMean <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (averageDuration qf)
+  lifecycleStatsTtmVariability <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (medianDeviationDuration qf)
 
   lifecycleStatsUpdatesOfChanges <- pure 0
   lifecycleStatsChangesWithTests <- pure 0
