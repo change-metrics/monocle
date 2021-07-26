@@ -154,7 +154,7 @@ server {
 ```ShellSession
 cd haskell
 cabal repl monocle
-λ> import Monocle.Api.CLI
+λ> import Monocle.Api
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
@@ -184,7 +184,7 @@ nix-shell --command monocle-api-start
 
 ```ShellSession
 nix-shell --command monocle-api2-start
-λ> import Monocle.Api.CLI
+λ> import Monocle.Api
 λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
 ```
 

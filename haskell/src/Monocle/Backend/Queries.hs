@@ -10,28 +10,11 @@ import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import Monocle.Backend.Documents (ELKChange (..))
+import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField, toBHQueryWithFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField, toBHQueryWithFlavor)
-import Monocle.Servant.Env (mkFinalQuery)
-
--- | Helper search func that can be replaced by a scanSearch
-doSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
-doSearch indexName search = do
-  -- monocleLog . decodeUtf8 . Aeson.encode $ search
-  rawResp <- BH.searchByIndex indexName search
-  resp <- BH.parseEsResponse rawResp
-  case resp of
-    Left _e -> handleError rawResp
-    Right x -> pure x
-  where
-    handleError resp = do
-      monocleLog (show resp)
-      error "Elastic response failed"
-
-simpleSearch :: (Aeson.FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
-simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
 changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
 changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothing] $ do
@@ -58,32 +41,14 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
-newtype Count = MkCount Word32
-  deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
-
-countToWord :: Count -> Word32
-countToWord (MkCount x) = x
-
--- | A special Num instance that prevent arithmetic underflow
-instance Num Count where
-  MkCount a - MkCount b
-    | b > a = MkCount 0
-    | otherwise = MkCount $ a - b
-
-  MkCount a + MkCount b = MkCount $ a + b
-  MkCount a * MkCount b = MkCount $ a * b
-  signum (MkCount a) = MkCount $ signum a
-  fromInteger x = MkCount $ fromInteger x
-  abs x = x
-
 doCountEvents :: BH.Query -> TenantM Count
 doCountEvents query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
   case resp of
-    Left e -> error (show e)
-    Right x -> pure (MkCount . fromInteger . toInteger . BH.crCount $ x)
+    Left e -> error $ show e
+    Right x -> pure $ naturalToCount (BH.crCount x)
 
 countEvents :: QueryFlavor -> [BH.Query] -> QueryM Count
 countEvents qf queries = withFilter queries $ do
@@ -113,15 +78,6 @@ changeReviewRatio = do
     -- Author makes query author match the change event author, not the receiver of the event.
     -- CreatedAt is necessary for change event.
     qf = QueryFlavor Author CreatedAt
-
-mkAnd :: [BH.Query] -> BH.Query
-mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
-
-mkOr :: [BH.Query] -> BH.Query
-mkOr orQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [] orQ
-
-mkTerm :: Text -> Text -> BH.Query
-mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
 
 -- | Add a change state filter to the query
 changeState :: Text -> [BH.Query]

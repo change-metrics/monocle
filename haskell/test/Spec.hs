@@ -2,8 +2,9 @@ module Main (main) where
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Google.Protobuf.Timestamp
-import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
+import Monocle.Client
+import Monocle.Client.Api
 import Monocle.Mock
 import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
@@ -132,7 +133,7 @@ monocleSearchLanguage =
       testCase
         "Query from flavor"
         ( queryMatchFlavor
-            (S.QueryFlavor S.Author S.UpdatedAt)
+            (Q.QueryFlavor Q.Author Q.UpdatedAt)
             "from:now-3weeks"
             "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
         ),
@@ -151,14 +152,14 @@ monocleSearchLanguage =
       testCase
         "Query author"
         ( queryMatchFlavor
-            (S.QueryFlavor S.Author S.UpdatedAt)
+            (Q.QueryFlavor Q.Author Q.UpdatedAt)
             "author:alice"
             "{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}"
         ),
       testCase
         "Query on author"
         ( queryMatchFlavor
-            (S.QueryFlavor S.OnAuthor S.UpdatedAt)
+            (Q.QueryFlavor Q.OnAuthor Q.UpdatedAt)
             "author:alice"
             "{\"term\":{\"on_author.muid\":{\"value\":\"alice\"}}}"
         ),
@@ -206,7 +207,7 @@ monocleSearchLanguage =
     headS = \case
       [x] -> x
       _ -> error "Not a list"
-    queryMatch = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH S.defaultQueryFlavor)
+    queryMatch = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH Q.defaultQueryFlavor)
     queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH flavor)
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =

@@ -1,25 +1,25 @@
--- | The servant endpoint implementation
+-- | The servant endpoint implementation.
+-- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
-import Data.Fixed (Deci)
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
 import Monocle.Backend.Index as I
-import Monocle.Backend.Queries (countToWord)
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), ParseError (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor)
-import Monocle.Servant.Env
+import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
@@ -89,7 +89,7 @@ userGroupGet request = do
   where
     getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
     getGroupStats users = do
-      let allQuery = Q.mkOr $ map Q.toUserTerm users
+      let allQuery = mkOr $ map Q.toUserTerm users
 
       allStats <- withFilter [allQuery] $ do
         UserGroupPB.GroupStat
@@ -105,16 +105,16 @@ userGroupGet request = do
     getUserStat :: Text -> QueryM UserGroupPB.UserStat
     getUserStat name = do
       let userQuery = Q.toUserTerm name
-          reviewQuery = Q.mkOr $ map (Q.mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+          reviewQuery = mkOr $ map (mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
           commitQuery =
-            Q.mkOr $
+            mkOr $
               map
-                (Q.mkTerm "type")
+                (mkTerm "type")
                 [ "ChangeCommitPushedEvent",
                   "ChangeCommitForcePushedEvent"
                 ]
 
-          qf = QueryFlavor Monocle.Search.Syntax.Author CreatedAt
+          qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
 
       userStats <- withFilter [userQuery] $ do
         reviewHisto <- withFilter [reviewQuery] $ Q.getHisto qf
@@ -539,15 +539,15 @@ searchChangesLifecycle indexName queryText = do
 
     toRatio ::
       Q.EventCounts ->
-      Q.Count ->
-      Q.Count ->
-      Q.Count ->
+      Count ->
+      Count ->
+      Count ->
       SearchPB.ChangesLifecycle_Ratios
     toRatio Q.EventCounts {..} createdEvent pushedEvent forcePushedEvent =
-      let ratio :: Q.Count -> Q.Count -> Deci
-          ratio (Q.MkCount x) (Q.MkCount y)
+      let ratio :: Count -> Count -> Deci
+          ratio x y
             | y == 0 = 0
-            | otherwise = (fromInteger . toInteger $ x) / (fromInteger . toInteger $ y)
+            | otherwise = countToDeci x / countToDeci y
           ratioF x = fromFixed . ratio x
 
           changesLifecycle_RatiosMerged = mergedCount `ratioF` createdEvent

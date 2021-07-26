@@ -8,7 +8,8 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Lentille.GitHub
 import Lentille.GitHub.Issues
-import Monocle.Api.Client
+import Monocle.Client
+import Monocle.Client.Worker
 import Monocle.TaskData
 import Options.Generic
 import Relude
