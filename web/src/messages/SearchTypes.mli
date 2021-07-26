@@ -53,7 +53,6 @@ type order = {
 
 type query_request_query_type =
   | Query_change 
-  | Query_change_lifecycle 
   | Query_repos_summary 
   | Query_top_authors_changes_created 
   | Query_top_authors_changes_merged 
@@ -64,6 +63,7 @@ type query_request_query_type =
   | Query_top_authors_peers 
   | Query_new_changes_authors 
   | Query_changes_review_stats 
+  | Query_changes_lifecycle_stats 
 
 type query_request = {
   index : string;
@@ -176,6 +176,27 @@ type authors_peers = {
   author_peer : author_peer list;
 }
 
+type lifecycle_stats = {
+  created_histo : histo list;
+  updated_histo : histo list;
+  merged_histo : histo list;
+  abandoned_histo : histo list;
+  created : review_count option;
+  opened : int32;
+  abandoned : int32;
+  abandoned_ratio : float;
+  merged : int32;
+  merged_ratio : float;
+  self_merged : int32;
+  self_merged_ratio : float;
+  ttm_mean : float;
+  ttm_variability : float;
+  updates_of_changes : int32;
+  changes_with_tests : float;
+  iterations_per_change : float;
+  commits_per_change : float;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
@@ -184,48 +205,7 @@ type query_response =
   | Authors_peers of authors_peers
   | New_authors of terms_count
   | Review_stats of review_stats
-
-type changes_histos_event = {
-  doc_count : int32;
-  key : int64;
-  key_as_string : string;
-}
-
-type changes_histos = {
-  change_abandoned_event : changes_histos_event list;
-  change_commit_force_pushed_event : changes_histos_event list;
-  change_commit_pushed_event : changes_histos_event list;
-  change_created_event : changes_histos_event list;
-  change_merged_event : changes_histos_event list;
-}
-
-type changes_lifecycle_event = {
-  authors_count : int32;
-  events_count : int32;
-}
-
-type changes_lifecycle_ratios = {
-  abandoned : float;
-  iterations : float;
-  merged : float;
-  self_merged : float;
-}
-
-type changes_lifecycle = {
-  change_commit_force_pushed_event : changes_lifecycle_event option;
-  change_commit_pushed_event : changes_lifecycle_event option;
-  change_created_event : changes_lifecycle_event option;
-  abandoned : int32;
-  commits : float;
-  duration : float;
-  duration_variability : float;
-  histos : changes_histos option;
-  merged : int32;
-  opened : int32;
-  ratios : changes_lifecycle_ratios option;
-  self_merged : int32;
-  tests : float;
-}
+  | Lifecycle_stats of lifecycle_stats
 
 
 (** {2 Default values} *)
@@ -428,57 +408,28 @@ val default_authors_peers :
   authors_peers
 (** [default_authors_peers ()] is the default value for type [authors_peers] *)
 
+val default_lifecycle_stats : 
+  ?created_histo:histo list ->
+  ?updated_histo:histo list ->
+  ?merged_histo:histo list ->
+  ?abandoned_histo:histo list ->
+  ?created:review_count option ->
+  ?opened:int32 ->
+  ?abandoned:int32 ->
+  ?abandoned_ratio:float ->
+  ?merged:int32 ->
+  ?merged_ratio:float ->
+  ?self_merged:int32 ->
+  ?self_merged_ratio:float ->
+  ?ttm_mean:float ->
+  ?ttm_variability:float ->
+  ?updates_of_changes:int32 ->
+  ?changes_with_tests:float ->
+  ?iterations_per_change:float ->
+  ?commits_per_change:float ->
+  unit ->
+  lifecycle_stats
+(** [default_lifecycle_stats ()] is the default value for type [lifecycle_stats] *)
+
 val default_query_response : unit -> query_response
 (** [default_query_response ()] is the default value for type [query_response] *)
-
-val default_changes_histos_event : 
-  ?doc_count:int32 ->
-  ?key:int64 ->
-  ?key_as_string:string ->
-  unit ->
-  changes_histos_event
-(** [default_changes_histos_event ()] is the default value for type [changes_histos_event] *)
-
-val default_changes_histos : 
-  ?change_abandoned_event:changes_histos_event list ->
-  ?change_commit_force_pushed_event:changes_histos_event list ->
-  ?change_commit_pushed_event:changes_histos_event list ->
-  ?change_created_event:changes_histos_event list ->
-  ?change_merged_event:changes_histos_event list ->
-  unit ->
-  changes_histos
-(** [default_changes_histos ()] is the default value for type [changes_histos] *)
-
-val default_changes_lifecycle_event : 
-  ?authors_count:int32 ->
-  ?events_count:int32 ->
-  unit ->
-  changes_lifecycle_event
-(** [default_changes_lifecycle_event ()] is the default value for type [changes_lifecycle_event] *)
-
-val default_changes_lifecycle_ratios : 
-  ?abandoned:float ->
-  ?iterations:float ->
-  ?merged:float ->
-  ?self_merged:float ->
-  unit ->
-  changes_lifecycle_ratios
-(** [default_changes_lifecycle_ratios ()] is the default value for type [changes_lifecycle_ratios] *)
-
-val default_changes_lifecycle : 
-  ?change_commit_force_pushed_event:changes_lifecycle_event option ->
-  ?change_commit_pushed_event:changes_lifecycle_event option ->
-  ?change_created_event:changes_lifecycle_event option ->
-  ?abandoned:int32 ->
-  ?commits:float ->
-  ?duration:float ->
-  ?duration_variability:float ->
-  ?histos:changes_histos option ->
-  ?merged:int32 ->
-  ?opened:int32 ->
-  ?ratios:changes_lifecycle_ratios option ->
-  ?self_merged:int32 ->
-  ?tests:float ->
-  unit ->
-  changes_lifecycle
-(** [default_changes_lifecycle ()] is the default value for type [changes_lifecycle] *)

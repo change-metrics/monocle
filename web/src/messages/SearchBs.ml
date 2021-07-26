@@ -288,88 +288,46 @@ let default_authors_peers_mutable () : authors_peers_mutable = {
   author_peer = [];
 }
 
-type changes_histos_event_mutable = {
-  mutable doc_count : int32;
-  mutable key : int64;
-  mutable key_as_string : string;
-}
-
-let default_changes_histos_event_mutable () : changes_histos_event_mutable = {
-  doc_count = 0l;
-  key = 0L;
-  key_as_string = "";
-}
-
-type changes_histos_mutable = {
-  mutable change_abandoned_event : SearchTypes.changes_histos_event list;
-  mutable change_commit_force_pushed_event : SearchTypes.changes_histos_event list;
-  mutable change_commit_pushed_event : SearchTypes.changes_histos_event list;
-  mutable change_created_event : SearchTypes.changes_histos_event list;
-  mutable change_merged_event : SearchTypes.changes_histos_event list;
-}
-
-let default_changes_histos_mutable () : changes_histos_mutable = {
-  change_abandoned_event = [];
-  change_commit_force_pushed_event = [];
-  change_commit_pushed_event = [];
-  change_created_event = [];
-  change_merged_event = [];
-}
-
-type changes_lifecycle_event_mutable = {
-  mutable authors_count : int32;
-  mutable events_count : int32;
-}
-
-let default_changes_lifecycle_event_mutable () : changes_lifecycle_event_mutable = {
-  authors_count = 0l;
-  events_count = 0l;
-}
-
-type changes_lifecycle_ratios_mutable = {
-  mutable abandoned : float;
-  mutable iterations : float;
-  mutable merged : float;
-  mutable self_merged : float;
-}
-
-let default_changes_lifecycle_ratios_mutable () : changes_lifecycle_ratios_mutable = {
-  abandoned = 0.;
-  iterations = 0.;
-  merged = 0.;
-  self_merged = 0.;
-}
-
-type changes_lifecycle_mutable = {
-  mutable change_commit_force_pushed_event : SearchTypes.changes_lifecycle_event option;
-  mutable change_commit_pushed_event : SearchTypes.changes_lifecycle_event option;
-  mutable change_created_event : SearchTypes.changes_lifecycle_event option;
-  mutable abandoned : int32;
-  mutable commits : float;
-  mutable duration : float;
-  mutable duration_variability : float;
-  mutable histos : SearchTypes.changes_histos option;
-  mutable merged : int32;
+type lifecycle_stats_mutable = {
+  mutable created_histo : SearchTypes.histo list;
+  mutable updated_histo : SearchTypes.histo list;
+  mutable merged_histo : SearchTypes.histo list;
+  mutable abandoned_histo : SearchTypes.histo list;
+  mutable created : SearchTypes.review_count option;
   mutable opened : int32;
-  mutable ratios : SearchTypes.changes_lifecycle_ratios option;
+  mutable abandoned : int32;
+  mutable abandoned_ratio : float;
+  mutable merged : int32;
+  mutable merged_ratio : float;
   mutable self_merged : int32;
-  mutable tests : float;
+  mutable self_merged_ratio : float;
+  mutable ttm_mean : float;
+  mutable ttm_variability : float;
+  mutable updates_of_changes : int32;
+  mutable changes_with_tests : float;
+  mutable iterations_per_change : float;
+  mutable commits_per_change : float;
 }
 
-let default_changes_lifecycle_mutable () : changes_lifecycle_mutable = {
-  change_commit_force_pushed_event = None;
-  change_commit_pushed_event = None;
-  change_created_event = None;
-  abandoned = 0l;
-  commits = 0.;
-  duration = 0.;
-  duration_variability = 0.;
-  histos = None;
-  merged = 0l;
+let default_lifecycle_stats_mutable () : lifecycle_stats_mutable = {
+  created_histo = [];
+  updated_histo = [];
+  merged_histo = [];
+  abandoned_histo = [];
+  created = None;
   opened = 0l;
-  ratios = None;
+  abandoned = 0l;
+  abandoned_ratio = 0.;
+  merged = 0l;
+  merged_ratio = 0.;
   self_merged = 0l;
-  tests = 0.;
+  self_merged_ratio = 0.;
+  ttm_mean = 0.;
+  ttm_variability = 0.;
+  updates_of_changes = 0l;
+  changes_with_tests = 0.;
+  iterations_per_change = 0.;
+  commits_per_change = 0.;
 }
 
 
@@ -573,7 +531,6 @@ let rec decode_order json =
 let rec decode_query_request_query_type (json:Js.Json.t) =
   match Pbrt_bs.string json "query_request_query_type" "value" with
   | "QUERY_CHANGE" -> (SearchTypes.Query_change : SearchTypes.query_request_query_type)
-  | "QUERY_CHANGE_LIFECYCLE" -> (SearchTypes.Query_change_lifecycle : SearchTypes.query_request_query_type)
   | "QUERY_REPOS_SUMMARY" -> (SearchTypes.Query_repos_summary : SearchTypes.query_request_query_type)
   | "QUERY_TOP_AUTHORS_CHANGES_CREATED" -> (SearchTypes.Query_top_authors_changes_created : SearchTypes.query_request_query_type)
   | "QUERY_TOP_AUTHORS_CHANGES_MERGED" -> (SearchTypes.Query_top_authors_changes_merged : SearchTypes.query_request_query_type)
@@ -584,6 +541,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_TOP_AUTHORS_PEERS" -> (SearchTypes.Query_top_authors_peers : SearchTypes.query_request_query_type)
   | "QUERY_NEW_CHANGES_AUTHORS" -> (SearchTypes.Query_new_changes_authors : SearchTypes.query_request_query_type)
   | "QUERY_CHANGES_REVIEW_STATS" -> (SearchTypes.Query_changes_review_stats : SearchTypes.query_request_query_type)
+  | "QUERY_CHANGES_LIFECYCLE_STATS" -> (SearchTypes.Query_changes_lifecycle_stats : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -1106,6 +1064,114 @@ let rec decode_authors_peers json =
     SearchTypes.author_peer = v.author_peer;
   } : SearchTypes.authors_peers)
 
+let rec decode_lifecycle_stats json =
+  let v = default_lifecycle_stats_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "created_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "created_histo" in 
+        Pbrt_bs.array_ a "lifecycle_stats" "created_histo"
+      in
+      v.created_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "created_histo"))
+      ) a |> Array.to_list;
+    end
+    | "updated_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "updated_histo" in 
+        Pbrt_bs.array_ a "lifecycle_stats" "updated_histo"
+      in
+      v.updated_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "updated_histo"))
+      ) a |> Array.to_list;
+    end
+    | "merged_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "merged_histo" in 
+        Pbrt_bs.array_ a "lifecycle_stats" "merged_histo"
+      in
+      v.merged_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "merged_histo"))
+      ) a |> Array.to_list;
+    end
+    | "abandoned_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "abandoned_histo" in 
+        Pbrt_bs.array_ a "lifecycle_stats" "abandoned_histo"
+      in
+      v.abandoned_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "abandoned_histo"))
+      ) a |> Array.to_list;
+    end
+    | "created" -> 
+      let json = Js.Dict.unsafeGet json "created" in
+      v.created <- Some ((decode_review_count (Pbrt_bs.object_ json "lifecycle_stats" "created")))
+    | "opened" -> 
+      let json = Js.Dict.unsafeGet json "opened" in
+      v.opened <- Pbrt_bs.int32 json "lifecycle_stats" "opened"
+    | "abandoned" -> 
+      let json = Js.Dict.unsafeGet json "abandoned" in
+      v.abandoned <- Pbrt_bs.int32 json "lifecycle_stats" "abandoned"
+    | "abandoned_ratio" -> 
+      let json = Js.Dict.unsafeGet json "abandoned_ratio" in
+      v.abandoned_ratio <- Pbrt_bs.float json "lifecycle_stats" "abandoned_ratio"
+    | "merged" -> 
+      let json = Js.Dict.unsafeGet json "merged" in
+      v.merged <- Pbrt_bs.int32 json "lifecycle_stats" "merged"
+    | "merged_ratio" -> 
+      let json = Js.Dict.unsafeGet json "merged_ratio" in
+      v.merged_ratio <- Pbrt_bs.float json "lifecycle_stats" "merged_ratio"
+    | "self_merged" -> 
+      let json = Js.Dict.unsafeGet json "self_merged" in
+      v.self_merged <- Pbrt_bs.int32 json "lifecycle_stats" "self_merged"
+    | "self_merged_ratio" -> 
+      let json = Js.Dict.unsafeGet json "self_merged_ratio" in
+      v.self_merged_ratio <- Pbrt_bs.float json "lifecycle_stats" "self_merged_ratio"
+    | "ttm_mean" -> 
+      let json = Js.Dict.unsafeGet json "ttm_mean" in
+      v.ttm_mean <- Pbrt_bs.float json "lifecycle_stats" "ttm_mean"
+    | "ttm_variability" -> 
+      let json = Js.Dict.unsafeGet json "ttm_variability" in
+      v.ttm_variability <- Pbrt_bs.float json "lifecycle_stats" "ttm_variability"
+    | "updates_of_changes" -> 
+      let json = Js.Dict.unsafeGet json "updates_of_changes" in
+      v.updates_of_changes <- Pbrt_bs.int32 json "lifecycle_stats" "updates_of_changes"
+    | "changes_with_tests" -> 
+      let json = Js.Dict.unsafeGet json "changes_with_tests" in
+      v.changes_with_tests <- Pbrt_bs.float json "lifecycle_stats" "changes_with_tests"
+    | "iterations_per_change" -> 
+      let json = Js.Dict.unsafeGet json "iterations_per_change" in
+      v.iterations_per_change <- Pbrt_bs.float json "lifecycle_stats" "iterations_per_change"
+    | "commits_per_change" -> 
+      let json = Js.Dict.unsafeGet json "commits_per_change" in
+      v.commits_per_change <- Pbrt_bs.float json "lifecycle_stats" "commits_per_change"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.created_histo = v.created_histo;
+    SearchTypes.updated_histo = v.updated_histo;
+    SearchTypes.merged_histo = v.merged_histo;
+    SearchTypes.abandoned_histo = v.abandoned_histo;
+    SearchTypes.created = v.created;
+    SearchTypes.opened = v.opened;
+    SearchTypes.abandoned = v.abandoned;
+    SearchTypes.abandoned_ratio = v.abandoned_ratio;
+    SearchTypes.merged = v.merged;
+    SearchTypes.merged_ratio = v.merged_ratio;
+    SearchTypes.self_merged = v.self_merged;
+    SearchTypes.self_merged_ratio = v.self_merged_ratio;
+    SearchTypes.ttm_mean = v.ttm_mean;
+    SearchTypes.ttm_variability = v.ttm_variability;
+    SearchTypes.updates_of_changes = v.updates_of_changes;
+    SearchTypes.changes_with_tests = v.changes_with_tests;
+    SearchTypes.iterations_per_change = v.iterations_per_change;
+    SearchTypes.commits_per_change = v.commits_per_change;
+  } : SearchTypes.lifecycle_stats)
+
 let rec decode_query_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -1133,209 +1199,14 @@ let rec decode_query_response json =
       | "review_stats" -> 
         let json = Js.Dict.unsafeGet json "review_stats" in
         (SearchTypes.Review_stats ((decode_review_stats (Pbrt_bs.object_ json "query_response" "Review_stats"))) : SearchTypes.query_response)
+      | "lifecycle_stats" -> 
+        let json = Js.Dict.unsafeGet json "lifecycle_stats" in
+        (SearchTypes.Lifecycle_stats ((decode_lifecycle_stats (Pbrt_bs.object_ json "query_response" "Lifecycle_stats"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
   in
   loop (Array.length keys - 1)
-
-let rec decode_changes_histos_event json =
-  let v = default_changes_histos_event_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "doc_count" -> 
-      let json = Js.Dict.unsafeGet json "doc_count" in
-      v.doc_count <- Pbrt_bs.int32 json "changes_histos_event" "doc_count"
-    | "key" -> 
-      let json = Js.Dict.unsafeGet json "key" in
-      v.key <- Pbrt_bs.int64 json "changes_histos_event" "key"
-    | "key_asString" -> 
-      let json = Js.Dict.unsafeGet json "key_asString" in
-      v.key_as_string <- Pbrt_bs.string json "changes_histos_event" "key_as_string"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.doc_count = v.doc_count;
-    SearchTypes.key = v.key;
-    SearchTypes.key_as_string = v.key_as_string;
-  } : SearchTypes.changes_histos_event)
-
-let rec decode_changes_histos json =
-  let v = default_changes_histos_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "change_abandonedEvent" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "change_abandonedEvent" in 
-        Pbrt_bs.array_ a "changes_histos" "change_abandoned_event"
-      in
-      v.change_abandoned_event <- Array.map (fun json -> 
-        (decode_changes_histos_event (Pbrt_bs.object_ json "changes_histos" "change_abandoned_event"))
-      ) a |> Array.to_list;
-    end
-    | "change_commitForcePushedEvent" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "change_commitForcePushedEvent" in 
-        Pbrt_bs.array_ a "changes_histos" "change_commit_force_pushed_event"
-      in
-      v.change_commit_force_pushed_event <- Array.map (fun json -> 
-        (decode_changes_histos_event (Pbrt_bs.object_ json "changes_histos" "change_commit_force_pushed_event"))
-      ) a |> Array.to_list;
-    end
-    | "change_commitPushedEvent" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "change_commitPushedEvent" in 
-        Pbrt_bs.array_ a "changes_histos" "change_commit_pushed_event"
-      in
-      v.change_commit_pushed_event <- Array.map (fun json -> 
-        (decode_changes_histos_event (Pbrt_bs.object_ json "changes_histos" "change_commit_pushed_event"))
-      ) a |> Array.to_list;
-    end
-    | "change_createdEvent" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "change_createdEvent" in 
-        Pbrt_bs.array_ a "changes_histos" "change_created_event"
-      in
-      v.change_created_event <- Array.map (fun json -> 
-        (decode_changes_histos_event (Pbrt_bs.object_ json "changes_histos" "change_created_event"))
-      ) a |> Array.to_list;
-    end
-    | "change_mergedEvent" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "change_mergedEvent" in 
-        Pbrt_bs.array_ a "changes_histos" "change_merged_event"
-      in
-      v.change_merged_event <- Array.map (fun json -> 
-        (decode_changes_histos_event (Pbrt_bs.object_ json "changes_histos" "change_merged_event"))
-      ) a |> Array.to_list;
-    end
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.change_abandoned_event = v.change_abandoned_event;
-    SearchTypes.change_commit_force_pushed_event = v.change_commit_force_pushed_event;
-    SearchTypes.change_commit_pushed_event = v.change_commit_pushed_event;
-    SearchTypes.change_created_event = v.change_created_event;
-    SearchTypes.change_merged_event = v.change_merged_event;
-  } : SearchTypes.changes_histos)
-
-let rec decode_changes_lifecycle_event json =
-  let v = default_changes_lifecycle_event_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "authors_count" -> 
-      let json = Js.Dict.unsafeGet json "authors_count" in
-      v.authors_count <- Pbrt_bs.int32 json "changes_lifecycle_event" "authors_count"
-    | "events_count" -> 
-      let json = Js.Dict.unsafeGet json "events_count" in
-      v.events_count <- Pbrt_bs.int32 json "changes_lifecycle_event" "events_count"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.authors_count = v.authors_count;
-    SearchTypes.events_count = v.events_count;
-  } : SearchTypes.changes_lifecycle_event)
-
-let rec decode_changes_lifecycle_ratios json =
-  let v = default_changes_lifecycle_ratios_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "abandoned" -> 
-      let json = Js.Dict.unsafeGet json "abandoned" in
-      v.abandoned <- Pbrt_bs.float json "changes_lifecycle_ratios" "abandoned"
-    | "iterations" -> 
-      let json = Js.Dict.unsafeGet json "iterations" in
-      v.iterations <- Pbrt_bs.float json "changes_lifecycle_ratios" "iterations"
-    | "merged" -> 
-      let json = Js.Dict.unsafeGet json "merged" in
-      v.merged <- Pbrt_bs.float json "changes_lifecycle_ratios" "merged"
-    | "self_merged" -> 
-      let json = Js.Dict.unsafeGet json "self_merged" in
-      v.self_merged <- Pbrt_bs.float json "changes_lifecycle_ratios" "self_merged"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.abandoned = v.abandoned;
-    SearchTypes.iterations = v.iterations;
-    SearchTypes.merged = v.merged;
-    SearchTypes.self_merged = v.self_merged;
-  } : SearchTypes.changes_lifecycle_ratios)
-
-let rec decode_changes_lifecycle json =
-  let v = default_changes_lifecycle_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "change_commitForcePushedEvent" -> 
-      let json = Js.Dict.unsafeGet json "change_commitForcePushedEvent" in
-      v.change_commit_force_pushed_event <- Some ((decode_changes_lifecycle_event (Pbrt_bs.object_ json "changes_lifecycle" "change_commit_force_pushed_event")))
-    | "change_commitPushedEvent" -> 
-      let json = Js.Dict.unsafeGet json "change_commitPushedEvent" in
-      v.change_commit_pushed_event <- Some ((decode_changes_lifecycle_event (Pbrt_bs.object_ json "changes_lifecycle" "change_commit_pushed_event")))
-    | "change_createdEvent" -> 
-      let json = Js.Dict.unsafeGet json "change_createdEvent" in
-      v.change_created_event <- Some ((decode_changes_lifecycle_event (Pbrt_bs.object_ json "changes_lifecycle" "change_created_event")))
-    | "abandoned" -> 
-      let json = Js.Dict.unsafeGet json "abandoned" in
-      v.abandoned <- Pbrt_bs.int32 json "changes_lifecycle" "abandoned"
-    | "commits" -> 
-      let json = Js.Dict.unsafeGet json "commits" in
-      v.commits <- Pbrt_bs.float json "changes_lifecycle" "commits"
-    | "duration" -> 
-      let json = Js.Dict.unsafeGet json "duration" in
-      v.duration <- Pbrt_bs.float json "changes_lifecycle" "duration"
-    | "duration_variability" -> 
-      let json = Js.Dict.unsafeGet json "duration_variability" in
-      v.duration_variability <- Pbrt_bs.float json "changes_lifecycle" "duration_variability"
-    | "histos" -> 
-      let json = Js.Dict.unsafeGet json "histos" in
-      v.histos <- Some ((decode_changes_histos (Pbrt_bs.object_ json "changes_lifecycle" "histos")))
-    | "merged" -> 
-      let json = Js.Dict.unsafeGet json "merged" in
-      v.merged <- Pbrt_bs.int32 json "changes_lifecycle" "merged"
-    | "opened" -> 
-      let json = Js.Dict.unsafeGet json "opened" in
-      v.opened <- Pbrt_bs.int32 json "changes_lifecycle" "opened"
-    | "ratios" -> 
-      let json = Js.Dict.unsafeGet json "ratios" in
-      v.ratios <- Some ((decode_changes_lifecycle_ratios (Pbrt_bs.object_ json "changes_lifecycle" "ratios")))
-    | "self_merged" -> 
-      let json = Js.Dict.unsafeGet json "self_merged" in
-      v.self_merged <- Pbrt_bs.int32 json "changes_lifecycle" "self_merged"
-    | "tests" -> 
-      let json = Js.Dict.unsafeGet json "tests" in
-      v.tests <- Pbrt_bs.float json "changes_lifecycle" "tests"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.change_commit_force_pushed_event = v.change_commit_force_pushed_event;
-    SearchTypes.change_commit_pushed_event = v.change_commit_pushed_event;
-    SearchTypes.change_created_event = v.change_created_event;
-    SearchTypes.abandoned = v.abandoned;
-    SearchTypes.commits = v.commits;
-    SearchTypes.duration = v.duration;
-    SearchTypes.duration_variability = v.duration_variability;
-    SearchTypes.histos = v.histos;
-    SearchTypes.merged = v.merged;
-    SearchTypes.opened = v.opened;
-    SearchTypes.ratios = v.ratios;
-    SearchTypes.self_merged = v.self_merged;
-    SearchTypes.tests = v.tests;
-  } : SearchTypes.changes_lifecycle)
 
 let rec encode_search_suggestions_request (v:SearchTypes.search_suggestions_request) = 
   let json = Js.Dict.empty () in
@@ -1411,7 +1282,6 @@ let rec encode_order (v:SearchTypes.order) =
 let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type) : string = 
   match v with
   | SearchTypes.Query_change -> "QUERY_CHANGE"
-  | SearchTypes.Query_change_lifecycle -> "QUERY_CHANGE_LIFECYCLE"
   | SearchTypes.Query_repos_summary -> "QUERY_REPOS_SUMMARY"
   | SearchTypes.Query_top_authors_changes_created -> "QUERY_TOP_AUTHORS_CHANGES_CREATED"
   | SearchTypes.Query_top_authors_changes_merged -> "QUERY_TOP_AUTHORS_CHANGES_MERGED"
@@ -1422,6 +1292,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_top_authors_peers -> "QUERY_TOP_AUTHORS_PEERS"
   | SearchTypes.Query_new_changes_authors -> "QUERY_NEW_CHANGES_AUTHORS"
   | SearchTypes.Query_changes_review_stats -> "QUERY_CHANGES_REVIEW_STATS"
+  | SearchTypes.Query_changes_lifecycle_stats -> "QUERY_CHANGES_LIFECYCLE_STATS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1705,6 +1576,75 @@ let rec encode_authors_peers (v:SearchTypes.authors_peers) =
   end;
   json
 
+let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) = 
+  let json = Js.Dict.empty () in
+  begin (* createdHisto field *)
+    let (created_histo':Js.Json.t) =
+      v.SearchTypes.created_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "created_histo" created_histo';
+  end;
+  begin (* updatedHisto field *)
+    let (updated_histo':Js.Json.t) =
+      v.SearchTypes.updated_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "updated_histo" updated_histo';
+  end;
+  begin (* mergedHisto field *)
+    let (merged_histo':Js.Json.t) =
+      v.SearchTypes.merged_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "merged_histo" merged_histo';
+  end;
+  begin (* abandonedHisto field *)
+    let (abandoned_histo':Js.Json.t) =
+      v.SearchTypes.abandoned_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "abandoned_histo" abandoned_histo';
+  end;
+  begin match v.SearchTypes.created with
+  | None -> ()
+  | Some v ->
+    begin (* created field *)
+      let json' = encode_review_count v in
+      Js.Dict.set json "created" (Js.Json.object_ json');
+    end;
+  end;
+  Js.Dict.set json "opened" (Js.Json.number (Int32.to_float v.SearchTypes.opened));
+  Js.Dict.set json "abandoned" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned));
+  Js.Dict.set json "abandoned_ratio" (Js.Json.number v.SearchTypes.abandoned_ratio);
+  Js.Dict.set json "merged" (Js.Json.number (Int32.to_float v.SearchTypes.merged));
+  Js.Dict.set json "merged_ratio" (Js.Json.number v.SearchTypes.merged_ratio);
+  Js.Dict.set json "self_merged" (Js.Json.number (Int32.to_float v.SearchTypes.self_merged));
+  Js.Dict.set json "self_merged_ratio" (Js.Json.number v.SearchTypes.self_merged_ratio);
+  Js.Dict.set json "ttm_mean" (Js.Json.number v.SearchTypes.ttm_mean);
+  Js.Dict.set json "ttm_variability" (Js.Json.number v.SearchTypes.ttm_variability);
+  Js.Dict.set json "updates_of_changes" (Js.Json.number (Int32.to_float v.SearchTypes.updates_of_changes));
+  Js.Dict.set json "changes_with_tests" (Js.Json.number v.SearchTypes.changes_with_tests);
+  Js.Dict.set json "iterations_per_change" (Js.Json.number v.SearchTypes.iterations_per_change);
+  Js.Dict.set json "commits_per_change" (Js.Json.number v.SearchTypes.commits_per_change);
+  json
+
 let rec encode_query_response (v:SearchTypes.query_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -1743,137 +1683,10 @@ let rec encode_query_response (v:SearchTypes.query_response) =
       let json' = encode_review_stats v in
       Js.Dict.set json "review_stats" (Js.Json.object_ json');
     end;
-  end;
-  json
-
-let rec encode_changes_histos_event (v:SearchTypes.changes_histos_event) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "doc_count" (Js.Json.number (Int32.to_float v.SearchTypes.doc_count));
-  Js.Dict.set json "key" (Js.Json.string (Int64.to_string v.SearchTypes.key));
-  Js.Dict.set json "key_asString" (Js.Json.string v.SearchTypes.key_as_string);
-  json
-
-let rec encode_changes_histos (v:SearchTypes.changes_histos) = 
-  let json = Js.Dict.empty () in
-  begin (* changeAbandonedEvent field *)
-    let (change_abandoned_event':Js.Json.t) =
-      v.SearchTypes.change_abandoned_event
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_changes_histos_event |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "change_abandonedEvent" change_abandoned_event';
-  end;
-  begin (* changeCommitForcePushedEvent field *)
-    let (change_commit_force_pushed_event':Js.Json.t) =
-      v.SearchTypes.change_commit_force_pushed_event
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_changes_histos_event |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "change_commitForcePushedEvent" change_commit_force_pushed_event';
-  end;
-  begin (* changeCommitPushedEvent field *)
-    let (change_commit_pushed_event':Js.Json.t) =
-      v.SearchTypes.change_commit_pushed_event
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_changes_histos_event |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "change_commitPushedEvent" change_commit_pushed_event';
-  end;
-  begin (* changeCreatedEvent field *)
-    let (change_created_event':Js.Json.t) =
-      v.SearchTypes.change_created_event
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_changes_histos_event |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "change_createdEvent" change_created_event';
-  end;
-  begin (* changeMergedEvent field *)
-    let (change_merged_event':Js.Json.t) =
-      v.SearchTypes.change_merged_event
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_changes_histos_event |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "change_mergedEvent" change_merged_event';
-  end;
-  json
-
-let rec encode_changes_lifecycle_event (v:SearchTypes.changes_lifecycle_event) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "authors_count" (Js.Json.number (Int32.to_float v.SearchTypes.authors_count));
-  Js.Dict.set json "events_count" (Js.Json.number (Int32.to_float v.SearchTypes.events_count));
-  json
-
-let rec encode_changes_lifecycle_ratios (v:SearchTypes.changes_lifecycle_ratios) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "abandoned" (Js.Json.number v.SearchTypes.abandoned);
-  Js.Dict.set json "iterations" (Js.Json.number v.SearchTypes.iterations);
-  Js.Dict.set json "merged" (Js.Json.number v.SearchTypes.merged);
-  Js.Dict.set json "self_merged" (Js.Json.number v.SearchTypes.self_merged);
-  json
-
-let rec encode_changes_lifecycle (v:SearchTypes.changes_lifecycle) = 
-  let json = Js.Dict.empty () in
-  begin match v.SearchTypes.change_commit_force_pushed_event with
-  | None -> ()
-  | Some v ->
-    begin (* changeCommitForcePushedEvent field *)
-      let json' = encode_changes_lifecycle_event v in
-      Js.Dict.set json "change_commitForcePushedEvent" (Js.Json.object_ json');
+  | SearchTypes.Lifecycle_stats v ->
+    begin (* lifecycleStats field *)
+      let json' = encode_lifecycle_stats v in
+      Js.Dict.set json "lifecycle_stats" (Js.Json.object_ json');
     end;
   end;
-  begin match v.SearchTypes.change_commit_pushed_event with
-  | None -> ()
-  | Some v ->
-    begin (* changeCommitPushedEvent field *)
-      let json' = encode_changes_lifecycle_event v in
-      Js.Dict.set json "change_commitPushedEvent" (Js.Json.object_ json');
-    end;
-  end;
-  begin match v.SearchTypes.change_created_event with
-  | None -> ()
-  | Some v ->
-    begin (* changeCreatedEvent field *)
-      let json' = encode_changes_lifecycle_event v in
-      Js.Dict.set json "change_createdEvent" (Js.Json.object_ json');
-    end;
-  end;
-  Js.Dict.set json "abandoned" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned));
-  Js.Dict.set json "commits" (Js.Json.number v.SearchTypes.commits);
-  Js.Dict.set json "duration" (Js.Json.number v.SearchTypes.duration);
-  Js.Dict.set json "duration_variability" (Js.Json.number v.SearchTypes.duration_variability);
-  begin match v.SearchTypes.histos with
-  | None -> ()
-  | Some v ->
-    begin (* histos field *)
-      let json' = encode_changes_histos v in
-      Js.Dict.set json "histos" (Js.Json.object_ json');
-    end;
-  end;
-  Js.Dict.set json "merged" (Js.Json.number (Int32.to_float v.SearchTypes.merged));
-  Js.Dict.set json "opened" (Js.Json.number (Int32.to_float v.SearchTypes.opened));
-  begin match v.SearchTypes.ratios with
-  | None -> ()
-  | Some v ->
-    begin (* ratios field *)
-      let json' = encode_changes_lifecycle_ratios v in
-      Js.Dict.set json "ratios" (Js.Json.object_ json');
-    end;
-  end;
-  Js.Dict.set json "self_merged" (Js.Json.number (Int32.to_float v.SearchTypes.self_merged));
-  Js.Dict.set json "tests" (Js.Json.number v.SearchTypes.tests);
   json

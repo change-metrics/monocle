@@ -62,7 +62,6 @@ message QueryRequest {
   string query = 3;
   enum QueryType {
     QUERY_CHANGE = 0;
-    QUERY_CHANGE_LIFECYCLE = 1;
     QUERY_REPOS_SUMMARY = 2;
     QUERY_TOP_AUTHORS_CHANGES_CREATED = 3;
     QUERY_TOP_AUTHORS_CHANGES_MERGED = 4;
@@ -75,6 +74,7 @@ message QueryRequest {
 
     // Activity page
     QUERY_CHANGES_REVIEW_STATS = 20;
+    QUERY_CHANGES_LIFECYCLE_STATS = 21;
   }
   QueryType query_type = 4;
 
@@ -174,45 +174,36 @@ message QueryResponse {
     AuthorsPeers authors_peers = 5;
     TermsCount new_authors = 6;
     ReviewStats review_stats = 20;
+    LifecycleStats lifecycle_stats = 21;
   }
 }
 
-message ChangesHistos {
-  message Event {
-    uint32 doc_count = 1;
-    uint64 key = 2;
-    string key_as_string = 3;
-  }
-  repeated Event ChangeAbandonedEvent = 1;
-  repeated Event ChangeCommitForcePushedEvent = 2;
-  repeated Event ChangeCommitPushedEvent = 3;
-  repeated Event ChangeCreatedEvent = 4;
-  repeated Event ChangeMergedEvent = 5;
-}
-message ChangesLifecycle {
-  message Event {
-    uint32 authors_count = 1;
-    uint32 events_count = 2;
-  }
-  Event ChangeCommitForcePushedEvent = 1;
-  Event ChangeCommitPushedEvent = 2;
-  Event ChangeCreatedEvent = 3;
-  uint32 abandoned = 4;
-  float commits = 5;
-  float duration = 6;
-  float duration_variability = 7;
-  ChangesHistos histos = 8;
-  uint32 merged = 9;
+message LifecycleStats {
+  repeated Histo created_histo = 1;
+  repeated Histo updated_histo = 2;
+  repeated Histo merged_histo = 3;
+  repeated Histo abandoned_histo = 4;
+
+  ReviewCount created = 5;
+
   uint32 opened = 10;
-  message Ratios {
-    float abandoned = 1;
-    float iterations = 2;
-    float merged = 3;
-    float self_merged = 4;
-  }
-  Ratios ratios = 11;
-  uint32 self_merged = 12;
-  float tests = 13;
+  uint32 abandoned = 11;
+  float abandoned_ratio = 12;
+  uint32 merged = 13;
+  float merged_ratio = 14;
+  uint32 self_merged = 15;
+  float self_merged_ratio = 16;
+
+  // Mean time to merge
+  float ttm_mean = 30;
+  // Median deviation of ttm
+  float ttm_variability = 31;
+
+  uint32 updates_of_changes = 32;
+
+  float changes_with_tests = 33;
+  float iterations_per_change = 34;
+  float commits_per_change = 35;
 }
 
 message RepoSummary {

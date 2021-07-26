@@ -709,6 +709,67 @@ components:
                 count:
                     type: integer
                     format: uint32
+        monocle_search_LifecycleStats:
+            properties:
+                created_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                updated_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                merged_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                abandoned_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                created:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                opened:
+                    type: integer
+                    format: uint32
+                abandoned:
+                    type: integer
+                    format: uint32
+                abandoned_ratio:
+                    type: number
+                    format: float
+                merged:
+                    type: integer
+                    format: uint32
+                merged_ratio:
+                    type: number
+                    format: float
+                self_merged:
+                    type: integer
+                    format: uint32
+                self_merged_ratio:
+                    type: number
+                    format: float
+                ttm_mean:
+                    type: number
+                    description: Mean time to merge
+                    format: float
+                ttm_variability:
+                    type: number
+                    description: Median deviation of ttm
+                    format: float
+                updates_of_changes:
+                    type: integer
+                    format: uint32
+                changes_with_tests:
+                    type: number
+                    format: float
+                iterations_per_change:
+                    type: number
+                    format: float
+                commits_per_change:
+                    type: number
+                    format: float
         monocle_search_Order:
             properties:
                 field:
@@ -755,6 +816,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
                 review_stats:
                     $ref: '#/components/schemas/monocle_search_ReviewStats'
+                lifecycle_stats:
+                    $ref: '#/components/schemas/monocle_search_LifecycleStats'
         monocle_search_RepoSummary:
             properties:
                 fullname:
