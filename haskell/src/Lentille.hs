@@ -13,7 +13,7 @@ where
 
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.Except (MonadError, throwError)
-import Monocle.Api.Client.Worker (MonadLog (..), MonadTime (..), getCurrentTime, logEvent)
+import Monocle.Client.Worker (MonadLog (..), MonadTime (..), getCurrentTime, logEvent)
 import Monocle.Prelude (MonadMask, MonadThrow)
 import Relude
 import Streaming (Of, Stream)

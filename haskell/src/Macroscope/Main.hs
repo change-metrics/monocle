@@ -6,8 +6,9 @@ import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Macroscope.Worker (DocumentStream (..), runStream)
-import Monocle.Api.Client
 import qualified Monocle.Api.Config as Config
+import Monocle.Client
+import Monocle.Client.Worker
 import Monocle.Prelude
 
 -- | 'MacroM' is an alias for a bunch of constrain.

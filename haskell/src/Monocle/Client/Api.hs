@@ -5,11 +5,11 @@
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
-module Monocle.Api.Client.Api where
+module Monocle.Client.Api where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
-import Monocle.Api.Client.Internal (MonocleClient, monocleReq)
+import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Config
 import Monocle.Crawler
 import Monocle.Search

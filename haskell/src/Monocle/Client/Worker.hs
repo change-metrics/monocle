@@ -5,7 +5,7 @@
 --
 -- The Monocle worker for task data. To be replaced by the new
 -- general document interface, once the legacy api is rewritten.
-module Monocle.Api.Client.Worker
+module Monocle.Client.Worker
   ( run,
     TaskDataFetcher (..),
     MonadLog (..),
@@ -27,8 +27,8 @@ import qualified Control.Retry as Retry
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Api.Client.Api
-import Monocle.Api.Client.Internal
+import Monocle.Client.Api
+import Monocle.Client (MonocleClient, mkManager)
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Monocle.TaskData

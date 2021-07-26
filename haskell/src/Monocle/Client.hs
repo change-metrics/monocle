@@ -4,7 +4,7 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- The Monocle API client
-module Monocle.Api.Client.Internal
+module Monocle.Client
   ( MonocleClient,
     withClient,
     mkManager,
