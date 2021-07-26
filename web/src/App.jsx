@@ -31,10 +31,7 @@ import { LoginView, CUserView } from './components/user'
 import { CChangesLifeCycleStats } from './components/changes_lifecycle'
 import { CChangesReviewStats } from './components/changes_review'
 import { CAuthorsHistoStats } from './components/authors_histo'
-import {
-  CNewContributorsStats,
-  CAuthorsPeersStats
-} from './components/top'
+import { CNewContributorsStats } from './components/top'
 import { CHotChanges, CColdChanges } from './components/changes'
 import { CRepoChanges } from './components/repos_summary'
 import CFiltersForm from './components/filtersform'
@@ -117,16 +114,6 @@ class PeopleView extends React.Component {
         <Row>
           <Col>
             <CAuthorsHistoStats index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CAuthorsPeersStats index={this.props.match.params.index} />
           </Col>
         </Row>
         <Row>

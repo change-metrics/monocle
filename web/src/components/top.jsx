@@ -135,59 +135,12 @@ class NewContributorsStats extends BaseQueryComponent {
   }
 }
 
-class TopStrengthsTable extends React.Component {
-  render() {
-    return (
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header>
-              <Card.Title>{this.props.title}</Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col>
-                  <ConnectionDiagram data={this.props.data} />
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
-  }
-}
 
-TopStrengthsTable.propTypes = {
-  title: PropTypes.string.isRequired,
-  data: PropTypes.array.isRequired
-}
-
-class AuthorsPeersStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'peers_exchange_strength'
-    this.state.graph_type = 'authors_peers_stats'
-  }
-
-  render() {
-    if (!this.props.authors_peers_stats_loading) {
-      if (this.props.authors_peers_stats_error) {
-        return <ErrorBox error={this.props.authors_peers_stats_error} />
-      }
-      const data = this.props.authors_peers_stats_result
-      return <TopStrengthsTable data={data} title="Peers strength" />
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
 
 const mapStateToProps = (state) => {
   const map = {}
 
   addMap(map, state.QueryReducer, 'new_contributors')
-  addMap(map, state.QueryReducer, 'authors_peers_stats')
 
   return map
 }
@@ -195,11 +148,7 @@ const mapStateToProps = (state) => {
 const CNewContributorsStats = withRouter(
   connect(mapStateToProps, mapDispatchToProps)(NewContributorsStats)
 )
-const CAuthorsPeersStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(AuthorsPeersStats)
-)
 
 export {
   CNewContributorsStats,
-  CAuthorsPeersStats
 }

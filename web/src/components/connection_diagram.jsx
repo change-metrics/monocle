@@ -25,13 +25,13 @@ class ConnectionDiagram extends React.Component {
     const strippedLabels = []
     // Extract the labels and create a hash table for each pair
     data.forEach((elt) => {
-      if (!labels.includes(elt[0][0])) {
-        labels.push(elt[0][0])
+      if (!labels.includes(elt.a1)) {
+        labels.push(elt.a1)
       }
-      if (!labels.includes(elt[0][1])) {
-        labels.push(elt[0][1])
+      if (!labels.includes(elt.a2)) {
+        labels.push(elt.a2)
       }
-      assoc[[elt[0][0], elt[0][1]].sort()] = elt[1]
+      assoc[[elt.a1, elt.a2].sort()] = elt.s
     })
     // Build the matrix from the labels and the hash table
     const matrix = []

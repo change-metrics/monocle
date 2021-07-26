@@ -264,10 +264,46 @@ module MGridItem = {
     <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
 
+module MGridItemXl9 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._9> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl8 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._8> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl7 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._7> {children} </Patternfly.Layout.GridItem>
+}
+
 module MGridItemXl6 = {
   @react.component
   let make = (~children) =>
     <Patternfly.Layout.GridItem xl=Column._6> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl5 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._5> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl4 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._4> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl3 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._3> {children} </Patternfly.Layout.GridItem>
 }
 
 module MStack = {
@@ -418,5 +454,24 @@ module MSimpleCard = {
         ),
       ],
     )
+  }
+}
+
+module LimitSelector = {
+  @react.component
+  let make = (~limit: int, ~setLimit: (int => int) => unit, ~default: int, ~values: list<int>) => {
+    let setLimit' = str => {
+      let v = str == "" ? default : str->int_of_string
+      setLimit(_ => v)
+    }
+    <Tooltip content={"Select the amount of item to display"}>
+      <MSelect
+        placeholder={"Set limit"}
+        options={values->Belt.List.map(string_of_int)}
+        multi={false}
+        value={limit > 0 ? limit->string_of_int : ""}
+        valueChanged={setLimit'}
+      />
+    </Tooltip>
   }
 }

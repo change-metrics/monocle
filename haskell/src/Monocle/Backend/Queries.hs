@@ -316,10 +316,6 @@ getProjectAgg query = do
         )
       ]
 
-getQueryFromSL :: Text -> [BH.Query]
-getQueryFromSL query =
-  flip Q.queryBH defaultQueryFlavor $ Q.load Nothing mempty Nothing query
-
 -- | TopTerm agg query utils
 getSimpleTR :: BH.TermsResult -> TermResult
 getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
@@ -383,7 +379,7 @@ getReposSummary = do
   names <- fmap trTerm <$> getRepos
   traverse getRepoSummary names
   where
-    getRepoSummary fn = withFilter (getQueryFromSL ("repo: " <> fn)) $ do
+    getRepoSummary fn = withFilter [mkTerm "repository_fullname" fn] $ do
       -- Prepare the queries
       let eventQF = QueryFlavor OnAuthor CreatedAt
           changeQF = QueryFlavor Author UpdatedAt
@@ -478,7 +474,7 @@ getAuthorsPeersStrength limit = do
     eventTypes = fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
     qf = QueryFlavor Author CreatedAt
     getAuthorPeers :: Text -> QueryM (Text, [TermResult])
-    getAuthorPeers peer = withFilter (getQueryFromSL $ "author: " <> peer) $ do
+    getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] $ do
       change_authors <-
         getDocTypeTopCountByField
           eventTypes
