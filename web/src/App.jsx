@@ -299,6 +299,9 @@ const App = () => {
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>
+      <br />
+      <br />
+      <br />
       <Footer />
     </React.Fragment>
   )
