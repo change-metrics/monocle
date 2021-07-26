@@ -20,3 +20,5 @@ module MonoLink = {
     </Link>
   }
 }
+
+let default = MonoLink.make

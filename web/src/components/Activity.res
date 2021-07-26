@@ -7,14 +7,49 @@ open Prelude
 
 module CChangesLifeCycleStats = {
   @react.component @module("./changes_lifecycle.jsx")
-  external make: (~index: string) => React.element = "CChangesLifeCycleStats"
+  external make: (
+    ~store: Store.t,
+    ~data: SearchTypes.lifecycle_stats,
+    ~created_histo: array<SearchTypes.histo>,
+    ~updated_histo: array<SearchTypes.histo>,
+    ~merged_histo: array<SearchTypes.histo>,
+    ~abandoned_histo: array<SearchTypes.histo>,
+  ) => React.element = "CChangesLifeCycleStats"
 }
 
 module ChangesLifeCycleStats = {
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
-    <CChangesLifeCycleStats index={state.index} />
+    let request = {
+      SearchTypes.index: state.index,
+      query: state.query,
+      username: "",
+      query_type: SearchTypes.Query_changes_lifecycle_stats,
+      order: None,
+      limit: 0->Int32.of_int,
+    }
+
+    {
+      switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+      | None => <Spinner />
+      | Some(Error(title)) => <Alert variant=#Danger title />
+      | Some(Ok(SearchTypes.Error(err))) =>
+        <Alert
+          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+        />
+      | Some(Ok(SearchTypes.Lifecycle_stats(data))) =>
+        <CChangesLifeCycleStats
+          store
+          data
+          created_histo={data.created_histo->Belt.List.toArray}
+          updated_histo={data.updated_histo->Belt.List.toArray}
+          merged_histo={data.merged_histo->Belt.List.toArray}
+          abandoned_histo={data.abandoned_histo->Belt.List.toArray}
+        />
+      | Some(Ok(_)) => /* Response does not match request */ React.null
+      }
+    }
   }
 }
 
