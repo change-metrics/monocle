@@ -133,7 +133,6 @@ library
                      , Monocle.Api.Client.Worker
 
                      -- servant
-                     , Monocle.Servant.Env
                      , Monocle.Servant.HTTP
                      , Monocle.Servant.PBJSON
 

@@ -10,8 +10,8 @@ module Monocle.Servant.HTTP (MonocleAPI, server) where
 import Monocle.Api.Server (configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchFields, searchQuery, userGroupGet, userGroupList)
 import Monocle.Config (GetWorkspacesRequest, GetWorkspacesResponse, HealthRequest, HealthResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
+import Monocle.Env
 import Monocle.Search (FieldsRequest, FieldsResponse, QueryRequest, QueryResponse)
-import Monocle.Servant.Env
 import Monocle.Servant.PBJSON (PBJSON)
 import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant

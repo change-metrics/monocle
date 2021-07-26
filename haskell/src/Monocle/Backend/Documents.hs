@@ -1,6 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
-
--- |
+-- | Data types for ELK documents
 module Monocle.Backend.Documents where
 
 import Data.Aeson (FromJSON, ToJSON, Value (String), genericParseJSON, genericToJSON, parseJSON, toJSON, withText)

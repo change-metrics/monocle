@@ -12,10 +12,10 @@ import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Env
 import Monocle.Prelude
+import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (defaultQueryFlavor)
-import Monocle.Servant.Env
 import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
 
