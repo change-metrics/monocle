@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..), ELKDocType (..), docTypeToText)
+import Monocle.Backend.Documents (ELKChange (..), ELKChangeState (..), ELKDocType (..), changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -80,10 +80,10 @@ changeReviewRatio = do
     qf = QueryFlavor Author CreatedAt
 
 -- | Add a change state filter to the query
-changeState :: Text -> [BH.Query]
+changeState :: ELKChangeState -> [BH.Query]
 changeState state' =
   [ BH.TermQuery (BH.Term "type" "Change") Nothing,
-    BH.TermQuery (BH.Term "state" state') Nothing
+    BH.TermQuery (BH.Term "state" $ changeStateToText state') Nothing
   ]
 
 -- | Add a document type filter to the query
@@ -122,9 +122,9 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> countEvents' (changeState "OPEN")
-      <*> countEvents' (changeState "MERGED")
-      <*> countEvents' (changeState "ABANDONED")
+    <$> countEvents' (changeState ElkChangeOpen)
+      <*> countEvents' (changeState ElkChangeMerged)
+      <*> countEvents' (changeState ElkChangeClosed)
       <*> countEvents' selfMergedQ
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
@@ -342,7 +342,7 @@ getReposSummary = do
 
       -- Count the events
       totalChanges' <- countEvents eventQF [documentType $ ElkChangeCreatedEvent :| []]
-      openChanges' <- countEvents changeQF $ changeState "OPEN"
+      openChanges' <- countEvents changeQF $ changeState ElkChangeOpen
       mergedChanges' <- countEvents eventQF [documentType $ ElkChangeMergedEvent :| []]
 
       -- Return summary
