@@ -402,6 +402,36 @@ testGetAuthorsPeersStrength = withTenant doTest
           ]
           results
 
+testGetNewContributors :: Assertion
+testGetNewContributors = withTenant doTest
+  where
+    indexScenario' project fakeDate' cid = indexScenario (nominalMerge project cid fakeDate' 3600)
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let sn1 = SProject "openstack/nova" [bob] [alice] [eve]
+      let sn2 = SProject "openstack/nova" [bob] [alice] [bob]
+
+      indexScenario' sn1 fakeDate "42"
+      indexScenario' sn1 (addUTCTime 7200 fakeDate) "43"
+      indexScenario' sn2 (addUTCTime 7200 fakeDate) "44"
+
+      let query =
+            let queryBH _ = []
+                queryBounds =
+                  ( addUTCTime 3600 fakeDate,
+                    fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+                  )
+                queryMinBoundsSet = True
+             in Q.Query {..}
+
+      runQueryM query $ do
+        results <- Q.getNewContributors
+        assertEqual'
+          "Check getNewContributors results"
+          [Q.TermResult {trTerm = "bob", trCount = 1}]
+          results
+
 -- Tests scenario helpers
 
 -- $setup
@@ -537,6 +567,7 @@ mkEvent ts start etype author onAuthor changeId name =
       elkchangeeventType = etype,
       elkchangeeventRepositoryFullname = name,
       elkchangeeventId = docTypeToText etype <> "-" <> changeId,
+      elkchangeeventCreatedAt = mkDate ts start,
       elkchangeeventOnCreatedAt = mkDate ts start,
       elkchangeeventChangeId = "change-" <> changeId
     }

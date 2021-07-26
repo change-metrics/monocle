@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..))
+import Monocle.Backend.Documents (ELKChange (..), ELKDocType (ElkChangeCreatedEvent), docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -446,6 +446,36 @@ getAuthorsPeersStrength limit = do
             (trTerm tr)
             peer
             (fromInteger $ toInteger (trCount tr))
+
+getNewContributors :: QueryM [TermResult]
+getNewContributors = do
+  -- Get query min bound
+  (minDate, _) <- Q.queryBounds <$> getQuery
+
+  let getDateLimit constraint =
+        BH.QueryRangeQuery $
+          BH.mkRangeQuery
+            ( BH.FieldName (rangeField CreatedAt)
+            )
+            constraint
+
+  let beforeBounceQ b = getDateLimit $ BH.RangeDateLt (BH.LessThanD b)
+  let afterBounceQ b = getDateLimit $ BH.RangeDateGte (BH.GreaterThanEqD b)
+
+  let runQ =
+        getDocTypeTopCountByField
+          (toText (docTypeToText ElkChangeCreatedEvent) :| [])
+          "author.muid"
+          (Just 5000)
+          (QueryFlavor Author CreatedAt)
+
+  -- Get author.muid term stats for ChangeCreatedEvent before and after bound
+  beforeAuthor <- withFilter [beforeBounceQ minDate] runQ
+  afterAuthor <- withFilter [afterBounceQ minDate] runQ
+
+  -- Only keep after authors not present in the before authors list
+  let ba = trTerm <$> beforeAuthor
+  pure $ filter (\tr -> trTerm tr `notElem` ba) afterAuthor
 
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
