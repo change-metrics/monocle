@@ -41,8 +41,8 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
-doCountEvents :: BH.Query -> TenantM Count
-doCountEvents query = do
+doCount :: BH.Query -> TenantM Count
+doCount query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
@@ -50,22 +50,22 @@ doCountEvents query = do
     Left e -> error $ show e
     Right x -> pure $ naturalToCount (BH.crCount x)
 
-countEvents :: QueryFlavor -> [BH.Query] -> QueryM Count
-countEvents qf queries = withFilter queries $ do
+countDocs :: QueryFlavor -> [BH.Query] -> QueryM Count
+countDocs qf queries = withFilter queries $ do
   bhQuery <-
     fromMaybe (error "Query shall exist because of withFilter")
       <$> getQueryBHWithFlavor qf
-  liftTenantM $ doCountEvents bhQuery
+  liftTenantM $ doCount bhQuery
 
-countEvents' :: [BH.Query] -> QueryM Count
-countEvents' = countEvents defaultQueryFlavor
+countDocs' :: [BH.Query] -> QueryM Count
+countDocs' = countDocs defaultQueryFlavor
 
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countEvents qf [documentType $ ElkChangeCreatedEvent :| []]
+  commitCount <- countDocs qf [documentType $ ElkChangeCreatedEvent :| []]
   reviewCount <-
-    countEvents
+    countDocs
       qf
       [ documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
       ]
@@ -122,10 +122,10 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> countEvents' (changeState ElkChangeOpen)
-      <*> countEvents' (changeState ElkChangeMerged)
-      <*> countEvents' (changeState ElkChangeClosed)
-      <*> countEvents' selfMergedQ
+    <$> countDocs' (changeState ElkChangeOpen)
+      <*> countDocs' (changeState ElkChangeMerged)
+      <*> countDocs' (changeState ElkChangeClosed)
+      <*> countDocs' selfMergedQ
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
@@ -154,7 +154,7 @@ instance FromJSON HistoEventBucket where
   parseJSON (Object v) = HistoEventBucket <$> v .: "key" <*> v .: "doc_count"
   parseJSON _ = mzero
 
-data HistoEventAgg = HistoEventAgg
+newtype HistoEventAgg = HistoEventAgg
   { heBuckets :: V.Vector HistoEventBucket
   }
   deriving (Eq, Show)
@@ -341,9 +341,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countEvents eventQF [documentType $ ElkChangeCreatedEvent :| []]
-      openChanges' <- countEvents changeQF $ changeState ElkChangeOpen
-      mergedChanges' <- countEvents eventQF [documentType $ ElkChangeMergedEvent :| []]
+      totalChanges' <- countDocs eventQF [documentType $ ElkChangeCreatedEvent :| []]
+      openChanges' <- countDocs changeQF $ changeState ElkChangeOpen
+      mergedChanges' <- countDocs eventQF [documentType $ ElkChangeMergedEvent :| []]
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
