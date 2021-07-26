@@ -59,6 +59,7 @@ type query_request_query_type =
   | Query_top_reviewed_authors 
   | Query_top_commented_authors 
   | Query_top_authors_peers 
+  | Query_new_changes_authors 
 
 type query_request = {
   index : string;
@@ -158,6 +159,7 @@ type query_response =
   | Repos_summary of repos_summary
   | Top_authors of terms_count
   | Authors_peers of authors_peers
+  | New_authors of terms_count
 
 type changes_histos_event = {
   doc_count : int32;

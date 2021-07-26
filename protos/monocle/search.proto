@@ -71,6 +71,7 @@ message QueryRequest {
     QUERY_TOP_REVIEWED_AUTHORS = 7;
     QUERY_TOP_COMMENTED_AUTHORS = 8;
     QUERY_TOP_AUTHORS_PEERS = 9;
+    QUERY_NEW_CHANGES_AUTHORS = 10;
   }
   QueryType query_type = 4;
 
@@ -149,6 +150,7 @@ message QueryResponse {
     ReposSummary repos_summary = 3;
     TermsCount top_authors = 4;
     AuthorsPeers authors_peers = 5;
+    TermsCount new_authors = 6;
   }
 }
 
