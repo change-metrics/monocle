@@ -46,6 +46,7 @@ import NChangeView from './components/NChangeView.bs.js'
 import NReposView from './components/ReposView.bs.js'
 import ActivePeopleView from './components/ActivePeopleView.bs.js'
 import PeersStengthView from './components/PeersStrengthView.bs.js'
+import NewContributorsView from './components/NewContributorsView.bs.js'
 
 class PeopleView extends React.Component {
   render() {
@@ -296,6 +297,10 @@ const App = () => {
         <Route
           path="/:index/peers_strength"
           render={() => <PeersStengthView store={store} />}
+        />
+        <Route
+          path="/:index/new_authors"
+          render={() => <NewContributorsView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>
