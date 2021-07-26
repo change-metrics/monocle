@@ -11,23 +11,32 @@ module ConnectionDiagram = {
   @react.component @module("./connection_diagram")
   external make: (~data: array<t>) => React.element = "default"
 
-  let adapt = (xs: list<SearchTypes.author_peer>) =>
-    xs
-    ->Belt.List.reduce(list{}, (acc, item) => {
-      let match_reversed = xs->Belt.List.keep(e => e.author == item.peer && e.peer == item.author)
-      let nitem = switch match_reversed->Belt.List.get(0) {
-      | None => {a1: item.author, a2: item.peer, s: item.strength->Int32.to_int}
-      | Some(match) => {
-          a1: item.author,
-          a2: item.peer,
-          s: item.strength->Int32.to_int + match.strength->Int32.to_int,
+  let adapt = (peers: list<SearchTypes.author_peer>) => {
+    let rec go = (xs: list<SearchTypes.author_peer>, acc: list<t>) =>
+      switch xs {
+      | list{} => acc
+      | list{x, ...rest} => {
+          // Look for a reverse peer (and remove it from the remaining list)
+          let (otherLink, remaining) =
+            rest->Belt.List.partition(e => x.author == e.peer && x.peer == e.author)
+          // If there is one, get its strength
+          let extraStrength = switch otherLink {
+          // here we assume there can only be one other link
+          | list{y} => y.strength->Int32.to_int
+          | _ => 0
+          }
+          // Continue with the remaining
+          remaining->go(
+            acc->Belt.List.add({
+              a1: x.author,
+              a2: x.peer,
+              s: x.strength->Int32.to_int + extraStrength,
+            }),
+          )
         }
       }
-      acc->Belt.List.has(nitem, (a, b) => a.a1 == b.a1 && a.a2 == b.a2)
-        ? acc
-        : Belt.List.add(acc, nitem)
-    })
-    ->Belt.List.toArray
+    peers->go(list{})->Belt.List.toArray
+  }
 }
 
 module PeersStrengthTable = {
