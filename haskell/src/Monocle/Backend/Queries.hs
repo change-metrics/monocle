@@ -84,6 +84,12 @@ changeState state' =
     BH.TermQuery (BH.Term "state" $ changeStateToText state') Nothing
   ]
 
+selfMerged :: [BH.Query]
+selfMerged =
+  [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+    BH.TermQuery (BH.Term "self_merged" "true") Nothing
+  ]
+
 -- | Add a document type filter to the query
 documentTypes :: NonEmpty ELKDocType -> BH.Query
 documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
@@ -696,19 +702,26 @@ getLifecycleStats = do
   lifecycleStatsMergedHisto <- getHisto' ElkChangeMergedEvent
   lifecycleStatsAbandonedHisto <- getHisto' ElkChangeAbandonedEvent
 
-  lifecycleStatsCreated' <- withDocType ElkChangeCreatedEvent $ do
-    SearchPB.ReviewCount
-      <$> fmap countToWord (countAuthors qf)
-      <*> fmap countToWord (countDocs qf)
-  let lifecycleStatsCreated = Just lifecycleStatsCreated'
+  (created, lifecycleStatsCreated) <- withDocType ElkChangeCreatedEvent $ do
+    created <- countDocs qf
+    stats <-
+      SearchPB.ReviewCount
+        <$> fmap countToWord (countAuthors qf)
+        <*> pure (countToWord created)
+    pure (created, Just stats)
 
-  lifecycleStatsOpened <- pure 0
-  lifecycleStatsAbandoned <- pure 0
-  lifecycleStatsAbandonedRatio <- pure 0
-  lifecycleStatsMerged <- pure 0
-  lifecycleStatsMergedRatio <- pure 0
-  lifecycleStatsSelfMerged <- pure 0
-  lifecycleStatsSelfMergedRatio <- pure 0
+  opened <- withFilter (changeState ElkChangeOpen) countDocs'
+  merged <- withFilter (changeState ElkChangeMerged) countDocs'
+  selfMerged' <- withFilter selfMerged countDocs'
+  abandoned <- withFilter (changeState ElkChangeClosed) countDocs'
+
+  let lifecycleStatsOpened = countToWord opened
+      lifecycleStatsMerged = countToWord merged
+      lifecycleStatsMergedRatio = merged `ratioF` created
+      lifecycleStatsSelfMerged = countToWord selfMerged'
+      lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` created
+      lifecycleStatsAbandoned = countToWord abandoned
+      lifecycleStatsAbandonedRatio = abandoned `ratioF` created
 
   lifecycleStatsTtmMean <- pure 0
   lifecycleStatsTtmVariability <- pure 0
@@ -723,3 +736,8 @@ getLifecycleStats = do
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType $ getHistoPB qf
     getHistos' docTypes = withDocTypes docTypes $ getHistoPB qf
+    ratio :: Count -> Count -> Deci
+    ratio x y
+      | y == 0 = 0
+      | otherwise = 100 * countToDeci x / countToDeci y
+    ratioF x = fromFixed . ratio x
