@@ -90,6 +90,11 @@ selfMerged =
     BH.TermQuery (BH.Term "self_merged" "true") Nothing
   ]
 
+testIncluded :: BH.Query
+testIncluded =
+  BH.QueryRegexpQuery $
+    BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp ".*[Tt]est.*") BH.AllRegexpFlags Nothing
+
 -- | Add a document type filter to the query
 documentTypes :: NonEmpty ELKDocType -> BH.Query
 documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
@@ -693,6 +698,11 @@ medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
             .= Aeson.object ["field" .= ("duration" :: Text)]
         ]
 
+changeMergedAvgCommits :: QueryFlavor -> QueryM Double
+changeMergedAvgCommits qf = queryAggValue =<< searchBody qf avg
+  where
+    avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("commit_count" :: Text)]]
+
 withDocTypes :: [ELKDocType] -> QueryM a -> QueryM a
 withDocTypes docTypes = withFilter [mkOr $ toTermQuery <$> docTypes]
   where
@@ -766,18 +776,29 @@ getLifecycleStats = do
     double2Float
       <$> withFilter (changeState ElkChangeMerged) (medianDeviationDuration qf)
 
-  lifecycleStatsUpdatesOfChanges <- pure 0
-  lifecycleStatsChangesWithTests <- pure 0
-  lifecycleStatsIterationsPerChange <- pure 0
-  lifecycleStatsCommitsPerChange <- pure 0
+  updated <-
+    withFilter
+      [documentTypes $ fromList [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]]
+      countDocs'
+
+  let lifecycleStatsUpdatesOfChanges = countToWord updated
+
+  tests <- withFilter [documentType ElkChange, testIncluded] countDocs'
+  let lifecycleStatsChangesWithTests = tests `ratioF` created
+      lifecycleStatsIterationsPerChange = updated `ratioN` created
+
+  lifecycleStatsCommitsPerChange <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (changeMergedAvgCommits qf)
 
   pure $ SearchPB.LifecycleStats {..}
   where
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType $ getHistoPB qf
     getHistos' docTypes = withDocTypes docTypes $ getHistoPB qf
-    ratio :: Count -> Count -> Deci
-    ratio x y
+    ratio :: Deci -> Count -> Count -> Deci
+    ratio m x y
       | y == 0 = 0
-      | otherwise = 100 * countToDeci x / countToDeci y
-    ratioF x = fromFixed . ratio x
+      | otherwise = m * countToDeci x / countToDeci y
+    ratioF x = fromFixed . ratio 100 x
+    ratioN x = fromFixed . ratio 1 x
