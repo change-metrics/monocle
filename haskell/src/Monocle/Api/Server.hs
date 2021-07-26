@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKDocType (..), File (..), TaskData (..), changeStateToText)
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -133,6 +133,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -489,18 +490,18 @@ searchChangesLifecycle indexName queryText = do
         let histo = liftTenantM . Q.getHistoEventAgg
             histos =
               toHisto
-                <$> histo (queryType $ "ChangeCreatedEvent" :| [])
-                <*> histo (queryType $ "ChangeMergedEvent" :| [])
-                <*> histo (queryType $ "ChangeAbandonedEvent" :| [])
-                <*> histo (queryType $ "ChangeCommitPushedEvent" :| [])
-                <*> histo (queryType $ "ChangeCommitForcePushedEvent" :| [])
+                <$> histo (queryType $ ElkChangeCreatedEvent :| [])
+                <*> histo (queryType $ ElkChangeMergedEvent :| [])
+                <*> histo (queryType $ ElkChangeAbandonedEvent :| [])
+                <*> histo (queryType $ ElkChangeCommitPushedEvent :| [])
+                <*> histo (queryType $ ElkChangeCommitForcePushedEvent :| [])
 
         -- ratios
         let ratios =
               toRatio eventCounts
-                <$> count [queryType $ "ChangeCreatedEvent" :| []]
-                <*> count [queryType $ "ChangeCommitPushedEvent" :| []]
-                <*> count [queryType $ "ChangeCommitForcePushedEvent" :| []]
+                <$> count [queryType $ ElkChangeCreatedEvent :| []]
+                <*> count [queryType $ ElkChangeCommitPushedEvent :| []]
+                <*> count [queryType $ ElkChangeCommitForcePushedEvent :| []]
 
         -- duration aggregate
         let durationAgg =

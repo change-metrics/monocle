@@ -9,7 +9,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..), ELKDocType (ElkChangeCreatedEvent), docTypeToText)
+import Monocle.Backend.Documents (ELKChange (..), ELKDocType (..), docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -63,11 +63,11 @@ countEvents' = countEvents defaultQueryFlavor
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countEvents qf [documentType $ "ChangeCreatedEvent" :| []]
+  commitCount <- countEvents qf [documentType $ ElkChangeCreatedEvent :| []]
   reviewCount <-
     countEvents
       qf
-      [ documentType $ fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+      [ documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
       ]
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
@@ -87,8 +87,8 @@ changeState state' =
   ]
 
 -- | Add a document type filter to the query
-documentType :: NonEmpty Text -> BH.Query
-documentType = BH.TermsQuery "type"
+documentType :: NonEmpty ELKDocType -> BH.Query
+documentType doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -298,7 +298,7 @@ getTermsAgg query onTerm maxBuckets = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
-getDocTypeTopCountByField :: NonEmpty Text -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField :: NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
@@ -316,7 +316,7 @@ getDocTypeTopCountByField doctype attr size qflavor = do
 getRepos :: QueryM [TermResult]
 getRepos =
   getDocTypeTopCountByField
-    ("Change" :| [])
+    (ElkChange :| [])
     "repository_fullname"
     (Just 5000)
     (QueryFlavor Author CreatedAt)
@@ -341,9 +341,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countEvents eventQF [documentType $ "ChangeCreatedEvent" :| []]
+      totalChanges' <- countEvents eventQF [documentType $ ElkChangeCreatedEvent :| []]
       openChanges' <- countEvents changeQF $ changeState "OPEN"
-      mergedChanges' <- countEvents eventQF [documentType $ "ChangeMergedEvent" :| []]
+      mergedChanges' <- countEvents eventQF [documentType $ ElkChangeMergedEvent :| []]
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -353,7 +353,7 @@ getReposSummary = do
 getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
-    ("ChangeCreatedEvent" :| [])
+    (ElkChangeCreatedEvent :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -361,7 +361,7 @@ getMostActiveAuthorByChangeCreated limit =
 getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
-    ("ChangeMergedEvent" :| [])
+    (ElkChangeMergedEvent :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -369,7 +369,7 @@ getMostActiveAuthorByChangeMerged limit =
 getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
-    ("ChangeReviewedEvent" :| [])
+    (ElkChangeReviewedEvent :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -377,7 +377,7 @@ getMostActiveAuthorByChangeReviewed limit =
 getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
 getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
-    ("ChangeCommentedEvent" :| [])
+    (ElkChangeCommentedEvent :| [])
     "author.muid"
     (Just limit)
     (QueryFlavor Author CreatedAt)
@@ -385,7 +385,7 @@ getMostActiveAuthorByChangeCommented limit =
 getMostReviewedAuthor :: Int -> QueryM [TermResult]
 getMostReviewedAuthor limit =
   getDocTypeTopCountByField
-    ("ChangeReviewedEvent" :| [])
+    (ElkChangeReviewedEvent :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -393,7 +393,7 @@ getMostReviewedAuthor limit =
 getMostCommentedAuthor :: Int -> QueryM [TermResult]
 getMostCommentedAuthor limit =
   getDocTypeTopCountByField
-    ("ChangeCommentedEvent" :| [])
+    (ElkChangeCommentedEvent :| [])
     "on_author.muid"
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
@@ -426,8 +426,8 @@ getAuthorsPeersStrength limit = do
           filter (\psr -> psrAuthor psr /= psrPeer psr) $
             concatMap transform authors_peers
   where
-    eventTypes :: NonEmpty Text
-    eventTypes = fromList ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+    eventTypes :: NonEmpty ELKDocType
+    eventTypes = fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
     qf = QueryFlavor Author CreatedAt
     getAuthorPeers :: Text -> QueryM (Text, [TermResult])
     getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] $ do
@@ -464,7 +464,7 @@ getNewContributors = do
 
   let runQ =
         getDocTypeTopCountByField
-          (toText (docTypeToText ElkChangeCreatedEvent) :| [])
+          (ElkChangeCreatedEvent :| [])
           "author.muid"
           (Just 5000)
           (QueryFlavor Author CreatedAt)
