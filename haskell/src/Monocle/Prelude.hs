@@ -7,6 +7,13 @@ module Monocle.Prelude
     getExn,
     MonadThrow,
     MonadMask,
+    Deci,
+
+    -- * usefull data types
+    Count,
+    countToWord,
+    countToDeci,
+    naturalToCount,
 
     -- * say
     sayErr,
@@ -37,13 +44,37 @@ where
 
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
-import Data.Fixed (Fixed (..), HasResolution (resolution))
+import Data.Fixed (Deci, Fixed (..), HasResolution (resolution))
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Proto3.Suite (Enumerated (..))
 import Relude
 import Say (sayErr)
+
+newtype Count = MkCount Word32
+  deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
+
+countToWord :: Count -> Word32
+countToWord (MkCount x) = x
+
+countToDeci :: Count -> Deci
+countToDeci (MkCount x) = fromInteger (toInteger x)
+
+naturalToCount :: Natural -> Count
+naturalToCount = MkCount . fromInteger . toInteger
+
+-- | A special Num instance that prevent arithmetic underflow
+instance Num Count where
+  MkCount a - MkCount b
+    | b > a = MkCount 0
+    | otherwise = MkCount $ a - b
+
+  MkCount a + MkCount b = MkCount $ a + b
+  MkCount a * MkCount b = MkCount $ a * b
+  signum (MkCount a) = MkCount $ signum a
+  fromInteger x = MkCount $ fromInteger x
+  abs x = x
 
 -- | From https://hackage.haskell.org/package/astro-0.4.3.0/docs/src/Data.Astro.Utils.html#fromFixed
 fromFixed :: (Fractional a, HasResolution b) => Fixed b -> a

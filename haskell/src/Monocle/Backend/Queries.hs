@@ -41,32 +41,14 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
-newtype Count = MkCount Word32
-  deriving newtype (Show, Eq, Ord, Enum, Real, Integral)
-
-countToWord :: Count -> Word32
-countToWord (MkCount x) = x
-
--- | A special Num instance that prevent arithmetic underflow
-instance Num Count where
-  MkCount a - MkCount b
-    | b > a = MkCount 0
-    | otherwise = MkCount $ a - b
-
-  MkCount a + MkCount b = MkCount $ a + b
-  MkCount a * MkCount b = MkCount $ a * b
-  signum (MkCount a) = MkCount $ signum a
-  fromInteger x = MkCount $ fromInteger x
-  abs x = x
-
 doCountEvents :: BH.Query -> TenantM Count
 doCountEvents query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
   index <- getIndexName
   resp <- BH.countByIndex index (BH.CountQuery query)
   case resp of
-    Left e -> error (show e)
-    Right x -> pure (MkCount . fromInteger . toInteger . BH.crCount $ x)
+    Left e -> error $ show e
+    Right x -> pure $ naturalToCount (BH.crCount x)
 
 countEvents :: QueryFlavor -> [BH.Query] -> QueryM Count
 countEvents qf queries = withFilter queries $ do

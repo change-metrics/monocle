@@ -2,14 +2,12 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
-import Data.Fixed (Deci)
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
 import Monocle.Backend.Index as I
-import Monocle.Backend.Queries (countToWord)
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
@@ -541,15 +539,15 @@ searchChangesLifecycle indexName queryText = do
 
     toRatio ::
       Q.EventCounts ->
-      Q.Count ->
-      Q.Count ->
-      Q.Count ->
+      Count ->
+      Count ->
+      Count ->
       SearchPB.ChangesLifecycle_Ratios
     toRatio Q.EventCounts {..} createdEvent pushedEvent forcePushedEvent =
-      let ratio :: Q.Count -> Q.Count -> Deci
-          ratio (Q.MkCount x) (Q.MkCount y)
+      let ratio :: Count -> Count -> Deci
+          ratio x y
             | y == 0 = 0
-            | otherwise = (fromInteger . toInteger $ x) / (fromInteger . toInteger $ y)
+            | otherwise = countToDeci x / countToDeci y
           ratioF x = fromFixed . ratio x
 
           changesLifecycle_RatiosMerged = mergedCount `ratioF` createdEvent
