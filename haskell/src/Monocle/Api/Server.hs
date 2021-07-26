@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKDocType (..), File (..), TaskData (..), changeStateToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -17,7 +17,7 @@ import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor)
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.TaskData as TaskDataPB
@@ -319,8 +319,6 @@ searchQuery request = do
             . V.fromList
             . map toChangeResult
             <$> Q.changes queryRequestOrder queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
-          error "LifeCycle Not Implemented"
         SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
           SearchPB.QueryResponse . Just
             . SearchPB.QueryResponseResultReposSummary
@@ -328,6 +326,9 @@ searchQuery request = do
             . V.fromList
             . map toRSumResult
             <$> Q.getReposSummary
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
+            <$> Q.getLifecycleStats
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
           SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
             <$> Q.getReviewStats
@@ -466,120 +467,3 @@ lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
   tenants <- getConfig
   pure $ Config.lookupTenant tenants name
-
--- TODO: change context from AppM to QueryM
-searchChangesLifecycle :: Text -> Text -> AppM SearchPB.ChangesLifecycle
-searchChangesLifecycle indexName queryText = do
-  now <- liftIO getCurrentTime
-  tenantM <- lookupTenant indexName
-  case tenantM of
-    Nothing -> error $ "Unknown tenant: " <> indexName
-    Just tenant -> runTenantM tenant $ response now
-  where
-    -- TODO: add field to the protobuf message
-    username = mempty
-
-    response now = case P.parse [] queryText >>= Q.queryWithMods now username Nothing of
-      Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
-      Right query -> runQueryM query $ do
-        -- TODO: use flavored query
-        let -- Helper functions ready to be applied
-            bhQuery = Q.queryBH query defaultQueryFlavor
-            count q = withFilter q Q.countDocs'
-            queryType = Q.documentType
-
-        -- get events count
-        eventCounts <- Q.getEventCounts
-
-        -- histos
-        let histo = liftTenantM . Q.getHistoEventAgg
-            histos =
-              toHisto
-                <$> histo (queryType ElkChangeCreatedEvent)
-                <*> histo (queryType ElkChangeMergedEvent)
-                <*> histo (queryType ElkChangeAbandonedEvent)
-                <*> histo (queryType ElkChangeCommitPushedEvent)
-                <*> histo (queryType ElkChangeCommitForcePushedEvent)
-
-        -- ratios
-        let ratios =
-              toRatio eventCounts
-                <$> count [queryType ElkChangeCreatedEvent]
-                <*> count [queryType ElkChangeCommitPushedEvent]
-                <*> count [queryType ElkChangeCommitForcePushedEvent]
-
-        -- duration aggregate
-        let durationAgg =
-              liftTenantM $ Q.changeMergedStatsDuration bhQuery
-
-        -- create final result
-        let result =
-              toResult eventCounts
-                <$> ratios
-                <*> histos
-                <*> durationAgg
-
-        result
-
-    toHisto ::
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      SearchPB.ChangesHistos
-    toHisto createdEvent mergedEvent abandonedEvent pushedEvent forcePushedEvent =
-      let toEvents qe =
-            let changesHistos_EventDocCount = Q.heCount qe
-                changesHistos_EventKey = Q.heKey qe
-                -- do we need that?
-                changesHistos_EventKeyAsString = mempty
-             in SearchPB.ChangesHistos_Event {..}
-
-          changesHistosChangeAbandonedEvent = toEvents <$> Q.heBuckets abandonedEvent
-          changesHistosChangeCommitForcePushedEvent = toEvents <$> Q.heBuckets forcePushedEvent
-          changesHistosChangeCommitPushedEvent = toEvents <$> Q.heBuckets pushedEvent
-          changesHistosChangeCreatedEvent = toEvents <$> Q.heBuckets createdEvent
-          changesHistosChangeMergedEvent = toEvents <$> Q.heBuckets mergedEvent
-       in SearchPB.ChangesHistos {..}
-
-    toRatio ::
-      Q.EventCounts ->
-      Count ->
-      Count ->
-      Count ->
-      SearchPB.ChangesLifecycle_Ratios
-    toRatio Q.EventCounts {..} createdEvent pushedEvent forcePushedEvent =
-      let ratio :: Count -> Count -> Deci
-          ratio x y
-            | y == 0 = 0
-            | otherwise = countToDeci x / countToDeci y
-          ratioF x = fromFixed . ratio x
-
-          changesLifecycle_RatiosMerged = mergedCount `ratioF` createdEvent
-          changesLifecycle_RatiosAbandoned = abandonedCount `ratioF` createdEvent
-          changesLifecycle_RatiosIterations = (pushedEvent + forcePushedEvent) `ratioF` createdEvent
-          changesLifecycle_RatiosSelfMerged = selfMergedCount `ratioF` createdEvent
-       in SearchPB.ChangesLifecycle_Ratios {..}
-
-    toResult ::
-      Q.EventCounts ->
-      SearchPB.ChangesLifecycle_Ratios ->
-      SearchPB.ChangesHistos ->
-      Q.MergedStatsDuration ->
-      SearchPB.ChangesLifecycle
-    toResult Q.EventCounts {..} ratios histos msd =
-      let changesLifecycleChangeCommitForcePushedEvent = Nothing
-          changesLifecycleChangeCommitPushedEvent = Nothing
-          changesLifecycleChangeCreatedEvent = Nothing
-          changesLifecycleAbandoned = countToWord abandonedCount
-          changesLifecycleCommits = 0
-          changesLifecycleDuration = double2Float (Q.avg msd)
-          changesLifecycleDurationVariability = double2Float (Q.variability msd)
-          changesLifecycleHistos = Just histos
-          changesLifecycleMerged = countToWord mergedCount
-          changesLifecycleOpened = countToWord openedCount
-          changesLifecycleRatios = Just ratios
-          changesLifecycleSelfMerged = countToWord selfMergedCount
-          changesLifecycleTests = 0
-       in SearchPB.ChangesLifecycle {..}

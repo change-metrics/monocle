@@ -642,6 +642,23 @@ getHisto qf = do
     res <- toAggRes <$> BHR.search index search
     pure $ heBuckets $ parseAggregationResults "agg1" res
 
+getHistoPB :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
+getHistoPB qf = fmap toPBHisto <$> getHisto qf
+  where
+    toPBHisto :: HistoEventBucket -> SearchPB.Histo
+    toPBHisto HistoEventBucket {..} =
+      let histoDate = heDate
+          histoCount = heCount
+       in SearchPB.Histo {..}
+
+withDocTypes :: [ELKDocType] -> QueryM a -> QueryM a
+withDocTypes docTypes = withFilter [mkOr $ toTermQuery <$> docTypes]
+  where
+    toTermQuery docType = mkTerm "type" (toText $ docTypeToText docType)
+
+withDocType :: ELKDocType -> QueryM a -> QueryM a
+withDocType docType = withDocTypes [docType]
+
 -- | changes review stats
 getReviewStats :: QueryM SearchPB.ReviewStats
 getReviewStats = do
@@ -669,10 +686,40 @@ getReviewStats = do
         <$> fmap countToWord (countAuthors qf)
         <*> fmap countToWord (countDocs qf)
 
-    getHisto' :: ELKDocType -> QueryM (V.Vector SearchPB.Histo)
-    getHisto' docType = fmap toPBHisto <$> withFilter [mkTerm "type" (toText $ docTypeToText docType)] (getHisto qf)
-    toPBHisto :: HistoEventBucket -> SearchPB.Histo
-    toPBHisto HistoEventBucket {..} =
-      let histoDate = heDate
-          histoCount = heCount
-       in SearchPB.Histo {..}
+    getHisto' docType = withDocType docType $ getHistoPB qf
+
+-- | changes lifecycle stats
+getLifecycleStats :: QueryM SearchPB.LifecycleStats
+getLifecycleStats = do
+  lifecycleStatsCreatedHisto <- getHisto' ElkChangeCreatedEvent
+  lifecycleStatsUpdatedHisto <- getHistos' [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]
+  lifecycleStatsMergedHisto <- getHisto' ElkChangeMergedEvent
+  lifecycleStatsAbandonedHisto <- getHisto' ElkChangeAbandonedEvent
+
+  lifecycleStatsCreated' <- withDocType ElkChangeCreatedEvent $ do
+    SearchPB.ReviewCount
+      <$> fmap countToWord (countAuthors qf)
+      <*> fmap countToWord (countDocs qf)
+  let lifecycleStatsCreated = Just lifecycleStatsCreated'
+
+  lifecycleStatsOpened <- pure 0
+  lifecycleStatsAbandoned <- pure 0
+  lifecycleStatsAbandonedRatio <- pure 0
+  lifecycleStatsMerged <- pure 0
+  lifecycleStatsMergedRatio <- pure 0
+  lifecycleStatsSelfMerged <- pure 0
+  lifecycleStatsSelfMergedRatio <- pure 0
+
+  lifecycleStatsTtmMean <- pure 0
+  lifecycleStatsTtmVariability <- pure 0
+
+  lifecycleStatsUpdatesOfChanges <- pure 0
+  lifecycleStatsChangesWithTests <- pure 0
+  lifecycleStatsIterationsPerChange <- pure 0
+  lifecycleStatsCommitsPerChange <- pure 0
+
+  pure $ SearchPB.LifecycleStats {..}
+  where
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    getHisto' docType = withDocType docType $ getHistoPB qf
+    getHistos' docTypes = withDocTypes docTypes $ getHistoPB qf
