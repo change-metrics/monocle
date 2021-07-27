@@ -668,6 +668,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_task_data_TaskData'
+        monocle_search_ChangeAndEvents:
+            properties:
+                change:
+                    $ref: '#/components/schemas/monocle_search_Change'
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_ChangeEvent'
+        monocle_search_ChangeEvent:
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                change_id:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                on_created_at:
+                    type: string
+                    format: RFC3339
+                author:
+                    type: string
+                on_author:
+                    type: string
+                branch:
+                    type: string
         monocle_search_Changes:
             properties:
                 changes:
@@ -823,6 +851,8 @@ components:
                 limit:
                     type: integer
                     format: uint32
+                change_id:
+                    type: string
         monocle_search_QueryResponse:
             properties:
                 error:
@@ -843,6 +873,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_LifecycleStats'
                 activity_stats:
                     $ref: '#/components/schemas/monocle_search_ActivityStats'
+                change_events:
+                    $ref: '#/components/schemas/monocle_search_ChangeAndEvents'
         monocle_search_RepoSummary:
             properties:
                 fullname:

@@ -51,6 +51,12 @@ val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 val encode_changes : SearchTypes.changes -> Js.Json.t Js.Dict.t
 (** [encode_changes v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_change_event : SearchTypes.change_event -> Js.Json.t Js.Dict.t
+(** [encode_change_event v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_change_and_events : SearchTypes.change_and_events -> Js.Json.t Js.Dict.t
+(** [encode_change_and_events v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_review_count : SearchTypes.review_count -> Js.Json.t Js.Dict.t
 (** [encode_review_count v dict] encodes [v] int the given JSON [dict] *)
 
@@ -137,6 +143,12 @@ val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 
 val decode_changes : Js.Json.t Js.Dict.t -> SearchTypes.changes
 (** [decode_changes decoder] decodes a [changes] value from [decoder] *)
+
+val decode_change_event : Js.Json.t Js.Dict.t -> SearchTypes.change_event
+(** [decode_change_event decoder] decodes a [change_event] value from [decoder] *)
+
+val decode_change_and_events : Js.Json.t Js.Dict.t -> SearchTypes.change_and_events
+(** [decode_change_and_events decoder] decodes a [change_and_events] value from [decoder] *)
 
 val decode_review_count : Js.Json.t Js.Dict.t -> SearchTypes.review_count
 (** [decode_review_count decoder] decodes a [review_count] value from [decoder] *)

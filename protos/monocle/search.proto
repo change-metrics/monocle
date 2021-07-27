@@ -8,6 +8,7 @@ option go_package = "monocle/search";
 import "google/protobuf/timestamp.proto";
 
 import "monocle/task_data.proto";
+import "monocle/change.proto";
 
 message SearchSuggestionsRequest {
   string index = 1;
@@ -76,12 +77,16 @@ message QueryRequest {
     QUERY_CHANGES_REVIEW_STATS = 20;
     QUERY_CHANGES_LIFECYCLE_STATS = 21;
     QUERY_ACTIVE_AUTHORS_STATS = 22;
+
+    // Change page
+    QUERY_CHANGE_AND_EVENTS = 30;
   }
   QueryType query_type = 4;
 
   // Only used for certain queries
   Order order = 5;
   uint32 limit = 6;
+  string change_id = 7;
 }
 
 message File {
@@ -147,6 +152,25 @@ message Changes {
   repeated Change changes = 1;
 }
 
+message ChangeEvent {
+  string id = 1;
+  string type = 2;
+  string change_id = 3;
+
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp on_created_at = 6;
+
+  string author = 10;
+  string on_author = 11;
+
+  string branch = 20;
+}
+
+message ChangeAndEvents {
+  Change change = 1;
+  repeated ChangeEvent events = 2;
+}
+
 message ReviewCount {
   uint32 authors_count = 1;
   uint32 events_count = 2;
@@ -186,6 +210,7 @@ message QueryResponse {
     ReviewStats review_stats = 20;
     LifecycleStats lifecycle_stats = 21;
     ActivityStats activity_stats = 22;
+    ChangeAndEvents change_events = 30;
   }
 }
 

@@ -65,6 +65,7 @@ type query_request_query_type =
   | Query_changes_review_stats 
   | Query_changes_lifecycle_stats 
   | Query_active_authors_stats 
+  | Query_change_and_events 
 
 type query_request = {
   index : string;
@@ -73,6 +74,7 @@ type query_request = {
   query_type : query_request_query_type;
   order : order option;
   limit : int32;
+  change_id : string;
 }
 
 type file = {
@@ -125,6 +127,22 @@ and change = {
 
 type changes = {
   changes : change list;
+}
+
+type change_event = {
+  id : string;
+  type_ : string;
+  change_id : string;
+  created_at : TimestampTypes.timestamp option;
+  on_created_at : TimestampTypes.timestamp option;
+  author : string;
+  on_author : string;
+  branch : string;
+}
+
+type change_and_events = {
+  change : change option;
+  events : change_event list;
 }
 
 type review_count = {
@@ -217,6 +235,7 @@ type query_response =
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
+  | Change_events of change_and_events
 
 
 (** {2 Default values} *)
@@ -287,6 +306,7 @@ val default_query_request :
   ?query_type:query_request_query_type ->
   ?order:order option ->
   ?limit:int32 ->
+  ?change_id:string ->
   unit ->
   query_request
 (** [default_query_request ()] is the default value for type [query_request] *)
@@ -350,6 +370,26 @@ val default_changes :
   unit ->
   changes
 (** [default_changes ()] is the default value for type [changes] *)
+
+val default_change_event : 
+  ?id:string ->
+  ?type_:string ->
+  ?change_id:string ->
+  ?created_at:TimestampTypes.timestamp option ->
+  ?on_created_at:TimestampTypes.timestamp option ->
+  ?author:string ->
+  ?on_author:string ->
+  ?branch:string ->
+  unit ->
+  change_event
+(** [default_change_event ()] is the default value for type [change_event] *)
+
+val default_change_and_events : 
+  ?change:change option ->
+  ?events:change_event list ->
+  unit ->
+  change_and_events
+(** [default_change_and_events ()] is the default value for type [change_and_events] *)
 
 val default_review_count : 
   ?authors_count:int32 ->

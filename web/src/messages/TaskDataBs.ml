@@ -332,7 +332,7 @@ let rec encode_task_data (v:TaskDataTypes.task_data) =
   begin match v.TaskDataTypes.updated_at with
   | None -> ()
   | Some v ->
-    begin (* updatedAt field *)
+    begin (* updated_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "updated_at" (Js.Json.string json');
     end;

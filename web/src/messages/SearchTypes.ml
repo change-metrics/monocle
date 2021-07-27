@@ -62,6 +62,7 @@ type query_request_query_type =
   | Query_changes_review_stats 
   | Query_changes_lifecycle_stats 
   | Query_active_authors_stats 
+  | Query_change_and_events 
 
 type query_request = {
   index : string;
@@ -70,6 +71,7 @@ type query_request = {
   query_type : query_request_query_type;
   order : order option;
   limit : int32;
+  change_id : string;
 }
 
 type file = {
@@ -122,6 +124,22 @@ and change = {
 
 type changes = {
   changes : change list;
+}
+
+type change_event = {
+  id : string;
+  type_ : string;
+  change_id : string;
+  created_at : TimestampTypes.timestamp option;
+  on_created_at : TimestampTypes.timestamp option;
+  author : string;
+  on_author : string;
+  branch : string;
+}
+
+type change_and_events = {
+  change : change option;
+  events : change_event list;
 }
 
 type review_count = {
@@ -214,6 +232,7 @@ type query_response =
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
+  | Change_events of change_and_events
 
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
@@ -286,6 +305,7 @@ let rec default_query_request
   ?query_type:((query_type:query_request_query_type) = default_query_request_query_type ())
   ?order:((order:order option) = None)
   ?limit:((limit:int32) = 0l)
+  ?change_id:((change_id:string) = "")
   () : query_request  = {
   index;
   username;
@@ -293,6 +313,7 @@ let rec default_query_request
   query_type;
   order;
   limit;
+  change_id;
 }
 
 let rec default_file 
@@ -385,6 +406,34 @@ let rec default_changes
   ?changes:((changes:change list) = [])
   () : changes  = {
   changes;
+}
+
+let rec default_change_event 
+  ?id:((id:string) = "")
+  ?type_:((type_:string) = "")
+  ?change_id:((change_id:string) = "")
+  ?created_at:((created_at:TimestampTypes.timestamp option) = None)
+  ?on_created_at:((on_created_at:TimestampTypes.timestamp option) = None)
+  ?author:((author:string) = "")
+  ?on_author:((on_author:string) = "")
+  ?branch:((branch:string) = "")
+  () : change_event  = {
+  id;
+  type_;
+  change_id;
+  created_at;
+  on_created_at;
+  author;
+  on_author;
+  branch;
+}
+
+let rec default_change_and_events 
+  ?change:((change:change option) = None)
+  ?events:((events:change_event list) = [])
+  () : change_and_events  = {
+  change;
+  events;
 }
 
 let rec default_review_count 

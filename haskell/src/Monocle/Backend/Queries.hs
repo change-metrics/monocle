@@ -42,6 +42,9 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
+changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
+changeEvents changeID limit = pure undefined
+
 doCount :: BH.Query -> TenantM Count
 doCount query = do
   -- monocleLog . decodeUtf8 . Aeson.encode $ query
