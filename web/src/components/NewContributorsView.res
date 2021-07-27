@@ -6,26 +6,6 @@
 
 open Prelude
 
-module NewContributorsTable = {
-  @react.component
-  let make = (~items: list<SearchTypes.term_count>) => {
-    let columnNames = ["New change author", "Change count"]
-
-    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
-      switch index {
-      | 0 => first.term < second.term
-      | 1 => first.count < second.count
-      | _ => false
-      }
-    let formatters: list<SearchTypes.term_count => React.element> = list{
-      item => item.term->str,
-      item => item.count->int32_str->str,
-    }
-
-    <SortableTable items defaultSortedColumn=1 columnNames isOrdered formatters />
-  }
-}
-
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
@@ -33,6 +13,7 @@ let make = (~store: Store.t) => {
   let query = state.query
   let (limit, setLimit) = React.useState(() => 25)
   let limit_values = list{10, 25, 50, 100, 500}
+  let columnNames = ["Author", "Change count"]
   let tooltip_content = "This shows the list of authors that are new contributors of changes"
   let request = {
     SearchTypes.index: index,
@@ -59,7 +40,7 @@ let make = (~store: Store.t) => {
               <MGridItemXl9>
                 <Title headingLevel=#H3>
                   <Tooltip content=tooltip_content> <Patternfly.Icons.Plus /> </Tooltip>
-                  {(" " ++ "New authors")->str}
+                  {(" " ++ "New change' authors")->str}
                 </Title>
               </MGridItemXl9>
               <MGridItemXl3>
@@ -67,7 +48,7 @@ let make = (~store: Store.t) => {
               </MGridItemXl3>
             </MGrid>
           </CardTitle>
-          <CardBody> <MGrid> <NewContributorsTable items={na.termcount} /> </MGrid> </CardBody>
+          <CardBody> <MGrid> <TopTermsTable items={na.termcount} columnNames /> </MGrid> </CardBody>
         </Card>
       </MCenteredContent>
     | Some(Ok(_)) => React.null

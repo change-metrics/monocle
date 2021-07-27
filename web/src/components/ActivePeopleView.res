@@ -6,45 +6,6 @@
 
 open Prelude
 
-module TopTermsTable = {
-  @react.component
-  let make = (~terms: list<SearchTypes.term_count>) => {
-    let columnNames = ["Name", "Count"]
-
-    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
-      switch index {
-      | 0 => first.term < second.term
-      | 1 => first.count < second.count
-      | _ => false
-      }
-    let formatters: list<SearchTypes.term_count => React.element> = list{
-      item => item.term->str,
-      item => item.count->int32_str->str,
-    }
-
-    <SortableTable items=terms defaultSortedColumn=1 columnNames isOrdered formatters />
-  }
-}
-
-module LimitSelector = {
-  @react.component
-  let make = (~limit: int, ~setLimit: (int => int) => unit) => {
-    let setLimit' = str => {
-      let v = str == "" ? 10 : str->int_of_string
-      setLimit(_ => v)
-    }
-    <Patternfly.Layout.Bullseye>
-      <MSelect
-        placeholder={"Set limit"}
-        options={list{10, 25, 50, 100, 500}->Belt.List.map(string_of_int)}
-        multi={false}
-        value={limit > 0 ? limit->string_of_int : ""}
-        valueChanged={setLimit'}
-      />
-    </Patternfly.Layout.Bullseye>
-  }
-}
-
 module MostActiveAuthor = {
   @react.component
   let make = (~store: Store.t, ~qtype: SearchTypes.query_request_query_type, ~title: string) => {
@@ -52,6 +13,8 @@ module MostActiveAuthor = {
     let index = state.index
     let query = state.query
     let (limit, setLimit) = React.useState(() => 10)
+    let limit_values = list{10, 25, 50, 100, 500}
+    let columnNames = ["Name", "Count"]
     let request = {
       SearchTypes.index: index,
       query: query,
@@ -74,10 +37,12 @@ module MostActiveAuthor = {
             <CardTitle>
               <MGrid>
                 <MGridItem> {title} </MGridItem>
-                <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
+                <MGridItem>
+                  <LimitSelector limit setLimit default=10 values=limit_values />
+                </MGridItem>
               </MGrid>
             </CardTitle>
-            <CardBody> <TopTermsTable terms=tsc.termcount /> </CardBody>
+            <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
           </Card>
         </MCenteredContent>
       | Some(Ok(_)) => React.null
