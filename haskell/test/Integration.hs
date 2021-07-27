@@ -15,19 +15,19 @@ monocleIntegrationTests :: TestTree
 monocleIntegrationTests =
   testGroup
     "Monocle.Backend.Changes"
-    [ -- testCase
-      --   "Index changes"
-      --   testIndexChanges,
-      -- testCase "Test achievement" testAchievements,
-      -- testCase "Test reposSummary" testReposSummary,
-      -- testCase "Test top authors" testTopAuthors,
-      -- testCase "Test authors peers strength" testGetAuthorsPeersStrength,
-      -- testCase "Test newContributors" testGetNewContributors,
-      testCase "Test getActivityStats" testGetActivityStats
-      -- testCase
-      --   "Index ProjectCrawlerMetadata"
-      --   testProjectCrawlerMetadata,
-      -- testCase
-      --   "Index OrganizationCrawlerMetadata"
-      --   testOrganizationCrawlerMetadata
+    [ testCase
+        "Index changes"
+        testIndexChanges,
+      testCase "Test achievement" testAchievements,
+      testCase "Test reposSummary" testReposSummary,
+      testCase "Test top authors" testTopAuthors,
+      testCase "Test authors peers strength" testGetAuthorsPeersStrength,
+      testCase "Test newContributors" testGetNewContributors,
+      testCase "Test getActivityStats" testGetActivityStats,
+      testCase
+        "Index ProjectCrawlerMetadata"
+        testProjectCrawlerMetadata,
+      testCase
+        "Index OrganizationCrawlerMetadata"
+        testOrganizationCrawlerMetadata
     ]

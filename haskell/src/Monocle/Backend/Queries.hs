@@ -175,7 +175,7 @@ instance FromJSON HistoAuthorBucket where
     HistoAuthorBucket <$> v .: "key" <*> v .: "doc_count"
   parseJSON _ = mzero
 
-data HistoAuthors = HistoAuthors
+newtype HistoAuthors = HistoAuthors
   { haBuckets :: V.Vector HistoAuthorBucket
   }
   deriving (Eq, Show)
@@ -894,27 +894,37 @@ getAuthorHisto qf = do
   liftTenantM $ do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
-    let agg1 = parseAggregationResults "agg1" res
-    pure $ hBuckets $ agg1
+    pure $ hBuckets $ parseAggregationResults "agg1" res
 
 getActivityStats :: QueryM SearchPB.ActivityStats
 getActivityStats = do
   changeCreatedHisto <- getHisto' ElkChangeCreatedEvent
-  let activityStatsChangeAuthors = 0
-      activityStatsCommentAuthors = 0
-      activityStatsReviewAuthors = 0
-      activityStatsCommentsHisto = fromList []
-      activityStatsReviewsHisto = fromList []
+  changeCommentedHisto <- getHisto' ElkChangeCommentedEvent
+  changeReviewedHisto <- getHisto' ElkChangeReviewedEvent
+
+  changeAuthorsCount <- runCount ElkChangeCreatedEvent
+  commentAuthorsCount <- runCount ElkChangeCommentedEvent
+  reviewAuthorsCount <- runCount ElkChangeReviewedEvent
+
+  let activityStatsChangeAuthors = changeAuthorsCount
+      activityStatsCommentAuthors = commentAuthorsCount
+      activityStatsReviewAuthors = reviewAuthorsCount
+      activityStatsCommentsHisto = changeCommentedHisto
+      activityStatsReviewsHisto = changeReviewedHisto
       activityStatsChangesHisto = changeCreatedHisto
   pure $ SearchPB.ActivityStats {..}
   where
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    qf = QueryFlavor Author CreatedAt
+    runCount docType = countToWord <$> withDocType docType (countAuthors qf)
     getHisto' docType = withDocType docType $ getHistoPB' qf
     getHistoPB' :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
     getHistoPB' qf' = fmap toPBHisto <$> getAuthorHisto qf'
-      where
-        toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
-        toPBHisto HistoBucket {..} =
-          let histoDate = hbDate
-              histoCount = fromInteger $ toInteger $ length $ haBuckets $ hbSubBuckets
-           in SearchPB.Histo {..}
+    toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
+    toPBHisto HistoBucket {..} =
+      let histoDate = hbDate
+          histoCount =
+            fromInteger
+              . toInteger
+              . length
+              $ haBuckets hbSubBuckets
+       in SearchPB.Histo {..}

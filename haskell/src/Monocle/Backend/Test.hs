@@ -459,24 +459,25 @@ testGetActivityStats = withTenant doTest
         assertEqual'
           "Check getActivityStats result"
           ( SearchPB.ActivityStats
-              0
-              0
-              0
-              (V.fromList [])
-              (V.fromList [])
+              1
+              1
+              2
               ( V.fromList
-                  [ SearchPB.Histo
-                      { histoDate = "2021-05-31 09:00",
-                        histoCount = 0
-                      },
-                    SearchPB.Histo
-                      { histoDate = "2021-05-31 10:00",
-                        histoCount = 1
-                      },
-                    SearchPB.Histo
-                      { histoDate = "2021-05-31 11:00",
-                        histoCount = 0
-                      }
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
           )
