@@ -133,6 +133,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -332,6 +333,9 @@ searchQuery request = do
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
           SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
             <$> Q.getReviewStats
+        SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
+            <$> Q.getActivityStats
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
           handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
