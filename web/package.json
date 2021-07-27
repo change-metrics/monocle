@@ -31,16 +31,16 @@
     "start": "mkdir -p build && npm run build && npm run live",
     "live": "concurrently --names www,res,esb -c green.bold,red.bold,blue.bold npm:dev-server npm:re:watch npm:es:watch",
     "clean": "npm run re:clean && npm run es:clean",
-    "build": "npm run clean && mkdir -p build && npm run re:build && NODE_ENV='\"production\"' npm run es:build",
+    "build": "mkdir -p build && npm run re:build && NODE_ENV='\"production\"' npm run es:build",
     "test": "npm run re:build && npm run js:test",
     "format": "rescript format -all",
     "dev-server": "live-server --entry-file=index.html --host=localhost --port=${WEB_PORT:-3000} --quiet ./build/",
     "es:build": "./build.js",
     "es:clean": "rm -Rf ./build/",
     "es:watch": "./build.js watch",
-    "re:build": "bsb -make-world",
-    "re:clean": "bsb -clean-world",
-    "re:watch": "NINJA_ANSI_FORCED=1 bsb -make-world -w"
+    "re:build": "rescript build",
+    "re:clean": "rescript clean",
+    "re:watch": "NINJA_ANSI_FORCED=1 rescript build -w"
   },
   "browserslist": {
     "production": [
@@ -55,7 +55,7 @@
     ]
   },
   "devDependencies": {
-    "bs-platform": "^9.0.2",
+    "rescript": "^9.1.4",
     "esbuild": "^0.11.15",
     "live-server": "^1.2.1"
   }
