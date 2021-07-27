@@ -16,27 +16,20 @@
 
 import React from 'react'
 
-import { connect } from 'react-redux'
-
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-import { withRouter, Link } from 'react-router-dom'
+import { withRouter } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
+import MonoLink from './MLink.bs.js'
+
 import moment from 'moment'
 
-import {
-  BaseQueryComponent,
-  LoadingBox,
-  ErrorBox,
-  mapDispatchToProps,
-  addMap,
-  hasSmallWidth
-} from './common'
+import { hasSmallWidth } from './common'
 
 class ChangeLifeCycleEventsHisto extends React.Component {
   prepareDataSet(histos) {
@@ -51,6 +44,13 @@ class ChangeLifeCycleEventsHisto extends React.Component {
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(' + createdColor + ',0.4)',
         borderColor: 'rgba(' + createdColor + ',1)'
+      },
+      ChangeUpdatedEvent: {
+        label: 'Updated',
+        pointBorderColor: 'rgba(' + updatedColor + ',1)',
+        pointBackgroundColor: '#fff',
+        backgroundColor: 'rgba(' + updatedColor + ',0.4)',
+        borderColor: 'rgba(' + updatedColor + ',1)'
       },
       ChangeMergedEvent: {
         label: 'Merged',
@@ -68,47 +68,32 @@ class ChangeLifeCycleEventsHisto extends React.Component {
       }
     }
 
-    const metaData = Object.entries(eventNameMapping)
+    const _histos = Object.entries(histos)
     const data = {
-      labels: histos.ChangeCreatedEvent[0].map((x) => x.key_as_string),
+      labels: histos.ChangeCreatedEvent.map((x) => x.date),
       datasets: []
     }
-    metaData.forEach((desc) => {
+    _histos.forEach((histo) => {
       data.datasets.push({
-        label: desc[1].label,
-        data: histos[desc[0]][0].map((x) => x.doc_count),
+        label: eventNameMapping[histo[0]].label,
+        data: histo[1].map((x) => x.count),
         lineTension: 0.5,
-        pointBorderColor: desc[1].pointBorderColor,
-        pointBackgroundColor: desc[1].pointBackgroundColor,
-        backgroundColor: desc[1].backgroundColor,
-        borderColor: desc[1].borderColor
+        pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
+        pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
+        backgroundColor: eventNameMapping[histo[0]].backgroundColor,
+        borderColor: eventNameMapping[histo[0]].borderColor
       })
-    })
-    // merge ChangeCommitForcePushedEvent and ChangeCommitPushedEvent together
-    const merged = []
-    for (
-      let idx = 0;
-      idx < histos.ChangeCommitForcePushedEvent[0].length;
-      idx++
-    ) {
-      const d1 = histos.ChangeCommitForcePushedEvent[0][idx]
-      const d2 = histos.ChangeCommitPushedEvent[0][idx]
-      merged.push(d1.doc_count + d2.doc_count)
-    }
-    data.datasets.push({
-      label: 'Updated',
-      data: merged,
-      lineTension: 0.5,
-      pointBorderColor: 'rgba(' + updatedColor + ',1)',
-      pointBackgroundColor: '#fff',
-      backgroundColor: 'rgba(' + updatedColor + ',0.4)',
-      borderColor: 'rgba(' + updatedColor + ',1)'
     })
     return data
   }
 
   render() {
-    const data = this.prepareDataSet(this.props.data)
+    const data = this.prepareDataSet({
+      ChangeCreatedEvent: this.props.created,
+      ChangeUpdatedEvent: this.props.updated,
+      ChangeMergedEvent: this.props.merged,
+      ChangeAbandonedEvent: this.props.abandoned
+    })
     return (
       <Row>
         {/* <Col md={{ span: 8, offset: 2 }}> */}
@@ -137,147 +122,113 @@ class ChangeLifeCycleEventsHisto extends React.Component {
 }
 
 ChangeLifeCycleEventsHisto.propTypes = {
-  data: PropTypes.shape({
-    ChangeAbandonedEvent: PropTypes.array,
-    ChangeCreatedEvent: PropTypes.array,
-    ChangeMergedEvent: PropTypes.array,
-    ChangeCommitForcePushedEvent: PropTypes.array
-  })
+  created: PropTypes.any,
+  updated: PropTypes.any,
+  merged: PropTypes.any,
+  abandoned: PropTypes.any
 }
 
-class ChangesLifeCycleStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'changes_lifecycle_stats'
-    this.state.graph_type = 'changes_lifecycle_stats'
-  }
-
-  getSearchString(state) {
-    const search = new URLSearchParams(window.location.search)
-    search.set('state', state)
-    return '?' + search.toString()
-  }
-
-  render() {
-    if (!this.props.changes_lifecycle_stats_loading) {
-      if (this.props.changes_lifecycle_stats_error) {
-        return <ErrorBox error={this.props.changes_lifecycle_stats_error} />
-      }
-      const data = this.props.changes_lifecycle_stats_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Changes lifecycle stats</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={4}>
-                    <ListGroup>
-                      <ListGroup.Item>
-                        {data.ChangeCreatedEvent.events_count} changes created
-                        by {data.ChangeCreatedEvent.authors_count} authors
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        <Link
-                          to={
-                            '/' +
-                            this.props.index +
-                            '/changes' +
-                            this.getSearchString('OPEN')
-                          }
-                        >
-                          {data.opened} opened changes
-                        </Link>
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        <Link
-                          to={
-                            '/' +
-                            this.props.index +
-                            '/changes' +
-                            this.getSearchString('CLOSED')
-                          }
-                        >
-                          {data.abandoned} changes abandoned:{' '}
-                          {data.ratios['abandoned/created']}%
-                        </Link>
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        <Link
-                          to={
-                            '/' +
-                            this.props.index +
-                            '/changes' +
-                            this.getSearchString('MERGED')
-                          }
-                        >
-                          {data.merged} changes merged:{' '}
-                          {data.ratios['merged/created']}%
-                        </Link>
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        <Link
-                          to={
-                            '/' +
-                            this.props.index +
-                            '/changes' +
-                            this.getSearchString('SELF-MERGED')
-                          }
-                        >
-                          {data.self_merged} changes self merged:{' '}
-                          {data.ratios['self_merged/created']}%
-                        </Link>
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Mean Time To Merge:{' '}
-                        {moment.duration(data.duration, 'seconds').humanize()}
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Median Deviation of TTM:{' '}
-                        {moment
-                          .duration(data.duration_variability, 'seconds')
-                          .humanize()}
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        {data.ChangeCommitForcePushedEvent.events_count +
-                          data.ChangeCommitPushedEvent.events_count}{' '}
-                        updates of changes
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Changes with tests: {data.tests}%
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        {data.ratios['iterations/created']} iterations per
-                        change
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        {data.commits ? data.commits.toFixed(2) : 'no'} commits
-                        per change
-                      </ListGroup.Item>
-                    </ListGroup>
-                  </Col>
-                  <Col md={8}>
-                    <ChangeLifeCycleEventsHisto data={data.histos} />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const mapStateToProps = (state) =>
-  addMap({}, state.QueryReducer, 'changes_lifecycle_stats')
-
-const CChangesLifeCycleStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(ChangesLifeCycleStats)
+const ChangesLifeCycleStats = (prop) => (
+  <Row>
+    <Col>
+      <Card>
+        <Card.Header>
+          <Card.Title>Changes lifecycle stats</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Row>
+            <Col md={4}>
+              <ListGroup>
+                <ListGroup.Item>
+                  {prop.data.created.events_count} changes created by{' '}
+                  {prop.data.created.authors_count} authors
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <MonoLink
+                    store={prop.store}
+                    filter="state:open"
+                    path="changes"
+                    name={prop.data.opened + ' opened changes'}
+                  />
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <MonoLink
+                    store={prop.store}
+                    filter="state:abandoned"
+                    path="changes"
+                    name={
+                      prop.data.abandoned +
+                      ' changes abandoned: ' +
+                      prop.data.abandoned_ratio +
+                      '%'
+                    }
+                  />
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <MonoLink
+                    store={prop.store}
+                    filter="state:merged"
+                    path="changes"
+                    name={
+                      prop.data.merged +
+                      ' changes merged: ' +
+                      prop.data.merged_ratio +
+                      '%'
+                    }
+                  />
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <MonoLink
+                    store={prop.store}
+                    filter="state:self_merged"
+                    path="changes"
+                    name={
+                      prop.data.self_merged +
+                      ' changes self merged: ' +
+                      prop.data.self_merged_ratio +
+                      '%'
+                    }
+                  />
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Mean Time To Merge:{' '}
+                  {moment.duration(prop.data.ttm_mean, 'seconds').humanize()}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Median Deviation of TTM:{' '}
+                  {moment
+                    .duration(prop.data.ttm_variability, 'seconds')
+                    .humanize()}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  {prop.data.updates_of_changes} updates of changes
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Changes with tests: {prop.data.changes_with_tests}%
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  {prop.data.iterations_per_change} iterations per change
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  {prop.data.commits_per_change.toFixed(2)} commits per change
+                </ListGroup.Item>
+              </ListGroup>
+            </Col>
+            <Col md={8}>
+              <ChangeLifeCycleEventsHisto
+                created={prop.created_histo}
+                updated={prop.updated_histo}
+                merged={prop.merged_histo}
+                abandoned={prop.abandoned_histo}
+              />
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
 )
+
+const CChangesLifeCycleStats = withRouter(ChangesLifeCycleStats)
 
 export { CChangesLifeCycleStats }

@@ -51,6 +51,15 @@ val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 val encode_changes : SearchTypes.changes -> Js.Json.t Js.Dict.t
 (** [encode_changes v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_review_count : SearchTypes.review_count -> Js.Json.t Js.Dict.t
+(** [encode_review_count v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_histo : SearchTypes.histo -> Js.Json.t Js.Dict.t
+(** [encode_histo v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_review_stats : SearchTypes.review_stats -> Js.Json.t Js.Dict.t
+(** [encode_review_stats v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_repo_summary : SearchTypes.repo_summary -> Js.Json.t Js.Dict.t
 (** [encode_repo_summary v dict] encodes [v] int the given JSON [dict] *)
 
@@ -69,23 +78,11 @@ val encode_author_peer : SearchTypes.author_peer -> Js.Json.t Js.Dict.t
 val encode_authors_peers : SearchTypes.authors_peers -> Js.Json.t Js.Dict.t
 (** [encode_authors_peers v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_lifecycle_stats : SearchTypes.lifecycle_stats -> Js.Json.t Js.Dict.t
+(** [encode_lifecycle_stats v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 (** [encode_query_response v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_changes_histos_event : SearchTypes.changes_histos_event -> Js.Json.t Js.Dict.t
-(** [encode_changes_histos_event v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_changes_histos : SearchTypes.changes_histos -> Js.Json.t Js.Dict.t
-(** [encode_changes_histos v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_changes_lifecycle_event : SearchTypes.changes_lifecycle_event -> Js.Json.t Js.Dict.t
-(** [encode_changes_lifecycle_event v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_changes_lifecycle_ratios : SearchTypes.changes_lifecycle_ratios -> Js.Json.t Js.Dict.t
-(** [encode_changes_lifecycle_ratios v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_changes_lifecycle : SearchTypes.changes_lifecycle -> Js.Json.t Js.Dict.t
-(** [encode_changes_lifecycle v dict] encodes [v] int the given JSON [dict] *)
 
 
 (** {2 BS Decoding} *)
@@ -138,6 +135,15 @@ val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 val decode_changes : Js.Json.t Js.Dict.t -> SearchTypes.changes
 (** [decode_changes decoder] decodes a [changes] value from [decoder] *)
 
+val decode_review_count : Js.Json.t Js.Dict.t -> SearchTypes.review_count
+(** [decode_review_count decoder] decodes a [review_count] value from [decoder] *)
+
+val decode_histo : Js.Json.t Js.Dict.t -> SearchTypes.histo
+(** [decode_histo decoder] decodes a [histo] value from [decoder] *)
+
+val decode_review_stats : Js.Json.t Js.Dict.t -> SearchTypes.review_stats
+(** [decode_review_stats decoder] decodes a [review_stats] value from [decoder] *)
+
 val decode_repo_summary : Js.Json.t Js.Dict.t -> SearchTypes.repo_summary
 (** [decode_repo_summary decoder] decodes a [repo_summary] value from [decoder] *)
 
@@ -156,20 +162,8 @@ val decode_author_peer : Js.Json.t Js.Dict.t -> SearchTypes.author_peer
 val decode_authors_peers : Js.Json.t Js.Dict.t -> SearchTypes.authors_peers
 (** [decode_authors_peers decoder] decodes a [authors_peers] value from [decoder] *)
 
+val decode_lifecycle_stats : Js.Json.t Js.Dict.t -> SearchTypes.lifecycle_stats
+(** [decode_lifecycle_stats decoder] decodes a [lifecycle_stats] value from [decoder] *)
+
 val decode_query_response : Js.Json.t Js.Dict.t -> SearchTypes.query_response
 (** [decode_query_response decoder] decodes a [query_response] value from [decoder] *)
-
-val decode_changes_histos_event : Js.Json.t Js.Dict.t -> SearchTypes.changes_histos_event
-(** [decode_changes_histos_event decoder] decodes a [changes_histos_event] value from [decoder] *)
-
-val decode_changes_histos : Js.Json.t Js.Dict.t -> SearchTypes.changes_histos
-(** [decode_changes_histos decoder] decodes a [changes_histos] value from [decoder] *)
-
-val decode_changes_lifecycle_event : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle_event
-(** [decode_changes_lifecycle_event decoder] decodes a [changes_lifecycle_event] value from [decoder] *)
-
-val decode_changes_lifecycle_ratios : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle_ratios
-(** [decode_changes_lifecycle_ratios decoder] decodes a [changes_lifecycle_ratios] value from [decoder] *)
-
-val decode_changes_lifecycle : Js.Json.t Js.Dict.t -> SearchTypes.changes_lifecycle
-(** [decode_changes_lifecycle decoder] decodes a [changes_lifecycle] value from [decoder] *)

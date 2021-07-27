@@ -5,11 +5,12 @@ module Monocle.Backend.Queries where
 import Data.Aeson (Value (Object), (.:), (.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..), ELKChangeState (..), ELKDocType (..), changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -50,25 +51,22 @@ doCount query = do
     Left e -> error $ show e
     Right x -> pure $ naturalToCount (BH.crCount x)
 
-countDocs :: QueryFlavor -> [BH.Query] -> QueryM Count
-countDocs qf queries = withFilter queries $ do
+countDocs :: QueryFlavor -> QueryM Count
+countDocs qf = do
   bhQuery <-
-    fromMaybe (error "Query shall exist because of withFilter")
-      <$> getQueryBHWithFlavor qf
+    fromMaybe (error "Need a query to count") <$> getQueryBHWithFlavor qf
   liftTenantM $ doCount bhQuery
 
-countDocs' :: [BH.Query] -> QueryM Count
+countDocs' :: QueryM Count
 countDocs' = countDocs defaultQueryFlavor
 
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = do
-  commitCount <- countDocs qf [documentType $ ElkChangeCreatedEvent :| []]
+  commitCount <- withFilter [documentType ElkChangeCreatedEvent] $ countDocs qf
   reviewCount <-
-    countDocs
-      qf
-      [ documentType $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
-      ]
+    withFilter [documentTypes $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
+      countDocs qf
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral reviewCount
@@ -86,9 +84,23 @@ changeState state' =
     BH.TermQuery (BH.Term "state" $ changeStateToText state') Nothing
   ]
 
+selfMerged :: [BH.Query]
+selfMerged =
+  [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+    BH.TermQuery (BH.Term "self_merged" "true") Nothing
+  ]
+
+testIncluded :: BH.Query
+testIncluded =
+  BH.QueryRegexpQuery $
+    BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp ".*[Tt]est.*") BH.AllRegexpFlags Nothing
+
 -- | Add a document type filter to the query
-documentType :: NonEmpty ELKDocType -> BH.Query
-documentType doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
+documentTypes :: NonEmpty ELKDocType -> BH.Query
+documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
+
+documentType :: ELKDocType -> BH.Query
+documentType x = documentTypes (x :| [])
 
 -- | User query
 toUserTerm :: Text -> BH.Query
@@ -98,10 +110,10 @@ toUserTerm user = BH.TermQuery (BH.Term "author.muid" user) Nothing
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
 
-aggSearch :: BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
+aggSearch :: Maybe BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
 aggSearch query aggs = do
   indexName <- getIndexName
-  toAggRes <$> doSearch indexName (BH.mkAggregateSearch (Just query) aggs)
+  toAggRes <$> doSearch indexName (BH.mkAggregateSearch query aggs)
 
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
@@ -122,10 +134,10 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> countDocs' (changeState ElkChangeOpen)
-      <*> countDocs' (changeState ElkChangeMerged)
-      <*> countDocs' (changeState ElkChangeClosed)
-      <*> countDocs' selfMergedQ
+    <$> withFilter (changeState ElkChangeOpen) countDocs'
+      <*> withFilter (changeState ElkChangeMerged) countDocs'
+      <*> withFilter (changeState ElkChangeClosed) countDocs'
+      <*> withFilter selfMergedQ countDocs'
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
@@ -146,12 +158,15 @@ getEventCounts =
 -- }
 data HistoEventBucket = HistoEventBucket
   { heKey :: Word64,
+    heDate :: LText,
     heCount :: Word32
   }
   deriving (Eq, Show)
 
 instance FromJSON HistoEventBucket where
-  parseJSON (Object v) = HistoEventBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON (Object v) =
+    HistoEventBucket
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count"
   parseJSON _ = mzero
 
 newtype HistoEventAgg = HistoEventAgg
@@ -166,7 +181,7 @@ instance FromJSON HistoEventAgg where
 getHistoEventAgg :: BH.Query -> TenantM HistoEventAgg
 getHistoEventAgg query =
   parseAggregationResults "agg1"
-    <$> aggSearch query (Map.fromList [("agg1", histoEventAgg)])
+    <$> aggSearch (Just query) (Map.fromList [("agg1", histoEventAgg)])
 
 histoEventAgg :: BH.Aggregation
 histoEventAgg = BH.DateHistogramAgg dateAgg
@@ -194,6 +209,65 @@ data MergedStatsDuration = MergedStatsDuration
 
 field :: Text -> Value
 field name = Aeson.object ["field" .= name]
+
+data FirstEvent = FirstEvent
+  { feChangeCreatedAt :: UTCTime,
+    feCreatedAt :: UTCTime,
+    feAuthor :: LText
+  }
+  deriving (Show)
+
+firstEventDuration :: FirstEvent -> Pico
+firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedAt
+
+firstEventAverageDuration :: [FirstEvent] -> Word32
+firstEventAverageDuration = truncate . fromMaybe 0 . average . map firstEventDuration
+
+firstEventOnChanges :: QueryM [FirstEvent]
+firstEventOnChanges = do
+  query <- getQueryBHWithFlavor (QueryFlavor Author CreatedAt)
+  (minDate, _) <- Q.queryBounds <$> getQuery
+  let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 10000}
+
+  -- Collect all the events
+  result <- liftTenantM $ do
+    index <- getIndexName
+    resp <- fmap BH.hitSource <$> BH.scanSearch index search
+    pure $ catMaybes resp
+
+  -- Group by change_id
+  let changeMap :: [NonEmpty ELKChangeEvent]
+      changeMap = HM.elems $ groupBy elkchangeeventChangeId result
+
+  -- Remove old change where we may not have the first event
+  let keepRecent :: NonEmpty ELKChangeEvent -> Bool
+      keepRecent (ELKChangeEvent {..} :| _)
+        | elkchangeeventOnCreatedAt > minDate = True
+        | otherwise = False
+
+  now <- liftIO getCurrentTime
+
+  -- For each change, get the detail of the first event
+  pure $ foldr toFirstEvent (initEvent now) <$> filter keepRecent changeMap
+  where
+    initEvent :: UTCTime -> FirstEvent
+    initEvent now =
+      let feChangeCreatedAt = now
+          feCreatedAt = now
+          feAuthor = ""
+       in FirstEvent {..}
+    toFirstEvent :: ELKChangeEvent -> FirstEvent -> FirstEvent
+    toFirstEvent ELKChangeEvent {..} acc =
+      let (createdAt, author) =
+            -- If the event is older update the info
+            if elkchangeeventCreatedAt < feCreatedAt acc
+              then (elkchangeeventCreatedAt, authorMuid elkchangeeventAuthor)
+              else (feCreatedAt acc, feAuthor acc)
+       in FirstEvent
+            { feChangeCreatedAt = elkchangeeventOnCreatedAt,
+              feCreatedAt = createdAt,
+              feAuthor = author
+            }
 
 changeMergedStatsDuration :: [BH.Query] -> TenantM MergedStatsDuration
 changeMergedStatsDuration query = do
@@ -284,7 +358,7 @@ getTermKey BH.TermsResult {} = error "Unexpected match"
 
 getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM [BH.TermsResult]
 getTermsAgg query onTerm maxBuckets = do
-  search <- aggSearch query aggs
+  search <- aggSearch (Just query) aggs
   pure $ filter isNotEmptyTerm $ unfilteredR search
   where
     aggs =
@@ -298,11 +372,33 @@ getTermsAgg query onTerm maxBuckets = do
     isNotEmptyTerm :: BH.TermsResult -> Bool
     isNotEmptyTerm tr = getTermKey tr /= ""
 
+newtype CountValue = CountValue {unCountValue :: Count}
+
+instance FromJSON CountValue where
+  parseJSON (Object v) = CountValue <$> v .: "value"
+  parseJSON _ = mzero
+
+getCardinalityAgg :: BH.FieldName -> Maybe Int -> QueryFlavor -> QueryM Count
+getCardinalityAgg (BH.FieldName fieldName) threshold qf = do
+  bhQuery <- getQueryBHWithFlavor qf
+
+  let cardinality = Aeson.object ["field" .= fieldName, "precision_threshold" .= threshold]
+      agg = Aeson.object ["agg1" .= Aeson.object ["cardinality" .= cardinality]]
+      search = Aeson.object ["aggregations" .= agg, "size" .= (0 :: Word), "query" .= bhQuery]
+
+  liftTenantM $ do
+    index <- getIndexName
+    res <- toAggRes <$> BHR.search index search
+    pure $ unCountValue $ parseAggregationResults "agg1" res
+
+countAuthors :: QueryFlavor -> QueryM Count
+countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
+
 getDocTypeTopCountByField :: NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = mkAnd $ basequery <> [documentType doctype]
+  let query = mkAnd $ basequery <> [documentTypes doctype]
 
   -- Run the aggregation
   results <- liftTenantM (runTermAgg query size)
@@ -341,9 +437,9 @@ getReposSummary = do
           changeQF = QueryFlavor Author UpdatedAt
 
       -- Count the events
-      totalChanges' <- countDocs eventQF [documentType $ ElkChangeCreatedEvent :| []]
-      openChanges' <- countDocs changeQF $ changeState ElkChangeOpen
-      mergedChanges' <- countDocs eventQF [documentType $ ElkChangeMergedEvent :| []]
+      totalChanges' <- withFilter [documentType ElkChangeCreatedEvent] (countDocs eventQF)
+      openChanges' <- withFilter (changeState ElkChangeOpen) (countDocs changeQF)
+      mergedChanges' <- withFilter [documentType ElkChangeMergedEvent] (countDocs eventQF)
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -447,6 +543,47 @@ getAuthorsPeersStrength limit = do
             peer
             (fromInteger $ toInteger (trCount tr))
 
+data HistoInterval = Hour | Day | Week | Month | Year deriving (Eq, Show)
+
+-- | Convert a duration to an interval that spans over maximum 24 buckets (31 for days)
+durationToHistoInterval :: Pico -> HistoInterval
+durationToHistoInterval sec
+  | sec / day <= 1 = Hour
+  | sec / month <= 1 = Day
+  | sec / month <= 6 = Week
+  | sec / year <= 2 = Month
+  | otherwise = Year
+  where
+    year = month * 12
+    month = day * 31
+    day = 24 * 3600
+
+histoIntervalToFormat :: HistoInterval -> Text
+histoIntervalToFormat = \case
+  Hour -> "yyyy-MM-dd HH:mm"
+  Day -> "yyyy-MM-dd"
+  Week -> "yyyy-MM-dd"
+  Month -> "yyyy-MM"
+  Year -> "yyyy"
+
+calendarInterval :: HistoInterval -> Text
+calendarInterval = \case
+  Hour -> "hour"
+  Day -> "day"
+  Week -> "week"
+  Month -> "month"
+  Year -> "year"
+
+dateInterval :: HistoInterval -> UTCTime -> Text
+dateInterval hi = formatTime' formatStr
+  where
+    formatStr = case hi of
+      Hour -> "%F %R"
+      Day -> "%F"
+      Week -> "%F"
+      Month -> "%Y-%m"
+      Year -> "%Y"
+
 getNewContributors :: QueryM [TermResult]
 getNewContributors = do
   -- Get query min bound
@@ -483,12 +620,20 @@ getHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
 
-  let (minBound', maxBound') = Q.queryBounds query
-      bound = Aeson.object ["min" .= minBound', "max" .= maxBound']
+  let (minDate, maxDate) = Q.queryBounds query
+      duration = elapsedSeconds minDate maxDate
+      interval = durationToHistoInterval duration
+
+      bound =
+        Aeson.object
+          [ "min" .= dateInterval interval minDate,
+            "max" .= dateInterval interval maxDate
+          ]
       date_histo =
         Aeson.object
-          [ "field" .= (rangeField $ qfRange qf),
-            "calendar_interval" .= ("day" :: Text),
+          [ "field" .= rangeField (qfRange qf),
+            "calendar_interval" .= calendarInterval interval,
+            "format" .= histoIntervalToFormat interval,
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound
           ]
@@ -507,3 +652,154 @@ getHisto qf = do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
     pure $ heBuckets $ parseAggregationResults "agg1" res
+
+getHistoPB :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
+getHistoPB qf = fmap toPBHisto <$> getHisto qf
+  where
+    toPBHisto :: HistoEventBucket -> SearchPB.Histo
+    toPBHisto HistoEventBucket {..} =
+      let histoDate = heDate
+          histoCount = heCount
+       in SearchPB.Histo {..}
+
+searchBody :: QueryFlavor -> Value -> QueryM Value
+searchBody qf agg = do
+  queryBH <- getQueryBHWithFlavor qf
+  pure $
+    Aeson.object
+      [ "aggregations" .= Aeson.object ["agg1" .= agg],
+        "size" .= (0 :: Word),
+        "docvalue_fields"
+          .= [ Aeson.object
+                 [ "field" .= ("created_at" :: Text),
+                   "format" .= ("date_time" :: Text)
+                 ]
+             ],
+        "query" .= fromMaybe (error "need query") queryBH
+      ]
+
+queryAggValue :: Value -> QueryM Double
+queryAggValue search = liftTenantM $ do
+  index <- getIndexName
+  res <- toAggRes <$> BHR.search index search
+  pure $ getAggValue "agg1" res
+
+averageDuration :: QueryFlavor -> QueryM Double
+averageDuration qf = queryAggValue =<< searchBody qf avg
+  where
+    avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("duration" :: Text)]]
+
+medianDeviationDuration :: QueryFlavor -> QueryM Double
+medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
+  where
+    deviation =
+      Aeson.object
+        [ "median_absolute_deviation"
+            .= Aeson.object ["field" .= ("duration" :: Text)]
+        ]
+
+changeMergedAvgCommits :: QueryFlavor -> QueryM Double
+changeMergedAvgCommits qf = queryAggValue =<< searchBody qf avg
+  where
+    avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("commit_count" :: Text)]]
+
+withDocTypes :: [ELKDocType] -> QueryM a -> QueryM a
+withDocTypes docTypes = withFilter [mkOr $ toTermQuery <$> docTypes]
+  where
+    toTermQuery docType = mkTerm "type" (toText $ docTypeToText docType)
+
+withDocType :: ELKDocType -> QueryM a -> QueryM a
+withDocType docType = withDocTypes [docType]
+
+-- | changes review stats
+getReviewStats :: QueryM SearchPB.ReviewStats
+getReviewStats = do
+  reviewStatsCommentHisto <- getHisto' ElkChangeCommentedEvent
+  reviewStatsReviewHisto <- getHisto' ElkChangeReviewedEvent
+
+  commentCount <- withFilter [documentType ElkChangeCommentedEvent] statCount
+  reviewCount <- withFilter [documentType ElkChangeReviewedEvent] statCount
+
+  let reviewStatsCommentCount = Just commentCount
+      reviewStatsReviewCount = Just reviewCount
+
+  firstComments <- withFilter [documentType ElkChangeCommentedEvent] firstEventOnChanges
+  firstReviews <- withFilter [documentType ElkChangeReviewedEvent] firstEventOnChanges
+
+  let reviewStatsCommentDelay = firstEventAverageDuration firstComments
+      reviewStatsReviewDelay = firstEventAverageDuration firstReviews
+
+  pure $ SearchPB.ReviewStats {..}
+  where
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    statCount :: QueryM SearchPB.ReviewCount
+    statCount =
+      SearchPB.ReviewCount
+        <$> fmap countToWord (countAuthors qf)
+        <*> fmap countToWord (countDocs qf)
+
+    getHisto' docType = withDocType docType $ getHistoPB qf
+
+-- | changes lifecycle stats
+getLifecycleStats :: QueryM SearchPB.LifecycleStats
+getLifecycleStats = do
+  lifecycleStatsCreatedHisto <- getHisto' ElkChangeCreatedEvent
+  lifecycleStatsUpdatedHisto <- getHistos' [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]
+  lifecycleStatsMergedHisto <- getHisto' ElkChangeMergedEvent
+  lifecycleStatsAbandonedHisto <- getHisto' ElkChangeAbandonedEvent
+
+  (created, lifecycleStatsCreated) <- withDocType ElkChangeCreatedEvent $ do
+    created <- countDocs qf
+    stats <-
+      SearchPB.ReviewCount
+        <$> fmap countToWord (countAuthors qf)
+        <*> pure (countToWord created)
+    pure (created, Just stats)
+
+  opened <- withFilter (changeState ElkChangeOpen) countDocs'
+  merged <- withFilter (changeState ElkChangeMerged) countDocs'
+  selfMerged' <- withFilter selfMerged countDocs'
+  abandoned <- withFilter (changeState ElkChangeClosed) countDocs'
+
+  let lifecycleStatsOpened = countToWord opened
+      lifecycleStatsMerged = countToWord merged
+      lifecycleStatsMergedRatio = merged `ratioF` created
+      lifecycleStatsSelfMerged = countToWord selfMerged'
+      lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` created
+      lifecycleStatsAbandoned = countToWord abandoned
+      lifecycleStatsAbandonedRatio = abandoned `ratioF` created
+
+  lifecycleStatsTtmMean <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (averageDuration qf)
+  lifecycleStatsTtmVariability <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (medianDeviationDuration qf)
+
+  updated <-
+    withFilter
+      [documentTypes $ fromList [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]]
+      countEvents
+
+  let lifecycleStatsUpdatesOfChanges = countToWord updated
+
+  tests <- withFilter [documentType ElkChange, testIncluded] countDocs'
+  let lifecycleStatsChangesWithTests = tests `ratioF` created
+      lifecycleStatsIterationsPerChange = updated `ratioN` created
+
+  lifecycleStatsCommitsPerChange <-
+    double2Float
+      <$> withFilter (changeState ElkChangeMerged) (changeMergedAvgCommits qf)
+
+  pure $ SearchPB.LifecycleStats {..}
+  where
+    countEvents = countDocs (QueryFlavor Monocle.Search.Query.Author OnCreatedAt)
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    getHisto' docType = withDocType docType $ getHistoPB qf
+    getHistos' docTypes = withDocTypes docTypes $ getHistoPB qf
+    ratio :: Deci -> Count -> Count -> Deci
+    ratio m x y
+      | y == 0 = 0
+      | otherwise = m * countToDeci x / countToDeci y
+    ratioF x = fromFixed . ratio 100 x
+    ratioN x = fromFixed . ratio 1 x
