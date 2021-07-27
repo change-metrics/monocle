@@ -29,7 +29,6 @@ import TopMenu from './components/menu'
 import Footer from './components/footer'
 import { LoginView, CUserView } from './components/user'
 import { CAuthorsHistoStats } from './components/authors_histo'
-import { CNewContributorsStats } from './components/top'
 import { CHotChanges, CColdChanges } from './components/changes'
 import { CRepoChanges } from './components/repos_summary'
 import CFiltersForm from './components/filtersform'
@@ -46,6 +45,7 @@ import NChangeView from './components/NChangeView.bs.js'
 import NReposView from './components/ReposView.bs.js'
 import ActivePeopleView from './components/ActivePeopleView.bs.js'
 import PeersStengthView from './components/PeersStrengthView.bs.js'
+import NewContributorsView from './components/NewContributorsView.bs.js'
 
 class PeopleView extends React.Component {
   render() {
@@ -64,16 +64,6 @@ class PeopleView extends React.Component {
         <Row>
           <Col>
             <CAuthorsHistoStats index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CNewContributorsStats index={this.props.match.params.index} />
           </Col>
         </Row>
       </React.Fragment>
@@ -228,26 +218,6 @@ const LegacyApp = (data) => (
         <p></p>
       </Col>
     </Row>
-    <Row>
-      <Col>
-        <p></p>
-      </Col>
-    </Row>
-    <Row>
-      <Col>
-        <p></p>
-      </Col>
-    </Row>
-    <Row>
-      <Col>
-        <p></p>
-      </Col>
-    </Row>
-    <Row>
-      <Col>
-        <p></p>
-      </Col>
-    </Row>
   </Container>
 )
 
@@ -296,6 +266,10 @@ const App = () => {
         <Route
           path="/:index/peers_strength"
           render={() => <PeersStengthView store={store} />}
+        />
+        <Route
+          path="/:index/new_authors"
+          render={() => <NewContributorsView store={store} />}
         />
         <Route path="/*" render={() => <LegacyApp store={store} />} />
       </Switch>

@@ -351,6 +351,13 @@ searchQuery request = do
             . V.fromList
             . map toAPeerResult
             <$> Q.getAuthorsPeersStrength queryRequestLimit
+        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultNewAuthors
+            . SearchPB.TermsCount
+            . V.fromList
+            . map toTTResult
+            <$> Q.getNewContributors
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse

@@ -41,16 +41,7 @@ public_queries = (
     "count_abandoned_changes",
     "events_histo",
     "authors_histo",
-    "events_top_authors",
-    "changes_top_approval",
-    "changes_top_commented",
-    "changes_top_reviewed",
-    "authors_top_reviewed",
-    "authors_top_commented",
-    "repos_top",
-    "authors_top",
     "approvals_top",
-    "peers_exchange_strength",
     "change_merged_count_by_duration",
     "changes_closed_ratios",
     "first_comment_on_changes",
@@ -62,14 +53,11 @@ public_queries = (
     "changes_review_histos",
     "changes_review_stats",
     "authors_histo_stats",
-    "most_active_authors_stats",
-    "most_reviewed_authors_stats",
     "last_changes",
     "last_state_changed_changes",
     "oldest_open_changes",
     "changes_and_events",
     "changes",
-    "new_contributors",
     "changes_by_file_map",
     "authors_by_file_map",
 )
@@ -435,91 +423,16 @@ def _events_top(es, index, repository_fullname, field, params):
     }
 
 
-def repos_top(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("Change",)
-    return _events_top(es, index, repository_fullname, "repository_fullname", params)
-
-
-def events_top_authors(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    return _events_top(es, index, repository_fullname, "author.muid", params)
-
-
-# TODO(fbo): add tests for queries below
-def changes_top_approval(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "approval", params)
-
-
 def changes_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("ChangeCommentedEvent",)
     return _events_top(es, index, repository_fullname, "change_id", params)
 
 
-def changes_top_reviewed(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "change_id", params)
-
-
-def authors_top_reviewed(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeReviewedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author.muid", params)
-
-
-def authors_top_commented(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeCommentedEvent",)
-    return _events_top(es, index, repository_fullname, "on_author.muid", params)
-
-
-def authors_top(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("Change",)
-    return _events_top(es, index, repository_fullname, "author.muid", params)
-
-
 def approvals_top(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
     return _events_top(es, index, repository_fullname, "approval", params)
-
-
-def peers_exchange_strength(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeReviewedEvent", "ChangeCommentedEvent")
-    # Fetch the most active authors for those events
-    authors = [
-        bucket["key"]
-        for bucket in _events_top(
-            es, index, repository_fullname, "author.muid", params
-        )["items"]
-    ]
-    peers_strength = {}
-    # For each of them get authors they most review or comment
-    for author in authors:
-        params["authors"] = [author]
-        ret = _events_top(es, index, repository_fullname, "on_author.muid", params)[
-            "items"
-        ]
-        for bucket in ret:
-            if bucket["key"] == author:
-                continue
-            # Build a peer identifier
-            peers_id = tuple(sorted((author, bucket["key"])))
-            peers_strength.setdefault(peers_id, 0)
-            # Cumulate the score
-            peers_strength[peers_id] += bucket["doc_count"]
-    peers_strength = sorted(
-        [(peers_id, strength) for peers_id, strength in peers_strength.items()],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-    return peers_strength
 
 
 def change_merged_count_by_duration(es, index, repository_fullname, params):
@@ -883,27 +796,6 @@ def changes_review_stats(es, index, repository_fullname, params):
     return ret
 
 
-def most_active_authors_stats(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    ret = {}
-    for etype in ("ChangeCreatedEvent", "ChangeReviewedEvent", "ChangeCommentedEvent"):
-        params["etype"] = (etype,)
-        ret[etype] = events_top_authors(es, index, repository_fullname, params)
-    params["etype"] = ("Change",)
-    params["state"] = ("MERGED",)
-    ret["ChangeMergedEvent"] = events_top_authors(
-        es, index, repository_fullname, params
-    )
-    return ret
-
-
-def most_reviewed_authors_stats(es, index, repository_fullname, params):
-    return {
-        "reviewed": authors_top_reviewed(es, index, repository_fullname, params),
-        "commented": authors_top_commented(es, index, repository_fullname, params),
-    }
-
-
 def last_changes(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("Change",)
@@ -984,25 +876,6 @@ def changes(es, index, repository_fullname, params):
     changes = [r["_source"] for r in data["hits"]["hits"]]
     changes = enhance_changes(changes)
     return {"items": changes, "total": totalc(data["hits"]["total"])}
-
-
-def new_contributors(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    # TODO(fbo): Check again
-    params["etype"] = ("Change",)
-    params["size"] = 10000
-    new_authors = events_top_authors(es, index, repository_fullname, params)["items"]
-    new = set([x["key"] for x in new_authors])
-    params["lte"] = params["gte"]
-    del params["gte"]
-    old = set(
-        [
-            x["key"]
-            for x in events_top_authors(es, index, repository_fullname, params)["items"]
-        ]
-    )
-    diff = new.difference(old)
-    return {"items": [n for n in new_authors if n["key"] in diff]}
 
 
 def changes_by_file_map(es, index, repository_fullname, params):
