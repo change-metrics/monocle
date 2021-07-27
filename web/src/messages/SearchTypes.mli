@@ -64,6 +64,7 @@ type query_request_query_type =
   | Query_new_changes_authors 
   | Query_changes_review_stats 
   | Query_changes_lifecycle_stats 
+  | Query_active_authors_stats 
 
 type query_request = {
   index : string;
@@ -145,6 +146,15 @@ type review_stats = {
   review_histo : histo list;
 }
 
+type activity_stats = {
+  change_authors : int32;
+  comment_authors : int32;
+  review_authors : int32;
+  comments_histo : histo list;
+  reviews_histo : histo list;
+  changes_histo : histo list;
+}
+
 type repo_summary = {
   fullname : string;
   total_changes : int32;
@@ -206,6 +216,7 @@ type query_response =
   | New_authors of terms_count
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
+  | Activity_stats of activity_stats
 
 
 (** {2 Default values} *)
@@ -364,6 +375,17 @@ val default_review_stats :
   unit ->
   review_stats
 (** [default_review_stats ()] is the default value for type [review_stats] *)
+
+val default_activity_stats : 
+  ?change_authors:int32 ->
+  ?comment_authors:int32 ->
+  ?review_authors:int32 ->
+  ?comments_histo:histo list ->
+  ?reviews_histo:histo list ->
+  ?changes_histo:histo list ->
+  unit ->
+  activity_stats
+(** [default_activity_stats ()] is the default value for type [activity_stats] *)
 
 val default_repo_summary : 
   ?fullname:string ->

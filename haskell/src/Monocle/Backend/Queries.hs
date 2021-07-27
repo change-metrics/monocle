@@ -156,39 +156,77 @@ getEventCounts =
 --         "interval": "day"
 --     }
 -- }
-data HistoEventBucket = HistoEventBucket
-  { heKey :: Word64,
-    heDate :: LText,
-    heCount :: Word32
-  }
-  deriving (Eq, Show)
-
-instance FromJSON HistoEventBucket where
-  parseJSON (Object v) =
-    HistoEventBucket
-      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count"
-  parseJSON _ = mzero
-
-newtype HistoEventAgg = HistoEventAgg
-  { heBuckets :: V.Vector HistoEventBucket
-  }
-  deriving (Eq, Show)
-
-instance FromJSON HistoEventAgg where
-  parseJSON (Object v) = HistoEventAgg <$> v .: "buckets"
-  parseJSON _ = mzero
-
-getHistoEventAgg :: BH.Query -> TenantM HistoEventAgg
-getHistoEventAgg query =
-  parseAggregationResults "agg1"
-    <$> aggSearch (Just query) (Map.fromList [("agg1", histoEventAgg)])
-
 histoEventAgg :: BH.Aggregation
 histoEventAgg = BH.DateHistogramAgg dateAgg
   where
     interval = BH.Day
     dateAgg =
       BH.mkDateHistogram (BH.FieldName "created_at") interval
+
+-- | Author histo
+data HistoAuthorBucket = HistoAuthorBucket
+  { habKey :: LText,
+    habCount :: Word32
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoAuthorBucket where
+  parseJSON (Object v) =
+    HistoAuthorBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON _ = mzero
+
+newtype HistoAuthors = HistoAuthors
+  { haBuckets :: V.Vector HistoAuthorBucket
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoAuthors where
+  parseJSON (Object v) = HistoAuthors <$> v .: "buckets"
+  parseJSON _ = mzero
+
+instance BucketName HistoAuthors where
+  bucketName _ = "authors"
+
+data HistoBucket a = HistoBucket
+  { hbKey :: Word64,
+    hbDate :: LText,
+    hbCount :: Word32,
+    hbSubBuckets :: a
+  }
+  deriving (Eq, Show)
+
+class BucketName a where
+  bucketName :: Proxy a -> Text
+
+newtype NoSubBucket = NoSubBucket (Maybe Void)
+
+instance FromJSON NoSubBucket where
+  parseJSON _ = mzero
+
+type HistoSimple = HistoBucket NoSubBucket
+
+instance BucketName NoSubBucket where
+  bucketName _ = "unused"
+
+instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
+  parseJSON (Object v) = do
+    HistoBucket
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> parseSubBucket
+    where
+      subKeyName = bucketName (Proxy @a)
+      parseSubBucket
+        | subKeyName == "unused" = pure $ error "no subbucket"
+        | otherwise = v .: subKeyName
+  parseJSON _ = mzero
+
+newtype HistoAgg a = HistoAgg
+  { hBuckets :: V.Vector (HistoBucket a)
+  }
+  deriving (Eq, Show)
+
+instance (FromJSON a, BucketName a) => FromJSON (HistoAgg a) where
+  parseJSON (Object v) = HistoAgg <$> v .: "buckets"
+  parseJSON _ = mzero
 
 -- | AggValue decodes aggregations with a single value
 newtype AggValue = AggValue {getValue :: Double}
@@ -615,7 +653,7 @@ getNewContributors = do
   pure $ filter (\tr -> trTerm tr `notElem` ba) afterAuthor
 
 -- | getReviewHisto
-getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getHisto :: QueryFlavor -> QueryM (V.Vector HistoSimple)
 getHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
@@ -651,15 +689,15 @@ getHisto qf = do
   liftTenantM $ do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
-    pure $ heBuckets $ parseAggregationResults "agg1" res
+    pure $ hBuckets $ parseAggregationResults "agg1" res
 
 getHistoPB :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
 getHistoPB qf = fmap toPBHisto <$> getHisto qf
   where
-    toPBHisto :: HistoEventBucket -> SearchPB.Histo
-    toPBHisto HistoEventBucket {..} =
-      let histoDate = heDate
-          histoCount = heCount
+    toPBHisto :: HistoSimple -> SearchPB.Histo
+    toPBHisto HistoBucket {..} =
+      let histoDate = hbDate
+          histoCount = hbCount
        in SearchPB.Histo {..}
 
 searchBody :: QueryFlavor -> Value -> QueryM Value
@@ -803,3 +841,90 @@ getLifecycleStats = do
       | otherwise = m * countToDeci x / countToDeci y
     ratioF x = fromFixed . ratio 100 x
     ratioN x = fromFixed . ratio 1 x
+
+-- | authors activity stats
+getAuthorHisto :: QueryFlavor -> QueryM (V.Vector (HistoBucket HistoAuthors))
+getAuthorHisto qf = do
+  query <- getQuery
+  queryBH <- getQueryBHWithFlavor qf
+
+  let (minDate, maxDate) = Q.queryBounds query
+      duration = elapsedSeconds minDate maxDate
+      interval = durationToHistoInterval duration
+
+      bound =
+        Aeson.object
+          [ "min" .= dateInterval interval minDate,
+            "max" .= dateInterval interval maxDate
+          ]
+      date_histo =
+        Aeson.object
+          [ "field" .= rangeField (qfRange qf),
+            "calendar_interval" .= calendarInterval interval,
+            "format" .= histoIntervalToFormat interval,
+            "min_doc_count" .= (0 :: Word),
+            "extended_bounds" .= bound
+          ]
+      author_agg =
+        Aeson.object
+          [ "authors"
+              .= Aeson.object
+                [ "terms"
+                    .= Aeson.object
+                      [ "field" .= ("author.muid" :: Text),
+                        "size" .= (10000 :: Word)
+                      ]
+                ]
+          ]
+      agg =
+        Aeson.object
+          [ "agg1"
+              .= Aeson.object
+                [ "date_histogram" .= date_histo,
+                  "aggs" .= author_agg
+                ]
+          ]
+      search =
+        Aeson.object
+          [ "aggregations" .= agg,
+            "size" .= (0 :: Word),
+            "query" .= fromMaybe (error "need query") queryBH
+          ]
+
+  liftTenantM $ do
+    index <- getIndexName
+    res <- toAggRes <$> BHR.search index search
+    pure $ hBuckets $ parseAggregationResults "agg1" res
+
+getActivityStats :: QueryM SearchPB.ActivityStats
+getActivityStats = do
+  changeCreatedHisto <- getHisto' ElkChangeCreatedEvent
+  changeCommentedHisto <- getHisto' ElkChangeCommentedEvent
+  changeReviewedHisto <- getHisto' ElkChangeReviewedEvent
+
+  changeAuthorsCount <- runCount ElkChangeCreatedEvent
+  commentAuthorsCount <- runCount ElkChangeCommentedEvent
+  reviewAuthorsCount <- runCount ElkChangeReviewedEvent
+
+  let activityStatsChangeAuthors = changeAuthorsCount
+      activityStatsCommentAuthors = commentAuthorsCount
+      activityStatsReviewAuthors = reviewAuthorsCount
+      activityStatsCommentsHisto = changeCommentedHisto
+      activityStatsReviewsHisto = changeReviewedHisto
+      activityStatsChangesHisto = changeCreatedHisto
+  pure $ SearchPB.ActivityStats {..}
+  where
+    qf = QueryFlavor Author CreatedAt
+    runCount docType = countToWord <$> withDocType docType (countAuthors qf)
+    getHisto' docType = withDocType docType $ getHistoPB' qf
+    getHistoPB' :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
+    getHistoPB' qf' = fmap toPBHisto <$> getAuthorHisto qf'
+    toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
+    toPBHisto HistoBucket {..} =
+      let histoDate = hbDate
+          histoCount =
+            fromInteger
+              . toInteger
+              . length
+              $ haBuckets hbSubBuckets
+       in SearchPB.Histo {..}

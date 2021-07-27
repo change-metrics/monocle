@@ -61,6 +61,7 @@ type query_request_query_type =
   | Query_new_changes_authors 
   | Query_changes_review_stats 
   | Query_changes_lifecycle_stats 
+  | Query_active_authors_stats 
 
 type query_request = {
   index : string;
@@ -142,6 +143,15 @@ type review_stats = {
   review_histo : histo list;
 }
 
+type activity_stats = {
+  change_authors : int32;
+  comment_authors : int32;
+  review_authors : int32;
+  comments_histo : histo list;
+  reviews_histo : histo list;
+  changes_histo : histo list;
+}
+
 type repo_summary = {
   fullname : string;
   total_changes : int32;
@@ -203,6 +213,7 @@ type query_response =
   | New_authors of terms_count
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
+  | Activity_stats of activity_stats
 
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
@@ -406,6 +417,22 @@ let rec default_review_stats
   review_delay;
   comment_histo;
   review_histo;
+}
+
+let rec default_activity_stats 
+  ?change_authors:((change_authors:int32) = 0l)
+  ?comment_authors:((comment_authors:int32) = 0l)
+  ?review_authors:((review_authors:int32) = 0l)
+  ?comments_histo:((comments_histo:histo list) = [])
+  ?reviews_histo:((reviews_histo:histo list) = [])
+  ?changes_histo:((changes_histo:histo list) = [])
+  () : activity_stats  = {
+  change_authors;
+  comment_authors;
+  review_authors;
+  comments_histo;
+  reviews_histo;
+  changes_histo;
 }
 
 let rec default_repo_summary 

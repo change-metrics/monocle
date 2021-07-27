@@ -6,6 +6,7 @@ import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
 import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
@@ -14,6 +15,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
+import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
@@ -430,6 +432,55 @@ testGetNewContributors = withTenant doTest
         assertEqual'
           "Check getNewContributors results"
           [Q.TermResult {trTerm = "bob", trCount = 1}]
+          results
+
+testGetActivityStats :: Assertion
+testGetActivityStats = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
+
+      let query =
+            let queryBH _ = []
+                queryBounds =
+                  ( addUTCTime (-3600) fakeDate,
+                    addUTCTime 3600 fakeDate
+                  )
+                queryMinBoundsSet = True
+             in Q.Query {..}
+
+      runQueryM query $ do
+        results <- Q.getActivityStats
+        assertEqual'
+          "Check getActivityStats result"
+          ( SearchPB.ActivityStats
+              1
+              1
+              2
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+          )
           results
 
 -- Tests scenario helpers

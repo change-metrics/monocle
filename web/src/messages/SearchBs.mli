@@ -60,6 +60,9 @@ val encode_histo : SearchTypes.histo -> Js.Json.t Js.Dict.t
 val encode_review_stats : SearchTypes.review_stats -> Js.Json.t Js.Dict.t
 (** [encode_review_stats v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_activity_stats : SearchTypes.activity_stats -> Js.Json.t Js.Dict.t
+(** [encode_activity_stats v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_repo_summary : SearchTypes.repo_summary -> Js.Json.t Js.Dict.t
 (** [encode_repo_summary v dict] encodes [v] int the given JSON [dict] *)
 
@@ -143,6 +146,9 @@ val decode_histo : Js.Json.t Js.Dict.t -> SearchTypes.histo
 
 val decode_review_stats : Js.Json.t Js.Dict.t -> SearchTypes.review_stats
 (** [decode_review_stats decoder] decodes a [review_stats] value from [decoder] *)
+
+val decode_activity_stats : Js.Json.t Js.Dict.t -> SearchTypes.activity_stats
+(** [decode_activity_stats decoder] decodes a [activity_stats] value from [decoder] *)
 
 val decode_repo_summary : Js.Json.t Js.Dict.t -> SearchTypes.repo_summary
 (** [decode_repo_summary decoder] decodes a [repo_summary] value from [decoder] *)
