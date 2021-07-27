@@ -803,3 +803,81 @@ getLifecycleStats = do
       | otherwise = m * countToDeci x / countToDeci y
     ratioF x = fromFixed . ratio 100 x
     ratioN x = fromFixed . ratio 1 x
+
+-- | authors activity stats
+getAuthorHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getAuthorHisto qf = do
+  query <- getQuery
+  queryBH <- getQueryBHWithFlavor qf
+
+  let (minDate, maxDate) = Q.queryBounds query
+      duration = elapsedSeconds minDate maxDate
+      interval = durationToHistoInterval duration
+
+      bound =
+        Aeson.object
+          [ "min" .= dateInterval interval minDate,
+            "max" .= dateInterval interval maxDate
+          ]
+      date_histo =
+        Aeson.object
+          [ "field" .= rangeField (qfRange qf),
+            "calendar_interval" .= calendarInterval interval,
+            "format" .= histoIntervalToFormat interval,
+            "min_doc_count" .= (0 :: Word),
+            "extended_bounds" .= bound
+          ]
+      author_agg =
+        Aeson.object
+          [ "authors"
+              .= Aeson.object
+                [ "terms"
+                    .= Aeson.object
+                      [ "field" .= ("author.muid" :: Text),
+                        "size" .= (10000 :: Word)
+                      ]
+                ]
+          ]
+      agg =
+        Aeson.object
+          [ "agg1"
+              .= Aeson.object
+                [ "date_histogram" .= date_histo,
+                  "aggs" .= author_agg
+                ]
+          ]
+      search =
+        Aeson.object
+          [ "aggregations" .= agg,
+            "size" .= (0 :: Word),
+            "query" .= fromMaybe (error "need query") queryBH
+          ]
+
+  liftTenantM $ do
+    index <- getIndexName
+    res <- toAggRes <$> BHR.search index search
+    let agg1 = parseAggregationResults "agg1" res
+    liftIO $ print agg1
+    pure $ heBuckets $ agg1
+
+getActivityStats :: QueryM SearchPB.ActivityStats
+getActivityStats = do
+  changeCreatedHisto <- getHisto' ElkChangeCreatedEvent
+  let activityStatsChangeAuthors = 0
+      activityStatsCommentAuthors = 0
+      activityStatsReviewAuthors = 0
+      activityStatsCommentsHisto = fromList []
+      activityStatsReviewsHisto = fromList []
+      activityStatsChangesHisto = changeCreatedHisto
+  pure $ SearchPB.ActivityStats {..}
+  where
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    getHisto' docType = withDocType docType $ getHistoPB' qf
+    getHistoPB' :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
+    getHistoPB' qf' = fmap toPBHisto <$> getAuthorHisto qf'
+      where
+        toPBHisto :: HistoEventBucket -> SearchPB.Histo
+        toPBHisto HistoEventBucket {..} =
+          let histoDate = heDate
+              histoCount = heCount
+           in SearchPB.Histo {..}

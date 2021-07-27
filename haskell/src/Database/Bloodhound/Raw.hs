@@ -17,6 +17,7 @@ dispatch ::
   LByteString ->
   m BH.Reply
 dispatch method url body = do
+  monocleLog $ decodeUtf8 body
   initReq <- liftIO $ HTTP.parseRequest (toString url)
   let request =
         initReq
@@ -39,6 +40,7 @@ search (BH.IndexName index) body = do
   let url = Text.intercalate "/" [s, index, "_search"]
       method = HTTP.methodPost
   rawResp <- dispatch method url (Aeson.encode body)
+  monocleLog $ show rawResp
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left _e -> handleError rawResp
