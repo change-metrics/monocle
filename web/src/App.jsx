@@ -28,7 +28,6 @@ import PropTypes from 'prop-types'
 import TopMenu from './components/menu'
 import Footer from './components/footer'
 import { LoginView, CUserView } from './components/user'
-import { CAuthorsHistoStats } from './components/authors_histo'
 import { CHotChanges, CColdChanges } from './components/changes'
 import { CRepoChanges } from './components/repos_summary'
 import CFiltersForm from './components/filtersform'
@@ -46,40 +45,6 @@ import NReposView from './components/ReposView.bs.js'
 import ActivePeopleView from './components/ActivePeopleView.bs.js'
 import PeersStengthView from './components/PeersStrengthView.bs.js'
 import NewContributorsView from './components/NewContributorsView.bs.js'
-
-class PeopleView extends React.Component {
-  render() {
-    return (
-      <React.Fragment>
-        <Row>
-          <Col>
-            <CFiltersForm index={this.props.match.params.index} />
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <p></p>
-          </Col>
-        </Row>
-        <Row>
-          <Col>
-            <CAuthorsHistoStats index={this.props.match.params.index} />
-          </Col>
-        </Row>
-      </React.Fragment>
-    )
-  }
-}
-
-PeopleView.propTypes = {
-  history: PropTypes.object.isRequired,
-  location: PropTypes.object.isRequired,
-  match: PropTypes.shape({
-    params: PropTypes.shape({
-      index: PropTypes.string
-    })
-  })
-}
 
 class ReposView extends React.Component {
   render() {
@@ -208,7 +173,6 @@ const LegacyApp = (data) => (
       />
       <Route exact path="/login" component={LoginView} />
       <Route exact path="/user" component={CUserView} />
-      <Route exact path="/:index/people" component={PeopleView} />
       <Route path="/:index/hot-changes" component={HotChangesView} />
       <Route path="/:index/cold-changes" component={ColdChangesView} />
       <Route path="/:index/change/:change" component={ChangeView} />

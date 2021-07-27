@@ -95,12 +95,61 @@ module ChangesReviewStats = {
   }
 }
 
+module CAuthorsHistoStats = {
+  @react.component @module("./authors_histo.jsx")
+  external make: (
+    ~change_authors: int32,
+    ~comment_authors: int32,
+    ~review_authors: int32,
+    ~change_histo: array<SearchTypes.histo>,
+    ~comment_histo: array<SearchTypes.histo>,
+    ~review_histo: array<SearchTypes.histo>,
+  ) => React.element = "CAuthorsHistoStats"
+}
+
+module AuthorHistoStats = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, _) = store
+    let request = {
+      SearchTypes.index: state.index,
+      query: state.query,
+      username: "",
+      query_type: SearchTypes.Query_active_authors_stats,
+      order: None,
+      limit: 0->Int32.of_int,
+    }
+
+    {
+      switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+      | None => <Spinner />
+      | Some(Error(title)) => <Alert variant=#Danger title />
+      | Some(Ok(SearchTypes.Error(err))) =>
+        <Alert
+          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+        />
+      | Some(Ok(SearchTypes.Activity_stats(data))) =>
+        <CAuthorsHistoStats
+          change_authors={data.change_authors}
+          comment_authors={data.comment_authors}
+          review_authors={data.review_authors}
+          change_histo={data.changes_histo->Belt.List.toArray}
+          comment_histo={data.comments_histo->Belt.List.toArray}
+          review_histo={data.reviews_histo->Belt.List.toArray}
+        />
+      | Some(Ok(_)) => /* Response does not match request */ React.null
+      }
+    }
+  }
+}
+
 @react.component
 let make = (~store: Store.t) => {
   <div className="container">
     <MStack>
       <MStackItem> <ChangesLifeCycleStats store /> </MStackItem>
       <MStackItem> <ChangesReviewStats store /> </MStackItem>
+      <MStackItem> <AuthorHistoStats store /> </MStackItem>
     </MStack>
   </div>
 }
