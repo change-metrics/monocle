@@ -190,6 +190,52 @@ histoEventAgg = BH.DateHistogramAgg dateAgg
     dateAgg =
       BH.mkDateHistogram (BH.FieldName "created_at") interval
 
+-- | Author histo
+data HistoAuthorBucket = HistoAuthorBucket
+  { habKey :: LText,
+    habCount :: Word32
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoAuthorBucket where
+  parseJSON (Object v) =
+    HistoAuthorBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON _ = mzero
+
+data HistoAuthors = HistoAuthors
+  { haBuckets :: V.Vector HistoAuthorBucket
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoAuthors where
+  parseJSON (Object v) = HistoAuthors <$> v .: "buckets"
+  parseJSON _ = mzero
+
+-- | TODO: parameterized HistoBucket with the sub buckets
+data HistoBucket = HistoBucket
+  { hbKey :: Word64,
+    hbDate :: LText,
+    hbCount :: Word32,
+    -- TODO: figure out how to derive the key name
+    hbAuthors :: HistoAuthors
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoBucket where
+  parseJSON (Object v) =
+    HistoBucket
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> v .: "authors"
+  parseJSON _ = mzero
+
+newtype HistoAgg = HistoAgg
+  { hBuckets :: V.Vector HistoBucket
+  }
+  deriving (Eq, Show)
+
+instance FromJSON HistoAgg where
+  parseJSON (Object v) = HistoAgg <$> v .: "buckets"
+  parseJSON _ = mzero
+
 -- | AggValue decodes aggregations with a single value
 newtype AggValue = AggValue {getValue :: Double}
 
@@ -805,7 +851,7 @@ getLifecycleStats = do
     ratioN x = fromFixed . ratio 1 x
 
 -- | authors activity stats
-getAuthorHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getAuthorHisto :: QueryFlavor -> QueryM (V.Vector HistoBucket)
 getAuthorHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
@@ -857,8 +903,7 @@ getAuthorHisto qf = do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
     let agg1 = parseAggregationResults "agg1" res
-    liftIO $ print agg1
-    pure $ heBuckets $ agg1
+    pure $ hBuckets $ agg1
 
 getActivityStats :: QueryM SearchPB.ActivityStats
 getActivityStats = do
@@ -876,8 +921,8 @@ getActivityStats = do
     getHistoPB' :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
     getHistoPB' qf' = fmap toPBHisto <$> getAuthorHisto qf'
       where
-        toPBHisto :: HistoEventBucket -> SearchPB.Histo
-        toPBHisto HistoEventBucket {..} =
-          let histoDate = heDate
-              histoCount = heCount
+        toPBHisto :: HistoBucket -> SearchPB.Histo
+        toPBHisto HistoBucket {..} =
+          let histoDate = hbDate
+              histoCount = fromInteger $ toInteger $ length $ haBuckets $ hbAuthors
            in SearchPB.Histo {..}

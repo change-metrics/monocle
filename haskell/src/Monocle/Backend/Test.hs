@@ -471,7 +471,7 @@ testGetActivityStats = withTenant doTest
                       },
                     SearchPB.Histo
                       { histoDate = "2021-05-31 10:00",
-                        histoCount = 4
+                        histoCount = 1
                       },
                     SearchPB.Histo
                       { histoDate = "2021-05-31 11:00",
