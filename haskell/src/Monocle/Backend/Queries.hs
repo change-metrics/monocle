@@ -156,33 +156,6 @@ getEventCounts =
 --         "interval": "day"
 --     }
 -- }
-data HistoEventBucket = HistoEventBucket
-  { heKey :: Word64,
-    heDate :: LText,
-    heCount :: Word32
-  }
-  deriving (Eq, Show)
-
-instance FromJSON HistoEventBucket where
-  parseJSON (Object v) =
-    HistoEventBucket
-      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count"
-  parseJSON _ = mzero
-
-newtype HistoEventAgg = HistoEventAgg
-  { heBuckets :: V.Vector HistoEventBucket
-  }
-  deriving (Eq, Show)
-
-instance FromJSON HistoEventAgg where
-  parseJSON (Object v) = HistoEventAgg <$> v .: "buckets"
-  parseJSON _ = mzero
-
-getHistoEventAgg :: BH.Query -> TenantM HistoEventAgg
-getHistoEventAgg query =
-  parseAggregationResults "agg1"
-    <$> aggSearch (Just query) (Map.fromList [("agg1", histoEventAgg)])
-
 histoEventAgg :: BH.Aggregation
 histoEventAgg = BH.DateHistogramAgg dateAgg
   where
@@ -236,9 +209,14 @@ instance BucketName NoSubBucket where
   bucketName _ = "unused"
 
 instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
-  parseJSON (Object v) =
+  parseJSON (Object v) = do
     HistoBucket
-      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> v .: (bucketName (Proxy @a))
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> parseSubBucket
+    where
+      subKeyName = bucketName (Proxy @a)
+      parseSubBucket
+        | subKeyName == "unused" = pure $ error "no subbucket"
+        | otherwise = v .: subKeyName
   parseJSON _ = mzero
 
 newtype HistoAgg a = HistoAgg
@@ -675,7 +653,7 @@ getNewContributors = do
   pure $ filter (\tr -> trTerm tr `notElem` ba) afterAuthor
 
 -- | getReviewHisto
-getHisto :: QueryFlavor -> QueryM (V.Vector HistoEventBucket)
+getHisto :: QueryFlavor -> QueryM (V.Vector HistoSimple)
 getHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
@@ -711,15 +689,15 @@ getHisto qf = do
   liftTenantM $ do
     index <- getIndexName
     res <- toAggRes <$> BHR.search index search
-    pure $ heBuckets $ parseAggregationResults "agg1" res
+    pure $ hBuckets $ parseAggregationResults "agg1" res
 
 getHistoPB :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
 getHistoPB qf = fmap toPBHisto <$> getHisto qf
   where
-    toPBHisto :: HistoEventBucket -> SearchPB.Histo
-    toPBHisto HistoEventBucket {..} =
-      let histoDate = heDate
-          histoCount = heCount
+    toPBHisto :: HistoSimple -> SearchPB.Histo
+    toPBHisto HistoBucket {..} =
+      let histoDate = hbDate
+          histoCount = hbCount
        in SearchPB.Histo {..}
 
 searchBody :: QueryFlavor -> Value -> QueryM Value

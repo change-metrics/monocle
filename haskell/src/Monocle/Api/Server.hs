@@ -128,8 +128,8 @@ userGroupGet request = do
 
       pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
 
-    toReviewHisto :: Q.HistoEventBucket -> UserGroupPB.ReviewHisto
-    toReviewHisto Q.HistoEventBucket {..} = UserGroupPB.ReviewHisto heKey heCount
+    toReviewHisto :: Q.HistoSimple -> UserGroupPB.ReviewHisto
+    toReviewHisto Q.HistoBucket {..} = UserGroupPB.ReviewHisto hbKey hbCount
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
