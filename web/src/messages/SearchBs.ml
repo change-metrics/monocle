@@ -226,6 +226,24 @@ let default_review_stats_mutable () : review_stats_mutable = {
   review_histo = [];
 }
 
+type activity_stats_mutable = {
+  mutable change_authors : int32;
+  mutable comment_authors : int32;
+  mutable review_authors : int32;
+  mutable comments_histo : SearchTypes.histo list;
+  mutable reviews_histo : SearchTypes.histo list;
+  mutable changes_histo : SearchTypes.histo list;
+}
+
+let default_activity_stats_mutable () : activity_stats_mutable = {
+  change_authors = 0l;
+  comment_authors = 0l;
+  review_authors = 0l;
+  comments_histo = [];
+  reviews_histo = [];
+  changes_histo = [];
+}
+
 type repo_summary_mutable = {
   mutable fullname : string;
   mutable total_changes : int32;
@@ -542,6 +560,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_NEW_CHANGES_AUTHORS" -> (SearchTypes.Query_new_changes_authors : SearchTypes.query_request_query_type)
   | "QUERY_CHANGES_REVIEW_STATS" -> (SearchTypes.Query_changes_review_stats : SearchTypes.query_request_query_type)
   | "QUERY_CHANGES_LIFECYCLE_STATS" -> (SearchTypes.Query_changes_lifecycle_stats : SearchTypes.query_request_query_type)
+  | "QUERY_ACTIVE_AUTHORS_STATS" -> (SearchTypes.Query_active_authors_stats : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -922,6 +941,60 @@ let rec decode_review_stats json =
     SearchTypes.review_histo = v.review_histo;
   } : SearchTypes.review_stats)
 
+let rec decode_activity_stats json =
+  let v = default_activity_stats_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "change_authors" -> 
+      let json = Js.Dict.unsafeGet json "change_authors" in
+      v.change_authors <- Pbrt_bs.int32 json "activity_stats" "change_authors"
+    | "comment_authors" -> 
+      let json = Js.Dict.unsafeGet json "comment_authors" in
+      v.comment_authors <- Pbrt_bs.int32 json "activity_stats" "comment_authors"
+    | "review_authors" -> 
+      let json = Js.Dict.unsafeGet json "review_authors" in
+      v.review_authors <- Pbrt_bs.int32 json "activity_stats" "review_authors"
+    | "comments_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "comments_histo" in 
+        Pbrt_bs.array_ a "activity_stats" "comments_histo"
+      in
+      v.comments_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "activity_stats" "comments_histo"))
+      ) a |> Array.to_list;
+    end
+    | "reviews_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "reviews_histo" in 
+        Pbrt_bs.array_ a "activity_stats" "reviews_histo"
+      in
+      v.reviews_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "activity_stats" "reviews_histo"))
+      ) a |> Array.to_list;
+    end
+    | "changes_histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "changes_histo" in 
+        Pbrt_bs.array_ a "activity_stats" "changes_histo"
+      in
+      v.changes_histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "activity_stats" "changes_histo"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.change_authors = v.change_authors;
+    SearchTypes.comment_authors = v.comment_authors;
+    SearchTypes.review_authors = v.review_authors;
+    SearchTypes.comments_histo = v.comments_histo;
+    SearchTypes.reviews_histo = v.reviews_histo;
+    SearchTypes.changes_histo = v.changes_histo;
+  } : SearchTypes.activity_stats)
+
 let rec decode_repo_summary json =
   let v = default_repo_summary_mutable () in
   let keys = Js.Dict.keys json in
@@ -1202,6 +1275,9 @@ let rec decode_query_response json =
       | "lifecycle_stats" -> 
         let json = Js.Dict.unsafeGet json "lifecycle_stats" in
         (SearchTypes.Lifecycle_stats ((decode_lifecycle_stats (Pbrt_bs.object_ json "query_response" "Lifecycle_stats"))) : SearchTypes.query_response)
+      | "activity_stats" -> 
+        let json = Js.Dict.unsafeGet json "activity_stats" in
+        (SearchTypes.Activity_stats ((decode_activity_stats (Pbrt_bs.object_ json "query_response" "Activity_stats"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1293,6 +1369,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_new_changes_authors -> "QUERY_NEW_CHANGES_AUTHORS"
   | SearchTypes.Query_changes_review_stats -> "QUERY_CHANGES_REVIEW_STATS"
   | SearchTypes.Query_changes_lifecycle_stats -> "QUERY_CHANGES_LIFECYCLE_STATS"
+  | SearchTypes.Query_active_authors_stats -> "QUERY_ACTIVE_AUTHORS_STATS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1509,6 +1586,46 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
   end;
   json
 
+let rec encode_activity_stats (v:SearchTypes.activity_stats) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "change_authors" (Js.Json.number (Int32.to_float v.SearchTypes.change_authors));
+  Js.Dict.set json "comment_authors" (Js.Json.number (Int32.to_float v.SearchTypes.comment_authors));
+  Js.Dict.set json "review_authors" (Js.Json.number (Int32.to_float v.SearchTypes.review_authors));
+  begin (* commentsHisto field *)
+    let (comments_histo':Js.Json.t) =
+      v.SearchTypes.comments_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "comments_histo" comments_histo';
+  end;
+  begin (* reviewsHisto field *)
+    let (reviews_histo':Js.Json.t) =
+      v.SearchTypes.reviews_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "reviews_histo" reviews_histo';
+  end;
+  begin (* changesHisto field *)
+    let (changes_histo':Js.Json.t) =
+      v.SearchTypes.changes_histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "changes_histo" changes_histo';
+  end;
+  json
+
 let rec encode_repo_summary (v:SearchTypes.repo_summary) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "fullname" (Js.Json.string v.SearchTypes.fullname);
@@ -1687,6 +1804,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* lifecycleStats field *)
       let json' = encode_lifecycle_stats v in
       Js.Dict.set json "lifecycle_stats" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Activity_stats v ->
+    begin (* activityStats field *)
+      let json' = encode_activity_stats v in
+      Js.Dict.set json "activity_stats" (Js.Json.object_ json');
     end;
   end;
   json

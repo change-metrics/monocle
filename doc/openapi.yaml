@@ -558,6 +558,29 @@ components:
             properties:
                 full_path:
                     type: string
+        monocle_search_ActivityStats:
+            properties:
+                change_authors:
+                    type: integer
+                    format: uint32
+                comment_authors:
+                    type: integer
+                    format: uint32
+                review_authors:
+                    type: integer
+                    format: uint32
+                comments_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                reviews_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                changes_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
         monocle_search_AuthorPeer:
             properties:
                 author:
@@ -818,6 +841,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_ReviewStats'
                 lifecycle_stats:
                     $ref: '#/components/schemas/monocle_search_LifecycleStats'
+                activity_stats:
+                    $ref: '#/components/schemas/monocle_search_ActivityStats'
         monocle_search_RepoSummary:
             properties:
                 fullname:

@@ -1226,6 +1226,7 @@ data QueryRequest_QueryType
   | QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
   | QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
   | QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  | QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1235,7 +1236,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  maxBound = QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1267,6 +1268,8 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
   toProtoEnumMay 21 =
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  toProtoEnumMay 22 =
+    Hs.Just QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_REPOS_SUMMARY) = 2
@@ -1289,6 +1292,8 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     20
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS) =
     21
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS) =
+    22
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1319,6 +1324,8 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
   parseJSONPB (HsJSONPB.String "QUERY_CHANGES_LIFECYCLE_STATS") =
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  parseJSONPB (HsJSONPB.String "QUERY_ACTIVE_AUTHORS_STATS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -3168,6 +3175,258 @@ instance HsJSONPB.ToSchema ReviewStats where
             }
         )
 
+data ActivityStats = ActivityStats
+  { activityStatsChangeAuthors ::
+      Hs.Word32,
+    activityStatsCommentAuthors :: Hs.Word32,
+    activityStatsReviewAuthors :: Hs.Word32,
+    activityStatsCommentsHisto :: Hs.Vector Monocle.Search.Histo,
+    activityStatsReviewsHisto :: Hs.Vector Monocle.Search.Histo,
+    activityStatsChangesHisto :: Hs.Vector Monocle.Search.Histo
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ActivityStats where
+  nameOf _ = (Hs.fromString "ActivityStats")
+
+instance HsProtobuf.HasDefault ActivityStats
+
+instance HsProtobuf.Message ActivityStats where
+  encodeMessage
+    _
+    ActivityStats
+      { activityStatsChangeAuthors =
+          activityStatsChangeAuthors,
+        activityStatsCommentAuthors = activityStatsCommentAuthors,
+        activityStatsReviewAuthors = activityStatsReviewAuthors,
+        activityStatsCommentsHisto = activityStatsCommentsHisto,
+        activityStatsReviewsHisto = activityStatsReviewsHisto,
+        activityStatsChangesHisto = activityStatsChangesHisto
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                activityStatsChangeAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                activityStatsCommentAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                activityStatsReviewAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsCommentsHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsReviewsHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 12)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsChangesHisto
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ActivityStats)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 10)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 11)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 12)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "change_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "comment_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "review_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "comments_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "reviews_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 12)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "changes_histo")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ActivityStats where
+  toJSONPB (ActivityStats f1 f2 f3 f10 f11 f12) =
+    ( HsJSONPB.object
+        [ "change_authors" .= f1,
+          "comment_authors" .= f2,
+          "review_authors" .= f3,
+          "comments_histo" .= f10,
+          "reviews_histo" .= f11,
+          "changes_histo" .= f12
+        ]
+    )
+  toEncodingPB (ActivityStats f1 f2 f3 f10 f11 f12) =
+    ( HsJSONPB.pairs
+        [ "change_authors" .= f1,
+          "comment_authors" .= f2,
+          "review_authors" .= f3,
+          "comments_histo" .= f10,
+          "reviews_histo" .= f11,
+          "changes_histo" .= f12
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ActivityStats where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ActivityStats"
+        ( \obj ->
+            (Hs.pure ActivityStats) <*> obj .: "change_authors"
+              <*> obj .: "comment_authors"
+              <*> obj .: "review_authors"
+              <*> obj .: "comments_histo"
+              <*> obj .: "reviews_histo"
+              <*> obj .: "changes_histo"
+        )
+    )
+
+instance HsJSONPB.ToJSON ActivityStats where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ActivityStats where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ActivityStats where
+  declareNamedSchema _ =
+    do
+      let declare_change_authors = HsJSONPB.declareSchemaRef
+      activityStatsChangeAuthors <- declare_change_authors Proxy.Proxy
+      let declare_comment_authors = HsJSONPB.declareSchemaRef
+      activityStatsCommentAuthors <- declare_comment_authors Proxy.Proxy
+      let declare_review_authors = HsJSONPB.declareSchemaRef
+      activityStatsReviewAuthors <- declare_review_authors Proxy.Proxy
+      let declare_comments_histo = HsJSONPB.declareSchemaRef
+      activityStatsCommentsHisto <- declare_comments_histo Proxy.Proxy
+      let declare_reviews_histo = HsJSONPB.declareSchemaRef
+      activityStatsReviewsHisto <- declare_reviews_histo Proxy.Proxy
+      let declare_changes_histo = HsJSONPB.declareSchemaRef
+      activityStatsChangesHisto <- declare_changes_histo Proxy.Proxy
+      let _ =
+            Hs.pure ActivityStats
+              <*> HsJSONPB.asProxy declare_change_authors
+              <*> HsJSONPB.asProxy declare_comment_authors
+              <*> HsJSONPB.asProxy declare_review_authors
+              <*> HsJSONPB.asProxy declare_comments_histo
+              <*> HsJSONPB.asProxy declare_reviews_histo
+              <*> HsJSONPB.asProxy declare_changes_histo
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ActivityStats",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "change_authors",
+                            activityStatsChangeAuthors
+                          ),
+                          ( "comment_authors",
+                            activityStatsCommentAuthors
+                          ),
+                          ( "review_authors",
+                            activityStatsReviewAuthors
+                          ),
+                          ( "comments_histo",
+                            activityStatsCommentsHisto
+                          ),
+                          ( "reviews_histo",
+                            activityStatsReviewsHisto
+                          ),
+                          ( "changes_histo",
+                            activityStatsChangesHisto
+                          )
+                        ]
+                  }
+            }
+        )
+
 newtype QueryResponse = QueryResponse
   { queryResponseResult ::
       Hs.Maybe QueryResponseResult
@@ -3252,6 +3511,14 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultActivityStats y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 22)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ActivityStats)
+                            @(HsProtobuf.Nested Monocle.Search.ActivityStats)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -3313,6 +3580,13 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.LifecycleStats))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 22),
+                  (Hs.pure (Hs.fmap QueryResponseResultActivityStats))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ActivityStats))
+                            @(_ (Hs.Maybe Monocle.Search.ActivityStats))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
@@ -3320,10 +3594,12 @@ instance HsProtobuf.Message QueryResponse where
 
 instance HsJSONPB.ToJSONPB QueryResponse where
   toJSONPB
-    (QueryResponse f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21) =
+    ( QueryResponse
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22
+      ) =
       ( HsJSONPB.object
           [ ( let encodeResult =
-                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21 of
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22 of
                         Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                         Hs.Just (QueryResponseResultChanges f2) ->
                           (HsJSONPB.pair "changes" f2)
@@ -3339,6 +3615,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                           (HsJSONPB.pair "review_stats" f20)
                         Hs.Just (QueryResponseResultLifecycleStats f21) ->
                           (HsJSONPB.pair "lifecycle_stats" f21)
+                        Hs.Just (QueryResponseResultActivityStats f22) ->
+                          (HsJSONPB.pair "activity_stats" f22)
                         Hs.Nothing -> Hs.mempty
                     )
                in \options ->
@@ -3351,10 +3629,12 @@ instance HsJSONPB.ToJSONPB QueryResponse where
           ]
       )
   toEncodingPB
-    (QueryResponse f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21) =
+    ( QueryResponse
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22
+      ) =
       ( HsJSONPB.pairs
           [ ( let encodeResult =
-                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21 of
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22 of
                         Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                         Hs.Just (QueryResponseResultChanges f2) ->
                           (HsJSONPB.pair "changes" f2)
@@ -3370,6 +3650,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                           (HsJSONPB.pair "review_stats" f20)
                         Hs.Just (QueryResponseResultLifecycleStats f21) ->
                           (HsJSONPB.pair "lifecycle_stats" f21)
+                        Hs.Just (QueryResponseResultActivityStats f22) ->
+                          (HsJSONPB.pair "activity_stats" f22)
                         Hs.Nothing -> Hs.mempty
                     )
                in \options ->
@@ -3404,6 +3686,8 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "review_stats"),
                               Hs.Just Hs.. QueryResponseResultLifecycleStats
                                 <$> (HsJSONPB.parseField parseObj "lifecycle_stats"),
+                              Hs.Just Hs.. QueryResponseResultActivityStats
+                                <$> (HsJSONPB.parseField parseObj "activity_stats"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -3454,6 +3738,7 @@ data QueryResponseResult
   | QueryResponseResultNewAuthors Monocle.Search.TermsCount
   | QueryResponseResultReviewStats Monocle.Search.ReviewStats
   | QueryResponseResultLifecycleStats Monocle.Search.LifecycleStats
+  | QueryResponseResultActivityStats Monocle.Search.ActivityStats
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -3508,6 +3793,13 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultLifecycleStats
               <*> HsJSONPB.asProxy declare_lifecycle_stats
+      let declare_activity_stats = HsJSONPB.declareSchemaRef
+      queryResponseResultActivityStats <-
+        declare_activity_stats
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultActivityStats
+              <*> HsJSONPB.asProxy declare_activity_stats
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -3540,6 +3832,9 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ),
                           ( "lifecycle_stats",
                             queryResponseResultLifecycleStats
+                          ),
+                          ( "activity_stats",
+                            queryResponseResultActivityStats
                           )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
