@@ -26,11 +26,8 @@ module Column = {
         | _ =>
           ignore(
             WebApi.Search.query({
-              index: state.index,
-              query: state.query,
-              username: "",
-              query_type: SearchTypes.Query_change,
-              limit: state.limit->Int32.of_int,
+              ...Store.mkSearchRequest(state, SearchTypes.Query_change),
+              query: query,
               order: column.order,
             }) |> Js.Promise.then_(handleOk),
           )
@@ -71,11 +68,8 @@ module Column = {
       | _ =>
         ignore(
           WebApi.Search.query({
-            index: state.index,
-            query: state.query,
-            username: "",
-            query_type: SearchTypes.Query_change,
-            limit: state.limit->Int32.of_int,
+            ...Store.mkSearchRequest(state, SearchTypes.Query_change),
+            query: query,
             order: column.order,
           }) |> Js.Promise.then_(handleOk),
         )

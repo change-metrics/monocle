@@ -142,6 +142,16 @@ module Fetch = {
 
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
+let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_query_type) => {
+  SearchTypes.index: state.index,
+  username: "",
+  query: state.query,
+  query_type: query_type,
+  order: state.order,
+  limit: state.limit->Int32.of_int,
+  change_id: "",
+}
+
 // Hook API
 type t = (Store.t, Store.action => unit)
 

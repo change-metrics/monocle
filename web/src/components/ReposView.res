@@ -77,16 +77,9 @@ module RepoSummaryTable = {
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
-  let index = state.index
-  let request = {
-    SearchTypes.index: index,
-    query: state.query,
-    username: "",
-    query_type: SearchTypes.Query_repos_summary,
-    // order and limit are not handled server side
-    order: None,
-    limit: 0->Int32.of_int,
-  }
+
+  let request = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
+
   <div>
     {switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
     | None => <Spinner />

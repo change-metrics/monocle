@@ -3,15 +3,10 @@ open Prelude
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
-  let index = state.index
   let query = addQuery(state.query, state.filter)
   let request = {
-    SearchTypes.index: index,
+    ...Store.mkSearchRequest(state, SearchTypes.Query_change),
     query: query,
-    username: "",
-    query_type: SearchTypes.Query_change,
-    limit: 50->Int32.of_int,
-    order: state.order,
   }
 
   <div>
