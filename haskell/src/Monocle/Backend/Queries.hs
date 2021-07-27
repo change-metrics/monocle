@@ -779,7 +779,7 @@ getLifecycleStats = do
   updated <-
     withFilter
       [documentTypes $ fromList [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]]
-      countDocs'
+      countEvents
 
   let lifecycleStatsUpdatesOfChanges = countToWord updated
 
@@ -793,6 +793,7 @@ getLifecycleStats = do
 
   pure $ SearchPB.LifecycleStats {..}
   where
+    countEvents = countDocs (QueryFlavor Monocle.Search.Query.Author OnCreatedAt)
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType $ getHistoPB qf
     getHistos' docTypes = withDocTypes docTypes $ getHistoPB qf

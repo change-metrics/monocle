@@ -49,10 +49,11 @@ data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 --
 -- In other words, to get all the change updated recently, use UpdatedAt.
 -- But to get all the event (such as review event), use CreatedAt.
-data RangeFlavor = CreatedAt | UpdatedAt deriving (Show, Eq)
+data RangeFlavor = OnCreatedAt | CreatedAt | UpdatedAt deriving (Show, Eq)
 
 rangeField :: RangeFlavor -> Text
 rangeField = \case
+  OnCreatedAt -> "on_created_at"
   CreatedAt -> "created_at"
   UpdatedAt -> "updated_at"
 
