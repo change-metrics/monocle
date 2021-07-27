@@ -116,7 +116,10 @@ data ELKDocType
   | ElkChangeCommitForcePushedEvent
   | ElkChangeCommitPushedEvent
   | ElkChange
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
+
+allEventTypes :: [ELKDocType]
+allEventTypes = filter (/= ElkChange) [minBound .. maxBound]
 
 docTypeToText :: ELKDocType -> LText
 docTypeToText = \case

@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
-import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), authorMuid, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
@@ -43,7 +43,28 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionDESC -> BH.Descending
 
 changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
-changeEvents changeID limit = pure undefined
+changeEvents changeID limit = dropQuery $
+  withFilter [mkTerm "change_id" (toText changeID)] $ do
+    change <- fromMaybe (error "Unknown change") . headMaybe <$> getChange
+
+    -- Collect all the events
+    result <- withDocTypes allEventTypes $ do
+      query <- getQueryBHWithFlavor (QueryFlavor Author CreatedAt)
+      let search = (BH.mkSearch query Nothing) {BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit}
+      liftTenantM $ do
+        index <- getIndexName
+        resp <- fmap BH.hitSource <$> BH.scanSearch index search
+        pure $ catMaybes resp
+
+    pure (change, result)
+  where
+    getChange = withDocType ElkChange $ do
+      query <- getQueryBHWithFlavor (QueryFlavor Author CreatedAt)
+      let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 1}
+      liftTenantM $ do
+        index <- getIndexName
+        resp <- fmap BH.hitSource <$> BH.scanSearch index search
+        pure $ catMaybes resp
 
 doCount :: BH.Query -> TenantM Count
 doCount query = do

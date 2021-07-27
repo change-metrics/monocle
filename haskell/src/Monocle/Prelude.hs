@@ -5,6 +5,7 @@ module Monocle.Prelude
     double2Float,
     orDie,
     getExn,
+    headMaybe,
 
     -- * exceptions
     MonadThrow,
@@ -68,6 +69,9 @@ import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
+
+headMaybe :: [a] -> Maybe a
+headMaybe xs = head <$> nonEmpty xs
 
 -- $setup
 -- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime

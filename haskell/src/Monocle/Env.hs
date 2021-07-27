@@ -101,6 +101,11 @@ getQueryBH = getQueryBHWithFlavor Q.defaultQueryFlavor
 liftTenantM :: TenantM a -> QueryM a
 liftTenantM = lift
 
+dropQuery :: QueryM a -> QueryM a
+dropQuery = local dropQuery'
+  where
+    dropQuery' query = query {Q.queryBH = const []}
+
 -- | 'withFilter' run a queryM with a modified filter query
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
 withFilter extraQueries = local addFilter

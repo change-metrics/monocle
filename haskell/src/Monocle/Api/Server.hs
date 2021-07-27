@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText, docTypeToText)
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -133,7 +133,6 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -417,7 +416,16 @@ searchQuery request = do
        in SearchPB.ChangeAndEvents {..}
 
     toEventResult :: ELKChangeEvent -> SearchPB.ChangeEvent
-    toEventResult event = undefined
+    toEventResult ELKChangeEvent {..} =
+      let changeEventId = elkchangeeventId
+          changeEventType = docTypeToText elkchangeeventType
+          changeEventChangeId = elkchangeeventChangeId
+          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
+          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
+          changeEventAuthor = authorMuid elkchangeeventAuthor
+          changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
+          changeEventBranch = elkchangeeventBranch
+       in SearchPB.ChangeEvent {..}
 
     toChangeResult :: ELKChange -> SearchPB.Change
     toChangeResult change =
