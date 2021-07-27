@@ -5,7 +5,9 @@
 
 type axiosResponse<'data> = {data: 'data}
 type axios<'data> = Js.Promise.t<axiosResponse<'data>>
-@module("../api.js") external serverUrl: string = "server"
+let serverUrl = %raw(`
+  (window.API_URL !== '__API_URL__' ? window.API_URL : process.env.REACT_APP_API_URL || '')
+`)
 
 module Config = {
   @module("axios")
