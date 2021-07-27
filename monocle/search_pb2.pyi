@@ -226,6 +226,7 @@ class QueryRequest(google.protobuf.message.Message):
         QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
         QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
         QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
+        QUERY_NEW_CHANGES_AUTHORS = QueryRequest.QueryType.V(10)
     class QueryType(metaclass=_QueryType):
         V = typing.NewType("V", builtins.int)
     QUERY_CHANGE = QueryRequest.QueryType.V(0)
@@ -238,6 +239,7 @@ class QueryRequest(google.protobuf.message.Message):
     QUERY_TOP_REVIEWED_AUTHORS = QueryRequest.QueryType.V(7)
     QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
     QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
+    QUERY_NEW_CHANGES_AUTHORS = QueryRequest.QueryType.V(10)
 
     INDEX_FIELD_NUMBER: builtins.int
     USERNAME_FIELD_NUMBER: builtins.int
@@ -583,6 +585,7 @@ class QueryResponse(google.protobuf.message.Message):
     REPOS_SUMMARY_FIELD_NUMBER: builtins.int
     TOP_AUTHORS_FIELD_NUMBER: builtins.int
     AUTHORS_PEERS_FIELD_NUMBER: builtins.int
+    NEW_AUTHORS_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
@@ -593,6 +596,8 @@ class QueryResponse(google.protobuf.message.Message):
     def top_authors(self) -> global___TermsCount: ...
     @property
     def authors_peers(self) -> global___AuthorsPeers: ...
+    @property
+    def new_authors(self) -> global___TermsCount: ...
     def __init__(
         self,
         *,
@@ -601,6 +606,7 @@ class QueryResponse(google.protobuf.message.Message):
         repos_summary: typing.Optional[global___ReposSummary] = ...,
         top_authors: typing.Optional[global___TermsCount] = ...,
         authors_peers: typing.Optional[global___AuthorsPeers] = ...,
+        new_authors: typing.Optional[global___TermsCount] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -611,6 +617,8 @@ class QueryResponse(google.protobuf.message.Message):
             b"changes",
             "error",
             b"error",
+            "new_authors",
+            b"new_authors",
             "repos_summary",
             b"repos_summary",
             "result",
@@ -628,6 +636,8 @@ class QueryResponse(google.protobuf.message.Message):
             b"changes",
             "error",
             b"error",
+            "new_authors",
+            b"new_authors",
             "repos_summary",
             b"repos_summary",
             "result",
@@ -639,7 +649,12 @@ class QueryResponse(google.protobuf.message.Message):
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
     ) -> typing_extensions.Literal[
-        "error", "changes", "repos_summary", "top_authors", "authors_peers"
+        "error",
+        "changes",
+        "repos_summary",
+        "top_authors",
+        "authors_peers",
+        "new_authors",
     ]: ...
 
 global___QueryResponse = QueryResponse

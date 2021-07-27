@@ -1224,6 +1224,7 @@ data QueryRequest_QueryType
   | QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
   | QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  | QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1233,7 +1234,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  maxBound = QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1261,6 +1262,8 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   toProtoEnumMay 9 =
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  toProtoEnumMay 10 =
+    Hs.Just QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE) = 1
@@ -1278,6 +1281,8 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
   fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS) =
     8
   fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS) = 9
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS) =
+    10
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1304,6 +1309,8 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_PEERS") =
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  parseJSONPB (HsJSONPB.String "QUERY_NEW_CHANGES_AUTHORS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -2756,6 +2763,14 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultNewAuthors y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 6)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                            @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2796,16 +2811,23 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.AuthorsPeers))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 6),
+                  (Hs.pure (Hs.fmap QueryResponseResultNewAuthors))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+                            @(_ (Hs.Maybe Monocle.Search.TermsCount))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB QueryResponse where
-  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
+  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5_or_f6) =
     ( HsJSONPB.object
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
+                  ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
@@ -2815,6 +2837,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                         (HsJSONPB.pair "top_authors" f4)
                       Hs.Just (QueryResponseResultAuthorsPeers f5) ->
                         (HsJSONPB.pair "authors_peers" f5)
+                      Hs.Just (QueryResponseResultNewAuthors f6) ->
+                        (HsJSONPB.pair "new_authors" f6)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2826,10 +2850,10 @@ instance HsJSONPB.ToJSONPB QueryResponse where
           )
         ]
     )
-  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
+  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5_or_f6) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
+                  ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6 of
                       Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (QueryResponseResultChanges f2) ->
                         (HsJSONPB.pair "changes" f2)
@@ -2839,6 +2863,8 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                         (HsJSONPB.pair "top_authors" f4)
                       Hs.Just (QueryResponseResultAuthorsPeers f5) ->
                         (HsJSONPB.pair "authors_peers" f5)
+                      Hs.Just (QueryResponseResultNewAuthors f6) ->
+                        (HsJSONPB.pair "new_authors" f6)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -2867,6 +2893,8 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "top_authors"),
                               Hs.Just Hs.. QueryResponseResultAuthorsPeers
                                 <$> (HsJSONPB.parseField parseObj "authors_peers"),
+                              Hs.Just Hs.. QueryResponseResultNewAuthors
+                                <$> (HsJSONPB.parseField parseObj "new_authors"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -2914,6 +2942,7 @@ data QueryResponseResult
   | QueryResponseResultReposSummary Monocle.Search.ReposSummary
   | QueryResponseResultTopAuthors Monocle.Search.TermsCount
   | QueryResponseResultAuthorsPeers Monocle.Search.AuthorsPeers
+  | QueryResponseResultNewAuthors Monocle.Search.TermsCount
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -2951,6 +2980,11 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultAuthorsPeers
               <*> HsJSONPB.asProxy declare_authors_peers
+      let declare_new_authors = HsJSONPB.declareSchemaRef
+      queryResponseResultNewAuthors <- declare_new_authors Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultNewAuthors
+              <*> HsJSONPB.asProxy declare_new_authors
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2974,6 +3008,9 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ),
                           ( "authors_peers",
                             queryResponseResultAuthorsPeers
+                          ),
+                          ( "new_authors",
+                            queryResponseResultNewAuthors
                           )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,

@@ -1,37 +1,15 @@
--- | The api configuration environment
-module Monocle.Servant.Env
-  ( -- * AppM : the global environment
-    Env (..),
-    AppM (..),
-    getConfig,
+-- | The library environment and logging functions
+module Monocle.Env where
 
-    -- * TenantM : the request environment
-    TenantM,
-    runTenantM,
-    runTenantM',
-    tenantIndexName,
-    getIndexName,
-    getIndexConfig,
-
-    -- * QueryM : the query environment
-    QueryM,
-    runQueryM,
-    getQuery,
-    getQueryBH,
-    getQueryBHWithFlavor,
-    mkFinalQuery,
-    liftTenantM,
-    withFilter,
-    runTenantQueryM,
-  )
-where
-
-import Control.Monad.Catch (MonadThrow)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
-import qualified Monocle.Search.Syntax as Q
-import Relude
+import Monocle.Prelude
+import Monocle.Search (QueryRequest_QueryType (..))
+import qualified Monocle.Search.Query as Q
 import Servant (Handler)
+
+-------------------------------------------------------------------------------
+-- context monads and utility functions
 
 -- | 'Env' is the global environment
 data Env = Env
@@ -131,3 +109,31 @@ withFilter extraQueries = local addFilter
       -- create a new queryBH
       let newQueryBH qf = extraQueries <> Q.queryBH query qf
        in query {Q.queryBH = newQueryBH}
+
+data Entity = Project {getName :: Text} | Organization {getName :: Text}
+  deriving (Eq, Show)
+
+-------------------------------------------------------------------------------
+-- logging function
+data MonocleEvent
+  = AddingChange LText Int Int
+  | AddingProject Text Text Int
+  | UpdatingEntity LText Entity UTCTime
+  | Searching QueryRequest_QueryType LText Q.Query
+
+eventToText :: MonocleEvent -> Text
+eventToText ev = case ev of
+  AddingChange crawler changes events ->
+    toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
+  AddingProject crawler organizationName projects ->
+    crawler <> " adding " <> show projects <> " changes for organization" <> organizationName
+  UpdatingEntity crawler entity ts ->
+    toStrict crawler <> " updating " <> show entity <> " to " <> show ts
+  Searching queryType queryText query ->
+    let jsonQuery = decodeUtf8 . encode $ Q.queryBH query Q.defaultQueryFlavor
+     in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
+
+monocleLogEvent :: MonocleEvent -> TenantM ()
+monocleLogEvent ev = do
+  Config.Index {..} <- getIndexConfig
+  sayErr $ name <> ": " <> eventToText ev

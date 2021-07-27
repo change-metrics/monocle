@@ -544,6 +544,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_TOP_REVIEWED_AUTHORS" -> (SearchTypes.Query_top_reviewed_authors : SearchTypes.query_request_query_type)
   | "QUERY_TOP_COMMENTED_AUTHORS" -> (SearchTypes.Query_top_commented_authors : SearchTypes.query_request_query_type)
   | "QUERY_TOP_AUTHORS_PEERS" -> (SearchTypes.Query_top_authors_peers : SearchTypes.query_request_query_type)
+  | "QUERY_NEW_CHANGES_AUTHORS" -> (SearchTypes.Query_new_changes_authors : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -999,6 +1000,9 @@ let rec decode_query_response json =
       | "authors_peers" -> 
         let json = Js.Dict.unsafeGet json "authors_peers" in
         (SearchTypes.Authors_peers ((decode_authors_peers (Pbrt_bs.object_ json "query_response" "Authors_peers"))) : SearchTypes.query_response)
+      | "new_authors" -> 
+        let json = Js.Dict.unsafeGet json "new_authors" in
+        (SearchTypes.New_authors ((decode_terms_count (Pbrt_bs.object_ json "query_response" "New_authors"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1286,6 +1290,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_top_reviewed_authors -> "QUERY_TOP_REVIEWED_AUTHORS"
   | SearchTypes.Query_top_commented_authors -> "QUERY_TOP_COMMENTED_AUTHORS"
   | SearchTypes.Query_top_authors_peers -> "QUERY_TOP_AUTHORS_PEERS"
+  | SearchTypes.Query_new_changes_authors -> "QUERY_NEW_CHANGES_AUTHORS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1540,6 +1545,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* authorsPeers field *)
       let json' = encode_authors_peers v in
       Js.Dict.set json "authors_peers" (Js.Json.object_ json');
+    end;
+  | SearchTypes.New_authors v ->
+    begin (* newAuthors field *)
+      let json' = encode_terms_count v in
+      Js.Dict.set json "new_authors" (Js.Json.object_ json');
     end;
   end;
   json

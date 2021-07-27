@@ -17,9 +17,10 @@ import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (LentilleStream, runLentilleM)
-import Monocle.Api.Client.Api
-import Monocle.Api.Client.Worker hiding (run)
 import Monocle.Change (Change, ChangeEvent)
+import Monocle.Client (MonocleClient)
+import Monocle.Client.Api
+import Monocle.Client.Worker hiding (run)
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)

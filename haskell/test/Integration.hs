@@ -22,6 +22,7 @@ monocleIntegrationTests =
       testCase "Test reposSummary" testReposSummary,
       testCase "Test top authors" testTopAuthors,
       testCase "Test authors peers strength" testGetAuthorsPeersStrength,
+      testCase "Test newContributors" testGetNewContributors,
       testCase
         "Index ProjectCrawlerMetadata"
         testProjectCrawlerMetadata,

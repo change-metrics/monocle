@@ -313,7 +313,7 @@ the initial date.
 
 #### Task crawler library
 
-[Monocle.Api.Client.Worker](./haskell/src/Monocle/Api/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
+[Monocle.Client.Worker](./haskell/src/Monocle/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
 
 ### Full configuration file example
 

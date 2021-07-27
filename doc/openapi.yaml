@@ -744,6 +744,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
                 authors_peers:
                     $ref: '#/components/schemas/monocle_search_AuthorsPeers'
+                new_authors:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
         monocle_search_RepoSummary:
             properties:
                 fullname:

@@ -6,6 +6,39 @@
 
 open Prelude
 
+module ConnectionDiagram = {
+  type t = {a1: string, a2: string, s: int}
+  @react.component @module("./connection_diagram")
+  external make: (~data: array<t>) => React.element = "default"
+
+  let adapt = (peers: list<SearchTypes.author_peer>) => {
+    let rec go = (xs: list<SearchTypes.author_peer>, acc: list<t>) =>
+      switch xs {
+      | list{} => acc
+      | list{x, ...rest} => {
+          // Look for a reverse peer (and remove it from the remaining list)
+          let (otherLink, remaining) =
+            rest->Belt.List.partition(e => x.author == e.peer && x.peer == e.author)
+          // If there is one, get its strength
+          let extraStrength = switch otherLink {
+          // here we assume there can only be one other link
+          | list{y} => y.strength->Int32.to_int
+          | _ => 0
+          }
+          // Continue with the remaining
+          remaining->go(
+            acc->Belt.List.add({
+              a1: x.author,
+              a2: x.peer,
+              s: x.strength->Int32.to_int + extraStrength,
+            }),
+          )
+        }
+      }
+    peers->go(list{})->Belt.List.toArray
+  }
+}
+
 module PeersStrengthTable = {
   @react.component
   let make = (~items: list<SearchTypes.author_peer>) => {
@@ -28,37 +61,20 @@ module PeersStrengthTable = {
   }
 }
 
-module LimitSelector = {
-  @react.component
-  let make = (~limit: int, ~setLimit: (int => int) => unit) => {
-    let setLimit' = str => {
-      let v = str == "" ? 25 : str->int_of_string
-      setLimit(_ => v)
-    }
-    <Patternfly.Layout.Bullseye>
-      <MSelect
-        placeholder={"Set limit"}
-        options={list{10, 25, 50, 100, 500}->Belt.List.map(string_of_int)}
-        multi={false}
-        value={limit > 0 ? limit->string_of_int : ""}
-        valueChanged={setLimit'}
-      />
-    </Patternfly.Layout.Bullseye>
-  }
-}
-
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
   let index = state.index
   let query = state.query
   let (limit, setLimit) = React.useState(() => 25)
+  let limit_values = list{10, 25, 50, 100, 500}
+  let tooltip_content = "This shows the strength between change authors and peer reviewers"
   let request = {
     SearchTypes.index: index,
     query: query,
     username: "",
     query_type: SearchTypes.Query_top_authors_peers,
-    // Not hendled server side
+    // Not handled server side
     order: None,
     limit: limit->Int32.of_int,
   }
@@ -75,11 +91,25 @@ let make = (~store: Store.t) => {
         <Card isCompact=true>
           <CardTitle>
             <MGrid>
-              <MGridItem> {"Peers Strength"->str} </MGridItem>
-              <MGridItem> <LimitSelector limit setLimit /> </MGridItem>
+              <MGridItemXl9>
+                <Title headingLevel=#H3>
+                  <Tooltip content=tooltip_content> <Patternfly.Icons.Integration /> </Tooltip>
+                  {(" " ++ "Peers Strength")->str}
+                </Title>
+              </MGridItemXl9>
+              <MGridItemXl3>
+                <LimitSelector limit setLimit default=25 values=limit_values />
+              </MGridItemXl3>
             </MGrid>
           </CardTitle>
-          <CardBody> <PeersStrengthTable items={tps.author_peer} /> </CardBody>
+          <CardBody>
+            <MGrid>
+              <MGridItemXl5> <PeersStrengthTable items={tps.author_peer} /> </MGridItemXl5>
+              <MGridItemXl7>
+                <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
+              </MGridItemXl7>
+            </MGrid>
+          </CardBody>
         </Card>
       </MCenteredContent>
     | Some(Ok(_)) => React.null
