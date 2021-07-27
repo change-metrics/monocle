@@ -211,28 +211,42 @@ instance FromJSON HistoAuthors where
   parseJSON (Object v) = HistoAuthors <$> v .: "buckets"
   parseJSON _ = mzero
 
--- | TODO: parameterized HistoBucket with the sub buckets
-data HistoBucket = HistoBucket
+instance BucketName HistoAuthors where
+  bucketName _ = "authors"
+
+data HistoBucket a = HistoBucket
   { hbKey :: Word64,
     hbDate :: LText,
     hbCount :: Word32,
-    -- TODO: figure out how to derive the key name
-    hbAuthors :: HistoAuthors
+    hbSubBuckets :: a
   }
   deriving (Eq, Show)
 
-instance FromJSON HistoBucket where
-  parseJSON (Object v) =
-    HistoBucket
-      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> v .: "authors"
+class BucketName a where
+  bucketName :: Proxy a -> Text
+
+newtype NoSubBucket = NoSubBucket (Maybe Void)
+
+instance FromJSON NoSubBucket where
   parseJSON _ = mzero
 
-newtype HistoAgg = HistoAgg
-  { hBuckets :: V.Vector HistoBucket
+type HistoSimple = HistoBucket NoSubBucket
+
+instance BucketName NoSubBucket where
+  bucketName _ = "unused"
+
+instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
+  parseJSON (Object v) =
+    HistoBucket
+      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> v .: (bucketName (Proxy @a))
+  parseJSON _ = mzero
+
+newtype HistoAgg a = HistoAgg
+  { hBuckets :: V.Vector (HistoBucket a)
   }
   deriving (Eq, Show)
 
-instance FromJSON HistoAgg where
+instance (FromJSON a, BucketName a) => FromJSON (HistoAgg a) where
   parseJSON (Object v) = HistoAgg <$> v .: "buckets"
   parseJSON _ = mzero
 
@@ -851,7 +865,7 @@ getLifecycleStats = do
     ratioN x = fromFixed . ratio 1 x
 
 -- | authors activity stats
-getAuthorHisto :: QueryFlavor -> QueryM (V.Vector HistoBucket)
+getAuthorHisto :: QueryFlavor -> QueryM (V.Vector (HistoBucket HistoAuthors))
 getAuthorHisto qf = do
   query <- getQuery
   queryBH <- getQueryBHWithFlavor qf
@@ -921,8 +935,8 @@ getActivityStats = do
     getHistoPB' :: QueryFlavor -> QueryM (V.Vector SearchPB.Histo)
     getHistoPB' qf' = fmap toPBHisto <$> getAuthorHisto qf'
       where
-        toPBHisto :: HistoBucket -> SearchPB.Histo
+        toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
         toPBHisto HistoBucket {..} =
           let histoDate = hbDate
-              histoCount = fromInteger $ toInteger $ length $ haBuckets $ hbAuthors
+              histoCount = fromInteger $ toInteger $ length $ haBuckets $ hbSubBuckets
            in SearchPB.Histo {..}
