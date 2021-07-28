@@ -80,6 +80,7 @@ message QueryRequest {
 
     // Change page
     QUERY_CHANGE_AND_EVENTS = 30;
+    QUERY_CHANGES_TOPS = 31;
   }
   QueryType query_type = 4;
 
@@ -211,6 +212,7 @@ message QueryResponse {
     LifecycleStats lifecycle_stats = 21;
     ActivityStats activity_stats = 22;
     ChangeAndEvents change_events = 30;
+    ChangesTops changes_tops = 31;
   }
 }
 
@@ -261,6 +263,7 @@ message TermCount {
 
 message TermsCount {
   repeated TermCount termcount = 1;
+  uint32 total_terms = 2;
 }
 
 message AuthorPeer {
@@ -271,4 +274,10 @@ message AuthorPeer {
 
 message AuthorsPeers {
   repeated AuthorPeer author_peer = 1;
+}
+
+message ChangesTops {
+  TermsCount authors = 1;
+  TermsCount repos = 2;
+  TermsCount approvals = 3;
 }

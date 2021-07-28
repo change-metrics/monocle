@@ -66,6 +66,7 @@ type query_request_query_type =
   | Query_changes_lifecycle_stats 
   | Query_active_authors_stats 
   | Query_change_and_events 
+  | Query_changes_tops 
 
 type query_request = {
   index : string;
@@ -192,6 +193,7 @@ type term_count = {
 
 type terms_count = {
   termcount : term_count list;
+  total_terms : int32;
 }
 
 type author_peer = {
@@ -225,6 +227,12 @@ type lifecycle_stats = {
   commits_per_change : float;
 }
 
+type changes_tops = {
+  authors : terms_count option;
+  repos : terms_count option;
+  approvals : terms_count option;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
@@ -236,6 +244,7 @@ type query_response =
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
   | Change_events of change_and_events
+  | Changes_tops of changes_tops
 
 
 (** {2 Default values} *)
@@ -452,6 +461,7 @@ val default_term_count :
 
 val default_terms_count : 
   ?termcount:term_count list ->
+  ?total_terms:int32 ->
   unit ->
   terms_count
 (** [default_terms_count ()] is the default value for type [terms_count] *)
@@ -492,6 +502,14 @@ val default_lifecycle_stats :
   unit ->
   lifecycle_stats
 (** [default_lifecycle_stats ()] is the default value for type [lifecycle_stats] *)
+
+val default_changes_tops : 
+  ?authors:terms_count option ->
+  ?repos:terms_count option ->
+  ?approvals:terms_count option ->
+  unit ->
+  changes_tops
+(** [default_changes_tops ()] is the default value for type [changes_tops] *)
 
 val default_query_response : unit -> query_response
 (** [default_query_response ()] is the default value for type [query_response] *)

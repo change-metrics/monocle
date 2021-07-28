@@ -359,13 +359,15 @@ searchQuery request = do
             . V.fromList
             . map toAPeerResult
             <$> Q.getAuthorsPeersStrength queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultNewAuthors
-            . SearchPB.TermsCount
-            . V.fromList
-            . map toTTResult
-            <$> Q.getNewContributors
+        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
+          results <- Q.getNewContributors
+          pure $
+            SearchPB.QueryResponse . Just $
+              SearchPB.QueryResponseResultNewAuthors $
+                toTermsCount (V.fromList $ toTTResult <$> results) 0
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
+          pure $
+            handleError $ ParseError "Not implemented" 1
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -378,12 +380,12 @@ searchQuery request = do
 
     handleTopAuthorsQ :: Word32 -> (Int -> QueryM [Q.TermResult]) -> QueryM QueryResponse
     handleTopAuthorsQ limit cb = do
-      SearchPB.QueryResponse . Just
-        . SearchPB.QueryResponseResultTopAuthors
-        . SearchPB.TermsCount
-        . V.fromList
-        . map toTTResult
-        <$> cb limit'
+      results <- cb limit'
+      pure $
+        SearchPB.QueryResponse
+          . Just
+          $ SearchPB.QueryResponseResultTopAuthors $
+            toTermsCount (V.fromList $ toTTResult <$> results) 0
       where
         limit' = fromInteger $ toInteger limit
 
@@ -393,6 +395,12 @@ searchQuery request = do
         (toLazy psrAuthor)
         (toLazy psrPeer)
         psrStrength
+
+    toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
+    toTermsCount tcV total =
+      let termsCountTermcount = tcV
+          termsCountTotalTerms = total
+       in SearchPB.TermsCount {..}
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =

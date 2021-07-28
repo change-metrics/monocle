@@ -63,6 +63,7 @@ type query_request_query_type =
   | Query_changes_lifecycle_stats 
   | Query_active_authors_stats 
   | Query_change_and_events 
+  | Query_changes_tops 
 
 type query_request = {
   index : string;
@@ -189,6 +190,7 @@ type term_count = {
 
 type terms_count = {
   termcount : term_count list;
+  total_terms : int32;
 }
 
 type author_peer = {
@@ -222,6 +224,12 @@ type lifecycle_stats = {
   commits_per_change : float;
 }
 
+type changes_tops = {
+  authors : terms_count option;
+  repos : terms_count option;
+  approvals : terms_count option;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
@@ -233,6 +241,7 @@ type query_response =
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
   | Change_events of change_and_events
+  | Changes_tops of changes_tops
 
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
@@ -514,8 +523,10 @@ let rec default_term_count
 
 let rec default_terms_count 
   ?termcount:((termcount:term_count list) = [])
+  ?total_terms:((total_terms:int32) = 0l)
   () : terms_count  = {
   termcount;
+  total_terms;
 }
 
 let rec default_author_peer 
@@ -572,6 +583,16 @@ let rec default_lifecycle_stats
   changes_with_tests;
   iterations_per_change;
   commits_per_change;
+}
+
+let rec default_changes_tops 
+  ?authors:((authors:terms_count option) = None)
+  ?repos:((repos:terms_count option) = None)
+  ?approvals:((approvals:terms_count option) = None)
+  () : changes_tops  = {
+  authors;
+  repos;
+  approvals;
 }
 
 let rec default_query_response () : query_response = Error (default_query_error ())
