@@ -32,6 +32,10 @@ jobs:
       - name: Build docker images
         run: |
           ln -s docker-compose.yml.dev docker-compose.yml
+          cat > .secrets << EOF
+          CRAWLERS_API_KEY=secret
+          GITHUB_TOKEN=123
+          EOF
           docker-compose build
 
       - name: Set write permission for others for data directory
@@ -44,12 +48,10 @@ jobs:
           ---
           workspaces:
             - name: monocle
-              crawlers_api_key: "CHANGE_ME"
               crawlers:
                 - name: github-tekton
                   update_since: "2020-01-01"
                   provider:
-                    github_token: "123"
                     github_organization: tekton
           EOL
 

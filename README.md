@@ -41,6 +41,7 @@ The process below describes how to index changes from a GitHub repository, a ful
 $ git clone https://github.com/change-metrics/monocle.git
 $ git submodule update --init --recursive
 $ cd monocle
+$ echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
 $ ln -s docker-compose.yml.img docker-compose.yml
 ```
 
@@ -58,7 +59,7 @@ If you want to crawl GitHub public repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
 In case of GitHub private repositories, see the [GitHub private repositories](#github-private-repositories) section.
 
-Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to replace `<github_token>` by your personal access token:
+Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to write `GITHUB_TOKEN=<github_token>` in the `.secrets` file:
 
 ```YAML
 ---
@@ -67,7 +68,6 @@ workspaces:
     crawlers:
       - name: github-tektoncd
         provider:
-          github_token: <github_token>
           github_organization: tektoncd
           github_repositories:
             - operator
@@ -194,18 +194,8 @@ for the matching installation and use it to query the GitHub API.
 
 #### Setup Monocle to use the application
 
-Add a new crawler definition:
-
-```yaml
-workspaces:
-  - name: github
-    crawlers:
-      - name: github-app
-        updated_since: "2020-01-01"
-        provider:
-          github_app_id: "<app-id>"
-          github_app_key_path: "/etc/monocle/app_key.rsa"
-```
+1. Save the private key into `etc/app_key.rsa`
+2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
 
 ### GitHub private repositories
 
@@ -311,7 +301,7 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 ```YAML
 workspaces:
   - name: default
-    crawlers_api_key: 1a2b3c4d5e
+    crawlers_api_key: API_KEY_ENV
     crawlers:
       - name: crawler_name
         updated_since: "2020-01-01"
@@ -327,6 +317,15 @@ the initial date.
 
 ### Full configuration file example
 
+Here are the expected environment variables:
+
+- `CRAWLERS_API_KEY`: an arbitrary api key used by the crawler to index data.
+- `GITHUB_TOKEN`: a github token for `github_organization` crawler.
+- `GITLAB_TOKEN`: a gitlab token for `gitlab_organization` crawler.
+- Optional `GERRIT_PASSWORD` for `gerrit_url` crawler.
+
+> To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
+
 ```YAML
 ---
 workspaces:
@@ -334,7 +333,6 @@ workspaces:
     crawlers:
       - name: tektoncd
         provider:
-          github_token: <github_token>
           github_organization: tektoncd
           github_repositories:
             - pipeline
@@ -342,7 +340,6 @@ workspaces:
       - name: spinnaker
         updated_since: "2020-03-15"
         provider:
-          github_token: <github_token>
           github_organization: spinnaker
           github_repositories:
             - pipeline
@@ -360,7 +357,6 @@ workspaces:
         aliases:
           - "review.opendev.org/Fabien Boucher/6889"
           - "review.rdoproject.org/Fabien Boucher/112"
-    crawlers_api_key: 1a2b3c4d5e
     crawlers:
       - name: bz-crawler
         updated_since: "2021-01-01"
