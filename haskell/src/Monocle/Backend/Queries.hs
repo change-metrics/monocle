@@ -676,6 +676,24 @@ getNewContributors = do
   let ba = trTerm <$> beforeAuthor
   pure $ filter (\tr -> trTerm tr `notElem` ba) afterAuthor
 
+-- | getChangesTop
+getChangesTop :: Text -> QueryM [TermResult]
+getChangesTop attr =
+  getDocTypeTopCountByField
+    (ElkChange :| [])
+    attr
+    (Just 10)
+    (QueryFlavor Author CreatedAt)
+
+getChangesTopAuthors :: QueryM [TermResult]
+getChangesTopAuthors = getChangesTop "author.muid"
+
+getChangesTopRepos :: QueryM [TermResult]
+getChangesTopRepos = getChangesTop "repository_fullname"
+
+getChangesTopApprovals :: QueryM [TermResult]
+getChangesTopApprovals = getChangesTop "approval"
+
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoSimple)
 getHisto qf = do
