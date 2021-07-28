@@ -79,6 +79,7 @@ type query_request_mutable = {
   mutable query_type : SearchTypes.query_request_query_type;
   mutable order : SearchTypes.order option;
   mutable limit : int32;
+  mutable change_id : string;
 }
 
 let default_query_request_mutable () : query_request_mutable = {
@@ -88,6 +89,7 @@ let default_query_request_mutable () : query_request_mutable = {
   query_type = SearchTypes.default_query_request_query_type ();
   order = None;
   limit = 0l;
+  change_id = "";
 }
 
 type file_mutable = {
@@ -186,6 +188,38 @@ type changes_mutable = {
 
 let default_changes_mutable () : changes_mutable = {
   changes = [];
+}
+
+type change_event_mutable = {
+  mutable id : string;
+  mutable type_ : string;
+  mutable change_id : string;
+  mutable created_at : TimestampTypes.timestamp option;
+  mutable on_created_at : TimestampTypes.timestamp option;
+  mutable author : string;
+  mutable on_author : string;
+  mutable branch : string;
+}
+
+let default_change_event_mutable () : change_event_mutable = {
+  id = "";
+  type_ = "";
+  change_id = "";
+  created_at = None;
+  on_created_at = None;
+  author = "";
+  on_author = "";
+  branch = "";
+}
+
+type change_and_events_mutable = {
+  mutable change : SearchTypes.change option;
+  mutable events : SearchTypes.change_event list;
+}
+
+let default_change_and_events_mutable () : change_and_events_mutable = {
+  change = None;
+  events = [];
 }
 
 type review_count_mutable = {
@@ -561,6 +595,7 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_CHANGES_REVIEW_STATS" -> (SearchTypes.Query_changes_review_stats : SearchTypes.query_request_query_type)
   | "QUERY_CHANGES_LIFECYCLE_STATS" -> (SearchTypes.Query_changes_lifecycle_stats : SearchTypes.query_request_query_type)
   | "QUERY_ACTIVE_AUTHORS_STATS" -> (SearchTypes.Query_active_authors_stats : SearchTypes.query_request_query_type)
+  | "QUERY_CHANGE_AND_EVENTS" -> (SearchTypes.Query_change_and_events : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -588,6 +623,9 @@ let rec decode_query_request json =
     | "limit" -> 
       let json = Js.Dict.unsafeGet json "limit" in
       v.limit <- Pbrt_bs.int32 json "query_request" "limit"
+    | "change_id" -> 
+      let json = Js.Dict.unsafeGet json "change_id" in
+      v.change_id <- Pbrt_bs.string json "query_request" "change_id"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -598,6 +636,7 @@ let rec decode_query_request json =
     SearchTypes.query_type = v.query_type;
     SearchTypes.order = v.order;
     SearchTypes.limit = v.limit;
+    SearchTypes.change_id = v.change_id;
   } : SearchTypes.query_request)
 
 let rec decode_file json =
@@ -776,8 +815,8 @@ and decode_change json =
         (decode_file (Pbrt_bs.object_ json "change" "changed_files"))
       ) a |> Array.to_list;
     end
-    | "changed_filesCount" -> 
-      let json = Js.Dict.unsafeGet json "changed_filesCount" in
+    | "changed_files_count" -> 
+      let json = Js.Dict.unsafeGet json "changed_files_count" in
       v.changed_files_count <- Pbrt_bs.int32 json "change" "changed_files_count"
     | "commits" -> begin
       let a = 
@@ -852,6 +891,76 @@ let rec decode_changes json =
   ({
     SearchTypes.changes = v.changes;
   } : SearchTypes.changes)
+
+let rec decode_change_event json =
+  let v = default_change_event_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "id" -> 
+      let json = Js.Dict.unsafeGet json "id" in
+      v.id <- Pbrt_bs.string json "change_event" "id"
+    | "type" -> 
+      let json = Js.Dict.unsafeGet json "type" in
+      v.type_ <- Pbrt_bs.string json "change_event" "type_"
+    | "change_id" -> 
+      let json = Js.Dict.unsafeGet json "change_id" in
+      v.change_id <- Pbrt_bs.string json "change_event" "change_id"
+    | "created_at" -> 
+      let json = Js.Dict.unsafeGet json "created_at" in
+      v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change_event" "created_at")))
+    | "on_created_at" -> 
+      let json = Js.Dict.unsafeGet json "on_created_at" in
+      v.on_created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "change_event" "on_created_at")))
+    | "author" -> 
+      let json = Js.Dict.unsafeGet json "author" in
+      v.author <- Pbrt_bs.string json "change_event" "author"
+    | "on_author" -> 
+      let json = Js.Dict.unsafeGet json "on_author" in
+      v.on_author <- Pbrt_bs.string json "change_event" "on_author"
+    | "branch" -> 
+      let json = Js.Dict.unsafeGet json "branch" in
+      v.branch <- Pbrt_bs.string json "change_event" "branch"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.id = v.id;
+    SearchTypes.type_ = v.type_;
+    SearchTypes.change_id = v.change_id;
+    SearchTypes.created_at = v.created_at;
+    SearchTypes.on_created_at = v.on_created_at;
+    SearchTypes.author = v.author;
+    SearchTypes.on_author = v.on_author;
+    SearchTypes.branch = v.branch;
+  } : SearchTypes.change_event)
+
+let rec decode_change_and_events json =
+  let v = default_change_and_events_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "change" -> 
+      let json = Js.Dict.unsafeGet json "change" in
+      v.change <- Some ((decode_change (Pbrt_bs.object_ json "change_and_events" "change")))
+    | "events" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "events" in 
+        Pbrt_bs.array_ a "change_and_events" "events"
+      in
+      v.events <- Array.map (fun json -> 
+        (decode_change_event (Pbrt_bs.object_ json "change_and_events" "events"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.change = v.change;
+    SearchTypes.events = v.events;
+  } : SearchTypes.change_and_events)
 
 let rec decode_review_count json =
   let v = default_review_count_mutable () in
@@ -1278,6 +1387,9 @@ let rec decode_query_response json =
       | "activity_stats" -> 
         let json = Js.Dict.unsafeGet json "activity_stats" in
         (SearchTypes.Activity_stats ((decode_activity_stats (Pbrt_bs.object_ json "query_response" "Activity_stats"))) : SearchTypes.query_response)
+      | "change_events" -> 
+        let json = Js.Dict.unsafeGet json "change_events" in
+        (SearchTypes.Change_events ((decode_change_and_events (Pbrt_bs.object_ json "query_response" "Change_events"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1370,6 +1482,7 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_changes_review_stats -> "QUERY_CHANGES_REVIEW_STATS"
   | SearchTypes.Query_changes_lifecycle_stats -> "QUERY_CHANGES_LIFECYCLE_STATS"
   | SearchTypes.Query_active_authors_stats -> "QUERY_ACTIVE_AUTHORS_STATS"
+  | SearchTypes.Query_change_and_events -> "QUERY_CHANGE_AND_EVENTS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1386,6 +1499,7 @@ let rec encode_query_request (v:SearchTypes.query_request) =
     end;
   end;
   Js.Dict.set json "limit" (Js.Json.number (Int32.to_float v.SearchTypes.limit));
+  Js.Dict.set json "change_id" (Js.Json.string v.SearchTypes.change_id);
   json
 
 let rec encode_file (v:SearchTypes.file) = 
@@ -1403,7 +1517,7 @@ let rec encode_commit (v:SearchTypes.commit) =
   begin match v.SearchTypes.authored_at with
   | None -> ()
   | Some v ->
-    begin (* authoredAt field *)
+    begin (* authored_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "authored_at" (Js.Json.string json');
     end;
@@ -1412,7 +1526,7 @@ let rec encode_commit (v:SearchTypes.commit) =
   begin match v.SearchTypes.committed_at with
   | None -> ()
   | Some v ->
-    begin (* committedAt field *)
+    begin (* committed_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "committed_at" (Js.Json.string json');
     end;
@@ -1442,7 +1556,7 @@ and encode_change (v:SearchTypes.change) =
   begin match v.SearchTypes.created_at with
   | None -> ()
   | Some v ->
-    begin (* createdAt field *)
+    begin (* created_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "created_at" (Js.Json.string json');
     end;
@@ -1450,7 +1564,7 @@ and encode_change (v:SearchTypes.change) =
   begin match v.SearchTypes.updated_at with
   | None -> ()
   | Some v ->
-    begin (* updatedAt field *)
+    begin (* updated_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "updated_at" (Js.Json.string json');
     end;
@@ -1458,7 +1572,7 @@ and encode_change (v:SearchTypes.change) =
   begin match v.SearchTypes.merged_at with
   | None -> ()
   | Some v ->
-    begin (* mergedAt field *)
+    begin (* merged_at field *)
       let json' = TimestampBs.encode_timestamp v in
       Js.Dict.set json "merged_at" (Js.Json.string json');
     end;
@@ -1489,7 +1603,7 @@ and encode_change (v:SearchTypes.change) =
     in
     Js.Dict.set json "changed_files" changed_files';
   end;
-  Js.Dict.set json "changed_filesCount" (Js.Json.number (Int32.to_float v.SearchTypes.changed_files_count));
+  Js.Dict.set json "changed_files_count" (Js.Json.number (Int32.to_float v.SearchTypes.changed_files_count));
   begin (* commits field *)
     let (commits':Js.Json.t) =
       v.SearchTypes.commits
@@ -1530,6 +1644,55 @@ let rec encode_changes (v:SearchTypes.changes) =
   end;
   json
 
+let rec encode_change_event (v:SearchTypes.change_event) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "id" (Js.Json.string v.SearchTypes.id);
+  Js.Dict.set json "type" (Js.Json.string v.SearchTypes.type_);
+  Js.Dict.set json "change_id" (Js.Json.string v.SearchTypes.change_id);
+  begin match v.SearchTypes.created_at with
+  | None -> ()
+  | Some v ->
+    begin (* created_at field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "created_at" (Js.Json.string json');
+    end;
+  end;
+  begin match v.SearchTypes.on_created_at with
+  | None -> ()
+  | Some v ->
+    begin (* onCreated_at field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "on_created_at" (Js.Json.string json');
+    end;
+  end;
+  Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
+  Js.Dict.set json "on_author" (Js.Json.string v.SearchTypes.on_author);
+  Js.Dict.set json "branch" (Js.Json.string v.SearchTypes.branch);
+  json
+
+let rec encode_change_and_events (v:SearchTypes.change_and_events) = 
+  let json = Js.Dict.empty () in
+  begin match v.SearchTypes.change with
+  | None -> ()
+  | Some v ->
+    begin (* change field *)
+      let json' = encode_change v in
+      Js.Dict.set json "change" (Js.Json.object_ json');
+    end;
+  end;
+  begin (* events field *)
+    let (events':Js.Json.t) =
+      v.SearchTypes.events
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_change_event |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "events" events';
+  end;
+  json
+
 let rec encode_review_count (v:SearchTypes.review_count) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "authors_count" (Js.Json.number (Int32.to_float v.SearchTypes.authors_count));
@@ -1547,7 +1710,7 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
   begin match v.SearchTypes.comment_count with
   | None -> ()
   | Some v ->
-    begin (* commentCount field *)
+    begin (* comment_count field *)
       let json' = encode_review_count v in
       Js.Dict.set json "comment_count" (Js.Json.object_ json');
     end;
@@ -1555,7 +1718,7 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
   begin match v.SearchTypes.review_count with
   | None -> ()
   | Some v ->
-    begin (* reviewCount field *)
+    begin (* review_count field *)
       let json' = encode_review_count v in
       Js.Dict.set json "review_count" (Js.Json.object_ json');
     end;
@@ -1809,6 +1972,11 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* activityStats field *)
       let json' = encode_activity_stats v in
       Js.Dict.set json "activity_stats" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Change_events v ->
+    begin (* changeEvents field *)
+      let json' = encode_change_and_events v in
+      Js.Dict.set json "change_events" (Js.Json.object_ json');
     end;
   end;
   json

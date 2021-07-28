@@ -10,21 +10,15 @@ module MostActiveAuthor = {
   @react.component
   let make = (~store: Store.t, ~qtype: SearchTypes.query_request_query_type, ~title: string) => {
     let (state, _) = store
-    let index = state.index
-    let query = state.query
     let (limit, setLimit) = React.useState(() => 10)
     let limit_values = list{10, 25, 50, 100, 500}
     let columnNames = ["Name", "Count"]
     let request = {
-      SearchTypes.index: index,
-      query: query,
-      username: "",
-      query_type: qtype,
-      order: None,
+      ...Store.mkSearchRequest(state, qtype),
       limit: limit->Int32.of_int,
     }
     <div>
-      {switch useAutoGetOn(() => WebApi.Search.query(request), query ++ limit->string_of_int) {
+      {switch useAutoGetOn(() => WebApi.Search.query(request), state.query ++ limit->string_of_int) {
       | None => <Spinner />
       | Some(Error(title)) => <Alert variant=#Danger title />
       | Some(Ok(SearchTypes.Error(err))) =>

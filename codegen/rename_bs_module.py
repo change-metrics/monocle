@@ -39,6 +39,9 @@ def fix_field_name(content):
         .replace("_ofChanges", "_of_changes")
         .replace("_withTests", "_with_tests")
         .replace("_perChange", "_per_change")
+        # on_createdAt -> on_created_at
+        .replace("edAt", "ed_at")
+        .replace("Count", "_count")
     )
 
 

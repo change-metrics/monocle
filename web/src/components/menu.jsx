@@ -177,6 +177,7 @@ class TopMenu extends React.Component {
             <Route path="/:index/board" render={render} />
             <Route path="/:index/user_groups" render={render} />
             <Route path="/:index/changes" render={render} />
+            <Route path="/:index/change" render={render} />
             <Route path="/:index/repos" render={render} />
             <Route path="/:index/active_authors" render={render} />
             <Route path="/:index/peers_strength" render={render} />

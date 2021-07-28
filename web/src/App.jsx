@@ -31,7 +31,6 @@ import { LoginView, CUserView } from './components/user'
 import { CHotChanges, CColdChanges } from './components/changes'
 import { CRepoChanges } from './components/repos_summary'
 import CFiltersForm from './components/filtersform'
-import { CChange } from './components/change'
 import Indices from './components/Indices.bs.js'
 import ChangesView from './components/ChangesView.bs.js'
 import ActivityView from './components/Activity.bs.js'
@@ -41,6 +40,7 @@ import GroupsView from './components/GroupsView.bs.js'
 import GroupView from './components/GroupView.bs.js'
 import HelpSearch from './components/HelpSearch.bs.js'
 import NChangeView from './components/NChangeView.bs.js'
+import ChangeView from './components/ChangeView.bs.js'
 import NReposView from './components/ReposView.bs.js'
 import ActivePeopleView from './components/ActivePeopleView.bs.js'
 import PeersStengthView from './components/PeersStrengthView.bs.js'
@@ -128,26 +128,6 @@ ChangesViewRoute.propTypes = {
   })
 }
 
-class ChangeView extends React.Component {
-  render() {
-    return (
-      <CChange
-        index={this.props.match.params.index}
-        changeIds={this.props.match.params.change}
-      />
-    )
-  }
-}
-
-ChangeView.propTypes = {
-  match: PropTypes.shape({
-    params: PropTypes.shape({
-      index: PropTypes.string,
-      change: PropTypes.string
-    })
-  })
-}
-
 const BoardView = (data) => <Board store={data.store} />
 
 BoardView.propTypes = {
@@ -175,7 +155,6 @@ const LegacyApp = (data) => (
       <Route exact path="/user" component={CUserView} />
       <Route path="/:index/hot-changes" component={HotChangesView} />
       <Route path="/:index/cold-changes" component={ColdChangesView} />
-      <Route path="/:index/change/:change" component={ChangeView} />
     </Switch>
     <Row>
       <Col>
@@ -214,6 +193,12 @@ const App = () => {
         <Route
           path="/:index/changes"
           render={(prop) => <NChangeView store={store} />}
+        />
+        <Route
+          path="/:index/change/:change"
+          render={(prop) => (
+            <ChangeView change={prop.match.params.change} store={store} />
+          )}
         />
         <Route
           path="/:index/user_groups"

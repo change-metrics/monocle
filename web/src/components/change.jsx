@@ -16,8 +16,6 @@
 
 import React from 'react'
 
-import { connect } from 'react-redux'
-
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
@@ -35,37 +33,30 @@ import { UrlMatcher } from 'interweave-autolink'
 import moment from 'moment'
 
 import {
-  BaseQueryComponent,
-  LoadingBox,
   ErrorBox,
   addS,
-  mapDispatchToProps,
-  addMap,
   chooseApprovalBadgeStyle,
   ChangeStatus
 } from './common'
 
 import TimelineGraph from './timeline'
 import CommitsTimelineGraph from './commits_timeline'
+import arrayFromList from './ArrayFromList.bs.js'
 
 class ChangeTable extends React.Component {
   render() {
-    if (!this.props.data || this.props.data.items.length === 0) {
+    if (!this.props.change || this.props.events.length === 0) {
       return <ErrorBox error={{ status: 0, data: 'Invalid change' }} />
     }
-    const changes = this.props.data.items.filter((x) => x.type === 'Change')
-    if (changes.length === 0) {
-      return <ErrorBox error={{ status: 1, data: 'No change found' }} />
-    }
-    const change = changes[0]
-    const events = this.props.data.items.filter((x) => x.type !== 'Change')
+    const change = this.props.change
+    const events = this.props.events
     const popover = (
       <Popover id="popover-basic">
         <Popover.Title>
           Changed File{addS(change.changed_files_count)}
         </Popover.Title>
         <Popover.Content>
-          {change.changed_files.map((f, idx) => (
+          {arrayFromList(change.changed_files).map((f, idx) => (
             <React.Fragment key={idx}>
               {f.path} (+{f.additions}-{f.deletions})<br />
             </React.Fragment>
@@ -73,11 +64,13 @@ class ChangeTable extends React.Component {
         </Popover.Content>
       </Popover>
     )
-    const labels = change.labels.map((l, idx) => (
+    const labels = arrayFromList(change.labels).map((l, idx) => (
       <Badge variant="warning" key={idx}>
         {l}
       </Badge>
     ))
+
+    /* See: https://github.com/change-metrics/monocle/issues/533
     change.issue_tracker_links.forEach((e) => {
       change.title = change.title.replace(
         e[0],
@@ -88,7 +81,43 @@ class ChangeTable extends React.Component {
         '<a href=' + e[1] + '>' + e[0] + '</a>'
       )
     })
+    */
+    const approvals = (
+      <span key={0} style={{ float: 'right' }}>
+        {arrayFromList(change.approval).map((app, idx) => (
+          <span key={idx + 1}>{chooseApprovalBadgeStyle(app, idx + 1)} </span>
+        ))}
+      </span>
+    )
 
+    // complexicity from Change.res
+    const complexity =
+      change.changed_files_count + change.additions + change.deletions
+
+    const testIncluded = <></>
+    /* See: https://github.com/change-metrics/monocle/issues/534
+                  <tr key={5}>
+                    <td align="center">
+                      {change.tests_included ? (
+                        <font color="DarkGreen">Has tests</font>
+                      ) : (
+                        <font color="red">Does not have tests</font>
+                      )}
+                    </td>
+                  </tr>
+    */
+    const hasIssue = <></>
+    /* See: https://github.com/change-metrics/monocle/issues/533
+                  <tr key={6}>
+                    <td align="center">
+                      {change.has_issue_tracker_links ? (
+                        <font color="DarkGreen">Has an issue link</font>
+                      ) : (
+                        <font color="red">Does not have an issue link</font>
+                      )}
+                    </td>
+                  </tr>
+    */
     return (
       <Row>
         <Col>
@@ -102,15 +131,8 @@ class ChangeTable extends React.Component {
                 />
                 <br />
                 <br />
-                <ChangeStatus data={change} /> {change.author.muid} authored{' '}
-                {moment(change.created_at).fromNow()}{' '}
-                <span key={0} style={{ float: 'right' }}>
-                  {change.approval.map((app, idx) => (
-                    <span key={idx + 1}>
-                      {chooseApprovalBadgeStyle(app, idx + 1)}{' '}
-                    </span>
-                  ))}
-                </span>
+                <ChangeStatus data={change} /> {change.author} authored{' '}
+                {moment(change.created_at).fromNow()} {approvals}
               </Card.Title>
               <Table striped responsive bordered hover size="sm">
                 <tbody>
@@ -133,8 +155,8 @@ class ChangeTable extends React.Component {
                   </tr>
                   <tr key={2}>
                     <td align="center">
-                      Complexity of {change.complexity} in {change.commit_count}{' '}
-                      commit{addS(change.commit_count)} changing
+                      Complexity of {complexity} in {change.commits_count}{' '}
+                      commit{addS(change.commits_count)} changing
                       <OverlayTrigger
                         trigger="click"
                         placement="right"
@@ -157,24 +179,8 @@ class ChangeTable extends React.Component {
                       <td align="center">{labels}</td>
                     </tr>
                   ) : null}
-                  <tr key={5}>
-                    <td align="center">
-                      {change.tests_included ? (
-                        <font color="DarkGreen">Has tests</font>
-                      ) : (
-                        <font color="red">Does not have tests</font>
-                      )}
-                    </td>
-                  </tr>
-                  <tr key={6}>
-                    <td align="center">
-                      {change.has_issue_tracker_links ? (
-                        <font color="DarkGreen">Has an issue link</font>
-                      ) : (
-                        <font color="red">Does not have an issue link</font>
-                      )}
-                    </td>
-                  </tr>
+                  {testIncluded}
+                  {hasIssue}
                 </tbody>
               </Table>
             </Card.Header>
@@ -195,7 +201,7 @@ class ChangeTable extends React.Component {
                   <TimelineGraph data={events} />
                 </Col>
                 <Col>
-                  <CommitsTimelineGraph data={change.commits} />
+                  <CommitsTimelineGraph data={arrayFromList(change.commits)} />
                 </Col>
               </Row>
             </Card.Body>
@@ -207,39 +213,11 @@ class ChangeTable extends React.Component {
 }
 
 ChangeTable.propTypes = {
-  data: PropTypes.object,
-  index: PropTypes.string.isRequired
+  index: PropTypes.string.isRequired,
+  change: PropTypes.any,
+  events: PropTypes.any
 }
 
-class Change extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'changes_and_events'
-    this.state.graph_type = 'changes_and_events'
-    this.state.pageSize = 100
-    this.state.forceAllAuthors = true
-  }
+const CChange = withRouter(ChangeTable)
 
-  render() {
-    if (!this.props.changes_and_events_loading) {
-      if (this.props.changes_and_events_error) {
-        return <ErrorBox error={this.props.changes_and_events_error} />
-      }
-      const data = this.props.changes_and_events_result
-      return <ChangeTable data={data} index={this.props.index} />
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-Change.propTypes = {
-  index: PropTypes.string.isRequired
-}
-
-const mapStateToProps = (state) =>
-  addMap({}, state.QueryReducer, 'changes_and_events')
-
-const CChange = withRouter(connect(mapStateToProps, mapDispatchToProps)(Change))
-
-export { CChange }
+export default CChange

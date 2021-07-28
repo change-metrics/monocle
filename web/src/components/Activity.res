@@ -21,14 +21,7 @@ module ChangesLifeCycleStats = {
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
-    let request = {
-      SearchTypes.index: state.index,
-      query: state.query,
-      username: "",
-      query_type: SearchTypes.Query_changes_lifecycle_stats,
-      order: None,
-      limit: 0->Int32.of_int,
-    }
+    let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
 
     {
       switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
@@ -66,14 +59,7 @@ module ChangesReviewStats = {
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
-    let request = {
-      SearchTypes.index: state.index,
-      query: state.query,
-      username: "",
-      query_type: SearchTypes.Query_changes_review_stats,
-      order: None,
-      limit: 0->Int32.of_int,
-    }
+    let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
 
     {
       switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
@@ -111,14 +97,7 @@ module AuthorHistoStats = {
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
-    let request = {
-      SearchTypes.index: state.index,
-      query: state.query,
-      username: "",
-      query_type: SearchTypes.Query_active_authors_stats,
-      order: None,
-      limit: 0->Int32.of_int,
-    }
+    let request = Store.mkSearchRequest(state, SearchTypes.Query_active_authors_stats)
 
     {
       switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {

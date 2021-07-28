@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText, docTypeToText)
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -133,7 +133,6 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -320,6 +319,11 @@ searchQuery request = do
             . V.fromList
             . map toChangeResult
             <$> Q.changes queryRequestOrder queryRequestLimit
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChangeEvents
+            . toChangeEventsResult
+            <$> Q.changeEvents queryRequestChangeId queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
           SearchPB.QueryResponse . Just
             . SearchPB.QueryResponseResultReposSummary
@@ -404,6 +408,24 @@ searchQuery request = do
           repoSummaryMergedChanges = countToWord mergedChanges
           repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
+
+    toChangeEventsResult :: (ELKChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents
+    toChangeEventsResult (change, events) =
+      let changeAndEventsChange = Just (toChangeResult change)
+          changeAndEventsEvents = V.fromList $ toEventResult <$> events
+       in SearchPB.ChangeAndEvents {..}
+
+    toEventResult :: ELKChangeEvent -> SearchPB.ChangeEvent
+    toEventResult ELKChangeEvent {..} =
+      let changeEventId = elkchangeeventId
+          changeEventType = docTypeToText elkchangeeventType
+          changeEventChangeId = elkchangeeventChangeId
+          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
+          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
+          changeEventAuthor = authorMuid elkchangeeventAuthor
+          changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
+          changeEventBranch = elkchangeeventBranch
+       in SearchPB.ChangeEvent {..}
 
     toChangeResult :: ELKChange -> SearchPB.Change
     toChangeResult change =

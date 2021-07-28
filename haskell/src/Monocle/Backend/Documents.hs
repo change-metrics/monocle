@@ -116,7 +116,10 @@ data ELKDocType
   | ElkChangeCommitForcePushedEvent
   | ElkChangeCommitPushedEvent
   | ElkChange
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
+
+allEventTypes :: [ELKDocType]
+allEventTypes = filter (/= ElkChange) [minBound .. maxBound]
 
 docTypeToText :: ELKDocType -> LText
 docTypeToText = \case
@@ -142,8 +145,10 @@ instance FromJSON ELKDocType where
           "ChangeReviewedEvent" -> pure ElkChangeReviewedEvent
           "ChangeCommentedEvent" -> pure ElkChangeCommentedEvent
           "ChangeAbandonedEvent" -> pure ElkChangeAbandonedEvent
+          "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
+          "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
           "Change" -> pure ElkChange
-          _anyOtherValue -> fail "Unknown Monocle ELK doc type"
+          anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
       )
 
 data ELKChange = ELKChange

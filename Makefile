@@ -18,6 +18,7 @@ codegen-stubs:
 
 codegen-haskell:
 	sh -c 'for pb in $(MESSAGES) $(MESSAGES_V2) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	find haskell/codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
