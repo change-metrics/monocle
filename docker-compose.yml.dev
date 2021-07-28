@@ -54,9 +54,6 @@ services:
     command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
     depends_on:
       - elastic
-    environment:
-      APP_ID: "${GITHUB_APP_ID:-}"
-      APP_KEY_PATH: "${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}"
     volumes:
       - "./etc:/etc/monocle:z"
       - "./dump:/var/lib/crawler:Z"

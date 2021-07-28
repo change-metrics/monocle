@@ -224,15 +224,6 @@ let createCrawlerLegacyService =
                   )
               , volumes = Some
                 [ "./etc:/etc/monocle:z", "./dump:/var/lib/crawler:Z" ]
-              , environment = Some
-                  ( Compose.ListOrDict.Dict
-                      [ { mapKey = "APP_ID", mapValue = "\${GITHUB_APP_ID:-}" }
-                      , { mapKey = "APP_KEY_PATH"
-                        , mapValue =
-                            "\${GITHUB_APP_KEY_PATH:-/etc/monocle/app_key.rsa}"
-                        }
-                      ]
-                  )
               }
 
         in  if    dev
