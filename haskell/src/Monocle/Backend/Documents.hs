@@ -142,8 +142,10 @@ instance FromJSON ELKDocType where
           "ChangeReviewedEvent" -> pure ElkChangeReviewedEvent
           "ChangeCommentedEvent" -> pure ElkChangeCommentedEvent
           "ChangeAbandonedEvent" -> pure ElkChangeAbandonedEvent
+          "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
+          "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
           "Change" -> pure ElkChange
-          _anyOtherValue -> fail "Unknown Monocle ELK doc type"
+          anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
       )
 
 data ELKChange = ELKChange
