@@ -378,16 +378,17 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: Word32 -> (Int -> QueryM [Q.TermResult]) -> QueryM QueryResponse
+    handleTopAuthorsQ :: Word32 -> (Int -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
     handleTopAuthorsQ limit cb = do
       results <- cb limit'
       pure $
         SearchPB.QueryResponse
           . Just
           $ SearchPB.QueryResponseResultTopAuthors $
-            toTermsCount (V.fromList $ toTTResult <$> results) 0
+            toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
       where
-        limit' = fromInteger $ toInteger limit
+        toInt c = fromInteger $ toInteger c
+        limit' = toInt limit
 
     toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
     toAPeerResult Q.PeerStrengthResult {..} =

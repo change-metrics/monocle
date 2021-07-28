@@ -344,34 +344,34 @@ testTopAuthors = withTenant doTest
         assertEqual'
           "Check getMostActiveAuthorByChangeCreated count"
           [Q.TermResult {trTerm = "eve", trCount = 4}]
-          results
+          (Q.tsrTR results)
         results' <- Q.getMostActiveAuthorByChangeMerged 10
         assertEqual'
           "Check getMostActiveAuthorByChangeMerged count"
           [Q.TermResult {trTerm = "eve", trCount = 2}]
-          results'
+          (Q.tsrTR results')
         results'' <- Q.getMostActiveAuthorByChangeReviewed 10
         assertEqual'
           "Check getMostActiveAuthorByChangeReviewed count"
           [ Q.TermResult {trTerm = "alice", trCount = 2},
             Q.TermResult {trTerm = "bob", trCount = 2}
           ]
-          results''
+          (Q.tsrTR results'')
         results''' <- Q.getMostActiveAuthorByChangeCommented 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCommented count"
           [Q.TermResult {trTerm = "alice", trCount = 2}]
-          results'''
+          (Q.tsrTR results''')
         results'''' <- Q.getMostReviewedAuthor 10
         assertEqual'
           "Check getMostReviewedAuthor count"
           [Q.TermResult {trTerm = "eve", trCount = 4}]
-          results''''
+          (Q.tsrTR results'''')
         results''''' <- Q.getMostCommentedAuthor 10
         assertEqual'
           "Check getMostCommentedAuthor count"
           [Q.TermResult {trTerm = "eve", trCount = 2}]
-          results'''''
+          (Q.tsrTR results''''')
 
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
@@ -480,6 +480,68 @@ testGetActivityStats = withTenant doTest
                     SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
+          )
+          results
+
+testGetChangesTops :: Assertion
+testGetChangesTops = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
+
+      runQueryM defaultQuery $ do
+        results <- Q.getChangesTops 10
+        assertEqual'
+          "Check getChangesTops result"
+          ( SearchPB.ChangesTops
+              { changesTopsAuthors =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "eve",
+                                    termCountCount = 4
+                                  }
+                              ],
+                          termsCountTotalTerms = 4
+                        }
+                    ),
+                changesTopsRepos =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "openstack/neutron",
+                                    termCountCount = 2
+                                  },
+                                SearchPB.TermCount
+                                  { termCountTerm = "openstack/nova",
+                                    termCountCount = 2
+                                  }
+                              ],
+                          termsCountTotalTerms = 4
+                        }
+                    ),
+                changesTopsApprovals =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "OK",
+                                    termCountCount = 4
+                                  }
+                              ],
+                          termsCountTotalTerms = 4
+                        }
+                    )
+              }
           )
           results
 
