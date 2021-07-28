@@ -18,7 +18,10 @@ module MostActiveAuthor = {
       limit: limit->Int32.of_int,
     }
     <div>
-      {switch useAutoGetOn(() => WebApi.Search.query(request), state.query ++ limit->string_of_int) {
+      {switch useAutoGetOn(
+        () => WebApi.Search.query(request),
+        state.query ++ limit->string_of_int,
+      ) {
       | None => <Spinner />
       | Some(Error(title)) => <Alert variant=#Danger title />
       | Some(Ok(SearchTypes.Error(err))) =>

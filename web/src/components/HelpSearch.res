@@ -123,7 +123,7 @@ module View = {
 module Tooltip = {
   @react.component
   let make = () => {
-    let href="/help/search"
+    let href = "/help/search"
     let onClick = e => {
       e->ReactEvent.Mouse.preventDefault
       href->RescriptReactRouter.push

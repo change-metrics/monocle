@@ -33,7 +33,7 @@
     "clean": "npm run re:clean && npm run es:clean",
     "build": "mkdir -p build && npm run re:build && NODE_ENV='\"production\"' npm run es:build",
     "test": "npm run re:build && npm run js:test",
-    "format": "rescript format -all",
+    "format": "rescript format -all && git diff --exit-code",
     "dev-server": "live-server --entry-file=index.html --host=localhost --port=${WEB_PORT:-3000} --quiet ./build/",
     "es:build": "./build.js",
     "es:clean": "rm -Rf ./build/",
