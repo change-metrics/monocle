@@ -18,8 +18,6 @@ import logging
 
 import statistics
 from copy import deepcopy
-from itertools import groupby
-from itertools import chain
 from monocle.utils import is8601_to_dt
 from monocle.utils import enhance_changes
 from monocle.utils import Detector
@@ -36,23 +34,12 @@ public_queries = (
     "count_events",
     "count_authors",
     "count_opened_changes",
-    "count_merged_changes",
-    "count_self_merged_changes",
-    "count_abandoned_changes",
-    "events_histo",
-    "authors_histo",
+    "events_top_authors",
+    "changes_top_approval",
+    "changes_top_commented",
+    "changes_top_reviewed",
     "approvals_top",
     "change_merged_count_by_duration",
-    "changes_closed_ratios",
-    "first_comment_on_changes",
-    "first_review_on_changes",
-    "cold_changes",
-    "hot_changes",
-    "changes_lifecycle_histos",
-    "changes_lifecycle_stats",
-    "changes_review_histos",
-    "changes_review_stats",
-    "authors_histo_stats",
     "last_changes",
     "last_state_changed_changes",
     "oldest_open_changes",
@@ -257,18 +244,6 @@ def _scan(es, index, repository_fullname, params):
     return ret
 
 
-def _get_all(es, index):
-    body = {
-        "query": {"match_all": {}},
-    }
-    scanner_params = {"index": index, "query": body}
-    data = scanner(es, **scanner_params)
-    ret = []
-    for d in data:
-        ret.append(d["_source"])
-    return ret
-
-
 def _first_created_event(es, index, repository_fullname, params):
     body = {
         "sort": [{"created_at": {"order": "asc"}}],
@@ -304,99 +279,6 @@ def count_authors(es, index, repository_fullname, params):
     return data["aggregations"]["agg1"]["value"]
 
 
-def set_histo_granularity(duration):
-    # Set resolution by hour if duration <= 1 day (max 24 buckets)
-    if (duration / (24 * 3600)) <= 1:
-        return "hour"
-    # Set resolution by day if duration <= 1 month (max 31 buckets)
-    if (duration / (24 * 3600 * 31)) <= 1:
-        return "day"
-    # Set resolution by week if duration <= 6 months (max 24 buckets)
-    if (duration / (24 * 3600 * 31)) <= 6:
-        return "week"
-    # Set resolution by month if duration <= 2 years (max 24 buckets)
-    if (duration / (24 * 3600 * 31 * 12)) <= 2:
-        return "month"
-    return "year"
-
-
-def interval_to_format(interval):
-    if interval == "hour":
-        return "HH:mm"
-    if interval == "day" or interval == "week":
-        return "yyyy-MM-dd"
-    if interval == "month":
-        return "yyyy-MM"
-    if interval == "year":
-        return "yyyy"
-    return "yyyy-MM-dd HH:mm"
-
-
-def events_histo(es, index, repository_fullname, params):
-    _filter = generate_filter(es, index, repository_fullname, params)
-    duration = (params["lte"] - params["gte"]) / 1000
-    interval = set_histo_granularity(duration)
-    fmt = interval_to_format(interval)
-
-    body = {
-        "aggs": {
-            "agg1": {
-                "date_histogram": {
-                    "field": "created_at",
-                    "calendar_interval": interval,
-                    "format": fmt,
-                    "min_doc_count": 0,
-                    "extended_bounds": {"min": params["gte"], "max": params["lte"]},
-                }
-            },
-            "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
-        },
-        "size": 0,
-        "query": _filter,
-    }
-    data = run_query(es, index, body)
-    return (
-        data["aggregations"]["agg1"]["buckets"],
-        data["aggregations"]["avg_count"]["value"] or 0,
-    )
-
-
-def authors_histo(es, index, repository_fullname, params):
-    _filter = generate_filter(es, index, repository_fullname, params)
-    duration = (params["lte"] - params["gte"]) / 1000
-    interval = set_histo_granularity(duration)
-    fmt = interval_to_format(interval)
-
-    body = {
-        "aggs": {
-            "agg1": {
-                "date_histogram": {
-                    "field": "created_at",
-                    "calendar_interval": interval,
-                    "format": fmt,
-                    "min_doc_count": 0,
-                    "extended_bounds": {"min": params["gte"], "max": params["lte"]},
-                },
-                "aggs": {
-                    "authors": {"terms": {"field": "author.muid", "size": 100000}}
-                },
-            },
-            "avg_count": {"avg_bucket": {"buckets_path": "agg1>_count"}},
-        },
-        "size": 0,
-        "query": _filter,
-    }
-    data = run_query(es, index, body)
-    res = data["aggregations"]["agg1"]["buckets"]
-    for bucket in res:
-        bucket["authors"] = [b["key"] for b in bucket["authors"]["buckets"]]
-        bucket["doc_count"] = len(bucket["authors"])
-    avg = sum([len(b["authors"]) for b in res]) / len(res)
-    total = [b["authors"] for b in res]
-    total = len(set(chain(*total)))
-    return {"buckets": res, "avg_authors": avg, "total_authors": total}
-
-
 def _events_top(es, index, repository_fullname, field, params):
     body = {
         "aggs": {
@@ -423,9 +305,27 @@ def _events_top(es, index, repository_fullname, field, params):
     }
 
 
+def events_top_authors(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    return _events_top(es, index, repository_fullname, "author.muid", params)
+
+
+# TODO(fbo): add tests for queries below
+def changes_top_approval(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params["etype"] = ("ChangeReviewedEvent",)
+    return _events_top(es, index, repository_fullname, "approval", params)
+
+
 def changes_top_commented(es, index, repository_fullname, params):
     params = deepcopy(params)
     params["etype"] = ("ChangeCommentedEvent",)
+    return _events_top(es, index, repository_fullname, "change_id", params)
+
+
+def changes_top_reviewed(es, index, repository_fullname, params):
+    params = deepcopy(params)
+    params["etype"] = ("ChangeReviewedEvent",)
     return _events_top(es, index, repository_fullname, "change_id", params)
 
 
@@ -511,289 +411,6 @@ def count_opened_changes(es, index, repository_fullname, params):
     params["etype"] = ("Change",)
     params["state"] = ("OPEN",)
     return count_events(es, index, repository_fullname, params)
-
-
-def count_merged_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("Change",)
-    params["state"] = ("MERGED",)
-    return count_events(es, index, repository_fullname, params)
-
-
-def count_self_merged_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["self_merged"] = True
-    return count_merged_changes(es, index, repository_fullname, params)
-
-
-def count_abandoned_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("Change",)
-    params["state"] = ("CLOSED",)
-    return count_events(es, index, repository_fullname, params)
-
-
-def changes_closed_ratios(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    etypes = (
-        "ChangeCreatedEvent",
-        "ChangeCommitPushedEvent",
-        "ChangeCommitForcePushedEvent",
-    )
-    ret = {}
-
-    for etype in etypes:
-        params["etype"] = (etype,)
-        ret[etype] = count_events(es, index, repository_fullname, params)
-
-    ret["merged"] = count_merged_changes(es, index, repository_fullname, params)
-    ret["abandoned"] = count_abandoned_changes(es, index, repository_fullname, params)
-    ret["self_merged"] = count_self_merged_changes(
-        es, index, repository_fullname, params
-    )
-
-    try:
-        ret["merged/created"] = round(
-            ret["merged"] / ret["ChangeCreatedEvent"] * 100, 1
-        )
-    except ZeroDivisionError:
-        ret["merged/created"] = 0
-
-    try:
-        ret["abandoned/created"] = round(
-            ret["abandoned"] / ret["ChangeCreatedEvent"] * 100, 1
-        )
-    except ZeroDivisionError:
-        ret["abandoned/created"] = 0
-
-    try:
-        ret["iterations/created"] = round(
-            (ret["ChangeCommitPushedEvent"] + ret["ChangeCommitForcePushedEvent"])
-            / ret["ChangeCreatedEvent"]
-            + 1,
-            1,
-        )
-    except ZeroDivisionError:
-        ret["iterations/created"] = 1
-
-    try:
-        ret["self_merged/created"] = round(
-            ret["self_merged"] / ret["ChangeCreatedEvent"] * 100, 1
-        )
-    except ZeroDivisionError:
-        ret["self_merged/created"] = 0
-
-    for etype in etypes:
-        del ret[etype]
-    return ret
-
-
-def _first_event_on_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-
-    def keyfunc(x):
-        return x["change_id"]
-
-    groups = {}
-    _events = _scan(es, index, repository_fullname, params)
-    _events = sorted(_events, key=lambda k: k["change_id"])
-    # Keep by Change the created date + first event date
-    for pr, events in groupby(_events, keyfunc):
-        groups[pr] = {
-            "change_created_at": None,
-            "first_event_created_at": utcnow(),
-            "first_event_author": None,
-            "delta": None,
-        }
-        for event in events:
-            if not groups[pr]["change_created_at"]:
-                groups[pr]["change_created_at"] = is8601_to_dt(event["on_created_at"])
-            event_created_at = is8601_to_dt(event["created_at"])
-            if event_created_at < groups[pr]["first_event_created_at"]:
-                groups[pr]["first_event_created_at"] = event_created_at
-                groups[pr]["delta"] = (
-                    groups[pr]["first_event_created_at"]
-                    - groups[pr]["change_created_at"]
-                )
-                groups[pr]["first_event_author"] = event["author"]["muid"]
-    ret = {"first_event_delay_avg": 0, "top_authors": {}}
-    for pr_data in groups.values():
-        ret["first_event_delay_avg"] += pr_data["delta"].seconds
-        ret["top_authors"].setdefault(pr_data["first_event_author"], 0)
-        ret["top_authors"][pr_data["first_event_author"]] += 1
-    try:
-        ret["first_event_delay_avg"] = int(ret["first_event_delay_avg"] / len(groups))
-    except ZeroDivisionError:
-        ret["first_event_delay_avg"] = 0
-    ret["top_authors"] = sorted(
-        [(k, v) for k, v in ret["top_authors"].items()],
-        key=lambda x: x[1],
-        reverse=True,
-    )[:10]
-    return ret
-
-
-def first_comment_on_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeCommentedEvent",)
-    # limit the depth of the scan query as this query is expensive
-    params["size"] = 10000
-    return _first_event_on_changes(es, index, repository_fullname, params)
-
-
-def first_review_on_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    params["etype"] = ("ChangeReviewedEvent",)
-    # limit the depth of the scan query as this query is expensive
-    params["size"] = 10000
-    return _first_event_on_changes(es, index, repository_fullname, params)
-
-
-def cold_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    size = params.get("size")
-    params["etype"] = ("Change",)
-    params["state"] = ("OPEN",)
-    changes = _scan(es, index, repository_fullname, params)
-    _changes_ids = set([change["change_id"] for change in changes])
-    params["etype"] = ("ChangeCommentedEvent", "ChangeReviewedEvent")
-    del params["state"]
-    events = _scan(es, index, repository_fullname, params)
-    _events_ids = set([event["change_id"] for event in events])
-    changes_ids_wo_rc = _changes_ids.difference(_events_ids)
-    changes_wo_rc = [
-        change for change in changes if change["change_id"] in changes_ids_wo_rc
-    ]
-    changes_wo_rc = enhance_changes(changes_wo_rc)
-    items = sorted(changes_wo_rc, key=lambda x: is8601_to_dt(x["created_at"]))
-    if size:
-        items = items[:size]
-    return {"items": items}
-
-
-def hot_changes(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    size = params.get("size")
-    # Set a significant depth to get an 'accurate' average value
-    params["size"] = 500
-    top_commented_changes = changes_top_commented(
-        es, index, repository_fullname, params
-    )
-    # Keep changes with comment events > average
-    top_commented_changes = [
-        change
-        for change in top_commented_changes["items"]
-        if change["doc_count"] > top_commented_changes["count_avg"]
-    ]
-    mapping = {}
-    for top_commented_change in top_commented_changes:
-        mapping[top_commented_change["key"]] = top_commented_change["doc_count"]
-    change_ids = [_id["key"] for _id in top_commented_changes]
-    if not change_ids:
-        return {"items": []}
-    _params = {
-        "etype": ("Change",),
-        "state": ("OPEN",),
-        "change_ids": change_ids,
-    }
-    changes = _scan(es, index, repository_fullname, _params)
-    for change in changes:
-        change["hot_score"] = mapping[change["change_id"]]
-    changes = enhance_changes(changes)
-    items = sorted(changes, key=lambda x: x["hot_score"], reverse=True)
-    if size:
-        items = items[:size]
-    return {"items": items}
-
-
-def changes_lifecycle_histos(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    switch_to_on_authors(params)
-    ret = {}
-    etypes = (
-        "ChangeCreatedEvent",
-        "ChangeMergedEvent",
-        "ChangeAbandonedEvent",
-        "ChangeCommitPushedEvent",
-        "ChangeCommitForcePushedEvent",
-    )
-    for etype in etypes:
-        params["etype"] = (etype,)
-        ret[etype] = events_histo(es, index, repository_fullname, params)
-    return ret
-
-
-def changes_lifecycle_stats(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    ret = {}
-    ret["ratios"] = changes_closed_ratios(es, index, repository_fullname, params)
-    ret["histos"] = changes_lifecycle_histos(es, index, repository_fullname, params)
-    ret["duration"] = change_merged_stats_duration(
-        es, index, repository_fullname, params
-    )["avg"]
-    ret["duration_variability"] = change_merged_stats_duration(
-        es, index, repository_fullname, params
-    )["variability"]
-    ret["commits"] = change_merged_avg_commits(es, index, repository_fullname, params)
-    ret["tests"] = changes_with_tests_ratio(es, index, repository_fullname, params)
-    ret["opened"] = count_opened_changes(es, index, repository_fullname, params)
-    for rname in ("merged", "self_merged", "abandoned"):
-        ret[rname] = ret["ratios"][rname]
-        del ret["ratios"][rname]
-    etypes = (
-        "ChangeCreatedEvent",
-        "ChangeCommitPushedEvent",
-        "ChangeCommitForcePushedEvent",
-    )
-    for etype in etypes:
-        params["etype"] = (etype,)
-        events_count = count_events(es, index, repository_fullname, params)
-        authors_count = count_authors(es, index, repository_fullname, params)
-        ret[etype] = {"events_count": events_count, "authors_count": authors_count}
-    return ret
-
-
-def authors_histo_stats(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    ret = {}
-    etypes = (
-        "ChangeCreatedEvent",
-        "ChangeReviewedEvent",
-        "ChangeCommentedEvent",
-    )
-    for etype in etypes:
-        params["etype"] = (etype,)
-        ret[etype] = authors_histo(es, index, repository_fullname, params)
-    return ret
-
-
-def changes_review_histos(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    ret = {}
-    etypes = ("ChangeCommentedEvent", "ChangeReviewedEvent")
-    for etype in etypes:
-        params["etype"] = (etype,)
-        ret[etype] = events_histo(es, index, repository_fullname, params)
-    return ret
-
-
-def changes_review_stats(es, index, repository_fullname, params):
-    params = deepcopy(params)
-    ret = {}
-    ret["first_event_delay"] = {}
-    ret["first_event_delay"]["comment"] = first_comment_on_changes(
-        es, index, repository_fullname, params
-    )
-    ret["first_event_delay"]["review"] = first_review_on_changes(
-        es, index, repository_fullname, params
-    )
-    ret["histos"] = changes_review_histos(es, index, repository_fullname, params)
-    for etype in ("ChangeReviewedEvent", "ChangeCommentedEvent"):
-        params["etype"] = (etype,)
-        events_count = count_events(es, index, repository_fullname, params)
-        authors_count = count_authors(es, index, repository_fullname, params)
-        ret[etype] = {"events_count": events_count, "authors_count": authors_count}
-    return ret
 
 
 def last_changes(es, index, repository_fullname, params):
