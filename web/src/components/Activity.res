@@ -14,7 +14,7 @@ module CChangesLifeCycleStats = {
     ~updated_histo: array<SearchTypes.histo>,
     ~merged_histo: array<SearchTypes.histo>,
     ~abandoned_histo: array<SearchTypes.histo>,
-  ) => React.element = "CChangesLifeCycleStats"
+  ) => React.element = "default"
 }
 
 module ChangesLifeCycleStats = {

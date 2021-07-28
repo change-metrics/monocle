@@ -5,9 +5,10 @@ module GroupItem = {
   let make = (~store: Store.t, ~group: UserGroupTypes.group_definition) => {
     let (state, _dispatch) = store
     <MSimpleCard>
-      <Link _to={"/" ++ state.index ++ "/user_groups/" ++ group.name}>
-        {(group.name ++ " (" ++ group.members->Int32.to_int->string_of_int ++ " member)")->str}
-      </Link>
+      <MLink.Direct
+        link={"/" ++ state.index ++ "/user_groups/" ++ group.name}
+        name={group.name ++ " (" ++ group.members->Int32.to_int->string_of_int ++ " member)"}
+      />
     </MSimpleCard>
   }
 }

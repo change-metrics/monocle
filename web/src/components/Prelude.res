@@ -12,7 +12,6 @@ open WebApi
 type axiosGetCallback<'data> = unit => axios<'data>
 
 // See https://rescript-lang.org/docs/manual/latest/interop-cheatsheet
-@module("../api.js") external apiUrl: string = "baseurl"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch

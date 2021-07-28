@@ -29,29 +29,27 @@ module Fixture = {
 module App = {
   @react.component
   let make = () => {
-  let store = Store.use("test")
-  <>
-    {[
-      ("title", <h2> {"Monocle designer mode"->str} </h2>),
-      ("group", <GroupView.GroupTable group={Fixture.group_get} />),
-      (
-        "change",
-        <div className="container">
-          <Change.DataItem store change={Fixture.change} />
-        </div>,
-      ),
-      ("table", <Change.Table store changes={list{Fixture.change, Fixture.change}} />),
-      (
-        "search help",
-        <>
-          <div className="container"> <HelpSearch.Tooltip /> {"test"->str} </div>
-          <div className="container"> <HelpSearch.Content fields={Fixture.fields.fields} /> </div>
-        </>,
-      ),
-    ]
-    ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
-    ->React.array}
-  </>
+    let store = Store.use("test")
+    <>
+      {[
+        ("title", <h2> {"Monocle designer mode"->str} </h2>),
+        ("group", <GroupView.GroupTable group={Fixture.group_get} />),
+        (
+          "change",
+          <div className="container"> <Change.DataItem store change={Fixture.change} /> </div>,
+        ),
+        ("table", <Change.Table store changes={list{Fixture.change, Fixture.change}} />),
+        (
+          "search help",
+          <>
+            <div className="container"> <HelpSearch.Tooltip /> {"test"->str} </div>
+            <div className="container"> <HelpSearch.Content fields={Fixture.fields.fields} /> </div>
+          </>,
+        ),
+      ]
+      ->Belt.Array.map(((key, v)) => <span key> {v} <hr /> </span>)
+      ->React.array}
+    </>
   }
 }
 

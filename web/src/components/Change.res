@@ -147,7 +147,7 @@ module ChangeLink = {
   @react.component
   let make = (~store: Store.t, ~id, ~title) => {
     let (state, _) = store
-    <Link _to={"/" ++ state.index ++ "/change/" ++ id}> {title->str} </Link>
+    <MLink.Direct link={"/" ++ state.index ++ "/change/" ++ id} name={title} />
   }
 }
 
