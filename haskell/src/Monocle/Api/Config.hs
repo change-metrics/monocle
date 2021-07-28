@@ -40,6 +40,7 @@ Dhall.TH.makeHaskellTypes
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
+          provider "GithubApplication",
           provider "Bugzilla",
           Dhall.TH.MultipleConstructors
             "Provider"
@@ -61,6 +62,10 @@ deriving instance Show Gerrit
 deriving instance Eq Github
 
 deriving instance Show Github
+
+deriving instance Eq GithubApplication
+
+deriving instance Show GithubApplication
 
 deriving instance Eq Gitlab
 
