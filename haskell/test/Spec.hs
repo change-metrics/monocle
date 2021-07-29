@@ -222,7 +222,7 @@ monocleSearchLanguage =
                 ]
             ),
           Config.crawlers = [],
-          Config.crawlers_api_key = "",
+          Config.crawlers_api_key = Nothing,
           Config.idents = Nothing
         }
     testProjects =

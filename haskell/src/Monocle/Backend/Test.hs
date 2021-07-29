@@ -79,7 +79,7 @@ fakeChange =
 
 emptyConfig :: Text -> Config.Index
 emptyConfig name =
-  let crawlers_api_key = ""
+  let crawlers_api_key = Nothing
       crawlers = []
       projects = Nothing
       idents = Nothing
@@ -202,9 +202,9 @@ testProjectCrawlerMetadata = withTenant doTest
               update_since = toText fakeDefaultDateStr
               provider =
                 let gitlab_url = Just "https://localhost"
-                    gitlab_token = "key"
+                    gitlab_token = Nothing
                     gitlab_repositories = Just ["nova", "neutron"]
-                    gitlab_organizations = Nothing
+                    gitlab_organization = "centos"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
         fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
@@ -250,9 +250,9 @@ testOrganizationCrawlerMetadata = withTenant doTest
               update_since = toText fakeDefaultDateStr
               provider =
                 let gitlab_url = Just "https://localhost"
-                    gitlab_token = "key"
+                    gitlab_token = Nothing
                     gitlab_repositories = Nothing
-                    gitlab_organizations = Just ["gitlab-org"]
+                    gitlab_organization = "gitlab-org"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 

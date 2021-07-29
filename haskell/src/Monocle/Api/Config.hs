@@ -126,6 +126,13 @@ loadConfig configPath = do
 
 data ReloadableConfig = ReloadableConfig {configTS :: UTCTime, configPath :: FilePath, configWorkspaces :: [Index]}
 
+getSecret :: MonadIO m => Text -> Maybe Text -> m Text
+getSecret def keyM =
+  toText . fromMaybe (error $ "Missing environment: " <> env)
+    <$> lookupEnv (toString env)
+  where
+    env = fromMaybe def keyM
+
 reloadConfig :: MonadIO m => IORef ReloadableConfig -> m [Index]
 reloadConfig configRef = liftIO $ do
   config <- readIORef configRef
@@ -182,17 +189,19 @@ getAliases index = maybe [] (fmap toTuple) (search_aliases index)
 
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
-  GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_repositories
+  GitlabProvider Gitlab {..} ->
+    let addOrgPrefix repo = gitlab_organization <> "/" <> repo
+     in addOrgPrefix <$> fromMaybe [] gitlab_repositories
   _anyOtherProvider -> []
 
-getCrawlerOrganization :: Crawler -> [Text]
+getCrawlerOrganization :: Crawler -> Maybe Text
 getCrawlerOrganization Crawler {..} = case provider of
-  GitlabProvider Gitlab {..} -> fromMaybe [] gitlab_organizations
-  _anyOtherProvider -> []
+  GitlabProvider Gitlab {..} -> Just gitlab_organization
+  _anyOtherProvider -> Nothing
 
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =
-  let crawlers_api_key = ""
+  let crawlers_api_key = Nothing
       crawlers = []
       projects = Nothing
       idents = Just idents'

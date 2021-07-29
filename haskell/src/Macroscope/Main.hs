@@ -17,11 +17,12 @@ class (MonadIO m, MonadFail m, MonadMask m, MonadLog m) => MacroM m
 instance MacroM IO
 
 -- | Utility function to create a flat list of crawler from the whole configuration
-getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
+getCrawlers :: MonadIO m => [Config.Index] -> [(Text, m Text, Config.Crawler, [Config.Ident])]
 getCrawlers xs = do
   Config.Index {..} <- xs
   crawler <- crawlers
-  pure (name, crawlers_api_key, crawler, fromMaybe [] idents)
+  let key = Config.getSecret "CRAWLERS_API_KEY" crawlers_api_key
+  pure (name, key, crawler, fromMaybe [] idents)
 
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
@@ -50,22 +51,23 @@ runMacroscope verbose confPath interval client = do
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
-    crawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
-    crawl (index, key, crawler, idents) = do
+    crawl :: MacroM m => (Text, m Text, Config.Crawler, [Config.Ident]) -> m ()
+    crawl (index, keyIO, crawler, idents) = do
       now <- liftIO getCurrentTime
+      key <- keyIO
       when verbose (monocleLog $ "Crawling " <> crawlerName crawler)
 
       -- Create document streams
       docStreams <- case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
           -- TODO: the client may be created once for each api key
+          token <- Config.getSecret "GITLAB_TOKEN" gitlab_token
           glClient <-
             newGitLabGraphClientWithKey
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
-              gitlab_token
+              token
           pure $
-            -- When organizations are configured, we need to index its project first
-            [glOrgCrawler glClient | isJust gitlab_organizations]
+            [glOrgCrawler glClient | isNothing gitlab_repositories]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
         _ -> pure []
