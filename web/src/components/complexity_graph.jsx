@@ -31,17 +31,11 @@ class ComplexityGraph extends React.Component {
   }
 
   handleClick(item) {
-    this.props.history.push(
-      '/' +
-        this.props.index +
-        '/change/' +
-        item.change_id +
-        window.location.search
-    )
+    this.props.onClick(item.change_id)
   }
 
-  getData(func, x) {
-    return { x: moment(func(x)).format('X'), y: x.complexity, r: 5 }
+  getData(x) {
+    return { x: moment(x.created_at).format('X'), y: x.complexity, r: 5 }
   }
 
   xTickToLabel(q) {
@@ -51,9 +45,7 @@ class ComplexityGraph extends React.Component {
   }
 
   render() {
-    const data = this.props.data.items.map((x) => {
-      return this.getData(this.props.timeFunc, x)
-    })
+    const data = this.props.data.map((x) => this.getData(x))
     const bubbleData = {
       datasets: [
         {
@@ -83,7 +75,7 @@ class ComplexityGraph extends React.Component {
     const options = {
       tooltips: {
         callbacks: {
-          label: (i, d) => this.tooltipLabel(i, this.props.data.items)
+          label: (i, d) => this.tooltipLabel(i, this.props.data)
         }
       },
       scales: {
@@ -112,7 +104,7 @@ class ComplexityGraph extends React.Component {
       <Bubble
         data={bubbleData}
         getElementsAtEvent={(elems) => {
-          this.handleClick(this.props.data.items[elems[0]._index])
+          this.handleClick(this.props.data[elems[0]._index])
         }}
         options={options}
       />
@@ -121,12 +113,8 @@ class ComplexityGraph extends React.Component {
 }
 
 ComplexityGraph.propTypes = {
-  history: PropTypes.object.isRequired,
-  data: PropTypes.shape({
-    items: PropTypes.array
-  }).isRequired,
-  timeFunc: PropTypes.func.isRequired,
-  index: PropTypes.string.isRequired
+  data: PropTypes.any,
+  onClick: PropTypes.any
 }
 
 export default ComplexityGraph
