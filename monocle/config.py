@@ -171,6 +171,13 @@ def removeEmpty(obj):
 migrate_command = "monocle migrate-config --config <config-path>"
 
 
+def get_env(name):
+    if not os.environ.get(name):
+        print("[ERROR] Could not find secret from environment name: ", name)
+        exit(1)
+    return os.environ[name]
+
+
 def downgrade(tenant):
     """Take a v1.0 configuration and return a v0.9 (for existing crawler)"""
     if tenant.get("crawlers", None) is None:
@@ -190,39 +197,44 @@ def downgrade(tenant):
     for crawler in crawlers:
         provider = crawler["provider"]
         if provider == "TaskDataProvider":
+            key = get_env(tenant.get("crawlers_api_key", "CRAWLERS_API_KEY"))
             tenant["task_crawlers"].append(
                 dict(
                     name=crawler["name"],
                     updated_since=crawler["update_since"],
-                    api_key=tenant["crawlers_api_key"],
+                    api_key=key,
                 )
             )
-        elif provider.get("github_token"):
+        elif provider.get("github_organization"):
+            key = get_env(provider.get("github_token", "GITHUB_TOKEN"))
             for repo in provider.get("github_repositories", [None]):
                 tenant["crawler"]["github_orgs"].append(
                     dict(
                         updated_since=crawler["update_since"],
                         name=provider["github_organization"],
-                        token=provider["github_token"],
+                        token=key,
                         repository=repo,
                         base_url=provider["github_url"]
                         if provider.get("github_url")
                         else "https://github.com",
                     )
                 )
-        elif provider.get("github_app_id"):
+        elif provider.get("github_app_organization"):
             if github_app_defined:
                 print("ERROR: only one github app is currently supported")
                 exit(1)
             github_app_defined = True
-            os.environ["APP_ID"] = provider["github_app_id"]
-            os.environ["APP_KEY_PATH"] = provider["github_app_key_path"]
+            os.environ["APP_ID"] = get_env(
+                provider.get("github_app_id", "GITHUB_APP_ID")
+            )
+            os.environ["APP_KEY_PATH"] = get_env(
+                provider.get("github_app_key_path", "GITHUB_APP_KEY_PATH")
+            )
             for repo in provider.get("github_app_repositories", [None]):
                 tenant["crawler"]["github_orgs"].append(
                     dict(
                         updated_since=crawler["update_since"],
                         name=provider["github_app_organization"],
-                        token="",
                         repository=repo,
                         base_url=provider["github_app_url"]
                         if provider.get("github_app_url")
@@ -230,6 +242,10 @@ def downgrade(tenant):
                     )
                 )
         elif provider.get("gerrit_url"):
+            if provider.get("gerrit_password"):
+                key = get_env(provider.get("gerrit_password", "GERRIT_PASSWORD"))
+            else:
+                key = None
             for repo in listFromMaybe(provider.get("gerrit_repositories")):
                 tenant["crawler"]["gerrit_repositories"].append(
                     dict(
@@ -238,7 +254,7 @@ def downgrade(tenant):
                         base_url=provider["gerrit_url"],
                         insecure=provider.get("gerrit_url_insecure"),
                         login=provider.get("gerrit_login"),
-                        password=provider.get("gerrit_password"),
+                        password=key,
                         prefix=provider.get("gerrit_prefix"),
                     )
                 )
@@ -247,8 +263,25 @@ def downgrade(tenant):
     return removeEmpty(tenant)
 
 
+env_counter = dict(current=0)
+assigned_env: Dict[str, str] = dict()
+
+
+def fresh_env(for_key):
+    if for_key in assigned_env:
+        return assigned_env[for_key]
+    env_counter["current"] += 1
+    env = "MONOCLE_SECRET" + str(env_counter["current"])
+    assigned_env[for_key] = env
+    os.environ[env] = for_key
+    return env
+
+
 def upgrade(tenant):
     """Take a v0.9 configuration and return a v1.0"""
+    if not tenant.get("index"):
+        print("Invalid workspace, it is missing the index key:", tenant)
+        exit(1)
     crawlers = tenant.get("crawlers", [])
 
     # Add github crawlers
@@ -257,17 +290,18 @@ def upgrade(tenant):
         if crawler.get("base_url", "") == "https://github.com":
             crawler.pop("base_url")
         if os.getenv("APP_ID"):
+            os.environ["GITHUB_APP_ID"] = os.environ["APP_ID"]
+            os.environ["GITHUB_APP_KEY_PATH"] = os.environ["APP_KEY_PATH"]
             provider = dict(
                 github_app_url=crawler.get("base_url"),
-                github_app_id=os.getenv("APP_ID"),
-                github_app_key_path=os.getenv("APP_KEY_PATH"),
                 github_app_organization=crawler["name"],
                 github_app_repositories=maybeToList(crawler.get("repository")),
             )
         else:
+            env = fresh_env(crawler["token"])
             provider = dict(
                 github_url=crawler.get("base_url"),
-                github_token=crawler["token"],
+                github_token=env,
                 github_organization=crawler["name"],
                 github_repositories=maybeToList(crawler.get("repository")),
             )
@@ -281,6 +315,10 @@ def upgrade(tenant):
 
     # Add gerrit crawlers
     for (pos, crawler) in enumerate(legacy_crawler.get("gerrit_repositories", [])):
+        if crawler.get("password"):
+            env = fresh_env(crawler["password"])
+        else:
+            env = None
         crawlers.append(
             dict(
                 name="gerrit-" + str(pos + 1),
@@ -288,7 +326,7 @@ def upgrade(tenant):
                 provider=dict(
                     gerrit_url=crawler["base_url"],
                     gerrit_login=crawler.get("login"),
-                    gerrit_password=crawler.get("password"),
+                    gerrit_password=env,
                     gerrit_url_insecure=crawler.get("insecure"),
                     gerrit_prefix=crawler.get("prefix"),
                     gerrit_repositories=maybeToList(crawler.get("name")),
@@ -305,7 +343,8 @@ def upgrade(tenant):
             print("[WARNING]: Could not migrate multiple tasks crawlers api key")
             print("Only one crawlers_api_key is now supported per tenant.")
             # TODO: should we fail here?
-        tenant["crawlers_api_key"] = crawler["api_key"]
+        os.environ["CRAWLERS_API_KEY"] = crawler["api_key"]
+        tenant["crawlers_api_key"] = "CRAWLERS_API_KEY"
         crawlers.append(
             dict(
                 name=crawler["name"],
@@ -315,10 +354,12 @@ def upgrade(tenant):
         )
 
     tenant["crawlers"] = crawlers
-    if not tenant.get("crawlers_api_key"):
-        tenant["crawlers_api_key"] = "CHANGE_ME"
     tenant["name"] = tenant.pop("index")
     return removeEmpty(tenant)
+
+
+def get_envs(config):
+    return [(v + "=" + k) for (k, v) in assigned_env.items()]
 
 
 def get_workspaces(conf):

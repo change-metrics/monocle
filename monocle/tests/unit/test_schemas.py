@@ -90,18 +90,18 @@ workspaces:
     users:
       - john
       - jane
-    crawlers_api_key: "1a2b3c4d5e"
+    crawlers_api_key: CRAWLERS_API_KEY
     crawlers:
       - name: github-git
         update_since: "2020-01-01"
         provider:
-          github_token: "123"
+          github_token: MONOCLE_SECRET1
           github_organization: git
 
       - name: github-bitcoin
         update_since: "2020-01-01"
         provider:
-          github_token: "123"
+          github_token: MONOCLE_SECRET1
           github_organization: bitcoin
 
       - name: crawler
@@ -109,18 +109,17 @@ workspaces:
         provider: TaskDataProvider
 
   - name: tenant1
-    crawlers_api_key: "CHANGE_ME"
     crawlers:
       - name: github-docker
         update_since: "2020-01-01"
         provider:
-          github_token: "123"
+          github_token: "MONOCLE_SECRET1"
           github_organization: docker
 
       - name: github-tekton
         update_since: "2020-01-01"
         provider:
-          github_token: "123"
+          github_token: "MONOCLE_SECRET1"
           github_organization: tekton
 
       - name: gerrit-1
@@ -136,7 +135,7 @@ workspaces:
           gerrit_url: https://softwarefactory-project.io/r
           gerrit_url_insecure: true
           gerrit_login: fabien
-          gerrit_password: secure
+          gerrit_password: MONOCLE_SECRET2
           gerrit_prefix: namespace/
           gerrit_repositories:
             - ^rpms/.*
@@ -173,13 +172,10 @@ new_app_config = """
 ---
 workspaces:
   - name: default
-    crawlers_api_key: "CHANGE_ME"
     crawlers:
       - name: github-git
         update_since: "2020-01-01"
         provider:
-          github_app_id: "123"
-          github_app_key_path: /key
           github_app_organization: git
 """
 
@@ -210,15 +206,18 @@ class TestSchemas(unittest.TestCase):
 
     def test_config_downgrade(self):
         """test adapting config into legacy_config"""
+        os.environ["MONOCLE_SECRET1"] = "123"
+        os.environ["MONOCLE_SECRET2"] = "secure"
+        os.environ["CRAWLERS_API_KEY"] = "1a2b3c4d5e"
         new_config = config.load(config_sample_yaml)
         self.assertEqual(new_config, yaml.safe_load(legacy_config_sample_yaml))
 
     def test_app_config_downgrade(self):
-        os.environ["APP_ID"] = "123"
-        os.environ["APP_KEY_PATH"] = "/key"
+        os.environ["GITHUB_APP_ID"] = "123"
+        os.environ["GITHUB_APP_KEY_PATH"] = "/key"
         new_config = config.load(new_app_config)
-        os.environ.pop("APP_ID")
-        os.environ.pop("APP_KEY_PATH")
+        os.environ.pop("GITHUB_APP_ID")
+        os.environ.pop("GITHUB_APP_KEY_PATH")
         self.assertEqual(new_config, yaml.safe_load(legacy_app_config))
 
     def test_get_ident_config(self):
