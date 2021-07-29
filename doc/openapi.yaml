@@ -974,7 +974,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_TermCount'
-                total_terms:
+                total_hits:
                     type: integer
                     format: uint32
         monocle_task_data_AddRequest:

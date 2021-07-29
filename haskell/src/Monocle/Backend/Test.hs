@@ -508,7 +508,7 @@ testGetChangesTops = withTenant doTest
                                     termCountCount = 4
                                   }
                               ],
-                          termsCountTotalTerms = 4
+                          termsCountTotalHits = 4
                         }
                     ),
                 changesTopsRepos =
@@ -525,7 +525,7 @@ testGetChangesTops = withTenant doTest
                                     termCountCount = 2
                                   }
                               ],
-                          termsCountTotalTerms = 4
+                          termsCountTotalHits = 4
                         }
                     ),
                 changesTopsApprovals =
@@ -538,7 +538,7 @@ testGetChangesTops = withTenant doTest
                                     termCountCount = 4
                                   }
                               ],
-                          termsCountTotalTerms = 4
+                          termsCountTotalHits = 4
                         }
                     )
               }

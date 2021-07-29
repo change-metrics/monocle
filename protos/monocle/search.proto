@@ -263,7 +263,7 @@ message TermCount {
 
 message TermsCount {
   repeated TermCount termcount = 1;
-  uint32 total_terms = 2;
+  uint32 total_hits = 2;
 }
 
 message AuthorPeer {

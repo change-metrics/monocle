@@ -400,7 +400,7 @@ searchQuery request = do
     toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
     toTermsCount tcV total =
       let termsCountTermcount = tcV
-          termsCountTotalTerms = total
+          termsCountTotalHits = total
        in SearchPB.TermsCount {..}
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount

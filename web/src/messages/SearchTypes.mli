@@ -193,7 +193,7 @@ type term_count = {
 
 type terms_count = {
   termcount : term_count list;
-  total_terms : int32;
+  total_hits : int32;
 }
 
 type author_peer = {
@@ -461,7 +461,7 @@ val default_term_count :
 
 val default_terms_count : 
   ?termcount:term_count list ->
-  ?total_terms:int32 ->
+  ?total_hits:int32 ->
   unit ->
   terms_count
 (** [default_terms_count ()] is the default value for type [terms_count] *)

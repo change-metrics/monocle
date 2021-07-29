@@ -740,7 +740,7 @@ getChangesTops limit = do
       Just $
         SearchPB.TermsCount
           { termsCountTermcount = V.fromList $ toPBTermCount <$> tsc,
-            termsCountTotalTerms = total
+            termsCountTotalHits = total
           }
 
 -- | getReviewHisto

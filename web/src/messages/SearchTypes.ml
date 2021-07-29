@@ -190,7 +190,7 @@ type term_count = {
 
 type terms_count = {
   termcount : term_count list;
-  total_terms : int32;
+  total_hits : int32;
 }
 
 type author_peer = {
@@ -523,10 +523,10 @@ let rec default_term_count
 
 let rec default_terms_count 
   ?termcount:((termcount:term_count list) = [])
-  ?total_terms:((total_terms:int32) = 0l)
+  ?total_hits:((total_hits:int32) = 0l)
   () : terms_count  = {
   termcount;
-  total_terms;
+  total_hits;
 }
 
 let rec default_author_peer 

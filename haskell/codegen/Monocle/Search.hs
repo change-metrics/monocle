@@ -5364,7 +5364,7 @@ instance HsJSONPB.ToSchema TermCount where
 data TermsCount = TermsCount
   { termsCountTermcount ::
       Hs.Vector Monocle.Search.TermCount,
-    termsCountTotalTerms :: Hs.Word32
+    termsCountTotalHits :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -5378,7 +5378,7 @@ instance HsProtobuf.Message TermsCount where
     _
     TermsCount
       { termsCountTermcount = termsCountTermcount,
-        termsCountTotalTerms = termsCountTotalTerms
+        termsCountTotalHits = termsCountTotalHits
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -5390,7 +5390,7 @@ instance HsProtobuf.Message TermsCount where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                termsCountTotalTerms
+                termsCountTotalHits
             )
           ]
       )
@@ -5420,7 +5420,7 @@ instance HsProtobuf.Message TermsCount where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "total_terms")
+          (HsProtobuf.Single "total_hits")
           []
           ""
       )
@@ -5428,9 +5428,9 @@ instance HsProtobuf.Message TermsCount where
 
 instance HsJSONPB.ToJSONPB TermsCount where
   toJSONPB (TermsCount f1 f2) =
-    (HsJSONPB.object ["termcount" .= f1, "total_terms" .= f2])
+    (HsJSONPB.object ["termcount" .= f1, "total_hits" .= f2])
   toEncodingPB (TermsCount f1 f2) =
-    (HsJSONPB.pairs ["termcount" .= f1, "total_terms" .= f2])
+    (HsJSONPB.pairs ["termcount" .= f1, "total_hits" .= f2])
 
 instance HsJSONPB.FromJSONPB TermsCount where
   parseJSONPB =
@@ -5438,7 +5438,7 @@ instance HsJSONPB.FromJSONPB TermsCount where
         "TermsCount"
         ( \obj ->
             (Hs.pure TermsCount) <*> obj .: "termcount"
-              <*> obj .: "total_terms"
+              <*> obj .: "total_hits"
         )
     )
 
@@ -5454,11 +5454,11 @@ instance HsJSONPB.ToSchema TermsCount where
     do
       let declare_termcount = HsJSONPB.declareSchemaRef
       termsCountTermcount <- declare_termcount Proxy.Proxy
-      let declare_total_terms = HsJSONPB.declareSchemaRef
-      termsCountTotalTerms <- declare_total_terms Proxy.Proxy
+      let declare_total_hits = HsJSONPB.declareSchemaRef
+      termsCountTotalHits <- declare_total_hits Proxy.Proxy
       let _ =
             Hs.pure TermsCount <*> HsJSONPB.asProxy declare_termcount
-              <*> HsJSONPB.asProxy declare_total_terms
+              <*> HsJSONPB.asProxy declare_total_hits
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -5473,7 +5473,7 @@ instance HsJSONPB.ToSchema TermsCount where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("termcount", termsCountTermcount),
-                          ("total_terms", termsCountTotalTerms)
+                          ("total_hits", termsCountTotalHits)
                         ]
                   }
             }

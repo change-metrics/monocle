@@ -314,12 +314,12 @@ let default_term_count_mutable () : term_count_mutable = {
 
 type terms_count_mutable = {
   mutable termcount : SearchTypes.term_count list;
-  mutable total_terms : int32;
+  mutable total_hits : int32;
 }
 
 let default_terms_count_mutable () : terms_count_mutable = {
   termcount = [];
-  total_terms = 0l;
+  total_hits = 0l;
 }
 
 type author_peer_mutable = {
@@ -1208,15 +1208,15 @@ let rec decode_terms_count json =
         (decode_term_count (Pbrt_bs.object_ json "terms_count" "termcount"))
       ) a |> Array.to_list;
     end
-    | "total_terms" -> 
-      let json = Js.Dict.unsafeGet json "total_terms" in
-      v.total_terms <- Pbrt_bs.int32 json "terms_count" "total_terms"
+    | "total_hits" -> 
+      let json = Js.Dict.unsafeGet json "total_hits" in
+      v.total_hits <- Pbrt_bs.int32 json "terms_count" "total_hits"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     SearchTypes.termcount = v.termcount;
-    SearchTypes.total_terms = v.total_terms;
+    SearchTypes.total_hits = v.total_hits;
   } : SearchTypes.terms_count)
 
 let rec decode_author_peer json =
@@ -1879,7 +1879,7 @@ let rec encode_terms_count (v:SearchTypes.terms_count) =
     in
     Js.Dict.set json "termcount" termcount';
   end;
-  Js.Dict.set json "total_terms" (Js.Json.number (Int32.to_float v.SearchTypes.total_terms));
+  Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.SearchTypes.total_hits));
   json
 
 let rec encode_author_peer (v:SearchTypes.author_peer) = 
