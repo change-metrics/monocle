@@ -20,7 +20,7 @@ import Col from 'react-bootstrap/Col'
 
 import PropTypes from 'prop-types'
 
-import { addUrlField, ErrorBox, hasSmallWidth } from './common'
+import { hasSmallWidth } from './common'
 
 import { Pie as BasePie } from 'react-chartjs-2'
 
@@ -71,20 +71,18 @@ class Pie extends React.Component {
 
   handleClick(obj, elems) {
     if (
-      obj.props.field &&
-      obj.props.history &&
       elems &&
       elems.length > 0 &&
       elems[0]._index < obj.props.data.items.length
     ) {
       const key = obj.props.data.items[elems[0]._index].key
-      obj.props.history.push(addUrlField(obj.props.field, key))
+      obj.props.handleClick(key)
     }
   }
 
   handleLegendClick(label) {
     if (label !== this.other_label) {
-      this.props.history.push(addUrlField(this.props.field, label))
+      this.props.handleClick(label)
     }
   }
 
@@ -108,7 +106,7 @@ class Pie extends React.Component {
   render() {
     const data = this.prepareDataSet(this.props.data)
     if (!data) {
-      return <ErrorBox error="No data for Pie" />
+      React.null
     } else {
       return (
         <React.Fragment>
@@ -163,8 +161,7 @@ class Pie extends React.Component {
 }
 
 Pie.propTypes = {
-  history: PropTypes.object,
-  field: PropTypes.string,
+  handleClick: PropTypes.any,
   data: PropTypes.shape({
     items: PropTypes.array.isRequired,
     total_hits: PropTypes.number.isRequired

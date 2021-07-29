@@ -130,14 +130,22 @@ documentType x = documentTypes (x :| [])
 toUserTerm :: Text -> BH.Query
 toUserTerm user = BH.TermQuery (BH.Term "author.muid" user) Nothing
 
+data AggregationResultsWTH = AggregationResultsWTH
+  { agResults :: BH.AggregationResults,
+    agTH :: Int
+  }
+  deriving (Show, Eq)
+
 -- | Handle aggregate requests
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
 
-aggSearch :: Maybe BH.Query -> BH.Aggregations -> TenantM BH.AggregationResults
+aggSearch :: Maybe BH.Query -> BH.Aggregations -> TenantM AggregationResultsWTH
 aggSearch query aggs = do
   indexName <- getIndexName
-  toAggRes <$> doSearch indexName (BH.mkAggregateSearch query aggs)
+  results <- doSearch indexName (BH.mkAggregateSearch query aggs)
+  let totalHits = BH.value $ BH.hitsTotal $ BH.searchHits results
+  pure $ AggregationResultsWTH (toAggRes results) totalHits
 
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
@@ -412,16 +420,32 @@ getProjectAgg query = do
 getSimpleTR :: BH.TermsResult -> TermResult
 getSimpleTR tr = TermResult (getTermKey tr) (BH.termsDocCount tr)
 
-data TermResult = TermResult {trTerm :: Text, trCount :: Int} deriving (Show, Eq)
+data TermResult = TermResult
+  { trTerm :: Text,
+    trCount :: Int
+  }
+  deriving (Show, Eq)
+
+instance Ord TermResult where
+  (TermResult _ x) `compare` (TermResult _ y) = x `compare` y
+
+data TermsResultWTH = TermsResultWTH
+  { tsrTR :: [TermResult],
+    tsrTH :: Int
+  }
+  deriving (Show, Eq)
 
 getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
 
-getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM [BH.TermsResult]
+getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM TermsResultWTH
 getTermsAgg query onTerm maxBuckets = do
   search <- aggSearch (Just query) aggs
-  pure $ filter isNotEmptyTerm $ unfilteredR search
+  pure $
+    TermsResultWTH
+      (getSimpleTR <$> filter isNotEmptyTerm (unfilteredR $ agResults search))
+      (agTH search)
   where
     aggs =
       BH.mkAggregations "singleTermAgg" $
@@ -456,22 +480,23 @@ getCardinalityAgg (BH.FieldName fieldName) threshold qf = do
 countAuthors :: QueryFlavor -> QueryM Count
 countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
-getDocTypeTopCountByField :: NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFlavor -> QueryM [TermResult]
+getDocTypeTopCountByField ::
+  NonEmpty ELKDocType -> Text -> Maybe Word32 -> QueryFlavor -> QueryM TermsResultWTH
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
   let query = mkAnd $ basequery <> [documentTypes doctype]
-
   -- Run the aggregation
-  results <- liftTenantM (runTermAgg query size)
-
-  -- Return the result
-  pure $ getSimpleTR <$> results
+  liftTenantM (runTermAgg query $ getSize size)
   where
     runTermAgg query = getTermsAgg query attr
+    getSize size' = toInt <$> size'
+    toInt i =
+      let i' = fromInteger $ toInteger i
+       in if i' <= 0 then 10 else i'
 
 -- | The repos_summary query
-getRepos :: QueryM [TermResult]
+getRepos :: QueryM TermsResultWTH
 getRepos =
   getDocTypeTopCountByField
     (ElkChange :| [])
@@ -490,7 +515,8 @@ data RepoSummary = RepoSummary
 
 getReposSummary :: QueryM [RepoSummary]
 getReposSummary = do
-  names <- fmap trTerm <$> getRepos
+  repos <- getRepos
+  let names = trTerm <$> tsrTR repos
   traverse getRepoSummary names
   where
     getRepoSummary fn = withFilter [mkTerm "repository_fullname" fn] $ do
@@ -508,7 +534,7 @@ getReposSummary = do
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
 -- | get authors tops
-getMostActiveAuthorByChangeCreated :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCreated :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
     (ElkChangeCreatedEvent :| [])
@@ -516,7 +542,7 @@ getMostActiveAuthorByChangeCreated limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeMerged :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeMerged :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
     (ElkChangeMergedEvent :| [])
@@ -524,7 +550,7 @@ getMostActiveAuthorByChangeMerged limit =
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostActiveAuthorByChangeReviewed :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeReviewed :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
     (ElkChangeReviewedEvent :| [])
@@ -532,7 +558,7 @@ getMostActiveAuthorByChangeReviewed limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeCommented :: Int -> QueryM [TermResult]
+getMostActiveAuthorByChangeCommented :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
     (ElkChangeCommentedEvent :| [])
@@ -540,7 +566,7 @@ getMostActiveAuthorByChangeCommented limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostReviewedAuthor :: Int -> QueryM [TermResult]
+getMostReviewedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostReviewedAuthor limit =
   getDocTypeTopCountByField
     (ElkChangeReviewedEvent :| [])
@@ -548,7 +574,7 @@ getMostReviewedAuthor limit =
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostCommentedAuthor :: Int -> QueryM [TermResult]
+getMostCommentedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostCommentedAuthor limit =
   getDocTypeTopCountByField
     (ElkChangeCommentedEvent :| [])
@@ -576,7 +602,7 @@ getAuthorsPeersStrength limit = do
       "author.muid"
       (Just 5000)
       qf
-  authors_peers <- traverse (getAuthorPeers . trTerm) peers
+  authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR peers)
   pure $
     take (fromInteger $ toInteger limit) $
       reverse $
@@ -595,7 +621,7 @@ getAuthorsPeersStrength limit = do
           "on_author.muid"
           (Just 5000)
           qf
-      pure (peer, change_authors)
+      pure (peer, tsrTR change_authors)
     transform :: (Text, [TermResult]) -> [PeerStrengthResult]
     transform (peer, change_authors) = toPSR <$> change_authors
       where
@@ -673,8 +699,52 @@ getNewContributors = do
   afterAuthor <- withFilter [afterBounceQ minDate] runQ
 
   -- Only keep after authors not present in the before authors list
-  let ba = trTerm <$> beforeAuthor
-  pure $ filter (\tr -> trTerm tr `notElem` ba) afterAuthor
+  let ba = trTerm <$> tsrTR beforeAuthor
+  pure $ filter (\tr -> trTerm tr `notElem` ba) (tsrTR afterAuthor)
+
+-- | getChangesTop
+getChangesTop :: Word32 -> Text -> QueryM TermsResultWTH
+getChangesTop limit attr =
+  getDocTypeTopCountByField
+    (ElkChange :| [])
+    attr
+    -- Ask for a large amount of buckets to hopefully
+    -- get a total count that is accurate
+    (Just limit)
+    (QueryFlavor Author CreatedAt)
+
+getChangesTopAuthors :: Word32 -> QueryM TermsResultWTH
+getChangesTopAuthors limit = getChangesTop limit "author.muid"
+
+getChangesTopRepos :: Word32 -> QueryM TermsResultWTH
+getChangesTopRepos limit = getChangesTop limit "repository_fullname"
+
+getChangesTopApprovals :: Word32 -> QueryM TermsResultWTH
+getChangesTopApprovals limit = getChangesTop limit "approval"
+
+getChangesTops :: Word32 -> QueryM SearchPB.ChangesTops
+getChangesTops limit = do
+  authors <- getChangesTopAuthors limit
+  repos <- getChangesTopRepos limit
+  approvals <- getChangesTopApprovals limit
+  let result =
+        let changesTopsAuthors = toTermsCount (toInt $ tsrTH authors) (tsrTR authors)
+            changesTopsRepos = toTermsCount (toInt $ tsrTH repos) (tsrTR repos)
+            changesTopsApprovals = toTermsCount (toInt $ tsrTH approvals) (tsrTR approvals)
+         in SearchPB.ChangesTops {..}
+  pure result
+  where
+    toPBTermCount TermResult {..} =
+      SearchPB.TermCount
+        (toLazy trTerm)
+        (toInt trCount)
+    toInt c = fromInteger $ toInteger c
+    toTermsCount total tsc =
+      Just $
+        SearchPB.TermsCount
+          { termsCountTermcount = V.fromList $ toPBTermCount <$> tsc,
+            termsCountTotalHits = total
+          }
 
 -- | getReviewHisto
 getHisto :: QueryFlavor -> QueryM (V.Vector HistoSimple)
