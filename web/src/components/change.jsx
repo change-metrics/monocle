@@ -31,6 +31,7 @@ import { UrlMatcher } from "interweave-autolink";
 
 import moment from "moment";
 
+import { addS } from "./common";
 import TimelineGraph from "./timeline";
 import CommitsTimelineGraph from "./commits_timeline";
 import arrayFromList from "./ArrayFromList.bs.js";
