@@ -32,13 +32,15 @@ module CPie = {
 
 module ChangesTopPies = {
   @react.component
-  let make = (~store: Store.t) => {
+  let make = (~store) => {
     let (state, dispatch) = store
     let qtype = SearchTypes.Query_changes_tops
     let request = {
       ...Store.mkSearchRequest(state, qtype),
       limit: 10->Int32.of_int,
+      query: addQuery(state.query, state.filter),
     }
+    let query = request.query
     let getEntry = (e: SearchTypes.term_count): CPie.entry => {
       doc_count: e.count->Int32.to_int,
       key: e.term,
@@ -61,7 +63,7 @@ module ChangesTopPies = {
       "CHANGES_REQUESTED": "#CA5462",
     }
     let ignoredApproval = ["Code-Review+0", "Verified+0", "Workflow+0", "COMMENTED"]
-    switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+    switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok(SearchTypes.Error(err))) =>
