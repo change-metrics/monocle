@@ -33,7 +33,7 @@ module CPie = {
 module ChangesTopPies = {
   @react.component
   let make = (~store: Store.t) => {
-    let (state, _) = store
+    let (state, dispatch) = store
     let qtype = SearchTypes.Query_changes_tops
     let request = {
       ...Store.mkSearchRequest(state, qtype),
@@ -47,7 +47,7 @@ module ChangesTopPies = {
       items: elms.termcount->Belt.List.map(getEntry)->Belt.List.keep(kf)->Belt.List.toArray,
       total_hits: elms.total_hits->Int32.to_int,
     }
-    let (panelExpandedState, setPanelExpandedState) = React.useState(_ => false)
+    let tee = (_: bool => bool) => Store.Store.ReverseChangesPiePanelState->dispatch
     let approvals_palette = {
       "Code-Review+2": "#00ff9f",
       "Code-Review+1": "#B6FCD5",
@@ -70,8 +70,7 @@ module ChangesTopPies = {
       />
     | Some(Ok(SearchTypes.Changes_tops(items))) =>
       <MExpandablePanel
-        title={"Show changes pie charts"}
-        stateControler={(panelExpandedState, setPanelExpandedState)}>
+        title={"Show changes pie charts"} stateControler={(state.changes_pies_panel, tee)}>
         <MGrid>
           <MGridItemXl4>
             <CPie
