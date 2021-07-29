@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import React from 'react'
+
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Card from 'react-bootstrap/Card'
+
 import moment from 'moment'
 
 import ComplexityGraph from './complexity_graph'
@@ -24,7 +30,10 @@ class DurationComplexityGraph extends ComplexityGraph {
     this.state.xScaleType = 'logarithmic'
   }
 
-  getData(func, x) {
+  getData(x) {
+    // complexicity from Change.res
+    x.duration = (x.merged_at - x.created_at) / 1000
+    x.complexity = x.changed_files_count + x.additions + x.deletions
     return { x: x.duration, y: x.complexity, r: 5 }
   }
 
@@ -39,4 +48,19 @@ class DurationComplexityGraph extends ComplexityGraph {
   }
 }
 
-export default DurationComplexityGraph
+const ChangesReviewStats = (prop) => (
+  <Row>
+    <Col>
+      <Card>
+        <Card.Header>
+          <Card.Title>Changes merge duration</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
+)
+
+export default ChangesReviewStats

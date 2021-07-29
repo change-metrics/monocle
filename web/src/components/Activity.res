@@ -81,6 +81,34 @@ module ChangesReviewStats = {
   }
 }
 
+module DurationComplexicityGraph = {
+  @react.component @module("./duration_complexity_graph.jsx")
+  external make: (~data: array<SearchTypes.change>, ~onClick: string => unit) => React.element =
+    "default"
+}
+
+module ChangesMergedDuration = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, _) = store
+    let query = addQuery(state.query, "state:merged")
+    let request = {
+      ...Store.mkSearchRequest(state, SearchTypes.Query_change),
+      query: query,
+    }
+    let onClick = changeId => {
+      let link = "/" ++ state.index ++ "/change/" ++ changeId
+      link->RescriptReactRouter.push
+    }
+    switch useAutoGetOn(() => WebApi.Search.query(request), query) {
+    | None => <Spinner />
+    | Some(Ok(SearchTypes.Changes(items))) =>
+      <DurationComplexicityGraph data={items.changes->Belt.List.toArray} onClick />
+    | _ => React.null
+    }
+  }
+}
+
 module CAuthorsHistoStats = {
   @react.component @module("./authors_histo.jsx")
   external make: (
@@ -128,6 +156,7 @@ let make = (~store: Store.t) => {
     <MStack>
       <MStackItem> <ChangesLifeCycleStats store /> </MStackItem>
       <MStackItem> <ChangesReviewStats store /> </MStackItem>
+      <MStackItem> <ChangesMergedDuration store /> </MStackItem>
       <MStackItem> <AuthorHistoStats store /> </MStackItem>
     </MStack>
   </div>
