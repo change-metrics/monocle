@@ -481,16 +481,19 @@ countAuthors :: QueryFlavor -> QueryM Count
 countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
 getDocTypeTopCountByField ::
-  NonEmpty ELKDocType -> Text -> Maybe Int -> QueryFlavor -> QueryM TermsResultWTH
+  NonEmpty ELKDocType -> Text -> Maybe Word32 -> QueryFlavor -> QueryM TermsResultWTH
 getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
   let query = mkAnd $ basequery <> [documentTypes doctype]
-
   -- Run the aggregation
-  liftTenantM (runTermAgg query size)
+  liftTenantM (runTermAgg query $ getSize size)
   where
     runTermAgg query = getTermsAgg query attr
+    getSize size' = toInt <$> size'
+    toInt i =
+      let i' = fromInteger $ toInteger i
+       in if i' <= 0 then 10 else i'
 
 -- | The repos_summary query
 getRepos :: QueryM TermsResultWTH
@@ -531,7 +534,7 @@ getReposSummary = do
       pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
 
 -- | get authors tops
-getMostActiveAuthorByChangeCreated :: Int -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeCreated :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCreated limit =
   getDocTypeTopCountByField
     (ElkChangeCreatedEvent :| [])
@@ -539,7 +542,7 @@ getMostActiveAuthorByChangeCreated limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeMerged :: Int -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeMerged :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   getDocTypeTopCountByField
     (ElkChangeMergedEvent :| [])
@@ -547,7 +550,7 @@ getMostActiveAuthorByChangeMerged limit =
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostActiveAuthorByChangeReviewed :: Int -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeReviewed :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeReviewed limit =
   getDocTypeTopCountByField
     (ElkChangeReviewedEvent :| [])
@@ -555,7 +558,7 @@ getMostActiveAuthorByChangeReviewed limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostActiveAuthorByChangeCommented :: Int -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeCommented :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCommented limit =
   getDocTypeTopCountByField
     (ElkChangeCommentedEvent :| [])
@@ -563,7 +566,7 @@ getMostActiveAuthorByChangeCommented limit =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getMostReviewedAuthor :: Int -> QueryM TermsResultWTH
+getMostReviewedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostReviewedAuthor limit =
   getDocTypeTopCountByField
     (ElkChangeReviewedEvent :| [])
@@ -571,7 +574,7 @@ getMostReviewedAuthor limit =
     (Just limit)
     (QueryFlavor OnAuthor CreatedAt)
 
-getMostCommentedAuthor :: Int -> QueryM TermsResultWTH
+getMostCommentedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostCommentedAuthor limit =
   getDocTypeTopCountByField
     (ElkChangeCommentedEvent :| [])
@@ -700,7 +703,7 @@ getNewContributors = do
   pure $ filter (\tr -> trTerm tr `notElem` ba) (tsrTR afterAuthor)
 
 -- | getChangesTop
-getChangesTop :: Int -> Text -> QueryM TermsResultWTH
+getChangesTop :: Word32 -> Text -> QueryM TermsResultWTH
 getChangesTop limit attr =
   getDocTypeTopCountByField
     (ElkChange :| [])
@@ -710,16 +713,16 @@ getChangesTop limit attr =
     (Just limit)
     (QueryFlavor Author CreatedAt)
 
-getChangesTopAuthors :: Int -> QueryM TermsResultWTH
+getChangesTopAuthors :: Word32 -> QueryM TermsResultWTH
 getChangesTopAuthors limit = getChangesTop limit "author.muid"
 
-getChangesTopRepos :: Int -> QueryM TermsResultWTH
+getChangesTopRepos :: Word32 -> QueryM TermsResultWTH
 getChangesTopRepos limit = getChangesTop limit "repository_fullname"
 
-getChangesTopApprovals :: Int -> QueryM TermsResultWTH
+getChangesTopApprovals :: Word32 -> QueryM TermsResultWTH
 getChangesTopApprovals limit = getChangesTop limit "approval"
 
-getChangesTops :: Int -> QueryM SearchPB.ChangesTops
+getChangesTops :: Word32 -> QueryM SearchPB.ChangesTops
 getChangesTops limit = do
   authors <- getChangesTopAuthors limit
   repos <- getChangesTopRepos limit

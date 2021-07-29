@@ -133,6 +133,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -366,8 +367,9 @@ searchQuery request = do
               SearchPB.QueryResponseResultNewAuthors $
                 toTermsCount (V.fromList $ toTTResult <$> results) 0
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
-          pure $
-            handleError $ ParseError "Not implemented" 1
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChangesTops
+            <$> Q.getChangesTops queryRequestLimit
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -378,9 +380,9 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: Word32 -> (Int -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
+    handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
     handleTopAuthorsQ limit cb = do
-      results <- cb limit'
+      results <- cb limit
       pure $
         SearchPB.QueryResponse
           . Just
@@ -388,7 +390,6 @@ searchQuery request = do
             toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
       where
         toInt c = fromInteger $ toInteger c
-        limit' = toInt limit
 
     toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
     toAPeerResult Q.PeerStrengthResult {..} =
