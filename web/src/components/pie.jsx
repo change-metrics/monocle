@@ -69,24 +69,22 @@ class Pie extends React.Component {
     return pieData
   }
 
-  // handleClick(obj, elems) {
-  //   if (
-  //     obj.props.field &&
-  //     obj.props.history &&
-  //     elems &&
-  //     elems.length > 0 &&
-  //     elems[0]._index < obj.props.data.items.length
-  //   ) {
-  //     const key = obj.props.data.items[elems[0]._index].key
-  //     obj.props.history.push(addUrlField(obj.props.field, key))
-  //   }
-  // }
+  handleClick(obj, elems) {
+    if (
+      elems &&
+      elems.length > 0 &&
+      elems[0]._index < obj.props.data.items.length
+    ) {
+      const key = obj.props.data.items[elems[0]._index].key
+      obj.props.handleClick(key)
+    }
+  }
 
-  // handleLegendClick(label) {
-  //   if (label !== this.other_label) {
-  //     this.props.history.push(addUrlField(this.props.field, label))
-  //   }
-  // }
+  handleLegendClick(label) {
+    if (label !== this.other_label) {
+      this.props.handleClick(label)
+    }
+  }
 
   getLabelBoxStyle(palette, index) {
     const labelBoxStyle = {
@@ -115,7 +113,7 @@ class Pie extends React.Component {
           <Row>
             <Col>
               <BasePie
-                getElementsAtEvent={(elems) => undefined}
+                getElementsAtEvent={(elems) => this.handleClick(this, elems)}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 300 : 200}
                 options={{
@@ -146,7 +144,7 @@ class Pie extends React.Component {
                     <span>&nbsp;</span>
                     <span
                       style={this.getLabelStyle(label)}
-                      onClick={(e) => undefined}
+                      onClick={(e) => this.handleLegendClick(label)}
                       id={label}
                     >
                       {label}
@@ -163,8 +161,7 @@ class Pie extends React.Component {
 }
 
 Pie.propTypes = {
-  // history: PropTypes.object,
-  // field: PropTypes.string,
+  handleClick: PropTypes.any,
   data: PropTypes.shape({
     items: PropTypes.array.isRequired,
     total_hits: PropTypes.number.isRequired

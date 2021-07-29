@@ -25,6 +25,7 @@ module CPie = {
   external make: (
     ~data: t,
     ~title: string,
+    ~handleClick: (~value: string) => unit,
     ~palette: palette_t=?,
     ~other_label: string=?,
   ) => React.element = "default"
@@ -63,6 +64,20 @@ module ChangesTopPies = {
       "CHANGES_REQUESTED": "#CA5462",
     }
     let ignoredApproval = ["Code-Review+0", "Verified+0", "Workflow+0", "COMMENTED"]
+    let handlePieClick = (state: Store.Store.t, dispatch, ~field: string, ~value: string) => {
+      let newFilter = field ++ ":\"" ++ value ++ "\""
+      let filter = Js.String.includes(newFilter, state.filter)
+        ? state.filter
+        : addQuery(state.filter, newFilter)
+      let base = "/" ++ state.index ++ "/" ++ "changes" ++ "?"
+      let query = switch state.query {
+      | "" => ""
+      | query => "q=" ++ query ++ "&"
+      }
+      let href = base ++ query ++ "f=" ++ filter
+      filter->Store.Store.SetFilter->dispatch
+      href->RescriptReactRouter.push
+    }
     switch useAutoGetOn(() => WebApi.Search.query(request), query) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
@@ -78,12 +93,14 @@ module ChangesTopPies = {
             <CPie
               data={items.authors->Belt.Option.getExn->adapt(_ => true)}
               title={"Changes per author"}
+              handleClick={handlePieClick(state, dispatch, ~field="author")}
             />
           </MGridItemXl4>
           <MGridItemXl4>
             <CPie
               data={items.repos->Belt.Option.getExn->adapt(_ => true)}
               title={"Changes per repository"}
+              handleClick={handlePieClick(state, dispatch, ~field="repo")}
             />
           </MGridItemXl4>
           <MGridItemXl4>
@@ -94,6 +111,7 @@ module ChangesTopPies = {
               ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
               title={"Changes per approval"}
               other_label={"No approval"}
+              handleClick={handlePieClick(state, dispatch, ~field="approval")}
             />
           </MGridItemXl4>
         </MGrid>

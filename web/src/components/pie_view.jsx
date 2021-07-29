@@ -37,6 +37,7 @@ const CPie = (props) => (
                 title={props.title}
                 palette={props.palette}
                 other_label={props.other_label}
+                handleClick={props.handleClick}
               />
             </Col>
           </Row>
