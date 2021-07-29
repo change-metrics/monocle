@@ -137,8 +137,9 @@ fromPBEnum (Enumerated (Right x)) = x
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearch indexName search = do
-  -- monocleLog . decodeUtf8 . Aeson.encode $ search
+  -- monocleLog . decodeUtf8 . encode $ search
   rawResp <- BH.searchByIndex indexName search
+  -- monocleLog $ show rawResp
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left _e -> handleError rawResp

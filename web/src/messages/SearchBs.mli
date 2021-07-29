@@ -90,6 +90,9 @@ val encode_authors_peers : SearchTypes.authors_peers -> Js.Json.t Js.Dict.t
 val encode_lifecycle_stats : SearchTypes.lifecycle_stats -> Js.Json.t Js.Dict.t
 (** [encode_lifecycle_stats v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_changes_tops : SearchTypes.changes_tops -> Js.Json.t Js.Dict.t
+(** [encode_changes_tops v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 (** [encode_query_response v dict] encodes [v] int the given JSON [dict] *)
 
@@ -182,6 +185,9 @@ val decode_authors_peers : Js.Json.t Js.Dict.t -> SearchTypes.authors_peers
 
 val decode_lifecycle_stats : Js.Json.t Js.Dict.t -> SearchTypes.lifecycle_stats
 (** [decode_lifecycle_stats decoder] decodes a [lifecycle_stats] value from [decoder] *)
+
+val decode_changes_tops : Js.Json.t Js.Dict.t -> SearchTypes.changes_tops
+(** [decode_changes_tops decoder] decodes a [changes_tops] value from [decoder] *)
 
 val decode_query_response : Js.Json.t Js.Dict.t -> SearchTypes.query_response
 (** [decode_query_response decoder] decodes a [query_response] value from [decoder] *)

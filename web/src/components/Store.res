@@ -38,6 +38,7 @@ module Store = {
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
+    changes_pies_panel: bool,
   }
   type action =
     | ChangeIndex(string)
@@ -48,6 +49,7 @@ module Store = {
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
+    | ReverseChangesPiePanelState
   type dispatch = action => unit
 
   let create = index => {
@@ -59,6 +61,7 @@ module Store = {
     suggestions: None,
     fields: None,
     user_groups: None,
+    changes_pies_panel: false,
   }
 
   let reducer = (state: t, action: action) =>
@@ -86,6 +89,7 @@ module Store = {
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchUserGroups(res) => {...state, user_groups: res}
+    | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
     }
 }
 

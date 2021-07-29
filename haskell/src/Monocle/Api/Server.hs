@@ -133,6 +133,7 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -359,13 +360,16 @@ searchQuery request = do
             . V.fromList
             . map toAPeerResult
             <$> Q.getAuthorsPeersStrength queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS ->
+        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
+          results <- Q.getNewContributors
+          pure $
+            SearchPB.QueryResponse . Just $
+              SearchPB.QueryResponseResultNewAuthors $
+                toTermsCount (V.fromList $ toTTResult <$> results) 0
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
           SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultNewAuthors
-            . SearchPB.TermsCount
-            . V.fromList
-            . map toTTResult
-            <$> Q.getNewContributors
+            . SearchPB.QueryResponseResultChangesTops
+            <$> Q.getChangesTops queryRequestLimit
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -376,16 +380,16 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: Word32 -> (Int -> QueryM [Q.TermResult]) -> QueryM QueryResponse
+    handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
     handleTopAuthorsQ limit cb = do
-      SearchPB.QueryResponse . Just
-        . SearchPB.QueryResponseResultTopAuthors
-        . SearchPB.TermsCount
-        . V.fromList
-        . map toTTResult
-        <$> cb limit'
+      results <- cb limit
+      pure $
+        SearchPB.QueryResponse
+          . Just
+          $ SearchPB.QueryResponseResultTopAuthors $
+            toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
       where
-        limit' = fromInteger $ toInteger limit
+        toInt c = fromInteger $ toInteger c
 
     toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
     toAPeerResult Q.PeerStrengthResult {..} =
@@ -393,6 +397,12 @@ searchQuery request = do
         (toLazy psrAuthor)
         (toLazy psrPeer)
         psrStrength
+
+    toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
+    toTermsCount tcV total =
+      let termsCountTermcount = tcV
+          termsCountTotalHits = total
+       in SearchPB.TermsCount {..}
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =

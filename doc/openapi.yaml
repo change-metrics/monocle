@@ -702,6 +702,14 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_Change'
+        monocle_search_ChangesTops:
+            properties:
+                authors:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                repos:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                approvals:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
         monocle_search_Commit:
             properties:
                 sha:
@@ -875,6 +883,8 @@ components:
                     $ref: '#/components/schemas/monocle_search_ActivityStats'
                 change_events:
                     $ref: '#/components/schemas/monocle_search_ChangeAndEvents'
+                changes_tops:
+                    $ref: '#/components/schemas/monocle_search_ChangesTops'
         monocle_search_RepoSummary:
             properties:
                 fullname:
@@ -964,6 +974,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_TermCount'
+                total_hits:
+                    type: integer
+                    format: uint32
         monocle_task_data_AddRequest:
             properties:
                 index:
