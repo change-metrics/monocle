@@ -102,6 +102,19 @@ let
         url: http://localhost:${toString prom-port}
     '';
   };
+  grafanaDashboards = pkgs.writeTextFile {
+    name = "grafana-dashboards-provider.yml";
+    text = ''
+      apiVersion: 1
+      providers:
+      - name: dashboards
+        type: file
+        updateIntervalSeconds: 30
+        options:
+          path: ${grafana-home}/dashboards
+          foldersFromFilesStructure: true
+    '';
+  };
   grafanaConf = pkgs.writeTextFile {
     name = "grafana.ini";
     text = ''
@@ -118,11 +131,15 @@ let
   };
   grafanaStart = pkgs.writeScriptBin "grafana-start" ''
     #!/bin/sh -ex
-    mkdir -p ${grafana-home}
+    mkdir -p ${grafana-home}/dashboards
     ${pkgs.rsync}/bin/rsync -a ${pkgs.grafana}/share/grafana/ ${grafana-home}/
     find ${grafana-home} -type f | xargs chmod 0600
     find ${grafana-home} -type d | xargs chmod 0700
+    ${pkgs.dhall-json}/bin/dhall-to-json  \
+      --file conf/grafana-dashboard.dhall \
+      --output ${grafana-home}/dashboards/monocle.json
     cd ${grafana-home}
+    cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
     cat ${grafanaPromDS} > conf/provisioning/datasources/prometheus.yaml
     exec ${pkgs.grafana}/bin/grafana-server -config ${grafanaConf}
   '';
