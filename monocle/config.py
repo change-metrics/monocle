@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import yaml
 
 from typing import Dict, List, Optional
@@ -184,6 +185,8 @@ def downgrade(tenant):
     tenant["crawler"] = dict(loop_delay=300, github_orgs=[], gerrit_repositories=[])
     tenant["index"] = tenant.pop("name")
 
+    github_app_defined = False
+
     for crawler in crawlers:
         provider = crawler["provider"]
         if provider == "TaskDataProvider":
@@ -204,6 +207,25 @@ def downgrade(tenant):
                         repository=repo,
                         base_url=provider["github_url"]
                         if provider.get("github_url")
+                        else "https://github.com",
+                    )
+                )
+        elif provider.get("github_app_id"):
+            if github_app_defined:
+                print("ERROR: only one github app is currently supported")
+                exit(1)
+            github_app_defined = True
+            os.environ["APP_ID"] = provider["github_app_id"]
+            os.environ["APP_KEY_PATH"] = provider["github_app_key_path"]
+            for repo in provider.get("github_app_repositories", [None]):
+                tenant["crawler"]["github_orgs"].append(
+                    dict(
+                        updated_since=crawler["update_since"],
+                        name=provider["github_app_organization"],
+                        token="",
+                        repository=repo,
+                        base_url=provider["github_app_url"]
+                        if provider.get("github_app_url")
                         else "https://github.com",
                     )
                 )
@@ -234,16 +256,26 @@ def upgrade(tenant):
     for crawler in legacy_crawler.get("github_orgs", []):
         if crawler.get("base_url", "") == "https://github.com":
             crawler.pop("base_url")
+        if os.getenv("APP_ID"):
+            provider = dict(
+                github_app_url=crawler.get("base_url"),
+                github_app_id=os.getenv("APP_ID"),
+                github_app_key_path=os.getenv("APP_KEY_PATH"),
+                github_app_organization=crawler["name"],
+                github_app_repositories=maybeToList(crawler.get("repository")),
+            )
+        else:
+            provider = dict(
+                github_url=crawler.get("base_url"),
+                github_token=crawler["token"],
+                github_organization=crawler["name"],
+                github_repositories=maybeToList(crawler.get("repository")),
+            )
         crawlers.append(
             dict(
                 name="github-" + crawler["name"],
                 update_since=crawler["updated_since"],
-                provider=dict(
-                    github_url=crawler.get("base_url"),
-                    github_token=crawler["token"],
-                    github_organization=crawler["name"],
-                    github_repositories=maybeToList(crawler.get("repository")),
-                ),
+                provider=provider,
             )
         )
 

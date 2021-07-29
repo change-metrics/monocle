@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
+import os
 
 import yaml
 
@@ -156,6 +157,32 @@ workspaces:
         file_regex: "doc[s]/.*"
 """
 
+legacy_app_config = """
+---
+tenants:
+  - index: default
+    crawler:
+      loop_delay: 300
+      github_orgs:
+        - name: git
+          updated_since: "2020-01-01"
+          base_url: https://github.com
+"""
+
+new_app_config = """
+---
+workspaces:
+  - name: default
+    crawlers_api_key: "CHANGE_ME"
+    crawlers:
+      - name: github-git
+        update_since: "2020-01-01"
+        provider:
+          github_app_id: "123"
+          github_app_key_path: /key
+          github_app_organization: git
+"""
+
 
 class TestSchemas(unittest.TestCase):
     maxDiff = None
@@ -164,15 +191,35 @@ class TestSchemas(unittest.TestCase):
         config.validate(yaml.safe_load(legacy_config_sample_yaml), config.schema)
         config.validate(yaml.safe_load(config_sample_yaml), config.schema)
 
+    def test_app_config_schema(self):
+        config.validate(yaml.safe_load(legacy_app_config), config.schema)
+        config.validate(yaml.safe_load(new_app_config), config.schema)
+
     def test_config_upgrade(self):
         """test adapting legacy_config into config"""
         adapted_config = config.loadUpgrade(legacy_config_sample_yaml)
         self.assertEqual(adapted_config, yaml.safe_load(config_sample_yaml))
 
+    def test_app_config_upgrade(self):
+        os.environ["APP_ID"] = "123"
+        os.environ["APP_KEY_PATH"] = "/key"
+        adapted_config = config.loadUpgrade(legacy_app_config)
+        os.environ.pop("APP_ID")
+        os.environ.pop("APP_KEY_PATH")
+        self.assertEqual(adapted_config, yaml.safe_load(new_app_config))
+
     def test_config_downgrade(self):
         """test adapting config into legacy_config"""
         new_config = config.load(config_sample_yaml)
         self.assertEqual(new_config, yaml.safe_load(legacy_config_sample_yaml))
+
+    def test_app_config_downgrade(self):
+        os.environ["APP_ID"] = "123"
+        os.environ["APP_KEY_PATH"] = "/key"
+        new_config = config.load(new_app_config)
+        os.environ.pop("APP_ID")
+        os.environ.pop("APP_KEY_PATH")
+        self.assertEqual(new_config, yaml.safe_load(legacy_app_config))
 
     def test_get_ident_config(self):
         idents_config = config.get_idents_config(
