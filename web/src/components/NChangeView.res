@@ -111,7 +111,6 @@ let make = (~store: Store.t) => {
   }
 
   <div>
-    <Patternfly.Layout.Bullseye> <Search.Filter store /> </Patternfly.Layout.Bullseye>
     {switch useAutoGetOn(() => WebApi.Search.query(request), query ++ state.order->orderToQS) {
     | None => <Spinner />
     | Some(Error(title)) => <Alert variant=#Danger title />
@@ -124,14 +123,25 @@ let make = (~store: Store.t) => {
         switch changes->Belt.Array.length {
         | 0 => <p> {"No changes matched"->str} </p>
         | _ =>
-          <div>
-            <ChangesTopPies store />
-            <Patternfly.DataList isCompact={true}>
-              {changes
-              ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
-              ->React.array}
-            </Patternfly.DataList>
-          </div>
+          <MStack>
+            <MStackItem>
+              <MCenteredContent> <ChangesTopPies store /> </MCenteredContent>
+            </MStackItem>
+            <MStackItem>
+              <MCenteredContent> <Search.Filter store /> </MCenteredContent>
+            </MStackItem>
+            <MStackItem>
+              <MCenteredContent>
+                <Patternfly.DataList isCompact={true}>
+                  {changes
+                  ->Belt.Array.map(change =>
+                    <Change.DataItem store key={change.url} change={change} />
+                  )
+                  ->React.array}
+                </Patternfly.DataList>
+              </MCenteredContent>
+            </MStackItem>
+          </MStack>
         }
       }
     | Some(Ok(_)) => <Alert title={"Invalid response"} />
