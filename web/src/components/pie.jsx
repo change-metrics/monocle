@@ -20,7 +20,7 @@ import Col from 'react-bootstrap/Col'
 
 import PropTypes from 'prop-types'
 
-import { addUrlField, ErrorBox, hasSmallWidth } from './common'
+import { hasSmallWidth } from './common'
 
 import { Pie as BasePie } from 'react-chartjs-2'
 
@@ -69,24 +69,24 @@ class Pie extends React.Component {
     return pieData
   }
 
-  handleClick(obj, elems) {
-    if (
-      obj.props.field &&
-      obj.props.history &&
-      elems &&
-      elems.length > 0 &&
-      elems[0]._index < obj.props.data.items.length
-    ) {
-      const key = obj.props.data.items[elems[0]._index].key
-      obj.props.history.push(addUrlField(obj.props.field, key))
-    }
-  }
+  // handleClick(obj, elems) {
+  //   if (
+  //     obj.props.field &&
+  //     obj.props.history &&
+  //     elems &&
+  //     elems.length > 0 &&
+  //     elems[0]._index < obj.props.data.items.length
+  //   ) {
+  //     const key = obj.props.data.items[elems[0]._index].key
+  //     obj.props.history.push(addUrlField(obj.props.field, key))
+  //   }
+  // }
 
-  handleLegendClick(label) {
-    if (label !== this.other_label) {
-      this.props.history.push(addUrlField(this.props.field, label))
-    }
-  }
+  // handleLegendClick(label) {
+  //   if (label !== this.other_label) {
+  //     this.props.history.push(addUrlField(this.props.field, label))
+  //   }
+  // }
 
   getLabelBoxStyle(palette, index) {
     const labelBoxStyle = {
@@ -108,14 +108,14 @@ class Pie extends React.Component {
   render() {
     const data = this.prepareDataSet(this.props.data)
     if (!data) {
-      return <ErrorBox error="No data for Pie" />
+      React.null
     } else {
       return (
         <React.Fragment>
           <Row>
             <Col>
               <BasePie
-                getElementsAtEvent={(elems) => this.handleClick(this, elems)}
+                getElementsAtEvent={(elems) => undefined}
                 // on small screen the legend takes the whole height so detect and adjust
                 height={hasSmallWidth() ? 300 : 200}
                 options={{
@@ -146,7 +146,7 @@ class Pie extends React.Component {
                     <span>&nbsp;</span>
                     <span
                       style={this.getLabelStyle(label)}
-                      onClick={(e) => this.handleLegendClick(label)}
+                      onClick={(e) => undefined}
                       id={label}
                     >
                       {label}
@@ -163,8 +163,8 @@ class Pie extends React.Component {
 }
 
 Pie.propTypes = {
-  history: PropTypes.object,
-  field: PropTypes.string,
+  // history: PropTypes.object,
+  // field: PropTypes.string,
   data: PropTypes.shape({
     items: PropTypes.array.isRequired,
     total_hits: PropTypes.number.isRequired

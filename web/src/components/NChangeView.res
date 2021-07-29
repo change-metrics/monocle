@@ -1,5 +1,107 @@
 open Prelude
 
+module CPie = {
+  type entry = {
+    key: string,
+    doc_count: int,
+  }
+  type t = {
+    items: array<entry>,
+    total_hits: int,
+  }
+  type palette_t = {
+    "APPROVED": string,
+    "CHANGES_REQUESTED": string,
+    "COMMENTED": string,
+    "Code-Review+1": string,
+    "Code-Review+2": string,
+    "Code-Review-1": string,
+    "Code-Review-2": string,
+    "DISMISSED": string,
+    "Workflow+1": string,
+    "Workflow-1": string,
+  }
+  @react.component @module("./pie_view.jsx")
+  external make: (
+    ~data: t,
+    ~title: string,
+    ~palette: palette_t=?,
+    ~other_label: string=?,
+  ) => React.element = "default"
+}
+
+module ChangesTopPies = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, _) = store
+    let qtype = SearchTypes.Query_changes_tops
+    let request = {
+      ...Store.mkSearchRequest(state, qtype),
+      limit: 10->Int32.of_int,
+    }
+    let getEntry = (e: SearchTypes.term_count): CPie.entry => {
+      doc_count: e.count->Int32.to_int,
+      key: e.term,
+    }
+    let adapt = (elms: SearchTypes.terms_count, kf: CPie.entry => bool): CPie.t => {
+      items: elms.termcount->Belt.List.map(getEntry)->Belt.List.keep(kf)->Belt.List.toArray,
+      total_hits: elms.total_hits->Int32.to_int,
+    }
+    let (panelExpandedState, setPanelExpandedState) = React.useState(_ => false)
+    let approvals_palette = {
+      "Code-Review+2": "#00ff9f",
+      "Code-Review+1": "#B6FCD5",
+      "Code-Review-1": "#CA5462",
+      "Code-Review-2": "#AB0000",
+      "Workflow+1": "#00ff9f",
+      "Workflow-1": "#AB0000",
+      "APPROVED": "#00ff9f",
+      "DISMISSED": "#AB0000",
+      "COMMENTED": "#B6FCD5",
+      "CHANGES_REQUESTED": "#CA5462",
+    }
+    let ignoredApproval = ["Code-Review+0", "Verified+0", "Workflow+0", "COMMENTED"]
+    switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
+    | None => <Spinner />
+    | Some(Error(title)) => <Alert variant=#Danger title />
+    | Some(Ok(SearchTypes.Error(err))) =>
+      <Alert
+        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+      />
+    | Some(Ok(SearchTypes.Changes_tops(items))) =>
+      <MExpandablePanel
+        title={"Show changes pie charts"}
+        stateControler={(panelExpandedState, setPanelExpandedState)}>
+        <MGrid>
+          <MGridItemXl4>
+            <CPie
+              data={items.authors->Belt.Option.getExn->adapt(_ => true)}
+              title={"Changes per author"}
+            />
+          </MGridItemXl4>
+          <MGridItemXl4>
+            <CPie
+              data={items.repos->Belt.Option.getExn->adapt(_ => true)}
+              title={"Changes per repository"}
+            />
+          </MGridItemXl4>
+          <MGridItemXl4>
+            <CPie
+              palette=approvals_palette
+              data={items.approvals
+              ->Belt.Option.getExn
+              ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
+              title={"Changes per approval"}
+              other_label={"No approval"}
+            />
+          </MGridItemXl4>
+        </MGrid>
+      </MExpandablePanel>
+    | Some(Ok(_)) => <Alert title={"Invalid response"} />
+    }
+  }
+}
+
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
@@ -23,11 +125,14 @@ let make = (~store: Store.t) => {
         switch changes->Belt.Array.length {
         | 0 => <p> {"No changes matched"->str} </p>
         | _ =>
-          <Patternfly.DataList isCompact={true}>
-            {changes
-            ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
-            ->React.array}
-          </Patternfly.DataList>
+          <div>
+            <ChangesTopPies store />
+            <Patternfly.DataList isCompact={true}>
+              {changes
+              ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
+              ->React.array}
+            </Patternfly.DataList>
+          </div>
         }
       }
     | Some(Ok(_)) => <Alert title={"Invalid response"} />
