@@ -17,6 +17,7 @@ module Monocle.Api.Config where
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import qualified Data.Map as Map
+import Data.Text (dropWhileEnd)
 import Data.Time.Clock (UTCTime)
 import qualified Dhall
 import qualified Dhall.Core
@@ -190,9 +191,12 @@ getAliases index = maybe [] (fmap toTuple) (search_aliases index)
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} ->
-    let addOrgPrefix repo = gitlab_organization <> "/" <> repo
+    let addOrgPrefix repo = removeTrailingSlash gitlab_organization <> "/" <> repo
      in addOrgPrefix <$> fromMaybe [] gitlab_repositories
   _anyOtherProvider -> []
+
+removeTrailingSlash :: Text -> Text
+removeTrailingSlash = dropWhileEnd (== '/')
 
 getCrawlerOrganization :: Crawler -> Maybe Text
 getCrawlerOrganization Crawler {..} = case provider of
