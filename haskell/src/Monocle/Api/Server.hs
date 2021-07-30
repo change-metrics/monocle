@@ -143,6 +143,10 @@ toEntity entityPB = case entityPB of
   OrganizationEntity organizationName -> Organization $ toStrict organizationName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
+getCrawlerApiKey :: Maybe Text -> TenantM Text
+getCrawlerApiKey index = do
+  Config.getSecret "CRAWLERS_API_KEY" index
+
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
@@ -166,16 +170,17 @@ crawlerAddDoc request = do
           Config.lookupCrawler index (toStrict crawlerName)
             `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
 
-        when
-          (Config.crawlers_api_key index /= Just (toStrict apiKey))
-          (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
-
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runTenantM index $ case toEntity entity of
-      Project _ -> addChanges crawlerName changes events
-      Organization organizationName -> addProjects crawler organizationName projects
+    Right (index, crawler) -> runTenantM index $ do
+      key <- getCrawlerApiKey (Config.crawlers_api_key index)
+      if key /= toText apiKey
+        then do pure $ toErrorResponse CrawlerPB.AddDocErrorAddUnknownApiKey
+        else do
+          case toEntity entity of
+            Project _ -> addChanges crawlerName changes events
+            Organization organizationName -> addProjects crawler organizationName projects
     Left err -> pure $ toErrorResponse err
   where
     addChanges crawlerName changes events = do
@@ -212,10 +217,6 @@ crawlerCommit request = do
           Config.lookupCrawler index (toStrict crawlerName)
             `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
 
-        when
-          (Config.crawlers_api_key index /= (Just $ toStrict apiKey))
-          (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
-
         ts <-
           timestampM
             `orDie` CrawlerPB.CommitErrorCommitDateMissing
@@ -224,13 +225,17 @@ crawlerCommit request = do
 
   case requestE of
     Right (index, ts, entity) -> runTenantM index $ do
-      let date = Timestamp.toUTCTime ts
-      monocleLogEvent $ UpdatingEntity crawlerName entity date
+      key <- getCrawlerApiKey (Config.crawlers_api_key index)
+      if key /= toText apiKey
+        then do pure $ toErrorResponse CrawlerPB.CommitErrorCommitUnknownApiKey
+        else do
+          let date = Timestamp.toUTCTime ts
+          monocleLogEvent $ UpdatingEntity crawlerName entity date
 
-      _ <- I.setLastUpdated (toStrict crawlerName) date entity
+          _ <- I.setLastUpdated (toStrict crawlerName) date entity
 
-      pure . CrawlerPB.CommitResponse . Just $
-        CrawlerPB.CommitResponseResultTimestamp ts
+          pure . CrawlerPB.CommitResponse . Just $
+            CrawlerPB.CommitResponseResultTimestamp ts
     Left err -> pure . toErrorResponse $ err
   where
     toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
