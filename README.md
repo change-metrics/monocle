@@ -7,8 +7,7 @@ Checkout the new [changemetrics.io website](https://changemetrics.io) and
 join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
 
 > We are currently working on the
-[version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
-
+> [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
 
 ## Components
 
@@ -28,7 +27,6 @@ Some legacy component are still required until they are migrated to the new Open
 5. an api service to perform filter based query.
 6. a crawler service to index github and gerrit changes.
 
-
 ## Installation
 
 Monocle is in an early phase of development. Feedback is highly welcome.
@@ -39,8 +37,8 @@ The process below describes how to index changes from a GitHub repository, a ful
 
 ```Shell
 $ git clone https://github.com/change-metrics/monocle.git
-$ git submodule update --init --recursive
 $ cd monocle
+$ git submodule update --init --recursive
 $ echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
 $ ln -s docker-compose.yml.img docker-compose.yml
 ```

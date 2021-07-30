@@ -7,10 +7,15 @@ understand the choices made by the project.
 
 ## Run the APIv1 test (Python)
 
+:warning: Make sure to follow first the installation instructions in the README!
+
 Tests rely on the Elasticsearch service so first you need to ensure the Elasticsearch container is running.
-You can run the "docker-compose up -d" or you can only run the Elasticsearch container by running "docker-compose start elastic".
+You can run the "docker-compose -f docker-compose.yml.dev up -d" or you can only run the Elasticsearch container by running "docker-compose -f docker-compose.yml.dev start elastic".
+
+(Or see below to use a symlink to the development compose instead instead)
 
 If you don't have docker-compose, you can start the elasticsearch service with podman by running this command:
+
 
 ```ShellSession
 $ podman run --env discovery.type=single-node --publish 9200:9200/tcp --name elastic --rm $(awk '/docker.elastic/ { print $2 }' docker-compose.yml* | head -n 1 | sed 's/"//g')
@@ -87,8 +92,16 @@ This can be used to better understand how the system works and to enable fast re
 
 #### Requirements
 
+:info: These requirements are for a Fedora-based system. Please adapt them to your own OS if needed.
+
 ```ShellSession
 sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
+```
+
+If needed, it is possible to install a distro-agnostic Haskell environment using
+
+```ShellSession
+curl -sSf https://get-ghcup.haskell.org | sh
 ```
 
 #### HTTP gateway (nginx)
