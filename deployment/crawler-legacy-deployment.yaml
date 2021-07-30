@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/name: crawler-legacy
+    app.kubernetes.io/component: crawler
+    app.kubernetes.io/part-of: monocle
+  name: crawler-legacy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: crawler-legacy
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/name: crawler-legacy
+        app.kubernetes.io/component: crawler
+        app.kubernetes.io/part-of: monocle
+    spec:
+      containers:
+        - args:
+            - monocle
+            - --elastic-conn
+            - elastic:9200
+            - crawler
+            - --config
+            - /etc/monocle/config.yaml
+          env:
+            - name: APP_ID
+            - name: APP_KEY_PATH
+              value: /etc/monocle/app_key.rsa
+          image: quay.io/change-metrics/monocle_backend:latest
+          name: crawler-legacy
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/monocle
+              name: monocle-config-volume
+            - mountPath: /var/lib/crawler
+              name: crawler-dump-data-volume
+      restartPolicy: Always
+      volumes:
+        - name: monocle-config-volume
+          configMap:
+            defaultMode: 420
+            name: monocle-config
+        - name: crawler-dump-data-volume
+          emptyDir: {}
+status: {}

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: monocle
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: monocle
+    spec:
+      containers:
+        - args:
+            - monocle-api
+            - --port
+            - "9898"
+          env:
+            - name: CONFIG
+              value: /etc/monocle/config.yaml
+            - name: ELASTIC_CONN
+              value: elastic:9200
+          image: quay.io/change-metrics/monocle_api:latest
+          livenessProbe:
+            exec:
+              command:
+                - python -c "
+                  import requests,sys
+                  r=requests.post('http://localhost:9898/api/2/health', json={})
+                  print(r.text)
+                  sys.exit(1) if r.status_code!=200 else sys.exit(0)
+                  "
+            failureThreshold: 6
+            timeoutSeconds: 60
+          name: api
+          ports:
+            - containerPort: 9898
+              name: http-rest-api
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/monocle
+              name: monocle-config-volume
+      restartPolicy: Always
+      volumes:
+        - name: monocle-config-volume
+          configMap:
+            defaultMode: 420
+            name: monocle-config
+status: {}
