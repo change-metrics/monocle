@@ -14,6 +14,5 @@ if ! test -f .venv/bin/monocle; then
     ./.venv/bin/python3 setup.py install
 fi
 
-PORT=${1:-9876}
-
-exec ./.venv/bin/uwsgi --http ":${PORT}" --manage-script-name --mount /app=monocle.webapp:app
+PORT=${1:-9200}
+exec monocle --elastic-conn localhost:$PORT crawler --config etc/config.yaml
