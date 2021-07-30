@@ -12,11 +12,14 @@ import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
 import Monocle.TaskData
+import System.Environment (setEnv)
 import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
+main = do
+  setEnv "API_KEY" "secret"
+  defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
 
 monocleSearchLanguage :: TestTree
 monocleSearchLanguage =

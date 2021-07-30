@@ -301,7 +301,6 @@ Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocl
 ```YAML
 workspaces:
   - name: default
-    crawlers_api_key: API_KEY_ENV
     crawlers:
       - name: crawler_name
         updated_since: "2020-01-01"
@@ -320,9 +319,9 @@ the initial date.
 Here are the expected environment variables:
 
 - `CRAWLERS_API_KEY`: an arbitrary api key used by the crawler to index data.
-- `GITHUB_TOKEN`: a github token for `github_organization` crawler.
-- `GITLAB_TOKEN`: a gitlab token for `gitlab_organization` crawler.
-- Optional `GERRIT_PASSWORD` for `gerrit_url` crawler.
+- `GITHUB_TOKEN`: an API key for GitHub crawler.
+- `GITLAB_TOKEN`: an API key for GitLab crawler.
+- Optional `GERRIT_PASSWORD`: an account password for Gerrit crawler.
 
 > To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
 

@@ -181,21 +181,21 @@ testProjectCrawlerMetadata = withTenant doTest
       I.setLastUpdated crawlerName fakeDateB entity
       I.setLastUpdated crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+      assertEqual' "check got oldest updated entity" ("centos/nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
       I.setLastUpdated crawlerName fakeDateC entity
       lastUpdated'' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
+      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
       I.initCrawlerMetadata worker
       lastUpdated''' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
-        entity = Project "nova"
-        entityAlt = Project "neutron"
+        entity = Project "centos/nova"
+        entityAlt = Project "centos/neutron"
         crawlerName = "test-crawler"
         worker =
           let name = crawlerName
