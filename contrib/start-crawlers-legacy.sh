@@ -14,5 +14,4 @@ if ! test -f .venv/bin/monocle; then
     ./.venv/bin/python3 setup.py install
 fi
 
-PORT=${1:-9200}
-exec monocle --elastic-conn localhost:$PORT crawler --config etc/config.yaml
+exec ./.venv/bin/monocle --elastic-conn "${ELASTIC_CONN:-localhost:9200}" crawler --config "${CONFIG:-etc/config.yaml}"
