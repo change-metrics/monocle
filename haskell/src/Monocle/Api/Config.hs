@@ -18,13 +18,12 @@ import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import qualified Data.Map as Map
 import Data.Text (dropWhileEnd)
-import Data.Time.Clock (UTCTime)
 import qualified Dhall
 import qualified Dhall.Core
 import qualified Dhall.Src
 import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
-import Relude
+import Monocle.Prelude
 import System.Directory (getModificationTime)
 
 -- | Generate Haskell Type from Dhall Type
@@ -51,6 +50,13 @@ Dhall.TH.makeHaskellTypes
           Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
         ]
   )
+
+-- | Some useful lens
+crawlersApiKeyLens :: Lens' Index Text
+crawlersApiKeyLens =
+  lens
+    (fromMaybe "CRAWLERS_API_KEY" . crawlers_api_key)
+    (\index newKey -> index {crawlers_api_key = Just newKey})
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
@@ -116,10 +122,10 @@ loadConfig configPath = do
   -- the first constructor that fit.
   configTS <- liftIO $ getModificationTime configPath
   expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile configPath
-  pure $ case Dhall.extract Dhall.auto expr of
-    Success config ->
-      let configWorkspaces = workspaces config
-       in ReloadableConfig {..}
+  case Dhall.extract Dhall.auto expr of
+    Success config -> do
+      configWorkspaces <- traverse resolveEnv (workspaces config)
+      pure $ ReloadableConfig {..}
     Failure err -> error $ "Invalid configuration: " <> show err
   where
     configType = Dhall.Core.pretty configurationSchema
@@ -258,3 +264,6 @@ getIdentByAliasFromIdents alias idents' = case isMatched <$> idents' of
   where
     isMatched :: Ident -> Maybe Text
     isMatched Ident {..} = if alias `elem` aliases then Just ident else Nothing
+
+resolveEnv :: MonadIO m => Index -> m Index
+resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'

@@ -5,6 +5,7 @@ module Monocle.Prelude
     double2Float,
     orDie,
     getExn,
+    getEnv',
     headMaybe,
 
     -- * exceptions
@@ -38,6 +39,13 @@ module Monocle.Prelude
     diffUTCTime,
     formatTime',
 
+    -- * lens
+    Lens',
+    lens,
+    mapMOf,
+    view,
+    over,
+
     -- * aeson
     FromJSON (..),
     ToJSON (..),
@@ -57,6 +65,7 @@ module Monocle.Prelude
   )
 where
 
+import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
@@ -72,6 +81,13 @@ import Say (sayErr)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
+
+getEnv' :: Text -> IO Text
+getEnv' var = do
+  val <- toText . exceptEnv <$> lookupEnv (toString var)
+  return $! val
+  where
+    exceptEnv = fromMaybe (error $ "ERROR: Missing environment variable named " <> var)
 
 -- $setup
 -- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
