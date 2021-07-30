@@ -17,11 +17,11 @@ class (MonadIO m, MonadFail m, MonadMask m, MonadLog m) => MacroM m
 instance MacroM IO
 
 -- | Utility function to create a flat list of crawler from the whole configuration
-getCrawlers :: MonadIO m => [Config.Index] -> [(Text, m Text, Config.Crawler, [Config.Ident])]
+getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
 getCrawlers xs = do
   Config.Index {..} <- xs
   crawler <- crawlers
-  let key = Config.getSecret "CRAWLERS_API_KEY" crawlers_api_key
+  let key = fromMaybe (error "unknown crawler key") crawlers_api_key
   pure (name, key, crawler, fromMaybe [] idents)
 
 crawlerName :: Config.Crawler -> Text
@@ -51,10 +51,9 @@ runMacroscope verbose confPath interval client = do
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
-    crawl :: MacroM m => (Text, m Text, Config.Crawler, [Config.Ident]) -> m ()
-    crawl (index, keyIO, crawler, idents) = do
+    crawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    crawl (index, key, crawler, idents) = do
       now <- liftIO getCurrentTime
-      key <- keyIO
       when verbose (monocleLog $ "Crawling " <> crawlerName crawler)
 
       -- Create document streams

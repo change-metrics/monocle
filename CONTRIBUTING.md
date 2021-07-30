@@ -174,7 +174,7 @@ cabal repl monocle
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
+λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
 ### Running the services manually using nix
