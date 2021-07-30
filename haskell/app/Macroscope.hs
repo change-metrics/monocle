@@ -4,7 +4,7 @@
 module Main (main) where
 
 import Macroscope.Main (runMacroscope)
-import Monocle.Api.Client (withClient)
+import Monocle.Client (withClient)
 import Options.Generic
 import Relude
 

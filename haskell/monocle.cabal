@@ -61,6 +61,19 @@ common common-options
                        TypeApplications,
                        TypeOperators
 
+common codegen
+  default-language:    Haskell2010
+  hs-source-dirs:      codegen
+  build-depends:       base                       < 5
+                     , aeson
+                     , bytestring
+                     , containers                 < 0.7
+                     , deepseq                    < 1.5
+                     , proto3-suite               >= 0.4.2
+                     , proto3-wire                >= 1.2.0
+                     , text
+                     , vector                     < 0.13
+
 common test-options
   hs-source-dirs:      test
   build-depends:       base                       < 5
@@ -78,7 +91,7 @@ common cli-options
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 
 library
-  import:              common-options
+  import:              common-options, codegen
   build-depends:       MonadRandom
                      , aeson-casing
                      , aeson
@@ -99,7 +112,6 @@ library
                      , http-types                 ^>=0.12
                      , megaparsec                 < 10
                      , morpheus-graphql-client    ^>= 0.17
-                     , monocle-codegen
                      , mtl
                      , network-uri                < 2.6.5
                      , parser-combinators         < 1.3
@@ -121,19 +133,19 @@ library
                      , warp                       ^>= 3.3.15
   hs-source-dirs:      src
   exposed-modules:     Monocle.Prelude
+                     , Monocle.Env
 
                      -- monocle api
-                     , Monocle.Api.CLI
+                     , Monocle.Api
                      , Monocle.Api.Config
                      , Monocle.Api.Server
 
                      -- api client for lentille
-                     , Monocle.Api.Client
-                     , Monocle.Api.Client.Api
-                     , Monocle.Api.Client.Worker
+                     , Monocle.Client
+                     , Monocle.Client.Api
+                     , Monocle.Client.Worker
 
                      -- servant
-                     , Monocle.Servant.Env
                      , Monocle.Servant.HTTP
                      , Monocle.Servant.PBJSON
 
@@ -166,28 +178,16 @@ library
                      , Macroscope.Main
                      , Macroscope.Worker
 
-  other-modules:       Monocle.Api.Client.Internal
-                     , Database.Bloodhound.Raw
-
-library monocle-codegen
-  default-language:    Haskell2010
-  hs-source-dirs:      codegen
-  build-depends:       base                       < 5
-                     , aeson
-                     , bytestring
-                     , containers                 < 0.7
-                     , deepseq                    < 1.5
-                     , proto3-suite               >= 0.4.2
-                     , proto3-wire                >= 1.2.0
-                     , text
-                     , vector                     < 0.13
-  exposed-modules:     Monocle.Change
+                     -- Codegen
+                     , Monocle.Change
                      , Monocle.Config
                      , Monocle.Search
                      , Monocle.TaskData
                      , Monocle.Crawler
                      , Monocle.UserGroup
                      , Monocle.Project
+
+  other-modules:       Database.Bloodhound.Raw
 
 executable monocle-search
   import:              common-options
@@ -210,8 +210,7 @@ executable lentille-bugzilla
 executable lentille-github
   import:              common-options, cli-options
   main-is:             LentilleGithub.hs
-  build-depends:       monocle-codegen
-                     , streaming                  < 0.3
+  build-depends:       streaming                  < 0.3
                      , time                       < 1.12
 
 -- executable lentille-gitlab
@@ -232,7 +231,6 @@ test-suite monocle-test
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
                      , monocle
-                     , monocle-codegen
                      , proto3-suite               >= 0.4.2
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
@@ -257,7 +255,6 @@ test-suite lentille-bugzilla-test
   build-depends:       bugzilla-redhat            >= 0.3.2
                      , http-types                 < 0.13
                      , monocle
-                     , monocle-codegen
                      , network                    < 4
                      , vector                     < 0.13
                      , wai                        < 3.3

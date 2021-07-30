@@ -8,6 +8,7 @@ option go_package = "monocle/search";
 import "google/protobuf/timestamp.proto";
 
 import "monocle/task_data.proto";
+import "monocle/change.proto";
 
 message SearchSuggestionsRequest {
   string index = 1;
@@ -62,7 +63,6 @@ message QueryRequest {
   string query = 3;
   enum QueryType {
     QUERY_CHANGE = 0;
-    QUERY_CHANGE_LIFECYCLE = 1;
     QUERY_REPOS_SUMMARY = 2;
     QUERY_TOP_AUTHORS_CHANGES_CREATED = 3;
     QUERY_TOP_AUTHORS_CHANGES_MERGED = 4;
@@ -71,12 +71,23 @@ message QueryRequest {
     QUERY_TOP_REVIEWED_AUTHORS = 7;
     QUERY_TOP_COMMENTED_AUTHORS = 8;
     QUERY_TOP_AUTHORS_PEERS = 9;
+    QUERY_NEW_CHANGES_AUTHORS = 10;
+
+    // Activity page
+    QUERY_CHANGES_REVIEW_STATS = 20;
+    QUERY_CHANGES_LIFECYCLE_STATS = 21;
+    QUERY_ACTIVE_AUTHORS_STATS = 22;
+
+    // Change page
+    QUERY_CHANGE_AND_EVENTS = 30;
+    QUERY_CHANGES_TOPS = 31;
   }
   QueryType query_type = 4;
 
   // Only used for certain queries
   Order order = 5;
   uint32 limit = 6;
+  string change_id = 7;
 }
 
 message File {
@@ -142,6 +153,53 @@ message Changes {
   repeated Change changes = 1;
 }
 
+message ChangeEvent {
+  string id = 1;
+  string type = 2;
+  string change_id = 3;
+
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp on_created_at = 6;
+
+  string author = 10;
+  string on_author = 11;
+
+  string branch = 20;
+}
+
+message ChangeAndEvents {
+  Change change = 1;
+  repeated ChangeEvent events = 2;
+}
+
+message ReviewCount {
+  uint32 authors_count = 1;
+  uint32 events_count = 2;
+}
+
+message Histo {
+  string date = 1;
+  uint32 count = 2;
+}
+
+message ReviewStats {
+  ReviewCount comment_count = 1;
+  ReviewCount review_count = 2;
+  uint32 comment_delay = 5;
+  uint32 review_delay = 6;
+  repeated Histo comment_histo = 10;
+  repeated Histo review_histo = 11;
+}
+
+message ActivityStats {
+  uint32 change_authors = 1;
+  uint32 comment_authors = 2;
+  uint32 review_authors = 3;
+  repeated Histo comments_histo = 10;
+  repeated Histo reviews_histo = 11;
+  repeated Histo changes_histo = 12;
+}
+
 message QueryResponse {
   oneof result {
     QueryError error = 1;
@@ -149,45 +207,41 @@ message QueryResponse {
     ReposSummary repos_summary = 3;
     TermsCount top_authors = 4;
     AuthorsPeers authors_peers = 5;
+    TermsCount new_authors = 6;
+    ReviewStats review_stats = 20;
+    LifecycleStats lifecycle_stats = 21;
+    ActivityStats activity_stats = 22;
+    ChangeAndEvents change_events = 30;
+    ChangesTops changes_tops = 31;
   }
 }
 
-message ChangesHistos {
-  message Event {
-    uint32 doc_count = 1;
-    uint64 key = 2;
-    string key_as_string = 3;
-  }
-  repeated Event ChangeAbandonedEvent = 1;
-  repeated Event ChangeCommitForcePushedEvent = 2;
-  repeated Event ChangeCommitPushedEvent = 3;
-  repeated Event ChangeCreatedEvent = 4;
-  repeated Event ChangeMergedEvent = 5;
-}
-message ChangesLifecycle {
-  message Event {
-    uint32 authors_count = 1;
-    uint32 events_count = 2;
-  }
-  Event ChangeCommitForcePushedEvent = 1;
-  Event ChangeCommitPushedEvent = 2;
-  Event ChangeCreatedEvent = 3;
-  uint32 abandoned = 4;
-  float commits = 5;
-  float duration = 6;
-  float duration_variability = 7;
-  ChangesHistos histos = 8;
-  uint32 merged = 9;
+message LifecycleStats {
+  repeated Histo created_histo = 1;
+  repeated Histo updated_histo = 2;
+  repeated Histo merged_histo = 3;
+  repeated Histo abandoned_histo = 4;
+
+  ReviewCount created = 5;
+
   uint32 opened = 10;
-  message Ratios {
-    float abandoned = 1;
-    float iterations = 2;
-    float merged = 3;
-    float self_merged = 4;
-  }
-  Ratios ratios = 11;
-  uint32 self_merged = 12;
-  float tests = 13;
+  uint32 abandoned = 11;
+  float abandoned_ratio = 12;
+  uint32 merged = 13;
+  float merged_ratio = 14;
+  uint32 self_merged = 15;
+  float self_merged_ratio = 16;
+
+  // Mean time to merge
+  float ttm_mean = 30;
+  // Median deviation of ttm
+  float ttm_variability = 31;
+
+  uint32 updates_of_changes = 32;
+
+  float changes_with_tests = 33;
+  float iterations_per_change = 34;
+  float commits_per_change = 35;
 }
 
 message RepoSummary {
@@ -209,6 +263,7 @@ message TermCount {
 
 message TermsCount {
   repeated TermCount termcount = 1;
+  uint32 total_hits = 2;
 }
 
 message AuthorPeer {
@@ -219,4 +274,10 @@ message AuthorPeer {
 
 message AuthorsPeers {
   repeated AuthorPeer author_peer = 1;
+}
+
+message ChangesTops {
+  TermsCount authors = 1;
+  TermsCount repos = 2;
+  TermsCount approvals = 3;
 }

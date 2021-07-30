@@ -1,4 +1,4 @@
--- |
+-- | Index management functions such as document mapping and ingest
 module Monocle.Backend.Index where
 
 import Data.Aeson
@@ -12,9 +12,9 @@ import qualified Database.Bloodhound as BH
 import Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
-import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Env
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
@@ -441,7 +441,7 @@ getWorkerUpdatedSince Config.Crawler {..} =
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
-  resp <- fmap BH.hitSource <$> Q.simpleSearch index search
+  resp <- fmap BH.hitSource <$> simpleSearch index search
   case nonEmpty (catMaybes resp) of
     Nothing ->
       error
@@ -460,7 +460,7 @@ getLastUpdated crawler entity offset = do
 
     bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
     query =
-      Q.mkAnd
+      mkAnd
         [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
           BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
         ]

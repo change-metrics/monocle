@@ -12,7 +12,7 @@ const api_url = optionDefault(process.env.REACT_APP_API_URL, '""')
 const isDesigner = process.env.NODE_ENV === '"designer"'
 
 const esbuildOptions = {
-  entryPoints: [isDesigner ? './src/Designer.bs.js' : './src/index.jsx'],
+  entryPoints: [isDesigner ? './src/Designer.bs.js' : './src/Index.bs.js'],
   outfile: './build/dist/bundle.js',
   bundle: true,
   sourcemap: true,

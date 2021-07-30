@@ -38,6 +38,7 @@ module Store = {
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
+    changes_pies_panel: bool,
   }
   type action =
     | ChangeIndex(string)
@@ -48,6 +49,7 @@ module Store = {
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
+    | ReverseChangesPiePanelState
   type dispatch = action => unit
 
   let create = index => {
@@ -59,11 +61,15 @@ module Store = {
     suggestions: None,
     fields: None,
     user_groups: None,
+    changes_pies_panel: false,
   }
 
   let reducer = (state: t, action: action) =>
     switch action {
-    | ChangeIndex(index) => create(index)
+    | ChangeIndex(index) => {
+        RescriptReactRouter.push("/" ++ index)
+        create(index)
+      }
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
         {...state, query: query}
@@ -83,6 +89,7 @@ module Store = {
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchUserGroups(res) => {...state, user_groups: res}
+    | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
     }
 }
 
@@ -141,6 +148,16 @@ module Fetch = {
 }
 
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
+
+let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_query_type) => {
+  SearchTypes.index: state.index,
+  username: "",
+  query: state.query,
+  query_type: query_type,
+  order: state.order,
+  limit: state.limit->Int32.of_int,
+  change_id: "",
+}
 
 // Hook API
 type t = (Store.t, Store.action => unit)

@@ -123,7 +123,12 @@ module View = {
 module Tooltip = {
   @react.component
   let make = () => {
-    <Link _to={"/help/search"} target="_blank"> <Patternfly.Icons.OutlinedQuestionCircle /> </Link>
+    let href = "/help/search"
+    let onClick = e => {
+      e->ReactEvent.Mouse.preventDefault
+      href->RescriptReactRouter.push
+    }
+    <a href onClick target="_blank"> <Patternfly.Icons.OutlinedQuestionCircle /> </a>
   }
 }
 

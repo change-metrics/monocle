@@ -50,7 +50,6 @@ type order = {
 
 type query_request_query_type =
   | Query_change 
-  | Query_change_lifecycle 
   | Query_repos_summary 
   | Query_top_authors_changes_created 
   | Query_top_authors_changes_merged 
@@ -59,6 +58,12 @@ type query_request_query_type =
   | Query_top_reviewed_authors 
   | Query_top_commented_authors 
   | Query_top_authors_peers 
+  | Query_new_changes_authors 
+  | Query_changes_review_stats 
+  | Query_changes_lifecycle_stats 
+  | Query_active_authors_stats 
+  | Query_change_and_events 
+  | Query_changes_tops 
 
 type query_request = {
   index : string;
@@ -67,6 +72,7 @@ type query_request = {
   query_type : query_request_query_type;
   order : order option;
   limit : int32;
+  change_id : string;
 }
 
 type file = {
@@ -121,6 +127,50 @@ type changes = {
   changes : change list;
 }
 
+type change_event = {
+  id : string;
+  type_ : string;
+  change_id : string;
+  created_at : TimestampTypes.timestamp option;
+  on_created_at : TimestampTypes.timestamp option;
+  author : string;
+  on_author : string;
+  branch : string;
+}
+
+type change_and_events = {
+  change : change option;
+  events : change_event list;
+}
+
+type review_count = {
+  authors_count : int32;
+  events_count : int32;
+}
+
+type histo = {
+  date : string;
+  count : int32;
+}
+
+type review_stats = {
+  comment_count : review_count option;
+  review_count : review_count option;
+  comment_delay : int32;
+  review_delay : int32;
+  comment_histo : histo list;
+  review_histo : histo list;
+}
+
+type activity_stats = {
+  change_authors : int32;
+  comment_authors : int32;
+  review_authors : int32;
+  comments_histo : histo list;
+  reviews_histo : histo list;
+  changes_histo : histo list;
+}
+
 type repo_summary = {
   fullname : string;
   total_changes : int32;
@@ -140,6 +190,7 @@ type term_count = {
 
 type terms_count = {
   termcount : term_count list;
+  total_hits : int32;
 }
 
 type author_peer = {
@@ -152,54 +203,45 @@ type authors_peers = {
   author_peer : author_peer list;
 }
 
+type lifecycle_stats = {
+  created_histo : histo list;
+  updated_histo : histo list;
+  merged_histo : histo list;
+  abandoned_histo : histo list;
+  created : review_count option;
+  opened : int32;
+  abandoned : int32;
+  abandoned_ratio : float;
+  merged : int32;
+  merged_ratio : float;
+  self_merged : int32;
+  self_merged_ratio : float;
+  ttm_mean : float;
+  ttm_variability : float;
+  updates_of_changes : int32;
+  changes_with_tests : float;
+  iterations_per_change : float;
+  commits_per_change : float;
+}
+
+type changes_tops = {
+  authors : terms_count option;
+  repos : terms_count option;
+  approvals : terms_count option;
+}
+
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
   | Top_authors of terms_count
   | Authors_peers of authors_peers
-
-type changes_histos_event = {
-  doc_count : int32;
-  key : int64;
-  key_as_string : string;
-}
-
-type changes_histos = {
-  change_abandoned_event : changes_histos_event list;
-  change_commit_force_pushed_event : changes_histos_event list;
-  change_commit_pushed_event : changes_histos_event list;
-  change_created_event : changes_histos_event list;
-  change_merged_event : changes_histos_event list;
-}
-
-type changes_lifecycle_event = {
-  authors_count : int32;
-  events_count : int32;
-}
-
-type changes_lifecycle_ratios = {
-  abandoned : float;
-  iterations : float;
-  merged : float;
-  self_merged : float;
-}
-
-type changes_lifecycle = {
-  change_commit_force_pushed_event : changes_lifecycle_event option;
-  change_commit_pushed_event : changes_lifecycle_event option;
-  change_created_event : changes_lifecycle_event option;
-  abandoned : int32;
-  commits : float;
-  duration : float;
-  duration_variability : float;
-  histos : changes_histos option;
-  merged : int32;
-  opened : int32;
-  ratios : changes_lifecycle_ratios option;
-  self_merged : int32;
-  tests : float;
-}
+  | New_authors of terms_count
+  | Review_stats of review_stats
+  | Lifecycle_stats of lifecycle_stats
+  | Activity_stats of activity_stats
+  | Change_events of change_and_events
+  | Changes_tops of changes_tops
 
 let rec default_search_suggestions_request 
   ?index:((index:string) = "")
@@ -272,6 +314,7 @@ let rec default_query_request
   ?query_type:((query_type:query_request_query_type) = default_query_request_query_type ())
   ?order:((order:order option) = None)
   ?limit:((limit:int32) = 0l)
+  ?change_id:((change_id:string) = "")
   () : query_request  = {
   index;
   username;
@@ -279,6 +322,7 @@ let rec default_query_request
   query_type;
   order;
   limit;
+  change_id;
 }
 
 let rec default_file 
@@ -373,6 +417,82 @@ let rec default_changes
   changes;
 }
 
+let rec default_change_event 
+  ?id:((id:string) = "")
+  ?type_:((type_:string) = "")
+  ?change_id:((change_id:string) = "")
+  ?created_at:((created_at:TimestampTypes.timestamp option) = None)
+  ?on_created_at:((on_created_at:TimestampTypes.timestamp option) = None)
+  ?author:((author:string) = "")
+  ?on_author:((on_author:string) = "")
+  ?branch:((branch:string) = "")
+  () : change_event  = {
+  id;
+  type_;
+  change_id;
+  created_at;
+  on_created_at;
+  author;
+  on_author;
+  branch;
+}
+
+let rec default_change_and_events 
+  ?change:((change:change option) = None)
+  ?events:((events:change_event list) = [])
+  () : change_and_events  = {
+  change;
+  events;
+}
+
+let rec default_review_count 
+  ?authors_count:((authors_count:int32) = 0l)
+  ?events_count:((events_count:int32) = 0l)
+  () : review_count  = {
+  authors_count;
+  events_count;
+}
+
+let rec default_histo 
+  ?date:((date:string) = "")
+  ?count:((count:int32) = 0l)
+  () : histo  = {
+  date;
+  count;
+}
+
+let rec default_review_stats 
+  ?comment_count:((comment_count:review_count option) = None)
+  ?review_count:((review_count:review_count option) = None)
+  ?comment_delay:((comment_delay:int32) = 0l)
+  ?review_delay:((review_delay:int32) = 0l)
+  ?comment_histo:((comment_histo:histo list) = [])
+  ?review_histo:((review_histo:histo list) = [])
+  () : review_stats  = {
+  comment_count;
+  review_count;
+  comment_delay;
+  review_delay;
+  comment_histo;
+  review_histo;
+}
+
+let rec default_activity_stats 
+  ?change_authors:((change_authors:int32) = 0l)
+  ?comment_authors:((comment_authors:int32) = 0l)
+  ?review_authors:((review_authors:int32) = 0l)
+  ?comments_histo:((comments_histo:histo list) = [])
+  ?reviews_histo:((reviews_histo:histo list) = [])
+  ?changes_histo:((changes_histo:histo list) = [])
+  () : activity_stats  = {
+  change_authors;
+  comment_authors;
+  review_authors;
+  comments_histo;
+  reviews_histo;
+  changes_histo;
+}
+
 let rec default_repo_summary 
   ?fullname:((fullname:string) = "")
   ?total_changes:((total_changes:int32) = 0l)
@@ -403,8 +523,10 @@ let rec default_term_count
 
 let rec default_terms_count 
   ?termcount:((termcount:term_count list) = [])
+  ?total_hits:((total_hits:int32) = 0l)
   () : terms_count  = {
   termcount;
+  total_hits;
 }
 
 let rec default_author_peer 
@@ -423,78 +545,54 @@ let rec default_authors_peers
   author_peer;
 }
 
-let rec default_query_response () : query_response = Error (default_query_error ())
-
-let rec default_changes_histos_event 
-  ?doc_count:((doc_count:int32) = 0l)
-  ?key:((key:int64) = 0L)
-  ?key_as_string:((key_as_string:string) = "")
-  () : changes_histos_event  = {
-  doc_count;
-  key;
-  key_as_string;
-}
-
-let rec default_changes_histos 
-  ?change_abandoned_event:((change_abandoned_event:changes_histos_event list) = [])
-  ?change_commit_force_pushed_event:((change_commit_force_pushed_event:changes_histos_event list) = [])
-  ?change_commit_pushed_event:((change_commit_pushed_event:changes_histos_event list) = [])
-  ?change_created_event:((change_created_event:changes_histos_event list) = [])
-  ?change_merged_event:((change_merged_event:changes_histos_event list) = [])
-  () : changes_histos  = {
-  change_abandoned_event;
-  change_commit_force_pushed_event;
-  change_commit_pushed_event;
-  change_created_event;
-  change_merged_event;
-}
-
-let rec default_changes_lifecycle_event 
-  ?authors_count:((authors_count:int32) = 0l)
-  ?events_count:((events_count:int32) = 0l)
-  () : changes_lifecycle_event  = {
-  authors_count;
-  events_count;
-}
-
-let rec default_changes_lifecycle_ratios 
-  ?abandoned:((abandoned:float) = 0.)
-  ?iterations:((iterations:float) = 0.)
-  ?merged:((merged:float) = 0.)
-  ?self_merged:((self_merged:float) = 0.)
-  () : changes_lifecycle_ratios  = {
-  abandoned;
-  iterations;
-  merged;
-  self_merged;
-}
-
-let rec default_changes_lifecycle 
-  ?change_commit_force_pushed_event:((change_commit_force_pushed_event:changes_lifecycle_event option) = None)
-  ?change_commit_pushed_event:((change_commit_pushed_event:changes_lifecycle_event option) = None)
-  ?change_created_event:((change_created_event:changes_lifecycle_event option) = None)
-  ?abandoned:((abandoned:int32) = 0l)
-  ?commits:((commits:float) = 0.)
-  ?duration:((duration:float) = 0.)
-  ?duration_variability:((duration_variability:float) = 0.)
-  ?histos:((histos:changes_histos option) = None)
-  ?merged:((merged:int32) = 0l)
+let rec default_lifecycle_stats 
+  ?created_histo:((created_histo:histo list) = [])
+  ?updated_histo:((updated_histo:histo list) = [])
+  ?merged_histo:((merged_histo:histo list) = [])
+  ?abandoned_histo:((abandoned_histo:histo list) = [])
+  ?created:((created:review_count option) = None)
   ?opened:((opened:int32) = 0l)
-  ?ratios:((ratios:changes_lifecycle_ratios option) = None)
+  ?abandoned:((abandoned:int32) = 0l)
+  ?abandoned_ratio:((abandoned_ratio:float) = 0.)
+  ?merged:((merged:int32) = 0l)
+  ?merged_ratio:((merged_ratio:float) = 0.)
   ?self_merged:((self_merged:int32) = 0l)
-  ?tests:((tests:float) = 0.)
-  () : changes_lifecycle  = {
-  change_commit_force_pushed_event;
-  change_commit_pushed_event;
-  change_created_event;
-  abandoned;
-  commits;
-  duration;
-  duration_variability;
-  histos;
-  merged;
+  ?self_merged_ratio:((self_merged_ratio:float) = 0.)
+  ?ttm_mean:((ttm_mean:float) = 0.)
+  ?ttm_variability:((ttm_variability:float) = 0.)
+  ?updates_of_changes:((updates_of_changes:int32) = 0l)
+  ?changes_with_tests:((changes_with_tests:float) = 0.)
+  ?iterations_per_change:((iterations_per_change:float) = 0.)
+  ?commits_per_change:((commits_per_change:float) = 0.)
+  () : lifecycle_stats  = {
+  created_histo;
+  updated_histo;
+  merged_histo;
+  abandoned_histo;
+  created;
   opened;
-  ratios;
+  abandoned;
+  abandoned_ratio;
+  merged;
+  merged_ratio;
   self_merged;
-  tests;
+  self_merged_ratio;
+  ttm_mean;
+  ttm_variability;
+  updates_of_changes;
+  changes_with_tests;
+  iterations_per_change;
+  commits_per_change;
 }
+
+let rec default_changes_tops 
+  ?authors:((authors:terms_count option) = None)
+  ?repos:((repos:terms_count option) = None)
+  ?approvals:((approvals:terms_count option) = None)
+  () : changes_tops  = {
+  authors;
+  repos;
+  approvals;
+}
+
+let rec default_query_response () : query_response = Error (default_query_error ())

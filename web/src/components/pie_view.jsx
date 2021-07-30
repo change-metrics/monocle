@@ -15,23 +15,36 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { render } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import { createMyStore } from './store'
-import App from './App'
-import { MemoryRouter } from 'react-router-dom'
-import { toBeInTheDocument, toHaveClass } from '@testing-library/jest-dom'
 
-test('renders Monocle link', () => {
-  const store = createMyStore()
-  const { getByText } = render(
-    <Provider store={store}>
-      <MemoryRouter initialEntries={['/index']}>
-        <App />
-      </MemoryRouter>
-    </Provider>
-  )
-  const linkElement = getByText(/^Monocle$/i)
-  expect(linkElement).toBeInTheDocument()
-  expect(linkElement).toHaveClass('navbar-brand')
-})
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Card from 'react-bootstrap/Card'
+
+import Pie from './pie'
+
+const CPie = (props) => (
+  <Row>
+    <Col>
+      <Card>
+        <Card.Header>
+          <Card.Title>{props.title}</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Row>
+            <Col>
+              <Pie
+                data={props.data}
+                title={props.title}
+                palette={props.palette}
+                other_label={props.other_label}
+                handleClick={props.handleClick}
+              />
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
+)
+
+export default CPie

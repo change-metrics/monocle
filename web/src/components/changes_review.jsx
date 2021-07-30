@@ -16,23 +16,13 @@
 
 import React from 'react'
 
-import { connect } from 'react-redux'
-
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-import { withRouter } from 'react-router-dom'
 
-import {
-  BaseQueryComponent,
-  LoadingBox,
-  ErrorBox,
-  mapDispatchToProps,
-  addMap,
-  hasSmallWidth
-} from './common'
+import { hasSmallWidth } from './common'
 
 import { Line } from 'react-chartjs-2'
 
@@ -64,13 +54,13 @@ class ChangeReviewEventsHisto extends React.Component {
     }
     const _histos = Object.entries(histos)
     const data = {
-      labels: histos.ChangeCommentedEvent[0].map((x) => x.key_as_string),
+      labels: histos.ChangeCommentedEvent.map((x) => x.date),
       datasets: []
     }
     _histos.forEach((histo) => {
       data.datasets.push({
         label: eventNameMapping[histo[0]].label,
-        data: histo[1][0].map((x) => x.doc_count),
+        data: histo[1].map((x) => x.count),
         lineTension: 0.5,
         pointBorderColor: eventNameMapping[histo[0]].pointBorderColor,
         pointBackgroundColor: eventNameMapping[histo[0]].pointBackgroundColor,
@@ -82,7 +72,10 @@ class ChangeReviewEventsHisto extends React.Component {
   }
 
   render() {
-    const data = this.prepareDataSet(this.props.data)
+    const data = this.prepareDataSet({
+      ChangeCommentedEvent: this.props.comment,
+      ChangeReviewedEvent: this.props.review
+    })
     return (
       <Row>
         <Col>
@@ -110,79 +103,50 @@ class ChangeReviewEventsHisto extends React.Component {
 }
 
 ChangeReviewEventsHisto.propTypes = {
-  data: PropTypes.shape({
-    ChangeCommentedEvent: PropTypes.array,
-    ChangeReviewedEvent: PropTypes.array
-  })
+  review: PropTypes.any,
+  comment: PropTypes.any
 }
 
-class ChangesReviewStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'changes_review_stats'
-    this.state.graph_type = 'changes_review_stats'
-  }
-
-  render() {
-    if (!this.props.changes_review_stats_loading) {
-      if (this.props.changes_review_stats_error) {
-        return <ErrorBox error={this.props.changes_review_stats_error} />
-      }
-      const data = this.props.changes_review_stats_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Changes review stats</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={4}>
-                    <ListGroup>
-                      <ListGroup.Item>
-                        {data.ChangeCommentedEvent.events_count} changes
-                        commented by {data.ChangeCommentedEvent.authors_count}{' '}
-                        authors
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        {data.ChangeReviewedEvent.events_count} changes reviewed
-                        by {data.ChangeReviewedEvent.authors_count} authors
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Mean time for the first comment:{' '}
-                        {secondsToDhms(
-                          data.first_event_delay.comment.first_event_delay_avg
-                        )}
-                      </ListGroup.Item>
-                      <ListGroup.Item>
-                        Mean time for the first review:{' '}
-                        {secondsToDhms(
-                          data.first_event_delay.review.first_event_delay_avg
-                        )}
-                      </ListGroup.Item>
-                    </ListGroup>
-                  </Col>
-                  <Col md={8}>
-                    <ChangeReviewEventsHisto data={data.histos} />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const mapStateToProps = (state) =>
-  addMap({}, state.QueryReducer, 'changes_review_stats')
-
-const CChangesReviewStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(ChangesReviewStats)
+const ChangesReviewStats = (prop) => (
+  <Row>
+    <Col>
+      <Card>
+        <Card.Header>
+          <Card.Title>Changes review stats</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Row>
+            <Col md={4}>
+              <ListGroup>
+                <ListGroup.Item>
+                  {prop.data.comment_count.events_count} changes commented by{' '}
+                  {prop.data.comment_count.authors_count} authors
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  {prop.data.review_count.events_count} changes reviewed by{' '}
+                  {prop.data.review_count.authors_count} authors
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Mean time for the first comment:{' '}
+                  {secondsToDhms(prop.data.comment_delay)}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  Mean time for the first review:{' '}
+                  {secondsToDhms(prop.data.review_delay)}
+                </ListGroup.Item>
+              </ListGroup>
+            </Col>
+            <Col md={8}>
+              <ChangeReviewEventsHisto
+                comment={prop.comment_histo}
+                review={prop.review_histo}
+              />
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
 )
 
-export { CChangesReviewStats }
+export { ChangesReviewStats }

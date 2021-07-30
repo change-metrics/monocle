@@ -12,7 +12,6 @@ open WebApi
 type axiosGetCallback<'data> = unit => axios<'data>
 
 // See https://rescript-lang.org/docs/manual/latest/interop-cheatsheet
-@module("../api.js") external apiUrl: string = "baseurl"
 @val @scope(("window", "location"))
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
@@ -264,10 +263,46 @@ module MGridItem = {
     <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
 
+module MGridItemXl9 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._9> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl8 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._8> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl7 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._7> {children} </Patternfly.Layout.GridItem>
+}
+
 module MGridItemXl6 = {
   @react.component
   let make = (~children) =>
     <Patternfly.Layout.GridItem xl=Column._6> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl5 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._5> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl4 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._4> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl3 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._3> {children} </Patternfly.Layout.GridItem>
 }
 
 module MStack = {
@@ -322,6 +357,24 @@ module SortableTable = {
     <Table caption=" " variant=#compact rows cells=columns sortBy onSort>
       <TableHeader /> <TableBody />
     </Table>
+  }
+}
+
+module TopTermsTable = {
+  @react.component
+  let make = (~items: list<SearchTypes.term_count>, ~columnNames: array<string>) => {
+    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
+      switch index {
+      | 0 => first.term < second.term
+      | 1 => first.count < second.count
+      | _ => false
+      }
+    let formatters: list<SearchTypes.term_count => React.element> = list{
+      item => item.term->str,
+      item => item.count->int32_str->str,
+    }
+
+    <SortableTable items defaultSortedColumn=1 columnNames isOrdered formatters />
   }
 }
 
@@ -418,5 +471,24 @@ module MSimpleCard = {
         ),
       ],
     )
+  }
+}
+
+module LimitSelector = {
+  @react.component
+  let make = (~limit: int, ~setLimit: (int => int) => unit, ~default: int, ~values: list<int>) => {
+    let setLimit' = str => {
+      let v = str == "" ? default : str->int_of_string
+      setLimit(_ => v)
+    }
+    <Tooltip content={"Select the amount of item to display"}>
+      <MSelect
+        placeholder={"Set limit"}
+        options={values->Belt.List.map(string_of_int)}
+        multi={false}
+        value={limit > 0 ? limit->string_of_int : ""}
+        valueChanged={setLimit'}
+      />
+    </Tooltip>
   }
 }

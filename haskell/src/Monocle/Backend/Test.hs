@@ -6,16 +6,18 @@ import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
 import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Env
 import Monocle.Prelude
+import qualified Monocle.Search as SearchPB
+import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (defaultQueryFlavor)
-import Monocle.Servant.Env
 import Relude.Unsafe ((!!))
 import Test.Tasty.HUnit
 
@@ -342,34 +344,34 @@ testTopAuthors = withTenant doTest
         assertEqual'
           "Check getMostActiveAuthorByChangeCreated count"
           [Q.TermResult {trTerm = "eve", trCount = 4}]
-          results
+          (Q.tsrTR results)
         results' <- Q.getMostActiveAuthorByChangeMerged 10
         assertEqual'
           "Check getMostActiveAuthorByChangeMerged count"
           [Q.TermResult {trTerm = "eve", trCount = 2}]
-          results'
+          (Q.tsrTR results')
         results'' <- Q.getMostActiveAuthorByChangeReviewed 10
         assertEqual'
           "Check getMostActiveAuthorByChangeReviewed count"
           [ Q.TermResult {trTerm = "alice", trCount = 2},
             Q.TermResult {trTerm = "bob", trCount = 2}
           ]
-          results''
+          (Q.tsrTR results'')
         results''' <- Q.getMostActiveAuthorByChangeCommented 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCommented count"
           [Q.TermResult {trTerm = "alice", trCount = 2}]
-          results'''
+          (Q.tsrTR results''')
         results'''' <- Q.getMostReviewedAuthor 10
         assertEqual'
           "Check getMostReviewedAuthor count"
           [Q.TermResult {trTerm = "eve", trCount = 4}]
-          results''''
+          (Q.tsrTR results'''')
         results''''' <- Q.getMostCommentedAuthor 10
         assertEqual'
           "Check getMostCommentedAuthor count"
           [Q.TermResult {trTerm = "eve", trCount = 2}]
-          results'''''
+          (Q.tsrTR results''''')
 
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
@@ -400,6 +402,147 @@ testGetAuthorsPeersStrength = withTenant doTest
                 psrStrength = 2
               }
           ]
+          results
+
+testGetNewContributors :: Assertion
+testGetNewContributors = withTenant doTest
+  where
+    indexScenario' project fakeDate' cid = indexScenario (nominalMerge project cid fakeDate' 3600)
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let sn1 = SProject "openstack/nova" [bob] [alice] [eve]
+      let sn2 = SProject "openstack/nova" [bob] [alice] [bob]
+
+      indexScenario' sn1 fakeDate "42"
+      indexScenario' sn1 (addUTCTime 7200 fakeDate) "43"
+      indexScenario' sn2 (addUTCTime 7200 fakeDate) "44"
+
+      let query =
+            let queryBH _ = []
+                queryBounds =
+                  ( addUTCTime 3600 fakeDate,
+                    fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+                  )
+                queryMinBoundsSet = True
+             in Q.Query {..}
+
+      runQueryM query $ do
+        results <- Q.getNewContributors
+        assertEqual'
+          "Check getNewContributors results"
+          [Q.TermResult {trTerm = "bob", trCount = 1}]
+          results
+
+testGetActivityStats :: Assertion
+testGetActivityStats = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Prapare data
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
+
+      let query =
+            let queryBH _ = []
+                queryBounds =
+                  ( addUTCTime (-3600) fakeDate,
+                    addUTCTime 3600 fakeDate
+                  )
+                queryMinBoundsSet = True
+             in Q.Query {..}
+
+      runQueryM query $ do
+        results <- Q.getActivityStats
+        assertEqual'
+          "Check getActivityStats result"
+          ( SearchPB.ActivityStats
+              1
+              1
+              2
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+              ( V.fromList
+                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  ]
+              )
+          )
+          results
+
+testGetChangesTops :: Assertion
+testGetChangesTops = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
+
+      runQueryM defaultQuery $ do
+        results <- Q.getChangesTops 10
+        assertEqual'
+          "Check getChangesTops result"
+          ( SearchPB.ChangesTops
+              { changesTopsAuthors =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "eve",
+                                    termCountCount = 4
+                                  }
+                              ],
+                          termsCountTotalHits = 4
+                        }
+                    ),
+                changesTopsRepos =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "openstack/neutron",
+                                    termCountCount = 2
+                                  },
+                                SearchPB.TermCount
+                                  { termCountTerm = "openstack/nova",
+                                    termCountCount = 2
+                                  }
+                              ],
+                          termsCountTotalHits = 4
+                        }
+                    ),
+                changesTopsApprovals =
+                  Just
+                    ( SearchPB.TermsCount
+                        { termsCountTermcount =
+                            V.fromList
+                              [ SearchPB.TermCount
+                                  { termCountTerm = "OK",
+                                    termCountCount = 4
+                                  }
+                              ],
+                          termsCountTotalHits = 4
+                        }
+                    )
+              }
+          )
           results
 
 -- Tests scenario helpers
@@ -537,6 +680,7 @@ mkEvent ts start etype author onAuthor changeId name =
       elkchangeeventType = etype,
       elkchangeeventRepositoryFullname = name,
       elkchangeeventId = docTypeToText etype <> "-" <> changeId,
+      elkchangeeventCreatedAt = mkDate ts start,
       elkchangeeventOnCreatedAt = mkDate ts start,
       elkchangeeventChangeId = "change-" <> changeId
     }

@@ -194,8 +194,18 @@ for the matching installation and use it to query the GitHub API.
 
 #### Setup Monocle to use the application
 
-1. Save the private key into `etc/app_key.rsa`
-2. Into the `.env` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
+Add a new crawler definition:
+
+```yaml
+workspaces:
+  - name: github
+    crawlers:
+      - name: github-app
+        updated_since: "2020-01-01"
+        provider:
+          github_app_id: "<app-id>"
+          github_app_key_path: "/etc/monocle/app_key.rsa"
+```
 
 ### GitHub private repositories
 
@@ -313,7 +323,7 @@ the initial date.
 
 #### Task crawler library
 
-[Monocle.Api.Client.Worker](./haskell/src/Monocle/Api/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
+[Monocle.Client.Worker](./haskell/src/Monocle/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
 
 ### Full configuration file example
 

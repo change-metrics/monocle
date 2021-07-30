@@ -1,61 +1,115 @@
--- | Utility functions
+-- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude
   ( module Relude,
     fromFixed,
     double2Float,
     orDie,
     getExn,
+    headMaybe,
+
+    -- * exceptions
     MonadThrow,
     MonadMask,
+
+    -- * relude extra
+    groupBy,
+    average,
+
+    -- * data.fixed
+    Fixed (..),
+    Deci,
+    Pico,
+
+    -- * custom numerical newtype
+    Count,
+    countToWord,
+    countToDeci,
+    naturalToCount,
+
+    -- * say
+    sayErr,
     monocleLog,
+
+    -- * time
+    UTCTime,
+    getCurrentTime,
+    elapsedSeconds,
+    nominalDiffTimeToSeconds,
+    diffUTCTime,
+    formatTime',
+
+    -- * aeson
     FromJSON (..),
     ToJSON (..),
     Value,
-    UTCTime,
-    MonocleClient,
-    getCurrentTime,
+    encode,
 
     -- * bloodhound
     BH.MonadBH,
+    simpleSearch,
+    doSearch,
+    mkAnd,
+    mkOr,
+    mkTerm,
 
-    -- * Shared types
-    Entity (..),
-
-    -- * System events
-    MonocleEvent (..),
-    monocleLogEvent,
-
-    -- * Application context
-    TenantM,
-    getIndexName,
-    getIndexConfig,
+    -- * proto3
     fromPBEnum,
-
-    -- * Query context
-    QueryM,
-    runQueryM,
-    getQuery,
-    liftTenantM,
-    getQueryBH,
-    getQueryBHWithFlavor,
-    withFilter,
   )
 where
 
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
-import Data.Fixed (Fixed (..), HasResolution (resolution))
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
-import Monocle.Api.Client.Internal (MonocleClient)
-import qualified Monocle.Api.Config as Config
-import Monocle.Search (QueryRequest_QueryType (..))
-import Monocle.Search.Syntax
-import Monocle.Servant.Env
 import Proto3.Suite (Enumerated (..))
 import Relude
+import Relude.Extra.Foldable (average)
+import Relude.Extra.Group (groupBy)
 import Say (sayErr)
+
+headMaybe :: [a] -> Maybe a
+headMaybe xs = head <$> nonEmpty xs
+
+-- $setup
+-- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
+
+-- | Return the seconds elapsed between a and b
+-- >>> elapsedSeconds (mkDate "2000-01-01 00:00:00 Z") (mkDate "2000-01-01 01:00:00 Z")
+-- 3600.000000000000
+elapsedSeconds :: UTCTime -> UTCTime -> Pico
+elapsedSeconds a b = nominalDiffTimeToSeconds $ diffUTCTime b a
+
+-- | Helper to format time without timezone
+formatTime' :: Text -> UTCTime -> Text
+formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatText)
+
+-- | Numerical type to count documents
+newtype Count = MkCount Word32
+  deriving newtype (Show, Eq, Ord, Enum, Real, Integral, FromJSON)
+
+countToWord :: Count -> Word32
+countToWord (MkCount x) = x
+
+countToDeci :: Count -> Deci
+countToDeci (MkCount x) = fromInteger (toInteger x)
+
+naturalToCount :: Natural -> Count
+naturalToCount = MkCount . fromInteger . toInteger
+
+-- | A special Num instance that prevent arithmetic underflow
+instance Num Count where
+  MkCount a - MkCount b
+    | b > a = MkCount 0
+    | otherwise = MkCount $ a - b
+
+  MkCount a + MkCount b = MkCount $ a + b
+  MkCount a * MkCount b = MkCount $ a * b
+  signum (MkCount a) = MkCount $ signum a
+  fromInteger x = MkCount $ fromInteger x
+  abs x = x
 
 -- | From https://hackage.haskell.org/package/astro-0.4.3.0/docs/src/Data.Astro.Utils.html#fromFixed
 fromFixed :: (Fractional a, HasResolution b) => Fixed b -> a
@@ -73,32 +127,36 @@ getExn (Left err) = error (toText err)
 monocleLog :: MonadIO m => Text -> m ()
 monocleLog = sayErr
 
-data Entity = Project {getName :: Text} | Organization {getName :: Text}
-  deriving (Eq, Show)
-
-data MonocleEvent
-  = AddingChange LText Int Int
-  | AddingProject Text Text Int
-  | UpdatingEntity LText Entity UTCTime
-  | Searching QueryRequest_QueryType LText Query
-
-eventToText :: MonocleEvent -> Text
-eventToText ev = case ev of
-  AddingChange crawler changes events ->
-    toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
-  AddingProject crawler organizationName projects ->
-    crawler <> " adding " <> show projects <> " changes for organization" <> organizationName
-  UpdatingEntity crawler entity ts ->
-    toStrict crawler <> " updating " <> show entity <> " to " <> show ts
-  Searching queryType queryText query ->
-    let jsonQuery = decodeUtf8 . encode $ queryBH query defaultQueryFlavor
-     in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
-
-monocleLogEvent :: MonocleEvent -> TenantM ()
-monocleLogEvent ev = do
-  Config.Index {..} <- getIndexConfig
-  sayErr $ name <> ": " <> eventToText ev
-
 fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
 fromPBEnum (Enumerated (Right x)) = x
+
+-------------------------------------------------------------------------------
+-- Bloodhound helpers
+
+-- | Helper search func that can be replaced by a scanSearch
+doSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
+doSearch indexName search = do
+  -- monocleLog . decodeUtf8 . encode $ search
+  rawResp <- BH.searchByIndex indexName search
+  -- monocleLog $ show rawResp
+  resp <- BH.parseEsResponse rawResp
+  case resp of
+    Left _e -> handleError rawResp
+    Right x -> pure x
+  where
+    handleError resp = do
+      monocleLog (show resp)
+      error "Elastic response failed"
+
+simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
+simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
+
+mkAnd :: [BH.Query] -> BH.Query
+mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
+
+mkOr :: [BH.Query] -> BH.Query
+mkOr orQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [] orQ
+
+mkTerm :: Text -> Text -> BH.Query
+mkTerm name value = BH.TermQuery (BH.Term name value) Nothing

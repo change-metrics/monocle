@@ -1,25 +1,25 @@
--- | The servant endpoint implementation
+-- | The servant endpoint implementation.
+-- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
-import Data.Fixed (Deci)
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), File (..), TaskData (..), changeStateToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText, docTypeToText)
 import Monocle.Backend.Index as I
-import Monocle.Backend.Queries (countToWord)
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
+import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (AuthorFlavor (..), ParseError (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor)
-import Monocle.Servant.Env
+import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.TaskData as TaskDataPB
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
@@ -89,7 +89,7 @@ userGroupGet request = do
   where
     getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
     getGroupStats users = do
-      let allQuery = Q.mkOr $ map Q.toUserTerm users
+      let allQuery = mkOr $ map Q.toUserTerm users
 
       allStats <- withFilter [allQuery] $ do
         UserGroupPB.GroupStat
@@ -105,16 +105,16 @@ userGroupGet request = do
     getUserStat :: Text -> QueryM UserGroupPB.UserStat
     getUserStat name = do
       let userQuery = Q.toUserTerm name
-          reviewQuery = Q.mkOr $ map (Q.mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
+          reviewQuery = mkOr $ map (mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
           commitQuery =
-            Q.mkOr $
+            mkOr $
               map
-                (Q.mkTerm "type")
+                (mkTerm "type")
                 [ "ChangeCommitPushedEvent",
                   "ChangeCommitForcePushedEvent"
                 ]
 
-          qf = QueryFlavor Monocle.Search.Syntax.Author CreatedAt
+          qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
 
       userStats <- withFilter [userQuery] $ do
         reviewHisto <- withFilter [reviewQuery] $ Q.getHisto qf
@@ -128,11 +128,12 @@ userGroupGet request = do
 
       pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
 
-    toReviewHisto :: Q.HistoEventBucket -> UserGroupPB.ReviewHisto
-    toReviewHisto Q.HistoEventBucket {..} = UserGroupPB.ReviewHisto heKey heCount
+    toReviewHisto :: Q.HistoSimple -> UserGroupPB.ReviewHisto
+    toReviewHisto Q.HistoBucket {..} = UserGroupPB.ReviewHisto hbKey hbCount
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
@@ -302,7 +303,10 @@ searchQuery request = do
           query <-
             Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
 
-          pure (tenant, query, fromPBEnum queryRequestQueryType)
+          -- Date histogram needs explicit bound to be set:
+          let queryWithBound = Q.ensureMinBound query
+
+          pure (tenant, queryWithBound, fromPBEnum queryRequestQueryType)
 
   case requestE of
     Right (tenant, query, queryType) -> runTenantQueryM tenant query $ do
@@ -316,8 +320,11 @@ searchQuery request = do
             . V.fromList
             . map toChangeResult
             <$> Q.changes queryRequestOrder queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE ->
-          error "LifeCycle Not Implemented"
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChangeEvents
+            . toChangeEventsResult
+            <$> Q.changeEvents queryRequestChangeId queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
           SearchPB.QueryResponse . Just
             . SearchPB.QueryResponseResultReposSummary
@@ -325,6 +332,15 @@ searchQuery request = do
             . V.fromList
             . map toRSumResult
             <$> Q.getReposSummary
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
+            <$> Q.getLifecycleStats
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
+            <$> Q.getReviewStats
+        SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
+          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
+            <$> Q.getActivityStats
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
           handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
         SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
@@ -344,6 +360,16 @@ searchQuery request = do
             . V.fromList
             . map toAPeerResult
             <$> Q.getAuthorsPeersStrength queryRequestLimit
+        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
+          results <- Q.getNewContributors
+          pure $
+            SearchPB.QueryResponse . Just $
+              SearchPB.QueryResponseResultNewAuthors $
+                toTermsCount (V.fromList $ toTTResult <$> results) 0
+        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
+          SearchPB.QueryResponse . Just
+            . SearchPB.QueryResponseResultChangesTops
+            <$> Q.getChangesTops queryRequestLimit
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -354,16 +380,16 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: Word32 -> (Int -> QueryM [Q.TermResult]) -> QueryM QueryResponse
+    handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
     handleTopAuthorsQ limit cb = do
-      SearchPB.QueryResponse . Just
-        . SearchPB.QueryResponseResultTopAuthors
-        . SearchPB.TermsCount
-        . V.fromList
-        . map toTTResult
-        <$> cb limit'
+      results <- cb limit
+      pure $
+        SearchPB.QueryResponse
+          . Just
+          $ SearchPB.QueryResponseResultTopAuthors $
+            toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
       where
-        limit' = fromInteger $ toInteger limit
+        toInt c = fromInteger $ toInteger c
 
     toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
     toAPeerResult Q.PeerStrengthResult {..} =
@@ -371,6 +397,12 @@ searchQuery request = do
         (toLazy psrAuthor)
         (toLazy psrPeer)
         psrStrength
+
+    toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
+    toTermsCount tcV total =
+      let termsCountTermcount = tcV
+          termsCountTotalHits = total
+       in SearchPB.TermsCount {..}
 
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =
@@ -386,6 +418,24 @@ searchQuery request = do
           repoSummaryMergedChanges = countToWord mergedChanges
           repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
+
+    toChangeEventsResult :: (ELKChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents
+    toChangeEventsResult (change, events) =
+      let changeAndEventsChange = Just (toChangeResult change)
+          changeAndEventsEvents = V.fromList $ toEventResult <$> events
+       in SearchPB.ChangeAndEvents {..}
+
+    toEventResult :: ELKChangeEvent -> SearchPB.ChangeEvent
+    toEventResult ELKChangeEvent {..} =
+      let changeEventId = elkchangeeventId
+          changeEventType = docTypeToText elkchangeeventType
+          changeEventChangeId = elkchangeeventChangeId
+          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
+          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
+          changeEventAuthor = authorMuid elkchangeeventAuthor
+          changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
+          changeEventBranch = elkchangeeventBranch
+       in SearchPB.ChangeEvent {..}
 
     toChangeResult :: ELKChange -> SearchPB.Change
     toChangeResult change =
@@ -460,120 +510,3 @@ lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
   tenants <- getConfig
   pure $ Config.lookupTenant tenants name
-
--- TODO: change context from AppM to QueryM
-searchChangesLifecycle :: Text -> Text -> AppM SearchPB.ChangesLifecycle
-searchChangesLifecycle indexName queryText = do
-  now <- liftIO getCurrentTime
-  tenantM <- lookupTenant indexName
-  case tenantM of
-    Nothing -> error $ "Unknown tenant: " <> indexName
-    Just tenant -> runTenantM tenant $ response now
-  where
-    -- TODO: add field to the protobuf message
-    username = mempty
-
-    response now = case P.parse [] queryText >>= Q.queryWithMods now username Nothing of
-      Left (ParseError msg _offset) -> error ("Oops: " <> show msg)
-      Right query -> runQueryM query $ do
-        -- TODO: use flavored query
-        let -- Helper functions ready to be applied
-            bhQuery = Q.queryBH query defaultQueryFlavor
-            count = Q.countEvents'
-            queryType = Q.documentType
-
-        -- get events count
-        eventCounts <- Q.getEventCounts
-
-        -- histos
-        let histo = liftTenantM . Q.getHistoEventAgg
-            histos =
-              toHisto
-                <$> histo (queryType $ "ChangeCreatedEvent" :| [])
-                <*> histo (queryType $ "ChangeMergedEvent" :| [])
-                <*> histo (queryType $ "ChangeAbandonedEvent" :| [])
-                <*> histo (queryType $ "ChangeCommitPushedEvent" :| [])
-                <*> histo (queryType $ "ChangeCommitForcePushedEvent" :| [])
-
-        -- ratios
-        let ratios =
-              toRatio eventCounts
-                <$> count [queryType $ "ChangeCreatedEvent" :| []]
-                <*> count [queryType $ "ChangeCommitPushedEvent" :| []]
-                <*> count [queryType $ "ChangeCommitForcePushedEvent" :| []]
-
-        -- duration aggregate
-        let durationAgg =
-              liftTenantM $ Q.changeMergedStatsDuration bhQuery
-
-        -- create final result
-        let result =
-              toResult eventCounts
-                <$> ratios
-                <*> histos
-                <*> durationAgg
-
-        result
-
-    toHisto ::
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      Q.HistoEventAgg ->
-      SearchPB.ChangesHistos
-    toHisto createdEvent mergedEvent abandonedEvent pushedEvent forcePushedEvent =
-      let toEvents qe =
-            let changesHistos_EventDocCount = Q.heCount qe
-                changesHistos_EventKey = Q.heKey qe
-                -- do we need that?
-                changesHistos_EventKeyAsString = mempty
-             in SearchPB.ChangesHistos_Event {..}
-
-          changesHistosChangeAbandonedEvent = toEvents <$> Q.heBuckets abandonedEvent
-          changesHistosChangeCommitForcePushedEvent = toEvents <$> Q.heBuckets forcePushedEvent
-          changesHistosChangeCommitPushedEvent = toEvents <$> Q.heBuckets pushedEvent
-          changesHistosChangeCreatedEvent = toEvents <$> Q.heBuckets createdEvent
-          changesHistosChangeMergedEvent = toEvents <$> Q.heBuckets mergedEvent
-       in SearchPB.ChangesHistos {..}
-
-    toRatio ::
-      Q.EventCounts ->
-      Q.Count ->
-      Q.Count ->
-      Q.Count ->
-      SearchPB.ChangesLifecycle_Ratios
-    toRatio Q.EventCounts {..} createdEvent pushedEvent forcePushedEvent =
-      let ratio :: Q.Count -> Q.Count -> Deci
-          ratio (Q.MkCount x) (Q.MkCount y)
-            | y == 0 = 0
-            | otherwise = (fromInteger . toInteger $ x) / (fromInteger . toInteger $ y)
-          ratioF x = fromFixed . ratio x
-
-          changesLifecycle_RatiosMerged = mergedCount `ratioF` createdEvent
-          changesLifecycle_RatiosAbandoned = abandonedCount `ratioF` createdEvent
-          changesLifecycle_RatiosIterations = (pushedEvent + forcePushedEvent) `ratioF` createdEvent
-          changesLifecycle_RatiosSelfMerged = selfMergedCount `ratioF` createdEvent
-       in SearchPB.ChangesLifecycle_Ratios {..}
-
-    toResult ::
-      Q.EventCounts ->
-      SearchPB.ChangesLifecycle_Ratios ->
-      SearchPB.ChangesHistos ->
-      Q.MergedStatsDuration ->
-      SearchPB.ChangesLifecycle
-    toResult Q.EventCounts {..} ratios histos msd =
-      let changesLifecycleChangeCommitForcePushedEvent = Nothing
-          changesLifecycleChangeCommitPushedEvent = Nothing
-          changesLifecycleChangeCreatedEvent = Nothing
-          changesLifecycleAbandoned = countToWord abandonedCount
-          changesLifecycleCommits = 0
-          changesLifecycleDuration = double2Float (Q.avg msd)
-          changesLifecycleDurationVariability = double2Float (Q.variability msd)
-          changesLifecycleHistos = Just histos
-          changesLifecycleMerged = countToWord mergedCount
-          changesLifecycleOpened = countToWord openedCount
-          changesLifecycleRatios = Just ratios
-          changesLifecycleSelfMerged = countToWord selfMergedCount
-          changesLifecycleTests = 0
-       in SearchPB.ChangesLifecycle {..}

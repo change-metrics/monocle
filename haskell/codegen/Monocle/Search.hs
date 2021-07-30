@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
@@ -29,6 +30,7 @@ import qualified Data.Word as Hs (Word16, Word32, Word64)
 import qualified GHC.Enum as Hs
 import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
+import qualified Monocle.Change
 import qualified Monocle.TaskData
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
@@ -999,7 +1001,8 @@ data QueryRequest = QueryRequest
     queryRequestQueryType ::
       HsProtobuf.Enumerated Monocle.Search.QueryRequest_QueryType,
     queryRequestOrder :: Hs.Maybe Monocle.Search.Order,
-    queryRequestLimit :: Hs.Word32
+    queryRequestLimit :: Hs.Word32,
+    queryRequestChangeId :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1017,7 +1020,8 @@ instance HsProtobuf.Message QueryRequest where
         queryRequestQuery = queryRequestQuery,
         queryRequestQueryType = queryRequestQueryType,
         queryRequestOrder = queryRequestOrder,
-        queryRequestLimit = queryRequestLimit
+        queryRequestLimit = queryRequestLimit,
+        queryRequestChangeId = queryRequestChangeId
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -1046,6 +1050,10 @@ instance HsProtobuf.Message QueryRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 6)
                 queryRequestLimit
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 7)
+                queryRequestChangeId
             )
           ]
       )
@@ -1077,6 +1085,10 @@ instance HsProtobuf.Message QueryRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 6)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 7)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -1122,28 +1134,37 @@ instance HsProtobuf.Message QueryRequest where
           (HsProtobuf.Single "limit")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 7)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "change_id")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB QueryRequest where
-  toJSONPB (QueryRequest f1 f2 f3 f4 f5 f6) =
+  toJSONPB (QueryRequest f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.object
         [ "index" .= f1,
           "username" .= f2,
           "query" .= f3,
           "query_type" .= f4,
           "order" .= f5,
-          "limit" .= f6
+          "limit" .= f6,
+          "change_id" .= f7
         ]
     )
-  toEncodingPB (QueryRequest f1 f2 f3 f4 f5 f6) =
+  toEncodingPB (QueryRequest f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.pairs
         [ "index" .= f1,
           "username" .= f2,
           "query" .= f3,
           "query_type" .= f4,
           "order" .= f5,
-          "limit" .= f6
+          "limit" .= f6,
+          "change_id" .= f7
         ]
     )
 
@@ -1157,6 +1178,7 @@ instance HsJSONPB.FromJSONPB QueryRequest where
               <*> obj .: "query_type"
               <*> obj .: "order"
               <*> obj .: "limit"
+              <*> obj .: "change_id"
         )
     )
 
@@ -1182,6 +1204,8 @@ instance HsJSONPB.ToSchema QueryRequest where
       queryRequestOrder <- declare_order Proxy.Proxy
       let declare_limit = HsJSONPB.declareSchemaRef
       queryRequestLimit <- declare_limit Proxy.Proxy
+      let declare_change_id = HsJSONPB.declareSchemaRef
+      queryRequestChangeId <- declare_change_id Proxy.Proxy
       let _ =
             Hs.pure QueryRequest <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_username
@@ -1189,6 +1213,7 @@ instance HsJSONPB.ToSchema QueryRequest where
               <*> HsJSONPB.asProxy declare_query_type
               <*> HsJSONPB.asProxy declare_order
               <*> HsJSONPB.asProxy declare_limit
+              <*> HsJSONPB.asProxy declare_change_id
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -1207,7 +1232,8 @@ instance HsJSONPB.ToSchema QueryRequest where
                           ("query", queryRequestQuery),
                           ("query_type", queryRequestQueryType),
                           ("order", queryRequestOrder),
-                          ("limit", queryRequestLimit)
+                          ("limit", queryRequestLimit),
+                          ("change_id", queryRequestChangeId)
                         ]
                   }
             }
@@ -1215,7 +1241,6 @@ instance HsJSONPB.ToSchema QueryRequest where
 
 data QueryRequest_QueryType
   = QueryRequest_QueryTypeQUERY_CHANGE
-  | QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   | QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED
   | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED
@@ -1224,6 +1249,12 @@ data QueryRequest_QueryType
   | QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS
   | QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   | QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  | QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
+  | QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
+  | QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  | QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
+  | QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
+  | QueryRequest_QueryTypeQUERY_CHANGES_TOPS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1233,7 +1264,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  maxBound = QueryRequest_QueryTypeQUERY_CHANGES_TOPS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -1243,8 +1274,6 @@ instance Hs.Ord QueryRequest_QueryType where
 
 instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
   toProtoEnumMay 0 = Hs.Just QueryRequest_QueryTypeQUERY_CHANGE
-  toProtoEnumMay 1 =
-    Hs.Just QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   toProtoEnumMay 2 =
     Hs.Just QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   toProtoEnumMay 3 =
@@ -1261,9 +1290,20 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   toProtoEnumMay 9 =
     Hs.Just QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  toProtoEnumMay 10 =
+    Hs.Just QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
+  toProtoEnumMay 20 =
+    Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
+  toProtoEnumMay 21 =
+    Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  toProtoEnumMay 22 =
+    Hs.Just QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
+  toProtoEnumMay 30 =
+    Hs.Just QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
+  toProtoEnumMay 31 =
+    Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_TOPS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
-  fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE) = 1
   fromProtoEnum (QueryRequest_QueryTypeQUERY_REPOS_SUMMARY) = 2
   fromProtoEnum
     (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED) = 3
@@ -1278,6 +1318,16 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
   fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS) =
     8
   fromProtoEnum (QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS) = 9
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS) =
+    10
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS) =
+    20
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS) =
+    21
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS) =
+    22
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS) = 30
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGES_TOPS) = 31
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1286,8 +1336,6 @@ instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
 instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
   parseJSONPB (HsJSONPB.String "QUERY_CHANGE") =
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGE
-  parseJSONPB (HsJSONPB.String "QUERY_CHANGE_LIFECYCLE") =
-    Hs.pure QueryRequest_QueryTypeQUERY_CHANGE_LIFECYCLE
   parseJSONPB (HsJSONPB.String "QUERY_REPOS_SUMMARY") =
     Hs.pure QueryRequest_QueryTypeQUERY_REPOS_SUMMARY
   parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_CHANGES_CREATED") =
@@ -1304,6 +1352,18 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS
   parseJSONPB (HsJSONPB.String "QUERY_TOP_AUTHORS_PEERS") =
     Hs.pure QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS
+  parseJSONPB (HsJSONPB.String "QUERY_NEW_CHANGES_AUTHORS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS
+  parseJSONPB (HsJSONPB.String "QUERY_CHANGES_REVIEW_STATS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS
+  parseJSONPB (HsJSONPB.String "QUERY_CHANGES_LIFECYCLE_STATS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS
+  parseJSONPB (HsJSONPB.String "QUERY_ACTIVE_AUTHORS_STATS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
+  parseJSONPB (HsJSONPB.String "QUERY_CHANGE_AND_EVENTS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
+  parseJSONPB (HsJSONPB.String "QUERY_CHANGES_TOPS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_TOPS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -2696,6 +2756,1127 @@ instance HsJSONPB.ToSchema Changes where
             }
         )
 
+data ChangeEvent = ChangeEvent
+  { changeEventId :: Hs.Text,
+    changeEventType :: Hs.Text,
+    changeEventChangeId :: Hs.Text,
+    changeEventCreatedAt ::
+      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeEventOnCreatedAt ::
+      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    changeEventAuthor :: Hs.Text,
+    changeEventOnAuthor :: Hs.Text,
+    changeEventBranch :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeEvent where
+  nameOf _ = (Hs.fromString "ChangeEvent")
+
+instance HsProtobuf.HasDefault ChangeEvent
+
+instance HsProtobuf.Message ChangeEvent where
+  encodeMessage
+    _
+    ChangeEvent
+      { changeEventId = changeEventId,
+        changeEventType = changeEventType,
+        changeEventChangeId = changeEventChangeId,
+        changeEventCreatedAt = changeEventCreatedAt,
+        changeEventOnCreatedAt = changeEventOnCreatedAt,
+        changeEventAuthor = changeEventAuthor,
+        changeEventOnAuthor = changeEventOnAuthor,
+        changeEventBranch = changeEventBranch
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                changeEventId
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                changeEventType
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                changeEventChangeId
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    changeEventCreatedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    changeEventOnCreatedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                changeEventAuthor
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                changeEventOnAuthor
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 20)
+                changeEventBranch
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ChangeEvent)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 5)
+              )
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 6)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 10)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 11)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 20)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "id")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "type")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "change_id")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "created_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "on_created_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "author")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "on_author")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 20)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "branch")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ChangeEvent where
+  toJSONPB (ChangeEvent f1 f2 f3 f5 f6 f10 f11 f20) =
+    ( HsJSONPB.object
+        [ "id" .= f1,
+          "type" .= f2,
+          "change_id" .= f3,
+          "created_at" .= f5,
+          "on_created_at" .= f6,
+          "author" .= f10,
+          "on_author" .= f11,
+          "branch" .= f20
+        ]
+    )
+  toEncodingPB (ChangeEvent f1 f2 f3 f5 f6 f10 f11 f20) =
+    ( HsJSONPB.pairs
+        [ "id" .= f1,
+          "type" .= f2,
+          "change_id" .= f3,
+          "created_at" .= f5,
+          "on_created_at" .= f6,
+          "author" .= f10,
+          "on_author" .= f11,
+          "branch" .= f20
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ChangeEvent where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ChangeEvent"
+        ( \obj ->
+            (Hs.pure ChangeEvent) <*> obj .: "id" <*> obj .: "type"
+              <*> obj .: "change_id"
+              <*> obj .: "created_at"
+              <*> obj .: "on_created_at"
+              <*> obj .: "author"
+              <*> obj .: "on_author"
+              <*> obj .: "branch"
+        )
+    )
+
+instance HsJSONPB.ToJSON ChangeEvent where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ChangeEvent where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ChangeEvent where
+  declareNamedSchema _ =
+    do
+      let declare_id = HsJSONPB.declareSchemaRef
+      changeEventId <- declare_id Proxy.Proxy
+      let declare_type = HsJSONPB.declareSchemaRef
+      changeEventType <- declare_type Proxy.Proxy
+      let declare_change_id = HsJSONPB.declareSchemaRef
+      changeEventChangeId <- declare_change_id Proxy.Proxy
+      let declare_created_at = HsJSONPB.declareSchemaRef
+      changeEventCreatedAt <- declare_created_at Proxy.Proxy
+      let declare_on_created_at = HsJSONPB.declareSchemaRef
+      changeEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
+      let declare_author = HsJSONPB.declareSchemaRef
+      changeEventAuthor <- declare_author Proxy.Proxy
+      let declare_on_author = HsJSONPB.declareSchemaRef
+      changeEventOnAuthor <- declare_on_author Proxy.Proxy
+      let declare_branch = HsJSONPB.declareSchemaRef
+      changeEventBranch <- declare_branch Proxy.Proxy
+      let _ =
+            Hs.pure ChangeEvent <*> HsJSONPB.asProxy declare_id
+              <*> HsJSONPB.asProxy declare_type
+              <*> HsJSONPB.asProxy declare_change_id
+              <*> HsJSONPB.asProxy declare_created_at
+              <*> HsJSONPB.asProxy declare_on_created_at
+              <*> HsJSONPB.asProxy declare_author
+              <*> HsJSONPB.asProxy declare_on_author
+              <*> HsJSONPB.asProxy declare_branch
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeEvent",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("id", changeEventId),
+                          ("type", changeEventType),
+                          ("change_id", changeEventChangeId),
+                          ("created_at", changeEventCreatedAt),
+                          ("on_created_at", changeEventOnCreatedAt),
+                          ("author", changeEventAuthor),
+                          ("on_author", changeEventOnAuthor),
+                          ("branch", changeEventBranch)
+                        ]
+                  }
+            }
+        )
+
+data ChangeAndEvents = ChangeAndEvents
+  { changeAndEventsChange ::
+      Hs.Maybe Monocle.Search.Change,
+    changeAndEventsEvents ::
+      Hs.Vector Monocle.Search.ChangeEvent
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeAndEvents where
+  nameOf _ = (Hs.fromString "ChangeAndEvents")
+
+instance HsProtobuf.HasDefault ChangeAndEvents
+
+instance HsProtobuf.Message ChangeAndEvents where
+  encodeMessage
+    _
+    ChangeAndEvents
+      { changeAndEventsChange = changeAndEventsChange,
+        changeAndEventsEvents = changeAndEventsEvents
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.Change)
+                    @(HsProtobuf.Nested Monocle.Search.Change)
+                    changeAndEventsChange
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangeEvent)
+                    @(HsProtobuf.NestedVec Monocle.Search.ChangeEvent)
+                    changeAndEventsEvents
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ChangeAndEvents)
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.Change))
+              @(_ (Hs.Maybe Monocle.Search.Change))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.ChangeEvent))
+              @(_ (Hs.Vector Monocle.Search.ChangeEvent))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Change")))
+          (HsProtobuf.Single "change")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "ChangeEvent"))
+          )
+          (HsProtobuf.Single "events")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ChangeAndEvents where
+  toJSONPB (ChangeAndEvents f1 f2) =
+    (HsJSONPB.object ["change" .= f1, "events" .= f2])
+  toEncodingPB (ChangeAndEvents f1 f2) =
+    (HsJSONPB.pairs ["change" .= f1, "events" .= f2])
+
+instance HsJSONPB.FromJSONPB ChangeAndEvents where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ChangeAndEvents"
+        ( \obj ->
+            (Hs.pure ChangeAndEvents) <*> obj .: "change" <*> obj .: "events"
+        )
+    )
+
+instance HsJSONPB.ToJSON ChangeAndEvents where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ChangeAndEvents where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ChangeAndEvents where
+  declareNamedSchema _ =
+    do
+      let declare_change = HsJSONPB.declareSchemaRef
+      changeAndEventsChange <- declare_change Proxy.Proxy
+      let declare_events = HsJSONPB.declareSchemaRef
+      changeAndEventsEvents <- declare_events Proxy.Proxy
+      let _ =
+            Hs.pure ChangeAndEvents <*> HsJSONPB.asProxy declare_change
+              <*> HsJSONPB.asProxy declare_events
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangeAndEvents",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("change", changeAndEventsChange),
+                          ("events", changeAndEventsEvents)
+                        ]
+                  }
+            }
+        )
+
+data ReviewCount = ReviewCount
+  { reviewCountAuthorsCount ::
+      Hs.Word32,
+    reviewCountEventsCount :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ReviewCount where
+  nameOf _ = (Hs.fromString "ReviewCount")
+
+instance HsProtobuf.HasDefault ReviewCount
+
+instance HsProtobuf.Message ReviewCount where
+  encodeMessage
+    _
+    ReviewCount
+      { reviewCountAuthorsCount = reviewCountAuthorsCount,
+        reviewCountEventsCount = reviewCountEventsCount
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                reviewCountAuthorsCount
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                reviewCountEventsCount
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ReviewCount)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "authors_count")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "events_count")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ReviewCount where
+  toJSONPB (ReviewCount f1 f2) =
+    (HsJSONPB.object ["authors_count" .= f1, "events_count" .= f2])
+  toEncodingPB (ReviewCount f1 f2) =
+    (HsJSONPB.pairs ["authors_count" .= f1, "events_count" .= f2])
+
+instance HsJSONPB.FromJSONPB ReviewCount where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ReviewCount"
+        ( \obj ->
+            (Hs.pure ReviewCount) <*> obj .: "authors_count"
+              <*> obj .: "events_count"
+        )
+    )
+
+instance HsJSONPB.ToJSON ReviewCount where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ReviewCount where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ReviewCount where
+  declareNamedSchema _ =
+    do
+      let declare_authors_count = HsJSONPB.declareSchemaRef
+      reviewCountAuthorsCount <- declare_authors_count Proxy.Proxy
+      let declare_events_count = HsJSONPB.declareSchemaRef
+      reviewCountEventsCount <- declare_events_count Proxy.Proxy
+      let _ =
+            Hs.pure ReviewCount
+              <*> HsJSONPB.asProxy declare_authors_count
+              <*> HsJSONPB.asProxy declare_events_count
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ReviewCount",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("authors_count", reviewCountAuthorsCount),
+                          ("events_count", reviewCountEventsCount)
+                        ]
+                  }
+            }
+        )
+
+data Histo = Histo {histoDate :: Hs.Text, histoCount :: Hs.Word32}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Histo where
+  nameOf _ = (Hs.fromString "Histo")
+
+instance HsProtobuf.HasDefault Histo
+
+instance HsProtobuf.Message Histo where
+  encodeMessage
+    _
+    Histo {histoDate = histoDate, histoCount = histoCount} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                histoDate
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                histoCount
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure Histo)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "date")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "count")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Histo where
+  toJSONPB (Histo f1 f2) =
+    (HsJSONPB.object ["date" .= f1, "count" .= f2])
+  toEncodingPB (Histo f1 f2) =
+    (HsJSONPB.pairs ["date" .= f1, "count" .= f2])
+
+instance HsJSONPB.FromJSONPB Histo where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Histo"
+        (\obj -> (Hs.pure Histo) <*> obj .: "date" <*> obj .: "count")
+    )
+
+instance HsJSONPB.ToJSON Histo where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Histo where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Histo where
+  declareNamedSchema _ =
+    do
+      let declare_date = HsJSONPB.declareSchemaRef
+      histoDate <- declare_date Proxy.Proxy
+      let declare_count = HsJSONPB.declareSchemaRef
+      histoCount <- declare_count Proxy.Proxy
+      let _ =
+            Hs.pure Histo <*> HsJSONPB.asProxy declare_date
+              <*> HsJSONPB.asProxy declare_count
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Histo",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("date", histoDate),
+                          ("count", histoCount)
+                        ]
+                  }
+            }
+        )
+
+data ReviewStats = ReviewStats
+  { reviewStatsCommentCount ::
+      Hs.Maybe Monocle.Search.ReviewCount,
+    reviewStatsReviewCount :: Hs.Maybe Monocle.Search.ReviewCount,
+    reviewStatsCommentDelay :: Hs.Word32,
+    reviewStatsReviewDelay :: Hs.Word32,
+    reviewStatsCommentHisto :: Hs.Vector Monocle.Search.Histo,
+    reviewStatsReviewHisto :: Hs.Vector Monocle.Search.Histo
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ReviewStats where
+  nameOf _ = (Hs.fromString "ReviewStats")
+
+instance HsProtobuf.HasDefault ReviewStats
+
+instance HsProtobuf.Message ReviewStats where
+  encodeMessage
+    _
+    ReviewStats
+      { reviewStatsCommentCount = reviewStatsCommentCount,
+        reviewStatsReviewCount = reviewStatsReviewCount,
+        reviewStatsCommentDelay = reviewStatsCommentDelay,
+        reviewStatsReviewDelay = reviewStatsReviewDelay,
+        reviewStatsCommentHisto = reviewStatsCommentHisto,
+        reviewStatsReviewHisto = reviewStatsReviewHisto
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.ReviewCount)
+                    @(HsProtobuf.Nested Monocle.Search.ReviewCount)
+                    reviewStatsCommentCount
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.ReviewCount)
+                    @(HsProtobuf.Nested Monocle.Search.ReviewCount)
+                    reviewStatsReviewCount
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                reviewStatsCommentDelay
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                reviewStatsReviewDelay
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    reviewStatsCommentHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    reviewStatsReviewHisto
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ReviewStats)
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ReviewCount))
+              @(_ (Hs.Maybe Monocle.Search.ReviewCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ReviewCount))
+              @(_ (Hs.Maybe Monocle.Search.ReviewCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 5)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 6)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 10)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 11)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "ReviewCount"))
+          )
+          (HsProtobuf.Single "comment_count")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "ReviewCount"))
+          )
+          (HsProtobuf.Single "review_count")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "comment_delay")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "review_delay")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "comment_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "review_histo")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ReviewStats where
+  toJSONPB (ReviewStats f1 f2 f5 f6 f10 f11) =
+    ( HsJSONPB.object
+        [ "comment_count" .= f1,
+          "review_count" .= f2,
+          "comment_delay" .= f5,
+          "review_delay" .= f6,
+          "comment_histo" .= f10,
+          "review_histo" .= f11
+        ]
+    )
+  toEncodingPB (ReviewStats f1 f2 f5 f6 f10 f11) =
+    ( HsJSONPB.pairs
+        [ "comment_count" .= f1,
+          "review_count" .= f2,
+          "comment_delay" .= f5,
+          "review_delay" .= f6,
+          "comment_histo" .= f10,
+          "review_histo" .= f11
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ReviewStats where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ReviewStats"
+        ( \obj ->
+            (Hs.pure ReviewStats) <*> obj .: "comment_count"
+              <*> obj .: "review_count"
+              <*> obj .: "comment_delay"
+              <*> obj .: "review_delay"
+              <*> obj .: "comment_histo"
+              <*> obj .: "review_histo"
+        )
+    )
+
+instance HsJSONPB.ToJSON ReviewStats where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ReviewStats where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ReviewStats where
+  declareNamedSchema _ =
+    do
+      let declare_comment_count = HsJSONPB.declareSchemaRef
+      reviewStatsCommentCount <- declare_comment_count Proxy.Proxy
+      let declare_review_count = HsJSONPB.declareSchemaRef
+      reviewStatsReviewCount <- declare_review_count Proxy.Proxy
+      let declare_comment_delay = HsJSONPB.declareSchemaRef
+      reviewStatsCommentDelay <- declare_comment_delay Proxy.Proxy
+      let declare_review_delay = HsJSONPB.declareSchemaRef
+      reviewStatsReviewDelay <- declare_review_delay Proxy.Proxy
+      let declare_comment_histo = HsJSONPB.declareSchemaRef
+      reviewStatsCommentHisto <- declare_comment_histo Proxy.Proxy
+      let declare_review_histo = HsJSONPB.declareSchemaRef
+      reviewStatsReviewHisto <- declare_review_histo Proxy.Proxy
+      let _ =
+            Hs.pure ReviewStats
+              <*> HsJSONPB.asProxy declare_comment_count
+              <*> HsJSONPB.asProxy declare_review_count
+              <*> HsJSONPB.asProxy declare_comment_delay
+              <*> HsJSONPB.asProxy declare_review_delay
+              <*> HsJSONPB.asProxy declare_comment_histo
+              <*> HsJSONPB.asProxy declare_review_histo
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ReviewStats",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("comment_count", reviewStatsCommentCount),
+                          ("review_count", reviewStatsReviewCount),
+                          ("comment_delay", reviewStatsCommentDelay),
+                          ("review_delay", reviewStatsReviewDelay),
+                          ("comment_histo", reviewStatsCommentHisto),
+                          ("review_histo", reviewStatsReviewHisto)
+                        ]
+                  }
+            }
+        )
+
+data ActivityStats = ActivityStats
+  { activityStatsChangeAuthors ::
+      Hs.Word32,
+    activityStatsCommentAuthors :: Hs.Word32,
+    activityStatsReviewAuthors :: Hs.Word32,
+    activityStatsCommentsHisto :: Hs.Vector Monocle.Search.Histo,
+    activityStatsReviewsHisto :: Hs.Vector Monocle.Search.Histo,
+    activityStatsChangesHisto :: Hs.Vector Monocle.Search.Histo
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ActivityStats where
+  nameOf _ = (Hs.fromString "ActivityStats")
+
+instance HsProtobuf.HasDefault ActivityStats
+
+instance HsProtobuf.Message ActivityStats where
+  encodeMessage
+    _
+    ActivityStats
+      { activityStatsChangeAuthors =
+          activityStatsChangeAuthors,
+        activityStatsCommentAuthors = activityStatsCommentAuthors,
+        activityStatsReviewAuthors = activityStatsReviewAuthors,
+        activityStatsCommentsHisto = activityStatsCommentsHisto,
+        activityStatsReviewsHisto = activityStatsReviewsHisto,
+        activityStatsChangesHisto = activityStatsChangesHisto
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                activityStatsChangeAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                activityStatsCommentAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                activityStatsReviewAuthors
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsCommentsHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsReviewsHisto
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 12)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    activityStatsChangesHisto
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ActivityStats)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 10)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 11)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 12)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "change_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "comment_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "review_authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "comments_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "reviews_histo")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 12)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "changes_histo")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ActivityStats where
+  toJSONPB (ActivityStats f1 f2 f3 f10 f11 f12) =
+    ( HsJSONPB.object
+        [ "change_authors" .= f1,
+          "comment_authors" .= f2,
+          "review_authors" .= f3,
+          "comments_histo" .= f10,
+          "reviews_histo" .= f11,
+          "changes_histo" .= f12
+        ]
+    )
+  toEncodingPB (ActivityStats f1 f2 f3 f10 f11 f12) =
+    ( HsJSONPB.pairs
+        [ "change_authors" .= f1,
+          "comment_authors" .= f2,
+          "review_authors" .= f3,
+          "comments_histo" .= f10,
+          "reviews_histo" .= f11,
+          "changes_histo" .= f12
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ActivityStats where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ActivityStats"
+        ( \obj ->
+            (Hs.pure ActivityStats) <*> obj .: "change_authors"
+              <*> obj .: "comment_authors"
+              <*> obj .: "review_authors"
+              <*> obj .: "comments_histo"
+              <*> obj .: "reviews_histo"
+              <*> obj .: "changes_histo"
+        )
+    )
+
+instance HsJSONPB.ToJSON ActivityStats where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ActivityStats where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ActivityStats where
+  declareNamedSchema _ =
+    do
+      let declare_change_authors = HsJSONPB.declareSchemaRef
+      activityStatsChangeAuthors <- declare_change_authors Proxy.Proxy
+      let declare_comment_authors = HsJSONPB.declareSchemaRef
+      activityStatsCommentAuthors <- declare_comment_authors Proxy.Proxy
+      let declare_review_authors = HsJSONPB.declareSchemaRef
+      activityStatsReviewAuthors <- declare_review_authors Proxy.Proxy
+      let declare_comments_histo = HsJSONPB.declareSchemaRef
+      activityStatsCommentsHisto <- declare_comments_histo Proxy.Proxy
+      let declare_reviews_histo = HsJSONPB.declareSchemaRef
+      activityStatsReviewsHisto <- declare_reviews_histo Proxy.Proxy
+      let declare_changes_histo = HsJSONPB.declareSchemaRef
+      activityStatsChangesHisto <- declare_changes_histo Proxy.Proxy
+      let _ =
+            Hs.pure ActivityStats
+              <*> HsJSONPB.asProxy declare_change_authors
+              <*> HsJSONPB.asProxy declare_comment_authors
+              <*> HsJSONPB.asProxy declare_review_authors
+              <*> HsJSONPB.asProxy declare_comments_histo
+              <*> HsJSONPB.asProxy declare_reviews_histo
+              <*> HsJSONPB.asProxy declare_changes_histo
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ActivityStats",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ( "change_authors",
+                            activityStatsChangeAuthors
+                          ),
+                          ( "comment_authors",
+                            activityStatsCommentAuthors
+                          ),
+                          ( "review_authors",
+                            activityStatsReviewAuthors
+                          ),
+                          ( "comments_histo",
+                            activityStatsCommentsHisto
+                          ),
+                          ( "reviews_histo",
+                            activityStatsReviewsHisto
+                          ),
+                          ( "changes_histo",
+                            activityStatsChangesHisto
+                          )
+                        ]
+                  }
+            }
+        )
+
 newtype QueryResponse = QueryResponse
   { queryResponseResult ::
       Hs.Maybe QueryResponseResult
@@ -2756,6 +3937,54 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultNewAuthors y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 6)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                            @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                            (Hs.Just y)
+                        )
+                    )
+                  QueryResponseResultReviewStats y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 20)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ReviewStats)
+                            @(HsProtobuf.Nested Monocle.Search.ReviewStats)
+                            (Hs.Just y)
+                        )
+                    )
+                  QueryResponseResultLifecycleStats y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 21)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.LifecycleStats)
+                            @(HsProtobuf.Nested Monocle.Search.LifecycleStats)
+                            (Hs.Just y)
+                        )
+                    )
+                  QueryResponseResultActivityStats y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 22)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ActivityStats)
+                            @(HsProtobuf.Nested Monocle.Search.ActivityStats)
+                            (Hs.Just y)
+                        )
+                    )
+                  QueryResponseResultChangeEvents y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 30)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangeAndEvents)
+                            @(HsProtobuf.Nested Monocle.Search.ChangeAndEvents)
+                            (Hs.Just y)
+                        )
+                    )
+                  QueryResponseResultChangesTops y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 31)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesTops)
+                            @(HsProtobuf.Nested Monocle.Search.ChangesTops)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2796,58 +4025,130 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.AuthorsPeers))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 6),
+                  (Hs.pure (Hs.fmap QueryResponseResultNewAuthors))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+                            @(_ (Hs.Maybe Monocle.Search.TermsCount))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 20),
+                  (Hs.pure (Hs.fmap QueryResponseResultReviewStats))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ReviewStats))
+                            @(_ (Hs.Maybe Monocle.Search.ReviewStats))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 21),
+                  (Hs.pure (Hs.fmap QueryResponseResultLifecycleStats))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.LifecycleStats))
+                            @(_ (Hs.Maybe Monocle.Search.LifecycleStats))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 22),
+                  (Hs.pure (Hs.fmap QueryResponseResultActivityStats))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ActivityStats))
+                            @(_ (Hs.Maybe Monocle.Search.ActivityStats))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 30),
+                  (Hs.pure (Hs.fmap QueryResponseResultChangeEvents))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ChangeAndEvents))
+                            @(_ (Hs.Maybe Monocle.Search.ChangeAndEvents))
+                            HsProtobuf.decodeMessageField
+                        )
+                ),
+                ( (HsProtobuf.FieldNumber 31),
+                  (Hs.pure (Hs.fmap QueryResponseResultChangesTops))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ChangesTops))
+                            @(_ (Hs.Maybe Monocle.Search.ChangesTops))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB QueryResponse where
-  toJSONPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
-    ( HsJSONPB.object
-        [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
-                      Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
-                      Hs.Just (QueryResponseResultChanges f2) ->
-                        (HsJSONPB.pair "changes" f2)
-                      Hs.Just (QueryResponseResultReposSummary f3) ->
-                        (HsJSONPB.pair "repos_summary" f3)
-                      Hs.Just (QueryResponseResultTopAuthors f4) ->
-                        (HsJSONPB.pair "top_authors" f4)
-                      Hs.Just (QueryResponseResultAuthorsPeers f5) ->
-                        (HsJSONPB.pair "authors_peers" f5)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then
-                      ("result" .= (HsJSONPB.objectOrNull [encodeResult] options))
-                        options
-                    else encodeResult options
-          )
-        ]
-    )
-  toEncodingPB (QueryResponse f1_or_f2_or_f3_or_f4_or_f5) =
-    ( HsJSONPB.pairs
-        [ ( let encodeResult =
-                  ( case f1_or_f2_or_f3_or_f4_or_f5 of
-                      Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
-                      Hs.Just (QueryResponseResultChanges f2) ->
-                        (HsJSONPB.pair "changes" f2)
-                      Hs.Just (QueryResponseResultReposSummary f3) ->
-                        (HsJSONPB.pair "repos_summary" f3)
-                      Hs.Just (QueryResponseResultTopAuthors f4) ->
-                        (HsJSONPB.pair "top_authors" f4)
-                      Hs.Just (QueryResponseResultAuthorsPeers f5) ->
-                        (HsJSONPB.pair "authors_peers" f5)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then ("result" .= (HsJSONPB.pairsOrNull [encodeResult] options)) options
-                    else encodeResult options
-          )
-        ]
-    )
+  toJSONPB
+    ( QueryResponse
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31
+      ) =
+      ( HsJSONPB.object
+          [ ( let encodeResult =
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31 of
+                        Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                        Hs.Just (QueryResponseResultChanges f2) ->
+                          (HsJSONPB.pair "changes" f2)
+                        Hs.Just (QueryResponseResultReposSummary f3) ->
+                          (HsJSONPB.pair "repos_summary" f3)
+                        Hs.Just (QueryResponseResultTopAuthors f4) ->
+                          (HsJSONPB.pair "top_authors" f4)
+                        Hs.Just (QueryResponseResultAuthorsPeers f5) ->
+                          (HsJSONPB.pair "authors_peers" f5)
+                        Hs.Just (QueryResponseResultNewAuthors f6) ->
+                          (HsJSONPB.pair "new_authors" f6)
+                        Hs.Just (QueryResponseResultReviewStats f20) ->
+                          (HsJSONPB.pair "review_stats" f20)
+                        Hs.Just (QueryResponseResultLifecycleStats f21) ->
+                          (HsJSONPB.pair "lifecycle_stats" f21)
+                        Hs.Just (QueryResponseResultActivityStats f22) ->
+                          (HsJSONPB.pair "activity_stats" f22)
+                        Hs.Just (QueryResponseResultChangeEvents f30) ->
+                          (HsJSONPB.pair "change_events" f30)
+                        Hs.Just (QueryResponseResultChangesTops f31) ->
+                          (HsJSONPB.pair "changes_tops" f31)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ("result" .= (HsJSONPB.objectOrNull [encodeResult] options))
+                          options
+                      else encodeResult options
+            )
+          ]
+      )
+  toEncodingPB
+    ( QueryResponse
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31
+      ) =
+      ( HsJSONPB.pairs
+          [ ( let encodeResult =
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31 of
+                        Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                        Hs.Just (QueryResponseResultChanges f2) ->
+                          (HsJSONPB.pair "changes" f2)
+                        Hs.Just (QueryResponseResultReposSummary f3) ->
+                          (HsJSONPB.pair "repos_summary" f3)
+                        Hs.Just (QueryResponseResultTopAuthors f4) ->
+                          (HsJSONPB.pair "top_authors" f4)
+                        Hs.Just (QueryResponseResultAuthorsPeers f5) ->
+                          (HsJSONPB.pair "authors_peers" f5)
+                        Hs.Just (QueryResponseResultNewAuthors f6) ->
+                          (HsJSONPB.pair "new_authors" f6)
+                        Hs.Just (QueryResponseResultReviewStats f20) ->
+                          (HsJSONPB.pair "review_stats" f20)
+                        Hs.Just (QueryResponseResultLifecycleStats f21) ->
+                          (HsJSONPB.pair "lifecycle_stats" f21)
+                        Hs.Just (QueryResponseResultActivityStats f22) ->
+                          (HsJSONPB.pair "activity_stats" f22)
+                        Hs.Just (QueryResponseResultChangeEvents f30) ->
+                          (HsJSONPB.pair "change_events" f30)
+                        Hs.Just (QueryResponseResultChangesTops f31) ->
+                          (HsJSONPB.pair "changes_tops" f31)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then ("result" .= (HsJSONPB.pairsOrNull [encodeResult] options)) options
+                      else encodeResult options
+            )
+          ]
+      )
 
 instance HsJSONPB.FromJSONPB QueryResponse where
   parseJSONPB =
@@ -2867,6 +4168,18 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "top_authors"),
                               Hs.Just Hs.. QueryResponseResultAuthorsPeers
                                 <$> (HsJSONPB.parseField parseObj "authors_peers"),
+                              Hs.Just Hs.. QueryResponseResultNewAuthors
+                                <$> (HsJSONPB.parseField parseObj "new_authors"),
+                              Hs.Just Hs.. QueryResponseResultReviewStats
+                                <$> (HsJSONPB.parseField parseObj "review_stats"),
+                              Hs.Just Hs.. QueryResponseResultLifecycleStats
+                                <$> (HsJSONPB.parseField parseObj "lifecycle_stats"),
+                              Hs.Just Hs.. QueryResponseResultActivityStats
+                                <$> (HsJSONPB.parseField parseObj "activity_stats"),
+                              Hs.Just Hs.. QueryResponseResultChangeEvents
+                                <$> (HsJSONPB.parseField parseObj "change_events"),
+                              Hs.Just Hs.. QueryResponseResultChangesTops
+                                <$> (HsJSONPB.parseField parseObj "changes_tops"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -2914,6 +4227,12 @@ data QueryResponseResult
   | QueryResponseResultReposSummary Monocle.Search.ReposSummary
   | QueryResponseResultTopAuthors Monocle.Search.TermsCount
   | QueryResponseResultAuthorsPeers Monocle.Search.AuthorsPeers
+  | QueryResponseResultNewAuthors Monocle.Search.TermsCount
+  | QueryResponseResultReviewStats Monocle.Search.ReviewStats
+  | QueryResponseResultLifecycleStats Monocle.Search.LifecycleStats
+  | QueryResponseResultActivityStats Monocle.Search.ActivityStats
+  | QueryResponseResultChangeEvents Monocle.Search.ChangeAndEvents
+  | QueryResponseResultChangesTops Monocle.Search.ChangesTops
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -2951,6 +4270,42 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultAuthorsPeers
               <*> HsJSONPB.asProxy declare_authors_peers
+      let declare_new_authors = HsJSONPB.declareSchemaRef
+      queryResponseResultNewAuthors <- declare_new_authors Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultNewAuthors
+              <*> HsJSONPB.asProxy declare_new_authors
+      let declare_review_stats = HsJSONPB.declareSchemaRef
+      queryResponseResultReviewStats <- declare_review_stats Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultReviewStats
+              <*> HsJSONPB.asProxy declare_review_stats
+      let declare_lifecycle_stats = HsJSONPB.declareSchemaRef
+      queryResponseResultLifecycleStats <-
+        declare_lifecycle_stats
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultLifecycleStats
+              <*> HsJSONPB.asProxy declare_lifecycle_stats
+      let declare_activity_stats = HsJSONPB.declareSchemaRef
+      queryResponseResultActivityStats <-
+        declare_activity_stats
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultActivityStats
+              <*> HsJSONPB.asProxy declare_activity_stats
+      let declare_change_events = HsJSONPB.declareSchemaRef
+      queryResponseResultChangeEvents <-
+        declare_change_events
+          Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultChangeEvents
+              <*> HsJSONPB.asProxy declare_change_events
+      let declare_changes_tops = HsJSONPB.declareSchemaRef
+      queryResponseResultChangesTops <- declare_changes_tops Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultChangesTops
+              <*> HsJSONPB.asProxy declare_changes_tops
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -2974,6 +4329,24 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ),
                           ( "authors_peers",
                             queryResponseResultAuthorsPeers
+                          ),
+                          ( "new_authors",
+                            queryResponseResultNewAuthors
+                          ),
+                          ( "review_stats",
+                            queryResponseResultReviewStats
+                          ),
+                          ( "lifecycle_stats",
+                            queryResponseResultLifecycleStats
+                          ),
+                          ( "activity_stats",
+                            queryResponseResultActivityStats
+                          ),
+                          ( "change_events",
+                            queryResponseResultChangeEvents
+                          ),
+                          ( "changes_tops",
+                            queryResponseResultChangesTops
                           )
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
@@ -2982,593 +4355,193 @@ instance HsJSONPB.ToSchema QueryResponseResult where
             }
         )
 
-data ChangesHistos = ChangesHistos
-  { changesHistosChangeAbandonedEvent ::
-      Hs.Vector Monocle.Search.ChangesHistos_Event,
-    changesHistosChangeCommitForcePushedEvent ::
-      Hs.Vector Monocle.Search.ChangesHistos_Event,
-    changesHistosChangeCommitPushedEvent ::
-      Hs.Vector Monocle.Search.ChangesHistos_Event,
-    changesHistosChangeCreatedEvent ::
-      Hs.Vector Monocle.Search.ChangesHistos_Event,
-    changesHistosChangeMergedEvent ::
-      Hs.Vector Monocle.Search.ChangesHistos_Event
+data LifecycleStats = LifecycleStats
+  { lifecycleStatsCreatedHisto ::
+      Hs.Vector Monocle.Search.Histo,
+    lifecycleStatsUpdatedHisto :: Hs.Vector Monocle.Search.Histo,
+    lifecycleStatsMergedHisto :: Hs.Vector Monocle.Search.Histo,
+    lifecycleStatsAbandonedHisto :: Hs.Vector Monocle.Search.Histo,
+    lifecycleStatsCreated :: Hs.Maybe Monocle.Search.ReviewCount,
+    lifecycleStatsOpened :: Hs.Word32,
+    lifecycleStatsAbandoned :: Hs.Word32,
+    lifecycleStatsAbandonedRatio :: Hs.Float,
+    lifecycleStatsMerged :: Hs.Word32,
+    lifecycleStatsMergedRatio :: Hs.Float,
+    lifecycleStatsSelfMerged :: Hs.Word32,
+    lifecycleStatsSelfMergedRatio :: Hs.Float,
+    lifecycleStatsTtmMean :: Hs.Float,
+    lifecycleStatsTtmVariability :: Hs.Float,
+    lifecycleStatsUpdatesOfChanges :: Hs.Word32,
+    lifecycleStatsChangesWithTests :: Hs.Float,
+    lifecycleStatsIterationsPerChange :: Hs.Float,
+    lifecycleStatsCommitsPerChange :: Hs.Float
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named ChangesHistos where
-  nameOf _ = (Hs.fromString "ChangesHistos")
+instance HsProtobuf.Named LifecycleStats where
+  nameOf _ = (Hs.fromString "LifecycleStats")
 
-instance HsProtobuf.HasDefault ChangesHistos
+instance HsProtobuf.HasDefault LifecycleStats
 
-instance HsProtobuf.Message ChangesHistos where
+instance HsProtobuf.Message LifecycleStats where
   encodeMessage
     _
-    ChangesHistos
-      { changesHistosChangeAbandonedEvent =
-          changesHistosChangeAbandonedEvent,
-        changesHistosChangeCommitForcePushedEvent =
-          changesHistosChangeCommitForcePushedEvent,
-        changesHistosChangeCommitPushedEvent =
-          changesHistosChangeCommitPushedEvent,
-        changesHistosChangeCreatedEvent = changesHistosChangeCreatedEvent,
-        changesHistosChangeMergedEvent = changesHistosChangeMergedEvent
+    LifecycleStats
+      { lifecycleStatsCreatedHisto =
+          lifecycleStatsCreatedHisto,
+        lifecycleStatsUpdatedHisto = lifecycleStatsUpdatedHisto,
+        lifecycleStatsMergedHisto = lifecycleStatsMergedHisto,
+        lifecycleStatsAbandonedHisto = lifecycleStatsAbandonedHisto,
+        lifecycleStatsCreated = lifecycleStatsCreated,
+        lifecycleStatsOpened = lifecycleStatsOpened,
+        lifecycleStatsAbandoned = lifecycleStatsAbandoned,
+        lifecycleStatsAbandonedRatio = lifecycleStatsAbandonedRatio,
+        lifecycleStatsMerged = lifecycleStatsMerged,
+        lifecycleStatsMergedRatio = lifecycleStatsMergedRatio,
+        lifecycleStatsSelfMerged = lifecycleStatsSelfMerged,
+        lifecycleStatsSelfMergedRatio = lifecycleStatsSelfMergedRatio,
+        lifecycleStatsTtmMean = lifecycleStatsTtmMean,
+        lifecycleStatsTtmVariability = lifecycleStatsTtmVariability,
+        lifecycleStatsUpdatesOfChanges = lifecycleStatsUpdatesOfChanges,
+        lifecycleStatsChangesWithTests = lifecycleStatsChangesWithTests,
+        lifecycleStatsIterationsPerChange =
+          lifecycleStatsIterationsPerChange,
+        lifecycleStatsCommitsPerChange = lifecycleStatsCommitsPerChange
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangesHistos_Event)
-                    @(HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event)
-                    changesHistosChangeAbandonedEvent
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    lifecycleStatsCreatedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangesHistos_Event)
-                    @(HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event)
-                    changesHistosChangeCommitForcePushedEvent
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    lifecycleStatsUpdatedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangesHistos_Event)
-                    @(HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event)
-                    changesHistosChangeCommitPushedEvent
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    lifecycleStatsMergedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangesHistos_Event)
-                    @(HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event)
-                    changesHistosChangeCreatedEvent
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                    @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                    lifecycleStatsAbandonedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
-                ( Hs.coerce @(Hs.Vector Monocle.Search.ChangesHistos_Event)
-                    @(HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event)
-                    changesHistosChangeMergedEvent
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.ReviewCount)
+                    @(HsProtobuf.Nested Monocle.Search.ReviewCount)
+                    lifecycleStatsCreated
                 )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                lifecycleStatsOpened
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                lifecycleStatsAbandoned
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 12)
+                lifecycleStatsAbandonedRatio
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 13)
+                lifecycleStatsMerged
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 14)
+                lifecycleStatsMergedRatio
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 15)
+                lifecycleStatsSelfMerged
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 16)
+                lifecycleStatsSelfMergedRatio
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 30)
+                lifecycleStatsTtmMean
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 31)
+                lifecycleStatsTtmVariability
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 32)
+                lifecycleStatsUpdatesOfChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 33)
+                lifecycleStatsChangesWithTests
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 34)
+                lifecycleStatsIterationsPerChange
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 35)
+                lifecycleStatsCommitsPerChange
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure ChangesHistos)
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event))
-              @(_ (Hs.Vector Monocle.Search.ChangesHistos_Event))
+    (Hs.pure LifecycleStats)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event))
-              @(_ (Hs.Vector Monocle.Search.ChangesHistos_Event))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event))
-              @(_ (Hs.Vector Monocle.Search.ChangesHistos_Event))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event))
-              @(_ (Hs.Vector Monocle.Search.ChangesHistos_Event))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Search.ChangesHistos_Event))
-              @(_ (Hs.Vector Monocle.Search.ChangesHistos_Event))
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ReviewCount))
+              @(_ (Hs.Maybe Monocle.Search.ReviewCount))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 5)
               )
           )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Event"))
-          )
-          (HsProtobuf.Single "ChangeAbandonedEvent")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Event"))
-          )
-          (HsProtobuf.Single "ChangeCommitForcePushedEvent")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Event"))
-          )
-          (HsProtobuf.Single "ChangeCommitPushedEvent")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Event"))
-          )
-          (HsProtobuf.Single "ChangeCreatedEvent")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 5)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Event"))
-          )
-          (HsProtobuf.Single "ChangeMergedEvent")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB ChangesHistos where
-  toJSONPB (ChangesHistos f1 f2 f3 f4 f5) =
-    ( HsJSONPB.object
-        [ "ChangeAbandonedEvent" .= f1,
-          "ChangeCommitForcePushedEvent" .= f2,
-          "ChangeCommitPushedEvent" .= f3,
-          "ChangeCreatedEvent" .= f4,
-          "ChangeMergedEvent" .= f5
-        ]
-    )
-  toEncodingPB (ChangesHistos f1 f2 f3 f4 f5) =
-    ( HsJSONPB.pairs
-        [ "ChangeAbandonedEvent" .= f1,
-          "ChangeCommitForcePushedEvent" .= f2,
-          "ChangeCommitPushedEvent" .= f3,
-          "ChangeCreatedEvent" .= f4,
-          "ChangeMergedEvent" .= f5
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB ChangesHistos where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "ChangesHistos"
-        ( \obj ->
-            (Hs.pure ChangesHistos) <*> obj .: "ChangeAbandonedEvent"
-              <*> obj .: "ChangeCommitForcePushedEvent"
-              <*> obj .: "ChangeCommitPushedEvent"
-              <*> obj .: "ChangeCreatedEvent"
-              <*> obj .: "ChangeMergedEvent"
-        )
-    )
-
-instance HsJSONPB.ToJSON ChangesHistos where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON ChangesHistos where
-  parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangesHistos where
-  declareNamedSchema _ =
-    do
-      let declare_ChangeAbandonedEvent = HsJSONPB.declareSchemaRef
-      changesHistosChangeAbandonedEvent <-
-        declare_ChangeAbandonedEvent
-          Proxy.Proxy
-      let declare_ChangeCommitForcePushedEvent =
-            HsJSONPB.declareSchemaRef
-      changesHistosChangeCommitForcePushedEvent <-
-        declare_ChangeCommitForcePushedEvent
-          Proxy.Proxy
-      let declare_ChangeCommitPushedEvent = HsJSONPB.declareSchemaRef
-      changesHistosChangeCommitPushedEvent <-
-        declare_ChangeCommitPushedEvent
-          Proxy.Proxy
-      let declare_ChangeCreatedEvent = HsJSONPB.declareSchemaRef
-      changesHistosChangeCreatedEvent <-
-        declare_ChangeCreatedEvent
-          Proxy.Proxy
-      let declare_ChangeMergedEvent = HsJSONPB.declareSchemaRef
-      changesHistosChangeMergedEvent <-
-        declare_ChangeMergedEvent
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangesHistos
-              <*> HsJSONPB.asProxy declare_ChangeAbandonedEvent
-              <*> HsJSONPB.asProxy declare_ChangeCommitForcePushedEvent
-              <*> HsJSONPB.asProxy declare_ChangeCommitPushedEvent
-              <*> HsJSONPB.asProxy declare_ChangeCreatedEvent
-              <*> HsJSONPB.asProxy declare_ChangeMergedEvent
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesHistos",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "ChangeAbandonedEvent",
-                            changesHistosChangeAbandonedEvent
-                          ),
-                          ( "ChangeCommitForcePushedEvent",
-                            changesHistosChangeCommitForcePushedEvent
-                          ),
-                          ( "ChangeCommitPushedEvent",
-                            changesHistosChangeCommitPushedEvent
-                          ),
-                          ( "ChangeCreatedEvent",
-                            changesHistosChangeCreatedEvent
-                          ),
-                          ( "ChangeMergedEvent",
-                            changesHistosChangeMergedEvent
-                          )
-                        ]
-                  }
-            }
-        )
-
-data ChangesHistos_Event = ChangesHistos_Event
-  { changesHistos_EventDocCount ::
-      Hs.Word32,
-    changesHistos_EventKey :: Hs.Word64,
-    changesHistos_EventKeyAsString :: Hs.Text
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named ChangesHistos_Event where
-  nameOf _ = (Hs.fromString "ChangesHistos_Event")
-
-instance HsProtobuf.HasDefault ChangesHistos_Event
-
-instance HsProtobuf.Message ChangesHistos_Event where
-  encodeMessage
-    _
-    ChangesHistos_Event
-      { changesHistos_EventDocCount =
-          changesHistos_EventDocCount,
-        changesHistos_EventKey = changesHistos_EventKey,
-        changesHistos_EventKeyAsString = changesHistos_EventKeyAsString
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changesHistos_EventDocCount
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                changesHistos_EventKey
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                changesHistos_EventKeyAsString
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangesHistos_Event)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 3)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "doc_count")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.UInt64)
-          (HsProtobuf.Single "key")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "key_as_string")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB ChangesHistos_Event where
-  toJSONPB (ChangesHistos_Event f1 f2 f3) =
-    ( HsJSONPB.object
-        ["doc_count" .= f1, "key" .= f2, "key_as_string" .= f3]
-    )
-  toEncodingPB (ChangesHistos_Event f1 f2 f3) =
-    ( HsJSONPB.pairs
-        ["doc_count" .= f1, "key" .= f2, "key_as_string" .= f3]
-    )
-
-instance HsJSONPB.FromJSONPB ChangesHistos_Event where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "ChangesHistos_Event"
-        ( \obj ->
-            (Hs.pure ChangesHistos_Event) <*> obj .: "doc_count"
-              <*> obj .: "key"
-              <*> obj .: "key_as_string"
-        )
-    )
-
-instance HsJSONPB.ToJSON ChangesHistos_Event where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON ChangesHistos_Event where
-  parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangesHistos_Event where
-  declareNamedSchema _ =
-    do
-      let declare_doc_count = HsJSONPB.declareSchemaRef
-      changesHistos_EventDocCount <- declare_doc_count Proxy.Proxy
-      let declare_key = HsJSONPB.declareSchemaRef
-      changesHistos_EventKey <- declare_key Proxy.Proxy
-      let declare_key_as_string = HsJSONPB.declareSchemaRef
-      changesHistos_EventKeyAsString <- declare_key_as_string Proxy.Proxy
-      let _ =
-            Hs.pure ChangesHistos_Event
-              <*> HsJSONPB.asProxy declare_doc_count
-              <*> HsJSONPB.asProxy declare_key
-              <*> HsJSONPB.asProxy declare_key_as_string
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesHistos_Event",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("doc_count", changesHistos_EventDocCount),
-                          ("key", changesHistos_EventKey),
-                          ( "key_as_string",
-                            changesHistos_EventKeyAsString
-                          )
-                        ]
-                  }
-            }
-        )
-
-data ChangesLifecycle = ChangesLifecycle
-  { changesLifecycleChangeCommitForcePushedEvent ::
-      Hs.Maybe Monocle.Search.ChangesLifecycle_Event,
-    changesLifecycleChangeCommitPushedEvent ::
-      Hs.Maybe Monocle.Search.ChangesLifecycle_Event,
-    changesLifecycleChangeCreatedEvent ::
-      Hs.Maybe Monocle.Search.ChangesLifecycle_Event,
-    changesLifecycleAbandoned :: Hs.Word32,
-    changesLifecycleCommits :: Hs.Float,
-    changesLifecycleDuration :: Hs.Float,
-    changesLifecycleDurationVariability :: Hs.Float,
-    changesLifecycleHistos ::
-      Hs.Maybe Monocle.Search.ChangesHistos,
-    changesLifecycleMerged :: Hs.Word32,
-    changesLifecycleOpened :: Hs.Word32,
-    changesLifecycleRatios ::
-      Hs.Maybe Monocle.Search.ChangesLifecycle_Ratios,
-    changesLifecycleSelfMerged :: Hs.Word32,
-    changesLifecycleTests :: Hs.Float
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named ChangesLifecycle where
-  nameOf _ = (Hs.fromString "ChangesLifecycle")
-
-instance HsProtobuf.HasDefault ChangesLifecycle
-
-instance HsProtobuf.Message ChangesLifecycle where
-  encodeMessage
-    _
-    ChangesLifecycle
-      { changesLifecycleChangeCommitForcePushedEvent =
-          changesLifecycleChangeCommitForcePushedEvent,
-        changesLifecycleChangeCommitPushedEvent =
-          changesLifecycleChangeCommitPushedEvent,
-        changesLifecycleChangeCreatedEvent =
-          changesLifecycleChangeCreatedEvent,
-        changesLifecycleAbandoned = changesLifecycleAbandoned,
-        changesLifecycleCommits = changesLifecycleCommits,
-        changesLifecycleDuration = changesLifecycleDuration,
-        changesLifecycleDurationVariability =
-          changesLifecycleDurationVariability,
-        changesLifecycleHistos = changesLifecycleHistos,
-        changesLifecycleMerged = changesLifecycleMerged,
-        changesLifecycleOpened = changesLifecycleOpened,
-        changesLifecycleRatios = changesLifecycleRatios,
-        changesLifecycleSelfMerged = changesLifecycleSelfMerged,
-        changesLifecycleTests = changesLifecycleTests
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesLifecycle_Event)
-                    @(HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event)
-                    changesLifecycleChangeCommitForcePushedEvent
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesLifecycle_Event)
-                    @(HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event)
-                    changesLifecycleChangeCommitPushedEvent
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesLifecycle_Event)
-                    @(HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event)
-                    changesLifecycleChangeCreatedEvent
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changesLifecycleAbandoned
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 5)
-                changesLifecycleCommits
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 6)
-                changesLifecycleDuration
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 7)
-                changesLifecycleDurationVariability
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 8)
-                ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesHistos)
-                    @(HsProtobuf.Nested Monocle.Search.ChangesHistos)
-                    changesLifecycleHistos
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 9)
-                changesLifecycleMerged
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                changesLifecycleOpened
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 11)
-                ( Hs.coerce @(Hs.Maybe Monocle.Search.ChangesLifecycle_Ratios)
-                    @(HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Ratios)
-                    changesLifecycleRatios
-                )
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                changesLifecycleSelfMerged
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 13)
-                changesLifecycleTests
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangesLifecycle)
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event))
-              @(_ (Hs.Maybe Monocle.Search.ChangesLifecycle_Event))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 1)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event))
-              @(_ (Hs.Maybe Monocle.Search.ChangesLifecycle_Event))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 2)
-              )
-          )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Event))
-              @(_ (Hs.Maybe Monocle.Search.ChangesLifecycle_Event))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 5)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 6)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 7)
-          )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.ChangesHistos))
-              @(_ (Hs.Maybe Monocle.Search.ChangesHistos))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 8)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 9)
-          )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 10)
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Search.ChangesLifecycle_Ratios))
-              @(_ (Hs.Maybe Monocle.Search.ChangesLifecycle_Ratios))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 11)
-              )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 11)
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
@@ -3578,69 +4551,85 @@ instance HsProtobuf.Message ChangesLifecycle where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 13)
           )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 14)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 15)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 16)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 30)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 31)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 32)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 33)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 34)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 35)
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Event")))
-          (HsProtobuf.Single "ChangeCommitForcePushedEvent")
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "created_histo")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Event")))
-          (HsProtobuf.Single "ChangeCommitPushedEvent")
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "updated_histo")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Event")))
-          (HsProtobuf.Single "ChangeCreatedEvent")
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "merged_histo")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "abandoned")
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "abandoned_histo")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 5)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "commits")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 6)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "duration")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 7)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "duration_variability")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 8)
           ( HsProtobuf.Prim
-              (HsProtobuf.Named (HsProtobuf.Single "ChangesHistos"))
+              (HsProtobuf.Named (HsProtobuf.Single "ReviewCount"))
           )
-          (HsProtobuf.Single "histos")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 9)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "merged")
+          (HsProtobuf.Single "created")
           []
           ""
       ),
@@ -3653,463 +4642,282 @@ instance HsProtobuf.Message ChangesLifecycle where
       ),
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 11)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Ratios")))
-          (HsProtobuf.Single "ratios")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
           (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "self_merged")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 13)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "tests")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB ChangesLifecycle where
-  toJSONPB
-    (ChangesLifecycle f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13) =
-      ( HsJSONPB.object
-          [ "ChangeCommitForcePushedEvent" .= f1,
-            "ChangeCommitPushedEvent" .= f2,
-            "ChangeCreatedEvent" .= f3,
-            "abandoned" .= f4,
-            "commits" .= f5,
-            "duration" .= f6,
-            "duration_variability" .= f7,
-            "histos" .= f8,
-            "merged" .= f9,
-            "opened" .= f10,
-            "ratios" .= f11,
-            "self_merged" .= f12,
-            "tests" .= f13
-          ]
-      )
-  toEncodingPB
-    (ChangesLifecycle f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13) =
-      ( HsJSONPB.pairs
-          [ "ChangeCommitForcePushedEvent" .= f1,
-            "ChangeCommitPushedEvent" .= f2,
-            "ChangeCreatedEvent" .= f3,
-            "abandoned" .= f4,
-            "commits" .= f5,
-            "duration" .= f6,
-            "duration_variability" .= f7,
-            "histos" .= f8,
-            "merged" .= f9,
-            "opened" .= f10,
-            "ratios" .= f11,
-            "self_merged" .= f12,
-            "tests" .= f13
-          ]
-      )
-
-instance HsJSONPB.FromJSONPB ChangesLifecycle where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "ChangesLifecycle"
-        ( \obj ->
-            (Hs.pure ChangesLifecycle)
-              <*> obj .: "ChangeCommitForcePushedEvent"
-              <*> obj .: "ChangeCommitPushedEvent"
-              <*> obj .: "ChangeCreatedEvent"
-              <*> obj .: "abandoned"
-              <*> obj .: "commits"
-              <*> obj .: "duration"
-              <*> obj .: "duration_variability"
-              <*> obj .: "histos"
-              <*> obj .: "merged"
-              <*> obj .: "opened"
-              <*> obj .: "ratios"
-              <*> obj .: "self_merged"
-              <*> obj .: "tests"
-        )
-    )
-
-instance HsJSONPB.ToJSON ChangesLifecycle where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON ChangesLifecycle where
-  parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangesLifecycle where
-  declareNamedSchema _ =
-    do
-      let declare_ChangeCommitForcePushedEvent =
-            HsJSONPB.declareSchemaRef
-      changesLifecycleChangeCommitForcePushedEvent <-
-        declare_ChangeCommitForcePushedEvent
-          Proxy.Proxy
-      let declare_ChangeCommitPushedEvent = HsJSONPB.declareSchemaRef
-      changesLifecycleChangeCommitPushedEvent <-
-        declare_ChangeCommitPushedEvent
-          Proxy.Proxy
-      let declare_ChangeCreatedEvent = HsJSONPB.declareSchemaRef
-      changesLifecycleChangeCreatedEvent <-
-        declare_ChangeCreatedEvent
-          Proxy.Proxy
-      let declare_abandoned = HsJSONPB.declareSchemaRef
-      changesLifecycleAbandoned <- declare_abandoned Proxy.Proxy
-      let declare_commits = HsJSONPB.declareSchemaRef
-      changesLifecycleCommits <- declare_commits Proxy.Proxy
-      let declare_duration = HsJSONPB.declareSchemaRef
-      changesLifecycleDuration <- declare_duration Proxy.Proxy
-      let declare_duration_variability = HsJSONPB.declareSchemaRef
-      changesLifecycleDurationVariability <-
-        declare_duration_variability
-          Proxy.Proxy
-      let declare_histos = HsJSONPB.declareSchemaRef
-      changesLifecycleHistos <- declare_histos Proxy.Proxy
-      let declare_merged = HsJSONPB.declareSchemaRef
-      changesLifecycleMerged <- declare_merged Proxy.Proxy
-      let declare_opened = HsJSONPB.declareSchemaRef
-      changesLifecycleOpened <- declare_opened Proxy.Proxy
-      let declare_ratios = HsJSONPB.declareSchemaRef
-      changesLifecycleRatios <- declare_ratios Proxy.Proxy
-      let declare_self_merged = HsJSONPB.declareSchemaRef
-      changesLifecycleSelfMerged <- declare_self_merged Proxy.Proxy
-      let declare_tests = HsJSONPB.declareSchemaRef
-      changesLifecycleTests <- declare_tests Proxy.Proxy
-      let _ =
-            Hs.pure ChangesLifecycle
-              <*> HsJSONPB.asProxy declare_ChangeCommitForcePushedEvent
-              <*> HsJSONPB.asProxy declare_ChangeCommitPushedEvent
-              <*> HsJSONPB.asProxy declare_ChangeCreatedEvent
-              <*> HsJSONPB.asProxy declare_abandoned
-              <*> HsJSONPB.asProxy declare_commits
-              <*> HsJSONPB.asProxy declare_duration
-              <*> HsJSONPB.asProxy declare_duration_variability
-              <*> HsJSONPB.asProxy declare_histos
-              <*> HsJSONPB.asProxy declare_merged
-              <*> HsJSONPB.asProxy declare_opened
-              <*> HsJSONPB.asProxy declare_ratios
-              <*> HsJSONPB.asProxy declare_self_merged
-              <*> HsJSONPB.asProxy declare_tests
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesLifecycle",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "ChangeCommitForcePushedEvent",
-                            changesLifecycleChangeCommitForcePushedEvent
-                          ),
-                          ( "ChangeCommitPushedEvent",
-                            changesLifecycleChangeCommitPushedEvent
-                          ),
-                          ( "ChangeCreatedEvent",
-                            changesLifecycleChangeCreatedEvent
-                          ),
-                          ("abandoned", changesLifecycleAbandoned),
-                          ("commits", changesLifecycleCommits),
-                          ("duration", changesLifecycleDuration),
-                          ( "duration_variability",
-                            changesLifecycleDurationVariability
-                          ),
-                          ("histos", changesLifecycleHistos),
-                          ("merged", changesLifecycleMerged),
-                          ("opened", changesLifecycleOpened),
-                          ("ratios", changesLifecycleRatios),
-                          ("self_merged", changesLifecycleSelfMerged),
-                          ("tests", changesLifecycleTests)
-                        ]
-                  }
-            }
-        )
-
-data ChangesLifecycle_Event = ChangesLifecycle_Event
-  { changesLifecycle_EventAuthorsCount ::
-      Hs.Word32,
-    changesLifecycle_EventEventsCount :: Hs.Word32
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named ChangesLifecycle_Event where
-  nameOf _ = (Hs.fromString "ChangesLifecycle_Event")
-
-instance HsProtobuf.HasDefault ChangesLifecycle_Event
-
-instance HsProtobuf.Message ChangesLifecycle_Event where
-  encodeMessage
-    _
-    ChangesLifecycle_Event
-      { changesLifecycle_EventAuthorsCount =
-          changesLifecycle_EventAuthorsCount,
-        changesLifecycle_EventEventsCount =
-          changesLifecycle_EventEventsCount
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changesLifecycle_EventAuthorsCount
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                changesLifecycle_EventEventsCount
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangesLifecycle_Event)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "authors_count")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "events_count")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB ChangesLifecycle_Event where
-  toJSONPB (ChangesLifecycle_Event f1 f2) =
-    (HsJSONPB.object ["authors_count" .= f1, "events_count" .= f2])
-  toEncodingPB (ChangesLifecycle_Event f1 f2) =
-    (HsJSONPB.pairs ["authors_count" .= f1, "events_count" .= f2])
-
-instance HsJSONPB.FromJSONPB ChangesLifecycle_Event where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "ChangesLifecycle_Event"
-        ( \obj ->
-            (Hs.pure ChangesLifecycle_Event) <*> obj .: "authors_count"
-              <*> obj .: "events_count"
-        )
-    )
-
-instance HsJSONPB.ToJSON ChangesLifecycle_Event where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON ChangesLifecycle_Event where
-  parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangesLifecycle_Event where
-  declareNamedSchema _ =
-    do
-      let declare_authors_count = HsJSONPB.declareSchemaRef
-      changesLifecycle_EventAuthorsCount <-
-        declare_authors_count
-          Proxy.Proxy
-      let declare_events_count = HsJSONPB.declareSchemaRef
-      changesLifecycle_EventEventsCount <-
-        declare_events_count
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangesLifecycle_Event
-              <*> HsJSONPB.asProxy declare_authors_count
-              <*> HsJSONPB.asProxy declare_events_count
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesLifecycle_Event",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "authors_count",
-                            changesLifecycle_EventAuthorsCount
-                          ),
-                          ( "events_count",
-                            changesLifecycle_EventEventsCount
-                          )
-                        ]
-                  }
-            }
-        )
-
-data ChangesLifecycle_Ratios = ChangesLifecycle_Ratios
-  { changesLifecycle_RatiosAbandoned ::
-      Hs.Float,
-    changesLifecycle_RatiosIterations ::
-      Hs.Float,
-    changesLifecycle_RatiosMerged :: Hs.Float,
-    changesLifecycle_RatiosSelfMerged ::
-      Hs.Float
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named ChangesLifecycle_Ratios where
-  nameOf _ = (Hs.fromString "ChangesLifecycle_Ratios")
-
-instance HsProtobuf.HasDefault ChangesLifecycle_Ratios
-
-instance HsProtobuf.Message ChangesLifecycle_Ratios where
-  encodeMessage
-    _
-    ChangesLifecycle_Ratios
-      { changesLifecycle_RatiosAbandoned =
-          changesLifecycle_RatiosAbandoned,
-        changesLifecycle_RatiosIterations =
-          changesLifecycle_RatiosIterations,
-        changesLifecycle_RatiosMerged = changesLifecycle_RatiosMerged,
-        changesLifecycle_RatiosSelfMerged =
-          changesLifecycle_RatiosSelfMerged
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                changesLifecycle_RatiosAbandoned
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                changesLifecycle_RatiosIterations
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                changesLifecycle_RatiosMerged
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                changesLifecycle_RatiosSelfMerged
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure ChangesLifecycle_Ratios)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 3)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 4)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.Float)
           (HsProtobuf.Single "abandoned")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.FieldNumber 12)
           (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "iterations")
+          (HsProtobuf.Single "abandoned_ratio")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.FieldNumber 13)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "merged")
           []
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 4)
+          (HsProtobuf.FieldNumber 14)
           (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "merged_ratio")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 15)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "self_merged")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 16)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "self_merged_ratio")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 30)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "ttm_mean")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 31)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "ttm_variability")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 32)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "updates_of_changes")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 33)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "changes_with_tests")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 34)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "iterations_per_change")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 35)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "commits_per_change")
           []
           ""
       )
     ]
 
-instance HsJSONPB.ToJSONPB ChangesLifecycle_Ratios where
-  toJSONPB (ChangesLifecycle_Ratios f1 f2 f3 f4) =
-    ( HsJSONPB.object
-        [ "abandoned" .= f1,
-          "iterations" .= f2,
-          "merged" .= f3,
-          "self_merged" .= f4
-        ]
-    )
-  toEncodingPB (ChangesLifecycle_Ratios f1 f2 f3 f4) =
-    ( HsJSONPB.pairs
-        [ "abandoned" .= f1,
-          "iterations" .= f2,
-          "merged" .= f3,
-          "self_merged" .= f4
-        ]
-    )
+instance HsJSONPB.ToJSONPB LifecycleStats where
+  toJSONPB
+    ( LifecycleStats
+        f1
+        f2
+        f3
+        f4
+        f5
+        f10
+        f11
+        f12
+        f13
+        f14
+        f15
+        f16
+        f30
+        f31
+        f32
+        f33
+        f34
+        f35
+      ) =
+      ( HsJSONPB.object
+          [ "created_histo" .= f1,
+            "updated_histo" .= f2,
+            "merged_histo" .= f3,
+            "abandoned_histo" .= f4,
+            "created" .= f5,
+            "opened" .= f10,
+            "abandoned" .= f11,
+            "abandoned_ratio" .= f12,
+            "merged" .= f13,
+            "merged_ratio" .= f14,
+            "self_merged" .= f15,
+            "self_merged_ratio" .= f16,
+            "ttm_mean" .= f30,
+            "ttm_variability" .= f31,
+            "updates_of_changes" .= f32,
+            "changes_with_tests" .= f33,
+            "iterations_per_change" .= f34,
+            "commits_per_change" .= f35
+          ]
+      )
+  toEncodingPB
+    ( LifecycleStats
+        f1
+        f2
+        f3
+        f4
+        f5
+        f10
+        f11
+        f12
+        f13
+        f14
+        f15
+        f16
+        f30
+        f31
+        f32
+        f33
+        f34
+        f35
+      ) =
+      ( HsJSONPB.pairs
+          [ "created_histo" .= f1,
+            "updated_histo" .= f2,
+            "merged_histo" .= f3,
+            "abandoned_histo" .= f4,
+            "created" .= f5,
+            "opened" .= f10,
+            "abandoned" .= f11,
+            "abandoned_ratio" .= f12,
+            "merged" .= f13,
+            "merged_ratio" .= f14,
+            "self_merged" .= f15,
+            "self_merged_ratio" .= f16,
+            "ttm_mean" .= f30,
+            "ttm_variability" .= f31,
+            "updates_of_changes" .= f32,
+            "changes_with_tests" .= f33,
+            "iterations_per_change" .= f34,
+            "commits_per_change" .= f35
+          ]
+      )
 
-instance HsJSONPB.FromJSONPB ChangesLifecycle_Ratios where
+instance HsJSONPB.FromJSONPB LifecycleStats where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "ChangesLifecycle_Ratios"
+        "LifecycleStats"
         ( \obj ->
-            (Hs.pure ChangesLifecycle_Ratios) <*> obj .: "abandoned"
-              <*> obj .: "iterations"
+            (Hs.pure LifecycleStats) <*> obj .: "created_histo"
+              <*> obj .: "updated_histo"
+              <*> obj .: "merged_histo"
+              <*> obj .: "abandoned_histo"
+              <*> obj .: "created"
+              <*> obj .: "opened"
+              <*> obj .: "abandoned"
+              <*> obj .: "abandoned_ratio"
               <*> obj .: "merged"
+              <*> obj .: "merged_ratio"
               <*> obj .: "self_merged"
+              <*> obj .: "self_merged_ratio"
+              <*> obj .: "ttm_mean"
+              <*> obj .: "ttm_variability"
+              <*> obj .: "updates_of_changes"
+              <*> obj .: "changes_with_tests"
+              <*> obj .: "iterations_per_change"
+              <*> obj .: "commits_per_change"
         )
     )
 
-instance HsJSONPB.ToJSON ChangesLifecycle_Ratios where
+instance HsJSONPB.ToJSON LifecycleStats where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON ChangesLifecycle_Ratios where
+instance HsJSONPB.FromJSON LifecycleStats where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangesLifecycle_Ratios where
+instance HsJSONPB.ToSchema LifecycleStats where
   declareNamedSchema _ =
     do
+      let declare_created_histo = HsJSONPB.declareSchemaRef
+      lifecycleStatsCreatedHisto <- declare_created_histo Proxy.Proxy
+      let declare_updated_histo = HsJSONPB.declareSchemaRef
+      lifecycleStatsUpdatedHisto <- declare_updated_histo Proxy.Proxy
+      let declare_merged_histo = HsJSONPB.declareSchemaRef
+      lifecycleStatsMergedHisto <- declare_merged_histo Proxy.Proxy
+      let declare_abandoned_histo = HsJSONPB.declareSchemaRef
+      lifecycleStatsAbandonedHisto <- declare_abandoned_histo Proxy.Proxy
+      let declare_created = HsJSONPB.declareSchemaRef
+      lifecycleStatsCreated <- declare_created Proxy.Proxy
+      let declare_opened = HsJSONPB.declareSchemaRef
+      lifecycleStatsOpened <- declare_opened Proxy.Proxy
       let declare_abandoned = HsJSONPB.declareSchemaRef
-      changesLifecycle_RatiosAbandoned <- declare_abandoned Proxy.Proxy
-      let declare_iterations = HsJSONPB.declareSchemaRef
-      changesLifecycle_RatiosIterations <- declare_iterations Proxy.Proxy
+      lifecycleStatsAbandoned <- declare_abandoned Proxy.Proxy
+      let declare_abandoned_ratio = HsJSONPB.declareSchemaRef
+      lifecycleStatsAbandonedRatio <- declare_abandoned_ratio Proxy.Proxy
       let declare_merged = HsJSONPB.declareSchemaRef
-      changesLifecycle_RatiosMerged <- declare_merged Proxy.Proxy
+      lifecycleStatsMerged <- declare_merged Proxy.Proxy
+      let declare_merged_ratio = HsJSONPB.declareSchemaRef
+      lifecycleStatsMergedRatio <- declare_merged_ratio Proxy.Proxy
       let declare_self_merged = HsJSONPB.declareSchemaRef
-      changesLifecycle_RatiosSelfMerged <-
-        declare_self_merged
+      lifecycleStatsSelfMerged <- declare_self_merged Proxy.Proxy
+      let declare_self_merged_ratio = HsJSONPB.declareSchemaRef
+      lifecycleStatsSelfMergedRatio <-
+        declare_self_merged_ratio
+          Proxy.Proxy
+      let declare_ttm_mean = HsJSONPB.declareSchemaRef
+      lifecycleStatsTtmMean <- declare_ttm_mean Proxy.Proxy
+      let declare_ttm_variability = HsJSONPB.declareSchemaRef
+      lifecycleStatsTtmVariability <- declare_ttm_variability Proxy.Proxy
+      let declare_updates_of_changes = HsJSONPB.declareSchemaRef
+      lifecycleStatsUpdatesOfChanges <-
+        declare_updates_of_changes
+          Proxy.Proxy
+      let declare_changes_with_tests = HsJSONPB.declareSchemaRef
+      lifecycleStatsChangesWithTests <-
+        declare_changes_with_tests
+          Proxy.Proxy
+      let declare_iterations_per_change = HsJSONPB.declareSchemaRef
+      lifecycleStatsIterationsPerChange <-
+        declare_iterations_per_change
+          Proxy.Proxy
+      let declare_commits_per_change = HsJSONPB.declareSchemaRef
+      lifecycleStatsCommitsPerChange <-
+        declare_commits_per_change
           Proxy.Proxy
       let _ =
-            Hs.pure ChangesLifecycle_Ratios
+            Hs.pure LifecycleStats
+              <*> HsJSONPB.asProxy declare_created_histo
+              <*> HsJSONPB.asProxy declare_updated_histo
+              <*> HsJSONPB.asProxy declare_merged_histo
+              <*> HsJSONPB.asProxy declare_abandoned_histo
+              <*> HsJSONPB.asProxy declare_created
+              <*> HsJSONPB.asProxy declare_opened
               <*> HsJSONPB.asProxy declare_abandoned
-              <*> HsJSONPB.asProxy declare_iterations
+              <*> HsJSONPB.asProxy declare_abandoned_ratio
               <*> HsJSONPB.asProxy declare_merged
+              <*> HsJSONPB.asProxy declare_merged_ratio
               <*> HsJSONPB.asProxy declare_self_merged
+              <*> HsJSONPB.asProxy declare_self_merged_ratio
+              <*> HsJSONPB.asProxy declare_ttm_mean
+              <*> HsJSONPB.asProxy declare_ttm_variability
+              <*> HsJSONPB.asProxy declare_updates_of_changes
+              <*> HsJSONPB.asProxy declare_changes_with_tests
+              <*> HsJSONPB.asProxy declare_iterations_per_change
+              <*> HsJSONPB.asProxy declare_commits_per_change
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesLifecycle_Ratios",
+                Hs.Just "LifecycleStats",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -4119,15 +4927,43 @@ instance HsJSONPB.ToSchema ChangesLifecycle_Ratios where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ( "abandoned",
-                            changesLifecycle_RatiosAbandoned
+                        [ ( "created_histo",
+                            lifecycleStatsCreatedHisto
                           ),
-                          ( "iterations",
-                            changesLifecycle_RatiosIterations
+                          ( "updated_histo",
+                            lifecycleStatsUpdatedHisto
                           ),
-                          ("merged", changesLifecycle_RatiosMerged),
-                          ( "self_merged",
-                            changesLifecycle_RatiosSelfMerged
+                          ("merged_histo", lifecycleStatsMergedHisto),
+                          ( "abandoned_histo",
+                            lifecycleStatsAbandonedHisto
+                          ),
+                          ("created", lifecycleStatsCreated),
+                          ("opened", lifecycleStatsOpened),
+                          ("abandoned", lifecycleStatsAbandoned),
+                          ( "abandoned_ratio",
+                            lifecycleStatsAbandonedRatio
+                          ),
+                          ("merged", lifecycleStatsMerged),
+                          ("merged_ratio", lifecycleStatsMergedRatio),
+                          ("self_merged", lifecycleStatsSelfMerged),
+                          ( "self_merged_ratio",
+                            lifecycleStatsSelfMergedRatio
+                          ),
+                          ("ttm_mean", lifecycleStatsTtmMean),
+                          ( "ttm_variability",
+                            lifecycleStatsTtmVariability
+                          ),
+                          ( "updates_of_changes",
+                            lifecycleStatsUpdatesOfChanges
+                          ),
+                          ( "changes_with_tests",
+                            lifecycleStatsChangesWithTests
+                          ),
+                          ( "iterations_per_change",
+                            lifecycleStatsIterationsPerChange
+                          ),
+                          ( "commits_per_change",
+                            lifecycleStatsCommitsPerChange
                           )
                         ]
                   }
@@ -4525,9 +5361,10 @@ instance HsJSONPB.ToSchema TermCount where
             }
         )
 
-newtype TermsCount = TermsCount
+data TermsCount = TermsCount
   { termsCountTermcount ::
-      Hs.Vector Monocle.Search.TermCount
+      Hs.Vector Monocle.Search.TermCount,
+    termsCountTotalHits :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -4539,7 +5376,10 @@ instance HsProtobuf.HasDefault TermsCount
 instance HsProtobuf.Message TermsCount where
   encodeMessage
     _
-    TermsCount {termsCountTermcount = termsCountTermcount} =
+    TermsCount
+      { termsCountTermcount = termsCountTermcount,
+        termsCountTotalHits = termsCountTotalHits
+      } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
@@ -4547,6 +5387,10 @@ instance HsProtobuf.Message TermsCount where
                     @(HsProtobuf.NestedVec Monocle.Search.TermCount)
                     termsCountTermcount
                 )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                termsCountTotalHits
             )
           ]
       )
@@ -4559,6 +5403,10 @@ instance HsProtobuf.Message TermsCount where
                   (HsProtobuf.FieldNumber 1)
               )
           )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -4568,18 +5416,30 @@ instance HsProtobuf.Message TermsCount where
           (HsProtobuf.Single "termcount")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "total_hits")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB TermsCount where
-  toJSONPB (TermsCount f1) = (HsJSONPB.object ["termcount" .= f1])
-  toEncodingPB (TermsCount f1) = (HsJSONPB.pairs ["termcount" .= f1])
+  toJSONPB (TermsCount f1 f2) =
+    (HsJSONPB.object ["termcount" .= f1, "total_hits" .= f2])
+  toEncodingPB (TermsCount f1 f2) =
+    (HsJSONPB.pairs ["termcount" .= f1, "total_hits" .= f2])
 
 instance HsJSONPB.FromJSONPB TermsCount where
   parseJSONPB =
     ( HsJSONPB.withObject
         "TermsCount"
-        (\obj -> (Hs.pure TermsCount) <*> obj .: "termcount")
+        ( \obj ->
+            (Hs.pure TermsCount) <*> obj .: "termcount"
+              <*> obj .: "total_hits"
+        )
     )
 
 instance HsJSONPB.ToJSON TermsCount where
@@ -4594,7 +5454,11 @@ instance HsJSONPB.ToSchema TermsCount where
     do
       let declare_termcount = HsJSONPB.declareSchemaRef
       termsCountTermcount <- declare_termcount Proxy.Proxy
-      let _ = Hs.pure TermsCount <*> HsJSONPB.asProxy declare_termcount
+      let declare_total_hits = HsJSONPB.declareSchemaRef
+      termsCountTotalHits <- declare_total_hits Proxy.Proxy
+      let _ =
+            Hs.pure TermsCount <*> HsJSONPB.asProxy declare_termcount
+              <*> HsJSONPB.asProxy declare_total_hits
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -4608,7 +5472,9 @@ instance HsJSONPB.ToSchema TermsCount where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("termcount", termsCountTermcount)]
+                        [ ("termcount", termsCountTermcount),
+                          ("total_hits", termsCountTotalHits)
+                        ]
                   }
             }
         )
@@ -4833,6 +5699,165 @@ instance HsJSONPB.ToSchema AuthorsPeers where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [("author_peer", authorsPeersAuthorPeer)]
+                  }
+            }
+        )
+
+data ChangesTops = ChangesTops
+  { changesTopsAuthors ::
+      Hs.Maybe Monocle.Search.TermsCount,
+    changesTopsRepos :: Hs.Maybe Monocle.Search.TermsCount,
+    changesTopsApprovals :: Hs.Maybe Monocle.Search.TermsCount
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangesTops where
+  nameOf _ = (Hs.fromString "ChangesTops")
+
+instance HsProtobuf.HasDefault ChangesTops
+
+instance HsProtobuf.Message ChangesTops where
+  encodeMessage
+    _
+    ChangesTops
+      { changesTopsAuthors = changesTopsAuthors,
+        changesTopsRepos = changesTopsRepos,
+        changesTopsApprovals = changesTopsApprovals
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                    @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                    changesTopsAuthors
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                    @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                    changesTopsRepos
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Maybe Monocle.Search.TermsCount)
+                    @(HsProtobuf.Nested Monocle.Search.TermsCount)
+                    changesTopsApprovals
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ChangesTops)
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+              @(_ (Hs.Maybe Monocle.Search.TermsCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+              @(_ (Hs.Maybe Monocle.Search.TermsCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.TermsCount))
+              @(_ (Hs.Maybe Monocle.Search.TermsCount))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+          )
+          (HsProtobuf.Single "authors")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+          )
+          (HsProtobuf.Single "repos")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+          )
+          (HsProtobuf.Single "approvals")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ChangesTops where
+  toJSONPB (ChangesTops f1 f2 f3) =
+    ( HsJSONPB.object
+        ["authors" .= f1, "repos" .= f2, "approvals" .= f3]
+    )
+  toEncodingPB (ChangesTops f1 f2 f3) =
+    ( HsJSONPB.pairs
+        ["authors" .= f1, "repos" .= f2, "approvals" .= f3]
+    )
+
+instance HsJSONPB.FromJSONPB ChangesTops where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ChangesTops"
+        ( \obj ->
+            (Hs.pure ChangesTops) <*> obj .: "authors" <*> obj .: "repos"
+              <*> obj .: "approvals"
+        )
+    )
+
+instance HsJSONPB.ToJSON ChangesTops where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ChangesTops where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema ChangesTops where
+  declareNamedSchema _ =
+    do
+      let declare_authors = HsJSONPB.declareSchemaRef
+      changesTopsAuthors <- declare_authors Proxy.Proxy
+      let declare_repos = HsJSONPB.declareSchemaRef
+      changesTopsRepos <- declare_repos Proxy.Proxy
+      let declare_approvals = HsJSONPB.declareSchemaRef
+      changesTopsApprovals <- declare_approvals Proxy.Proxy
+      let _ =
+            Hs.pure ChangesTops <*> HsJSONPB.asProxy declare_authors
+              <*> HsJSONPB.asProxy declare_repos
+              <*> HsJSONPB.asProxy declare_approvals
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "ChangesTops",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("authors", changesTopsAuthors),
+                          ("repos", changesTopsRepos),
+                          ("approvals", changesTopsApprovals)
+                        ]
                   }
             }
         )

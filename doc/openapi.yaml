@@ -558,6 +558,29 @@ components:
             properties:
                 full_path:
                     type: string
+        monocle_search_ActivityStats:
+            properties:
+                change_authors:
+                    type: integer
+                    format: uint32
+                comment_authors:
+                    type: integer
+                    format: uint32
+                review_authors:
+                    type: integer
+                    format: uint32
+                comments_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                reviews_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                changes_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
         monocle_search_AuthorPeer:
             properties:
                 author:
@@ -645,12 +668,48 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_task_data_TaskData'
+        monocle_search_ChangeAndEvents:
+            properties:
+                change:
+                    $ref: '#/components/schemas/monocle_search_Change'
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_ChangeEvent'
+        monocle_search_ChangeEvent:
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                change_id:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                on_created_at:
+                    type: string
+                    format: RFC3339
+                author:
+                    type: string
+                on_author:
+                    type: string
+                branch:
+                    type: string
         monocle_search_Changes:
             properties:
                 changes:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_Change'
+        monocle_search_ChangesTops:
+            properties:
+                authors:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                repos:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                approvals:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
         monocle_search_Commit:
             properties:
                 sha:
@@ -702,6 +761,74 @@ components:
                     format: uint32
                 path:
                     type: string
+        monocle_search_Histo:
+            properties:
+                date:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
+        monocle_search_LifecycleStats:
+            properties:
+                created_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                updated_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                merged_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                abandoned_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                created:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                opened:
+                    type: integer
+                    format: uint32
+                abandoned:
+                    type: integer
+                    format: uint32
+                abandoned_ratio:
+                    type: number
+                    format: float
+                merged:
+                    type: integer
+                    format: uint32
+                merged_ratio:
+                    type: number
+                    format: float
+                self_merged:
+                    type: integer
+                    format: uint32
+                self_merged_ratio:
+                    type: number
+                    format: float
+                ttm_mean:
+                    type: number
+                    description: Mean time to merge
+                    format: float
+                ttm_variability:
+                    type: number
+                    description: Median deviation of ttm
+                    format: float
+                updates_of_changes:
+                    type: integer
+                    format: uint32
+                changes_with_tests:
+                    type: number
+                    format: float
+                iterations_per_change:
+                    type: number
+                    format: float
+                commits_per_change:
+                    type: number
+                    format: float
         monocle_search_Order:
             properties:
                 field:
@@ -732,6 +859,8 @@ components:
                 limit:
                     type: integer
                     format: uint32
+                change_id:
+                    type: string
         monocle_search_QueryResponse:
             properties:
                 error:
@@ -744,6 +873,18 @@ components:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
                 authors_peers:
                     $ref: '#/components/schemas/monocle_search_AuthorsPeers'
+                new_authors:
+                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                review_stats:
+                    $ref: '#/components/schemas/monocle_search_ReviewStats'
+                lifecycle_stats:
+                    $ref: '#/components/schemas/monocle_search_LifecycleStats'
+                activity_stats:
+                    $ref: '#/components/schemas/monocle_search_ActivityStats'
+                change_events:
+                    $ref: '#/components/schemas/monocle_search_ChangeAndEvents'
+                changes_tops:
+                    $ref: '#/components/schemas/monocle_search_ChangesTops'
         monocle_search_RepoSummary:
             properties:
                 fullname:
@@ -766,6 +907,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_RepoSummary'
+        monocle_search_ReviewCount:
+            properties:
+                authors_count:
+                    type: integer
+                    format: uint32
+                events_count:
+                    type: integer
+                    format: uint32
+        monocle_search_ReviewStats:
+            properties:
+                comment_count:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                review_count:
+                    $ref: '#/components/schemas/monocle_search_ReviewCount'
+                comment_delay:
+                    type: integer
+                    format: uint32
+                review_delay:
+                    type: integer
+                    format: uint32
+                comment_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
+                review_histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
         monocle_search_SearchSuggestionsRequest:
             properties:
                 index:
@@ -805,6 +974,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_TermCount'
+                total_hits:
+                    type: integer
+                    format: uint32
         monocle_task_data_AddRequest:
             properties:
                 index:

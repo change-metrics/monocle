@@ -16,47 +16,37 @@
 
 import React from 'react'
 
-import { connect } from 'react-redux'
-
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
 import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-import { withRouter } from 'react-router-dom'
 
 import { Line } from 'react-chartjs-2'
 
-import {
-  BaseQueryComponent,
-  LoadingBox,
-  ErrorBox,
-  mapDispatchToProps,
-  addMap,
-  hasSmallWidth
-} from './common'
+import {hasSmallWidth} from './common'
 
 class AuthorsHisto extends React.Component {
-  prepareDataSet(histos) {
+  prepareDataSet(data) {
     const createdColor = '135,255,149'
     const reviewedColor = '153,102,102'
     const commentedColor = '169,135,255'
     const eventNameMapping = {
-      ChangeCreatedEvent: {
+      change_histo: {
         label: 'Changes authors',
         pointBorderColor: 'rgba(' + createdColor + ',1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(' + createdColor + ',0.4)',
         borderColor: 'rgba(' + createdColor + ',1)'
       },
-      ChangeReviewedEvent: {
+      review_histo: {
         label: 'Reviews authors',
         pointBorderColor: 'rgba(' + reviewedColor + ',1)',
         pointBackgroundColor: '#fff',
         backgroundColor: 'rgba(' + reviewedColor + ',0.4)',
         borderColor: 'rgba(' + reviewedColor + ',1)'
       },
-      ChangeCommentedEvent: {
+      comment_histo: {
         label: 'Comments authors',
         pointBorderColor: 'rgba(' + commentedColor + ',1)',
         pointBackgroundColor: '#fff',
@@ -66,14 +56,14 @@ class AuthorsHisto extends React.Component {
     }
 
     const metaData = Object.entries(eventNameMapping)
-    const data = {
-      labels: histos.ChangeCreatedEvent.buckets.map((x) => x.key_as_string),
+    const ret = {
+      labels: data.change_histo.map((x) => x.date),
       datasets: []
     }
     metaData.forEach((desc) => {
-      data.datasets.push({
+      ret.datasets.push({
         label: desc[1].label,
-        data: histos[desc[0]].buckets.map((x) => x.doc_count),
+        data: data[desc[0]].map((x) => x.count),
         lineTension: 0.5,
         pointBorderColor: desc[1].pointBorderColor,
         pointBackgroundColor: desc[1].pointBackgroundColor,
@@ -81,7 +71,7 @@ class AuthorsHisto extends React.Component {
         borderColor: desc[1].borderColor
       })
     })
-    return data
+    return ret
   }
 
   render() {
@@ -96,15 +86,15 @@ class AuthorsHisto extends React.Component {
                   <ListGroup>
                     <ListGroup.Item>
                       Change authors:{' '}
-                      {this.props.data.ChangeCreatedEvent.total_authors}
+                      {this.props.data.change_authors}
                     </ListGroup.Item>
                     <ListGroup.Item>
                       Review authors:{' '}
-                      {this.props.data.ChangeReviewedEvent.total_authors}
+                      {this.props.data.review_authors}
                     </ListGroup.Item>
                     <ListGroup.Item>
                       Comment authors:{' '}
-                      {this.props.data.ChangeCommentedEvent.total_authors}
+                      {this.props.data.comment_authors}
                     </ListGroup.Item>
                   </ListGroup>
                 </Col>
@@ -134,50 +124,28 @@ class AuthorsHisto extends React.Component {
 
 AuthorsHisto.propTypes = {
   data: PropTypes.shape({
-    ChangeCommentedEvent: PropTypes.object,
-    ChangeCreatedEvent: PropTypes.object,
-    ChangeReviewedEvent: PropTypes.object
+    change_histo: PropTypes.any,
+    comment_histo: PropTypes.any,
+    review_histo: PropTypes.any,
+    change_authors: PropTypes.any,
+    comment_authors: PropTypes.any,
+    review_authors: PropTypes.any,
   })
 }
 
-class AuthorsHistoStats extends BaseQueryComponent {
-  constructor(props) {
-    super(props)
-    this.state.name = 'authors_histo_stats'
-    this.state.graph_type = 'authors_histo_stats'
-  }
-
-  render() {
-    if (!this.props.authors_histo_stats_loading) {
-      if (this.props.authors_histo_stats_error) {
-        return <ErrorBox error={this.props.authors_histo_stats_error} />
-      }
-      const data = this.props.authors_histo_stats_result
-      return (
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <Card.Title>Active authors</Card.Title>
-              </Card.Header>
-              <Card.Body>
-                <AuthorsHisto data={data} />
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      )
-    } else {
-      return <LoadingBox />
-    }
-  }
-}
-
-const mapStateToProps = (state) =>
-  addMap({}, state.QueryReducer, 'authors_histo_stats')
-
-const CAuthorsHistoStats = withRouter(
-  connect(mapStateToProps, mapDispatchToProps)(AuthorsHistoStats)
+const CAuthorsHistoStats = (prop) => (
+  <Row>
+    <Col>
+      <Card>
+        <Card.Header>
+          <Card.Title>Active authors</Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <AuthorsHisto data={prop} />
+        </Card.Body>
+      </Card>
+    </Col>
+  </Row>
 )
 
 export { CAuthorsHistoStats }

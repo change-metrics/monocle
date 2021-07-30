@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 .PHONY: up-stage
 
-MESSAGES = monocle/search.proto monocle/task_data.proto
-MESSAGES_V2 = monocle/config.proto monocle/user_group.proto
+MESSAGES = monocle/task_data.proto
+MESSAGES_V2 = monocle/search.proto monocle/config.proto monocle/user_group.proto
 BACKEND_ONLY = monocle/change.proto monocle/project.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
@@ -11,14 +11,15 @@ codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Api/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../monocle/webapi.py ../srcgen/WebApi.res)
-	ormolu -i ./haskell/src/Monocle/Api/Client/Api.hs ./haskell/src/Monocle/Servant/HTTP.hs
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../monocle/webapi.py ../srcgen/WebApi.res)
+	ormolu -i ./haskell/src/Monocle/Client/Api.hs ./haskell/src/Monocle/Servant/HTTP.hs
 	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
 
 codegen-haskell:
 	sh -c 'for pb in $(MESSAGES) $(MESSAGES_V2) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	find haskell/codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:

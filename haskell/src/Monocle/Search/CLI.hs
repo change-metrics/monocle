@@ -5,11 +5,11 @@ import qualified Data.Aeson as Aeson
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Backend.Test (emptyConfig)
+import Monocle.Env (runQueryM, runTenantM')
 import Monocle.Prelude
 import qualified Monocle.Search.Parser as P
+import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.Search.Syntax (defaultQueryFlavor)
-import Monocle.Servant.Env (runTenantM')
 
 parseQuery :: UTCTime -> Text -> Text
 parseQuery now code = either show decodeUtf8 query

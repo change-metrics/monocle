@@ -4,6 +4,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 
+-- | The Monocle service configuration
+--
+-- TODO: Rename to Monocle.Config . To do that we need to:
+--
+-- - Finish the migration from filter form,
+-- - Remove the /api/1/get_project endpoint (defined from config.proto)
+-- - Move existing config.proto to another protobuf package
+-- - Then we can use the Monocle.Config namespace
 module Monocle.Api.Config where
 
 import qualified Data.ByteString as BS
@@ -32,6 +40,7 @@ Dhall.TH.makeHaskellTypes
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
+          provider "GithubApplication",
           provider "Bugzilla",
           Dhall.TH.MultipleConstructors
             "Provider"
@@ -53,6 +62,10 @@ deriving instance Show Gerrit
 deriving instance Eq Github
 
 deriving instance Show Github
+
+deriving instance Eq GithubApplication
+
+deriving instance Show GithubApplication
 
 deriving instance Eq Gitlab
 
