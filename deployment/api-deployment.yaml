@@ -32,14 +32,9 @@ spec:
               value: elastic:9200
           image: quay.io/change-metrics/monocle_api:latest
           livenessProbe:
-            exec:
-              command:
-                - python -c "
-                  import requests,sys
-                  r=requests.post('http://localhost:9898/api/2/health', json={})
-                  print(r.text)
-                  sys.exit(1) if r.status_code!=200 else sys.exit(0)
-                  "
+            httpGet:
+              path: /api/2/health
+              port: 9898
             failureThreshold: 6
             timeoutSeconds: 60
           name: api

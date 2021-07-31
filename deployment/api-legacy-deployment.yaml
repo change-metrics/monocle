@@ -1,7 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     app.kubernetes.io/name: api-legacy
     app.kubernetes.io/component: api
@@ -43,14 +42,9 @@ spec:
               value: http://localhost:8080
           image: quay.io/change-metrics/monocle_backend:latest
           livenessProbe:
-            exec:
-              command:
-                - python -c "
-                  import requests,sys
-                  r=requests.get('http://localhost:9876/api/0/health')
-                  print(r.text)
-                  sys.exit(1) if r.status_code!=200 else sys.exit(0)
-                  "
+            httpGet:
+              path: /api/0/health
+              port: 9876
             failureThreshold: 6
             timeoutSeconds: 60
           name: api-legacy
