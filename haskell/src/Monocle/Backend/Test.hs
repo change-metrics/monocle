@@ -79,7 +79,7 @@ fakeChange =
 
 emptyConfig :: Text -> Config.Index
 emptyConfig name =
-  let crawlers_api_key = ""
+  let crawlers_api_key = Nothing
       crawlers = []
       projects = Nothing
       idents = Nothing
@@ -181,30 +181,30 @@ testProjectCrawlerMetadata = withTenant doTest
       I.setLastUpdated crawlerName fakeDateB entity
       I.setLastUpdated crawlerName fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("nova", fakeDateB) lastUpdated'
+      assertEqual' "check got oldest updated entity" ("centos/nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
       I.setLastUpdated crawlerName fakeDateC entity
       lastUpdated'' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated''
+      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
       I.initCrawlerMetadata worker
       lastUpdated''' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("neutron", fakeDateA) lastUpdated'''
+      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated'''
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
-        entity = Project "nova"
-        entityAlt = Project "neutron"
+        entity = Project "centos/nova"
+        entityAlt = Project "centos/neutron"
         crawlerName = "test-crawler"
         worker =
           let name = crawlerName
               update_since = toText fakeDefaultDateStr
               provider =
                 let gitlab_url = Just "https://localhost"
-                    gitlab_token = "key"
+                    gitlab_token = Nothing
                     gitlab_repositories = Just ["nova", "neutron"]
-                    gitlab_organizations = Nothing
+                    gitlab_organization = "centos"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
         fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
@@ -250,9 +250,9 @@ testOrganizationCrawlerMetadata = withTenant doTest
               update_since = toText fakeDefaultDateStr
               provider =
                 let gitlab_url = Just "https://localhost"
-                    gitlab_token = "key"
+                    gitlab_token = Nothing
                     gitlab_repositories = Nothing
-                    gitlab_organizations = Just ["gitlab-org"]
+                    gitlab_organization = "gitlab-org"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 

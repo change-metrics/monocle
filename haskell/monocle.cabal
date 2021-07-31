@@ -110,6 +110,7 @@ library
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , http-types                 ^>=0.12
+                     , lens
                      , megaparsec                 < 10
                      , morpheus-graphql-client    ^>= 0.17
                      , mtl
@@ -226,7 +227,8 @@ test-suite monocle-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       aeson-pretty
+  build-depends:       base                       < 5
+                     , aeson-pretty
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13

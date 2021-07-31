@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Upgrade
 
 - [config] The crawler configuration is now using a new schema, use the `monocle migrate-config` command to upgrade the configuration.
+- [config] The secret are now passed through environment variables, use the new `.secrets` file with docker-compose.
 
 ## [0.9.0] - 2021-05-24
 

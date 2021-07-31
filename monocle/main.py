@@ -218,6 +218,15 @@ def main() -> None:
         cfg = open(args.config).read()
         raw = yaml.safe_load(cfg)
         new = config.loadUpgrade(cfg)
+        envs = "\n".join(config.get_envs(args.config) + [""])
+        if os.path.exists(".secrets"):
+            secrets = open(".secrets").read()
+        else:
+            secrets = ""
+        if envs != secrets:
+            with open(".secrets", "a") as f:
+                f.write(envs)
+            print(".secrets: updated")
         if raw != new:
             with open(args.config, "w") as f:
                 f.write(yaml.dump(new))

@@ -33,6 +33,8 @@ let buildContext =
             in  default
         }
 
+let envFile = Some (Compose.StringOrList.String ".secrets")
+
 let mkEnvDefault =
       \(env-var-name : Text) ->
       \(default-value : Text) ->
@@ -113,6 +115,7 @@ let createApiLegacyService =
                       "uwsgi --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app"
                   )
               , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , env_file = envFile
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "CONFIG"
@@ -161,6 +164,7 @@ let createApiService =
               , command = Some
                   (Compose.StringOrList.String "monocle-api --port 9898")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , env_file = envFile
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "CONFIG"
@@ -191,6 +195,7 @@ let createCrawlerService =
               { depends_on = Some [ "api" ]
               , command = Some (Compose.StringOrList.String "macroscope")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
+              , env_file = envFile
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "CONFIG"
@@ -222,6 +227,7 @@ let createCrawlerLegacyService =
                   ( Compose.StringOrList.String
                       "monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml"
                   )
+              , env_file = envFile
               , volumes = Some
                 [ "./etc:/etc/monocle:z", "./dump:/var/lib/crawler:Z" ]
               }
