@@ -45,9 +45,6 @@ spec:
             httpGet:
               path: /api/0/health
               port: 9876
-            exec:
-              command:
-                - python -c " import requests,sys r=requests.get('http://localhost:9876/api/0/health') print(r.text) sys.exit(1) if r.status_code!=200 else sys.exit(0) "
             failureThreshold: 6
             timeoutSeconds: 60
           name: api-legacy
