@@ -32,11 +32,11 @@ module App = {
     <>
       {[
         ("title", <h2> {"Monocle designer mode"->str} </h2>),
-        /* ("group", <GroupView.GroupTable group={Fixture.group_get} />),
+        ("group", <GroupView.GroupTable group={Fixture.group_get} />),
         (
           "change",
           <div className="container"> <Change.DataItem store change={Fixture.change} /> </div>,
-        ), */
+        ),
         (
           "table",
           <Change.Table
