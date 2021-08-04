@@ -31,6 +31,36 @@ module CPie = {
   ) => React.element = "default"
 }
 
+module ChangeList = {
+  @react.component
+  let make = (~store: Store.t, ~changes: array<Web.SearchTypes.change>) => {
+    let paginationThreshold = 20
+    let (page, setPage) = React.useState(_ => 1)
+    let (perPage, setPerPage) = React.useState(_ => paginationThreshold)
+    let onSetPage = (_, pageNumber: int, _, _, _) => {
+      setPage(_ => pageNumber)
+    }
+    let onPerPageSelect = (_, perPage: int, _, _, _) => {
+      setPerPage(_ => perPage)
+    }
+    let paginate =
+      Belt.Array.length(changes) > paginationThreshold
+        ? <Pagination
+            itemCount={changes->Belt.Array.length} perPage page onSetPage onPerPageSelect
+          />
+        : React.null
+    <>
+      {paginate}
+      <Patternfly.DataList isCompact={true}>
+        {changes
+        ->Belt.Array.slice(~offset=(page - 1) * perPage, ~len=perPage)
+        ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
+        ->React.array}
+      </Patternfly.DataList>
+    </>
+  }
+}
+
 module ChangesTopPies = {
   @react.component
   let make = (~store) => {
@@ -151,15 +181,7 @@ let make = (~store: Store.t) => {
               <MCenteredContent> <Search.Filter store /> </MCenteredContent>
             </MStackItem>
             <MStackItem>
-              <MCenteredContent>
-                <Patternfly.DataList isCompact={true}>
-                  {changes
-                  ->Belt.Array.map(change =>
-                    <Change.DataItem store key={change.url} change={change} />
-                  )
-                  ->React.array}
-                </Patternfly.DataList>
-              </MCenteredContent>
+              <MCenteredContent> <ChangeList store changes /> </MCenteredContent>
             </MStackItem>
           </MStack>
         }

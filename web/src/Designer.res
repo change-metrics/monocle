@@ -48,6 +48,12 @@ module App = {
           />,
         ),
         (
+          "changeList",
+          <NChangeView.ChangeList
+            store changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray}
+          />,
+        ),
+        (
           "search help",
           <>
             <div className="container"> <HelpSearch.Tooltip /> {"test"->str} </div>

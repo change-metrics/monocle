@@ -264,48 +264,12 @@ module RowItem = {
     </tr>
 }
 
-module Pagination = {
-  @react.component @module("@patternfly/react-core")
-  external make: (
-    ~children: 'children=?,
-    ~className: string=?,
-    ~defaultToFullPage: bool=?,
-    ~dropDirection: @string
-    [
-      | @as("up") #Up
-      | @as("down") #Down
-    ]=?,
-    ~firstPage: int=?,
-    ~isCompact: bool=?,
-    ~isDisabled: bool=?,
-    ~isStatic: bool=?,
-    ~isSticky: bool=?,
-    ~itemCount: int,
-    ~itemsEnd: int=?,
-    ~itemsStart: int=?,
-    ~offset: int=?,
-    ~onPerPageSelect: (ReactEvent.Mouse.t, int, int, int, int) => unit=?,
-    ~onSetPage: (ReactEvent.Mouse.t, int, int, int, int) => unit=?,
-    ~onNextClick: (ReactEvent.Mouse.t, int) => unit=?,
-    ~onPreviousClick: (ReactEvent.Mouse.t, int) => unit=?,
-    ~onPageInput: (ReactEvent.Mouse.t, int) => unit=?,
-    ~page: int=?,
-    ~perPage: int=?,
-    ~variant: @string
-    [
-      | @as("top") #Top
-      | @as("bottom") #Bottom
-      | @as("PaginationVariant") #PaginationVariant
-    ]=?,
-    ~widgetId: string=?,
-  ) => React.element = "Pagination"
-}
-
 module Table = {
   @react.component
   let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
+    let paginationThreshold = 20
     let (page, setPage) = React.useState(_ => 1)
-    let (perPage, setPerPage) = React.useState(_ => 25)
+    let (perPage, setPerPage) = React.useState(_ => paginationThreshold)
     let (changeArray, _) = React.useState(_ => Belt.List.toArray(changes))
     let onSetPage = (_, pageNumber: int, _, _, _) => {
       setPage(_ => pageNumber)
@@ -313,10 +277,14 @@ module Table = {
     let onPerPageSelect = (_, perPage: int, _, _, _) => {
       setPerPage(_ => perPage)
     }
+    let paginate =
+      Belt.Array.length(changeArray) > paginationThreshold
+        ? <Pagination
+            itemCount={changeArray->Belt.Array.length} perPage page onSetPage onPerPageSelect
+          />
+        : React.null
     <>
-      <Pagination
-        itemCount={changeArray->Belt.Array.length} perPage page onSetPage onPerPageSelect
-      />
+      {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
         <RowItem.Head />
         <tbody role="rowgroup">
