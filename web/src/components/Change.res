@@ -267,29 +267,13 @@ module RowItem = {
 module Table = {
   @react.component
   let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
-    let paginationThreshold = 20
-    let (page, setPage) = React.useState(_ => 1)
-    let (perPage, setPerPage) = React.useState(_ => paginationThreshold)
-    let (changeArray, _) = React.useState(_ => Belt.List.toArray(changes))
-    let onSetPage = (_, pageNumber: int, _, _, _) => {
-      setPage(_ => pageNumber)
-    }
-    let onPerPageSelect = (_, perPage: int, _, _, _) => {
-      setPerPage(_ => perPage)
-    }
-    let paginate =
-      Belt.Array.length(changeArray) > paginationThreshold
-        ? <Pagination
-            itemCount={changeArray->Belt.Array.length} perPage page onSetPage onPerPageSelect
-          />
-        : React.null
+    let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
     <>
       {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
         <RowItem.Head />
         <tbody role="rowgroup">
-          {changeArray
-          ->Belt.Array.slice(~offset=(page - 1) * perPage, ~len=perPage)
+          {changesArray
           ->Belt.Array.mapWithIndex((idx, change) =>
             <RowItem key={string_of_int(idx)} store change />
           )
