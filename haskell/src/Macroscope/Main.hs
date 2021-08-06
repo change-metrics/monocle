@@ -21,7 +21,8 @@ getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
 getCrawlers xs = do
   Config.Index {..} <- xs
   crawler <- crawlers
-  pure (name, crawlers_api_key, crawler, fromMaybe [] idents)
+  let key = fromMaybe (error "unknown crawler key") crawlers_api_key
+  pure (name, key, crawler, fromMaybe [] idents)
 
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
@@ -59,13 +60,13 @@ runMacroscope verbose confPath interval client = do
       docStreams <- case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
           -- TODO: the client may be created once for each api key
+          token <- Config.getSecret "GITLAB_TOKEN" gitlab_token
           glClient <-
             newGitLabGraphClientWithKey
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
-              gitlab_token
+              token
           pure $
-            -- When organizations are configured, we need to index its project first
-            [glOrgCrawler glClient | isJust gitlab_organizations]
+            [glOrgCrawler glClient | isNothing gitlab_repositories]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
         _ -> pure []

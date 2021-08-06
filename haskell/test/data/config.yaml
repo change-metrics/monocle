@@ -1,7 +1,7 @@
 ---
 workspaces:
   - name: zuul
-    crawlers_api_key: "secret"
+    crawlers_api_key: "API_KEY"
     crawlers:
       - name: taskdata
         update_since: "2021-01-01"

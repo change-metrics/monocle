@@ -45,7 +45,7 @@ $ ln -sf docker-compose.yml.dev docker-compose.yml
 
 ### Using docker-compose with podman
 
-On fedora:
+On Fedora:
 
 ```ShellSession
 $ dnf install -y podman podman-docker docker-compose
@@ -152,10 +152,29 @@ server {
 #### APIv2
 
 ```ShellSession
+export $(cat .secrets)
 cd haskell
 cabal repl monocle
 λ> import Monocle.Api
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
+```
+
+#### Start legacy crawlers process
+
+```ShellSession
+./contrib/start-crawlers-legacy.sh
+```
+
+#### Start crawlers process
+
+```ShellSession
+export $(cat .secrets)
+cd haskell
+cabal repl monocle
+λ> import Macroscope.Worker
+λ> import Macroscope.Main
+λ> import Monocle.Client (withClient)
+λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
 ### Running the services manually using nix
@@ -193,6 +212,22 @@ nix-shell --command monocle-api2-start
 ```ShellSession
 nix-shell --command monocle-web-start
 firefox http://localhost:13000
+```
+
+#### Start legacy crawlers process
+
+```ShellSession
+nix-shell --command monocle-crawlers-legacy-start
+```
+
+#### Start crawlers process
+
+```ShellSession
+nix-shell --command monocle-api2-start
+λ> import Macroscope.Worker
+λ> import Macroscope.Main
+λ> import Monocle.Client (withClient)
+λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
 #### Launch with emacs lisp

@@ -511,13 +511,13 @@ initCrawlerEntities entities worker = traverse_ run entities
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
 
-getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
+getOrganizationEntityFromCrawler :: Config.Crawler -> Maybe Entity
 getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
 
 initCrawlerMetadata :: Config.Crawler -> TenantM ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
     ( getProjectEntityFromCrawler crawler
-        <> getOrganizationEntityFromCrawler crawler
+        <> maybe [] (: []) (getOrganizationEntityFromCrawler crawler)
     )
     crawler
