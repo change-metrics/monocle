@@ -266,14 +266,20 @@ module RowItem = {
 
 module Table = {
   @react.component
-  let make = (~store: Store.t, ~changes: list<SearchTypes.change>) =>
-    <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
-      <RowItem.Head />
-      <tbody role="rowgroup">
-        {changes
-        ->Belt.List.mapWithIndex((idx, change) => <RowItem key={string_of_int(idx)} store change />)
-        ->Belt.List.toArray
-        ->React.array}
-      </tbody>
-    </table>
+  let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
+    let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
+    <>
+      {paginate}
+      <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
+        <RowItem.Head />
+        <tbody role="rowgroup">
+          {changesArray
+          ->Belt.Array.mapWithIndex((idx, change) =>
+            <RowItem key={string_of_int(idx)} store change />
+          )
+          ->React.array}
+        </tbody>
+      </table>
+    </>
+  }
 }

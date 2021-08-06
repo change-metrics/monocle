@@ -115,6 +115,26 @@ module URLSearchParams = {
   let current = () => windowLocationSearch->make
 }
 
+// Table helpers
+let usePagination = (rows: array<'a>): (array<'a>, React.element) => {
+  let paginationThreshold = 20
+  let (page, setPage) = React.useState(_ => 1)
+  let (perPage, setPerPage) = React.useState(_ => paginationThreshold)
+  let onSetPage = (_, pageNumber: int, _, _, _) => {
+    setPage(_ => pageNumber)
+  }
+  let onPerPageSelect = (_, perPage: int, _, _, _) => {
+    setPerPage(_ => perPage)
+  }
+  let itemCount = Belt.Array.length(rows)
+  itemCount > paginationThreshold
+    ? (
+        rows->Belt.Array.slice(~offset=(page - 1) * perPage, ~len=perPage),
+        <Pagination itemCount perPage page onSetPage onPerPageSelect />,
+      )
+    : (rows, React.null)
+}
+
 // Network helpers
 
 // useAutoGet perform the 'get' effect when the calling component is mounted.

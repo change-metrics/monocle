@@ -9,7 +9,6 @@ import '@patternfly/react-core/dist/styles/base.css'
 import '@patternfly/react-styles/css/components/Table/table.css'
 import './index.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
-import './App.css'
 `)
 
 open Prelude
@@ -38,7 +37,22 @@ module App = {
           "change",
           <div className="container"> <Change.DataItem store change={Fixture.change} /> </div>,
         ),
-        ("table", <Change.Table store changes={list{Fixture.change, Fixture.change}} />),
+        (
+          "table",
+          <Change.Table
+            store
+            changes={Belt.List.make(200, Fixture.change)->Belt.List.mapWithIndex((idx, change) => {
+              ...change,
+              title: "test " ++ string_of_int(idx),
+            })}
+          />,
+        ),
+        (
+          "changeList",
+          <NChangeView.ChangeList
+            store changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray}
+          />,
+        ),
         (
           "search help",
           <>
@@ -53,12 +67,7 @@ module App = {
   }
 }
 
-module BrowserRouter = {
-  @react.component @module("react-router-dom")
-  external make: (~children: 'children) => React.element = "BrowserRouter"
-}
-
 switch ReactDOM.querySelector("#root") {
-| Some(root) => ReactDOM.render(<BrowserRouter> <App /> </BrowserRouter>, root)
+| Some(root) => ReactDOM.render(<App />, root)
 | None => Js.log("Can't find #root element!")
 }

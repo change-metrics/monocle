@@ -31,6 +31,21 @@ module CPie = {
   ) => React.element = "default"
 }
 
+module ChangeList = {
+  @react.component
+  let make = (~store: Store.t, ~changes: array<Web.SearchTypes.change>) => {
+    let (changesArray, paginate) = usePagination(changes)
+    <>
+      {paginate}
+      <Patternfly.DataList isCompact={true}>
+        {changesArray
+        ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
+        ->React.array}
+      </Patternfly.DataList>
+    </>
+  }
+}
+
 module ChangesTopPies = {
   @react.component
   let make = (~store) => {
@@ -151,15 +166,7 @@ let make = (~store: Store.t) => {
               <MCenteredContent> <Search.Filter store /> </MCenteredContent>
             </MStackItem>
             <MStackItem>
-              <MCenteredContent>
-                <Patternfly.DataList isCompact={true}>
-                  {changes
-                  ->Belt.Array.map(change =>
-                    <Change.DataItem store key={change.url} change={change} />
-                  )
-                  ->React.array}
-                </Patternfly.DataList>
-              </MCenteredContent>
+              <MCenteredContent> <ChangeList store changes /> </MCenteredContent>
             </MStackItem>
           </MStack>
         }
