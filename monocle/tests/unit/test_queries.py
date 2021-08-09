@@ -18,16 +18,12 @@ import logging
 import unittest
 from datetime import datetime
 
-from deepdiff import DeepDiff
-
 from .common import index_dataset
-from .common import DiffException
 from .common import get_db_cnx
 
 from monocle.db.db import UnknownQueryException
 from monocle.db import queries
 from monocle.utils import set_params
-from monocle.config import ProjectDefinition
 from monocle.task_data import OrphanTaskDataForEL, TaskData
 
 
@@ -144,16 +140,6 @@ class TestQueries(unittest.TestCase):
                 failing.append((query, ret))
         self.assertEqual(failing, [])
 
-    def test_scan(self):
-        """
-        Test internal query: _scan
-        """
-        params = set_params({})
-        ret = queries._scan(self.eldb.es, self.eldb.index, "unit/repo1", params)
-        ids = [obj["id"] for obj in ret]
-        expected = ["c1_e1", "c1_e2", "c1_e3", "c1_e4", "c1_e5"]
-        self.assertCountEqual(ids, expected)
-
     def test_first_created_event(self):
         """
         Test internal query: _first_created_event
@@ -164,204 +150,12 @@ class TestQueries(unittest.TestCase):
         )
         self.assertEqual(ret, "2020-01-01T00:00:00Z")
 
-    def test_events_top(self):
-        """
-        Test internal query: _events_top
-        """
-        params = set_params({})
-        ret = queries._events_top(
-            self.eldb.es, self.eldb.index, "unit/repo1", "type", params
-        )
-        expected = {
-            "count_avg": 1.25,
-            "count_median": 1.0,
-            "items": [
-                {"doc_count": 2, "key": "ChangeReviewedEvent"},
-                {"doc_count": 1, "key": "ChangeCommentedEvent"},
-                {"doc_count": 1, "key": "ChangeCreatedEvent"},
-                {"doc_count": 1, "key": "ChangeMergedEvent"},
-            ],
-            "total": 4,
-            "total_hits": 5,
-        }
-        ddiff = DeepDiff(ret, expected)
-        if ddiff:
-            raise DiffException(ddiff)
-
-    def test_count_events(self):
-        """
-        Test query: count_events
-        """
-        params = set_params({})
-        ret = self.eldb.run_named_query("count_events", "unit/repo1", params)
-        self.assertEqual(ret, 5)
-
-    def test_count_authors(self):
-        """
-        Test query: count_authors
-        """
-        params = set_params({})
-        ret = self.eldb.run_named_query("count_authors", "unit/repo1", params)
-        self.assertEqual(ret, 2)
-
-        params = set_params({"type": "ChangeCreatedEvent"})
-        ret = self.eldb.run_named_query("count_authors", "unit/repo1", params)
-        self.assertEqual(ret, 1)
-
-    def test_events_top_authors(self):
-        """
-        Test query: events_top_authors
-        """
-        params = set_params({})
-        ret = self.eldb.run_named_query("events_top_authors", "unit/repo1", params)
-        expected = {
-            "count_avg": 2.5,
-            "count_median": 2.5,
-            "items": [{"doc_count": 3, "key": "jane"}, {"doc_count": 2, "key": "john"}],
-            "total": 2,
-            "total_hits": 5,
-        }
-        ddiff = DeepDiff(ret, expected)
-        if ddiff:
-            raise DiffException(ddiff)
-
-    def test_project_param(self):
-        """
-        Test project param: last_changes
-        """
-        params = set_params({"project": "mytestproject"})
-        params["_project_defs"] = [
-            ProjectDefinition(
-                name="mytestproject",
-                repository_regex=None,
-                branch_regex=None,
-                file_regex=r".*backend.py",
-            )
-        ]
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-    def test_files_param(self):
-        """
-        Test files param: last_changes
-        """
-        params = set_params({"files": r".*backend.py"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-    def test_state_param(self):
-        """
-        Test files param: changes_and_events
-        """
-        params = set_params({"state": "MERGED"})
-        ret = self.eldb.run_named_query("changes_and_events", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 3, ret)
-
-    def test_approvals_param(self):
-        """
-        Test approvals param: changes_and_events
-        """
-        params = set_params({"approvals": "Code-Review+2", "gte": "2020-01-01"})
-        ret = self.eldb.run_named_query("changes_and_events", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 2, ret)
-        self.assertCountEqual([item["id"] for item in ret["items"]], ["c1", "c1_e4"])
-
-        params = set_params(
-            {"approvals": "CHANGES_REQUESTED,APPROVED", "gte": "2020-01-01"}
-        )
-        ret = self.eldb.run_named_query("changes_and_events", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 4, ret)
-        self.assertCountEqual(
-            [item["id"] for item in ret["items"]], ["c2", "c2_e4", "c3", "c3_e2"]
-        )
-
-    def test_task_params(self):
-        """
-        Test task related params
-        """
-        params = set_params({"task_priority": "HIGH"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-        params = set_params({"task_priority": "HIGH,MEDIUM,LOW"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 2, ret)
-
-        params = set_params({"task_type": "BUG"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 2, ret)
-
-        params = set_params({"task_type": "BUG,CLIENT_IMPACT"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 2, ret)
-
-        params = set_params({"task_priority": "LOW", "task_type": "BUG,CLIENT_IMPACT"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-        params = set_params({"task_priority": "HIGH"})
-        ret = self.eldb.run_named_query("changes_and_events", ".*", params)
-        self.assertEqual(ret["total"], 2, ret)
-        self.assertListEqual([o["id"] for o in ret["items"]], ["c1", "c1_e2"])
-
-        params = set_params({"task_score": "> 10"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-        params = set_params({"task_score": ">= 10"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 2, ret)
-
-        params = set_params({"task_score": "< 10"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 0, ret)
-
-        params = set_params({"task_score": "== 50"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 1, ret)
-
-        params = set_params({"task_score": "== 51"})
-        ret = self.eldb.run_named_query("last_changes", ".*", params)
-        self.assertEqual(ret["total"], 0, ret)
-
-    def test_exclude_approvals_param(self):
-        """
-        Test exclude_approvals param: last_changes
-        """
-        params = set_params({"exclude_approvals": "Verified-1", "gte": "2020-01-01"})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo1", params)
-        self.assertEqual(ret["total"], 0, ret)
-
-        params = set_params(
-            {
-                "approvals": "Code-Review+2",
-                "exclude_approvals": "Verified-1",
-                "gte": "2020-01-01",
-            }
-        )
-        ret = self.eldb.run_named_query("last_changes", "unit/repo1", params)
-        self.assertEqual(ret["total"], 0, ret)
-
     def test_get_indices(self):
         """
         Test get_indices
         """
         ret = self.eldb.get_indices()
         self.assertEqual(ret, [self.index])
-
-    def test_branch_param(self):
-        """
-        Test branch param: last_changes
-        """
-        params = set_params({"state": "MERGED", "target_branch": "maintainance"})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 0, ret)
-        params = set_params({"target_branch": "master"})
-        ret = self.eldb.run_named_query("changes_and_events", "unit/repo[12]", params)
-        ret2 = self.eldb.run_named_query(
-            "changes_and_events", "unit/repo[12]", set_params({})
-        )
-        self.assertEqual(ret["total"], ret2["total"])
 
     def test_change_and_events(self):
         """
@@ -377,46 +171,3 @@ class TestQueries(unittest.TestCase):
             change["issue_tracker_links"][0],
             ["#42", "https://github.com/unit/repo1/issues/42"],
         )
-
-    def test_last_changes(self):
-        """
-        Test last_changes query
-        """
-        params = set_params({"state": "OPEN"})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 1)
-        self.assertFalse(ret["items"][0]["tests_included"])
-
-        params = set_params({"state": "MERGED"})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 3)
-        for change in ret["items"]:
-            self.assertIn("tests_included", list(change.keys()))
-
-    def test_self_merged_param(self):
-        params = set_params({"state": "MERGED", "self_merged": True})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 1)
-        self.assertEqual(ret["items"][0]["author"], ret["items"][0]["merged_by"])
-
-    def test_tests_included_param(self):
-        """
-        Test tests_included param: last_changes
-        """
-        params = set_params({"tests_included": True})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 1, ret)
-        params = set_params({})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 4, ret)
-
-    def test_has_issue_tracker_links_param(self):
-        """
-        Test has_issue_tracker_links param: last_changes
-        """
-        params = set_params({"has_issue_tracker_links": "github.com"})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 1, ret)
-        params = set_params({})
-        ret = self.eldb.run_named_query("last_changes", "unit/repo[12]", params)
-        self.assertEqual(ret["total"], 4, ret)

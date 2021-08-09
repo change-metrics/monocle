@@ -78,13 +78,6 @@ class TestWebAPI(unittest.TestCase):
         resp = self.client.get("/api/0/indices")
         self.assertListEqual(["unittest-1", "unittest-2"], json.loads(resp.data))
 
-    def test_query(self):
-        "Test we can run query via the api"
-        resp = self.client.get(
-            "/api/0/query/count_events?index=%s&repository=.*" % self.index2
-        )
-        self.assertEqual(5, json.loads(resp.data))
-
     def test_whoami(self):
         "Test whoami method"
         resp = self.client.get("/api/0/whoami")
