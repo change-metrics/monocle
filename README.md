@@ -105,42 +105,7 @@ $ docker-compose restart api-legacy
 $ docker-compose restart crawler-legacy
 ```
 
-#### Troubleshooting
-
-ElasticSearch could need some capabilities to run in container
-mode. Take a look at the logs to see if it started correctly:
-
-```ShellSession
-$ docker-compose logs elastic
-```
-
-For example, you could need to increase this system parameter:
-
-```ShellSession
-$ sudo sysctl -w vm.max_map_count=262144
-```
-
-or make the data directory writable for other:
-
-```ShellSession
-$ chmod o+w data
-```
-
-You might want to wipe a Monocle project:
-
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
-```
-
-or delete a workspace:
-
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
-```
-
-## Advanced deployment configuration
+## Advanced configuration
 
 ### Configuration of the containers
 
@@ -169,36 +134,150 @@ The following settings are available in the `.env` file:
   only exposed in the development version of the docker-compose
   (`docker-compose.yml.dev`).
 
-### GitHub application
+### Monocle configuration file
 
-Monocle can interact with a GitHub application to create and use installed
-application token to query the API.
+The Monocle configuration file defines workspaces. The file is used by the API and crawlers processes. The format of the file is YAML. You might want to use Dhall to manage it or to better
+understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle.)).
 
-Once the application is created and Monocle started with application id and
-private key. If a `github_orgs` entry's token attribute is missing Monocle will
-search accross the application installations for an installed application
-on the related GitHub organization. If any, it will generate an installation token
-for the matching installation and use it to query the GitHub API.
+#### Workpaces
 
-#### Create the application on GitHub
+- permits to define multiple crawlers - [details](#crawlers)
+- permits to define a list of projects - [details](#projects-definition)
+- permits to define identities - [details](#groups-definition)
+- uses a dedicated ElasticSearch index
 
-1. [Register new GitHub App](https://github.com/settings/apps/new)
-2. In `Repository permissions` set `Metadata` as `Read-Only`,
-   `Pull requests` as `Read-Only` and `Contents` as `Read-Only`
-3. Click `Create the GitHub App`
-4. Click `Generate a private key` and download the key
-5. Save the `App ID`
+#### Crawlers
 
-#### Setup Monocle to use the application
+Monocle provides two kinds of crawlers:
 
-1. Save the private key into `etc/app_key.rsa`
-2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
+- Change: A crawler to fetch Changes proposed to a repository. Monocle supports Gerrit (Reviews), GitHub (Pull-Requests), GitLab (Merge-Requests).
+- TaskData: A crawler to fetch task data related to a repository. Monocle supports GitHub (issues),
+  and BugZilla (Bugs).
 
-### GitHub private repositories
+The `.secrets` file is used to store credentials or API keys used by crawlers to authenticate on providers. The configuration file do not contain any sensible information then it might be convenient to store the file on a DVCS.
 
-To let Monocle crawl and index privates repositories, either you must use a
-[GitHub Application](#github-application) or you must generate a Personal Access Token
-with the "repo" scope.
+The `crawlers` value is a list of crawler. Each crawler is composed of:
+
+- `name`: an abitrary name used to identify the crawler.
+- `updated_since`: the crawler will fetch changes that has been created/updated since that date.
+- `provider`: provider settings
+
+```YAML
+workspaces:
+  - name: demo
+    crawlers:
+      - name: spinnaker
+        updated_since: "2020-01-01"
+        provider: {}
+```
+
+##### Change
+
+###### GitHub
+
+A GitHub provider settings
+
+```YAML
+  provider:
+    github_organization: spinnaker
+    # Optional settings
+    github_repositories:
+      - pipeline
+    github_url: https://github.com
+    github_token: GITHUB_TOKEN
+```
+
+`github_organization` is the only mandatory key. If `github_repositories` is not specified then
+the crawler will crawl the whole organization repositories. If specified then it will crawl only
+the listed repositories.
+
+`github_url` might be specified in case of an alternate url. Default is "github.com".
+
+`github_token` might be specified to use an alternate environment variable name to look for the
+token value. Default is "GITHUB_TOKEN"
+
+To crawl privates repositories, either you must use a [GitHub Application](#github-application)
+or you must generate a Personal Access Token with the "repo" scope.
+
+Note that this crawler is managed by the `crawler-legacy` container.
+
+###### Gerrit
+
+A Gerrit provider settings
+
+```YAML
+  provider:
+    gerrit_url: https://review.opendev.org
+    gerrit_repositories:
+      - openstack/nova
+      - openstack/neutron
+    # Optional settings
+    gerrit_login: monocle
+    gerrit_password: GERRIT_PASSWORD
+    gerrit_url_insecure: true
+    gerrit_prefix: opendev/
+```
+
+`gerrit_url` is mandatory and must be the url of the Gerrit provider.
+`gerrit_repositories` is mandatory and is the list of repositories from which the crawler will fetch Reviews from.
+
+`gerrit_login` might be specified to authenticate on the provider API.
+`gerrit_password`might be specified to use an alternate environment variable name to look for the
+password. Default is "GERRIT_PASSWORD"
+
+`gerrit_url_insecure` could be set to true to prevent HTTP certificate check.
+
+`gerrit_prefix` might be set to configure the crawler to prepend the repository name with a prefix.
+
+Note that this crawler is managed by the `crawler-legacy` container.
+
+###### GitLab
+
+A GitLab provider settings
+
+```YAML
+  provider:
+    gitlab_organization: redhat/centos-stream/ci-cd/zuul
+    # Optional settings
+    gitlab_repositories:
+      - jobs-config
+    gitlab_url: https://gitlab.com/api/graphql
+    gitlab_token: GITLAB_TOKEN
+```
+
+`gitlab_organization` is the only mandatory key. If `gitlab_repositories` is not specified then
+the crawler will crawl the whole organization repositories. If specified then it will crawl only
+the listed repositories.
+
+`gitlab_url` might be specified in case of an alternate url. Default is "https://gitlab.com/api/graphql".
+
+`gitlab_token` might be specified to use an alternate environment variable name to look for the
+token value. Default is "GITLAB_TOKEN"
+
+Note that this crawler is managed by the `crawler` container.
+
+##### TaskData
+
+Monocle provides additional crawlers to attach tasks/issues/RFEs to changes based on a
+match on `change_url`. Then, Changes can be enhanced with information about related
+tasks such as a `priority` or a `score`.
+
+However these crawlers are not fully integrated with the configuration file and the crawler
+container process. Until they are, usage might be a bit rough.
+
+###### GitHub
+
+```ShellSession
+export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
+docker-compose run --rm --no-deps crawler lentille-github --monocle-url http://api-legacy:9896 --index monocle.changes.1.my-index --crawler-name my-crawler --since "2020-01-01T00:00:00Z" --repo change-metrics/monocle
+```
+
+###### Bugzilla
+
+```ShellSession
+export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
+docker-compose run --rm --no-deps crawler lentille-bugzilla --monocle-url http://api-legacy:9896 --index monocle.changes.1.my-index --crawler-name my-crawler --since "2020-01-01T00:00:00Z" --bugzilla-product Awesome-Product
+```
 
 ### Projects definition
 
@@ -278,7 +357,7 @@ A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerr
 
 A group in Monocle permits to group authors of Changes and filter them from the web interface.
 
-Group memberships are defined through the `idents` section of the configuration.
+Group memberships are defined through the [idents](#identity-management) section of the configuration.
 
 Here is an example:
 
@@ -309,34 +388,6 @@ docker-compose restart crawler-legacy
 docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
 docker-compose restart api-legacy
 ```
-
-### Connect a tasks tracker crawler
-
-The Monocle API provides endpoints for a crawler to send task/issue/RFE
-related data into the Monocle database. Monocle is able to attach tasks
-to changes based on a match of the `change_url` field.
-
-#### Endpoints available for a crawler
-
-Check the OpenAPI definitions for tasks data endpoints: [Monocle OpenAPI][monocle-openapi].
-
-#### Task data crawler configuration
-
-```YAML
-workspaces:
-  - name: default
-    crawlers:
-      - name: crawler_name
-        updated_since: "2020-01-01"
-        provider: TaskDataProvider
-```
-
-The `updated_since` date is the initial date the crawler needs to crawl from. Without any prior commit, a `GET` call on `/api/0/task_data` returns
-the initial date.
-
-#### Task crawler library
-
-[Monocle.Client.Worker](./haskell/src/Monocle/Client/Worker.hs) provides a Haskell module to ease the development of a task crawler for Monocle.
 
 ### Full configuration file example
 
@@ -398,6 +449,31 @@ workspaces:
         update_since: '2020-03-15'
 ```
 
+### GitHub application
+
+Monocle can interact with a GitHub application to create and use installed
+application token to query the API.
+
+Once the application is created and Monocle started with application id and
+private key. If a `github_orgs` entry's token attribute is missing Monocle will
+search accross the application installations for an installed application
+on the related GitHub organization. If any, it will generate an installation token
+for the matching installation and use it to query the GitHub API.
+
+#### Create the application on GitHub
+
+1. [Register new GitHub App](https://github.com/settings/apps/new)
+2. In `Repository permissions` set `Metadata` as `Read-Only`,
+   `Pull requests` as `Read-Only` and `Contents` as `Read-Only`
+3. Click `Create the GitHub App`
+4. Click `Generate a private key` and download the key
+5. Save the `App ID`
+
+#### Setup Monocle to use the application
+
+1. Save the private key into `etc/app_key.rsa`
+2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
+
 ## Database migration
 
 ### From version 0.8.X to next stable
@@ -431,6 +507,41 @@ To check that, you are able to run simple curl command:
 
 ```Shell
 curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
+```
+
+#### Troubleshooting
+
+ElasticSearch could need some capabilities to run in container
+mode. Take a look at the logs to see if it started correctly:
+
+```ShellSession
+$ docker-compose logs elastic
+```
+
+For example, you could need to increase this system parameter:
+
+```ShellSession
+$ sudo sysctl -w vm.max_map_count=262144
+```
+
+or make the data directory writable for other:
+
+```ShellSession
+$ chmod o+w data
+```
+
+You might want to wipe a Monocle project:
+
+```
+docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
+--elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
+```
+
+or delete a workspace:
+
+```
+docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
+--elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
 ```
 
 ## Contributing
