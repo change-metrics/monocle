@@ -3,9 +3,7 @@
 This document provides some instructions to get started with Monocle development. It covers topics
 such as running tests, running services w/o docker-compose or running the codegen.
 
-As explain in the [README](README.md), Monocle is composed of several services and during
-our current refactoring some services run though the Python runtime (legacy components) and other
-are built based on Haskell.
+As explained in the [README](README.md), Monocle is composed of several services, some services run though the Python runtime (legacy components) and the new one are built using the Haskell runtime.
 
 ## Understanding the design choices
 
@@ -78,7 +76,7 @@ Then ensure NGINX service is started/reloaded on your system.
 
 #### ElasticSearch
 
-Monocle relies on ElasticSearch as backend to store Changes and Change' events.
+Monocle relies on ElasticSearch as backend to store Changes events.
 
 ```ShellSession
 ./contrib/start-elk.sh 9200
@@ -86,7 +84,7 @@ Monocle relies on ElasticSearch as backend to store Changes and Change' events.
 
 #### API
 
-To start the Monocle API then run the following commands.
+To start the Monocle API run the following commands.
 
 To reload modules when code is updated then type `:reload`.
 
@@ -138,7 +136,7 @@ cabal repl monocle
 
 This section describes how to start the Monocle services directly on your host using nix.
 
-Note that the above commands can be started in emacs buffer using:
+Note that the commands below can be started in emacs buffer using:
 
 ```ShellSession
 nix-shell --command launch-monocle-with-emacs
@@ -195,7 +193,7 @@ nix-shell --command monocle-api2-start
 
 ## Contributing a new driver
 
-We do not provide specific documentation to cover that topic yet but the source code of
+There is no specific documentation to cover that topic yet but the source code of
 the [GitLab driver](monocle/haskell/src/Lentille/GitLab/MergeRequests.hs) might be a good
 source of knowledge to hack on a new crawler.
 
@@ -206,19 +204,21 @@ related nix-shell command.
 
 ### On Python code base (legacy)
 
-Tests can be executed using (ajust the port the 19200 if you used the nix-shell command to start Elastic):
+Tests can be executed using:
 
 ```ShellSession
-ELASTIC_CONN=127.0.0.1:9200 tox
+export ELASTIC_CONN=127.0.0.1:9200
+tox
 ```
 
 ### On the Haskell code base
 
-Tests can be executed using (ajust the port the 19200 if you used the nix-shell command to start Elastic):
+Tests can be executed using:
 
 ```ShellSession
+export ELASTIC_URL=http://localhost:9200
 cd haskell
-ELASTIC_URL=http://localhost:9200 cabal test
+cabal test
 ```
 
 ## Update API (protobuf)
