@@ -1,89 +1,17 @@
 # Contributing
 
+This document provides some instructions to get started with Monocle development. It covers topics
+such as running tests, running services w/o docker-compose or running the codegen.
+
+As explain in the [README](README.md), Monocle is composed of several services and during
+our current refactoring some services run though the Python runtime (legacy components) and other
+are built based on Haskell.
+
 ## Understanding the design choices
 
-Follow the [Architectural Decision Records](doc/adr/index.md) to
-understand the choices made by the project.
-
-## Run the APIv1 test (Python)
-
-:warning: Make sure to follow first the installation instructions in the README!
-
-Tests rely on the Elasticsearch service so first you need to ensure the Elasticsearch container is running.
-You can run the "docker-compose -f docker-compose.yml.dev up -d" or you can only run the Elasticsearch container by running "docker-compose -f docker-compose.yml.dev start elastic".
-
-(Or see below to use a symlink to the development compose instead instead)
-
-If you don't have docker-compose, you can start the elasticsearch service with podman by running this command:
-
-
-```ShellSession
-$ podman run --env discovery.type=single-node --publish 9200:9200/tcp --name elastic --rm $(awk '/docker.elastic/ { print $2 }' docker-compose.yml* | head -n 1 | sed 's/"//g')
-```
-
-Then the tests can be executed using:
-
-```ShellSession
-$ tox
-```
-
-## Update the APIv2 (protobuf)
-
-The new APIs are defined using protobuf. To change them, first you need to update the
-protobuf definitions present in the [./protos/ folder](./protos). Then you need to update
-the api and web client by running the protoc command using the Makefile:
-
-```ShellSession
-$ make codegen
-```
+Follow the [Architectural Decision Records](doc/adr/index.md) to understand the choices made by the project.
 
 ## Deploy from source code
-
-### Using docker-compose
-
-To use `docker-compose` from source code, use the
-`docker-compose.yml.dev` file instead of the image based one:
-
-```ShellSession
-$ ln -sf docker-compose.yml.dev docker-compose.yml
-```
-
-### Using docker-compose with podman
-
-On Fedora:
-
-```ShellSession
-$ dnf install -y podman podman-docker docker-compose
-$ sudo systemctl start podman.socket
-$ export DOCKER_HOST=///run/podman/podman.sock
-```
-
-You might have to use `sudo` to run the docker commands, or change
-the permissions of the socket.
-
-#### Reloading code
-
-This section explains how you can hack the Monocle code. The idea is to use
-the docker deployment to avoid complex development methods.
-
-After changes, simply run the following command. docker-compose will
-rebuild and re-spawn the changed containers:
-
-```ShellSession
-$ docker-compose up -d --build
-```
-
-#### auto-reloading the web UI code
-
-To have your code automatically reloaded on each change, just run it
-outside the container:
-
-```ShellSession
-$ docker-compose stop web
-$ cd web
-$ npm install
-$ npm start
-```
 
 ### Running the services manually
 
@@ -92,7 +20,7 @@ This can be used to better understand how the system works and to enable fast re
 
 #### Requirements
 
-:info: These requirements are for a Fedora-based system. Please adapt them to your own OS if needed.
+These requirements are for a Fedora-based system. Please adapt them to your own OS if needed.
 
 ```ShellSession
 sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
@@ -106,7 +34,9 @@ curl -sSf https://get-ghcup.haskell.org | sh
 
 #### HTTP gateway (nginx)
 
-Adjust and copy this configuration to `/etc/nginx/conf.d/monocle.conf`
+The Monocle WebAPP and the API endpoints are served though NGINX.
+
+Copy this configuration to `/etc/nginx/conf.d/monocle.conf`
 
 ```
 server {
@@ -144,25 +74,26 @@ server {
 }
 ```
 
-#### Elastic
+Then ensure NGINX service is started/reloaded on your system.
+
+#### ElasticSearch
+
+Monocle relies on ElasticSearch as backend to store Changes and Change' events.
 
 ```ShellSession
 ./contrib/start-elk.sh 9200
 ```
 
-#### APIv1
+#### API
 
-```ShellSession
-./contrib/start-apiv1.sh 9878
-```
+To start the Monocle API then run the following commands.
 
-#### Web
+To reload modules when code is updated then type `:reload`.
 
-```ShellSession
-./contrib/start-web.sh
-```
+In addition you could run `ghcid -c 'cabal repl monocle'` in another terminal, then on every save in your IDE you'll see a list of the errors and warnings from ghc.
 
-#### APIv2
+You might need to restart the repl and/or ghcid when new dependencies are
+added in the `monocle.cabal` file.
 
 ```ShellSession
 export $(cat .secrets)
@@ -172,13 +103,26 @@ cabal repl monocle
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
+#### Web
+
+The Monocle React WebAPP (hot reload is enabled).
+
+```ShellSession
+./contrib/start-web.sh
+firefox http://localhost:3000
+```
+
 #### Start legacy crawlers process
+
+Run this command to start the GitHub or/and Gerrit crawlers.
 
 ```ShellSession
 ./contrib/start-crawlers-legacy.sh
 ```
 
 #### Start crawlers process
+
+Run this commands to start the Macroscope which is the new Monocle crawler system.
 
 ```ShellSession
 export $(cat .secrets)
@@ -190,34 +134,40 @@ cabal repl monocle
 λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
-### Running the services manually using nix
+### Running the services manually using NIX
 
 This section describes how to start the Monocle services directly on your host using nix.
 
-#### Elastic
+Note that the above commands can be started in emacs buffer using:
 
 ```ShellSession
-nix-shell --command elk-start
+nix-shell --command launch-monocle-with-emacs
 ```
 
-#### Nginx
+#### HTTP gateway (nginx)
 
 ```ShellSession
 nix-shell --command nginx-start
 ```
 
-#### APIv1
+#### ElasticSearch
 
 ```ShellSession
-nix-shell --command monocle-api-start
+nix-shell --command elk-start
 ```
 
-#### APIv2
+#### API
 
 ```ShellSession
 nix-shell --command monocle-api2-start
 λ> import Monocle.Api
 λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
+```
+
+In another terminal you could run ghcid with
+
+```ShellSession
+nix-shell --command monocle-ghcid
 ```
 
 #### Web
@@ -243,15 +193,40 @@ nix-shell --command monocle-api2-start
 λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
-#### Launch with emacs lisp
-
-The above commands can be started in emacs buffer using:
-
-```ShellSession
-nix-shell --command launch-monocle-with-emacs
-```
-
 ## Contributing a new driver
 
-Please refer to the file `dummy/change.py` that contain a Dummy driver and
-some comments to help you get started.
+We do not provide specific documentation to cover that topic yet but the source code of
+the [GitLab driver](monocle/haskell/src/Lentille/GitLab/MergeRequests.hs) might be a good
+source of knowledge to hack on a new crawler.
+
+## Running tests
+
+Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the
+related nix-shell command.
+
+### On Python code base (legacy)
+
+Tests can be executed using (ajust the port the 19200 if you used the nix-shell command to start Elastic):
+
+```ShellSession
+ELASTIC_CONN=127.0.0.1:9200 tox
+```
+
+### On the Haskell code base
+
+Tests can be executed using (ajust the port the 19200 if you used the nix-shell command to start Elastic):
+
+```ShellSession
+cd haskell
+ELASTIC_URL=http://localhost:9200 cabal test
+```
+
+## Update API (protobuf)
+
+The APIs are defined using protobuf. To change them, first you need to update the
+protobuf definitions present in the [./protos/ folder](./protos). Then you need to update
+the api and web client by running the protoc command using the Makefile:
+
+```ShellSession
+$ make codegen
+```
