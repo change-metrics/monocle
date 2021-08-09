@@ -243,7 +243,9 @@ Monocle is able to index changes from multiple code review systems. A contributo
 might get different identities across code review systems. Thus Monocle provides
 a configuration section to define aliases for contributors.
 
-Let say a Monocle workspace is configured to fetch changes from github.com and review.opendev.org (Gerrit) and we would like that John's metrics are merged under the `John Doe` identity.
+Let say a Monocle workspace is configured to fetch changes from github.com and
+review.opendev.org (Gerrit) and we would like that John's metrics are merged under
+the `John Doe` identity.
 
 ```YAML
 workspaces:
@@ -272,13 +274,38 @@ A contributor id on github.com or a GitHub enterprise instance is formated as `<
 
 A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerrit-user-id>`.
 
+### Groups definition
+
+A group in Monocle permits to group authors of Changes and filter them from the web interface.
+
+Group memberships are defined through the `idents` section of the configuration.
+
+Here is an example:
+
+```YAML
+workspaces:
+  - name: example
+    idents:
+      - ident: John Doe
+        aliases:
+          - github.com/john-doe
+          - review.opendev.org/John Doe/12345
+        groups:
+          - devs
+      - ident: Jane Doe
+        aliases:
+          - github.com/jane-doe
+        groups:
+          - devs
+          - ptl
+```
+
 #### Apply idents configuration
 
 Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
 
 ```bash
 docker-compose restart crawler-legacy
-docker-compose restart crawler
 docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
 docker-compose restart api-legacy
 ```
