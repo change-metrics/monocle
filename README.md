@@ -3,11 +3,12 @@
 The main idea behind Monocle is to detect anomalies in the way changes
 are produced in your project on GitHub, GitLab and Gerrit.
 
-Checkout the new [changemetrics.io website](https://changemetrics.io) and
+Monocle is in an early phase of development. Feedback is highly welcome.
+
+Checkout the [changemetrics.io website](https://changemetrics.io) and
 join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
 
-> We are currently working on the
-> [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
+We are currently working on the [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
 
 ## Components
 
@@ -29,8 +30,6 @@ Some legacy component are still required until they are migrated to the new Open
 
 ## Installation
 
-Monocle is in an early phase of development. Feedback is highly welcome.
-
 The process below describes how to index changes from a GitHub repository, a full GitHub organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
 
 ### Clone and create the needed directories
@@ -45,7 +44,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
-If running master does not git your needs, you could still use the last release
+If running master does not fit your needs, you could still use the last release
 by setting the MONOCLE_VERSION to 0.9.0 in the .env file. Please refer
 to [Configuration of the containers](#configuration-of-the-containers).
 
@@ -73,7 +72,7 @@ workspaces:
         update_since: '2020-05-01'
 ```
 
-To crawl the full tektoncd GitHub organization then remove the _github_repositories_ entry from the file.
+To crawl the full tektoncd GitHub organization then remove the `github_repositories` entry from the file.
 A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
 
 ### Start docker-compose
@@ -278,10 +277,10 @@ A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerr
 Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
 
 ```bash
-docker-compose stop crawler-legacy
+docker-compose restart crawler-legacy
+docker-compose restart crawler
 docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
 docker-compose restart api-legacy
-docker-compose start crawler-legacy
 ```
 
 ### Connect a tasks tracker crawler
@@ -321,7 +320,7 @@ Here are the expected environment variables:
 - `GITLAB_TOKEN`: an API key for GitLab crawler.
 - Optional `GERRIT_PASSWORD`: an account password for Gerrit crawler.
 
-> To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
+To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
 
 ```YAML
 ---
