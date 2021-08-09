@@ -189,7 +189,8 @@ monocleSearchLanguage =
             (d "2001-01-01", d "2010-01-01")
         ),
       testCase "QueryM combinator" testSimpleQueryM,
-      testCase "QueryM ensureMinBound" testEnsureMinBound
+      testCase "QueryM ensureMinBound" testEnsureMinBound,
+      testCase "QueryM dropDate" testDropDate
     ]
   where
     testSimpleQueryM :: Assertion
@@ -216,6 +217,17 @@ monocleSearchLanguage =
           got <- prettyQuery
           let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
           liftIO $ assertEqual "match ensured without query" (Just expected) got
+
+    testDropDate :: Assertion
+    testDropDate = do
+      runTenantM' (error "env") testTenant $
+        runQueryM (mkQuery "from:2020 repo:zuul") $ do
+          got <- prettyQuery
+          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}]}}"
+          liftIO $ assertEqual "match" (Just expected) got
+          withModified Q.dropDate $ do
+            newQ <- prettyQuery
+            liftIO $ assertEqual "drop date worked" (Just "{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}") newQ
 
     -- Get pretty query
     prettyQuery :: QueryM (Maybe LByteString)

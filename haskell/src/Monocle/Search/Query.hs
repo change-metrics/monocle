@@ -19,6 +19,8 @@ module Monocle.Search.Query
     defaultQueryFlavor,
     toBHQuery,
     toBHQueryWithFlavor,
+    dropDate,
+    dropField,
   )
 where
 
@@ -480,3 +482,43 @@ ensureMinBound query'
       Just expr -> modifier $ Just $ AndExpr minExpr expr
       Nothing -> modifier $ Just $ minExpr
     minExpr = GtExpr "from" $ toText $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
+
+-- | dropField remove a field from an Expr
+--
+-- >>> let testDF = dropField (== "date") . Just
+-- >>> testDF $ AndExpr (EqExpr "f" "v") (EqExpr "g" "v")
+-- Just (AndExpr (EqExpr "f" "v") (EqExpr "g" "v"))
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "date" "v") (EqExpr "g" "v")
+-- Just (EqExpr "g" "v")
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "f" "v") (EqExpr "date" "v")
+-- Just (EqExpr "f" "v")
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "date" "v") (EqExpr "date" "v")
+-- Nothing
+-- >>> dropField (== "date") $ Just $ EqExpr "date" "v"
+-- Nothing
+dropField :: (Text -> Bool) -> Maybe Expr -> Maybe Expr
+dropField _ Nothing = Nothing
+dropField dropFieldPred (Just expr) = go expr
+  where
+    go e = case e of
+      AndExpr e1 e2 -> tryBoth AndExpr e1 e2 <|> go e1 <|> go e2
+      OrExpr e1 e2 -> tryBoth OrExpr e1 e2 <|> go e1 <|> go e2
+      NotExpr e1 -> Just . NotExpr =<< go e1
+      EqExpr field _ -> unlessField field e
+      GtExpr field _ -> unlessField field e
+      LtExpr field _ -> unlessField field e
+      GtEqExpr field _ -> unlessField field e
+      LtEqExpr field _ -> unlessField field e
+    tryBoth op e1 e2 = do
+      e1' <- go e1
+      e2' <- go e2
+      pure $ op e1' e2'
+    unlessField field e
+      | dropFieldPred field = Nothing
+      | otherwise = Just e
+
+dropDate :: Maybe Expr -> Maybe Expr
+dropDate = dropField (`elem` ["from", "to", "updated_at", "created_at"])
