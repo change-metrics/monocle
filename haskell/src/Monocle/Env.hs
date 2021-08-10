@@ -2,6 +2,7 @@
 module Monocle.Env where
 
 import qualified Database.Bloodhound as BH
+import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
@@ -70,11 +71,16 @@ instance MonadFail AppM where
   fail = error . toText
 
 -- | 'QueryM' is the query context
-type QueryM = ReaderT Q.Query TenantM
+data QueryEnv = QueryEnv
+  { qeQuery :: Q.Query,
+    qeContext :: Maybe Text
+  }
+
+type QueryM = ReaderT QueryEnv TenantM
 
 -- | 'runQueryM' run the query context
 runQueryM :: Q.Query -> QueryM a -> TenantM a
-runQueryM query qm = runReaderT qm query
+runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
 
 -- | 'runTenantQueryM' combine runTenantM and runQueryM
 runTenantQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
@@ -82,7 +88,10 @@ runTenantQueryM config query qm = runTenantM config (runQueryM query qm)
 
 -- | 'getQuery' provides the query from the context
 getQuery :: QueryM Q.Query
-getQuery = ask
+getQuery = asks qeQuery
+
+getContext :: QueryM (Maybe Text)
+getContext = asks qeContext
 
 mkFinalQuery :: [BH.Query] -> Maybe BH.Query
 mkFinalQuery = \case
@@ -105,27 +114,34 @@ liftTenantM = lift
 dropQuery :: QueryM a -> QueryM a
 dropQuery = local dropQuery'
   where
-    dropQuery' query =
+    dropQuery' (QueryEnv query context) =
       let newQueryGet m = Q.queryGet query (\_ -> m Nothing)
-       in query {Q.queryGet = newQueryGet}
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
+
+withContext :: HasCallStack => Text -> QueryM a -> QueryM a
+withContext context = local setContext
+  where
+    setContext (QueryEnv query _) = (QueryEnv query (Just contextName))
+    contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
+    getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
 withModified :: (Maybe Expr -> Maybe Expr) -> QueryM a -> QueryM a
 withModified modifier = local addModifier
   where
-    addModifier query =
+    addModifier (QueryEnv query context) =
       let newQueryGet oldModifier qf = Q.queryGet query (modifier . oldModifier) qf
-       in query {Q.queryGet = newQueryGet}
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
 withFilter extraQueries = local addFilter
   where
-    addFilter query =
+    addFilter (QueryEnv query context) =
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
-       in query {Q.queryGet = newQueryGet}
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 data Entity = Project {getName :: Text} | Organization {getName :: Text}
   deriving (Eq, Show)
