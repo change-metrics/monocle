@@ -124,14 +124,14 @@ module Bar = {
     let appendField = v => {
       switch v {
       | Some(fieldName, fieldValues) => {
-          let prefix = value == "" ? "" : " and "
+          let prefix = value == "" ? "" : " "
           let expr = switch Js.String.split(",", fieldValues)->Belt.Array.map(fieldValue =>
             fieldName ++ ":" ++ fieldValue->quoteValue
           ) {
           | [x] => x
           | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
           }
-          setValue(expr ++ prefix ++ value)
+          onSave(expr ++ prefix ++ value)
         }
       | None => ignore()
       }
