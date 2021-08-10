@@ -5,6 +5,7 @@ import Google.Protobuf.Timestamp
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
 import Monocle.Client.Api
+import Monocle.Env
 import Monocle.Mock
 import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
@@ -186,9 +187,57 @@ monocleSearchLanguage =
         ( queryMatchBound
             "created_at>2000 and created_at>2001 and created_at<2010 and created_at<2011"
             (d "2001-01-01", d "2010-01-01")
-        )
+        ),
+      testCase "QueryM combinator" testSimpleQueryM,
+      testCase "QueryM ensureMinBound" testEnsureMinBound,
+      testCase "QueryM dropDate" testDropDate
     ]
   where
+    testSimpleQueryM :: Assertion
+    testSimpleQueryM = do
+      runTenantM' (error "env") testTenant $
+        runQueryM (mkQuery "author:alice") $ do
+          q <- prettyQuery
+          liftIO $ assertEqual "simple queryM work" (Just "{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}") q
+          dropQuery $ do
+            emptyQ <- prettyQuery
+            liftIO $ assertEqual "dropQuery work" Nothing emptyQ
+            withModified (const $ Just (S.EqExpr "author" "bob")) $ do
+              newQ <- prettyQuery
+              liftIO $ assertEqual "withModified work" (Just "{\"term\":{\"author.muid\":{\"value\":\"bob\"}}}") newQ
+
+    testEnsureMinBound :: Assertion
+    testEnsureMinBound = do
+      runTenantM' (error "env") testTenant $ do
+        runQueryM (Q.ensureMinBound $ mkQuery "author:alice") $ do
+          got <- prettyQuery
+          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}]}}"
+          liftIO $ assertEqual "bound ensured with query" (Just expected) got
+        runQueryM (Q.ensureMinBound $ mkQuery "") $ do
+          got <- prettyQuery
+          let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
+          liftIO $ assertEqual "match ensured without query" (Just expected) got
+
+    testDropDate :: Assertion
+    testDropDate = do
+      runTenantM' (error "env") testTenant $
+        runQueryM (mkQuery "from:2020 repo:zuul") $ do
+          got <- prettyQuery
+          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}]}}"
+          liftIO $ assertEqual "match" (Just expected) got
+          withModified Q.dropDate $ do
+            newQ <- prettyQuery
+            liftIO $ assertEqual "drop date worked" (Just "{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}") newQ
+
+    -- Get pretty query
+    prettyQuery :: QueryM (Maybe LByteString)
+    prettyQuery = fmap encodePretty <$> getQueryBH
+
+    -- Create a Query object
+    mkQuery code = case P.parse [] code >>= Q.queryWithMods now mempty (Just testTenant) of
+      Left e -> error $ show e
+      Right q -> q
+
     d :: String -> UTCTime
     d date = fromMaybe (error "nop") (readMaybe $ date <> " 00:00:00 Z")
     threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 00:00:00 Z")

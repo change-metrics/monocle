@@ -489,6 +489,7 @@ getDocTypeTopCountByField doctype attr size qflavor = do
   -- Prepare the query
   basequery <- toBHQueryWithFlavor qflavor <$> getQuery
   let query = mkAnd $ basequery <> [documentTypes doctype]
+  -- putTextLn $ decodeUtf8 $ encode query
   -- Run the aggregation
   liftTenantM (runTermAgg query $ getSize size)
   where
@@ -698,8 +699,8 @@ getNewContributors = do
           (QueryFlavor Author CreatedAt)
 
   -- Get author.muid term stats for ChangeCreatedEvent before and after bound
-  beforeAuthor <- withFilter [beforeBounceQ minDate] runQ
-  afterAuthor <- withFilter [afterBounceQ minDate] runQ
+  beforeAuthor <- withModified Q.dropDate (withFilter [beforeBounceQ minDate] runQ)
+  afterAuthor <- withModified Q.dropDate (withFilter [afterBounceQ minDate] runQ)
 
   -- Only keep after authors not present in the before authors list
   let ba = trTerm <$> tsrTR beforeAuthor
