@@ -6,6 +6,7 @@ module Monocle.Search.Query
     query,
     ensureMinBound,
     fields,
+    queryFieldToDocument,
     loadAliases,
     loadAliases',
     load,
@@ -144,6 +145,11 @@ fields =
     ("task", (fieldText, "tasks_data.ttype", "Task type")),
     ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
+
+queryFieldToDocument :: Field -> Maybe Field
+queryFieldToDocument name = do
+  (_, field, _) <- lookup name fields
+  pure field
 
 -- | Resolves the actual document field for a given flavor
 getFlavoredField :: QueryFlavor -> Field -> Maybe Field
