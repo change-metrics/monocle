@@ -141,10 +141,11 @@ understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-m
 
 #### Workpaces
 
-- permits to define multiple crawlers - [details](#crawlers)
-- permits to define a list of projects - [details](#projects-definition)
-- permits to define identities - [details](#groups-definition)
-- uses a dedicated ElasticSearch index
+A workspace uses a dedicated ElasticSearch index. A workspace defines:
+
+- crawlers - [details](#crawlers)
+- projects - [details](#projects-definition)
+- identities - [details](#groups-definition)
 
 #### Crawlers
 
@@ -154,7 +155,7 @@ Monocle provides two kinds of crawlers:
 - TaskData: A crawler to fetch task data related to a repository. Monocle supports GitHub (issues),
   and BugZilla (Bugs).
 
-The `.secrets` file is used to store credentials or API keys used by crawlers to authenticate on providers. The configuration file do not contain any sensible information then it might be convenient to store the file on a DVCS.
+The `.secrets` file is used to store credentials and API keys used by crawlers to authenticate on providers.
 
 The `crawlers` value is a list of crawler. Each crawler is composed of:
 
