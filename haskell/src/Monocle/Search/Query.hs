@@ -4,8 +4,10 @@ module Monocle.Search.Query
   ( Query (..),
     queryWithMods,
     query,
+    queryBH,
     ensureMinBound,
     fields,
+    queryFieldToDocument,
     loadAliases,
     loadAliases',
     load,
@@ -18,6 +20,8 @@ module Monocle.Search.Query
     defaultQueryFlavor,
     toBHQuery,
     toBHQueryWithFlavor,
+    dropDate,
+    dropField,
   )
 where
 
@@ -26,7 +30,7 @@ import Data.Char (isDigit)
 import Data.List (lookup)
 import qualified Data.Text as Text
 import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
-import Data.Time.Format (defaultTimeLocale, parseTimeM)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
@@ -66,10 +70,15 @@ data QueryFlavor = QueryFlavor
 defaultQueryFlavor :: QueryFlavor
 defaultQueryFlavor = QueryFlavor Author CreatedAt
 
+-- | Deprecated accessor to get the bloodhound query from the query
+{-# DEPRECATED queryBH "Use queryGet instead" #-}
+queryBH :: Query -> QueryFlavor -> [BH.Query]
+queryBH q qf = queryGet q id qf
+
 data Query = Query
-  { -- | queryBH is the bloodhound query
-    -- it is a list to be combine as a bool query
-    queryBH :: QueryFlavor -> [BH.Query],
+  { -- | queryGet provide the bloodhound query.
+    -- it is a list to be combined as a bool query
+    queryGet :: (Maybe Expr -> Maybe Expr) -> QueryFlavor -> [BH.Query],
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -144,6 +153,11 @@ fields =
     ("task", (fieldText, "tasks_data.ttype", "Task type")),
     ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
+
+queryFieldToDocument :: Field -> Maybe Field
+queryFieldToDocument name = do
+  (_, field, _) <- lookup name fields
+  pure field
 
 -- | Resolves the actual document field for a given flavor
 getFlavoredField :: QueryFlavor -> Field -> Maybe Field
@@ -357,6 +371,8 @@ mkEqQuery field value' = do
       pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
+    (_, Field_TypeFIELD_DATE) ->
+      toParseError $ Left $ "Invalid date operator for: " <> field <> ", ':' is not allowed"
     _anyOtherField -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
@@ -394,22 +410,24 @@ query expr = case expr of
   e@(LtEqExpr field value) -> mkRangeQuery e field value
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
-queryWithMods now' username indexM exprM =
-  case exprM of
-    Nothing -> pure $ Query (const []) (threeWeeksAgo now, now) False
+queryWithMods now' username indexM exprM = do
+  -- Compute whenever bound are provided
+  (queryBounds, queryMinBoundsSet) <- case exprM of
+    Nothing -> pure ((threeWeeksAgo now, now), False)
     Just expr -> do
-      (_, (boundM, bound)) <-
-        runParser expr defaultQueryFlavor
-      let getWithFlavor flavor =
-            let (queryFlavored, (_, _)) =
-                  fromRight
-                    (error "That is not possible, the query already compiled")
-                    (runParser expr flavor)
-             in [queryFlavored]
+      (_, (minBoundM, maxBound')) <- runParser expr defaultQueryFlavor
+      pure ((fromMaybe (threeWeeksAgo maxBound') minBoundM, maxBound'), isJust minBoundM)
 
-      pure $
-        let bound' = (fromMaybe (threeWeeksAgo bound) boundM, bound)
-         in Query getWithFlavor bound' (isJust boundM)
+  -- Prepare the queryGet accessor
+  let queryGet modifier flavor = case modifier exprM of
+        Just expr' ->
+          -- We have a query Expr, convert it to a BH.query
+          let queryBHE = runParser expr' flavor
+           in case queryBHE of
+                Left e -> error $ "Could not convert the expr to a bloodhound query: " <> show e
+                Right (queryFlavored, _) -> [queryFlavored]
+        Nothing -> []
+  pure $ Query {..}
   where
     runParser expr flavor =
       runExcept
@@ -460,13 +478,55 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases ind
         Nothing -> Left $ "Empty alias " <> name
 
 -- | Ensure a minimum range bound is set
+-- TODO: re-implement as a `QueryM a -> QueryM a` combinator
 ensureMinBound :: Query -> Query
 ensureMinBound query'
   | queryMinBoundsSet query' = query'
-  | otherwise = query' {queryBH = newQueryBH}
+  | otherwise = query' {queryGet = newQueryGet}
   where
-    newQueryBH flavor = [boundQuery flavor] <> queryBH query' flavor
-    boundQuery QueryFlavor {..} =
-      BH.QueryRangeQuery $
-        BH.mkRangeQuery (BH.FieldName (rangeField qfRange)) $
-          BH.RangeDateGte (BH.GreaterThanEqD $ fst (queryBounds query'))
+    newQueryGet modifier flavor = queryGet query' (newModifier modifier) flavor
+    -- A modifier function that ensure a min bound is set, whenever the user provided an expr.
+    newModifier modifier exprM = case exprM of
+      Just expr -> modifier $ Just $ AndExpr minExpr expr
+      Nothing -> modifier $ Just $ minExpr
+    minExpr = GtExpr "from" $ toText $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
+
+-- | dropField remove a field from an Expr
+--
+-- >>> let testDF = dropField (== "date") . Just
+-- >>> testDF $ AndExpr (EqExpr "f" "v") (EqExpr "g" "v")
+-- Just (AndExpr (EqExpr "f" "v") (EqExpr "g" "v"))
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "date" "v") (EqExpr "g" "v")
+-- Just (EqExpr "g" "v")
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "f" "v") (EqExpr "date" "v")
+-- Just (EqExpr "f" "v")
+--
+-- >>> dropField (== "date") $ Just $ AndExpr (EqExpr "date" "v") (EqExpr "date" "v")
+-- Nothing
+-- >>> dropField (== "date") $ Just $ EqExpr "date" "v"
+-- Nothing
+dropField :: (Text -> Bool) -> Maybe Expr -> Maybe Expr
+dropField _ Nothing = Nothing
+dropField dropFieldPred (Just expr) = go expr
+  where
+    go e = case e of
+      AndExpr e1 e2 -> tryBoth AndExpr e1 e2 <|> go e1 <|> go e2
+      OrExpr e1 e2 -> tryBoth OrExpr e1 e2 <|> go e1 <|> go e2
+      NotExpr e1 -> Just . NotExpr =<< go e1
+      EqExpr field _ -> unlessField field e
+      GtExpr field _ -> unlessField field e
+      LtExpr field _ -> unlessField field e
+      GtEqExpr field _ -> unlessField field e
+      LtEqExpr field _ -> unlessField field e
+    tryBoth op e1 e2 = do
+      e1' <- go e1
+      e2' <- go e2
+      pure $ op e1' e2'
+    unlessField field e
+      | dropFieldPred field = Nothing
+      | otherwise = Just e
+
+dropDate :: Maybe Expr -> Maybe Expr
+dropDate = dropField (`elem` ["from", "to", "updated_at", "created_at"])

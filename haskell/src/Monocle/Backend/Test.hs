@@ -284,13 +284,13 @@ testAchievements = withTenant doTest
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = case (Q.queryBH $ Q.load Nothing mempty Nothing "state:merged") defaultQueryFlavor of
+        query = case (Q.queryGet $ Q.load Nothing mempty Nothing "state:merged") id defaultQueryFlavor of
           [x] -> x
           _ -> error "Could not compile query"
 
 defaultQuery :: Q.Query
 defaultQuery =
-  let queryBH _ = []
+  let queryGet _ = const []
       queryBounds =
         ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
           fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
@@ -419,7 +419,7 @@ testGetNewContributors = withTenant doTest
       indexScenario' sn2 (addUTCTime 7200 fakeDate) "44"
 
       let query =
-            let queryBH _ = []
+            let queryGet _ = const []
                 queryBounds =
                   ( addUTCTime 3600 fakeDate,
                     fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
@@ -446,7 +446,7 @@ testGetActivityStats = withTenant doTest
       traverse_ (indexScenarioNO neutron) ["142", "143"]
 
       let query =
-            let queryBH _ = []
+            let queryGet _ = const []
                 queryBounds =
                   ( addUTCTime (-3600) fakeDate,
                     addUTCTime 3600 fakeDate
