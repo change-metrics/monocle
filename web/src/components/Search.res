@@ -13,7 +13,17 @@ let startWithOrderModalOpen = false
 module FieldSelectorModal = {
   module FieldSelector = {
     @react.component
-    let make = (~store: Store.t, ~fieldName, ~setFieldName, ~fieldValue, ~setFieldValue) =>
+    let make = (
+      ~store: Store.t,
+      ~fieldName,
+      ~setFieldName,
+      ~fieldValue,
+      ~setFieldValue,
+      ~fromValue,
+      ~setFromValue,
+      ~toValue,
+      ~setToValue,
+    ) =>
       // We fetch the suggestions once, after the modal is displayed
       switch (Store.Fetch.suggestions(store), Store.Fetch.fields(store)) {
       | (Some(Ok(suggestions)), Some(Ok(fields))) => {
@@ -31,31 +41,50 @@ module FieldSelectorModal = {
 
           let value = fieldValue
           let onChange = (v, _) => setFieldValue(_ => v)
+          let freeFormFields = (f: SearchTypes.field) =>
+            !(list{"from", "to", "created_at", "updated_at"}->elemText(f.name))
 
           <>
-            <MSelect
-              placeholder={"Pick a field"}
-              options={fields->Belt.List.map(f => f.name)}
-              multi={false}
-              value={fieldName}
-              valueChanged={v => setFieldName(_ => v)}
-            />
-            {switch get(fieldName) {
-            | Some(field) =>
-              switch getValues(fieldName) {
-              | list{} =>
-                <TextInput id={"field-input"} placeholder={field.description} onChange value />
-              | xs =>
-                <MSelect
-                  isCreatable={true}
-                  placeholder={field.description}
-                  options={xs}
-                  valueChanged={v => setFieldValue(_ => v)}
-                  value
-                />
-              }
-            | None => React.null
-            }}
+            <FormGroup label="Date range" fieldId="date-range-form" hasNoPaddingTop=false>
+              <DatePicker
+                id={"from-date"}
+                placeholder={"From date"}
+                value={fromValue}
+                onChange={(v, _) => setFromValue(_ => v)}
+              />
+              <DatePicker
+                id={"to-date"}
+                placeholder={"To date"}
+                value={toValue}
+                onChange={(v, _) => setToValue(_ => v)}
+              />
+            </FormGroup>
+            <br />
+            <FormGroup label="Extra filter" fieldId="query-filter" hasNoPaddingTop=false>
+              <MSelect
+                placeholder={"Pick a field"}
+                options={fields->Belt.List.keep(freeFormFields)->Belt.List.map(f => f.name)}
+                multi={false}
+                value={fieldName}
+                valueChanged={v => setFieldName(_ => v)}
+              />
+              {switch get(fieldName) {
+              | Some(field) =>
+                switch getValues(fieldName) {
+                | list{} =>
+                  <TextInput id={"field-input"} placeholder={field.description} onChange value />
+                | xs =>
+                  <MSelect
+                    isCreatable={true}
+                    placeholder={field.description}
+                    options={xs}
+                    valueChanged={v => setFieldValue(_ => v)}
+                    value
+                  />
+                }
+              | None => React.null
+              }}
+            </FormGroup>
             <br />
             <br />
           </>
@@ -68,23 +97,35 @@ module FieldSelectorModal = {
   let make = (~isOpen, ~onClose: option<string> => unit, ~store) => {
     let (fieldName, setFieldName) = React.useState(_ => "")
     let (fieldValue, setFieldValue) = React.useState(_ => "")
+    let (fromValue, setFromValue) = React.useState(_ => "")
+    let (toValue, setToValue) = React.useState(_ => "")
+
     let submit = res => {
+      setFromValue(_ => "")
+      setToValue(_ => "")
       setFieldName(_ => "")
       setFieldValue(_ => "")
       onClose(res)
     }
     let onConfirm = _ => {
-      let expr = switch Js.String.split(",", fieldValue)->Belt.Array.map(fieldValue =>
-        fieldName ++ ":" ++ fieldValue->quoteValue
-      ) {
-      | [x] => x
-      | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
-      }
+      let field =
+        fieldValue == ""
+          ? ""
+          : switch Js.String.split(",", fieldValue)->Belt.Array.map(fieldValue =>
+              fieldName ++ ":" ++ fieldValue->quoteValue
+            ) {
+            | [x] => x
+            | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
+            }
+      let setExpr = (value, field) => value == "" ? "" : field ++ ":" ++ value
+      let fromExpr = fromValue->setExpr("from")
+      let toExpr = toValue->setExpr("to")
+      let expr = list{field, fromExpr, toExpr}->Belt.List.keep(v => v != "")->concatSep(" ")
       expr->Some->submit
     }
     let onCancel = _ => None->submit
     <Patternfly.Modal
-      title="Field selector"
+      title="Add search filter"
       variant=#Large
       isOpen
       onClose={_ => onClose(None)}
@@ -97,7 +138,17 @@ module FieldSelectorModal = {
         </Patternfly.Button>,
       ]>
       <div style={ReactDOM.Style.make(~height="400px", ())}>
-        <FieldSelector store fieldName setFieldName fieldValue setFieldValue />
+        <FieldSelector
+          store
+          fieldName
+          setFieldName
+          fieldValue
+          setFieldValue
+          fromValue
+          setFromValue
+          toValue
+          setToValue
+        />
       </div>
     </Patternfly.Modal>
   }
