@@ -173,6 +173,8 @@ let maybeRenderList = (xs: list<'a>, component) =>
 let lower = s => s->Js.String.toLowerCase
 let int32_str = i32 => string_of_int(Int32.to_int(i32))
 
+let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
+
 // the take from haskell prelude
 let rec take: (list<'a>, int) => list<'a> = (xs, count) =>
   switch xs {

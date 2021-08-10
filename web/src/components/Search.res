@@ -65,7 +65,7 @@ module FieldSelectorModal = {
   }
 
   @react.component
-  let make = (~isOpen, ~onClose: option<(string, string)> => unit, ~store) => {
+  let make = (~isOpen, ~onClose: option<string> => unit, ~store) => {
     let (fieldName, setFieldName) = React.useState(_ => "")
     let (fieldValue, setFieldValue) = React.useState(_ => "")
     let submit = res => {
@@ -73,7 +73,15 @@ module FieldSelectorModal = {
       setFieldValue(_ => "")
       onClose(res)
     }
-    let onConfirm = _ => Some(fieldName, fieldValue)->submit
+    let onConfirm = _ => {
+      let expr = switch Js.String.split(",", fieldValue)->Belt.Array.map(fieldValue =>
+        fieldName ++ ":" ++ fieldValue->quoteValue
+      ) {
+      | [x] => x
+      | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
+      }
+      expr->Some->submit
+    }
     let onCancel = _ => None->submit
     <Patternfly.Modal
       title="Field selector"
@@ -116,8 +124,6 @@ module TextInputUp = {
 }
 
 module Bar = {
-  let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
-
   @react.component
   let make = (
     ~store: Store.t,
@@ -126,16 +132,10 @@ module Bar = {
     ~onSave: string => unit,
   ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
-    let appendField = v => {
-      switch v {
-      | Some(fieldName, fieldValues) => {
-          let prefix = value == "" ? "" : " "
-          let expr = switch Js.String.split(",", fieldValues)->Belt.Array.map(fieldValue =>
-            fieldName ++ ":" ++ fieldValue->quoteValue
-          ) {
-          | [x] => x
-          | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
-          }
+    let appendExpr = expr => {
+      switch expr {
+      | Some(expr) => {
+          let prefix = expr == "" ? "" : " "
           onSave(expr ++ prefix ++ value)
         }
       | None => ignore()
@@ -148,7 +148,7 @@ module Bar = {
       | _ => ignore()
       }
     <>
-      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendField} />
+      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
       <HelpSearch.Tooltip />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
         {"Add filter"->str}
