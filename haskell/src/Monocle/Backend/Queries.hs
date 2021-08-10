@@ -14,7 +14,7 @@ import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChange
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
-import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField, toBHQueryWithFlavor)
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), defaultQueryFlavor, rangeField)
 import qualified Monocle.Search.Query as Q
 
 changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
@@ -342,25 +342,6 @@ firstEventOnChanges = do
               feAuthor = author
             }
 
-changeMergedStatsDuration :: [BH.Query] -> TenantM MergedStatsDuration
-changeMergedStatsDuration query = do
-  index <- getIndexName
-  let finalQuery = mkFinalQuery query
-  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg finalQuery)
-  pure $ MergedStatsDuration (getAggValue "avg" res) (getAggValue "variability" res)
-  where
-    agg =
-      [ ( "avg",
-          Aeson.object
-            ["avg" .= field "duration"]
-        ),
-        ( "variability",
-          Aeson.object
-            [ "median_absolute_deviation" .= field "duration"
-            ]
-        )
-      ]
-
 -- | The achievement query
 data ProjectBucket = ProjectBucket
   { pbKey :: LText,
@@ -442,9 +423,9 @@ getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
 
-getTermsAgg :: BH.Query -> Text -> Maybe Int -> TenantM TermsResultWTH
+getTermsAgg :: Maybe BH.Query -> Text -> Maybe Int -> TenantM TermsResultWTH
 getTermsAgg query onTerm maxBuckets = do
-  search <- aggSearch (Just query) aggs
+  search <- aggSearch query aggs
   pure $
     TermsResultWTH
       (getSimpleTR <$> filter isNotEmptyTerm (unfilteredR $ agResults search))
@@ -485,12 +466,9 @@ countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
 getDocTypeTopCountByField ::
   NonEmpty ELKDocType -> Text -> Maybe Word32 -> QueryFlavor -> QueryM TermsResultWTH
-getDocTypeTopCountByField doctype attr size qflavor = do
+getDocTypeTopCountByField doctype attr size qflavor = withFilter [documentTypes doctype] $ do
   -- Prepare the query
-  basequery <- toBHQueryWithFlavor qflavor <$> getQuery
-  let query = mkAnd $ basequery <> [documentTypes doctype]
-  -- putTextLn $ decodeUtf8 $ encode query
-  -- Run the aggregation
+  query <- getQueryBHWithFlavor qflavor
   liftTenantM (runTermAgg query $ getSize size)
   where
     runTermAgg query = getTermsAgg query attr

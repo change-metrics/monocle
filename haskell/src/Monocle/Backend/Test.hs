@@ -284,7 +284,7 @@ testAchievements = withTenant doTest
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = case (Q.queryGet $ Q.load Nothing mempty Nothing "state:merged") id defaultQueryFlavor of
+        query = case (Q.queryGet $ Q.load Nothing mempty Nothing "state:merged") id (Just defaultQueryFlavor) of
           [x] -> x
           _ -> error "Could not compile query"
 

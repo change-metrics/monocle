@@ -8,15 +8,15 @@ import Monocle.Backend.Test (emptyConfig)
 import Monocle.Env (runQueryM, runTenantM')
 import Monocle.Prelude
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 
 parseQuery :: UTCTime -> Text -> Text
-parseQuery now code = either show decodeUtf8 query
+parseQuery now code = either show decodeUtf8 queryJson
   where
-    query = do
+    queryJson = do
       expr <- P.parse [] code
-      Aeson.encode . flip Q.queryBH defaultQueryFlavor <$> Q.queryWithMods now mempty Nothing expr
+      query <- Q.queryWithMods now mempty Nothing expr
+      pure $ Aeson.encode $ Q.queryGet query id Nothing
 
 printQuery :: MonadIO m => UTCTime -> Text -> Text -> Text -> m ()
 printQuery now elkUrl index code = do

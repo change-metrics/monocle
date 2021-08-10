@@ -93,19 +93,21 @@ getQuery = asks qeQuery
 getContext :: QueryM (Maybe Text)
 getContext = asks qeContext
 
-mkFinalQuery :: [BH.Query] -> Maybe BH.Query
-mkFinalQuery = \case
-  [] -> Nothing
-  [x] -> Just x
-  xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
+mkFinalQuery :: Maybe Q.QueryFlavor -> QueryM (Maybe BH.Query)
+mkFinalQuery flavorM = do
+  query <- getQuery
+  pure $ toBoolQuery $ Q.queryGet query id flavorM
+  where
+    toBoolQuery = \case
+      [] -> Nothing
+      [x] -> Just x
+      xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
 
 getQueryBHWithFlavor :: Q.QueryFlavor -> QueryM (Maybe BH.Query)
-getQueryBHWithFlavor flavor = do
-  query <- getQuery
-  pure $ mkFinalQuery $ Q.queryBH query flavor
+getQueryBHWithFlavor flavor = mkFinalQuery (Just flavor)
 
 getQueryBH :: QueryM (Maybe BH.Query)
-getQueryBH = getQueryBHWithFlavor Q.defaultQueryFlavor
+getQueryBH = mkFinalQuery Nothing
 
 -- | 'liftTenantM' run a TenantM in the QueryM
 liftTenantM :: TenantM a -> QueryM a
@@ -163,7 +165,7 @@ eventToText ev = case ev of
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->
-    let jsonQuery = decodeUtf8 . encode $ Q.queryBH query Q.defaultQueryFlavor
+    let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
      in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
 
 monocleLogEvent :: MonocleEvent -> TenantM ()
