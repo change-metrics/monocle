@@ -152,14 +152,14 @@ module AuthorHistoStats = {
 
 @react.component
 let make = (~store: Store.t) => {
-  <div className="container">
+  <MCenteredContent>
     <MStack>
       <MStackItem> <ChangesLifeCycleStats store /> </MStackItem>
       <MStackItem> <ChangesReviewStats store /> </MStackItem>
       <MStackItem> <ChangesMergedDuration store /> </MStackItem>
       <MStackItem> <AuthorHistoStats store /> </MStackItem>
     </MStack>
-  </div>
+  </MCenteredContent>
 }
 
 let default = make
