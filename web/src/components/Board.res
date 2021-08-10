@@ -139,7 +139,9 @@ module ColumnEditor = {
           onChange={setName}
           _type=#Text
         />
-        <Search.Bar store value={queryRef.contents} setValue={v => setQuery(v, ())} />
+        <Search.Bar
+          store value={queryRef.contents} setValue={v => setQuery(v, ())} onSave={_ => ()}
+        />
       </div>
       <div style={ReactDOM.Style.make(~display="inline-block", ())}>
         <span style={ReactDOM.Style.make(~width="200px", ~display="inline-block", ())}>

@@ -90,11 +90,36 @@ module FieldSelectorModal = {
   }
 }
 
+// A custom text input with onKeyUp callback
+// TODO: add property to re-patternfly
+module TextInputUp = {
+  @react.component @module("@patternfly/react-core")
+  external make: (
+    ~iconVariant: @string
+    [
+      | @as("search") #Search
+    ]=?,
+    ~id: string,
+    ~onChange: (string, ReactEvent.Mouse.t) => unit=?,
+    ~onKeyUp: ReactEvent.Keyboard.t => unit=?,
+    ~_type: @string
+    [
+      | @as("text") #Text
+    ]=?,
+    ~value: string=?,
+  ) => React.element = "TextInput"
+}
+
 module Bar = {
   let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
 
   @react.component
-  let make = (~store: Store.t, ~value: string, ~setValue: string => unit) => {
+  let make = (
+    ~store: Store.t,
+    ~value: string,
+    ~setValue: string => unit,
+    ~onSave: string => unit,
+  ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
     let appendField = v => {
       switch v {
@@ -112,16 +137,22 @@ module Bar = {
       }
       setShowFieldSelector(_ => false)
     }
+    let onKeyUp = (v: ReactEvent.Keyboard.t) =>
+      switch ReactEvent.Keyboard.key(v) {
+      | "Enter" => onSave(value)
+      | _ => ignore()
+      }
     <>
       <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendField} />
       <HelpSearch.Tooltip />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
         {"Add filter"->str}
       </Patternfly.Button>
-      <Patternfly.TextInput
+      <TextInputUp
         id="col-search"
         value={value}
         onChange={(v, _) => setValue(v)}
+        onKeyUp
         _type=#Text
         iconVariant=#Search
       />
@@ -262,10 +293,11 @@ module Top = {
     }, [state.query])
 
     // Dispatch the value upstream
-    let onClick = _ => {
-      setSavedValue(_ => value)
-      value->Store.Store.SetQuery->dispatch
+    let onSave = newValue => {
+      setSavedValue(_ => newValue)
+      newValue->Store.Store.SetQuery->dispatch
     }
+    let onClick = _ => onSave(value)
     let setLimit = str => {
       let v = str == "" ? 0 : str->int_of_string
       setLimit'(_ => v)
@@ -274,7 +306,7 @@ module Top = {
 
     <Patternfly.Layout.Bullseye>
       <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
-        <Bar value setValue store />
+        <Bar value setValue onSave store />
         {value != savedValue
           ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
           : React.null}
