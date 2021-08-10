@@ -12,25 +12,46 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
-import Monocle.Prelude
+import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import qualified Monocle.Search.Query as Q
 
-changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
-changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothing] $ do
-  query <- getQueryBH
-  let search =
-        (BH.mkSearch query Nothing)
-          { BH.size = BH.Size (if limit > 0 then limitInt else 50),
-            BH.sortBody = toSortBody <$> orderM
-          }
+-------------------------------------------------------------------------------
+-- Low level wrappers for bloodhound. Only those should be using liftTenantM.
+
+-- | Call the search endpoint
+doSearchBH :: (ToJSON body, FromJSON resp) => body -> QueryM (BH.SearchResult resp)
+doSearchBH body = do
   liftTenantM $ do
     index <- getIndexName
-    resp <- fmap BH.hitSource <$> simpleSearch index search
-    pure $ catMaybes resp
+    BHR.search index body
+
+-- | Call the count endpoint
+doCountBH :: BH.Query -> QueryM Count
+doCountBH body = do
+  liftTenantM $ do
+    index <- getIndexName
+    resp <- BH.countByIndex index (BH.CountQuery body)
+    case resp of
+      Left e -> error $ show e
+      Right x -> pure $ naturalToCount (BH.crCount x)
+
+-------------------------------------------------------------------------------
+-- Mid level queries
+
+-- | Get search results hits
+doSearch :: FromJSON resp => Maybe SearchPB.Order -> Word32 -> QueryM [resp]
+doSearch orderM limit = do
+  query <- getQueryBH
+  resp <-
+    doSearchBH
+      (BH.mkSearch query Nothing)
+        { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit,
+          BH.sortBody = toSortBody <$> orderM
+        }
+  pure $ catMaybes (fmap BH.hitSource <$> BH.hits . BH.searchHits $ resp)
   where
-    limitInt = fromInteger . toInteger $ limit
     toSortBody SearchPB.Order {..} =
       let field' =
             BH.FieldName
@@ -45,54 +66,66 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
 
+-- | Get document count matching the query
+countDocs :: QueryM Count
+countDocs = do
+  query <-
+    fromMaybe (error "Need a query to count") <$> getQueryBH
+  doCountBH query
+
+-- | Get aggregation results
+doAggregation :: (ToJSON body) => body -> QueryM BH.AggregationResults
+doAggregation body = toAggRes <$> doSearchBH body
+
+toAggRes :: BH.SearchResult Value -> BH.AggregationResults
+toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
+
+aggSearch :: Maybe BH.Query -> BH.Aggregations -> QueryM AggregationResultsWTH
+aggSearch query aggs = do
+  resp <- doSearchBH (BH.mkAggregateSearch query aggs)
+  let totalHits = BH.value $ BH.hitsTotal $ BH.searchHits resp
+  pure $ AggregationResultsWTH (toAggRes resp) totalHits
+
+queryAggValue :: Value -> QueryM Double
+queryAggValue search = getAggValue "agg1" <$> doAggregation search
+  where
+    getAggValue :: Text -> BH.AggregationResults -> Double
+    getAggValue key = getValue . parseAggregationResults key
+
+-- | Extract a single aggregation result from the map
+parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
+parseAggregationResults key res = getExn $ do
+  value <- Map.lookup key res `orDie` ("No value found for: " <> toString key)
+  Aeson.parseEither Aeson.parseJSON value
+
+queryAggResult :: FromJSON a => Value -> QueryM a
+queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
+
+-------------------------------------------------------------------------------
+-- High level queries
+changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
+changes orderM limit =
+  withDocTypes [ElkChange] (QueryFlavor Author CreatedAt) $
+    doSearch orderM limit
+
 changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
 changeEvents changeID limit = dropQuery $
   withFilter [mkTerm "change_id" (toText changeID)] $ do
-    change <- fromMaybe (error "Unknown change") . headMaybe <$> getChange
+    change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
 
     -- Collect all the events
     result <- withDocTypes allEventTypes (QueryFlavor Author CreatedAt) $ do
-      query <- getQueryBH
-      let search = (BH.mkSearch query Nothing) {BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit}
-      liftTenantM $ do
-        index <- getIndexName
-        resp <- fmap BH.hitSource <$> BH.scanSearch index search
-        pure $ catMaybes resp
+      doSearch Nothing limit
 
     pure (change, result)
-  where
-    getChange = withDocTypes [ElkChange] (QueryFlavor Author CreatedAt) $ do
-      query <- getQueryBH
-      let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 1}
-      liftTenantM $ do
-        index <- getIndexName
-        resp <- fmap BH.hitSource <$> BH.scanSearch index search
-        pure $ catMaybes resp
-
-doCount :: BH.Query -> TenantM Count
-doCount query = do
-  -- monocleLog . decodeUtf8 . Aeson.encode $ query
-  index <- getIndexName
-  resp <- BH.countByIndex index (BH.CountQuery query)
-  case resp of
-    Left e -> error $ show e
-    Right x -> pure $ naturalToCount (BH.crCount x)
-
-countDocs :: QueryFlavor -> QueryM Count
-countDocs qf = withFlavor qf $ countDocs'
-
-countDocs' :: QueryM Count
-countDocs' = do
-  bhQuery <- fromMaybe (error "Need a query to count") <$> getQueryBH
-  liftTenantM $ doCount bhQuery
 
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
-changeReviewRatio = do
-  commitCount <- withFilter [documentType ElkChangeCreatedEvent] $ countDocs qf
+changeReviewRatio = withFlavor qf $ do
+  commitCount <- withFilter [documentType ElkChangeCreatedEvent] $ countDocs
   reviewCount <-
     withFilter [documentTypes $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
-      countDocs qf
+      countDocs
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
       reviewCountF = fromIntegral reviewCount
@@ -138,23 +171,6 @@ data AggregationResultsWTH = AggregationResultsWTH
   }
   deriving (Show, Eq)
 
--- | Handle aggregate requests
-toAggRes :: BH.SearchResult Value -> BH.AggregationResults
-toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
-
-aggSearch :: Maybe BH.Query -> BH.Aggregations -> TenantM AggregationResultsWTH
-aggSearch query aggs = do
-  indexName <- getIndexName
-  results <- doSearch indexName (BH.mkAggregateSearch query aggs)
-  let totalHits = BH.value $ BH.hitsTotal $ BH.searchHits results
-  pure $ AggregationResultsWTH (toAggRes results) totalHits
-
--- | Extract a single aggregation result from the map
-parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
-parseAggregationResults key res = getExn $ do
-  value <- Map.lookup key res `orDie` ("No value found for: " <> toString key)
-  Aeson.parseEither Aeson.parseJSON value
-
 -- | Event counts
 data EventCounts = EventCounts
   { openedCount :: Count,
@@ -168,10 +184,10 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> withFilter (changeState ElkChangeOpen) countDocs'
-      <*> withFilter (changeState ElkChangeMerged) countDocs'
-      <*> withFilter (changeState ElkChangeClosed) countDocs'
-      <*> withFilter selfMergedQ countDocs'
+    <$> withFilter (changeState ElkChangeOpen) countDocs
+      <*> withFilter (changeState ElkChangeMerged) countDocs
+      <*> withFilter (changeState ElkChangeClosed) countDocs
+      <*> withFilter selfMergedQ countDocs
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
 
@@ -269,9 +285,6 @@ instance FromJSON AggValue where
   parseJSON (Object v) = AggValue <$> v .: "value"
   parseJSON _ = mzero
 
-getAggValue :: Text -> BH.AggregationResults -> Double
-getAggValue key = getValue . parseAggregationResults key
-
 -- | The 'changeMergedStatsDuration' result
 data MergedStatsDuration = MergedStatsDuration
   { avg :: Double,
@@ -297,15 +310,10 @@ firstEventAverageDuration = truncate . fromMaybe 0 . average . map firstEventDur
 
 firstEventOnChanges :: QueryM [FirstEvent]
 firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
-  query <- getQueryBH
   (minDate, _) <- Q.queryBounds <$> getQuery
-  let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 10000}
 
   -- Collect all the events
-  result <- liftTenantM $ do
-    index <- getIndexName
-    resp <- fmap BH.hitSource <$> BH.scanSearch index search
-    pure $ catMaybes resp
+  result <- doSearch Nothing 10000
 
   -- Group by change_id
   let changeMap :: [NonEmpty ELKChangeEvent]
@@ -422,7 +430,7 @@ getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
 
-getTermsAgg :: Maybe BH.Query -> Text -> Maybe Int -> TenantM TermsResultWTH
+getTermsAgg :: Maybe BH.Query -> Text -> Maybe Int -> QueryM TermsResultWTH
 getTermsAgg query onTerm maxBuckets = do
   search <- aggSearch query aggs
   pure $
@@ -454,11 +462,7 @@ getCardinalityAgg (BH.FieldName fieldName) threshold = do
   let cardinality = Aeson.object ["field" .= fieldName, "precision_threshold" .= threshold]
       agg = Aeson.object ["agg1" .= Aeson.object ["cardinality" .= cardinality]]
       search = Aeson.object ["aggregations" .= agg, "size" .= (0 :: Word), "query" .= bhQuery]
-
-  liftTenantM $ do
-    index <- getIndexName
-    res <- toAggRes <$> BHR.search index search
-    pure $ unCountValue $ parseAggregationResults "agg1" res
+  unCountValue . parseAggregationResults "agg1" <$> doAggregation search
 
 countAuthors :: QueryM Count
 countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
@@ -468,7 +472,7 @@ getDocTypeTopCountByField ::
 getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] $ do
   -- Prepare the query
   query <- getQueryBH
-  liftTenantM (runTermAgg query $ getSize size)
+  runTermAgg query $ getSize size
   where
     runTermAgg query = getTermsAgg query attr
     getSize size' = toInt <$> size'
@@ -499,13 +503,13 @@ getReposSummary = do
   where
     getRepoSummary fn = withFilter [mkTerm "repository_fullname" fn] $ do
       -- Prepare the queries
-      let eventQF = QueryFlavor OnAuthor CreatedAt
-          changeQF = QueryFlavor Author UpdatedAt
+      let eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
+          changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      totalChanges' <- withFilter [documentType ElkChangeCreatedEvent] (countDocs eventQF)
-      openChanges' <- withFilter (changeState ElkChangeOpen) (countDocs changeQF)
-      mergedChanges' <- withFilter [documentType ElkChangeMergedEvent] (countDocs eventQF)
+      totalChanges' <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
+      openChanges' <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
+      mergedChanges' <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
 
       -- Return summary
       let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
@@ -738,10 +742,7 @@ getHisto rf = do
             "query" .= fromMaybe (error "need query") queryBH
           ]
 
-  liftTenantM $ do
-    index <- getIndexName
-    res <- toAggRes <$> BHR.search index search
-    pure $ hBuckets $ parseAggregationResults "agg1" res
+  hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
 getHistoPB :: RangeFlavor -> QueryM (V.Vector SearchPB.Histo)
 getHistoPB rf = fmap toPBHisto <$> getHisto rf
@@ -767,12 +768,6 @@ searchBody qf agg = withFlavor qf $ do
              ],
         "query" .= fromMaybe (error "need query") queryBH
       ]
-
-queryAggValue :: Value -> QueryM Double
-queryAggValue search = liftTenantM $ do
-  index <- getIndexName
-  res <- toAggRes <$> BHR.search index search
-  pure $ getAggValue "agg1" res
 
 averageDuration :: QueryFlavor -> QueryM Double
 averageDuration qf = queryAggValue =<< searchBody qf avg
@@ -827,7 +822,7 @@ getReviewStats = do
     statCount =
       SearchPB.ReviewCount
         <$> fmap countToWord (withFlavor qf countAuthors)
-        <*> fmap countToWord (countDocs qf)
+        <*> fmap countToWord (withFlavor qf countDocs)
 
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
 
@@ -840,17 +835,17 @@ getLifecycleStats = do
   lifecycleStatsAbandonedHisto <- getHisto' ElkChangeAbandonedEvent
 
   (created, lifecycleStatsCreated) <- withDocType ElkChangeCreatedEvent qf $ do
-    created <- countDocs'
+    created <- countDocs
     stats <-
       SearchPB.ReviewCount
         <$> fmap countToWord countAuthors
         <*> pure (countToWord created)
     pure (created, Just stats)
 
-  opened <- withFilter (changeState ElkChangeOpen) countDocs'
-  merged <- withFilter (changeState ElkChangeMerged) countDocs'
-  selfMerged' <- withFilter selfMerged countDocs'
-  abandoned <- withFilter (changeState ElkChangeClosed) countDocs'
+  opened <- withFilter (changeState ElkChangeOpen) countDocs
+  merged <- withFilter (changeState ElkChangeMerged) countDocs
+  selfMerged' <- withFilter selfMerged countDocs
+  abandoned <- withFilter (changeState ElkChangeClosed) countDocs
 
   let lifecycleStatsOpened = countToWord opened
       lifecycleStatsMerged = countToWord merged
@@ -874,7 +869,7 @@ getLifecycleStats = do
 
   let lifecycleStatsUpdatesOfChanges = countToWord updated
 
-  tests <- withFilter [documentType ElkChange, testIncluded] countDocs'
+  tests <- withFilter [documentType ElkChange, testIncluded] countDocs
   let lifecycleStatsChangesWithTests = tests `ratioF` created
       lifecycleStatsIterationsPerChange = updated `ratioN` created
 
@@ -884,7 +879,7 @@ getLifecycleStats = do
 
   pure $ SearchPB.LifecycleStats {..}
   where
-    countEvents = countDocs (QueryFlavor Monocle.Search.Query.Author OnCreatedAt)
+    countEvents = withFlavor (QueryFlavor Monocle.Search.Query.Author OnCreatedAt) countDocs
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
     getHistos' docTypes = withDocTypes docTypes qf (getHistoPB CreatedAt)
@@ -944,10 +939,7 @@ getAuthorHisto qf = withFlavor qf $ do
             "query" .= fromMaybe (error "need query") queryBH
           ]
 
-  liftTenantM $ do
-    index <- getIndexName
-    res <- toAggRes <$> BHR.search index search
-    pure $ hBuckets $ parseAggregationResults "agg1" res
+  hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
 getActivityStats :: QueryM SearchPB.ActivityStats
 getActivityStats = do
