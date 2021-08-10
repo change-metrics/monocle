@@ -365,6 +365,8 @@ mkEqQuery field value' = do
       pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
+    (_, Field_TypeFIELD_DATE) ->
+      toParseError $ Left $ "Invalid date operator for: " <> field <> ", ':' is not allowed"
     _anyOtherField -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
 
 data BoolOp = And | Or
