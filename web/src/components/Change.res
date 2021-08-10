@@ -177,8 +177,8 @@ module State = {
       ? (#Grey, "Draft")
       : switch state {
         | "OPEN" => (#Green, "Open")
-        | "Merged" => (#Blue, "Merged")
-        | "Closed" => (#Purple, "Closed")
+        | "MERGED" => (#Blue, "Merged")
+        | "CLOSED" => (#Purple, "Closed")
         | _ => (#Red, state)
         }
     <Label color> {value->str} </Label>
