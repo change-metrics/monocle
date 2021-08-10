@@ -133,7 +133,6 @@ module OrderSelectorModal = {
   module OrderSelector = {
     @react.component
     let make = (
-      ~store: Store.t,
       ~fieldName,
       ~setFieldName,
       ~directionValue: SearchTypes.order_direction,
@@ -152,26 +151,23 @@ module OrderSelectorModal = {
             SearchTypes.Asc
           }
         )
-      let sortable = (f: SearchTypes.field) => f.type_ != SearchTypes.Field_regex
-      switch Store.Fetch.fields(store) {
-      | Some(Ok(fields)) => <>
-          <MSelect
-            placeholder={"Pick a field"}
-            options={fields->Belt.List.keep(sortable)->Belt.List.map(f => f.name)}
-            multi={false}
-            value={fieldName}
-            valueChanged={v => setFieldName(_ => v)}
-          />
-          <MSelect
-            placeholder={"Ascending"}
-            options={list{"Ascending", "Descending"}}
-            multi={false}
-            value={directionName}
-            valueChanged={v => setDirectionName(v)}
-          />
-        </>
-      | _ => <Spinner />
-      }
+      let fields = list{"created_at", "updated_at", "repo", "score"}
+      <>
+        <MSelect
+          placeholder={"Pick a field"}
+          options={fields}
+          multi={false}
+          value={fieldName}
+          valueChanged={v => setFieldName(_ => v)}
+        />
+        <MSelect
+          placeholder={"Ascending"}
+          options={list{"Ascending", "Descending"}}
+          multi={false}
+          value={directionName}
+          valueChanged={v => setDirectionName(v)}
+        />
+      </>
     }
   }
   @react.component
@@ -207,7 +203,7 @@ module OrderSelectorModal = {
         </Patternfly.Button>,
       ]>
       <div style={ReactDOM.Style.make(~height="400px", ())}>
-        <OrderSelector store fieldName setFieldName directionValue setDirectionValue />
+        <OrderSelector fieldName setFieldName directionValue setDirectionValue />
       </div>
     </Patternfly.Modal>
   }

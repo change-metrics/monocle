@@ -32,7 +32,10 @@ changes orderM limit = withFilter [BH.TermQuery (BH.Term "type" "Change") Nothin
   where
     limitInt = fromInteger . toInteger $ limit
     toSortBody SearchPB.Order {..} =
-      let field' = BH.FieldName $ toStrict orderField
+      let field' =
+            BH.FieldName
+              . fromMaybe (error $ "Unknown sort field: " <> toStrict orderField)
+              $ Q.queryFieldToDocument (toStrict orderField)
           order = sortOrder orderDirection
        in [ BH.DefaultSortSpec
               ( BH.DefaultSort field' order Nothing Nothing Nothing Nothing
