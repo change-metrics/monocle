@@ -29,19 +29,18 @@ module MostActiveAuthor = {
           title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
         />
       | Some(Ok(SearchTypes.Top_authors(tsc))) =>
-        <MCenteredContent>
-          <Card isCompact=true>
-            <CardTitle>
-              <MGrid>
-                <MGridItem> {title} </MGridItem>
-                <MGridItem>
-                  <LimitSelector limit setLimit default=10 values=limit_values />
-                </MGridItem>
-              </MGrid>
-            </CardTitle>
-            <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
-          </Card>
-        </MCenteredContent>
+        <Card isCompact=true>
+          <CardTitle>
+            <MGrid>
+              <MGridItem> {title} </MGridItem>
+              <MGridItem>
+                <LimitSelector limit setLimit default=10 values=limit_values />
+              </MGridItem>
+            </MGrid>
+          </CardTitle>
+          <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
+        </Card>
+
       | Some(Ok(_)) => React.null
       }}
     </div>
@@ -78,7 +77,7 @@ let make = (~store: Store.t) => {
   ]
   let getItem = (item: t) => {
     let (qtype, title) = item->TopMetricsInfo.getQD
-    <MStackItem key=title> <MostActiveAuthor store qtype title /> </MStackItem>
+    <MostActiveAuthor store qtype title />
   }
   let getItemL = ((l, _)) => l->getItem
   let getItemR = ((_, r)) => r->getItem
