@@ -68,8 +68,13 @@ module FieldSelectorModal = {
   let make = (~isOpen, ~onClose: option<(string, string)> => unit, ~store) => {
     let (fieldName, setFieldName) = React.useState(_ => "")
     let (fieldValue, setFieldValue) = React.useState(_ => "")
-    let onConfirm = _ => onClose(Some(fieldName, fieldValue))
-    let onCancel = _ => onClose(None)
+    let submit = res => {
+      setFieldName(_ => "")
+      setFieldValue(_ => "")
+      onClose(res)
+    }
+    let onConfirm = _ => Some(fieldName, fieldValue)->submit
+    let onCancel = _ => None->submit
     <Patternfly.Modal
       title="Field selector"
       variant=#Large
