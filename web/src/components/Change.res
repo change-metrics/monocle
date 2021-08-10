@@ -105,10 +105,14 @@ module Approvals = {
 
 module Mergeable = {
   @react.component
-  let make = (~mergeable: bool) =>
-    <Patternfly.Label color={mergeable ? #Green : #Orange}>
-      {(mergeable ? "Mergeable" : "Conflicting")->str}
-    </Patternfly.Label>
+  let make = (~state: string, ~mergeable: bool) =>
+    switch state {
+    | "MERGED" => React.null
+    | _ =>
+      <Patternfly.Label color={mergeable ? #Green : #Orange}>
+        {(mergeable ? "Mergeable" : "Conflicting")->str}
+      </Patternfly.Label>
+    }
 }
 
 let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5px", ())
@@ -196,7 +200,7 @@ module DataItem = {
         <Card isCompact={true}>
           <CardHeader>
             <State state={change.state} draft={change.draft} />
-            <Mergeable mergeable={change.mergeable} />
+            <Mergeable state={change.state} mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
             <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
@@ -248,7 +252,7 @@ module RowItem = {
       <td role="cell">
         <div style={oneLineStyle}>
           <State state={change.state} draft={change.draft} />
-          <Mergeable mergeable={change.mergeable} />
+          <Mergeable state={change.state} mergeable={change.mergeable} />
         </div>
       </td>
       <td role="cell"> <AuthorLink store title="" author={change.author} /> </td>
