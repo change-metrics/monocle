@@ -11,13 +11,27 @@ module MonocleNav = {
     let (state, _) = store
 
     let navItem = (name, dest) => {
+      let query = [
+        switch state.query {
+        | "" => list{}
+        | q => list{"q=" ++ q}
+        },
+        switch dest {
+        | "/changes" =>
+          switch state.order {
+          | None => list{}
+          | Some(_) => list{"o=" ++ state.order->orderToQS}
+          }
+        | _ => list{}
+        },
+      ]->Belt.List.concatMany
       let navUrl =
         "/" ++
         state.index ++
         dest ++
-        switch state.query {
-        | "" => ""
-        | q => "?q=" ++ q
+        switch query {
+        | list{} => ""
+        | _ => "?" ++ query->concatSep("&")
         }
 
       <NavItem
