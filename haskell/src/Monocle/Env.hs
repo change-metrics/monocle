@@ -103,22 +103,12 @@ mkFinalQuery flavorM = do
       [x] -> Just x
       xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
 
-getQueryBHWithFlavor :: Q.QueryFlavor -> QueryM (Maybe BH.Query)
-getQueryBHWithFlavor flavor = mkFinalQuery (Just flavor)
-
 getQueryBH :: QueryM (Maybe BH.Query)
 getQueryBH = mkFinalQuery Nothing
 
 -- | 'liftTenantM' run a TenantM in the QueryM
 liftTenantM :: TenantM a -> QueryM a
 liftTenantM = lift
-
-dropQuery :: QueryM a -> QueryM a
-dropQuery = local dropQuery'
-  where
-    dropQuery' (QueryEnv query context) =
-      let newQueryGet m = Q.queryGet query (\_ -> m Nothing)
-       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 withContext :: HasCallStack => Text -> QueryM a -> QueryM a
 withContext context = local setContext
@@ -127,11 +117,31 @@ withContext context = local setContext
     contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
     getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 
+-- | 'dropQuery' remove the query from the context
+dropQuery :: QueryM a -> QueryM a
+dropQuery = local dropQuery'
+  where
+    -- we still want to call the provided modifier, so
+    -- the expr is removed by discarding the modifier parameter
+    dropQuery' (QueryEnv query context) =
+      let newQueryGet modifier = Q.queryGet query (const $ modifier Nothing)
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
+
+-- | 'withFlavor' change the query flavor
+withFlavor :: Q.QueryFlavor -> QueryM a -> QueryM a
+withFlavor flavor = local setFlavor
+  where
+    -- the new flavor replaces the oldFlavor
+    setFlavor (QueryEnv query context) =
+      let newQueryGet modifier _oldFlavor = Q.queryGet query modifier (Just flavor)
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
+
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
 withModified :: (Maybe Expr -> Maybe Expr) -> QueryM a -> QueryM a
 withModified modifier = local addModifier
   where
+    -- The new modifier is composed with the previous one
     addModifier (QueryEnv query context) =
       let newQueryGet oldModifier qf = Q.queryGet query (modifier . oldModifier) qf
        in QueryEnv (query {Q.queryGet = newQueryGet}) context
@@ -141,6 +151,7 @@ withModified modifier = local addModifier
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
 withFilter extraQueries = local addFilter
   where
+    -- The extra query is added to the resulting [BH.Query]
     addFilter (QueryEnv query context) =
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
        in QueryEnv (query {Q.queryGet = newQueryGet}) context
