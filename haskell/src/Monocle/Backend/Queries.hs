@@ -20,17 +20,26 @@ import qualified Monocle.Search.Query as Q
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound. Only those should be using liftTenantM.
 
+measureTenantM :: ToJSON body => body -> TenantM a -> QueryM a
+measureTenantM body action = do
+  prev <- liftIO getCurrentTime
+  res <- liftTenantM action
+  after <- liftIO getCurrentTime
+  ctx <- fromMaybe "UNKNOWN" <$> getContext
+  -- putTextLn $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
+  pure res
+
 -- | Call the search endpoint
 doSearchBH :: (ToJSON body, FromJSON resp) => body -> QueryM (BH.SearchResult resp)
 doSearchBH body = do
-  liftTenantM $ do
+  measureTenantM body $ do
     index <- getIndexName
     BHR.search index body
 
 -- | Call the count endpoint
 doCountBH :: BH.Query -> QueryM Count
 doCountBH body = do
-  liftTenantM $ do
+  measureTenantM body $ do
     index <- getIndexName
     resp <- BH.countByIndex index (BH.CountQuery body)
     case resp of
