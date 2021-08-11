@@ -260,8 +260,9 @@ monocleSearchLanguage =
     headS = \case
       [x] -> x
       _ -> error "Not a list"
-    queryMatch = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH Q.defaultQueryFlavor)
-    queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . headS . flip Q.queryBH flavor)
+    queryGet flavor query = Q.queryGet query id flavor
+    queryMatch = queryDoMatch' [] (encodePretty . headS . queryGet Nothing)
+    queryMatchFlavor flavor = queryDoMatch' [] (encodePretty . headS . queryGet (Just flavor))
     queryMatchBound = queryDoMatch Q.queryBounds
     testTenant =
       Config.Index

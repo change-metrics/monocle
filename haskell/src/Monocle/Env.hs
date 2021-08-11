@@ -2,6 +2,7 @@
 module Monocle.Env where
 
 import qualified Database.Bloodhound as BH
+import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
@@ -70,11 +71,16 @@ instance MonadFail AppM where
   fail = error . toText
 
 -- | 'QueryM' is the query context
-type QueryM = ReaderT Q.Query TenantM
+data QueryEnv = QueryEnv
+  { qeQuery :: Q.Query,
+    qeContext :: Maybe Text
+  }
+
+type QueryM = ReaderT QueryEnv TenantM
 
 -- | 'runQueryM' run the query context
 runQueryM :: Q.Query -> QueryM a -> TenantM a
-runQueryM query qm = runReaderT qm query
+runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
 
 -- | 'runTenantQueryM' combine runTenantM and runQueryM
 runTenantQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
@@ -82,50 +88,73 @@ runTenantQueryM config query qm = runTenantM config (runQueryM query qm)
 
 -- | 'getQuery' provides the query from the context
 getQuery :: QueryM Q.Query
-getQuery = ask
+getQuery = asks qeQuery
 
-mkFinalQuery :: [BH.Query] -> Maybe BH.Query
-mkFinalQuery = \case
-  [] -> Nothing
-  [x] -> Just x
-  xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
+getContext :: QueryM (Maybe Text)
+getContext = asks qeContext
 
-getQueryBHWithFlavor :: Q.QueryFlavor -> QueryM (Maybe BH.Query)
-getQueryBHWithFlavor flavor = do
+mkFinalQuery :: Maybe Q.QueryFlavor -> QueryM (Maybe BH.Query)
+mkFinalQuery flavorM = do
   query <- getQuery
-  pure $ mkFinalQuery $ Q.queryBH query flavor
+  pure $ toBoolQuery $ Q.queryGet query id flavorM
+  where
+    toBoolQuery = \case
+      [] -> Nothing
+      [x] -> Just x
+      xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
 
 getQueryBH :: QueryM (Maybe BH.Query)
-getQueryBH = getQueryBHWithFlavor Q.defaultQueryFlavor
+getQueryBH = mkFinalQuery Nothing
 
 -- | 'liftTenantM' run a TenantM in the QueryM
 liftTenantM :: TenantM a -> QueryM a
 liftTenantM = lift
 
+withContext :: HasCallStack => Text -> QueryM a -> QueryM a
+withContext context = local setContext
+  where
+    setContext (QueryEnv query _) = (QueryEnv query (Just contextName))
+    contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
+    getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
+
+-- | 'dropQuery' remove the query from the context
 dropQuery :: QueryM a -> QueryM a
 dropQuery = local dropQuery'
   where
-    dropQuery' query =
-      let newQueryGet m = Q.queryGet query (\_ -> m Nothing)
-       in query {Q.queryGet = newQueryGet}
+    -- we still want to call the provided modifier, so
+    -- the expr is removed by discarding the modifier parameter
+    dropQuery' (QueryEnv query context) =
+      let newQueryGet modifier = Q.queryGet query (const $ modifier Nothing)
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
+
+-- | 'withFlavor' change the query flavor
+withFlavor :: Q.QueryFlavor -> QueryM a -> QueryM a
+withFlavor flavor = local setFlavor
+  where
+    -- the new flavor replaces the oldFlavor
+    setFlavor (QueryEnv query context) =
+      let newQueryGet modifier _oldFlavor = Q.queryGet query modifier (Just flavor)
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
 withModified :: (Maybe Expr -> Maybe Expr) -> QueryM a -> QueryM a
 withModified modifier = local addModifier
   where
-    addModifier query =
+    -- The new modifier is composed with the previous one
+    addModifier (QueryEnv query context) =
       let newQueryGet oldModifier qf = Q.queryGet query (modifier . oldModifier) qf
-       in query {Q.queryGet = newQueryGet}
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
 withFilter extraQueries = local addFilter
   where
-    addFilter query =
+    -- The extra query is added to the resulting [BH.Query]
+    addFilter (QueryEnv query context) =
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
-       in query {Q.queryGet = newQueryGet}
+       in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 data Entity = Project {getName :: Text} | Organization {getName :: Text}
   deriving (Eq, Show)
@@ -147,7 +176,7 @@ eventToText ev = case ev of
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->
-    let jsonQuery = decodeUtf8 . encode $ Q.queryBH query Q.defaultQueryFlavor
+    let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
      in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
 
 monocleLogEvent :: MonocleEvent -> TenantM ()
