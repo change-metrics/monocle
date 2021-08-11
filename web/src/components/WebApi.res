@@ -28,7 +28,7 @@ module Config = {
     ConfigTypes.get_projects_response,
   > =>
     request->ConfigBs.encode_get_projects_request
-    |> getProjectsRaw(serverUrl ++ "/api/1/get_projects")
+    |> getProjectsRaw(serverUrl ++ "/api/2/get_projects")
     |> Js.Promise.then_(resp =>
       {data: resp.data->ConfigBs.decode_get_projects_response}->Js.Promise.resolve
     )
