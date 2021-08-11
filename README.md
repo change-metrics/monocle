@@ -46,7 +46,7 @@ By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
 by setting the MONOCLE_VERSION to 0.9.0 in the .env file. Please refer
-to [Configuration of the containers](#configuration-of-the-containers).
+to [System configuration section](#system).
 
 ### Create the config.yaml file
 
@@ -54,9 +54,9 @@ The `config.yaml` file is used by the crawler and api services.
 
 If you want to crawl GitHub public repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
-In case of GitHub private repositories, see the [GitHub private repositories](#github-private-repositories) section.
 
-Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to write `GITHUB_TOKEN=<github_token>` in the `.secrets` file:
+Then create the config file `etc/config.yaml`. Here is an example your could start with.
+Make sure to write `GITHUB_TOKEN=<github_token>` in the `.secrets` file:
 
 ```YAML
 ---
@@ -73,7 +73,7 @@ workspaces:
 ```
 
 To crawl the full tektoncd GitHub organization then remove the `github_repositories` entry from the file.
-Check the section [Monocle Configuration File](#monocle-configuration-file) for a complete description of
+Check the section [Workspaces](#workspaces) for a complete description of
 the configuration.
 
 ### Start docker-compose
@@ -106,9 +106,9 @@ $ docker-compose restart api-legacy
 $ docker-compose restart crawler-legacy
 ```
 
-## Advanced configuration
+## Configuration
 
-### Configuration of the containers
+### System
 
 For a local deployment, default settings are fine.
 
@@ -123,24 +123,11 @@ The following settings are available in the `.env` file:
   default it is `Monocle`.
 - `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
   512m.
-- `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_API_PORT=<port>` to change the port of the API (default `9876)`
-- `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_WEB_PORT=<port>` to change the port of the WEB (default `8080`)
-- `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
-- `MONOCLE_ELASTIC_PORT=<port>` to change the port of the ELK (default `9200`)
-  ElasticSearch service is listening to (default `0.0.0.0`). This is
-  only exposed in the development version of the docker-compose
-  (`docker-compose.yml.dev`).
 
-### Monocle configuration file
+### Workspaces
 
 The Monocle configuration file defines workspaces. The file is used by the API and crawlers processes. The format of the file is YAML. You might want to use Dhall to manage it or to better
 understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle)).
-
-#### Workpaces
 
 A workspace uses a dedicated ElasticSearch index. A workspace defines:
 
@@ -399,72 +386,7 @@ Here are the expected environment variables that need to be added to the `.secre
 - `GITHUB_TOKEN`: an API key for GitHub crawler.
 - `GITLAB_TOKEN`: an API key for GitLab crawler.
 
-```YAML
----
-workspaces:
-  - name: sf-team-workspace
-    crawlers:
-      - name: zuul-crawler
-        update_since: '2021-01-01'
-        provider:
-          gerrit_url: https://review.opendev.org
-          gerrit_repositories:
-            - ^zuul/.*
-      - name: rdo-config-crawler
-        update_since: '2021-01-01'
-        provider:
-          gerrit_url: https://review.rdoproject.org/r/
-          gerrit_repositories:
-            - config
-          gerrit_prefix: rdo/
-      - name: sf-crawler
-        update_since: '2021-01-01'
-        provider:
-          gerrit_url: https://softwarefactory-project.io/r/
-          gerrit_repositories:
-            - ^rpms/.*
-            - config
-            - software-factory/sf-config
-      - name: gitlab-crawler
-        update_since: '2020-01-01 00:00:00 UTC'
-        provider:
-          gitlab_organization: redhat/centos-stream/ci-cd/zuul
-      - name: change-metrics-crawler
-        update_since: "2021-01-01"
-        provider:
-          github_organization: change-metrics
-    projects:
-      - name: infra-config
-        repository_regex: "config|rdo/config"
-      - name: monocle
-        repository_regex: "change-metrics/.*"
-      - name: zuul
-        repository_regex: "zuul/.*"
-      - name: software-factory
-        repository_regex: "software-factory/.*|rpms/.*"
-    idents:
-      - ident: "Fabien Boucher"
-        aliases:
-          - "review.opendev.org/Fabien Boucher/6889"
-          - "review.rdoproject.org/Fabien Boucher/112"
-          - "softwarefactory-project.io/Fabien Boucher/6"
-          - "github.com/morucci"
-          - "gitlab.com/fboucher1"
-        groups:
-          - sf-core
-          - change-metrics-core
-      - ident: "Tristan de Cacqueray"
-        aliases:
-          - "review.opendev.org/Tristan de Cacqueray/9311"
-          - "review.rdoproject.org/Tristan de Cacqueray/19"
-          - "softwarefactory-project.io/Tristan de Cacqueray/7"
-          - "github.com/TristanCacqueray"
-          - "gitlab.com/TristanCacqueray"
-        groups:
-          - sf-core
-          - change-metrics-core
-          - zuul-core
-```
+Open the sample [config.yaml](haskell/test/data/config.yaml).
 
 ### GitHub application
 
