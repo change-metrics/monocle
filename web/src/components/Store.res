@@ -11,7 +11,11 @@ module UrlData = {
     let params = Prelude.URLSearchParams.current()
     params->Prelude.URLSearchParams.get(name)->Js.Nullable.toOption->Belt.Option.getWithDefault("")
   }
-  let getOrder = () => getParam("o")->Prelude.orderFromQS
+  let getOrder = () =>
+    getParam("o")
+    ->Prelude.orderFromQS
+    ->Belt.Option.getWithDefault({field: "updated_at", direction: Desc})
+    ->Some
   let getQuery = () => getParam("q")
   let getFilter = () => getParam("f")
   let getLimit = () => {

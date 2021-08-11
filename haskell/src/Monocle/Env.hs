@@ -6,6 +6,7 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
+import Monocle.Search.Syntax (Expr)
 import Servant (Handler)
 
 -------------------------------------------------------------------------------
@@ -104,16 +105,27 @@ liftTenantM = lift
 dropQuery :: QueryM a -> QueryM a
 dropQuery = local dropQuery'
   where
-    dropQuery' query = query {Q.queryBH = const []}
+    dropQuery' query =
+      let newQueryGet m = Q.queryGet query (\_ -> m Nothing)
+       in query {Q.queryGet = newQueryGet}
 
--- | 'withFilter' run a queryM with a modified filter query
+-- | 'withModified' run a queryM with a modified query
+-- Use it to remove or change field from the initial expr, for example to drop dates.
+withModified :: (Maybe Expr -> Maybe Expr) -> QueryM a -> QueryM a
+withModified modifier = local addModifier
+  where
+    addModifier query =
+      let newQueryGet oldModifier qf = Q.queryGet query (modifier . oldModifier) qf
+       in query {Q.queryGet = newQueryGet}
+
+-- | 'withFilter' run a queryM with extra queries.
+-- Use it to mappend bloodhound expression to the final result
 withFilter :: [BH.Query] -> QueryM a -> QueryM a
 withFilter extraQueries = local addFilter
   where
     addFilter query =
-      -- create a new queryBH
-      let newQueryBH qf = extraQueries <> Q.queryBH query qf
-       in query {Q.queryBH = newQueryBH}
+      let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
+       in query {Q.queryGet = newQueryGet}
 
 data Entity = Project {getName :: Text} | Organization {getName :: Text}
   deriving (Eq, Show)
