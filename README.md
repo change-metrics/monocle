@@ -69,11 +69,12 @@ workspaces:
           github_repositories:
             - operator
             - pipeline
-        update_since: '2020-05-01'
+        update_since: '2021-01-01'
 ```
 
 To crawl the full tektoncd GitHub organization then remove the `github_repositories` entry from the file.
-A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
+Check the section [Monocle Configuration File](#monocle-configuration-file) for a complete description of
+the configuration.
 
 ### Start docker-compose
 
@@ -137,7 +138,7 @@ The following settings are available in the `.env` file:
 ### Monocle configuration file
 
 The Monocle configuration file defines workspaces. The file is used by the API and crawlers processes. The format of the file is YAML. You might want to use Dhall to manage it or to better
-understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle.)).
+understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle)).
 
 #### Workpaces
 
@@ -299,7 +300,7 @@ workspaces:
           gerrit_url: https://review.opendev.org
           gerrit_repositories:
             - ^openstack/.*
-        updated_since: "2000-01-01"
+        updated_since: "2021-01-01"
     projects:
       - name: compute
         repository_regex: ".*nova.*"
@@ -392,62 +393,77 @@ docker-compose restart api-legacy
 
 ### Full configuration file example
 
-Here are the expected environment variables:
+Here are the expected environment variables that need to be added to the `.secrets` file:
 
 - `CRAWLERS_API_KEY`: an arbitrary api key used by the crawler to index data.
 - `GITHUB_TOKEN`: an API key for GitHub crawler.
 - `GITLAB_TOKEN`: an API key for GitLab crawler.
-- Optional `GERRIT_PASSWORD`: an account password for Gerrit crawler.
-
-To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
 
 ```YAML
 ---
 workspaces:
-  - name: monocle
+  - name: sf-team-workspace
     crawlers:
-      - name: tektoncd
-        provider:
-          github_organization: tektoncd
-          github_repositories:
-            - pipeline
-        updated_since: "2020-03-15"
-      - name: spinnaker
-        updated_since: "2020-03-15"
-        provider:
-          github_organization: spinnaker
-          github_repositories:
-            - pipeline
-  - name: zuul
-    crawlers:
-      - name: gerrit-opendev
+      - name: zuul-crawler
+        update_since: '2021-01-01'
         provider:
           gerrit_url: https://review.opendev.org
           gerrit_repositories:
             - ^zuul/.*
-        update_since: '2020-03-15'
-  - name: openstack
+      - name: rdo-config-crawler
+        update_since: '2021-01-01'
+        provider:
+          gerrit_url: https://review.rdoproject.org/r/
+          gerrit_repositories:
+            - config
+          gerrit_prefix: rdo/
+      - name: sf-crawler
+        update_since: '2021-01-01'
+        provider:
+          gerrit_url: https://softwarefactory-project.io/r/
+          gerrit_repositories:
+            - ^rpms/.*
+            - config
+            - software-factory/sf-config
+      - name: gitlab-crawler
+        update_since: '2020-01-01 00:00:00 UTC'
+        provider:
+          gitlab_organization: redhat/centos-stream/ci-cd/zuul
+      - name: change-metrics-crawler
+        update_since: "2021-01-01"
+        provider:
+          github_organization: change-metrics
+    projects:
+      - name: infra-config
+        repository_regex: "config|rdo/config"
+      - name: monocle
+        repository_regex: "change-metrics/.*"
+      - name: zuul
+        repository_regex: "zuul/.*"
+      - name: software-factory
+        repository_regex: "software-factory/.*|rpms/.*"
     idents:
       - ident: "Fabien Boucher"
         aliases:
           - "review.opendev.org/Fabien Boucher/6889"
           - "review.rdoproject.org/Fabien Boucher/112"
-    crawlers:
-      - name: bz-crawler
-        updated_since: "2021-01-01"
-        provider: TaskDataProvider
-      - name: gerrit-opendev
-        provider:
-          gerrit_url: https://review.opendev.org
-          gerrit_repositories:
-            - ^openstack/.*
-        update_since: '2020-03-15'
-      - name: gerrit-rdo
-        provider:
-          gerrit_url: https://review.rdoproject.org/r/
-          gerrit_repositories:
-            - ^openstack/.*
-        update_since: '2020-03-15'
+          - "softwarefactory-project.io/Fabien Boucher/6"
+          - "github.com/morucci"
+          - "gitlab.com/fboucher1"
+        groups:
+          - sf-core
+          - change-metrics-core
+      - ident: "Tristan de Cacqueray"
+        aliases:
+          - "review.opendev.org/Tristan de Cacqueray/9311"
+          - "review.rdoproject.org/Tristan de Cacqueray/19"
+          - "softwarefactory-project.io/Tristan de Cacqueray/7"
+          - "github.com/TristanCacqueray"
+          - "gitlab.com/TristanCacqueray"
+        groups:
+          - sf-core
+          - change-metrics-core
+          - zuul-core
 ```
 
 ### GitHub application
