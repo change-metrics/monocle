@@ -1,8 +1,64 @@
 ---
 workspaces:
-  - name: zuul
-    crawlers_api_key: "API_KEY"
+  - name: sf-team-workspace
     crawlers:
-      - name: taskdata
+      - name: zuul-crawler
         update_since: "2021-01-01"
-        provider: TaskDataProvider
+        provider:
+          gerrit_url: https://review.opendev.org
+          gerrit_repositories:
+            - ^zuul/.*
+      - name: rdo-config-crawler
+        update_since: "2021-01-01"
+        provider:
+          gerrit_url: https://review.rdoproject.org/r/
+          gerrit_repositories:
+            - config
+          gerrit_prefix: rdo/
+      - name: sf-crawler
+        update_since: "2021-01-01"
+        provider:
+          gerrit_url: https://softwarefactory-project.io/r/
+          gerrit_repositories:
+            - ^rpms/.*
+            - config
+            - software-factory/sf-config
+      - name: gitlab-crawler
+        update_since: "2020-01-01 00:00:00 UTC"
+        provider:
+          gitlab_organization: redhat/centos-stream/ci-cd/zuul
+      - name: change-metrics-crawler
+        update_since: "2021-01-01"
+        provider:
+          github_organization: change-metrics
+    projects:
+      - name: infra-config
+        repository_regex: "config|rdo/config"
+      - name: monocle
+        repository_regex: "change-metrics/.*"
+      - name: zuul
+        repository_regex: "zuul/.*"
+      - name: software-factory
+        repository_regex: "software-factory/.*|rpms/.*"
+    idents:
+      - ident: "Fabien Boucher"
+        aliases:
+          - "review.opendev.org/Fabien Boucher/6889"
+          - "review.rdoproject.org/Fabien Boucher/112"
+          - "softwarefactory-project.io/Fabien Boucher/6"
+          - "github.com/morucci"
+          - "gitlab.com/fboucher1"
+        groups:
+          - sf-core
+          - change-metrics-core
+      - ident: "Tristan de Cacqueray"
+        aliases:
+          - "review.opendev.org/Tristan de Cacqueray/9311"
+          - "review.rdoproject.org/Tristan de Cacqueray/19"
+          - "softwarefactory-project.io/Tristan de Cacqueray/7"
+          - "github.com/TristanCacqueray"
+          - "gitlab.com/TristanCacqueray"
+        groups:
+          - sf-core
+          - change-metrics-core
+          - zuul-core
