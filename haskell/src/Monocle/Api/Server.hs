@@ -17,7 +17,7 @@ import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..))
+import Monocle.Search.Query (RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.TaskData as TaskDataPB
@@ -114,11 +114,9 @@ userGroupGet request = do
                   "ChangeCommitForcePushedEvent"
                 ]
 
-          qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-
       userStats <- withFilter [userQuery] $ do
-        reviewHisto <- withFilter [reviewQuery] $ Q.getHisto qf
-        commitHisto <- withFilter [commitQuery] $ Q.getHisto qf
+        reviewHisto <- withFilter [reviewQuery] $ Q.getHisto CreatedAt
+        commitHisto <- withFilter [commitQuery] $ Q.getHisto CreatedAt
 
         UserGroupPB.GroupStat
           <$> Q.changeReviewRatio

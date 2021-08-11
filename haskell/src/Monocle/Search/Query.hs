@@ -4,7 +4,6 @@ module Monocle.Search.Query
   ( Query (..),
     queryWithMods,
     query,
-    queryBH,
     ensureMinBound,
     fields,
     queryFieldToDocument,
@@ -18,8 +17,6 @@ module Monocle.Search.Query
     RangeFlavor (..),
     rangeField,
     defaultQueryFlavor,
-    toBHQuery,
-    toBHQueryWithFlavor,
     dropDate,
     dropField,
   )
@@ -70,15 +67,10 @@ data QueryFlavor = QueryFlavor
 defaultQueryFlavor :: QueryFlavor
 defaultQueryFlavor = QueryFlavor Author CreatedAt
 
--- | Deprecated accessor to get the bloodhound query from the query
-{-# DEPRECATED queryBH "Use queryGet instead" #-}
-queryBH :: Query -> QueryFlavor -> [BH.Query]
-queryBH q qf = queryGet q id qf
-
 data Query = Query
   { -- | queryGet provide the bloodhound query.
     -- it is a list to be combined as a bool query
-    queryGet :: (Maybe Expr -> Maybe Expr) -> QueryFlavor -> [BH.Query],
+    queryGet :: (Maybe Expr -> Maybe Expr) -> Maybe QueryFlavor -> [BH.Query],
     -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
     -- It defaults to (now-3weeks, now)
     -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
@@ -90,15 +82,6 @@ data Query = Query
     -- | queryBoundsSet indicate when a minimum bound has been set by the user.
     queryMinBoundsSet :: Bool
   }
-
--- instance Show Query where
---  show Query {..} = "Query {" <> show queryBounds <> "}"
-
-toBHQuery :: Query -> [BH.Query]
-toBHQuery = flip queryBH defaultQueryFlavor
-
-toBHQueryWithFlavor :: QueryFlavor -> Query -> [BH.Query]
-toBHQueryWithFlavor = flip queryBH
 
 -- $setup
 -- >>> import Monocle.Search.Parser as P
@@ -395,7 +378,7 @@ mkNotQuery e1 = do
 --
 -- >>> :{
 --  let query = load Nothing mempty Nothing "state:open"
---   in putTextLn . decodeUtf8 . Aeson.encode $ (queryBH query defaultQueryFlavor)
+--   in putTextLn . decodeUtf8 . Aeson.encode $ (queryGet query id Nothing)
 -- :}
 -- [{"term":{"state":{"value":"OPEN"}}}]
 query :: Expr -> Parser BH.Query
@@ -419,10 +402,10 @@ queryWithMods now' username indexM exprM = do
       pure ((fromMaybe (threeWeeksAgo maxBound') minBoundM, maxBound'), isJust minBoundM)
 
   -- Prepare the queryGet accessor
-  let queryGet modifier flavor = case modifier exprM of
+  let queryGet modifier flavorM = case modifier exprM of
         Just expr' ->
           -- We have a query Expr, convert it to a BH.query
-          let queryBHE = runParser expr' flavor
+          let queryBHE = runParser expr' (fromMaybe defaultQueryFlavor flavorM)
            in case queryBHE of
                 Left e -> error $ "Could not convert the expr to a bloodhound query: " <> show e
                 Right (queryFlavored, _) -> [queryFlavored]
