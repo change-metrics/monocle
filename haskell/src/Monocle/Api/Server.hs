@@ -57,6 +57,22 @@ userGroupList request = do
           groupDefinitionMembers = fromInteger . toInteger $ length users
        in UserGroupPB.GroupDefinition {..}
 
+-- | /api/2/get_projects
+configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
+configGetProjects ConfigPB.GetProjectsRequest {..} = do
+  tenants <- getConfig
+  pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getProjectsRequestIndex) of
+    Just index -> fromMaybe [] $ fmap toResp <$> Config.projects index
+    Nothing -> []
+  where
+    toResp :: Config.Project -> ConfigPB.ProjectDefinition
+    toResp Config.Project {..} =
+      let projectDefinitionName = toLazy name
+          projectDefinitionRepositoryRegex = toLazy $ fromMaybe "" repository_regex
+          projectDefinitionBranchRegex = toLazy $ fromMaybe "" branch_regex
+          projectDefinitionFileRegex = toLazy $ fromMaybe "" file_regex
+       in ConfigPB.ProjectDefinition {..}
+
 -- | /api/2/user_group/get endpoint
 userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
 userGroupGet request = do
