@@ -13,7 +13,17 @@ let startWithOrderModalOpen = false
 module FieldSelectorModal = {
   module FieldSelector = {
     @react.component
-    let make = (~store: Store.t, ~fieldName, ~setFieldName, ~fieldValue, ~setFieldValue) =>
+    let make = (
+      ~store: Store.t,
+      ~fieldName,
+      ~setFieldName,
+      ~fieldValue,
+      ~setFieldValue,
+      ~fromValue,
+      ~setFromValue,
+      ~toValue,
+      ~setToValue,
+    ) =>
       // We fetch the suggestions once, after the modal is displayed
       switch (Store.Fetch.suggestions(store), Store.Fetch.fields(store)) {
       | (Some(Ok(suggestions)), Some(Ok(fields))) => {
@@ -31,31 +41,50 @@ module FieldSelectorModal = {
 
           let value = fieldValue
           let onChange = (v, _) => setFieldValue(_ => v)
+          let freeFormFields = (f: SearchTypes.field) =>
+            !(list{"from", "to", "created_at", "updated_at"}->elemText(f.name))
 
           <>
-            <MSelect
-              placeholder={"Pick a field"}
-              options={fields->Belt.List.map(f => f.name)}
-              multi={false}
-              value={fieldName}
-              valueChanged={v => setFieldName(_ => v)}
-            />
-            {switch get(fieldName) {
-            | Some(field) =>
-              switch getValues(fieldName) {
-              | list{} =>
-                <TextInput id={"field-input"} placeholder={field.description} onChange value />
-              | xs =>
-                <MSelect
-                  isCreatable={true}
-                  placeholder={field.description}
-                  options={xs}
-                  valueChanged={v => setFieldValue(_ => v)}
-                  value
-                />
-              }
-            | None => React.null
-            }}
+            <FormGroup label="Date range" fieldId="date-range-form" hasNoPaddingTop=false>
+              <DatePicker
+                id={"from-date"}
+                placeholder={"From date"}
+                value={fromValue}
+                onChange={(v, _) => setFromValue(_ => v)}
+              />
+              <DatePicker
+                id={"to-date"}
+                placeholder={"To date"}
+                value={toValue}
+                onChange={(v, _) => setToValue(_ => v)}
+              />
+            </FormGroup>
+            <br />
+            <FormGroup label="Extra filter" fieldId="query-filter" hasNoPaddingTop=false>
+              <MSelect
+                placeholder={"Pick a field"}
+                options={fields->Belt.List.keep(freeFormFields)->Belt.List.map(f => f.name)}
+                multi={false}
+                value={fieldName}
+                valueChanged={v => setFieldName(_ => v)}
+              />
+              {switch get(fieldName) {
+              | Some(field) =>
+                switch getValues(fieldName) {
+                | list{} =>
+                  <TextInput id={"field-input"} placeholder={field.description} onChange value />
+                | xs =>
+                  <MSelect
+                    isCreatable={true}
+                    placeholder={field.description}
+                    options={xs}
+                    valueChanged={v => setFieldValue(_ => v)}
+                    value
+                  />
+                }
+              | None => React.null
+              }}
+            </FormGroup>
             <br />
             <br />
           </>
@@ -65,13 +94,38 @@ module FieldSelectorModal = {
   }
 
   @react.component
-  let make = (~isOpen, ~onClose: option<(string, string)> => unit, ~store) => {
+  let make = (~isOpen, ~onClose: option<string> => unit, ~store) => {
     let (fieldName, setFieldName) = React.useState(_ => "")
     let (fieldValue, setFieldValue) = React.useState(_ => "")
-    let onConfirm = _ => onClose(Some(fieldName, fieldValue))
-    let onCancel = _ => onClose(None)
+    let (fromValue, setFromValue) = React.useState(_ => "")
+    let (toValue, setToValue) = React.useState(_ => "")
+
+    let submit = res => {
+      setFromValue(_ => "")
+      setToValue(_ => "")
+      setFieldName(_ => "")
+      setFieldValue(_ => "")
+      onClose(res)
+    }
+    let onConfirm = _ => {
+      let field =
+        fieldValue == ""
+          ? ""
+          : switch Js.String.split(",", fieldValue)->Belt.Array.map(fieldValue =>
+              fieldName ++ ":" ++ fieldValue->quoteValue
+            ) {
+            | [x] => x
+            | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
+            }
+      let setExpr = (value, field) => value == "" ? "" : field ++ ":" ++ value
+      let fromExpr = fromValue->setExpr("from")
+      let toExpr = toValue->setExpr("to")
+      let expr = list{field, fromExpr, toExpr}->Belt.List.keep(v => v != "")->concatSep(" ")
+      expr->Some->submit
+    }
+    let onCancel = _ => None->submit
     <Patternfly.Modal
-      title="Field selector"
+      title="Add search filter"
       variant=#Large
       isOpen
       onClose={_ => onClose(None)}
@@ -84,44 +138,77 @@ module FieldSelectorModal = {
         </Patternfly.Button>,
       ]>
       <div style={ReactDOM.Style.make(~height="400px", ())}>
-        <FieldSelector store fieldName setFieldName fieldValue setFieldValue />
+        <FieldSelector
+          store
+          fieldName
+          setFieldName
+          fieldValue
+          setFieldValue
+          fromValue
+          setFromValue
+          toValue
+          setToValue
+        />
       </div>
     </Patternfly.Modal>
   }
 }
 
-module Bar = {
-  let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
+// A custom text input with onKeyUp callback
+// TODO: add property to re-patternfly
+module TextInputUp = {
+  @react.component @module("@patternfly/react-core")
+  external make: (
+    ~iconVariant: @string
+    [
+      | @as("search") #Search
+    ]=?,
+    ~id: string,
+    ~onChange: (string, ReactEvent.Mouse.t) => unit=?,
+    ~onKeyUp: ReactEvent.Keyboard.t => unit=?,
+    ~_type: @string
+    [
+      | @as("text") #Text
+    ]=?,
+    ~value: string=?,
+  ) => React.element = "TextInput"
+}
 
+module Bar = {
   @react.component
-  let make = (~store: Store.t, ~value: string, ~setValue: string => unit) => {
+  let make = (
+    ~store: Store.t,
+    ~value: string,
+    ~setValue: string => unit,
+    ~onSave: string => unit,
+  ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
-    let appendField = v => {
-      switch v {
-      | Some(fieldName, fieldValues) => {
-          let prefix = value == "" ? "" : " and "
-          let expr = switch Js.String.split(",", fieldValues)->Belt.Array.map(fieldValue =>
-            fieldName ++ ":" ++ fieldValue->quoteValue
-          ) {
-          | [x] => x
-          | xs => "(" ++ Js.Array.joinWith(" or ", xs) ++ ")"
-          }
-          setValue(expr ++ prefix ++ value)
+    let appendExpr = expr => {
+      switch expr {
+      | Some(expr) => {
+          let prefix = expr == "" ? "" : " "
+          onSave(expr ++ prefix ++ value)
         }
       | None => ignore()
       }
       setShowFieldSelector(_ => false)
     }
+    let onKeyUp = (v: ReactEvent.Keyboard.t) =>
+      switch ReactEvent.Keyboard.key(v) {
+      | "Enter" => onSave(value)
+      | _ => ignore()
+      }
     <>
-      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendField} />
+      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
       <HelpSearch.Tooltip />
       <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
         {"Add filter"->str}
       </Patternfly.Button>
-      <Patternfly.TextInput
+      <TextInputUp
         id="col-search"
         value={value}
         onChange={(v, _) => setValue(v)}
+        onKeyUp
         _type=#Text
         iconVariant=#Search
       />
@@ -258,10 +345,11 @@ module Top = {
     }, [state.query])
 
     // Dispatch the value upstream
-    let onClick = _ => {
-      setSavedValue(_ => value)
-      value->Store.Store.SetQuery->dispatch
+    let onSave = newValue => {
+      setSavedValue(_ => newValue)
+      newValue->Store.Store.SetQuery->dispatch
     }
+    let onClick = _ => onSave(value)
     let setLimit = str => {
       let v = str == "" ? 0 : str->int_of_string
       setLimit'(_ => v)
@@ -270,7 +358,7 @@ module Top = {
 
     <Patternfly.Layout.Bullseye>
       <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
-        <Bar value setValue store />
+        <Bar value setValue onSave store />
         {value != savedValue
           ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
           : React.null}
