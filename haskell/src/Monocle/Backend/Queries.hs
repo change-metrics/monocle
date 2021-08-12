@@ -19,6 +19,8 @@ import qualified Monocle.Search.Query as Q
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound. Only those should be using liftTenantM.
+debug :: Bool
+debug = False
 
 measureTenantM :: ToJSON body => body -> TenantM a -> QueryM a
 measureTenantM body action = do
@@ -26,7 +28,8 @@ measureTenantM body action = do
   res <- liftTenantM action
   after <- liftIO getCurrentTime
   ctx <- fromMaybe "UNKNOWN" <$> getContext
-  -- putTextLn $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
+  when debug $
+    putTextLn $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
   pure res
 
 -- | Call the search endpoint
