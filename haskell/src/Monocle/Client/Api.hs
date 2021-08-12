@@ -20,7 +20,7 @@ configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspac
 configGetWorkspaces = monocleReq "api/2/get_workspaces"
 
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
-configGetProjects = monocleReq "api/1/get_projects"
+configGetProjects = monocleReq "api/2/get_projects"
 
 configHealth :: (MonadThrow m, MonadIO m) => MonocleClient -> HealthRequest -> m HealthResponse
 configHealth = monocleReq "api/2/health"

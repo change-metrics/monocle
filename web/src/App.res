@@ -62,7 +62,7 @@ module MonocleNav = {
               ("Groups", "/user_groups"),
             },
           ),
-          navGroup("Projects", list{("Repositories", "/repos")}),
+          navGroup("Projects", list{("Projects", "/projects"), ("Repositories", "/repos")}),
           navGroup("Changes", list{("Browse Changes", "/changes"), ("Board", "/board")}),
         ]->React.array}
       </NavList>
@@ -124,6 +124,7 @@ let make = () => {
       | list{_, "active_authors"} => <ActivePeopleView store />
       | list{_, "peers_strength"} => <PeersStrengthView store />
       | list{_, "new_authors"} => <NewContributorsView store />
+      | list{_, "projects"} => <ProjectsView store />
       | list{_, "user_groups"} => <GroupsView store />
       | list{_, "user_groups", group} => <GroupView group store />
       | list{_, "repos"} => <ReposView store />
