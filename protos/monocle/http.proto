@@ -28,7 +28,7 @@ service Config {
   // Return the list of projects
   rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
     option (google.api.http) = {
-      post: "/api/1/get_projects"
+      post: "/api/2/get_projects"
       body: "*"
     };
   }

@@ -7,23 +7,6 @@ info:
     description: The monocle HTTP API
     version: 0.0.1
 paths:
-    /api/1/get_projects:
-        post:
-            summary: Return the list of projects
-            operationId: Config_GetProjects
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_config_GetProjectsRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_config_GetProjectsResponse'
     /api/1/suggestions:
         post:
             operationId: Search_Suggestions
@@ -142,6 +125,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_crawler_CommitInfoResponse'
+    /api/2/get_projects:
+        post:
+            summary: Return the list of projects
+            operationId: Config_GetProjects
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_config_GetProjectsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_config_GetProjectsResponse'
     /api/2/get_workspaces:
         post:
             summary: Return the list of workspaces
