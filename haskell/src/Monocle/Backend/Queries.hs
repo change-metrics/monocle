@@ -39,6 +39,24 @@ doSearchBH body = do
     index <- getIndexName
     BHR.search index body
 
+-- | Call the scroll api and collect unordered results
+getInitialScrollBH :: FromJSON resp => BH.Search -> QueryM (BH.SearchResult resp)
+getInitialScrollBH body = do
+  resp <- measureTenantM body $ do
+    index <- getIndexName
+    BH.getInitialScroll index body
+  case resp of
+    Left err -> error (show err)
+    Right res -> pure res
+
+advanceScrollBH :: FromJSON resp => BH.ScrollId -> QueryM (BH.SearchResult resp)
+advanceScrollBH scroll = do
+  resp <- measureTenantM (Aeson.String "Advancing scroll") $ do
+    BH.advanceScroll scroll 60
+  case resp of
+    Left err -> error (show err)
+    Right res -> pure res
+
 -- | Call the count endpoint
 doCountBH :: BH.Query -> QueryM Count
 doCountBH body = do
@@ -77,6 +95,27 @@ doSearch orderM limit = do
     sortOrder order = case fromPBEnum order of
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
+
+-- | Get scan results hits
+doScan :: FromJSON resp => Word32 -> QueryM [resp]
+doScan limit' = do
+  query <- getQueryBH
+  res <-
+    handleScrollResult []
+      =<< getInitialScrollBH (BH.mkSearch query Nothing) {BH.size = BH.Size limit}
+  pure $ catMaybes (BH.hitSource <$> res)
+  where
+    handleScrollResult acc resp = do
+      case BH.hits (BH.searchHits resp) of
+        [] -> pure acc
+        xs -> loop (acc <> xs) (BH.scrollId resp)
+
+    loop acc Nothing = pure acc
+    loop acc (Just scroll)
+      | length acc >= limit = pure acc
+      | otherwise = handleScrollResult acc =<< advanceScrollBH scroll
+
+    limit = fromInteger $ toInteger $ max 50 limit'
 
 -- | Get document count matching the query
 countDocs :: QueryM Count
@@ -325,7 +364,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
   (minDate, _) <- Q.queryBounds <$> getQuery
 
   -- Collect all the events
-  result <- doSearch Nothing 10000
+  result <- doScan 10000
 
   -- Group by change_id
   let changeMap :: [NonEmpty ELKChangeEvent]

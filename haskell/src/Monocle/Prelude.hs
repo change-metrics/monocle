@@ -38,6 +38,7 @@ module Monocle.Prelude
     nominalDiffTimeToSeconds,
     diffUTCTime,
     formatTime',
+    threadDelay,
 
     -- * lens
     Lens',
@@ -65,6 +66,7 @@ module Monocle.Prelude
   )
 where
 
+import Control.Concurrent (threadDelay)
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
