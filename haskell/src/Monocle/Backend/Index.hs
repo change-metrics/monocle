@@ -436,7 +436,9 @@ getWorkerName Config.Crawler {..} = name
 
 getWorkerUpdatedSince :: Config.Crawler -> UTCTime
 getWorkerUpdatedSince Config.Crawler {..} =
-  fromMaybe (error "nop") (readMaybe (toString update_since) :: Maybe UTCTime)
+  fromMaybe
+    (error "Invalid date format: Expected format YYYY-mm-dd hh:mm:ss UTC")
+    (readMaybe (toString update_since) :: Maybe UTCTime)
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity offset = do

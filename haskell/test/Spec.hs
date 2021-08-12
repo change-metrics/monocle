@@ -20,6 +20,7 @@ import Test.Tasty.HUnit
 main :: IO ()
 main = do
   setEnv "API_KEY" "secret"
+  setEnv "CRAWLERS_API_KEY" "secret"
   defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
 
 monocleSearchLanguage :: TestTree
@@ -151,7 +152,7 @@ monocleSearchLanguage =
         "Query project"
         ( queryMatch
             "project:zuul"
-            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}}]}}"
+            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}},{\"regexp\":{\"changed_files.path\":{\"flags\":\"ALL\",\"value\":\"tests/.*\"}}}]}}"
         ),
       testCase
         "Query author"
