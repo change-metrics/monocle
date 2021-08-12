@@ -20,6 +20,7 @@ import Test.Tasty.HUnit
 main :: IO ()
 main = do
   setEnv "API_KEY" "secret"
+  setEnv "CRAWLERS_API_KEY" "secret"
   defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
 
 monocleSearchLanguage :: TestTree

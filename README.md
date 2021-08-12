@@ -46,7 +46,7 @@ By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
 by setting the MONOCLE_VERSION to 0.9.0 in the .env file. Please refer
-to [Configuration of the containers](#configuration-of-the-containers).
+to [System configuration section](#system).
 
 ### Create the config.yaml file
 
@@ -54,9 +54,9 @@ The `config.yaml` file is used by the crawler and api services.
 
 If you want to crawl GitHub public repositories, generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
-In case of GitHub private repositories, see the [GitHub private repositories](#github-private-repositories) section.
 
-Then create the config file `etc/config.yaml`. Here is an example your could start with. Make sure to write `GITHUB_TOKEN=<github_token>` in the `.secrets` file:
+Then create the config file `etc/config.yaml`. Here is an example your could start with.
+Make sure to write `GITHUB_TOKEN=<github_token>` in the `.secrets` file:
 
 ```YAML
 ---
@@ -69,11 +69,12 @@ workspaces:
           github_repositories:
             - operator
             - pipeline
-        update_since: '2020-05-01'
+        update_since: '2021-01-01'
 ```
 
 To crawl the full tektoncd GitHub organization then remove the `github_repositories` entry from the file.
-A more complete example is available in the section [Full configuration file example](#full-configuration-file-example).
+Check the section [Workspaces](#workspaces) for a complete description of
+the configuration.
 
 ### Start docker-compose
 
@@ -105,9 +106,9 @@ $ docker-compose restart api-legacy
 $ docker-compose restart crawler-legacy
 ```
 
-## Advanced configuration
+## Configuration
 
-### Configuration of the containers
+### System
 
 For a local deployment, default settings are fine.
 
@@ -122,24 +123,11 @@ The following settings are available in the `.env` file:
   default it is `Monocle`.
 - `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
   512m.
-- `MONOCLE_API_ADDR=<ip>` to change the IP address the API service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_API_PORT=<port>` to change the port of the API (default `9876)`
-- `MONOCLE_WEB_ADDR=<ip>` to change the IP address the Web service is
-  listening to (default `0.0.0.0`).
-- `MONOCLE_WEB_PORT=<port>` to change the port of the WEB (default `8080`)
-- `MONOCLE_ELASTIC_ADDR=<ip>` to change the IP address the
-- `MONOCLE_ELASTIC_PORT=<port>` to change the port of the ELK (default `9200`)
-  ElasticSearch service is listening to (default `0.0.0.0`). This is
-  only exposed in the development version of the docker-compose
-  (`docker-compose.yml.dev`).
 
-### Monocle configuration file
+### Workspaces
 
 The Monocle configuration file defines workspaces. The file is used by the API and crawlers processes. The format of the file is YAML. You might want to use Dhall to manage it or to better
-understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle.)).
-
-#### Workpaces
+understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle)).
 
 A workspace uses a dedicated ElasticSearch index. A workspace defines:
 
@@ -299,7 +287,7 @@ workspaces:
           gerrit_url: https://review.opendev.org
           gerrit_repositories:
             - ^openstack/.*
-        updated_since: "2000-01-01"
+        updated_since: "2021-01-01"
     projects:
       - name: compute
         repository_regex: ".*nova.*"
@@ -392,63 +380,13 @@ docker-compose restart api-legacy
 
 ### Full configuration file example
 
-Here are the expected environment variables:
+Here are the expected environment variables that need to be added to the `.secrets` file:
 
 - `CRAWLERS_API_KEY`: an arbitrary api key used by the crawler to index data.
 - `GITHUB_TOKEN`: an API key for GitHub crawler.
 - `GITLAB_TOKEN`: an API key for GitLab crawler.
-- Optional `GERRIT_PASSWORD`: an account password for Gerrit crawler.
 
-To use a different variable name, add a new attribute to the crawler definition using the default name in lowercase, `github_token: CUSTOM_ENV_NAME`.
-
-```YAML
----
-workspaces:
-  - name: monocle
-    crawlers:
-      - name: tektoncd
-        provider:
-          github_organization: tektoncd
-          github_repositories:
-            - pipeline
-        updated_since: "2020-03-15"
-      - name: spinnaker
-        updated_since: "2020-03-15"
-        provider:
-          github_organization: spinnaker
-          github_repositories:
-            - pipeline
-  - name: zuul
-    crawlers:
-      - name: gerrit-opendev
-        provider:
-          gerrit_url: https://review.opendev.org
-          gerrit_repositories:
-            - ^zuul/.*
-        update_since: '2020-03-15'
-  - name: openstack
-    idents:
-      - ident: "Fabien Boucher"
-        aliases:
-          - "review.opendev.org/Fabien Boucher/6889"
-          - "review.rdoproject.org/Fabien Boucher/112"
-    crawlers:
-      - name: bz-crawler
-        updated_since: "2021-01-01"
-        provider: TaskDataProvider
-      - name: gerrit-opendev
-        provider:
-          gerrit_url: https://review.opendev.org
-          gerrit_repositories:
-            - ^openstack/.*
-        update_since: '2020-03-15'
-      - name: gerrit-rdo
-        provider:
-          gerrit_url: https://review.rdoproject.org/r/
-          gerrit_repositories:
-            - ^openstack/.*
-        update_since: '2020-03-15'
-```
+Open the sample [config.yaml](haskell/test/data/config.yaml).
 
 ### GitHub application
 
