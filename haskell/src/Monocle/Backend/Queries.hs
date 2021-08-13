@@ -327,6 +327,21 @@ data FirstEvent = FirstEvent
   }
   deriving (Show)
 
+data JsonChangeEvent = JsonChangeEvent
+  { jceCreatedAt :: UTCTime,
+    jceOnCreatedAt :: UTCTime,
+    jceChangeId :: Json.ShortText,
+    jceAuthor :: Json.ShortText
+  }
+
+decodeJsonChangeEvent :: Json.Value -> Maybe JsonChangeEvent
+decodeJsonChangeEvent v = do
+  jceCreatedAt <- Json.getDate =<< Json.getAttr "created_at" v
+  jceOnCreatedAt <- Json.getDate =<< Json.getAttr "on_created_at" v
+  jceChangeId <- Json.getString =<< Json.getAttr "change_id" v
+  jceAuthor <- Json.getString =<< Json.getAttr "muid" =<< Json.getAttr "author" v
+  pure $ JsonChangeEvent {..}
+
 firstEventDuration :: FirstEvent -> Pico
 firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedAt
 
@@ -338,16 +353,17 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
   (minDate, _) <- Q.queryBounds <$> getQuery
 
   -- Collect all the events
-  result <- doSearch Nothing 10000
+  resultJson <- doFastSearch 10000
+  let result = catMaybes $ map decodeJsonChangeEvent resultJson
 
   -- Group by change_id
-  let changeMap :: [NonEmpty ELKChangeEvent]
-      changeMap = HM.elems $ groupBy elkchangeeventChangeId result
+  let changeMap :: [NonEmpty JsonChangeEvent]
+      changeMap = HM.elems $ groupBy jceChangeId result
 
   -- Remove old change where we may not have the first event
-  let keepRecent :: NonEmpty ELKChangeEvent -> Bool
-      keepRecent (ELKChangeEvent {..} :| _)
-        | elkchangeeventOnCreatedAt > minDate = True
+  let keepRecent :: NonEmpty JsonChangeEvent -> Bool
+      keepRecent (JsonChangeEvent {..} :| _)
+        | jceOnCreatedAt > minDate = True
         | otherwise = False
 
   now <- liftIO getCurrentTime
@@ -361,15 +377,15 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
           feCreatedAt = now
           feAuthor = ""
        in FirstEvent {..}
-    toFirstEvent :: ELKChangeEvent -> FirstEvent -> FirstEvent
-    toFirstEvent ELKChangeEvent {..} acc =
+    toFirstEvent :: JsonChangeEvent -> FirstEvent -> FirstEvent
+    toFirstEvent JsonChangeEvent {..} acc =
       let (createdAt, author) =
             -- If the event is older update the info
-            if elkchangeeventCreatedAt < feCreatedAt acc
-              then (elkchangeeventCreatedAt, authorMuid elkchangeeventAuthor)
+            if jceCreatedAt < feCreatedAt acc
+              then (jceCreatedAt, toLazy $ Json.toText jceAuthor)
               else (feCreatedAt acc, feAuthor acc)
        in FirstEvent
-            { feChangeCreatedAt = elkchangeeventOnCreatedAt,
+            { feChangeCreatedAt = jceOnCreatedAt,
               feCreatedAt = createdAt,
               feAuthor = author
             }
