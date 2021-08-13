@@ -10,6 +10,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
+import qualified Json.Extras as Json
 import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
@@ -35,6 +36,12 @@ doSearchBH body = do
   measureTenantM body $ do
     index <- getIndexName
     BHR.search index body
+
+doSearchHitBH :: (ToJSON body) => body -> QueryM [Json.Value]
+doSearchHitBH body = do
+  measureTenantM body $ do
+    index <- getIndexName
+    BHR.searchHit index body
 
 -- | Call the count endpoint
 doCountBH :: BH.Query -> QueryM Count
@@ -74,6 +81,15 @@ doSearch orderM limit = do
     sortOrder order = case fromPBEnum order of
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
+
+-- | Get search results hits, as fast as possible
+doFastSearch :: Word32 -> QueryM [Json.Value]
+doFastSearch limit = do
+  query <- getQueryBH
+  doSearchHitBH
+    (BH.mkSearch query Nothing)
+      { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit
+      }
 
 -- | Get document count matching the query
 countDocs :: QueryM Count
