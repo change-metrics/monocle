@@ -269,63 +269,9 @@ let
       version = "1.0.0.1";
       sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
     };
-
-    # bloodhound needs a new release, use current master for now
-    bloodhound = pkgs.haskell.lib.overrideCabal super.bloodhound {
-      src = pkgs.fetchFromGitHub {
-        owner = "bitemyapp";
-        repo = "bloodhound";
-        rev = "4775ebb759fe1b7cb5f880e4a41044b2363d98af";
-        sha256 = "00wzaj4slvdxanm0krbc6mfn96mi5c6hhd3sywd3gq5m2ff59ggn";
-      };
-      broken = false;
-    };
   });
-  # haskell dependencies from monocle.cabal and lentille.cabal
-  ghc = hsPkgs.ghcWithPackages (p:
-    with p; [
-      MonadRandom
-      aeson
-      aeson-casing
-      binary
-      bloodhound
-      bytestring
-      connection
-      dhall
-      dhall-yaml
-      either
-      exceptions
-      file-embed
-      http-client
-      http-client-openssl
-      http-types
-      language-protobuf
-      megaparsec
-      morpheus-graphql-client
-      parser-combinators
-      proto3-suite
-      relude
-      retry
-      say
-      servant
-      servant-options
-      servant-server
-      semver
-      streaming
-      time
-      transformers
-      vector
-      wai
-      wai-cors
-      wai-logger
-      warp
-
-      # tests
-      doctest
-      http-mock
-      tasty
-      tasty-hunit
-    ]);
+  # haskell dependencies for codegen
+  ghc = hsPkgs.ghcWithPackages (p: with p; [ casing language-protobuf relude ]);
   hs-req =
     [ ghc hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
