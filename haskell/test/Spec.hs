@@ -202,7 +202,11 @@ monocleSearchLanguage =
       withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) $ do
         q <- prettyQuery
         let expected = "{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"on_created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}]}}"
-        liftIO $ assertEqual "simple queryM work" (Just expected) q
+        liftIO $ assertEqual "OnCreatedAndCreated range flavor" (Just expected) q
+        withFlavor (Q.QueryFlavor Q.Author Q.UpdatedAt) $ do
+          q' <- prettyQuery
+          let expected' = "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}"
+          liftIO $ assertEqual "range flavor reset" (Just expected') q'
 
     testSimpleQueryM :: Assertion
     testSimpleQueryM = mkQueryM "author:alice" $ do
