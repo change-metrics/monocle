@@ -301,8 +301,7 @@ mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] 
       [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
     repository = mkRegexpQ "repository_fullname"
     branch = mkRegexpQ "target_branch"
-    -- TODO: check how to regexp match nested list
-    file = const [] -- mkRegexpQ "changed_files"
+    file = mkRegexpQ "changed_files.path"
 
 -- | Resolve the author field name and value.
 getAuthorField :: Field -> Text -> Parser (Field, Text)

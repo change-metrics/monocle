@@ -152,7 +152,7 @@ monocleSearchLanguage =
         "Query project"
         ( queryMatch
             "project:zuul"
-            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}}]}}"
+            "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul/.*\"}}},{\"regexp\":{\"target_branch\":{\"flags\":\"ALL\",\"value\":\"master\"}}},{\"regexp\":{\"changed_files.path\":{\"flags\":\"ALL\",\"value\":\"tests/.*\"}}}]}}"
         ),
       testCase
         "Query author"

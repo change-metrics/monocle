@@ -101,7 +101,7 @@ mkFinalQuery flavorM = do
     toBoolQuery = \case
       [] -> Nothing
       [x] -> Just x
-      xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery xs [] [] []
+      xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
 
 getQueryBH :: QueryM (Maybe BH.Query)
 getQueryBH = mkFinalQuery Nothing

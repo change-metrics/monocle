@@ -15,10 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import tempfile
 import time
 import unittest
-import yaml
 from flask import json
 
 from monocle import env
@@ -90,59 +88,6 @@ class TestWebAPI(unittest.TestCase):
             sess["username"] = "jane"
         resp = self.client.get("/api/0/whoami")
         self.assertEqual("jane", json.loads(resp.data))
-
-    def test_config_project_def(self):
-        "Test get project definitions"
-        config_example = """
----
-workspaces:
-  - index: testindex
-    crawler: []
-    projects:
-      - name: projectdef1
-        repository_regex: "test1/somerepo1"
-        branch_regex: "master"
-      - name: projectdef2
-        repository_regex: "test2/test"
-  - index: testindex2
-    crawler: []
-        """
-        with tempfile.NamedTemporaryFile() as fp:
-            with open(fp.name, "w") as f:
-                f.write(config_example)
-            env.project_defs = config.build_project_definitions(
-                yaml.safe_load(open(fp.name))
-            )
-            # First try with a non existing index
-            resp = self.client.post("/api/1/get_projects", json=dict(index="missing"))
-            self.assertEqual(200, resp.status_code)
-            # Now fetch projects definition of testindex
-            resp = self.client.post("/api/1/get_projects", json=dict(index="testindex"))
-            self.assertEqual(200, resp.status_code)
-            projects = json.loads(resp.data)["projects"]
-            self.assertEqual(2, len(projects))
-            self.assertListEqual(
-                projects,
-                [
-                    {
-                        "branch_regex": "master",
-                        "name": "projectdef1",
-                        "repository_regex": "test1/somerepo1",
-                    },
-                    {
-                        "name": "projectdef2",
-                        "repository_regex": "test2/test",
-                    },
-                ],
-            )
-            p_names = [p["name"] for p in json.loads(resp.data)["projects"]]
-            self.assertListEqual(p_names, ["projectdef1", "projectdef2"])
-            # Now fetch projects definition of testindex
-            resp = self.client.post(
-                "/api/1/get_projects", json=dict(index="testindex2")
-            )
-            self.assertEqual(200, resp.status_code)
-            self.assertEqual(0, len(json.loads(resp.data).get("projects", [])))
 
     def check_APIErr_msg(self, message, resp):
         err = json.loads(resp.data)

@@ -7,25 +7,6 @@ from flask import request
 from google.protobuf import json_format as pbjson
 
 
-def config_service(app):
-    from monocle.api import config_get_projects
-    from monocle.config_pb2 import GetProjectsRequest
-    from monocle.config_pb2 import GetProjectsResponse
-
-    def get_projects_stub() -> None:
-        input_data: bytes = request.get_data() or b"{}"
-        input_request: GetProjectsRequest = pbjson.Parse(input_data, GetProjectsRequest())  # type: ignore
-        output_resp: GetProjectsResponse = config_get_projects(input_request)
-        json_resp = pbjson.MessageToJson(output_resp, preserving_proto_field_name=True)
-        return app.response_class(
-            response=json_resp, status=200, mimetype="application/json"
-        )
-
-    app.add_url_rule(
-        "/api/1/get_projects", "GetProjects", get_projects_stub, methods=["GET", "POST"]
-    )
-
-
 def search_service(app):
     from monocle.api import search_suggestions
     from monocle.search_pb2 import SearchSuggestionsRequest

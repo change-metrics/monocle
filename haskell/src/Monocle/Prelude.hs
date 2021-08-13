@@ -169,7 +169,7 @@ simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.S
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
 mkAnd :: [BH.Query] -> BH.Query
-mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery andQ [] [] []
+mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> andQ) [] []
 
 mkOr :: [BH.Query] -> BH.Query
 mkOr orQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [] orQ
