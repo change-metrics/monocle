@@ -650,10 +650,7 @@ getNewContributors = do
 
   let getDateLimit constraint =
         BH.QueryRangeQuery $
-          BH.mkRangeQuery
-            ( BH.FieldName (rangeField CreatedAt)
-            )
-            constraint
+          BH.mkRangeQuery (BH.FieldName "created_at") constraint
 
   let beforeBounceQ b = getDateLimit $ BH.RangeDateLt (BH.LessThanD b)
   let afterBounceQ b = getDateLimit $ BH.RangeDateGte (BH.GreaterThanEqD b)
@@ -817,9 +814,10 @@ getReviewStats = do
 
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount
+      withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter ev
 
-  firstComments <- withFilter [documentType ElkChangeCommentedEvent] firstEventOnChanges
-  firstReviews <- withFilter [documentType ElkChangeReviewedEvent] firstEventOnChanges
+  firstComments <- withEvents [documentType ElkChangeCommentedEvent] firstEventOnChanges
+  firstReviews <- withEvents [documentType ElkChangeReviewedEvent] firstEventOnChanges
 
   let reviewStatsCommentDelay = firstEventAverageDuration firstComments
       reviewStatsReviewDelay = firstEventAverageDuration firstReviews
