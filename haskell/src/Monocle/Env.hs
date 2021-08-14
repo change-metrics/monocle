@@ -1,6 +1,7 @@
 -- | The library environment and logging functions
 module Monocle.Env where
 
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Database.Bloodhound as BH
 import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Monocle.Api.Config as Config
@@ -11,7 +12,6 @@ import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
 import Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 
 -------------------------------------------------------------------------------
 -- context monads and utility functions
@@ -61,7 +61,6 @@ runTenantM tenant (TenantM im) = do
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
 runTenantM' bhEnv config tenantM = withLogger $ \glLogger ->
   runReaderT (unTenant tenantM) (TenantEnv config Env {..})
-
 
 mkEnv :: MonadIO m => Text -> m BH.BHEnv
 mkEnv server = do
@@ -190,7 +189,7 @@ type Logger = FastLogger.TimedFastLogger
 -- | withLogger create the logger
 --
 -- try with repl:
--- λ> runTenantM' Prelude.undefined (emptyConfig "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
+-- λ> runTenantM' Prelude.undefined (Config.defaultTenant "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
 withLogger :: (Logger -> IO a) -> IO a
 withLogger cb = do
   tc <- liftIO $ FastLogger.newTimeCache "%F %T "

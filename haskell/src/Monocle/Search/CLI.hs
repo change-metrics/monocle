@@ -2,8 +2,8 @@
 module Monocle.Search.CLI (searchMain) where
 
 import qualified Data.Aeson as Aeson
+import Monocle.Api.Config (defaultTenant)
 import qualified Monocle.Backend.Queries as Q
-import Monocle.Backend.Test (emptyConfig)
 import Monocle.Env (runQueryM, testTenantM)
 import Monocle.Prelude
 import qualified Monocle.Search.Parser as P
@@ -19,7 +19,7 @@ parseQuery now code = either show decodeUtf8 queryJson
 
 printQuery :: MonadIO m => UTCTime -> Text -> Text -> m ()
 printQuery now index code = do
-  changes <- liftIO $ testTenantM (emptyConfig index) $ runQueryM query $ Q.changes Nothing 10
+  changes <- liftIO $ testTenantM (defaultTenant index) $ runQueryM query $ Q.changes Nothing 10
   mapM_ (putTextLn . show) (take 2 changes)
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where

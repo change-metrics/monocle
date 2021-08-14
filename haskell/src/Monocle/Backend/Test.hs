@@ -4,7 +4,7 @@ module Monocle.Backend.Test where
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
-import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -19,7 +19,6 @@ import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
-import Test.Tasty.HUnit
 
 fakeDate :: UTCTime
 fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
@@ -77,21 +76,12 @@ fakeChange =
       elkchangeDraft = False
     }
 
-emptyConfig :: Text -> Config.Index
-emptyConfig name =
-  let crawlers_api_key = Nothing
-      crawlers = []
-      projects = Nothing
-      idents = Nothing
-      search_aliases = Nothing
-   in Config.Index {..}
-
 withTenant :: TenantM () -> IO ()
 withTenant cb = bracket_ create delete run
   where
     -- todo: generate random name
     testName = "test-tenant"
-    config = emptyConfig testName
+    config = Config.defaultTenant testName
     create = testTenantM config I.ensureIndex
     delete = testTenantM config I.deleteIndex
     run = testTenantM config cb

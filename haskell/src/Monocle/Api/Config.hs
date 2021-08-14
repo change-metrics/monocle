@@ -106,6 +106,17 @@ deriving instance Eq Index
 
 deriving instance Show Index
 
+defaultTenant :: Text -> Index
+defaultTenant name =
+  Index
+    { name,
+      crawlers = [],
+      crawlers_api_key = Nothing,
+      projects = Nothing,
+      idents = Nothing,
+      search_aliases = Nothing
+    }
+
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name

@@ -26,7 +26,7 @@ import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.Char (isDigit)
 import Data.List (lookup)
 import qualified Data.Text as Text
-import Data.Time.Clock (UTCTime (..), addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Clock (UTCTime (..), secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
