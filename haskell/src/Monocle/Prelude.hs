@@ -12,6 +12,11 @@ module Monocle.Prelude
     MonadThrow,
     MonadMask,
 
+    -- * tests
+    Assertion,
+    assertEqual,
+    assertFailure,
+
     -- * relude extra
     groupBy,
     average,
@@ -34,6 +39,7 @@ module Monocle.Prelude
     -- * time
     UTCTime,
     getCurrentTime,
+    addUTCTime,
     elapsedSeconds,
     nominalDiffTimeToSeconds,
     diffUTCTime,
@@ -71,7 +77,7 @@ import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
@@ -80,6 +86,7 @@ import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
+import Test.Tasty.HUnit
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
