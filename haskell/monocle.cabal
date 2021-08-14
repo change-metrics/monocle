@@ -167,6 +167,9 @@ library
                      , Monocle.Search.Query
                      , Monocle.Search.Syntax
 
+                     -- companion feature
+                     , Monocle.Companion
+
                      -- Lentille
                      , Lentille
                      , Lentille.Bugzilla

@@ -92,6 +92,15 @@ data QueryEnv = QueryEnv
 
 type QueryM = ReaderT QueryEnv TenantM
 
+-- | 'mkQuery' is an helper function to create a Query
+mkQuery :: Text -> Maybe Expr -> TenantM Q.Query
+mkQuery username expr = do
+  now <- liftIO getCurrentTime
+  tenant <- getIndexConfig
+  case Q.queryWithMods now username (Just tenant) expr of
+    Left e -> error $ "Invalid query: " <> show e
+    Right q -> pure q
+
 -- | 'runQueryM' run the query context
 runQueryM :: Q.Query -> QueryM a -> TenantM a
 runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
