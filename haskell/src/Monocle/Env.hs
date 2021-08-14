@@ -8,6 +8,7 @@ import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
+import qualified Network.HTTP.Client as HTTP
 import Servant (Handler)
 
 -------------------------------------------------------------------------------
@@ -49,9 +50,22 @@ runTenantM config (TenantM im) = do
   liftIO $ runReaderT im (TenantEnv config bhEnv)
 
 -- | 'runTenantM'' is used in test, without the servant Handler
+-- TODO: replace usage with testTenantM
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
 runTenantM' bhEnv config tenantM =
   runReaderT (unTenant tenantM) (TenantEnv config bhEnv)
+
+mkEnv :: MonadIO m => Text -> m BH.BHEnv
+mkEnv server = do
+  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
+  pure $ BH.mkBHEnv (BH.Server server) manager
+
+-- | 'testTenantM' run a TenantM using the ELASTIC_URL environment variable
+testTenantM :: Config.Index -> TenantM a -> IO a
+testTenantM config tenantM = do
+  url <- getEnv' "ELASTIC_URL"
+  bhEnv <- mkEnv url
+  runTenantM' bhEnv config tenantM
 
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where

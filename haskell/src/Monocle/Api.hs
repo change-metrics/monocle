@@ -39,7 +39,7 @@ run port elkUrl configFile = do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  bhEnv' <- I.mkEnv elkUrl
+  bhEnv' <- mkEnv elkUrl
   retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv' tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do

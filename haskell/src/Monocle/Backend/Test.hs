@@ -98,7 +98,7 @@ withTenant cb = do
     -- todo: generate random name
     testName = "test-tenant"
     create url = do
-      bhEnv <- I.mkEnv url
+      bhEnv <- mkEnv url
       let config = emptyConfig testName
       _ <- runTenantM' bhEnv config I.ensureIndex
       pure (bhEnv, config)
