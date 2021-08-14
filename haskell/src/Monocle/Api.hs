@@ -42,7 +42,7 @@ run' port elkUrl configFile glLogger = do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  bhEnv <- I.mkEnv elkUrl
+  bhEnv <- mkEnv elkUrl
   let aEnv = Env {..}
   retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv tenant I.ensureIndex) tenants'
   liftIO $

@@ -1,7 +1,7 @@
 -- |
 module Monocle.Backend.Test where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
 import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
@@ -86,29 +86,15 @@ emptyConfig name =
       search_aliases = Nothing
    in Config.Index {..}
 
-getElasticURL :: IO Text
-getElasticURL =
-  toText . fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
-
 withTenant :: TenantM () -> IO ()
-withTenant cb = do
-  elasticURL <- getElasticURL
-  bracket (create elasticURL) delete toTenantM
+withTenant cb = bracket_ create delete run
   where
     -- todo: generate random name
     testName = "test-tenant"
-    create url = do
-      bhEnv <- I.mkEnv url
-      let config = emptyConfig testName
-      _ <- runTenantM' bhEnv config I.ensureIndex
-      pure (bhEnv, config)
-    delete (bhEnv, config) = do
-      BH.runBH bhEnv $ do
-        let testIndex = tenantIndexName config
-        _resp <- BH.deleteIndex testIndex
-        False <- BH.indexExists testIndex
-        pure ()
-    toTenantM (bhEnv, config) = runTenantM' bhEnv config cb
+    config = emptyConfig testName
+    create = testTenantM config I.ensureIndex
+    delete = testTenantM config I.deleteIndex
+    run = testTenantM config cb
 
 checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
 checkELKChangeField docId field value = do

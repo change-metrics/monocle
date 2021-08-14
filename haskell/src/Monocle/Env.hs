@@ -8,6 +8,7 @@ import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
+import qualified Network.HTTP.Client as HTTP
 import Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
 import Control.Monad.IO.Unlift (MonadUnliftIO)
@@ -50,16 +51,31 @@ newtype TenantM a = TenantM {unTenant :: ReaderT TenantEnv IO a}
 tenantIndexName :: Config.Index -> BH.IndexName
 tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
--- | 'runTenantM' is the only way to run an 'TenantM' computation
+-- | 'runTenantM' is the main way to run a 'TenantM' computation
 runTenantM :: Config.Index -> TenantM a -> AppM a
 runTenantM tenant (TenantM im) = do
   tEnv <- asks aEnv
   liftIO $ runReaderT im (TenantEnv {..})
 
--- | 'runTenantM'' is used in test, without the servant Handler
+-- | 'runTenantM'' run a 'TenantM' with an existing BHEnv
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
 runTenantM' bhEnv config tenantM = withLogger $ \glLogger ->
   runReaderT (unTenant tenantM) (TenantEnv config Env {..})
+
+
+mkEnv :: MonadIO m => Text -> m BH.BHEnv
+mkEnv server = do
+  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
+  pure $ BH.mkBHEnv (BH.Server server) manager
+
+-- | 'testTenantM' run a TenantM using the ELASTIC_URL environment variable
+-- Use this to test a tenant action from the repl.
+testTenantM :: Config.Index -> TenantM a -> IO a
+testTenantM config tenantM = do
+  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+  bhEnv <- mkEnv (toText url)
+  withLogger $ \glLogger ->
+    runReaderT (unTenant tenantM) (TenantEnv config Env {..})
 
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where

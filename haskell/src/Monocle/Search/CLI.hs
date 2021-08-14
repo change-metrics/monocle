@@ -2,10 +2,9 @@
 module Monocle.Search.CLI (searchMain) where
 
 import qualified Data.Aeson as Aeson
-import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Backend.Test (emptyConfig)
-import Monocle.Env (runQueryM, runTenantM')
+import Monocle.Env (runQueryM, testTenantM)
 import Monocle.Prelude
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
@@ -18,10 +17,9 @@ parseQuery now code = either show decodeUtf8 queryJson
       query <- Q.queryWithMods now mempty Nothing expr
       pure $ Aeson.encode $ Q.queryGet query id Nothing
 
-printQuery :: MonadIO m => UTCTime -> Text -> Text -> Text -> m ()
-printQuery now elkUrl index code = do
-  bhEnv <- I.mkEnv elkUrl
-  changes <- liftIO $ runTenantM' bhEnv (emptyConfig index) $ runQueryM query $ Q.changes Nothing 10
+printQuery :: MonadIO m => UTCTime -> Text -> Text -> m ()
+printQuery now index code = do
+  changes <- liftIO $ testTenantM (emptyConfig index) $ runQueryM query $ Q.changes Nothing 10
   mapM_ (putTextLn . show) (take 2 changes)
   putTextLn $ "Got : " <> show (length changes) <> " results"
   where
@@ -35,5 +33,5 @@ searchMain = do
   args <- map toText <$> getArgs
   case args of
     ["--parse", query] -> putTextLn $ parseQuery now query
-    [elkUrl, index, code] -> printQuery now elkUrl index code
-    _otherArgs -> putTextLn "usage: elk-url index query"
+    [index, code] -> printQuery now index code
+    _otherArgs -> putTextLn "usage: index query"
