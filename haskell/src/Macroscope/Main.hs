@@ -1,7 +1,6 @@
 -- |
 module Macroscope.Main (runMacroscope) where
 
-import Control.Concurrent (threadDelay)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
