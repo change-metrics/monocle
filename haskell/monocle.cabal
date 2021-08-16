@@ -92,24 +92,26 @@ common cli-options
 
 library
   import:              common-options, codegen
-  build-depends:       MonadRandom
-                     , aeson-casing
+  build-depends:       base                       < 5
+                     , MonadRandom
                      , aeson
-                     , base                       < 5
+                     , aeson-casing
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , bugzilla-redhat            >= 0.3.2
                      , bytestring                 >= 0.10
+                     , byteslice                  ^>= 0.2
                      , connection
                      , containers                 ^>= 0.6
-                     , directory
                      , dhall                      ^>= 1.39
                      , dhall-yaml                 ^>= 1.2
+                     , directory
                      , either                     ^>= 5
                      , exceptions                 < 0.11
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , http-types                 ^>=0.12
+                     , json-syntax                ^>= 0.2
                      , lens
                      , megaparsec                 < 10
                      , morpheus-graphql-client    ^>= 0.17
@@ -125,6 +127,8 @@ library
                      , servant-server             ^>= 0.18.2
                      , streaming                  < 0.3
                      , tasty-hunit                < 0.11
+                     , text-short                 ^>= 0.1
+                     , text-time                  ^>= 0.3
                      , time                       < 1.10
                      , transformers
                      , vector
@@ -179,6 +183,9 @@ library
                      , Macroscope.Main
                      , Macroscope.Worker
 
+                     -- Fast json helpers
+                     , Json.Extras
+
                      -- Codegen
                      , Monocle.Change
                      , Monocle.Config
@@ -221,6 +228,14 @@ executable lentille-github
 executable macroscope
   import:              common-options, cli-options
   main-is:             Macroscope.hs
+
+benchmark json-decode
+  import:              common-options
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  build-depends:       base, aeson, bloodhound, byteslice, bytestring, criterion, json-syntax, monocle, text-short, text-time
+  main-is:             JsonDecode.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 
 test-suite monocle-test
   import:              common-options
