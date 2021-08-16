@@ -18,7 +18,7 @@ import Servant (Handler, hoistServer, serve)
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
-app :: Env -> Wai.Application
+app :: AppEnv -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
   where
     mkAppM :: AppM x -> Handler x
@@ -27,7 +27,7 @@ app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
 run :: (MonadMask m, MonadLog m, MonadIO m) => Int -> Text -> FilePath -> m ()
 run port elkUrl configFile = do
   reloadableConfig <- Config.loadConfig configFile
-  confRef <- newIORef reloadableConfig
+  config <- newIORef reloadableConfig
   let tenants' = Config.configWorkspaces reloadableConfig
 
   -- Check alias and abort if they are not usable
@@ -39,8 +39,9 @@ run port elkUrl configFile = do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  bhEnv' <- I.mkEnv elkUrl
-  retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv' tenant I.ensureIndex) tenants'
+  bhEnv <- I.mkEnv elkUrl
+  let aEnv = Env {..}
+  retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
@@ -50,7 +51,7 @@ run port elkUrl configFile = do
         settings
         . cors (const $ Just policy)
         . provideOptions monocleAPI
-        $ app (Env confRef bhEnv')
+        $ app (AppEnv {..})
   where
     policy =
       simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
