@@ -483,6 +483,16 @@ docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
 --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
 ```
 
+ElasticSearch sets defaults settings on new indexes. The default setting for queries based
+on regex is set to a value that might not fit your usage especially when your project definitions
+uses regex above that limit. However the limit could be increased using the following command:
+
+```ShellSession
+docker-compose run --rm --no-deps crawler-legacy curl \
+-XPUT http://localhost:9200/monocle.changes.1.<workspace-name>/_settings \
+-H "Content-Type: application/json" -d '{"index": {"max_regex_length": 50000}}'
+```
+
 ## Contributing
 
 Follow [our contributing guide](CONTRIBUTING.md).
