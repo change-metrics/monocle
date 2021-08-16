@@ -258,14 +258,14 @@ container process. Until they are, usage might be a bit rough.
 
 ```ShellSession
 export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
-docker-compose run --rm --no-deps crawler lentille-github --monocle-url http://api-legacy:9896 --index monocle.changes.1.my-index --crawler-name my-crawler --since "2020-01-01T00:00:00Z" --repo change-metrics/monocle
+docker-compose run --rm --no-deps crawler lentille-github --monocle-url http://api-legacy:9896 --index my-index --crawler-name my-crawler --since "2020-01-01 00:00:00 Z" --repo change-metrics/monocle
 ```
 
 ###### Bugzilla
 
 ```ShellSession
 export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
-docker-compose run --rm --no-deps crawler lentille-bugzilla --monocle-url http://api-legacy:9896 --index monocle.changes.1.my-index --crawler-name my-crawler --since "2020-01-01T00:00:00Z" --bugzilla-product Awesome-Product
+docker-compose run --rm --no-deps crawler lentille-bugzilla --monocle-url http://api-legacy:9896 --index my-index --crawler-name my-crawler --since "2020-01-01 00:00:00 Z" --bugzilla-product Awesome-Product
 ```
 
 ### Projects definition
