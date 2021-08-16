@@ -9,6 +9,7 @@ import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import qualified Database.Bloodhound.Raw as BHR
 import Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
@@ -245,6 +246,7 @@ ensureIndex = do
   indexName <- getIndexName
   config <- getIndexConfig
   _respCI <- BH.createIndex indexSettings indexName
+  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
   -- print respCI
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
