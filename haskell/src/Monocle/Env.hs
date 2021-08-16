@@ -133,7 +133,7 @@ withFlavor flavor = local setFlavor
   where
     -- the new flavor replaces the oldFlavor
     setFlavor (QueryEnv query context) =
-      let newQueryGet modifier _oldFlavor = Q.queryGet query modifier (Just flavor)
+      let newQueryGet modifier oldFlavor = Q.queryGet query modifier (Just $ fromMaybe flavor oldFlavor)
        in QueryEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withModified' run a queryM with a modified query

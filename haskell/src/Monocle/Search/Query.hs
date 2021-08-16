@@ -50,13 +50,15 @@ data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 --
 -- In other words, to get all the change updated recently, use UpdatedAt.
 -- But to get all the event (such as review event), use CreatedAt.
-data RangeFlavor = OnCreatedAt | CreatedAt | UpdatedAt deriving (Show, Eq)
+data RangeFlavor = OnCreatedAt | CreatedAt | UpdatedAt | OnCreatedAndCreated deriving (Show, Eq)
 
-rangeField :: RangeFlavor -> Text
+rangeField :: RangeFlavor -> Maybe Text
 rangeField = \case
-  OnCreatedAt -> "on_created_at"
-  CreatedAt -> "created_at"
-  UpdatedAt -> "updated_at"
+  OnCreatedAt -> Just "on_created_at"
+  CreatedAt -> Just "created_at"
+  UpdatedAt -> Just "updated_at"
+  -- OnCreatedAndCreated flavor does not match a single field
+  OnCreatedAndCreated -> Nothing
 
 data QueryFlavor = QueryFlavor
   { qfAuthor :: AuthorFlavor,
@@ -148,7 +150,7 @@ getFlavoredField QueryFlavor {..} field
   | field `elem` ["author", "author_regex", "group"] = Just $ case qfAuthor of
     Author -> "author"
     OnAuthor -> "on_author"
-  | field `elem` ["from", "to"] = Just $ rangeField qfRange
+  | field `elem` ["from", "to"] = rangeField qfRange
   | otherwise = Nothing
 
 -- | 'lookupField' return a field type and actual field name
@@ -215,14 +217,6 @@ note err value = case value of
   Just a -> Right a
   Nothing -> Left err
 
-toRangeOp :: Expr -> RangeOp
-toRangeOp expr = case expr of
-  GtExpr _ _ -> Gt
-  LtExpr _ _ -> Lt
-  GtEqExpr _ _ -> Gte
-  LtEqExpr _ _ -> Lte
-  _anyOtherExpr -> error "Unsupported range expression"
-
 -- | dropTime ensures the encoded date does not have millisecond.
 -- This actually discard hour differences
 dropTime :: UTCTime -> UTCTime
@@ -256,7 +250,7 @@ mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue op field fieldType value = do
   now <- asks envNow
   case fieldType of
-    Field_TypeFIELD_DATE | field `notElem` ["from", "to"] -> do
+    Field_TypeFIELD_DATE -> do
       date <-
         dropTime
           <$> ( toParseError
@@ -270,24 +264,25 @@ mkRangeValue op field fieldType value = do
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
     _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
 
-mkRangeQuery' :: RangeOp -> Field -> FieldType -> Text -> Parser BH.Query
-mkRangeQuery' op field fieldType value =
-  BH.QueryRangeQuery
-    . BH.mkRangeQuery (BH.FieldName field)
-    <$> mkRangeValue op field fieldType value
+mkRangeQuery :: RangeOp -> Field -> Text -> Parser BH.Query
+mkRangeQuery op field value = do
+  (fieldType, fieldName, _desc) <- lookupField field
+  rangeValue <- mkRangeValue op field fieldType value
 
-mkRangeAlias :: RangeOp -> Field -> Text -> Parser BH.Query
-mkRangeAlias op field = mkRangeQuery' op field fieldDate
+  let mkQuery fieldName' =
+        BH.QueryRangeQuery $
+          BH.mkRangeQuery (BH.FieldName fieldName') rangeValue
+
+  QueryFlavor _ rf <- asks envFlavor
+  pure $ case rf of
+    OnCreatedAndCreated ->
+      mkAnd [mkQuery "created_at", mkQuery "on_created_at"]
+    _ -> mkQuery fieldName
 
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
   Left msg -> lift . lift $ throwE (ParseError msg 0)
   Right x -> pure x
-
-mkRangeQuery :: Expr -> Field -> Text -> Parser BH.Query
-mkRangeQuery expr field value = do
-  (fieldType, fieldName, _desc) <- lookupField field
-  mkRangeQuery' (toRangeOp expr) fieldName fieldType value
 
 mkProjectQuery :: Config.Project -> BH.Query
 mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
@@ -323,8 +318,7 @@ mkEqQuery field value' = do
       then getAuthorField fieldName' value'
       else pure (fieldName', value')
   case (field, fieldType) of
-    ("from", _) -> mkRangeAlias Gt fieldName value
-    ("to", _) -> mkRangeAlias Lt fieldName value
+    -- Handle custom field name that needs extra processing
     ("state", _) -> do
       (stateField, stateValue) <-
         toParseError
@@ -384,12 +378,15 @@ query :: Expr -> Parser BH.Query
 query expr = case expr of
   AndExpr e1 e2 -> mkBoolQuery And e1 e2
   OrExpr e1 e2 -> mkBoolQuery Or e1 e2
-  EqExpr field value -> mkEqQuery field value
+  EqExpr field value
+    | field == "from" -> mkRangeQuery Gt "from" value
+    | field == "to" -> mkRangeQuery Lt "from" value
+    | otherwise -> mkEqQuery field value
   NotExpr e1 -> mkNotQuery e1
-  e@(GtExpr field value) -> mkRangeQuery e field value
-  e@(GtEqExpr field value) -> mkRangeQuery e field value
-  e@(LtExpr field value) -> mkRangeQuery e field value
-  e@(LtEqExpr field value) -> mkRangeQuery e field value
+  GtExpr field value -> mkRangeQuery Gt field value
+  GtEqExpr field value -> mkRangeQuery Gte field value
+  LtExpr field value -> mkRangeQuery Lt field value
+  LtEqExpr field value -> mkRangeQuery Lte field value
 
 queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
 queryWithMods now' username indexM exprM = do
