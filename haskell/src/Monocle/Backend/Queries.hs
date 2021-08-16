@@ -10,6 +10,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
+import qualified Json.Extras as Json
 import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, authorMuid, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
@@ -37,6 +38,12 @@ doSearchBH body = do
   measureTenantM body $ do
     index <- getIndexName
     BHR.search index body
+
+doSearchHitBH :: (ToJSON body) => body -> QueryM [Json.Value]
+doSearchHitBH body = do
+  measureTenantM body $ do
+    index <- getIndexName
+    BHR.searchHit index body
 
 -- | Call the count endpoint
 doCountBH :: BH.Query -> QueryM Count
@@ -76,6 +83,15 @@ doSearch orderM limit = do
     sortOrder order = case fromPBEnum order of
       SearchPB.Order_DirectionASC -> BH.Ascending
       SearchPB.Order_DirectionDESC -> BH.Descending
+
+-- | Get search results hits, as fast as possible
+doFastSearch :: Word32 -> QueryM [Json.Value]
+doFastSearch limit = do
+  query <- getQueryBH
+  doSearchHitBH
+    (BH.mkSearch query Nothing)
+      { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit
+      }
 
 -- | Get document count matching the query
 countDocs :: QueryM Count
@@ -313,6 +329,21 @@ data FirstEvent = FirstEvent
   }
   deriving (Show)
 
+data JsonChangeEvent = JsonChangeEvent
+  { jceCreatedAt :: UTCTime,
+    jceOnCreatedAt :: UTCTime,
+    jceChangeId :: Json.ShortText,
+    jceAuthor :: Json.ShortText
+  }
+
+decodeJsonChangeEvent :: Json.Value -> Maybe JsonChangeEvent
+decodeJsonChangeEvent v = do
+  jceCreatedAt <- Json.getDate =<< Json.getAttr "created_at" v
+  jceOnCreatedAt <- Json.getDate =<< Json.getAttr "on_created_at" v
+  jceChangeId <- Json.getString =<< Json.getAttr "change_id" v
+  jceAuthor <- Json.getString =<< Json.getAttr "muid" =<< Json.getAttr "author" v
+  pure $ JsonChangeEvent {..}
+
 firstEventDuration :: FirstEvent -> Pico
 firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedAt
 
@@ -324,16 +355,17 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
   (minDate, _) <- Q.queryBounds <$> getQuery
 
   -- Collect all the events
-  result <- doSearch Nothing 10000
+  resultJson <- doFastSearch 10000
+  let result = catMaybes $ map decodeJsonChangeEvent resultJson
 
   -- Group by change_id
-  let changeMap :: [NonEmpty ELKChangeEvent]
-      changeMap = HM.elems $ groupBy elkchangeeventChangeId result
+  let changeMap :: [NonEmpty JsonChangeEvent]
+      changeMap = HM.elems $ groupBy jceChangeId result
 
   -- Remove old change where we may not have the first event
-  let keepRecent :: NonEmpty ELKChangeEvent -> Bool
-      keepRecent (ELKChangeEvent {..} :| _)
-        | elkchangeeventOnCreatedAt > minDate = True
+  let keepRecent :: NonEmpty JsonChangeEvent -> Bool
+      keepRecent (JsonChangeEvent {..} :| _)
+        | jceOnCreatedAt > minDate = True
         | otherwise = False
 
   now <- liftIO getCurrentTime
@@ -347,15 +379,15 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
           feCreatedAt = now
           feAuthor = ""
        in FirstEvent {..}
-    toFirstEvent :: ELKChangeEvent -> FirstEvent -> FirstEvent
-    toFirstEvent ELKChangeEvent {..} acc =
+    toFirstEvent :: JsonChangeEvent -> FirstEvent -> FirstEvent
+    toFirstEvent JsonChangeEvent {..} acc =
       let (createdAt, author) =
             -- If the event is older update the info
-            if elkchangeeventCreatedAt < feCreatedAt acc
-              then (elkchangeeventCreatedAt, authorMuid elkchangeeventAuthor)
+            if jceCreatedAt < feCreatedAt acc
+              then (jceCreatedAt, toLazy $ Json.toText jceAuthor)
               else (feCreatedAt acc, feAuthor acc)
        in FirstEvent
-            { feChangeCreatedAt = elkchangeeventOnCreatedAt,
+            { feChangeCreatedAt = jceOnCreatedAt,
               feCreatedAt = createdAt,
               feAuthor = author
             }
@@ -652,10 +684,7 @@ getNewContributors = do
 
   let getDateLimit constraint =
         BH.QueryRangeQuery $
-          BH.mkRangeQuery
-            ( BH.FieldName (rangeField CreatedAt)
-            )
-            constraint
+          BH.mkRangeQuery (BH.FieldName "created_at") constraint
 
   let beforeBounceQ b = getDateLimit $ BH.RangeDateLt (BH.LessThanD b)
   let afterBounceQ b = getDateLimit $ BH.RangeDateGte (BH.GreaterThanEqD b)
@@ -819,9 +848,10 @@ getReviewStats = do
 
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount
+      withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter ev
 
-  firstComments <- withFilter [documentType ElkChangeCommentedEvent] firstEventOnChanges
-  firstReviews <- withFilter [documentType ElkChangeReviewedEvent] firstEventOnChanges
+  firstComments <- withEvents [documentType ElkChangeCommentedEvent] firstEventOnChanges
+  firstReviews <- withEvents [documentType ElkChangeReviewedEvent] firstEventOnChanges
 
   let reviewStatsCommentDelay = firstEventAverageDuration firstComments
       reviewStatsReviewDelay = firstEventAverageDuration firstReviews
