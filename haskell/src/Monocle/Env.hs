@@ -9,12 +9,14 @@ import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import Servant (Handler)
+import qualified System.Log.FastLogger as FastLogger
 
 -------------------------------------------------------------------------------
 -- context monads and utility functions
 
 data Env = Env
-  { bhEnv :: BH.BHEnv
+  { bhEnv :: BH.BHEnv,
+    glLogger :: Logger
   }
 
 -- | 'Env' is the global environment
@@ -48,13 +50,13 @@ tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | 'runTenantM' is the only way to run an 'TenantM' computation
 runTenantM :: Config.Index -> TenantM a -> AppM a
-runTenantM config (TenantM im) = do
-  bhEnv <- BH.getBHEnv
-  liftIO $ runReaderT im (TenantEnv config Env {..})
+runTenantM tenant (TenantM im) = do
+  tEnv <- asks aEnv
+  liftIO $ runReaderT im (TenantEnv {..})
 
 -- | 'runTenantM'' is used in test, without the servant Handler
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
-runTenantM' bhEnv config tenantM =
+runTenantM' bhEnv config tenantM = withLogger $ \glLogger ->
   runReaderT (unTenant tenantM) (TenantEnv config Env {..})
 
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
@@ -165,6 +167,19 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 -------------------------------------------------------------------------------
 -- logging function
+type Logger = FastLogger.TimedFastLogger
+
+-- | withLogger create the logger
+--
+-- try with repl:
+-- λ> runTenantM' Prelude.undefined (emptyConfig "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
+withLogger :: (Logger -> IO a) -> IO a
+withLogger cb = do
+  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
+  FastLogger.withTimedFastLogger tc logger cb
+  where
+    logger = FastLogger.LogStderr 1024
+
 data MonocleEvent
   = AddingChange LText Int Int
   | AddingProject Text Text Int
@@ -186,4 +201,5 @@ eventToText ev = case ev of
 monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
   Config.Index {..} <- getIndexConfig
-  sayErr $ name <> ": " <> eventToText ev
+  logger <- asks (glLogger . tEnv)
+  liftIO $ logger (\time -> FastLogger.toLogStr $ time <> (encodeUtf8 $ name <> ": " <> eventToText ev <> "\n"))
