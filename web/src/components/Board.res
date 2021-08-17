@@ -162,8 +162,8 @@ module Board = {
   type style = Kanban | Table
   type t = {title: string, columns: list<Column.t>, style: style}
 
-  let defaultNegativeApprovals = "(approval:Workflow-1 or approval:Code-Review-1 or approval:Code-Review-2)"
-  let defaultPositiveApprovals = "approval:Verified+1"
+  let defaultNegativeApprovals = "(approval:CHANGE_REQUESTED or approval:Verified-1 or approval:Workflow-1 or approval:Code-Review-1 or approval:Code-Review-2)"
+  let defaultPositiveApprovals = "(approval:APPROVED or approval:Code-Review+1 or approval:Code-Review+2)"
 
   let mkOrder = (field, dirM) =>
     {
@@ -177,25 +177,26 @@ module Board = {
       {
         Column.name: "To Review",
         order: mkOrder("created_at", None),
-        query: "state: open and updated_at < now-1week and updated_at > now-3week " ++
-        defaultPositiveApprovals ++
-        " and not " ++
-        defaultNegativeApprovals,
+        query: "state:open and updated_at>now-3week " ++ " and not " ++ defaultNegativeApprovals,
       },
       {
         Column.name: "To Approve",
-        order: mkOrder("created_at", Desc->Some),
-        query: "state:open and updated_at > now-1week " ++ "not " ++ defaultNegativeApprovals,
+        order: mkOrder("created_at", None),
+        query: "state:open and updated_at>now-3week " ++
+        "and not " ++
+        defaultNegativeApprovals ++
+        "and " ++
+        defaultPositiveApprovals,
       },
       {
         Column.name: "Done",
         order: mkOrder("updated_at", Desc->Some),
-        query: "state:merged and updated_at > now-1week",
+        query: "state:merged and updated_at>now-1week",
       },
       {
         Column.name: "Oldies",
         order: mkOrder("updated_at", Desc->Some),
-        query: "state:open and updated_at < now-3week",
+        query: "state:open and updated_at<now-3week",
       },
     },
     style: Table,
@@ -361,15 +362,16 @@ module Board = {
         </span>
 
       let bottomRow =
-        <>
-          <Patternfly.Button
-            onClick={_ => {
-              doSave()
-              AddColumn->dispatch
-            }}>
-            {"Add Column"->str}
-          </Patternfly.Button>
-        </>
+        <Patternfly.Button
+          onClick={_ => {
+            doSave()
+            AddColumn->dispatch
+          }}>
+          {switch board.style {
+          | Kanban => "Add Column"->str
+          | Table => "Add Row"->str
+          }}
+        </Patternfly.Button>
 
       let columnsEditor = showColumnEditor
         ? <>
