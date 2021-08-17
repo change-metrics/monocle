@@ -361,15 +361,16 @@ module Board = {
         </span>
 
       let bottomRow =
-        <>
-          <Patternfly.Button
-            onClick={_ => {
-              doSave()
-              AddColumn->dispatch
-            }}>
-            {"Add Column"->str}
-          </Patternfly.Button>
-        </>
+        <Patternfly.Button
+          onClick={_ => {
+            doSave()
+            AddColumn->dispatch
+          }}>
+          {switch board.style {
+          | Kanban => "Add Column"->str
+          | Table => "Add Row"->str
+          }}
+        </Patternfly.Button>
 
       let columnsEditor = showColumnEditor
         ? <>
