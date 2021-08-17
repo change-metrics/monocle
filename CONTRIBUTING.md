@@ -132,65 +132,6 @@ cabal repl monocle
 λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
 ```
 
-### Running the services manually using NIX
-
-This section describes how to start the Monocle services directly on your host using nix.
-
-Note that the commands below can be started in emacs buffer using:
-
-```ShellSession
-nix-shell --command launch-monocle-with-emacs
-```
-
-#### HTTP gateway (nginx)
-
-```ShellSession
-nix-shell --command nginx-start
-```
-
-#### ElasticSearch
-
-```ShellSession
-nix-shell --command elk-start
-```
-
-#### API
-
-```ShellSession
-nix-shell --command monocle-api2-start
-λ> import Monocle.Api
-λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
-```
-
-In another terminal you could run ghcid with
-
-```ShellSession
-nix-shell --command monocle-ghcid
-```
-
-#### Web
-
-```ShellSession
-nix-shell --command monocle-web-start
-firefox http://localhost:13000
-```
-
-#### Start legacy crawlers process
-
-```ShellSession
-nix-shell --command monocle-crawlers-legacy-start
-```
-
-#### Start crawlers process
-
-```ShellSession
-nix-shell --command monocle-api2-start
-λ> import Macroscope.Worker
-λ> import Macroscope.Main
-λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
-```
-
 ## Contributing a new driver
 
 There is no specific documentation to cover that topic yet but the source code of
@@ -220,6 +161,10 @@ export ELASTIC_URL=http://localhost:9200
 cd haskell
 cabal test
 ```
+
+## Develop with nix
+
+Checkout the [./nix/README.md](./nix/README.md) for more details.
 
 ## Update API (protobuf)
 

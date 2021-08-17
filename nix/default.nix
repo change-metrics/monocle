@@ -211,7 +211,7 @@ let
   '';
 
   monocle-home = "/tmp/monocle-home";
-  monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
+  monocleApiStart = pkgs.writeScriptBin "monocle-api-legacy-start" ''
     #!/bin/sh
     set -ex
     export $(cat .secrets)
@@ -231,7 +231,7 @@ let
     }" --manage-script-name --mount /app=monocle.webapp:app
   '';
 
-  monocleApi2Start = pkgs.writeScriptBin "monocle-api2-start" ''
+  monocleApi2Start = pkgs.writeScriptBin "monocle-api-start" ''
     #!/bin/sh
     set -ex
     export $(cat .secrets)
@@ -322,19 +322,6 @@ let
     ${pkgs.emacs-nox}/bin/emacs --quick --load ${monocleEmacsLauncher}
   '';
 
-  services-req = [
-    elkStart
-    nginxStart
-    promStart
-    grafanaStart
-    monocleApiStart
-    monocleApi2Start
-    monocleWebStart
-    monocleCrawlersLegacy
-    monocleEmacsStart
-    monocleGhcid
-  ];
-
   # define the base requirements
   base-req = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnumake ];
   codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc pkgs.glibc ]
@@ -357,12 +344,6 @@ let
   ghc = hsPkgs.ghcWithPackages (p: with p; [ casing language-protobuf relude ]);
   hs-req =
     [ ghc hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
-
-  # define python requirements
-  python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
-
-  # define javascript requirements
-  javascript-req = [ pkgs.nodejs ];
 
   # define openapi requirements
   gnostic = pkgs.buildGoModule rec {
@@ -393,12 +374,27 @@ let
     rev = "94a788e91f0f10db7d3ca38d3503d6eecefffab8";
     sha256 = "03ky469sk0gkndxs4v8civ6x70mnnihgzaaqj51rr1xc14h40qss";
   };
+
+in rec {
+  python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
+  javascript-req = [ pkgs.nodejs ];
   go-req = [ gnostic ];
+  services-req = [
+    elkStart
+    nginxStart
+    promStart
+    grafanaStart
+    monocleApiStart
+    monocleApi2Start
+    monocleWebStart
+    monocleCrawlersLegacy
+    monocleEmacsStart
+    monocleGhcid
+  ];
 
   # all requirement
   all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req;
 
-in rec {
   codegen-shell = pkgs.stdenv.mkDerivation {
     name = "monocle-codegen-shell";
     buildInputs = all-req ++ services-req;
