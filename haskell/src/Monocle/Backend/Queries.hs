@@ -132,7 +132,7 @@ queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
 -- High level queries
 changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
 changes orderM limit =
-  withDocTypes [ElkChange] (QueryFlavor Author CreatedAt) $
+  withDocTypes [ElkChange] (QueryFlavor Author UpdatedAt) $
     doSearch orderM limit
 
 changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
