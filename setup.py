@@ -20,7 +20,7 @@ from setuptools import setup
 
 setup(
     name="monocle",
-    version="0.9.0",
+    version="1.0.0rc1",
     packages=[
         "monocle",
         "monocle.db",

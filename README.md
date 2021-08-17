@@ -8,8 +8,6 @@ Monocle is in an early phase of development. Feedback is highly welcome.
 Checkout the [changemetrics.io website](https://changemetrics.io) and
 join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
 
-We are currently working on the [version 1.0 roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
-
 ## Components
 
 ![architecture](./doc/architecture.png)
