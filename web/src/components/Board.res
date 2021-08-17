@@ -177,12 +177,12 @@ module Board = {
       {
         Column.name: "To Review",
         order: mkOrder("created_at", None),
-        query: "state: open and updated_at > now-3week " ++ " and not " ++ defaultNegativeApprovals,
+        query: "state:open and updated_at>now-3week " ++ " and not " ++ defaultNegativeApprovals,
       },
       {
         Column.name: "To Approve",
         order: mkOrder("created_at", None),
-        query: "state:open and updated_at > now-3week " ++
+        query: "state:open and updated_at>now-3week " ++
         "and not " ++
         defaultNegativeApprovals ++
         "and " ++
@@ -191,12 +191,12 @@ module Board = {
       {
         Column.name: "Done",
         order: mkOrder("updated_at", Desc->Some),
-        query: "state:merged and updated_at > now-1week",
+        query: "state:merged and updated_at>now-1week",
       },
       {
         Column.name: "Oldies",
         order: mkOrder("updated_at", Desc->Some),
-        query: "state:open and updated_at < now-3week",
+        query: "state:open and updated_at<now-3week",
       },
     },
     style: Table,
