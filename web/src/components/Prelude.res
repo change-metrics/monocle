@@ -32,7 +32,7 @@ let resetLocationSearch = %raw(`
   }
 `)
 
-let setLocationSearch = %raw(`
+let setLocationSearch: (string, string) => unit = %raw(`
   function(q, v) {
     const url = new URL(window.location.href);
     url.searchParams.set(q, v);

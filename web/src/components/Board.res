@@ -152,7 +152,7 @@ module ColumnEditor = {
             </Patternfly.Button>,
           )}
         </span>
-        <Search.Order store value={orderRef.contents} setValue={v => setOrder(v, ())} />
+        <Search.Order value={orderRef.contents} setValue={v => setOrder(v, ())} />
       </div>
     </div>
   }

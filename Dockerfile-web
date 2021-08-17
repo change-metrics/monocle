@@ -38,8 +38,8 @@ COPY build.js /app/
 COPY public /app/public/
 COPY src /app/src/
 
-# install dependencies
-RUN npm run build
+# install dependencies (sed is ugly hack to make warning errors)
+RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+27+101+109|' -i bsconfig.json && npm run build
 
 ################################################################################
 FROM registry.fedoraproject.org/fedora:33
