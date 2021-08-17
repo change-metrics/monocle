@@ -56,7 +56,7 @@ class Monad m => MonadTime m where
   getTime :: m UTCTime
 
 instance MonadTime IO where
-  getTime = liftIO getCurrentTime
+  getTime = getCurrentTime
 
 logEvent :: (MonadTime m, MonadIO m) => LogEvent -> m UTCTime
 logEvent ev = do

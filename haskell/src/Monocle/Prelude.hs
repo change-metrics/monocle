@@ -38,7 +38,7 @@ module Monocle.Prelude
 
     -- * time
     UTCTime,
-    getCurrentTime,
+    Monocle.Prelude.getCurrentTime,
     addUTCTime,
     elapsedSeconds,
     nominalDiffTimeToSeconds,
@@ -100,6 +100,10 @@ getEnv' var = do
 
 -- $setup
 -- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
+
+-- | A lifted version of getCurrentTime
+getCurrentTime :: MonadIO m => m UTCTime
+getCurrentTime = liftIO Data.Time.Clock.getCurrentTime
 
 -- | Return the seconds elapsed between a and b
 -- >>> elapsedSeconds (mkDate "2000-01-01 00:00:00 Z") (mkDate "2000-01-01 01:00:00 Z")

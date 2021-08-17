@@ -88,7 +88,6 @@ data Query = Query
 -- $setup
 -- >>> import Monocle.Search.Parser as P
 -- >>> import qualified Data.Aeson as Aeson
--- >>> import Data.Time.Clock (getCurrentTime)
 -- >>> now <- getCurrentTime
 
 type Bound = (Maybe UTCTime, UTCTime)

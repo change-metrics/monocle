@@ -22,9 +22,9 @@ import qualified Monocle.Search.Query as Q
 -- Low level wrappers for bloodhound. Only those should be using liftTenantM.
 measureTenantM :: ToJSON body => body -> TenantM a -> QueryM a
 measureTenantM body action = do
-  prev <- liftIO getCurrentTime
+  prev <- getCurrentTime
   res <- liftTenantM action
-  after <- liftIO getCurrentTime
+  after <- getCurrentTime
   ctxM <- getContext
   case ctxM of
     Just ctx ->
@@ -368,7 +368,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
         | jceOnCreatedAt > minDate = True
         | otherwise = False
 
-  now <- liftIO getCurrentTime
+  now <- getCurrentTime
 
   -- For each change, get the detail of the first event
   pure $ foldr toFirstEvent (initEvent now) <$> filter keepRecent changeMap

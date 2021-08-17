@@ -52,7 +52,7 @@ runMacroscope verbose confPath interval client = do
 
     crawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     crawl (index, key, crawler, idents) = do
-      now <- liftIO getCurrentTime
+      now <- getCurrentTime
       when verbose (monocleLog $ "Crawling " <> crawlerName crawler)
 
       -- Create document streams

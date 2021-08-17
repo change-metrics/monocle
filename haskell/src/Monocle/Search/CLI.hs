@@ -29,7 +29,7 @@ printQuery now index code = do
 
 searchMain :: MonadIO m => m ()
 searchMain = do
-  now <- liftIO getCurrentTime
+  now <- getCurrentTime
   args <- map toText <$> getArgs
   case args of
     ["--parse", query] -> putTextLn $ parseQuery now query

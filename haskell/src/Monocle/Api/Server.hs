@@ -78,7 +78,7 @@ userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
 userGroupGet request = do
   tenants <- getConfig
   let UserGroupPB.GetRequest {..} = request
-  now <- liftIO getCurrentTime
+  now <- getCurrentTime
 
   let requestE = do
         index <-
@@ -304,7 +304,7 @@ searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   tenants <- getConfig
   let SearchPB.QueryRequest {..} = request
-  now <- liftIO getCurrentTime
+  now <- getCurrentTime
 
   let requestE =
         do
