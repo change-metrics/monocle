@@ -2,8 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-
 ## [master]
 
 ### Added
@@ -12,9 +10,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-- [api] Index acl authentication using the `users` settings is removed. To protect an index use an authentication proxy instead.
-
 ### Fixed
+
+### Upgrade
+
+## [1.0.0] - 2021-08-17
+
+This release features some major refactoring. See [v1-roadmap](https://changemetrics.io/posts/2021-07-06-v1-roadmap.html).
+Most notable changes are:
+
+- a new [OpenAPI](./doc/openapi.yaml) served through the Haskell RunTime
+- a new WEB application written in ReScript
+- a new query system based on the Monocle query language
+
+### Added
+
+- [api,web] Query Language to replace the filter form.
+- [crawler] Support GitLab provider.
+
+### Changed
+
+- [web] Multiple UX improvements.
+
+### Removed
+
+- [api] Index acl authentication using the `users` settings is removed. To protect an index use an authentication proxy instead.
+- [web] Remove support of the FilterForm based query system.
 
 ### Upgrade
 
