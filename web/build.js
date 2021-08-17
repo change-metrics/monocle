@@ -41,7 +41,7 @@ if (isProd) {
   console.log('Running production build with', api_url)
 }
 // Ensure public asset are in sync:
-;['index.html', 'favicon.ico', 'robots.txt'].map((fn) => {
+;['index.html', 'favicon.ico', 'logo.png', 'robots.txt'].map((fn) => {
   fs.copyFile('public/' + fn, 'build/' + fn, (err) =>
     err ? console.log(err) : null
   )
