@@ -37,7 +37,7 @@ runMacroscope verbose confPath interval client = do
   where
     loop confRef = do
       -- Reload config
-      conf <- Config.reloadConfig confRef
+      conf <- Config.reloadConfig (const $ pure ()) confRef
 
       -- Crawl each index
       traverse_ crawl (getCrawlers conf)

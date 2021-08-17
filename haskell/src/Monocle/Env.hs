@@ -34,7 +34,9 @@ newtype AppM a = AppM {unApp :: ReaderT AppEnv Handler a}
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM [Config.Index]
-getConfig = Config.reloadConfig =<< asks config
+getConfig = do
+  logger <- asks (glLogger . aEnv)
+  Config.reloadConfig (logEvent logger . ReloadConfig) =<< asks config
 
 -- | 'TenantEnv' is the request environment, after validation
 data TenantEnv = TenantEnv
@@ -197,6 +199,23 @@ withLogger cb = do
   where
     logger = FastLogger.LogStderr 1024
 
+doLog :: Logger -> ByteString -> IO ()
+doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
+
+data SystemEvent
+  = Ready Int Int Text
+  | ReloadConfig FilePath
+
+sysEventToText :: SystemEvent -> ByteString
+sysEventToText = \case
+  Ready tenantCount port elkUrl ->
+    "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> encodeUtf8 elkUrl
+  ReloadConfig fp ->
+    "Reloading " <> encodeUtf8 fp
+
+logEvent :: Logger -> SystemEvent -> IO ()
+logEvent logger ev = doLog logger (sysEventToText ev)
+
 data MonocleEvent
   = AddingChange LText Int Int
   | AddingProject Text Text Int
@@ -219,4 +238,4 @@ monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
   Config.Index {..} <- getIndexConfig
   logger <- asks (glLogger . tEnv)
-  liftIO $ logger (\time -> FastLogger.toLogStr $ time <> (encodeUtf8 $ name <> ": " <> eventToText ev <> "\n"))
+  liftIO $ doLog logger (encodeUtf8 $ name <> ": " <> eventToText ev)

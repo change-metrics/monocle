@@ -48,8 +48,7 @@ run' port elkUrl configFile glLogger = do
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      putTextLn $
-        "Serving " <> show (length tenants') <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> elkUrl
+      logEvent glLogger $ Ready (length tenants') port elkUrl
       Warp.runSettings
         settings
         . cors (const $ Just policy)
