@@ -1,5 +1,5 @@
 -- | A module for low-level function unavailable in bloodhound
-module Database.Bloodhound.Raw (search, searchHit, aggWithDocValues) where
+module Database.Bloodhound.Raw (search, searchHit, settings, aggWithDocValues) where
 
 import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
@@ -28,6 +28,16 @@ dispatch method url body = do
           }
   manager <- BH.bhManager <$> BH.getBHEnv
   liftIO $ HTTP.httpLbs request manager
+
+settings :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> m ()
+settings (BH.IndexName index) body = do
+  BH.Server s <- BH.bhServer <$> BH.getBHEnv
+  let url = Text.intercalate "/" [s, index, "_settings"]
+      method = HTTP.methodPut
+  resp <- dispatch method url (Aeson.encode body)
+  case HTTP.responseBody resp of
+    "{\"acknowledged\":true}" -> pure ()
+    _ -> error $ "Settings apply failed: " <> show resp
 
 search' :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> m (BH.Reply)
 search' (BH.IndexName index) body = do
