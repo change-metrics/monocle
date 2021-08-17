@@ -22,6 +22,11 @@ source-repository head
   type:                git
   location:            https://github.com/change-metrics/monocle.git
 
+flag ci
+  description: Make warnings error
+  default:     False
+  manual:      True
+
 common common-options
   ghc-options:         -Wall
                        -Wcompat
@@ -41,6 +46,8 @@ common common-options
     ghc-options:       -Wpartial-fields
   if impl(ghc >= 8.10)
     ghc-options:       -Wunused-packages
+  if flag(ci)
+    ghc-options:       -Werror
 
   default-language:    Haskell2010
   default-extensions:  BangPatterns,
@@ -108,6 +115,7 @@ library
                      , directory
                      , either                     ^>= 5
                      , exceptions                 < 0.11
+                     , fast-logger
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
                      , http-types                 ^>=0.12
@@ -131,6 +139,8 @@ library
                      , text-time                  ^>= 0.3
                      , time                       < 1.10
                      , transformers
+                     , unliftio
+                     , unliftio-core
                      , vector
                      , wai                        ^>= 3.2.3
                      , wai-cors                   ^>= 0.2

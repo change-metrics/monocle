@@ -9,20 +9,27 @@ import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import Servant (Handler)
+import qualified System.Log.FastLogger as FastLogger
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 
 -------------------------------------------------------------------------------
 -- context monads and utility functions
 
--- | 'Env' is the global environment
 data Env = Env
+  { bhEnv :: BH.BHEnv,
+    glLogger :: Logger
+  }
+
+-- | 'Env' is the global environment
+data AppEnv = AppEnv
   { config :: IORef Config.ReloadableConfig,
-    bhEnv :: BH.BHEnv
+    aEnv :: Env
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
-newtype AppM a = AppM {unApp :: ReaderT Env Handler a}
+newtype AppM a = AppM {unApp :: ReaderT AppEnv Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
-  deriving newtype (MonadReader Env)
+  deriving newtype (MonadReader AppEnv)
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM [Config.Index]
@@ -31,35 +38,36 @@ getConfig = Config.reloadConfig =<< asks config
 -- | 'TenantEnv' is the request environment, after validation
 data TenantEnv = TenantEnv
   { tenant :: Config.Index,
-    bhEnv' :: BH.BHEnv
+    tEnv :: Env
   }
 
 -- | 'TenantM' is the request context, it contains the TenantEnv
 newtype TenantM a = TenantM {unTenant :: ReaderT TenantEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail, MonadThrow)
   deriving newtype (MonadReader TenantEnv)
+  deriving newtype (MonadUnliftIO)
 
 tenantIndexName :: Config.Index -> BH.IndexName
 tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | 'runTenantM' is the only way to run an 'TenantM' computation
 runTenantM :: Config.Index -> TenantM a -> AppM a
-runTenantM config (TenantM im) = do
-  bhEnv <- BH.getBHEnv
-  liftIO $ runReaderT im (TenantEnv config bhEnv)
+runTenantM tenant (TenantM im) = do
+  tEnv <- asks aEnv
+  liftIO $ runReaderT im (TenantEnv {..})
 
 -- | 'runTenantM'' is used in test, without the servant Handler
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
-runTenantM' bhEnv config tenantM =
-  runReaderT (unTenant tenantM) (TenantEnv config bhEnv)
+runTenantM' bhEnv config tenantM = withLogger $ \glLogger ->
+  runReaderT (unTenant tenantM) (TenantEnv config Env {..})
 
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where
-  getBHEnv = asks bhEnv
+  getBHEnv = asks (bhEnv . aEnv)
 
 -- | We can also derive a MonadBH from TenantM, we just needs to lift to the parent Reader
 instance BH.MonadBH TenantM where
-  getBHEnv = TenantM (asks bhEnv')
+  getBHEnv = TenantM (asks $ bhEnv . tEnv)
 
 getIndexName :: TenantM BH.IndexName
 getIndexName = tenantIndexName <$> asks tenant
@@ -161,6 +169,19 @@ data Entity = Project {getName :: Text} | Organization {getName :: Text}
 
 -------------------------------------------------------------------------------
 -- logging function
+type Logger = FastLogger.TimedFastLogger
+
+-- | withLogger create the logger
+--
+-- try with repl:
+-- λ> runTenantM' Prelude.undefined (emptyConfig "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
+withLogger :: (Logger -> IO a) -> IO a
+withLogger cb = do
+  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
+  FastLogger.withTimedFastLogger tc logger cb
+  where
+    logger = FastLogger.LogStderr 1024
+
 data MonocleEvent
   = AddingChange LText Int Int
   | AddingProject Text Text Int
@@ -182,4 +203,5 @@ eventToText ev = case ev of
 monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
   Config.Index {..} <- getIndexConfig
-  sayErr $ name <> ": " <> eventToText ev
+  logger <- asks (glLogger . tEnv)
+  liftIO $ logger (\time -> FastLogger.toLogStr $ time <> (encodeUtf8 $ name <> ": " <> eventToText ev <> "\n"))

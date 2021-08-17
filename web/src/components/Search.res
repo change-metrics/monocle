@@ -262,7 +262,6 @@ module OrderSelectorModal = {
     ~isOpen,
     ~value: option<SearchTypes.order>,
     ~onClose: option<SearchTypes.order> => unit,
-    ~store,
   ) => {
     let getOrder = (valueM, selector, defaultValue) =>
       valueM->Belt.Option.flatMap(v => v->selector->Some)->Belt.Option.getWithDefault(defaultValue)
@@ -298,11 +297,7 @@ module OrderSelectorModal = {
 
 module Order = {
   @react.component
-  let make = (
-    ~store: Store.t,
-    ~value: option<SearchTypes.order>,
-    ~setValue: option<SearchTypes.order> => unit,
-  ) => {
+  let make = (~value: option<SearchTypes.order>, ~setValue: option<SearchTypes.order> => unit) => {
     let (showOrderSelector, setShowOrderSelector) = React.useState(_ => startWithOrderModalOpen)
     let setOrder = v => {
       v->setValue
@@ -310,7 +305,7 @@ module Order = {
     }
     let onClick = _ => setShowOrderSelector(_ => true)
     <>
-      <OrderSelectorModal store value isOpen={showOrderSelector} onClose={setOrder} />
+      <OrderSelectorModal value isOpen={showOrderSelector} onClose={setOrder} />
       {switch value {
       | None => <Patternfly.Button onClick> {"Set order"->str} </Patternfly.Button>
       | Some(order) =>
@@ -388,7 +383,7 @@ module Filter = {
       setOrder(_ => v)
     }
     <div style={ReactDOM.Style.make(~width="1024px", ~whiteSpace="nowrap", ())}>
-      <Order store value={order} setValue />
+      <Order value={order} setValue />
       {state.filter == ""
         ? React.null
         : <>
