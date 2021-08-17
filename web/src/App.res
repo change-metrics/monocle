@@ -53,6 +53,8 @@ module MonocleNav = {
       <NavList>
         {[
           navItem("Activity", "/"),
+          navGroup("Changes", list{("Review Board", "/board"), ("Browse Changes", "/changes")}),
+          navGroup("Projects", list{("Projects", "/projects"), ("Repositories", "/repos")}),
           navGroup(
             "People",
             list{
@@ -62,8 +64,6 @@ module MonocleNav = {
               ("Groups", "/user_groups"),
             },
           ),
-          navGroup("Projects", list{("Projects", "/projects"), ("Repositories", "/repos")}),
-          navGroup("Changes", list{("Browse Changes", "/changes"), ("Board", "/board")}),
         ]->React.array}
       </NavList>
     </Nav>
