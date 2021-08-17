@@ -139,6 +139,8 @@ library
                      , text-time                  ^>= 0.3
                      , time                       < 1.10
                      , transformers
+                     , unliftio
+                     , unliftio-core
                      , vector
                      , wai                        ^>= 3.2.3
                      , wai-cors                   ^>= 0.2

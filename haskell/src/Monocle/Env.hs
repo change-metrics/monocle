@@ -10,6 +10,7 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 
 -------------------------------------------------------------------------------
 -- context monads and utility functions
@@ -44,6 +45,7 @@ data TenantEnv = TenantEnv
 newtype TenantM a = TenantM {unTenant :: ReaderT TenantEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail, MonadThrow)
   deriving newtype (MonadReader TenantEnv)
+  deriving newtype (MonadUnliftIO)
 
 tenantIndexName :: Config.Index -> BH.IndexName
 tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
