@@ -1,4 +1,4 @@
-module Main (main) where
+module Lentille.Bugzilla.Spec (bzClientTests) where
 
 import qualified Data.Vector as V
 import Lentille.Bugzilla
@@ -8,9 +8,6 @@ import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Web.Bugzilla.RedHat as BZ
-
-main :: IO ()
-main = defaultMain (testGroup "Tests" [bzClientTests])
 
 bzClientTests :: TestTree
 bzClientTests =

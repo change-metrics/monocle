@@ -2,7 +2,9 @@ module Main (main) where
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Google.Protobuf.Timestamp
+import Lentille.Bugzilla.Spec
 import qualified Monocle.Api.Config as Config
+import Monocle.Backend.Test
 import Monocle.Client
 import Monocle.Client.Api
 import Monocle.Env
@@ -21,7 +23,47 @@ main :: IO ()
 main = do
   setEnv "API_KEY" "secret"
   setEnv "CRAWLERS_API_KEY" "secret"
-  defaultMain (testGroup "Tests" [monocleSearchLanguage, monocleWebApiTests, monocleConfig])
+  integrationTests <- do
+    elasticUrl <- lookupEnv "ELASTIC_URL"
+    case elasticUrl of
+      Nothing -> do
+        putTextLn $ "ELASTIC_URL is missing, we skip integration test"
+        pure []
+      Just _ -> do
+        setEnv "TASTY_NUM_THREADS" "1"
+        pure [monocleIntegrationTests]
+
+  defaultMain
+    ( testGroup "Tests" $
+        [ monocleSearchLanguage,
+          monocleWebApiTests,
+          monocleConfig,
+          bzClientTests
+        ]
+          <> integrationTests
+    )
+
+monocleIntegrationTests :: TestTree
+monocleIntegrationTests =
+  testGroup
+    "Monocle.Backend.Changes"
+    [ testCase
+        "Index changes"
+        testIndexChanges,
+      testCase "Test achievement" testAchievements,
+      testCase "Test reposSummary" testReposSummary,
+      testCase "Test top authors" testTopAuthors,
+      testCase "Test changes top" testGetChangesTops,
+      testCase "Test authors peers strength" testGetAuthorsPeersStrength,
+      testCase "Test newContributors" testGetNewContributors,
+      testCase "Test getActivityStats" testGetActivityStats,
+      testCase
+        "Index ProjectCrawlerMetadata"
+        testProjectCrawlerMetadata,
+      testCase
+        "Index OrganizationCrawlerMetadata"
+        testOrganizationCrawlerMetadata
+    ]
 
 monocleSearchLanguage :: TestTree
 monocleSearchLanguage =

@@ -139,7 +139,6 @@ library
                      , text-time                  ^>= 0.3
                      , time                       < 1.10
                      , transformers
-                     , unliftio
                      , unliftio-core
                      , vector
                      , wai                        ^>= 3.2.3
@@ -248,44 +247,33 @@ benchmark json-decode
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 
 test-suite monocle-test
-  import:              common-options
+  import:              common-options, test-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base                       < 5
                      , aeson-pretty
+                     , bugzilla-redhat            >= 0.3.2
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
                      , monocle
+                     , network                    < 4
                      , proto3-suite               >= 0.4.2
                      , relude                     > 1.0 && < 1.1
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
                      , time
+                     , vector                     < 0.13
                      , wai                        < 3.3
+                     , wai                        < 3.3
+                     , warp                       < 3.4
   other-modules:       Monocle.Mock
+                     , Lentille.BugzillaMock
+                     , Lentille.Bugzilla.Spec
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
-
-test-suite monocle-integration-test
-  import:              common-options, test-options
-  type:                exitcode-stdio-1.0
-  main-is:             Integration.hs
-
-test-suite lentille-bugzilla-test
-  import:              common-options, test-options
-  type:                exitcode-stdio-1.0
-  other-modules:       Lentille.BugzillaMock
-  main-is:             Lentille/Bugzilla/Spec.hs
-  build-depends:       bugzilla-redhat            >= 0.3.2
-                     , http-types                 < 0.13
-                     , monocle
-                     , network                    < 4
-                     , vector                     < 0.13
-                     , wai                        < 3.3
-                     , warp                       < 3.4
 
 test-suite monocle-doctest
   type:               exitcode-stdio-1.0
