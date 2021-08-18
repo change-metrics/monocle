@@ -11,6 +11,7 @@ module Lentille.Bugzilla
     getBugzillaSession,
     getBugWithScore,
     getBugsWithScore,
+    BugzillaSession,
     BugWithScore,
     BZ.BugzillaApikey (..),
   )

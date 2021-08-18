@@ -27,8 +27,8 @@ import qualified Control.Retry as Retry
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Client.Api
 import Monocle.Client (MonocleClient, mkManager)
+import Monocle.Client.Api
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Monocle.TaskData

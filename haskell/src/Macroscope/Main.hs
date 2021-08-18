@@ -1,13 +1,15 @@
 -- |
 module Macroscope.Main (runMacroscope) where
 
+import Lentille (runLentilleM)
+import Lentille.Bugzilla (BugzillaSession, getBZData)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
-import Macroscope.Worker (DocumentStream (..), runStream)
+import Macroscope.Worker (DocumentStream (..), runLegacyTDStream, runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
-import Monocle.Client.Worker
+import Monocle.Client.Worker (MonadLog)
 import Monocle.Prelude
 
 -- | 'MacroM' is an alias for a bunch of constrain.
@@ -71,8 +73,14 @@ runMacroscope verbose confPath interval client = do
         _ -> pure []
 
       -- Consume each stream
-      let runner =
-            runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+      let runner' = runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+          legacyTDRunner' = runLegacyTDStream client Nothing (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+
+      let runner ds = case ds of
+            Projects _ -> runner' ds
+            Changes _ -> runner' ds
+            TaskDatas _ -> void $ runLentilleM $ legacyTDRunner' ds
+
       -- TODO: handle exceptions
       traverse_ runner docStreams
       where
@@ -84,3 +92,6 @@ runMacroscope verbose confPath interval client = do
 
     glOrgCrawler :: GitLabGraphClient -> DocumentStream
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
+
+    bzCrawler :: BugzillaSession -> Text -> DocumentStream
+    bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
