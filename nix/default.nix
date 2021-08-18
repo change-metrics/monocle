@@ -406,6 +406,21 @@ let
     '';
   };
 
+  dhall-kubernetes = pkgs.dhallPackages.buildDhallGitHubPackage {
+    name = "dhall-kubernetes";
+    githubBase = "github.com";
+    owner = "dhall-lang";
+    repo = "dhall-kubernetes";
+    rev = "v5.0.0";
+    fetchSubmodules = false;
+    sha256 = "0irqv44nh6fp3nyal48rzp5ir0y82r897aaw2nnc4yrfh9rd8w0y";
+    directory = "1.19";
+    file = "package.dhall";
+    source = false;
+    document = false;
+    dependencies = [ ];
+  };
+
 in rec {
   kind-start = pkgs.writeScriptBin "kind-start" ''
     #!/bin/sh -e
@@ -418,6 +433,27 @@ in rec {
     fi
   '';
   kube-req = [ kind-start pkgs.kubectl ];
+  dhall-req = [ pkgs.dhall pkgs.dhall-json ];
+
+  monoclectl-shell = pkgs.stdenv.mkDerivation {
+    name = "monoclectl-shell";
+    buildInputs = kube-req ++ services-req ++ dhall-req;
+    shellHook = ''
+      ROOT=${builtins.toString ./..}
+      echo '{ web = "${monocleWebStart}/bin/monocle-web-start", api = "${monocleApiStart}/bin/monocle-api-start" }' | dhall > data/nix-paths.dhall
+      export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
+      export DHALL_KUBERNETES=${dhall-kubernetes}/binary.dhall
+      export XDG_CACHE_HOME=/tmp/ops-home/
+      mkdir -p $XDG_CACHE_HOME/dhall
+      for pkg in ${pkgs.dhallPackages.Prelude} ${dhall-kubernetes}; do
+        for cache in $pkg/.cache/dhall/*; do
+            ln -sf $cache $XDG_CACHE_HOME/dhall/
+        done
+      done
+      alias monoclectl=$ROOT/monoclectl
+      echo "Welcome to monoclectl, "
+    '';
+  };
 
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
   javascript-req = [ pkgs.nodejs ];

@@ -20,6 +20,13 @@ all the tools needed to develop monocle:
 Check the [CONTRIBUTING.md](../CONTRIBUTING.md) documentation for
 service documentations.
 
+## Run monoclectl and its requirements
+
+```ShellSession
+$ nix-shell --attr monoclectl-shell ./nix/default.nix
+[nix-shell]$ kind-start && monoclectl devel
+```
+
 ## Run a single command
 
 To quickly run a command, use this helper:
