@@ -12,7 +12,10 @@ import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
+import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Network.Wai.Middleware.Servant.Options (provideOptions)
+import Prometheus (register)
+import Prometheus.Metric.GHC (ghcMetrics)
 import Servant (Handler, hoistServer, serve)
 
 monocleAPI :: Proxy MonocleAPI
@@ -42,18 +45,22 @@ run' port elkUrl configFile glLogger = do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  bhEnv <- I.mkEnv elkUrl
+  -- Monitoring
+  void $ register ghcMetrics
+  let monitoringMiddleware = prometheus def
+
+  bhEnv <- mkEnv elkUrl
   let aEnv = Env {..}
   retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      putTextLn $
-        "Serving " <> show (length tenants') <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> elkUrl
+      logEvent glLogger $ Ready (length tenants') port elkUrl
       Warp.runSettings
         settings
         . cors (const $ Just policy)
         . provideOptions monocleAPI
+        . monitoringMiddleware
         $ app (AppEnv {..})
   where
     policy =

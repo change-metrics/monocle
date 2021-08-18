@@ -1,6 +1,7 @@
 -- | The library environment and logging functions
 module Monocle.Env where
 
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Database.Bloodhound as BH
 import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Monocle.Api.Config as Config
@@ -8,9 +9,9 @@ import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
+import qualified Network.HTTP.Client as HTTP
 import Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 
 -------------------------------------------------------------------------------
 -- context monads and utility functions
@@ -33,7 +34,9 @@ newtype AppM a = AppM {unApp :: ReaderT AppEnv Handler a}
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM [Config.Index]
-getConfig = Config.reloadConfig =<< asks config
+getConfig = do
+  logger <- asks (glLogger . aEnv)
+  Config.reloadConfig (logEvent logger . ReloadConfig) =<< asks config
 
 -- | 'TenantEnv' is the request environment, after validation
 data TenantEnv = TenantEnv
@@ -50,16 +53,30 @@ newtype TenantM a = TenantM {unTenant :: ReaderT TenantEnv IO a}
 tenantIndexName :: Config.Index -> BH.IndexName
 tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
--- | 'runTenantM' is the only way to run an 'TenantM' computation
+-- | 'runTenantM' is the main way to run a 'TenantM' computation
 runTenantM :: Config.Index -> TenantM a -> AppM a
 runTenantM tenant (TenantM im) = do
   tEnv <- asks aEnv
   liftIO $ runReaderT im (TenantEnv {..})
 
--- | 'runTenantM'' is used in test, without the servant Handler
+-- | 'runTenantM'' run a 'TenantM' with an existing BHEnv
 runTenantM' :: forall a. BH.BHEnv -> Config.Index -> TenantM a -> IO a
 runTenantM' bhEnv config tenantM = withLogger $ \glLogger ->
   runReaderT (unTenant tenantM) (TenantEnv config Env {..})
+
+mkEnv :: MonadIO m => Text -> m BH.BHEnv
+mkEnv server = do
+  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
+  pure $ BH.mkBHEnv (BH.Server server) manager
+
+-- | 'testTenantM' run a TenantM using the ELASTIC_URL environment variable
+-- Use this to test a tenant action from the repl.
+testTenantM :: Config.Index -> TenantM a -> IO a
+testTenantM config tenantM = do
+  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+  bhEnv <- mkEnv (toText url)
+  withLogger $ \glLogger ->
+    runReaderT (unTenant tenantM) (TenantEnv config Env {..})
 
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where
@@ -174,13 +191,30 @@ type Logger = FastLogger.TimedFastLogger
 -- | withLogger create the logger
 --
 -- try with repl:
--- λ> runTenantM' Prelude.undefined (emptyConfig "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
+-- λ> runTenantM' Prelude.undefined (Config.defaultTenant "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
 withLogger :: (Logger -> IO a) -> IO a
 withLogger cb = do
   tc <- liftIO $ FastLogger.newTimeCache "%F %T "
   FastLogger.withTimedFastLogger tc logger cb
   where
     logger = FastLogger.LogStderr 1024
+
+doLog :: Logger -> ByteString -> IO ()
+doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
+
+data SystemEvent
+  = Ready Int Int Text
+  | ReloadConfig FilePath
+
+sysEventToText :: SystemEvent -> ByteString
+sysEventToText = \case
+  Ready tenantCount port elkUrl ->
+    "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> encodeUtf8 elkUrl
+  ReloadConfig fp ->
+    "Reloading " <> encodeUtf8 fp
+
+logEvent :: Logger -> SystemEvent -> IO ()
+logEvent logger ev = doLog logger (sysEventToText ev)
 
 data MonocleEvent
   = AddingChange LText Int Int
@@ -204,4 +238,4 @@ monocleLogEvent :: MonocleEvent -> TenantM ()
 monocleLogEvent ev = do
   Config.Index {..} <- getIndexConfig
   logger <- asks (glLogger . tEnv)
-  liftIO $ logger (\time -> FastLogger.toLogStr $ time <> (encodeUtf8 $ name <> ": " <> eventToText ev <> "\n"))
+  liftIO $ doLog logger (encodeUtf8 $ name <> ": " <> eventToText ev)

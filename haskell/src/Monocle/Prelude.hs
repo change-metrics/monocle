@@ -12,6 +12,11 @@ module Monocle.Prelude
     MonadThrow,
     MonadMask,
 
+    -- * tests
+    Assertion,
+    assertEqual,
+    assertFailure,
+
     -- * relude extra
     groupBy,
     average,
@@ -33,7 +38,8 @@ module Monocle.Prelude
 
     -- * time
     UTCTime,
-    getCurrentTime,
+    Monocle.Prelude.getCurrentTime,
+    addUTCTime,
     elapsedSeconds,
     nominalDiffTimeToSeconds,
     diffUTCTime,
@@ -71,7 +77,7 @@ import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
@@ -80,6 +86,7 @@ import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
+import Test.Tasty.HUnit
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
@@ -93,6 +100,10 @@ getEnv' var = do
 
 -- $setup
 -- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
+
+-- | A lifted version of getCurrentTime
+getCurrentTime :: MonadIO m => m UTCTime
+getCurrentTime = liftIO Data.Time.Clock.getCurrentTime
 
 -- | Return the seconds elapsed between a and b
 -- >>> elapsedSeconds (mkDate "2000-01-01 00:00:00 Z") (mkDate "2000-01-01 01:00:00 Z")
