@@ -388,7 +388,37 @@ let
     sha256 = "03ky469sk0gkndxs4v8civ6x70mnnihgzaaqj51rr1xc14h40qss";
   };
 
+  kindConf = pkgs.writeTextFile {
+    name = "kind.yml";
+    text = ''
+      kind: Cluster
+      apiVersion:  kind.x-k8s.io/v1alpha4
+      nodes:
+      - role: control-plane
+      - role: worker
+        extraMounts:
+        - hostPath: ~/.cabal
+          containerPath: /cabal
+        - hostPath: ./
+          containerPath: /src
+        - hostPath: /nix
+          containerPath: /nix
+    '';
+  };
+
 in rec {
+  kind-start = pkgs.writeScriptBin "kind-start" ''
+    #!/bin/sh -e
+    export PATH=${pkgs.kind}/bin:$PATH
+
+    if [ "$1" == "stop" ]; then
+      kind delete cluster
+    else
+      kind create cluster --config ${kindConf}
+    fi
+  '';
+  kube-req = [ kind-start pkgs.kubectl ];
+
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
   javascript-req = [ pkgs.nodejs ];
   go-req = [ gnostic ];

@@ -20,6 +20,17 @@ all the tools needed to develop monocle:
 Check the [CONTRIBUTING.md](../CONTRIBUTING.md) documentation for
 service documentations.
 
+## Run a single command
+
+To quickly run a command, use this helper:
+
+```ShellSession
+$ nix-run () { $(nix-build -of ./nix/default.nix --attr $1-start)/bin/$1-start; }
+
+$ nix-run kind
+[kind start]
+```
+
 ## Inspect the derivations
 
 A package in nix is called a derivation corresponding to a node in
