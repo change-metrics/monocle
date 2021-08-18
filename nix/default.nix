@@ -45,7 +45,7 @@ let
     '';
   };
   elkStart = pkgs.writeScriptBin "elk-start" ''
-    #!/bin/sh
+    #!${pkgs.bash}/bin/bash
     # todo: only set max_map_count when necessary
     ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144
     set -ex
@@ -53,6 +53,7 @@ let
     mkdir -p $ES_HOME/logs $ES_HOME/data
     ${pkgs.rsync}/bin/rsync -a ${elk}/config/ $ES_HOME/config/
     ln -sf ${elk}/modules/ $ES_HOME/
+    export PATH=$PATH:${pkgs.findutils}/bin
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
     cat ${elkConf} > $ES_HOME/config/elasticsearch.yml
@@ -210,11 +211,20 @@ let
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
   '';
 
+  monocleScriptHeader = ''
+    #!${pkgs.bash}/bin/bash
+    set -ex
+    if test -d /src; then cd /src; fi
+    if ! test -e .secrets; then
+      echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
+    fi
+    export $(cat .secrets)
+  '';
+
   monocle-home = "/tmp/monocle-home";
   monocleApiStart = pkgs.writeScriptBin "monocle-api-legacy-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
+    ${monocleScriptHeader};
+
     if ! test -d ${monocle-home}; then
         ${pkgs.python3}/bin/python -mvenv ${monocle-home}
         ${monocle-home}/bin/pip install --upgrade pip
@@ -232,37 +242,38 @@ let
   '';
 
   monocleApi2Start = pkgs.writeScriptBin "monocle-api-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
+    ${monocleScriptHeader};
+
     cd haskell; cabal repl monocle
   '';
 
   monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
-    #!/bin/sh
-    set -ex
+    ${monocleScriptHeader};
+
     cd haskell; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
-    #!/bin/sh
-    set -ex
-    cd web
+    ${monocleScriptHeader}
+    export PATH=$PATH:${pkgs.nodejs}/bin
 
+    cd web
     if ! test -d node_modules; then
-        ${pkgs.nodejs}/bin/npm install
+        # This config is needed by esbuild install
+        npm config set ignore-scripts false
+        npm install
+        npm config set ignore-scripts true
     fi
 
     export WEB_PORT=${toString web-port}
     export REACT_APP_API_URL=http://localhost:${toString nginx-port}
     export REACT_APP_TITLE="Monocle Dev"
-    exec ${pkgs.nodejs}/bin/npm start
+    exec npm start
   '';
 
   monocleCrawlersLegacy = pkgs.writeScriptBin "monocle-crawlers-legacy-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
+    ${monocleScriptHeader}
+
     if ! test -d ${monocle-home}; then
         ${pkgs.python3}/bin/python -mvenv ${monocle-home}
         ${monocle-home}/bin/pip install --upgrade pip
@@ -273,7 +284,9 @@ let
         ${monocle-home}/bin/python3 setup.py install
     fi
 
-    exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${toString elk-port}" crawler --config etc/config.yaml
+    exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${
+      toString elk-port
+    }" crawler --config etc/config.yaml
   '';
 
   monocleEmacsLauncher = pkgs.writeTextFile {
