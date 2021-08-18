@@ -26,7 +26,7 @@ newtype LentilleM a = LentilleM {unLentille :: ExceptT LentilleError IO a}
   deriving newtype (MonadError LentilleError)
 
 instance MonadTime LentilleM where
-  getTime = liftIO getCurrentTime
+  getTime = getCurrentTime
 
 instance MonadLog LentilleM where
   log' = logEvent

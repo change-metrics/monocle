@@ -1,10 +1,10 @@
 -- |
 module Monocle.Backend.Test where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import qualified Data.Text as Text
-import Data.Time.Clock (addUTCTime, secondsToNominalDiffTime)
+import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -19,7 +19,6 @@ import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
-import Test.Tasty.HUnit
 
 fakeDate :: UTCTime
 fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
@@ -77,38 +76,15 @@ fakeChange =
       elkchangeDraft = False
     }
 
-emptyConfig :: Text -> Config.Index
-emptyConfig name =
-  let crawlers_api_key = Nothing
-      crawlers = []
-      projects = Nothing
-      idents = Nothing
-      search_aliases = Nothing
-   in Config.Index {..}
-
-getElasticURL :: IO Text
-getElasticURL =
-  toText . fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
-
 withTenant :: TenantM () -> IO ()
-withTenant cb = do
-  elasticURL <- getElasticURL
-  bracket (create elasticURL) delete toTenantM
+withTenant cb = bracket_ create delete run
   where
     -- todo: generate random name
     testName = "test-tenant"
-    create url = do
-      bhEnv <- I.mkEnv url
-      let config = emptyConfig testName
-      _ <- runTenantM' bhEnv config I.ensureIndex
-      pure (bhEnv, config)
-    delete (bhEnv, config) = do
-      BH.runBH bhEnv $ do
-        let testIndex = tenantIndexName config
-        _resp <- BH.deleteIndex testIndex
-        False <- BH.indexExists testIndex
-        pure ()
-    toTenantM (bhEnv, config) = runTenantM' bhEnv config cb
+    config = Config.defaultTenant testName
+    create = testTenantM config I.ensureIndex
+    delete = testTenantM config I.deleteIndex
+    run = testTenantM config cb
 
 checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
 checkELKChangeField docId field value = do

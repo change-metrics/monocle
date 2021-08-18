@@ -106,6 +106,17 @@ deriving instance Eq Index
 
 deriving instance Show Index
 
+defaultTenant :: Text -> Index
+defaultTenant name =
+  Index
+    { name,
+      crawlers = [],
+      crawlers_api_key = Nothing,
+      projects = Nothing,
+      idents = Nothing,
+      search_aliases = Nothing
+    }
+
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name
@@ -140,14 +151,14 @@ getSecret def keyM =
   where
     env = fromMaybe def keyM
 
-reloadConfig :: MonadIO m => IORef ReloadableConfig -> m [Index]
-reloadConfig configRef = liftIO $ do
+reloadConfig :: MonadIO m => (FilePath -> IO ()) -> IORef ReloadableConfig -> m [Index]
+reloadConfig logReload configRef = liftIO $ do
   config <- readIORef configRef
   newConfigTs <- getModificationTime (configPath config)
   configWorkspaces
     <$> if newConfigTs > configTS config
       then do
-        putTextLn $ toText (configPath config) <> ": reloading config"
+        logReload (configPath config)
         newConfig <- loadConfig (configPath config)
         writeIORef configRef newConfig
         pure newConfig

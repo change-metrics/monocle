@@ -20,8 +20,6 @@ import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 
-type MServerName = Text
-
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
 instance ToJSON ChangesIndexMapping where
@@ -236,11 +234,6 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-mkEnv :: MonadIO m => MServerName -> m BH.BHEnv
-mkEnv server = do
-  manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
-  pure $ BH.mkBHEnv (BH.Server server) manager
-
 ensureIndex :: TenantM ()
 ensureIndex = do
   indexName <- getIndexName
@@ -254,6 +247,13 @@ ensureIndex = do
   traverse_ initCrawlerMetadata $ Config.crawlers config
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+deleteIndex :: TenantM ()
+deleteIndex = do
+  indexName <- getIndexName
+  _resp <- BH.deleteIndex indexName
+  False <- BH.indexExists indexName
+  pure ()
 
 toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just Monocle.Change.Ident {..}) =
