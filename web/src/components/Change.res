@@ -115,14 +115,6 @@ module Mergeable = {
     }
 }
 
-let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5px", ())
-
-module ExternalLink = {
-  @react.component
-  let make = (~href) =>
-    <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}> {`🔗`->str} </a>
-}
-
 module FilterLink = {
   @react.component
   let make = (~store: Store.t, ~queryField: string, ~queryValue: string, ~name: string) => {
@@ -248,7 +240,10 @@ module RowItem = {
   @react.component
   let make = (~store: Store.t, ~change: SearchTypes.change) =>
     <tr role="row">
-      <td role="cell"> <ChangeLink store id={change.change_id} title={change.title} /> </td>
+      <td role="cell">
+        <ExternalLink href={change.url} />
+        <ChangeLink store id={change.change_id} title={change.title} />
+      </td>
       <td role="cell">
         <div style={oneLineStyle}>
           <State state={change.state} draft={change.draft} />
