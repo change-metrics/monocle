@@ -17,6 +17,8 @@ let
   monocle-port = 19876;
   monocle2-port = 19875;
   web-port = 13000;
+  prom-port = 19090;
+  grafana-port = 19030;
 
   # DB
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
@@ -64,6 +66,82 @@ let
     set -x
     [ -f ${elk-home}/pid ] && (${elkStop}/bin/elkstop; sleep 5)
     rm -Rf ${elk-home}/
+  '';
+
+  # Prometheus
+  promConf = pkgs.writeTextFile {
+    name = "prometheus.yml";
+    text = ''
+      global:
+        evaluation_interval: "1m"
+        scrape_interval: "1m"
+        scrape_timeout: "10s"
+      scrape_configs:
+        - job_name: api
+          static_configs:
+            - targets:
+                - localhost:${toString monocle2-port}
+    '';
+  };
+  promStart = pkgs.writeScriptBin "prometheus-start" ''
+    #!/bin/sh
+    exec ${pkgs.prometheus}/bin/prometheus \
+      --config.file=${promConf}            \
+      --web.listen-address="0.0.0.0:${toString prom-port}"
+  '';
+
+  grafana-home = "/tmp/grafana-home";
+  grafanaPromDS = pkgs.writeTextFile {
+    name = "prometheus.yml";
+    text = ''
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        access: direct
+        url: http://localhost:${toString prom-port}
+    '';
+  };
+  grafanaDashboards = pkgs.writeTextFile {
+    name = "grafana-dashboards-provider.yml";
+    text = ''
+      apiVersion: 1
+      providers:
+      - name: dashboards
+        type: file
+        updateIntervalSeconds: 30
+        options:
+          path: ${grafana-home}/dashboards
+          foldersFromFilesStructure: true
+    '';
+  };
+  grafanaConf = pkgs.writeTextFile {
+    name = "grafana.ini";
+    text = ''
+      [security]
+      admin_user = admin
+      admin_password = monocle
+
+      [server]
+      http_port = ${toString grafana-port}
+
+      [plugin.grafana-image-renderer]
+      rendering_ignore_https_errors = true
+    '';
+  };
+  grafanaStart = pkgs.writeScriptBin "grafana-start" ''
+    #!/bin/sh -ex
+    mkdir -p ${grafana-home}/dashboards
+    ${pkgs.rsync}/bin/rsync -a ${pkgs.grafana}/share/grafana/ ${grafana-home}/
+    find ${grafana-home} -type f | xargs chmod 0600
+    find ${grafana-home} -type d | xargs chmod 0700
+    ${pkgs.dhall-json}/bin/dhall-to-json  \
+      --file conf/grafana-dashboard.dhall \
+      --output ${grafana-home}/dashboards/monocle.json
+    cd ${grafana-home}
+    cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
+    cat ${grafanaPromDS} > conf/provisioning/datasources/prometheus.yaml
+    exec ${pkgs.grafana}/bin/grafana-server -config ${grafanaConf}
   '';
 
   # WEB
@@ -227,6 +305,8 @@ let
       (defun monocle-start ()
         (monocle-startp "elk" "${elkStart}" )
         (monocle-startp "nginx" "${nginxStart}" )
+        (monocle-startp "prometheus" "${promStart}" )
+        (monocle-startp "grafana" "${grafanaStart}" )
         (monocle-startp "monocle-api" "${monocleApiStart}" )
         (monocle-startp "monocle-api2" "${monocleApi2Start}" )
         (monocle-startp "monocle-web" "${monocleWebStart}" ))
@@ -244,6 +324,8 @@ let
   services-req = [
     elkStart
     nginxStart
+    promStart
+    grafanaStart
     monocleApiStart
     monocleApi2Start
     monocleWebStart
