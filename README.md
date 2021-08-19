@@ -249,9 +249,6 @@ Monocle provides additional crawlers to attach tasks/issues/RFEs to changes base
 match on `change_url`. Then, Changes can be enhanced with information about related
 tasks such as a `priority` or a `score`.
 
-However these crawlers are not fully integrated with the configuration file and the crawler
-container process. Until they are, usage might be a bit rough.
-
 ###### GitHub
 
 ```ShellSession
@@ -260,6 +257,26 @@ docker-compose run --rm --no-deps crawler lentille-github --monocle-url http://a
 ```
 
 ###### Bugzilla
+
+A BugZilla provider settings
+
+```YAML
+  provider:
+    bugzilla_url: https://redhat.bugzilla.com
+    bugzilla_products:
+      - Awesome product
+    # Optional settings
+    bugzilla_token: BUGZILLA_TOKEN
+```
+
+`bugzilla_product` must be specified. The crawler will crawl listed products for bugs that
+contain an external bug references `ext_bz_bug_id`. The crawler assumes that the external
+reference is used to link to a change (Pull-Request/Review).
+
+`bugzilla_token` might be specified to use an alternate environment variable name to look for the
+token value. Default is "BUGZILLA_TOKEN"
+
+Note that this crawler is managed by the `crawler` container.
 
 ```ShellSession
 export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
