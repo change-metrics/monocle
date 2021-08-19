@@ -514,3 +514,11 @@ module LimitSelector = {
     </Tooltip>
   }
 }
+
+let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5px", ())
+
+module ExternalLink = {
+  @react.component
+  let make = (~href) =>
+    <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}> {`🔗`->str} </a>
+}
