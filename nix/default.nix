@@ -2,13 +2,78 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/db6e089456cdddcd7e2c1d8dac37a505c797e8fa.tar.gz";
-    sha256 = "02yk20i9n5nhn6zgll3af7kp3q5flgrpg1h5vcqfdqcck8iikx4b";
+      "https://github.com/NixOS/nixpkgs/archive/9fc2cddf24ad1819f17174cbae47789294ea6dc4.tar.gz";
+    sha256 = "058l6ry119mkg7pwmm7z4rl1721w0zigklskq48xb5lmgig4l332";
   };
   nixpkgsSrc = (import nixpkgsPath);
+  gitignoreSrc = pkgs.fetchFromGitHub {
+    owner = "hercules-ci";
+    repo = "gitignore.nix";
+    # put the latest commit sha of gitignore Nix library here:
+    rev = "211907489e9f198594c0eb0ca9256a1949c9d412";
+    # use what nix suggests in the mismatch message here:
+    sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
+  };
+  inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
+
+  # update haskell dependencies
+  compilerVersion = "8104";
+  compiler = "ghc" + compilerVersion;
+  overlays = [
+    (final: prev: {
+      myHaskellPackages = prev.haskell.packages.${compiler}.override {
+        overrides = hpFinal: hpPrev: {
+          # Unbreak proto3-suite
+          range-set-list = pkgs.haskell.lib.dontCheck
+            (pkgs.haskell.lib.overrideCabal hpPrev.range-set-list {
+              broken = false;
+            });
+          proto3-suite = pkgs.haskell.lib.dontCheck hpPrev.proto3-suite;
+
+          text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
+            broken = false;
+            src = builtins.fetchGit {
+              url = "https://github.com/klangner/text-time.git";
+              ref = "master";
+              rev = "33bffc43fde3fc57d0a6e3cb9f4f60fca2a8af6e";
+            };
+          });
+
+          json-syntax = pkgs.haskell.lib.dontCheck
+            (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax {
+              broken = false;
+            });
+
+          # relude>1 featuer exposed modules
+          relude = pkgs.haskell.lib.overrideCabal hpPrev.relude {
+            version = "1.0.0.1";
+            sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
+          };
+
+          # bloodhound needs a new release, use current master for now
+          bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
+            src = pkgs.fetchFromGitHub {
+              owner = "bitemyapp";
+              repo = "bloodhound";
+              rev = "4775ebb759fe1b7cb5f880e4a41044b2363d98af";
+              sha256 = "00wzaj4slvdxanm0krbc6mfn96mi5c6hhd3sywd3gq5m2ff59ggn";
+            };
+            broken = false;
+          };
+
+          monocle =
+            hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell) { };
+        };
+      };
+
+    })
+  ];
 
   # create the main package set without options
-  pkgs = nixpkgsSrc { };
+  pkgs = nixpkgsSrc {
+    inherit overlays;
+    system = "x86_64-linux";
+  };
   pkgsNonFree = nixpkgsSrc { config.allowUnfree = true; };
 
   # local devel env
@@ -247,10 +312,17 @@ let
     cd haskell; cabal repl monocle
   '';
 
-  monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
-    ${monocleScriptHeader};
+  monocleReq = pkgs.myHaskellPackages.shellFor {
+    packages = p: [ p.monocle ];
 
-    cd haskell; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
+    buildInputs = with pkgs.myHaskellPackages; [ cabal-install hlint ghcid ];
+  };
+
+  monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
+    ${monocleScriptHeader}
+    # Setup the requirements env
+    export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):$PATH
+    ${../monoclectl} start-api
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -340,20 +412,8 @@ let
   codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc pkgs.glibc ]
     ++ base-req;
 
-  # define the haskell toolchain
-  hsPkgs = pkgs.haskellPackages.extend (self: super: {
-    # Unbreak proto3-suite
-    range-set-list = pkgs.haskell.lib.dontCheck
-      (pkgs.haskell.lib.overrideCabal super.range-set-list { broken = false; });
-    proto3-suite = pkgs.haskell.lib.dontCheck super.proto3-suite;
-
-    # relude>1 featuer exposed modules
-    relude = pkgs.haskell.lib.overrideCabal super.relude {
-      version = "1.0.0.1";
-      sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
-    };
-  });
   # haskell dependencies for codegen
+  hsPkgs = pkgs.myHaskellPackages;
   ghc = hsPkgs.ghcWithPackages (p: with p; [ casing language-protobuf relude ]);
   hs-req =
     [ ghc hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
@@ -499,4 +559,5 @@ in rec {
     buildInputs = base-req ++ services-req;
   };
   shell = codegen-shell;
+  inherit pkgs;
 }
