@@ -158,7 +158,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
       case resp of
         GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
         anyOtherResponse ->
-          error $ "Could not got initial timesamp: " <> show anyOtherResponse
+          error $ "Could not get initial timestamp: " <> show anyOtherResponse
     mkRequest :: [TaskData] -> AddRequest
     mkRequest =
       AddRequest
@@ -287,7 +287,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           )
       case resp of
         CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
-        _ -> error $ "Could not got initial timesamp: " <> show resp
+        _ -> error $ "Could not get initial timestamp: " <> show resp
 
     -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
     -- this is used by the processBatch function.
