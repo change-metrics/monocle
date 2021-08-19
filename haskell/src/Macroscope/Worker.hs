@@ -9,6 +9,7 @@
 -- The Monocle worker interface.
 module Macroscope.Worker
   ( runStream,
+    runLegacyTDStream,
     DocumentStream (..),
   )
 where
@@ -24,7 +25,7 @@ import Monocle.Client.Worker hiding (run)
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
-import Monocle.TaskData (TaskData)
+import Monocle.TaskData
 import Proto3.Suite.Types (Enumerated (..))
 import Streaming (Of, Stream)
 import qualified Streaming as S
@@ -73,6 +74,107 @@ getOrganization oe = (getDate oe, toStrict organization)
       case commitInfoResponse_OldestEntityEntity oe of
         Just (Entity (Just (EntityEntityOrganizationName name))) -> name
         _ -> error $ "Not an organization: " <> show oe
+
+-------------------------------------------------------------------------------
+-- Legacy Worker for TaskData implementation
+-------------------------------------------------------------------------------
+
+pattern CommitError err = TaskDataCommitResponse (Just (TaskDataCommitResponseResultError err))
+
+pattern CommitSuccess <- TaskDataCommitResponse (Just (TaskDataCommitResponseResultTimestamp _ts))
+
+pattern GetLastUpdatedSuccess ts =
+  TaskDataGetLastUpdatedResponse (Just (TaskDataGetLastUpdatedResponseResultTimestamp ts))
+
+data ProcessResult' = Amended' | AmendError' Text deriving stock (Show)
+
+pattern AddSuccess' :: AddResponse
+pattern AddSuccess' = AddResponse Nothing
+
+pattern AddError' :: Enumerated TaskDataCommitError -> AddResponse
+pattern AddError' err = AddResponse (Just (AddResponseResultError err))
+
+processBatchTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> [TaskData] -> m ProcessResult'
+processBatchTD postFunc tds = do
+  log $ LogPostData (length tds)
+  resp <- postFunc tds
+  pure $ case resp of
+    AddSuccess' -> Amended'
+    (AddError' err) -> AmendError' (show err)
+    anyOtherResponse -> AmendError' ("Unknown error: " <> show anyOtherResponse)
+
+processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m [ProcessResult']
+processTD postFunc =
+  S.toList_
+    . S.mapM (processBatchTD postFunc)
+    . S.mapped S.toList --   Convert to list (type is Stream (Of [TaskData]) m ())
+    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TaskData) m) m ())
+
+-- | This function is using the original task_data_get_last_updated endpoint
+-- TODO: migrate the task_data endpoint to the new general entity system and drop this function
+runLegacyTDStream ::
+  (MonadMask m, MonadLog m, MonadIO m) =>
+  MonocleClient ->
+  Maybe UTCTime ->
+  ApiKey ->
+  IndexName ->
+  CrawlerName ->
+  DocumentStream ->
+  m ()
+runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
+  startTime <- log' LogStarting
+  since <- maybe getTimestampFromApi pure sinceM
+  postResultE <-
+    runLentilleM $  processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+  case postResultE of
+    Right _ -> pure ()
+    Left err ->
+      -- TODO: report decoding error
+      putTextLn $ "Lentille error: " <> show err
+  res <- retry $ commitTimestamp startTime
+  log (if res then LogEnded else LogFailed)
+  where
+    getStream since ds = case ds of
+      TaskDatas s -> s since
+      _ -> error "Not Implemented"
+
+    commitTimestamp startTime = do
+      commitResp <-
+        taskDataCommit
+          monocleClient
+          ( TaskDataCommitRequest
+              indexName
+              crawlerName
+              apiKey
+              (Just $ Timestamp.fromUTCTime startTime)
+          )
+      case commitResp of
+        CommitSuccess -> pure True
+        CommitError err -> do
+          monocleLog ("Commit failed: " <> show err)
+          pure False
+        anyOtherResponse -> do
+          monocleLog ("Empty commit response: " <> show anyOtherResponse)
+          pure False
+    getTimestampFromApi = do
+      resp <-
+        taskDataGetLastUpdated
+          monocleClient
+          ( TaskDataGetLastUpdatedRequest
+              indexName
+              crawlerName
+          )
+      case resp of
+        GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
+        anyOtherResponse ->
+          error $ "Could not get initial timestamp: " <> show anyOtherResponse
+    mkRequest :: [TaskData] -> AddRequest
+    mkRequest =
+      AddRequest
+        indexName
+        crawlerName
+        apiKey
+        . V.fromList
 
 -------------------------------------------------------------------------------
 -- Worker implementation
@@ -194,7 +296,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           )
       case resp of
         CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
-        _ -> error $ "Could not got initial timesamp: " <> show resp
+        _ -> error $ "Could not get initial timestamp: " <> show resp
 
     -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
     -- this is used by the processBatch function.

@@ -196,7 +196,7 @@ def downgrade(tenant):
 
     for crawler in crawlers:
         provider = crawler["provider"]
-        if provider == "TaskDataProvider":
+        if provider == "TaskDataProvider" or provider.get("bugzilla_url"):
             key = get_env(tenant.get("crawlers_api_key", "CRAWLERS_API_KEY"))
             tenant["task_crawlers"].append(
                 dict(
