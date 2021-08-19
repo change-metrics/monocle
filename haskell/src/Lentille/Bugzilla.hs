@@ -11,8 +11,10 @@ module Lentille.Bugzilla
     getBugzillaSession,
     getBugWithScore,
     getBugsWithScore,
+    BugzillaSession,
     BugWithScore,
     BZ.BugzillaApikey (..),
+    getApikey,
   )
 where
 
@@ -95,6 +97,9 @@ instance FromJSON BugsWithScore where
     bugs <- v .: "bugs"
     pure $ BugsWithScore bugs
   parseJSON _ = mzero
+
+getApikey :: Text -> BZ.BugzillaApikey
+getApikey = BZ.BugzillaApikey
 
 -- getBugs unwraps the 'BugsWithScore' newtype wrapper
 getBugs :: (MonadIO m) => BugzillaSession -> BZ.Request -> m [BugWithScore]

@@ -221,21 +221,11 @@ executable monocle-api
   main-is:             Api.hs
   build-depends:       base, monocle, relude
 
-executable lentille-bugzilla
-  import:              common-options, cli-options
-  main-is:             LentilleBugzilla.hs
-  build-depends:       streaming                  < 0.3
-                     , time                       < 1.12
-
 executable lentille-github
   import:              common-options, cli-options
   main-is:             LentilleGithub.hs
   build-depends:       streaming                  < 0.3
                      , time                       < 1.12
-
--- executable lentille-gitlab
---  import:              common-options, cli-options
---  main-is:             LentilleGitlab.hs
 
 executable macroscope
   import:              common-options, cli-options
