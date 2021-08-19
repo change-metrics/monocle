@@ -2,7 +2,7 @@
 module Macroscope.Main (runMacroscope) where
 
 import Lentille (runLentilleM)
-import Lentille.Bugzilla (BugzillaSession, getBZData)
+import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
@@ -70,6 +70,10 @@ runMacroscope verbose confPath interval client = do
             [glOrgCrawler glClient | isNothing gitlab_repositories]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
+        Config.BugzillaProvider Config.Bugzilla {..} -> do
+          bzTokenT <- Config.getSecret "BUGZILLA_TOKEN" bugzilla_token
+          bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
+          pure $ bzCrawler bzClient <$> fromMaybe [] bugzilla_products
         _ -> pure []
 
       -- Consume each stream
