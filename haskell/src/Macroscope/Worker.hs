@@ -17,7 +17,7 @@ where
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (LentilleM, LentilleStream, runLentilleM)
+import Lentille (LentilleStream, runLentilleM)
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Client (MonocleClient)
 import Monocle.Client.Api
@@ -103,25 +103,34 @@ processBatchTD postFunc tds = do
     (AddError' err) -> AmendError' (show err)
     anyOtherResponse -> AmendError' ("Unknown error: " <> show anyOtherResponse)
 
-processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m ()
+processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m [ProcessResult']
 processTD postFunc =
-  S.print
+  S.toList_
     . S.mapM (processBatchTD postFunc)
     . S.mapped S.toList --   Convert to list (type is Stream (Of [TaskData]) m ())
     . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TaskData) m) m ())
 
+-- | This function is using the original task_data_get_last_updated endpoint
+-- TODO: migrate the task_data endpoint to the new general entity system and drop this function
 runLegacyTDStream ::
+  (MonadMask m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   Maybe UTCTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
   DocumentStream ->
-  LentilleM ()
+  m ()
 runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- maybe getTimestampFromApi pure sinceM
-  processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+  postResultE <-
+    runLentilleM $  processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+  case postResultE of
+    Right _ -> pure ()
+    Left err ->
+      -- TODO: report decoding error
+      putTextLn $ "Lentille error: " <> show err
   res <- retry $ commitTimestamp startTime
   log (if res then LogEnded else LogFailed)
   where

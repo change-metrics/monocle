@@ -1,7 +1,6 @@
 -- |
 module Macroscope.Main (runMacroscope) where
 
-import Lentille (runLentilleM)
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
@@ -83,7 +82,7 @@ runMacroscope verbose confPath interval client = do
       let runner ds = case ds of
             Projects _ -> runner' ds
             Changes _ -> runner' ds
-            TaskDatas _ -> void $ runLentilleM $ legacyTDRunner' ds
+            TaskDatas _ -> legacyTDRunner' ds
 
       -- TODO: handle exceptions
       traverse_ runner docStreams
