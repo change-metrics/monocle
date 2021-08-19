@@ -79,7 +79,7 @@ Then ensure NGINX service is started/reloaded on your system.
 Monocle relies on ElasticSearch as backend to store Changes events.
 
 ```ShellSession
-./contrib/start-elk.sh 9200
+./monoclectl start-elk
 ```
 
 #### API
@@ -106,7 +106,7 @@ cabal repl monocle
 The Monocle React WebAPP (hot reload is enabled).
 
 ```ShellSession
-./contrib/start-web.sh
+./monoclectl start-web
 firefox http://localhost:3000
 ```
 
@@ -115,7 +115,7 @@ firefox http://localhost:3000
 Run this command to start the GitHub or/and Gerrit crawlers.
 
 ```ShellSession
-./contrib/start-crawlers-legacy.sh
+./monoclectl start-crawlers-legacy
 ```
 
 #### Start crawlers process

@@ -5,8 +5,8 @@ let Kubernetes = env:DHALL_KUBERNETES
 let default-paths =
       let PWD = env:PWD as Text
 
-      in  { web = "${PWD}/contrib/start-web.sh"
-          , api = "${PWD}/contrib/start-api.sh"
+      in  { web = "${PWD}/monoclectl start-web"
+          , api = "${PWD}/monoclectl start-api"
           }
 
 let Paths = ./data/nix-paths.dhall ? default-paths
@@ -90,4 +90,4 @@ in  \(dev : Bool) ->
             , api = mkDeployment "api" Paths.api 9000
             }
 
-      in  services.api
+      in  services.web

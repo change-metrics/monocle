@@ -76,14 +76,9 @@ let
   };
   pkgsNonFree = nixpkgsSrc { config.allowUnfree = true; };
 
-  # local devel env
-  elk-port = 19200;
-  nginx-port = 18080;
-  monocle-port = 19876;
-  monocle2-port = 19875;
-  web-port = 13000;
-  prom-port = 19090;
-  grafana-port = 19030;
+  script-headers = ''
+    #!${pkgs.bash}/bin/bash -ex
+  '';
 
   # DB
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
@@ -103,36 +98,39 @@ let
     name = "elasticsearch.yml";
     text = ''
       cluster.name: monocle
-      http.port: ${toString elk-port}
+      http.port: ELASTIC_PORT
       discovery.type: single-node
       network.host: 0.0.0.0
       cluster.routing.allocation.disk.threshold_enabled: false
     '';
   };
   elkStart = pkgs.writeScriptBin "elk-start" ''
-    #!${pkgs.bash}/bin/bash
+    ${script-headers}
+    source ${../monoclectl}
+
     # todo: only set max_map_count when necessary
-    ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144
-    set -ex
+    ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144 || true
+
+    # look for data dir
+    if test -d /src/data; then
+      DATA=/src/data
+    else
+      DATA=${builtins.toString ./../data}
+    fi
+
+    # setup standalone ES_HOME
     export ES_HOME=${elk-home}
-    mkdir -p $ES_HOME/logs $ES_HOME/data
+    mkdir -p $ES_HOME/logs
     ${pkgs.rsync}/bin/rsync -a ${elk}/config/ $ES_HOME/config/
     ln -sf ${elk}/modules/ $ES_HOME/
+    ln -sf $DATA $ES_HOME/data
     export PATH=$PATH:${pkgs.findutils}/bin
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
-    cat ${elkConf} > $ES_HOME/config/elasticsearch.yml
+    cat ${elkConf} | sed "s/ELASTIC_PORT/$ELASTIC_PORT/" > $ES_HOME/config/elasticsearch.yml
+
+    # start the service
     exec ${elk}/bin/elasticsearch -p $ES_HOME/pid
-  '';
-  elkStop = pkgs.writeScriptBin "elk-stop" ''
-    #!/bin/sh
-    kill $(cat /tmp/es-home/pid)
-  '';
-  elkDestroy = pkgs.writeScriptBin "elk-destroy" ''
-    #!/bin/sh
-    set -x
-    [ -f ${elk-home}/pid ] && (${elkStop}/bin/elkstop; sleep 5)
-    rm -Rf ${elk-home}/
   '';
 
   # Prometheus
@@ -147,14 +145,16 @@ let
         - job_name: api
           static_configs:
             - targets:
-                - localhost:${toString monocle2-port}
+                - localhost:MONOCLE_API_PORT
     '';
   };
   promStart = pkgs.writeScriptBin "prometheus-start" ''
-    #!/bin/sh
+    ${script-headers}
+    source ${../monoclectl}
+    cat ${promConf} | sed "s/MONOCLE_API_PORT/$MONOCLE_API_PORT/" > data/prometheus.yml
     exec ${pkgs.prometheus}/bin/prometheus \
       --config.file=${promConf}            \
-      --web.listen-address="0.0.0.0:${toString prom-port}"
+      --web.listen-address="0.0.0.0:$PROM_PORT
   '';
 
   grafana-home = "/tmp/grafana-home";
@@ -166,7 +166,7 @@ let
       - name: Prometheus
         type: prometheus
         access: direct
-        url: http://localhost:${toString prom-port}
+        url: http://localhost:PROM_PORT
     '';
   };
   grafanaDashboards = pkgs.writeTextFile {
@@ -190,25 +190,29 @@ let
       admin_password = monocle
 
       [server]
-      http_port = ${toString grafana-port}
+      http_port = GRAFANA_PORT
 
       [plugin.grafana-image-renderer]
       rendering_ignore_https_errors = true
     '';
   };
   grafanaStart = pkgs.writeScriptBin "grafana-start" ''
-    #!/bin/sh -ex
+    ${script-headers}
+    source ${../monoclectl}
+
+    # setup standalone grafana
     mkdir -p ${grafana-home}/dashboards
     ${pkgs.rsync}/bin/rsync -a ${pkgs.grafana}/share/grafana/ ${grafana-home}/
     find ${grafana-home} -type f | xargs chmod 0600
     find ${grafana-home} -type d | xargs chmod 0700
     ${pkgs.dhall-json}/bin/dhall-to-json  \
-      --file conf/grafana-dashboard.dhall \
+      --file ${../conf/grafana-dashboard.dhall} \
       --output ${grafana-home}/dashboards/monocle.json
     cd ${grafana-home}
     cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
-    cat ${grafanaPromDS} > conf/provisioning/datasources/prometheus.yaml
-    exec ${pkgs.grafana}/bin/grafana-server -config ${grafanaConf}
+    cat ${grafanaPromDS} | sed "s/PROM_PORT/$PROM_PORT/" > conf/provisioning/datasources/prometheus.yaml
+    cat ${grafanaConf} | sed "s/GRAFANA_PORT/$GRAFANA_PORT/" > conf/grafana.ini
+    exec ${pkgs.grafana}/bin/grafana-server -config conf/grafana.ini
   '';
 
   # WEB
@@ -234,7 +238,7 @@ let
         scgi_temp_path ${nginx-home}/scgi;
         client_max_body_size 1024M;
         server {
-          listen ${toString nginx-port} default_server;
+          listen NGINX_PORT default_server;
           proxy_cache one;
 
           gzip on;
@@ -242,23 +246,23 @@ let
           gzip_types text/plain text/xml application/javascript text/css;
 
           location /api/2/ {
-             proxy_pass http://localhost:${toString monocle2-port}/;
+             proxy_pass http://localhost:MONOCLE_API_PORT/;
              proxy_http_version 1.1;
           }
 
           location /api/ {
-              proxy_pass http://localhost:${toString monocle-port}/api/;
+              proxy_pass http://localhost:MONOCLE_LEGACY_PORT/api/;
               proxy_http_version 1.1;
           }
 
           location /auth {
-              proxy_pass http://localhost:${toString monocle2-port}/auth;
+              proxy_pass http://localhost:MONOCLE_API_PORT/auth;
               proxy_http_version 1.1;
           }
 
           # Forward the rest to the node development server
           location / {
-              proxy_pass http://localhost:${toString web-port};
+              proxy_pass http://localhost:MONOCLE_WEB_PORT;
               proxy_http_version 1.1;
               proxy_set_header Upgrade $http_upgrade;
               proxy_set_header Connection "upgrade";
@@ -270,95 +274,50 @@ let
     '';
   };
   nginxStart = pkgs.writeScriptBin "nginx-start" ''
-    #!/bin/sh
-    set -ex
+    ${script-headers}
+    source ${../monoclectl}
+
+    # setup standalone nginx
     mkdir -p ${nginx-home};
-    exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
+    cat ${nginxConf} | sed \
+      -e "s/NGINX_PORT/8080/" \
+      -e "s/MONOCLE_API_PORT/$MONOCLE_API_PORT/" \
+      -e "s/MONOCLE_LEGACY_PORT/$MONOCLE_LEGACY_PORT/" \
+      -e "s/MONOCLE_WEB_PORT/$MONOCLE_WEB_PORT/" \
+      > ${nginx-home}/nginx.conf
+    exec ${pkgs.nginx}/bin/nginx -c ${nginx-home}/nginx.conf -p ${nginx-home}/ -g "daemon off;"
   '';
 
-  monocleScriptHeader = ''
-    #!${pkgs.bash}/bin/bash
-    set -ex
-    if test -d /src; then cd /src; fi
-    if ! test -e .secrets; then
-      echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
-    fi
-    export $(cat .secrets)
+  monocleApiLegacyStart = pkgs.writeScriptBin "monocle-api-legacy-start" ''
+    ${script-headers};
+    export PATH=${pkgs.python3}/bin:$PATH
+    exec ./contrib/start-apiv1.sh
   '';
+  monocleCrawlersLegacyStart =
+    pkgs.writeScriptBin "monocle-crawlers-legacy-start" ''
+      ${script-headers}
+      export PATH=${pkgs.python3}/bin:$PATH
+      exec ./contrib/start-crawlers-legacy.sh
+    '';
 
-  monocle-home = "/tmp/monocle-home";
-  monocleApiStart = pkgs.writeScriptBin "monocle-api-legacy-start" ''
-    ${monocleScriptHeader};
-
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    export ELASTIC_CONN="localhost:${toString elk-port}"
-    exec ${monocle-home}/bin/uwsgi --http ":${
-      toString monocle-port
-    }" --manage-script-name --mount /app=monocle.webapp:app
-  '';
-
-  monocleApi2Start = pkgs.writeScriptBin "monocle-api-start" ''
-    ${monocleScriptHeader};
-
-    cd haskell; cabal repl monocle
-  '';
-
+  # Here we use a `shellFor` to pull in the monocle requirements
   monocleReq = pkgs.myHaskellPackages.shellFor {
     packages = p: [ p.monocle ];
-
     buildInputs = with pkgs.myHaskellPackages; [ cabal-install hlint ghcid ];
   };
 
   monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
-    ${monocleScriptHeader}
+    ${script-headers}
     # Setup the requirements env
     export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):$PATH
     ${../monoclectl} start-api
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
-    ${monocleScriptHeader}
+    ${script-headers}
     export PATH=$PATH:${pkgs.nodejs}/bin
-
-    cd web
-    if ! test -d node_modules; then
-        # This config is needed by esbuild install
-        npm config set ignore-scripts false
-        npm install
-        npm config set ignore-scripts true
-    fi
-
-    export WEB_PORT=${toString web-port}
-    export REACT_APP_API_URL=http://localhost:${toString nginx-port}
     export REACT_APP_TITLE="Monocle Dev"
-    exec npm start
-  '';
-
-  monocleCrawlersLegacy = pkgs.writeScriptBin "monocle-crawlers-legacy-start" ''
-    ${monocleScriptHeader}
-
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${
-      toString elk-port
-    }" crawler --config etc/config.yaml
+    ${../monoclectl} start-web
   '';
 
   monocleEmacsLauncher = pkgs.writeTextFile {
@@ -394,7 +353,7 @@ let
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
         (monocle-startp "monocle-api" "${monocleApiStart}" )
-        (monocle-startp "monocle-api2" "${monocleApi2Start}" )
+        (monocle-startp "monocle-api-legacy" "${monocleApiLegacyStart}" )
         (monocle-startp "monocle-web" "${monocleWebStart}" ))
 
       (monocle-start)
@@ -404,7 +363,7 @@ let
   monocleEmacsStart = pkgs.writeScriptBin "launch-monocle-with-emacs" ''
     #!/bin/sh
     set -ex
-    ${pkgs.emacs-nox}/bin/emacs --quick --load ${monocleEmacsLauncher}
+    emacs --quick --load ${monocleEmacsLauncher}
   '';
 
   # define the base requirements
@@ -457,7 +416,7 @@ let
       - role: control-plane
       - role: worker
         extraMounts:
-        - hostPath: ~/.cabal
+        - hostPath: HOME/.cabal
           containerPath: /cabal
         - hostPath: ./
           containerPath: /src
@@ -485,11 +444,12 @@ in rec {
   kind-start = pkgs.writeScriptBin "kind-start" ''
     #!/bin/sh -e
     export PATH=${pkgs.kind}/bin:$PATH
+    cat ${kindConf} | sed "s|HOME|$HOME|" > data/kind.yaml
 
     if [ "$1" == "stop" ]; then
       kind delete cluster
     else
-      kind create cluster --config ${kindConf}
+      kind create cluster --config data/kind.yaml
     fi
   '';
   kube-req = [ kind-start pkgs.kubectl ];
@@ -500,6 +460,7 @@ in rec {
     buildInputs = kube-req ++ services-req ++ dhall-req;
     shellHook = ''
       ROOT=${builtins.toString ./..}
+      cd $ROOT
       echo '{ web = "${monocleWebStart}/bin/monocle-web-start", api = "${monocleApiStart}/bin/monocle-api-start" }' | dhall > data/nix-paths.dhall
       export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
       export DHALL_KUBERNETES=${dhall-kubernetes}/binary.dhall
@@ -510,10 +471,12 @@ in rec {
             ln -sf $cache $XDG_CACHE_HOME/dhall/
         done
       done
-      alias monoclectl=$ROOT/monoclectl
+      alias monoclectl=${../monoclectl}
       echo "Welcome to monoclectl, "
     '';
   };
+  elk-start = elkStart;
+  monocle-api-start = monocleApiStart;
 
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
   javascript-req = [ pkgs.nodejs ];
@@ -524,11 +487,10 @@ in rec {
     promStart
     grafanaStart
     monocleApiStart
-    monocleApi2Start
+    monocleApiLegacyStart
     monocleWebStart
-    monocleCrawlersLegacy
+    monocleCrawlersLegacyStart
     monocleEmacsStart
-    monocleGhcid
   ];
 
   # all requirement
@@ -544,16 +506,7 @@ in rec {
       eval $(egrep ^export ${ghc}/bin/ghc)
     '';
   };
-  # Build using: TMPDIR=/tmp/podman podman load < $(nix-build --attr codegen-container)
-  codegen-container = pkgs.dockerTools.buildImage {
-    name = " changemetrics/monocle_codegen";
-    contents = all-req;
-    config = {
-      Cmd = [ "/bin/make" ];
-      WorkingDir = "/data";
-    };
-    tag = "latest";
-  };
+
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;
