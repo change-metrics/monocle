@@ -414,6 +414,15 @@ let
       apiVersion:  kind.x-k8s.io/v1alpha4
       nodes:
       - role: control-plane
+        kubeadmConfigPatches:
+        - |
+          kind: InitConfiguration
+          nodeRegistration:
+            kubeletExtraArgs:
+              node-labels: "ingress-ready=true"
+        extraPortMappings:
+        - containerPort: 80
+          hostPort: 80
       - role: worker
         extraMounts:
         - hostPath: HOME/.cabal
@@ -423,6 +432,10 @@ let
         - hostPath: /nix
           containerPath: /nix
     '';
+  };
+  kindIngress = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml";
+    sha256 = "1ck3df2mjvr7xikzb4hcq4czazqz3m1084pxyxf0cw9ha6bqxkxz";
   };
 
   dhall-kubernetes = pkgs.dhallPackages.buildDhallGitHubPackage {
@@ -450,6 +463,7 @@ in rec {
       kind delete cluster
     else
       kind create cluster --config data/kind.yaml
+      kubectl apply -f ${kindIngress}
     fi
   '';
   kube-req = [ kind-start pkgs.kubectl ];
