@@ -8,16 +8,23 @@
 
 # Default system configuration
 ELASTIC_PORT=${ELASTIC_PORT:-9200}
-PROM_PORT=${PROM_PORT:-9090}
-GRAFANA_PORT=${GRAFANA_PORT:-9030}
-MONOCLE_API_PORT=${MONOCLE_API_PORT:-9000}
-MONOCLE_WEB_PORT=${MONOCLE_WEB_PORT:-3000}
-MONOCLE_LEGACY_PORT=${MONOCLE_LEGACY_PORT:-9876}
 ELASTIC_HOST=${ELASTIC_HOST:-localhost}
+PROM_PORT=${PROM_PORT:-9090}
+PROM_HOST=${PROM_HOST:-localhost}
+GRAFANA_PORT=${GRAFANA_PORT:-9030}
+GRAFANA_HOST=${GRAFANA_HOST:-localhost}
+MONOCLE_API_PORT=${MONOCLE_API_PORT:-9000}
+MONOCLE_API_HOST=${MONOCLE_API_HOST:-localhost}
+MONOCLE_WEB_PORT=${MONOCLE_WEB_PORT:-3000}
+MONOCLE_WEB_HOST=${MONOCLE_WEB_HOST:-localhost}
+MONOCLE_LEGACY_PORT=${MONOCLE_LEGACY_PORT:-9876}
+MONOCLE_LEGACY_HOST=${MONOCLE_LEGACY_HOST:-localhost}
+
 ELASTIC_CONN=$ELASTIC_HOST:$ELASTIC_PORT
 ELASTIC_URL=http://$ELASTIC_CONN
 CONFIG=${CONFIG:-$PWD/etc/config.yaml}
 
+# if we are in a container, then move to the root of the project
 if test -e /src/monoclectl; then
     cd /src
 fi
@@ -47,8 +54,14 @@ get_container_runtime () {
 }
 
 case $1 in
+    "setup")
+        echo '(./package.dhall True).setup' | dhall-to-yaml --documents > data/setup-kind.yaml
+        kubectl apply -f data/setup-kind.yaml
+        kubectl wait --for=condition=complete job.batch/monocle-setup
+        ;;
     "devel")
-        echo './package.dhall True' | dhall-to-yaml --documents > data/monocle-kind.yaml
+        # TODO: auto start setup
+        echo '(./package.dhall True).services' | dhall-to-yaml --documents > data/monocle-kind.yaml
         kubectl apply -f data/monocle-kind.yaml
         ;;
     "stop")
@@ -81,6 +94,10 @@ case $1 in
         if ! test -d node_modules; then
             # Ignore-scripts is needed by esbuild
             npm install --ignore-scripts=false
+        fi
+        if ! test -f .bsb.lock; then
+            kill -9 $(pidof .bsb.lock) || true
+            rm -f .bsb.lock
         fi
         exec npm start
         ;;

@@ -222,6 +222,7 @@ let
     text = ''
       error_log /dev/stdout info;
       pid ${nginx-home}/nginx.pid;
+      user nobody nobody;
 
       events {
           worker_connections 1024;
@@ -229,6 +230,7 @@ let
 
       http {
         access_log /dev/stdout;
+        error_log /dev/stdout info;
         client_body_temp_path ${nginx-home}/client-body;
         proxy_temp_path ${nginx-home}/proxy;
         proxy_cache_path ${nginx-home}/cache keys_zone=one:10m;
@@ -246,23 +248,23 @@ let
           gzip_types text/plain text/xml application/javascript text/css;
 
           location /api/2/ {
-             proxy_pass http://localhost:MONOCLE_API_PORT/;
+             proxy_pass http://MONOCLE_API_HOST:MONOCLE_API_PORT/;
              proxy_http_version 1.1;
           }
 
           location /api/ {
-              proxy_pass http://localhost:MONOCLE_LEGACY_PORT/api/;
+              proxy_pass http://MONOCLE_LEGACY_HOST:MONOCLE_LEGACY_PORT/api/;
               proxy_http_version 1.1;
           }
 
           location /auth {
-              proxy_pass http://localhost:MONOCLE_API_PORT/auth;
+              proxy_pass http://MONOCLE_API_HOST:MONOCLE_API_PORT/auth;
               proxy_http_version 1.1;
           }
 
           # Forward the rest to the node development server
           location / {
-              proxy_pass http://localhost:MONOCLE_WEB_PORT;
+              proxy_pass http://MONOCLE_WEB_HOST:MONOCLE_WEB_PORT;
               proxy_http_version 1.1;
               proxy_set_header Upgrade $http_upgrade;
               proxy_set_header Connection "upgrade";
@@ -282,8 +284,11 @@ let
     cat ${nginxConf} | sed \
       -e "s/NGINX_PORT/8080/" \
       -e "s/MONOCLE_API_PORT/$MONOCLE_API_PORT/" \
+      -e "s/MONOCLE_API_HOST/$MONOCLE_API_HOST/" \
       -e "s/MONOCLE_LEGACY_PORT/$MONOCLE_LEGACY_PORT/" \
+      -e "s/MONOCLE_LEGACY_HOST/$MONOCLE_LEGACY_HOST/" \
       -e "s/MONOCLE_WEB_PORT/$MONOCLE_WEB_PORT/" \
+      -e "s/MONOCLE_WEB_HOST/$MONOCLE_WEB_HOST/" \
       > ${nginx-home}/nginx.conf
     exec ${pkgs.nginx}/bin/nginx -c ${nginx-home}/nginx.conf -p ${nginx-home}/ -g "daemon off;"
   '';
@@ -306,10 +311,27 @@ let
     buildInputs = with pkgs.myHaskellPackages; [ cabal-install hlint ghcid ];
   };
 
+  monocleReqPath =
+    "export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):${pkgs.git}/bin:$PATH";
+
+  mountCabalCache = ''
+    # when using uid=1000, HOME is set to / for ubi image
+    # todo: remove that hack by using a monocle-devel image that works with uid=1000
+    if test -z "$HOME" || test "$HOME" = "/" ; then
+        export HOME=/tmp
+    fi
+
+    if test -d /src/data; then
+        mkdir -p /src/data/cabal
+        ln -s /src/data/cabal ~/.cabal
+    fi
+  '';
+
   monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
     ${script-headers}
-    # Setup the requirements env
-    export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):$PATH
+    ${monocleReqPath}
+    ${mountCabalCache}
+
     ${../monoclectl} start-api
   '';
 
@@ -425,8 +447,6 @@ let
           hostPort: 80
       - role: worker
         extraMounts:
-        - hostPath: HOME/.cabal
-          containerPath: /cabal
         - hostPath: ./
           containerPath: /src
         - hostPath: /nix
@@ -434,7 +454,8 @@ let
     '';
   };
   kindIngress = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml";
+    url =
+      "https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml";
     sha256 = "1ck3df2mjvr7xikzb4hcq4czazqz3m1084pxyxf0cw9ha6bqxkxz";
   };
 
@@ -452,6 +473,17 @@ let
     document = false;
     dependencies = [ ];
   };
+
+  monocleDevSetup = pkgs.writeScriptBin "monocle-dev-start" ''
+    ${script-headers}
+    ${monocleReqPath}
+    ${mountCabalCache}
+
+    cd /src/haskell
+
+    # TODO: verify why git isn't able to clone dependencies without this:
+    env GIT_SSL_NO_VERIFY=1 cabal build exe:monocle-api
+  '';
 
 in rec {
   kind-start = pkgs.writeScriptBin "kind-start" ''
@@ -475,7 +507,17 @@ in rec {
     shellHook = ''
       ROOT=${builtins.toString ./..}
       cd $ROOT
-      echo '{ web = "${monocleWebStart}/bin/monocle-web-start", api = "${monocleApiStart}/bin/monocle-api-start" }' | dhall > data/nix-paths.dhall
+
+      # setup containers' command using nix script
+      (
+        echo '{'
+        echo ', setup = "${monocleDevSetup}/bin/monocle-dev-start"'
+        echo ', elk = "${elkStart}/bin/elk-start"'
+        echo ', nginx = "${nginxStart}/bin/nginx-start"'
+        echo ', web = "${monocleWebStart}/bin/monocle-web-start"'
+        echo ', api = "${monocleApiStart}/bin/monocle-api-start"'
+        echo '}'
+      ) | dhall > data/nix-paths.dhall
       export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
       export DHALL_KUBERNETES=${dhall-kubernetes}/binary.dhall
       export XDG_CACHE_HOME=/tmp/ops-home/

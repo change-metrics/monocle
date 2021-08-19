@@ -1,13 +1,16 @@
-let Prelude = env:DHALL_PRELUDE
+let Prelude =
+        env:DHALL_PRELUDE
+      ? https://prelude.dhall-lang.org/v17.0.0/package.dhall sha256:10db3c919c25e9046833df897a8ffe2701dc390fa0893d958c3430524be5a43e
 
-let Kubernetes = env:DHALL_KUBERNETES
+let Kubernetes =
+        env:DHALL_KUBERNETES
+      ? https://raw.githubusercontent.com/dhall-lang/dhall-kubernetes/v5.0.0/1.19/package.dhall sha256:1ba3b2108e8f38427f649f336e21f08f20d825c91b3ac64033be8c98783345d2
 
 let DevelConfig =
       { image = "registry.access.redhat.com/ubi8/ubi-minimal"
       , volumesMounts =
         [ Kubernetes.VolumeMount::{ mountPath = "/nix", name = "nix" }
         , Kubernetes.VolumeMount::{ mountPath = "/src", name = "src" }
-        , Kubernetes.VolumeMount::{ mountPath = "/cabal", name = "cabal" }
         ]
       , volumes =
         [ Kubernetes.Volume::{
@@ -18,21 +21,17 @@ let DevelConfig =
           , hostPath = Some Kubernetes.HostPathVolumeSource::{ path = "/src/" }
           , name = "src"
           }
-        , Kubernetes.Volume::{
-          , hostPath = Some Kubernetes.HostPathVolumeSource::{ path = "/cabal" }
-          , name = "cabal"
-          }
         ]
       }
 
 in  \(dev : Bool) ->
       let default-paths =
-            let PWD = env:PWD as Text
-
-            in  { web = "${PWD}/monoclectl start-web"
-                , api = "${PWD}/monoclectl start-api"
-                , api-repl = "${PWD}/monoclectl start-api-repl"
-                }
+            { nginx = ""
+            , elk = ""
+            , web = ""
+            , api = ""
+            , setup = "sleep infinity"
+            }
 
       let Paths = ./data/nix-paths.dhall ? default-paths
 
@@ -40,6 +39,7 @@ in  \(dev : Bool) ->
             \(name : Text) ->
             \(command : Text) ->
             \(containerPort : Natural) ->
+            \(env : Optional (List Kubernetes.EnvVar.Type)) ->
               let metadata =
                     Kubernetes.ObjectMeta::{
                     , labels = Some
@@ -59,61 +59,163 @@ in  \(dev : Bool) ->
                       [ { mapKey = "app.kubernetes.io/name", mapValue = name } ]
 
               let service =
-                    Kubernetes.Service::{
-                    , metadata
-                    , spec = Some Kubernetes.ServiceSpec::{
-                      , ports = Some
-                        [ Kubernetes.ServicePort::{
-                          , name = Some "web"
-                          , port = containerPort
-                          , targetPort = Some
-                              ( < Int : Natural | String : Text >.Int
-                                  containerPort
-                              )
-                          }
-                        ]
-                      , selector
+                    Kubernetes.Resource.Service
+                      Kubernetes.Service::{
+                      , metadata
+                      , spec = Some Kubernetes.ServiceSpec::{
+                        , ports = Some
+                          [ Kubernetes.ServicePort::{
+                            , name = Some "web"
+                            , port = containerPort
+                            , targetPort = Some
+                                ( < Int : Natural | String : Text >.Int
+                                    containerPort
+                                )
+                            }
+                          ]
+                        , selector
+                        }
                       }
-                    }
 
               let deployment =
-                    Kubernetes.Deployment::{
-                    , metadata
-                    , spec = Some Kubernetes.DeploymentSpec::{
-                      , replicas = Some 1
-                      , selector = Kubernetes.LabelSelector::{
-                        , matchLabels = selector
-                        }
-                      , template = Kubernetes.PodTemplateSpec::{
-                        , metadata
-                        , spec = Some Kubernetes.PodSpec::{
-                          , containers =
-                            [ Kubernetes.Container::{
-                              , image = Some DevelConfig.image
-                              , command = Some [ command ]
-                              , name
-                              , ports = Some
-                                [ Kubernetes.ContainerPort::{
-                                  , containerPort
-                                  , name = Some name
+                    Kubernetes.Resource.Deployment
+                      Kubernetes.Deployment::{
+                      , metadata
+                      , spec = Some Kubernetes.DeploymentSpec::{
+                        , replicas = Some 1
+                        , selector = Kubernetes.LabelSelector::{
+                          , matchLabels = selector
+                          }
+                        , template = Kubernetes.PodTemplateSpec::{
+                          , metadata
+                          , spec = Some Kubernetes.PodSpec::{
+                            , automountServiceAccountToken = Some False
+                            , containers =
+                              [ Kubernetes.Container::{
+                                , image = Some DevelConfig.image
+                                , imagePullPolicy = Some "IfNotPresent"
+                                , command = Some [ command ]
+                                , env
+                                , name
+                                , securityContext = Some Kubernetes.SecurityContext::{
+                                  , runAsUser = Some 1000
+                                  , runAsNonRoot = Some True
                                   }
-                                ]
-                              , volumeMounts = Some DevelConfig.volumesMounts
-                              }
-                            ]
-                          , volumes = Some DevelConfig.volumes
+                                , ports = Some
+                                  [ Kubernetes.ContainerPort::{
+                                    , containerPort
+                                    , name = Some name
+                                    }
+                                  ]
+                                , volumeMounts = Some DevelConfig.volumesMounts
+                                }
+                              ]
+                            , volumes = Some DevelConfig.volumes
+                            }
                           }
                         }
                       }
+
+              in  [ service, deployment ]
+
+      let ingress =
+            Kubernetes.Ingress::{
+            , metadata = Kubernetes.ObjectMeta::{
+              , name = Some "monocle-ingress"
+              }
+            , spec = Some Kubernetes.IngressSpec::{
+              , rules = Some
+                [ Kubernetes.IngressRule::{
+                  , http = Some Kubernetes.HTTPIngressRuleValue::{
+                    , paths =
+                      [ Kubernetes.HTTPIngressPath::{
+                        , backend = Kubernetes.IngressBackend::{
+                          , service = Some Kubernetes.IngressServiceBackend::{
+                            , name = "nginx"
+                            , port = Some Kubernetes.ServiceBackendPort::{
+                              , number = Some 8080
+                              }
+                            }
+                          }
+                        , path = Some "/"
+                        , pathType = Some "Prefix"
+                        }
+                      ]
                     }
-
-              in  { service, deployment }
-
-      let components =
-            { web = mkDeployment "web" Paths.web 3000
-            , api = mkDeployment "api" Paths.api 9000
+                  }
+                ]
+              }
             }
 
-      in  [ Kubernetes.Resource.Service components.web.service
-          , Kubernetes.Resource.Deployment components.web.deployment
-          ]
+      let no-env = None (List Kubernetes.EnvVar.Type)
+
+      let to-env =
+            \(map : Prelude.Map.Type Text Text) ->
+              Some
+                ( Prelude.List.map
+                    (Prelude.Map.Entry Text Text)
+                    Kubernetes.EnvVar.Type
+                    ( \(entry : Prelude.Map.Entry Text Text) ->
+                        Kubernetes.EnvVar::{
+                        , name = entry.mapKey
+                        , value = Some entry.mapValue
+                        }
+                    )
+                    map
+                )
+
+      let components =
+            { nginx =
+                mkDeployment
+                  "nginx"
+                  Paths.nginx
+                  8080
+                  ( to-env
+                      ( toMap
+                          { MONOCLE_WEB_HOST = "web", MONOCLE_API_HOST = "api" }
+                      )
+                  )
+            , web = mkDeployment "web" Paths.web 3000 no-env
+            , api =
+                mkDeployment
+                  "api"
+                  Paths.api
+                  9000
+                  (to-env (toMap { ELASTIC_HOST = "elastic" }))
+            }
+
+      let resources =
+              components.api
+            # components.web
+            # components.nginx
+            # [ Kubernetes.Resource.Ingress ingress ]
+
+      let setup =
+            Kubernetes.Job::{
+            , metadata = Kubernetes.ObjectMeta::{ name = Some "monocle-setup" }
+            , spec = Some Kubernetes.JobSpec::{
+              , template = Kubernetes.PodTemplateSpec::{
+                , metadata = Kubernetes.ObjectMeta::{
+                  , name = Some "monocle-setup"
+                  }
+                , spec = Some Kubernetes.PodSpec::{
+                  , containers =
+                    [ Kubernetes.Container::{
+                      , command = Some [ Paths.setup ]
+                      , image = Some DevelConfig.image
+                      , name = "monocle-setup"
+                      , volumeMounts = Some DevelConfig.volumesMounts
+                      , securityContext = Some Kubernetes.SecurityContext::{
+                        , runAsUser = Some 1000
+                        , runAsNonRoot = Some True
+                        }
+                      }
+                    ]
+                  , volumes = Some DevelConfig.volumes
+                  , restartPolicy = Some "Never"
+                  }
+                }
+              }
+            }
+
+      in  { setup, resources }
