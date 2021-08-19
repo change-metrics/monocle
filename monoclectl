@@ -48,7 +48,7 @@ get_container_runtime () {
 
 case $1 in
     "devel")
-        echo './package.dhall True' | dhall-to-yaml > data/monocle-kind.yaml
+        echo './package.dhall True' | dhall-to-yaml --documents > data/monocle-kind.yaml
         kubectl apply -f data/monocle-kind.yaml
         ;;
     "stop")
@@ -69,6 +69,12 @@ case $1 in
         ensure_secrets
         export CONFIG
         exec cabal run exe:monocle-api -- --port $MONOCLE_API_PORT
+        ;;
+    "start-api-repl")
+        cd haskell
+        ensure_secrets
+        export CONFIG
+        exec cabal repl
         ;;
     "start-web")
         cd web
