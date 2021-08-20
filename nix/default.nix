@@ -511,12 +511,10 @@ in rec {
   kind-start = pkgs.writeScriptBin "kind-start" ''
     #!/bin/sh -e
     export PATH=${pkgs.kind}/bin:$PATH
-    cat ${kindConf} | sed "s|HOME|$HOME|" > data/kind.yaml
-
     if [ "$1" == "stop" ]; then
       kind delete cluster
     else
-      kind create cluster --config data/kind.yaml
+      kind create cluster --config ${kindConf}
       kubectl apply -f ${kindIngress}
     fi
   '';

@@ -1,17 +1,10 @@
 .git
-.gitignore
-web
-data
-docker-compose.yml
-contrib
-dump
-etc
-doc
+.venv
+.tox
 
-# docker
-.dockerignore
-Dockerfile
-
-# cabal-install
-dist-newstyle/
-.ghc.environment*
+/web/node_modules
+/web/build
+/haskell/dist-newstyle
+/codegen/dist-newstyle
+/data
+/etc

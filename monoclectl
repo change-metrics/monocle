@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -77,7 +77,12 @@ case $1 in
     "stop")
         kubectl delete -f data/monocle-kind.yaml
         ;;
-
+    "build")
+        for img in builder; do
+            echo "(./conf/Container.dhall).$img" | dhall text > Containerfile
+            docker build -t quay.io/change-metrics/${img} -f Containerfile .
+        done
+        ;;
     # Helpers to manage service manually
     "start-elastic")
         IMAGE=$(awk '/docker.elastic/ { print $2 }' docker-compose.yml* | head -n 1 | sed 's/"//g')
