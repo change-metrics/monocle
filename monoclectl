@@ -1,10 +1,12 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # A collection of functions to manage monocle service.
 # This script is meant to be used by contributors
 # as well as containers' entrypoint.
+
+test -z "$TRACE" || set -x
 
 # Default system configuration
 MONOCLE_ELASTIC_PORT=${MONOCLE_ELASTIC_PORT:-9200}
@@ -22,12 +24,13 @@ MONOCLE_LEGACY_HOST=${MONOCLE_LEGACY_HOST:-localhost}
 
 ELASTIC_CONN=$MONOCLE_ELASTIC_HOST:$MONOCLE_ELASTIC_PORT
 ELASTIC_URL=http://$ELASTIC_CONN
-CONFIG=${CONFIG:-$PWD/etc/config.yaml}
 
 # if we are in a container, then move to the root of the project
 if test -e /src/monoclectl; then
     cd /src
 fi
+
+CONFIG=${CONFIG:-$PWD/etc/config.yaml}
 
 ensure_secrets () {
     if ! test -e .secrets; then
@@ -56,8 +59,15 @@ get_container_runtime () {
 case $1 in
     "setup")
         echo '(./package.dhall True).setup' | dhall-to-yaml --documents > data/setup-kind.yaml
+        kubectl delete job monocle-setup || true
         kubectl apply -f data/setup-kind.yaml
         kubectl wait --for=condition=complete job.batch/monocle-setup
+        ;;
+    "test")
+        echo '(./package.dhall True).test' | dhall-to-yaml --documents > data/api-test-kind.yaml
+        kubectl delete job monocle-api-test || true
+        kubectl apply -f data/api-test-kind.yaml
+        kubectl wait --for=condition=complete job.batch/monocle-api-test
         ;;
     "devel")
         # TODO: auto start setup
@@ -88,6 +98,12 @@ case $1 in
         ensure_secrets
         export CONFIG
         exec cabal repl
+        ;;
+    "test-api")
+        cd haskell
+        cabal build --enable-tests --enable-benchmarks --write-ghc-environment-files=always -O0
+        hlint src
+        doctest src
         ;;
     "start-web")
         cd web

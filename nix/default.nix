@@ -308,11 +308,13 @@ let
   # Here we use a `shellFor` to pull in the monocle requirements
   monocleReq = pkgs.myHaskellPackages.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = with pkgs.myHaskellPackages; [ cabal-install hlint ghcid ];
+    buildInputs = with pkgs.myHaskellPackages; [
+      cabal-install
+      hlint
+      ghcid
+      doctest
+    ];
   };
-
-  monocleReqPath =
-    "export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):${pkgs.git}/bin:$PATH";
 
   mountCabalCache = ''
     # when using uid=1000, HOME is set to / for ubi image
@@ -322,17 +324,48 @@ let
     fi
 
     if test -d /src/data; then
-        mkdir -p /src/data/cabal
-        ln -s /src/data/cabal ~/.cabal
+        mkdir -p /src/data/cabal ~/.cabal
+
+        for p in packages store; do
+          ln -s /src/data/cabal/$p ~/.cabal/$p
+        done
+        cat <<EOF> ~/.cabal/config
+    repository hackage.haskell.org
+      url: http://hackage.haskell.org/
+    remote-repo-cache: $HOME/.cabal/packages
+    world-file: $HOME/.cabal/world
+    EOF
     fi
+  '';
+
+  monocleReqPath = ''
+    export PATH=$(cat ${monocleReq} | sed -e 's| |/bin:|g' -e 's|$|/bin|'):${pkgs.git}/bin:$PATH
+    ${mountCabalCache}
   '';
 
   monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
     ${script-headers}
     ${monocleReqPath}
-    ${mountCabalCache}
 
     ${../monoclectl} start-api
+  '';
+
+  monocleDevSetup = pkgs.writeScriptBin "monocle-dev-start" ''
+    ${script-headers}
+    ${monocleReqPath}
+
+    cd /src/haskell
+
+    test -f ~/.cabal/packages/hackage.haskell.org/01-index.cache || cabal update
+
+    # TODO: verify why git isn't able to clone dependencies without this:
+    env GIT_SSL_NO_VERIFY=1 cabal build all
+  '';
+
+  monocleApiTest = pkgs.writeScriptBin "monocle-api-test" ''
+    ${script-headers}
+    ${monocleReqPath}
+    env GIT_SSL_NO_VERIFY=1 ${../monoclectl} test-api
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -474,17 +507,6 @@ let
     dependencies = [ ];
   };
 
-  monocleDevSetup = pkgs.writeScriptBin "monocle-dev-start" ''
-    ${script-headers}
-    ${monocleReqPath}
-    ${mountCabalCache}
-
-    cd /src/haskell
-
-    # TODO: verify why git isn't able to clone dependencies without this:
-    env GIT_SSL_NO_VERIFY=1 cabal build exe:monocle-api
-  '';
-
 in rec {
   kind-start = pkgs.writeScriptBin "kind-start" ''
     #!/bin/sh -e
@@ -516,6 +538,7 @@ in rec {
         echo ', nginx = "${nginxStart}/bin/nginx-start"'
         echo ', web = "${monocleWebStart}/bin/monocle-web-start"'
         echo ', api = "${monocleApiStart}/bin/monocle-api-start"'
+        echo ', api-test = "${monocleApiTest}/bin/monocle-api-test"'
         echo '}'
       ) | dhall > data/nix-paths.dhall
       export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
@@ -533,6 +556,7 @@ in rec {
   };
   elastic-start = elasticStart;
   monocle-api-start = monocleApiStart;
+  monocle-api-test = monocleApiTest;
 
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
   javascript-req = [ pkgs.nodejs ];

@@ -31,6 +31,7 @@ in  \(dev : Bool) ->
             , web = ""
             , api = ""
             , setup = "sleep infinity"
+            , api-test = ""
             }
 
       let Paths = ./data/nix-paths.dhall ? default-paths
@@ -203,32 +204,41 @@ in  \(dev : Bool) ->
             # components.nginx
             # [ Kubernetes.Resource.Ingress ingress ]
 
-      let setup =
-            Kubernetes.Job::{
-            , metadata = Kubernetes.ObjectMeta::{ name = Some "monocle-setup" }
-            , spec = Some Kubernetes.JobSpec::{
-              , template = Kubernetes.PodTemplateSpec::{
-                , metadata = Kubernetes.ObjectMeta::{
-                  , name = Some "monocle-setup"
-                  }
-                , spec = Some Kubernetes.PodSpec::{
-                  , containers =
-                    [ Kubernetes.Container::{
-                      , command = Some [ Paths.setup ]
-                      , image = Some DevelConfig.image
-                      , name = "monocle-setup"
-                      , volumeMounts = Some DevelConfig.volumesMounts
-                      , securityContext = Some Kubernetes.SecurityContext::{
-                        , runAsUser = Some 1000
-                        , runAsNonRoot = Some True
+      let mkJob =
+            \(name : Text) ->
+            \(command : Text) ->
+              Kubernetes.Job::{
+              , metadata = Kubernetes.ObjectMeta::{
+                , name = Some "monocle-${name}"
+                }
+              , spec = Some Kubernetes.JobSpec::{
+                , backoffLimit = Some 0
+                , template = Kubernetes.PodTemplateSpec::{
+                  , metadata = Kubernetes.ObjectMeta::{
+                    , name = Some "monocle-${name}"
+                    }
+                  , spec = Some Kubernetes.PodSpec::{
+                    , containers =
+                      [ Kubernetes.Container::{
+                        , command = Some [ command ]
+                        , image = Some DevelConfig.image
+                        , name = "monocle-${name}"
+                        , volumeMounts = Some DevelConfig.volumesMounts
+                        , securityContext = Some Kubernetes.SecurityContext::{
+                          , runAsUser = Some 1000
+                          , runAsNonRoot = Some True
+                          }
                         }
-                      }
-                    ]
-                  , volumes = Some DevelConfig.volumes
-                  , restartPolicy = Some "Never"
+                      ]
+                    , volumes = Some DevelConfig.volumes
+                    , restartPolicy = Some "Never"
+                    }
                   }
                 }
               }
-            }
 
-      in  { setup, resources }
+      let setup = mkJob "setup" Paths.setup
+
+      let test = mkJob "api-test" Paths.api-test
+
+      in  { setup, test, resources }
