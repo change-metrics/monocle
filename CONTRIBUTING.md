@@ -79,7 +79,7 @@ Then ensure NGINX service is started/reloaded on your system.
 Monocle relies on ElasticSearch as backend to store Changes events.
 
 ```ShellSession
-./monoclectl start-elk
+./monoclectl start-elastic
 ```
 
 #### API
@@ -140,8 +140,7 @@ source of knowledge to hack on a new crawler.
 
 ## Running tests
 
-Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the
-related nix-shell command.
+Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `monoclectl start-elastic`.
 
 ### On Python code base (legacy)
 

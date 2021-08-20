@@ -84,7 +84,7 @@ let
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
-  elk = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
+  elastic = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
     version = "7.10.1";
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
@@ -93,18 +93,18 @@ let
       sha256 = "1r62afmpmwyxifr4kjlannj44zbh67gdcch5czh4fllv459ajf7f";
     };
   });
-  elk-home = "/tmp/es-home";
-  elkConf = pkgs.writeTextFile {
+  elastic-home = "/tmp/es-home";
+  elasticConf = pkgs.writeTextFile {
     name = "elasticsearch.yml";
     text = ''
       cluster.name: monocle
-      http.port: ELASTIC_PORT
+      http.port: MONOCLE_ELASTIC_PORT
       discovery.type: single-node
       network.host: 0.0.0.0
       cluster.routing.allocation.disk.threshold_enabled: false
     '';
   };
-  elkStart = pkgs.writeScriptBin "elk-start" ''
+  elasticStart = pkgs.writeScriptBin "elastic-start" ''
     ${script-headers}
     source ${../monoclectl}
 
@@ -119,18 +119,18 @@ let
     fi
 
     # setup standalone ES_HOME
-    export ES_HOME=${elk-home}
+    export ES_HOME=${elastic-home}
     mkdir -p $ES_HOME/logs
-    ${pkgs.rsync}/bin/rsync -a ${elk}/config/ $ES_HOME/config/
-    ln -sf ${elk}/modules/ $ES_HOME/
+    ${pkgs.rsync}/bin/rsync -a ${elastic}/config/ $ES_HOME/config/
+    ln -sf ${elastic}/modules/ $ES_HOME/
     ln -sf $DATA $ES_HOME/data
     export PATH=$PATH:${pkgs.findutils}/bin
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
-    cat ${elkConf} | sed "s/ELASTIC_PORT/$ELASTIC_PORT/" > $ES_HOME/config/elasticsearch.yml
+    cat ${elasticConf} | sed "s/MONOCLE_ELASTIC_PORT/$MONOCLE_ELASTIC_PORT/" > $ES_HOME/config/elasticsearch.yml
 
     # start the service
-    exec ${elk}/bin/elasticsearch -p $ES_HOME/pid
+    exec ${elastic}/bin/elasticsearch -p $ES_HOME/pid
   '';
 
   # Prometheus
@@ -154,7 +154,7 @@ let
     cat ${promConf} | sed "s/MONOCLE_API_PORT/$MONOCLE_API_PORT/" > data/prometheus.yml
     exec ${pkgs.prometheus}/bin/prometheus \
       --config.file=${promConf}            \
-      --web.listen-address="0.0.0.0:$PROM_PORT
+      --web.listen-address="0.0.0.0:$MONOCLE_PROM_PORT
   '';
 
   grafana-home = "/tmp/grafana-home";
@@ -166,7 +166,7 @@ let
       - name: Prometheus
         type: prometheus
         access: direct
-        url: http://localhost:PROM_PORT
+        url: http://localhost:MONOCLE_PROM_PORT
     '';
   };
   grafanaDashboards = pkgs.writeTextFile {
@@ -190,7 +190,7 @@ let
       admin_password = monocle
 
       [server]
-      http_port = GRAFANA_PORT
+      http_port = MONOCLE_GRAFANA_PORT
 
       [plugin.grafana-image-renderer]
       rendering_ignore_https_errors = true
@@ -210,8 +210,8 @@ let
       --output ${grafana-home}/dashboards/monocle.json
     cd ${grafana-home}
     cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
-    cat ${grafanaPromDS} | sed "s/PROM_PORT/$PROM_PORT/" > conf/provisioning/datasources/prometheus.yaml
-    cat ${grafanaConf} | sed "s/GRAFANA_PORT/$GRAFANA_PORT/" > conf/grafana.ini
+    cat ${grafanaPromDS} | sed "s/MONOCLE_PROM_PORT/$MONOCLE_PROM_PORT/" > conf/provisioning/datasources/prometheus.yaml
+    cat ${grafanaConf} | sed "s/MONOCLE_GRAFANA_PORT/$MONOCLE_GRAFANA_PORT/" > conf/grafana.ini
     exec ${pkgs.grafana}/bin/grafana-server -config conf/grafana.ini
   '';
 
@@ -240,7 +240,7 @@ let
         scgi_temp_path ${nginx-home}/scgi;
         client_max_body_size 1024M;
         server {
-          listen NGINX_PORT default_server;
+          listen MONOCLE_NGINX_PORT default_server;
           proxy_cache one;
 
           gzip on;
@@ -282,7 +282,7 @@ let
     # setup standalone nginx
     mkdir -p ${nginx-home};
     cat ${nginxConf} | sed \
-      -e "s/NGINX_PORT/8080/" \
+      -e "s/MONOCLE_NGINX_PORT/8080/" \
       -e "s/MONOCLE_API_PORT/$MONOCLE_API_PORT/" \
       -e "s/MONOCLE_API_HOST/$MONOCLE_API_HOST/" \
       -e "s/MONOCLE_LEGACY_PORT/$MONOCLE_LEGACY_PORT/" \
@@ -370,7 +370,7 @@ let
         (start-worker-process (concat "monocle-" name) (concat command "/bin/" name "-start")))
 
       (defun monocle-start ()
-        (monocle-startp "elk" "${elkStart}" )
+        (monocle-startp "elastic" "${elasticStart}" )
         (monocle-startp "nginx" "${nginxStart}" )
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
@@ -512,7 +512,7 @@ in rec {
       (
         echo '{'
         echo ', setup = "${monocleDevSetup}/bin/monocle-dev-start"'
-        echo ', elk = "${elkStart}/bin/elk-start"'
+        echo ', elastic = "${elasticStart}/bin/elastic-start"'
         echo ', nginx = "${nginxStart}/bin/nginx-start"'
         echo ', web = "${monocleWebStart}/bin/monocle-web-start"'
         echo ', api = "${monocleApiStart}/bin/monocle-api-start"'
@@ -531,14 +531,14 @@ in rec {
       echo "Welcome to monoclectl, "
     '';
   };
-  elk-start = elkStart;
+  elastic-start = elasticStart;
   monocle-api-start = monocleApiStart;
 
   python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
   javascript-req = [ pkgs.nodejs ];
   go-req = [ gnostic ];
   services-req = [
-    elkStart
+    elasticStart
     nginxStart
     promStart
     grafanaStart

@@ -27,7 +27,7 @@ let DevelConfig =
 in  \(dev : Bool) ->
       let default-paths =
             { nginx = ""
-            , elk = ""
+            , elastic = ""
             , web = ""
             , api = ""
             , setup = "sleep infinity"
@@ -175,6 +175,18 @@ in  \(dev : Bool) ->
                           { MONOCLE_WEB_HOST = "web", MONOCLE_API_HOST = "api" }
                       )
                   )
+            , elastic =
+                mkDeployment
+                  "elastic"
+                  Paths.elastic
+                  9200
+                  ( to-env
+                      ( toMap
+                          { `discovery.type` = "single-node"
+                          , ES_JAVA_OPTS = "-Xms512m -Xmx512m"
+                          }
+                      )
+                  )
             , web = mkDeployment "web" Paths.web 3000 no-env
             , api =
                 mkDeployment
@@ -185,7 +197,8 @@ in  \(dev : Bool) ->
             }
 
       let resources =
-              components.api
+              components.elastic
+            # components.api
             # components.web
             # components.nginx
             # [ Kubernetes.Resource.Ingress ingress ]
