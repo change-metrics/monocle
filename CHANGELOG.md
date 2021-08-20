@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- [macroscope] Added support for BugZilla crawler.
+- [macroscope] Added support for GitHub Issues crawler.
+- [config] Support update_since date format as "YYYY-mm-dd" for macroscope crawlers.
+
 ### Changed
 
 ### Removed
