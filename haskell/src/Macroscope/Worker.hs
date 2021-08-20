@@ -21,7 +21,7 @@ import Lentille (LentilleStream, runLentilleM)
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Client (MonocleClient)
 import Monocle.Client.Api
-import Monocle.Client.Worker hiding (run)
+import Monocle.Client.Worker
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)

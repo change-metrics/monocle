@@ -11,7 +11,7 @@ module Lentille.GitHub where
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
-import Monocle.Client.Worker (mkManager)
+import Monocle.Client (mkManager)
 import qualified Network.HTTP.Client as HTTP
 import Relude
 import Streaming (Of, Stream)

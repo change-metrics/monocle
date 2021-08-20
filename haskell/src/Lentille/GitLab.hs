@@ -8,7 +8,8 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Lentille (LentilleError (DecodeError), LentilleStream, stopLentille)
-import Monocle.Client.Worker (mkManager, retry)
+import Monocle.Client (mkManager)
+import Monocle.Client.Worker (retry)
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.URI as URI
 import Relude
