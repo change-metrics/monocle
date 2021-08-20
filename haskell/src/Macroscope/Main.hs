@@ -3,6 +3,8 @@ module Macroscope.Main (runMacroscope) where
 
 import Control.Exception.Safe (tryAny)
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
+import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
+import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
@@ -45,6 +47,7 @@ runMacroscope verbose confPath interval client = do
       traverse_ safeCrawl (getCrawlers conf)
 
       -- Pause
+      monocleLog $ "Waiting " <> show (fromIntegral interval_usec / 1_000_000 :: Float) <> "s. brb"
       liftIO $ threadDelay interval_usec
 
       -- Loop again
@@ -84,6 +87,12 @@ runMacroscope verbose confPath interval client = do
           bzTokenT <- Config.getSecret "BUGZILLA_TOKEN" bugzilla_token
           bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
           pure $ bzCrawler bzClient <$> fromMaybe [] bugzilla_products
+        Config.GithubProvider ghCrawler -> do
+          let Config.Github _ _ github_token github_url = ghCrawler
+          ghToken <- Config.getSecret "GITHUB_TOKEN" github_token
+          ghClient <- newGithubGraphClientWithKey (fromMaybe githubDefaultGQLUrl github_url) ghToken
+          let repos = Config.getCrawlerProject crawler
+          pure $ ghIssuesCrawler ghClient <$> repos
         _ -> pure []
 
       -- Consume each stream
@@ -109,3 +118,8 @@ runMacroscope verbose confPath interval client = do
 
     bzCrawler :: BugzillaSession -> Text -> DocumentStream
     bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
+
+    ghIssuesCrawler :: GitHubGraphClient -> Text -> DocumentStream
+    ghIssuesCrawler ghClient repository =
+      TaskDatas $
+        streamLinkedIssue ghClient $ toString $ "repo:" <> repository

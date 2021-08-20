@@ -11,7 +11,7 @@ module Lentille.GitHub where
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
-import Monocle.Client.Worker (mkManager)
+import Monocle.Client (mkManager)
 import qualified Network.HTTP.Client as HTTP
 import Relude
 import Streaming (Of, Stream)
@@ -19,6 +19,9 @@ import qualified Streaming.Prelude as S
 
 schemaLocation :: String
 schemaLocation = "./github-schema/schema.docs.graphql"
+
+githubDefaultGQLUrl :: Text
+githubDefaultGQLUrl = "https://api.github.com/graphql"
 
 -------------------------------------------------------------------------------
 -- HTTP Client
@@ -31,11 +34,15 @@ data GitHubGraphClient = GitHubGraphClient
 
 newGithubGraphClient :: MonadIO m => Text -> m GitHubGraphClient
 newGithubGraphClient url' = do
-  manager' <- mkManager
   token' <-
     toText
       . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")
       <$> liftIO (lookupEnv "GITHUB_GRAPH_TOKEN")
+  newGithubGraphClientWithKey url' token'
+
+newGithubGraphClientWithKey :: MonadIO m => Text -> Text -> m GitHubGraphClient
+newGithubGraphClientWithKey url' token' = do
+  manager' <- mkManager
   pure $ GitHubGraphClient manager' url' token'
 
 -- | The morpheus-graphql-client fetch callback,

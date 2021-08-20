@@ -3,7 +3,7 @@ module Monocle.Api (run) where
 
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
-import Monocle.Client.Worker (retry)
+import Monocle.Client (retry)
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)

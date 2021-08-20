@@ -19,9 +19,9 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (LentilleStream, runLentilleM)
 import Monocle.Change (Change, ChangeEvent)
-import Monocle.Client (MonocleClient)
+import Monocle.Client (MonocleClient, retry)
 import Monocle.Client.Api
-import Monocle.Client.Worker hiding (run)
+import Monocle.Client.Worker
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
@@ -125,7 +125,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- maybe getTimestampFromApi pure sinceM
   postResultE <-
-    runLentilleM $  processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+    runLentilleM $ processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
   case postResultE of
     Right _ -> pure ()
     Left err ->

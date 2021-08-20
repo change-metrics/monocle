@@ -222,12 +222,6 @@ executable monocle-api
   main-is:             Api.hs
   build-depends:       base, monocle, relude
 
-executable lentille-github
-  import:              common-options, cli-options
-  main-is:             LentilleGithub.hs
-  build-depends:       streaming                  < 0.3
-                     , time                       < 1.12
-
 executable macroscope
   import:              common-options, cli-options
   main-is:             Macroscope.hs

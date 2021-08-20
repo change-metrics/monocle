@@ -251,10 +251,8 @@ tasks such as a `priority` or a `score`.
 
 ###### GitHub
 
-```ShellSession
-export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
-docker-compose run --rm --no-deps crawler lentille-github --monocle-url http://api-legacy:9896 --index my-index --crawler-name my-crawler --since "2020-01-01 00:00:00 Z" --repo change-metrics/monocle
-```
+The GitHub TaskData crawler run automatically whenever repositories are specified into a
+[GitHub Changes crawler](#github) definition.
 
 ###### Bugzilla
 
@@ -277,11 +275,6 @@ reference is used to link to a change (Pull-Request/Review).
 token value. Default is "BUGZILLA_TOKEN"
 
 Note that this crawler is managed by the `crawler` container.
-
-```ShellSession
-export MONOCLE_API_KEY=$(sed -n '/CRAWLERS_API_KEY=/ s/CRAWLERS_API_KEY=//p' .secrets)
-docker-compose run --rm --no-deps crawler lentille-bugzilla --monocle-url http://api-legacy:9896 --index my-index --crawler-name my-crawler --since "2020-01-01 00:00:00 Z" --bugzilla-product Awesome-Product
-```
 
 ### Projects definition
 

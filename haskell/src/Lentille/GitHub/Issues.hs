@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Calendar
 import Data.Time.Clock
+import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille.GitHub
@@ -82,17 +83,19 @@ defineByDocumentFile
     }
   |]
 
--- fetchLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> m (Either String GetLinkedIssues)
--- fetchLinkedIssue client searchText = fetch (runGithubGraphRequest client) (GetLinkedIssuesArgs searchText "")
-
-streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> Stream (Of TaskData) m ()
-streamLinkedIssue client searchText =
-  streamFetch client mkArgs transformResponse
+streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
+streamLinkedIssue client searchText utctime = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor' = GetLinkedIssuesArgs (searchText <> " linked:pr") $ toCursorM cursor'
+    mkArgs cursor' =
+      GetLinkedIssuesArgs
+        ( searchText <> " updated:>=" <> toSimpleDate utctime <> " linked:pr"
+        )
+        $ toCursorM cursor'
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just $ toString cursor''
+    toSimpleDate :: UTCTime -> String
+    toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
@@ -140,8 +143,8 @@ transformResponse searchResult =
       where
         getLabelsE :: Either Text [LText]
         getLabelsE = case partitionEithers (getLabels issue) of
-          (labels', []) -> Right (fmap toLazy labels')
-          (_, errors) -> Left (unwords errors)
+          ([], labels') -> Right (fmap toLazy labels')
+          (errors, _) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
         getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _) = changeURL
         getIssueID :: SearchNodesSearchResultItem -> Text
@@ -172,19 +175,19 @@ transformResponse searchResult =
           _
           ( SearchNodesTimelineItemsIssueTimelineItemsConnection
               (Just urls)
-            ) -> map extractUrl urls
+            ) -> Right <$> mapMaybe extractUrl urls
         respOther -> [Left ("Invalid response: " <> show respOther)]
-    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Either Text Text
+    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
     extractUrl item = case item of
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
             "ConnectedEvent"
             (SearchNodesTimelineItemsNodesSubjectPullRequest (Just (URI url')))
-          ) -> Right url'
+          ) -> Just url'
       Just
         ( SearchNodesTimelineItemsNodesCrossReferencedEvent
             "CrossReferencedEvent"
             (SearchNodesTimelineItemsNodesSourcePullRequest (Just (URI url')))
-          ) -> Right url'
+          ) -> Just url'
       -- We are requesting Issue with connected PR we cannot get Nothing
-      _ -> Left "Missing PR URI"
+      _ -> Nothing
