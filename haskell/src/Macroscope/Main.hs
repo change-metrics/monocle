@@ -1,6 +1,7 @@
 -- |
 module Macroscope.Main (runMacroscope) where
 
+import Control.Exception.Safe (tryAny)
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
@@ -41,7 +42,7 @@ runMacroscope verbose confPath interval client = do
       conf <- Config.reloadConfig (const $ pure ()) confRef
 
       -- Crawl each index
-      traverse_ crawl (getCrawlers conf)
+      traverse_ safeCrawl (getCrawlers conf)
 
       -- Pause
       liftIO $ threadDelay interval_usec
@@ -50,6 +51,16 @@ runMacroscope verbose confPath interval client = do
       loop confRef
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
+
+    safeCrawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    safeCrawl crawler = do
+      catched <- tryAny $ crawl crawler
+      case catched of
+        Right comp -> pure comp
+        Left exc ->
+          let (name, _, _, _) = crawler
+           in monocleLog $
+                "Skipping crawler: " <> name <> ". Unexpected exception catched: " <> show exc
 
     crawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     crawl (index, key, crawler, idents) = do

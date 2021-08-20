@@ -133,6 +133,7 @@ library
                      , relude                     > 1.0.0.0
                      , retry                      < 0.9
                      , say                        ^>= 0.1
+                     , safe-exceptions            < 0.1.7.3
                      , servant                    ^>= 0.18.2
                      , servant-options            ^>= 0.1
                      , servant-server             ^>= 0.18.2
