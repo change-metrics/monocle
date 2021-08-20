@@ -61,7 +61,7 @@ runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
           }
   response <- liftIO $ HTTP.httpLbs request manager'
   -- print response
-  pure (HTTP.responseBody response)
+  pure $ HTTP.responseBody response
 
 data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
   deriving (Show)

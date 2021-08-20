@@ -41,6 +41,7 @@ let
       http.port: ${toString elk-port}
       discovery.type: single-node
       network.host: 0.0.0.0
+      cluster.routing.allocation.disk.threshold_enabled: false
     '';
   };
   elkStart = pkgs.writeScriptBin "elk-start" ''
