@@ -13,19 +13,13 @@ module Monocle.Client.Worker
 
     -- * Utility function
     getCurrentTime,
-    retry,
     MonadMask,
   )
 where
 
-import Control.Monad.Catch (Handler (Handler))
-import Control.Retry (RetryStatus (..))
-import qualified Control.Retry as Retry
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
-import Network.HTTP.Client (HttpException (..))
-import qualified Network.HTTP.Client as HTTP
 
 -------------------------------------------------------------------------------
 -- Log system
@@ -71,22 +65,3 @@ class Monad m => MonadLog m where
 instance MonadLog IO where
   log' = logEvent
   log = void . log'
-
--- Retry 5 times network action, doubling backoff each time
-retry :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
-retry action =
-  Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries 5)
-    [handler]
-    (const action)
-  where
-    backoff = 500000 -- 500ms
-    -- Log network error
-    handler (RetryStatus num _ _) = Handler $ \case
-      HttpExceptionRequest req ctx -> do
-        let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-            arg = decodeUtf8 $ HTTP.queryString req
-            loc = if num == 0 then url <> arg else url
-        log . LogNetworkFailure $ show num <> "/5 " <> loc <> " failed: " <> show ctx
-        pure True
-      InvalidUrlException _ _ -> pure False

@@ -9,14 +9,19 @@ module Monocle.Client
     withClient,
     mkManager,
     monocleReq,
+    retry,
   )
 where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (Handler (Handler), MonadThrow)
+import Control.Retry (RetryStatus (..))
+import qualified Control.Retry as Retry
 import qualified Data.Text as T
+import Monocle.Client.Worker
 import qualified Network.Connection as Connection
 import Network.HTTP.Client
-  ( Manager,
+  ( HttpException (..),
+    Manager,
     RequestBody (..),
     httpLbs,
     method,
@@ -26,6 +31,7 @@ import Network.HTTP.Client
     requestHeaders,
     responseBody,
   )
+import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Client.TLS as HTTP
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
 import qualified Proto3.Suite.JSONPB as JSONPB
@@ -90,3 +96,22 @@ monocleReq path MonocleClient {..} body =
     decodeResponse body' = case JSONPB.eitherDecode body' of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
+
+-- Retry 5 times network action, doubling backoff each time
+retry :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
+retry action =
+  Retry.recovering
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries 5)
+    [handler]
+    (const action)
+  where
+    backoff = 500000 -- 500ms
+    -- Log network error
+    handler (RetryStatus num _ _) = Handler $ \case
+      HttpExceptionRequest req ctx -> do
+        let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+            arg = decodeUtf8 $ HTTP.queryString req
+            loc = if num == 0 then url <> arg else url
+        log . LogNetworkFailure $ show num <> "/5 " <> loc <> " failed: " <> show ctx
+        pure True
+      InvalidUrlException _ _ -> pure False

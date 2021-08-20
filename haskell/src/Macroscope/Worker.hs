@@ -19,7 +19,7 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (LentilleStream, runLentilleM)
 import Monocle.Change (Change, ChangeEvent)
-import Monocle.Client (MonocleClient)
+import Monocle.Client (MonocleClient, retry)
 import Monocle.Client.Api
 import Monocle.Client.Worker
 import Monocle.Crawler
