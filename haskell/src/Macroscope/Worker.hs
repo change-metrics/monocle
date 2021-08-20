@@ -125,7 +125,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- maybe getTimestampFromApi pure sinceM
   postResultE <-
-    runLentilleM $  processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+    runLentilleM $ processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
   case postResultE of
     Right _ -> pure ()
     Left err ->

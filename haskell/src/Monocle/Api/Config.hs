@@ -210,6 +210,9 @@ getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} ->
     let addOrgPrefix repo = removeTrailingSlash gitlab_organization <> "/" <> repo
      in addOrgPrefix <$> fromMaybe [] gitlab_repositories
+  GithubProvider Github {..} ->
+    let addOrgPrefix repo = removeTrailingSlash github_organization <> "/" <> repo
+     in addOrgPrefix <$> fromMaybe [] github_repositories
   _anyOtherProvider -> []
 
 removeTrailingSlash :: Text -> Text

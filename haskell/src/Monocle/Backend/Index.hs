@@ -428,9 +428,6 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
-getLastUpdatedFromConfig :: UTCTime
-getLastUpdatedFromConfig = parseTimeOrError False defaultTimeLocale "%F" "2021-01-01"
-
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
 getWorkerName :: Config.Crawler -> Text
@@ -439,8 +436,13 @@ getWorkerName Config.Crawler {..} = name
 getWorkerUpdatedSince :: Config.Crawler -> UTCTime
 getWorkerUpdatedSince Config.Crawler {..} =
   fromMaybe
-    (error "Invalid date format: Expected format YYYY-mm-dd hh:mm:ss UTC")
-    (readMaybe (toString update_since) :: Maybe UTCTime)
+    (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
+    $ parseDateValue (toString update_since)
+
+parseDateValue :: String -> Maybe UTCTime
+parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z"
+  where
+    tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity offset = do

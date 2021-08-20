@@ -63,15 +63,6 @@ main = do
       where
         ghTDF :: MonadIO m => GitHubGraphClient -> UTCTime -> Stream (Of TaskData) m ()
         ghTDF ghClient since' = streamLinkedIssue ghClient (buildSearchQuery (repo args) since')
-        buildSearchQuery :: Text -> UTCTime -> String
-        buildSearchQuery repo' utctime =
-          toString $
-            unwords
-              [ "repo:" <> repo',
-                "updated:>=" <> toSimpleDate utctime
-              ]
-        toSimpleDate :: UTCTime -> Text
-        toSimpleDate utctime = toText $ formatTime defaultTimeLocale "%F" utctime
         ghUrl = fromMaybe "https://api.github.com/graphql" (githubUrl args)
         sinceTSM = readSince $ since args
         sinceTS = fromMaybe (error "Couldn't parse since") sinceTSM
