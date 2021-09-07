@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- [web] Only display mergeable status if conflicting.
+
 ### Removed
 
 ### Fixed

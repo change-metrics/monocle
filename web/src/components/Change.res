@@ -108,10 +108,9 @@ module Mergeable = {
   let make = (~state: string, ~mergeable: bool) =>
     switch state {
     | "MERGED" => React.null
-    | _ =>
-      <Patternfly.Label color={mergeable ? #Green : #Orange}>
-        {(mergeable ? "Mergeable" : "Conflicting")->str}
-      </Patternfly.Label>
+    | _ => mergeable
+        ? React.null
+        : <Patternfly.Label color=#Orange> {"Conflicting"->str} </Patternfly.Label>
     }
 }
 
