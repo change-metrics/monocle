@@ -1014,3 +1014,21 @@ getActivityStats = do
               . length
               $ haBuckets hbSubBuckets
        in SearchPB.Histo {..}
+
+getSuggestions :: QueryM SearchPB.SearchSuggestionsResponse
+getSuggestions = do
+  topAuthors <- getTop "author.muid"
+  topTaskTypes <- getTop "tasks_data.ttype"
+  topSeverity <- getTop "tasks_data.severity"
+  topPriority <- getTop "tasks_data.priority"
+  topApproval <- getTop "approval"
+  let searchSuggestionsResponseTaskTypes = topTaskTypes
+      searchSuggestionsResponseAuthors = topAuthors
+      searchSuggestionsResponseApprovals = topApproval
+      searchSuggestionsResponsePriorities = topPriority
+      searchSuggestionsResponseSeverities = topSeverity
+  pure $ SearchPB.SearchSuggestionsResponse {..}
+  where
+    getTop field' = do
+      tt <- getDocTypeTopCountByField (ElkChange :| []) field' (Just 1000)
+      pure $ V.fromList $ toLazy . trTerm <$> tsrTR tt
