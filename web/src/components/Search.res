@@ -181,6 +181,7 @@ module Bar = {
     ~value: string,
     ~setValue: string => unit,
     ~onSave: string => unit,
+    ~showTooltips: bool=true,
   ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
     let appendExpr = expr => {
@@ -198,21 +199,25 @@ module Bar = {
       | "Enter" => onSave(value)
       | _ => ignore()
       }
-    <>
-      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
-      <HelpSearch.Tooltip />
-      <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
-        {"Add filter"->str}
-      </Patternfly.Button>
-      <TextInputUp
-        id="col-search"
-        value={value}
-        onChange={(v, _) => setValue(v)}
-        onKeyUp
-        _type=#Text
-        iconVariant=#Search
-      />
-    </>
+    <MGrid>
+      <MGridItemXl2>
+        <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
+        {showTooltips ? <HelpSearch.Tooltip /> : React.null}
+        <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
+          {"Add filter"->str}
+        </Patternfly.Button>
+      </MGridItemXl2>
+      <MGridItemXl10>
+        <TextInputUp
+          id="col-search"
+          value={value}
+          onChange={(v, _) => setValue(v)}
+          onKeyUp
+          _type=#Text
+          iconVariant=#Search
+        />
+      </MGridItemXl10>
+    </MGrid>
   }
 }
 

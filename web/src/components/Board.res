@@ -130,31 +130,33 @@ module ColumnEditor = {
     let setQuery = (v, _) => setAndRender(queryRef, v)
     let setOrder = (v, _) => setAndRender(orderRef, v)
 
-    <div style={ReactDOM.Style.make(~paddingTop="5px", ~paddingBottom="5px", ())}>
-      <div style={ReactDOM.Style.make(~display="flex", ())}>
+    <MGrid>
+      <MGridItemXl1>
         <Patternfly.TextInput
-          style={ReactDOM.Style.make(~width="200px", ())}
-          id="col-name"
-          value={nameRef.contents}
-          onChange={setName}
-          _type=#Text
+          id="col-name" value={nameRef.contents} onChange={setName} _type=#Text
         />
+      </MGridItemXl1>
+      <MGridItemXl6>
         <Search.Bar
-          store value={queryRef.contents} setValue={v => setQuery(v, ())} onSave={_ => ()}
+          store
+          value={queryRef.contents}
+          showTooltips={false}
+          setValue={v => setQuery(v, ())}
+          onSave={_ => ()}
         />
-      </div>
-      <div style={ReactDOM.Style.make(~display="inline-block", ())}>
-        <span style={ReactDOM.Style.make(~width="200px", ~display="inline-block", ())}>
-          {maybeRender(
-            count > 1,
-            <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-              {"Remove"->str}
-            </Patternfly.Button>,
-          )}
-        </span>
+      </MGridItemXl6>
+      <MGridItemXl3>
         <Search.Order value={orderRef.contents} setValue={v => setOrder(v, ())} />
-      </div>
-    </div>
+      </MGridItemXl3>
+      <MGridItemXl1>
+        {maybeRender(
+          count > 1,
+          <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
+            {"Remove"->str}
+          </Patternfly.Button>,
+        )}
+      </MGridItemXl1>
+    </MGrid>
   }
 }
 
@@ -331,22 +333,28 @@ module Board = {
       }
 
       let topRow =
-        <span style={ReactDOM.Style.make(~display="flex", ())}>
-          <Patternfly.TextInput
-            id="board-name"
-            isDisabled={!showColumnEditor}
-            value={title}
-            onChange={(v, _) => setTitle(_ => v)}
-            _type=#Text
-          />
+        <MGrid>
+          <MGridItemXl6>
+            <Patternfly.TextInput
+              id="board-name"
+              isDisabled={!showColumnEditor}
+              value={title}
+              onChange={(v, _) => setTitle(_ => v)}
+              _type=#Text
+            />
+          </MGridItemXl6>
+          <MGridItemXl3>
+            <Patternfly.Button
+              isDisabled={!showColumnEditor} variant=#Tertiary onClick={_ => toggleStyle()}>
+              {showColumnEditor
+                ? "Switch board style"->str
+                : ("Board mode: " ++ {
+                    currentStyle ? "Row" : "Kanban"
+                  })->str}
+            </Patternfly.Button>
+          </MGridItemXl3>
           {showColumnEditor
-            ? <>
-                <Patternfly.Checkbox
-                  id="style"
-                  description="table"
-                  isChecked={currentStyle}
-                  onChange={(_, _) => toggleStyle()}
-                />
+            ? <MGridItemXl3>
                 <Patternfly.Button
                   _type=#Submit
                   onClick={_ => {
@@ -355,11 +363,13 @@ module Board = {
                   }}>
                   {"Save"->str}
                 </Patternfly.Button>
-              </>
-            : <Patternfly.Button variant=#Tertiary onClick={_ => setShowColumnEditor(_ => true)}>
-                {"Edit"->str}
-              </Patternfly.Button>}
-        </span>
+              </MGridItemXl3>
+            : <MGridItemXl3>
+                <Patternfly.Button variant=#Tertiary onClick={_ => setShowColumnEditor(_ => true)}>
+                  {"Edit"->str}
+                </Patternfly.Button>
+              </MGridItemXl3>}
+        </MGrid>
 
       let bottomRow =
         <Patternfly.Button
@@ -374,26 +384,35 @@ module Board = {
         </Patternfly.Button>
 
       let columnsEditor = showColumnEditor
-        ? <>
-            {columnsRefs
-            ->Belt.Array.mapWithIndex((pos, (nameRef, queryRef, orderRef)) =>
-              <ColumnEditor
-                key={nameRef.contents ++ string_of_int(pos)}
-                store
-                pos
-                nameRef
-                queryRef
-                orderRef
-                onRemove
-                count={columnsCount}
-              />
-            )
-            ->React.array}
-            {bottomRow}
-          </>
+        ? <MStack>
+            <MStackItem>
+              {columnsRefs
+              ->Belt.Array.mapWithIndex((pos, (nameRef, queryRef, orderRef)) =>
+                <ColumnEditor
+                  key={nameRef.contents ++ string_of_int(pos)}
+                  store
+                  pos
+                  nameRef
+                  queryRef
+                  orderRef
+                  onRemove
+                  count={columnsCount}
+                />
+              )
+              ->React.array}
+            </MStackItem>
+            <MStackItem> {bottomRow} </MStackItem>
+          </MStack>
         : React.null
 
-      <div> {topRow} {columnsEditor} </div>
+      <MCenteredContent>
+        <MStack>
+          <MStackItem>
+            <Patternfly.Layout.Bullseye> {topRow} </Patternfly.Layout.Bullseye>
+          </MStackItem>
+          <MStackItem> {columnsEditor} </MStackItem>
+        </MStack>
+      </MCenteredContent>
     }
   }
 }
@@ -441,11 +460,7 @@ let make = (~store: Store.t) => {
   }
 
   <MStack>
-    <MStackItem>
-      <Patternfly.Layout.Bullseye>
-        <div style={ReactDOM.Style.make(~overflowX="width", ~width="1024px", ())}> {editor} </div>
-      </Patternfly.Layout.Bullseye>
-    </MStackItem>
+    <MStackItem> {editor} </MStackItem>
     <MStackItem>
       <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
     </MStackItem>

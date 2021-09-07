@@ -12,6 +12,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- [web] Only display mergeable status if conflicting.
+- [web] Board - add column for branch and make it clickable
+- [web] Display "Abandoned" is state instead of "closed" and do not display mergeable status.
+- [web] Board - improve editor layout.
+
 ### Removed
 
 ### Fixed

@@ -108,10 +108,11 @@ module Mergeable = {
   let make = (~state: string, ~mergeable: bool) =>
     switch state {
     | "MERGED" => React.null
+    | "CLOSED" => React.null
     | _ =>
-      <Patternfly.Label color={mergeable ? #Green : #Orange}>
-        {(mergeable ? "Mergeable" : "Conflicting")->str}
-      </Patternfly.Label>
+      mergeable
+        ? React.null
+        : <Patternfly.Label color=#Orange> {"Conflicting"->str} </Patternfly.Label>
     }
 }
 
@@ -130,11 +131,18 @@ module FilterLink = {
 
 module ProjectLink = {
   @react.component
-  let make = (~store, ~project, ~branch) => {
-    let name =
-      list{"master", "main", "devel"}->elemText(branch) ? project : project ++ "<" ++ branch ++ ">"
+  let make = (~store, ~project) => {
     <span style={horizontalSpacing}>
-      {"["->str} <FilterLink store queryField="repo" queryValue={project} name /> {"]"->str}
+      <FilterLink store queryField="repo" queryValue={project} name=project />
+    </span>
+  }
+}
+
+module BranchLink = {
+  @react.component
+  let make = (~store, ~branch) => {
+    <span style={horizontalSpacing}>
+      <FilterLink store queryField="branch" queryValue={branch} name=branch />
     </span>
   }
 }
@@ -170,7 +178,7 @@ module State = {
       : switch state {
         | "OPEN" => (#Green, "Open")
         | "MERGED" => (#Blue, "Merged")
-        | "CLOSED" => (#Purple, "Closed")
+        | "CLOSED" => (#Purple, "Abandoned")
         | _ => (#Red, state)
         }
     <Label color> {value->str} </Label>
@@ -194,7 +202,10 @@ module DataItem = {
             <State state={change.state} draft={change.draft} />
             <Mergeable state={change.state} mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
-            <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
+            <ProjectLink store project={change.repository_fullname} />
+            {"<"->str}
+            <BranchLink store branch={change.target_branch} />
+            {">"->str}
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
               {"Complexicity: "->str}
               <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
@@ -230,6 +241,7 @@ module RowItem = {
           <th role="columnheader"> {"Status"->str} </th>
           <th role="columnheader"> {"Owner"->str} </th>
           <th role="columnheader"> {"Repo"->str} </th>
+          <th role="columnheader"> {"Branch"->str} </th>
           <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
@@ -251,9 +263,8 @@ module RowItem = {
         </div>
       </td>
       <td role="cell"> <AuthorLink store title="" author={change.author} /> </td>
-      <td role="cell">
-        <ProjectLink store project={change.repository_fullname} branch={change.target_branch} />
-      </td>
+      <td role="cell"> <ProjectLink store project={change.repository_fullname} /> </td>
+      <td role="cell"> <BranchLink store branch={change.target_branch} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
       <td role="cell">
