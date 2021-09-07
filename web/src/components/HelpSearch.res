@@ -128,7 +128,13 @@ module Tooltip = {
       e->ReactEvent.Mouse.preventDefault
       href->RescriptReactRouter.push
     }
-    <a href onClick target="_blank"> <Patternfly.Icons.OutlinedQuestionCircle /> </a>
+    <a
+      href
+      onClick
+      style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}
+      target="_blank">
+      <Patternfly.Icons.OutlinedQuestionCircle />
+    </a>
   }
 }
 

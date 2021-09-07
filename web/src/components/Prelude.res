@@ -285,6 +285,18 @@ module MGridItem = {
     <Patternfly.Layout.GridItem md=Column._4> {children} </Patternfly.Layout.GridItem>
 }
 
+module MGridItemXl11 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._11> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl10 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._10> {children} </Patternfly.Layout.GridItem>
+}
+
 module MGridItemXl9 = {
   @react.component
   let make = (~children) =>
@@ -325,6 +337,18 @@ module MGridItemXl3 = {
   @react.component
   let make = (~children) =>
     <Patternfly.Layout.GridItem xl=Column._3> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl2 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._2> {children} </Patternfly.Layout.GridItem>
+}
+
+module MGridItemXl1 = {
+  @react.component
+  let make = (~children) =>
+    <Patternfly.Layout.GridItem xl=Column._1> {children} </Patternfly.Layout.GridItem>
 }
 
 module MStack = {
