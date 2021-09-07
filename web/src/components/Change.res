@@ -108,6 +108,7 @@ module Mergeable = {
   let make = (~state: string, ~mergeable: bool) =>
     switch state {
     | "MERGED" => React.null
+    | "CLOSED" => React.null
     | _ =>
       mergeable
         ? React.null
@@ -177,7 +178,7 @@ module State = {
       : switch state {
         | "OPEN" => (#Green, "Open")
         | "MERGED" => (#Blue, "Merged")
-        | "CLOSED" => (#Purple, "Closed")
+        | "CLOSED" => (#Purple, "Abandoned")
         | _ => (#Red, state)
         }
     <Label color> {value->str} </Label>
