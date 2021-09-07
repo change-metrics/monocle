@@ -331,35 +331,46 @@ module Board = {
       }
 
       let topRow =
-        <span style={ReactDOM.Style.make(~display="flex", ())}>
-          <Patternfly.TextInput
-            id="board-name"
-            isDisabled={!showColumnEditor}
-            value={title}
-            onChange={(v, _) => setTitle(_ => v)}
-            _type=#Text
-          />
-          {showColumnEditor
-            ? <>
-                <Patternfly.Checkbox
-                  id="style"
-                  description="table"
-                  isChecked={currentStyle}
-                  onChange={(_, _) => toggleStyle()}
-                />
-                <Patternfly.Button
-                  _type=#Submit
-                  onClick={_ => {
-                    doSave()
-                    setShowColumnEditor(_ => false)
-                  }}>
-                  {"Save"->str}
-                </Patternfly.Button>
-              </>
-            : <Patternfly.Button variant=#Tertiary onClick={_ => setShowColumnEditor(_ => true)}>
-                {"Edit"->str}
-              </Patternfly.Button>}
-        </span>
+        <MCenteredContent>
+          <MGrid>
+            <MGridItemXl6>
+              <Patternfly.TextInput
+                id="board-name"
+                isDisabled={!showColumnEditor}
+                value={title}
+                onChange={(v, _) => setTitle(_ => v)}
+                _type=#Text
+              />
+            </MGridItemXl6>
+            <MGridItemXl3>
+              <Patternfly.Button
+                isDisabled={!showColumnEditor} variant=#Tertiary onClick={_ => toggleStyle()}>
+                {showColumnEditor
+                  ? "Switch board style"->str
+                  : ("Board mode: " ++ {
+                      currentStyle ? "Row" : "Kanban"
+                    })->str}
+              </Patternfly.Button>
+            </MGridItemXl3>
+            {showColumnEditor
+              ? <MGridItemXl3>
+                  <Patternfly.Button
+                    _type=#Submit
+                    onClick={_ => {
+                      doSave()
+                      setShowColumnEditor(_ => false)
+                    }}>
+                    {"Save"->str}
+                  </Patternfly.Button>
+                </MGridItemXl3>
+              : <MGridItemXl3>
+                  <Patternfly.Button
+                    variant=#Tertiary onClick={_ => setShowColumnEditor(_ => true)}>
+                    {"Edit"->str}
+                  </Patternfly.Button>
+                </MGridItemXl3>}
+          </MGrid>
+        </MCenteredContent>
 
       let bottomRow =
         <Patternfly.Button
