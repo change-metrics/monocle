@@ -545,7 +545,14 @@ getReposSummary = do
   let names = trTerm <$> tsrTR repos
   traverse getRepoSummary names
   where
-    getRepoSummary fn = withFilter [mkTerm "repository_fullname" fn] $ do
+    withoutRepoFilters =
+      -- Remove the initial repo filter to speedup the summary query.
+      -- It is not necessary to keep such filter as we already got the repos list.
+      -- This is important for project with huge list of repository regex.
+      withModified (Q.dropField (`elem` ["repo", "repo_regex", "project"]))
+    withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
+
+    getRepoSummary fn = withRepo fn $ do
       -- Prepare the queries
       let eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
           changeQF = withFlavor (QueryFlavor Author UpdatedAt)
@@ -608,7 +615,7 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
     getDocTypeTopCountByField
       eventTypes
       "author.muid"
-      (Just 5000)
+      (Just limit)
   authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR peers)
   pure $
     take (fromInteger $ toInteger limit) $
