@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - [macroscope] Added support for BugZilla crawler.
 - [macroscope] Added support for GitHub Issues crawler.
 - [config] Support update_since date format as "YYYY-mm-dd" for macroscope crawlers.
+- [web] Added suggestions in Fields selector for projects and groups.
 
 ### Changed
 
