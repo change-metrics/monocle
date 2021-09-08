@@ -19,6 +19,9 @@ module Monocle.Search.Query
     defaultQueryFlavor,
     dropDate,
     dropField,
+    subUTCTimeSecond,
+    dropTime,
+    blankQueryModifier,
   )
 where
 
@@ -68,6 +71,9 @@ data QueryFlavor = QueryFlavor
 
 defaultQueryFlavor :: QueryFlavor
 defaultQueryFlavor = QueryFlavor Author CreatedAt
+
+blankQueryModifier :: (Maybe Expr -> Maybe Expr) -> Maybe QueryFlavor -> [BH.Query]
+blankQueryModifier _ _ = []
 
 data Query = Query
   { -- | queryGet provide the bloodhound query.
