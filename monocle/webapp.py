@@ -39,7 +39,7 @@ from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
 from monocle.task_data import TaskCrawler
-from monocle.webapi import search_service, task_data_service
+from monocle.webapi import task_data_service
 from monocle import env
 
 
@@ -228,7 +228,6 @@ def task_data():
         return jsonify(commit_date + "Z")
 
 
-search_service(app)
 task_data_service(app)
 
 

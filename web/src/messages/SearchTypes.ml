@@ -1,16 +1,18 @@
 [@@@ocaml.warning "-27-30-39"]
 
 
-type search_suggestions_request = {
+type suggestions_request = {
   index : string;
 }
 
-type search_suggestions_response = {
+type suggestions_response = {
   task_types : string list;
   authors : string list;
   approvals : string list;
   priorities : string list;
   severities : string list;
+  projects : string list;
+  groups : string list;
 }
 
 type fields_request = {
@@ -243,24 +245,28 @@ type query_response =
   | Change_events of change_and_events
   | Changes_tops of changes_tops
 
-let rec default_search_suggestions_request 
+let rec default_suggestions_request 
   ?index:((index:string) = "")
-  () : search_suggestions_request  = {
+  () : suggestions_request  = {
   index;
 }
 
-let rec default_search_suggestions_response 
+let rec default_suggestions_response 
   ?task_types:((task_types:string list) = [])
   ?authors:((authors:string list) = [])
   ?approvals:((approvals:string list) = [])
   ?priorities:((priorities:string list) = [])
   ?severities:((severities:string list) = [])
-  () : search_suggestions_response  = {
+  ?projects:((projects:string list) = [])
+  ?groups:((groups:string list) = [])
+  () : suggestions_response  = {
   task_types;
   authors;
   approvals;
   priorities;
   severities;
+  projects;
+  groups;
 }
 
 let rec default_fields_request 

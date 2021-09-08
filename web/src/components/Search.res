@@ -36,6 +36,8 @@ module FieldSelectorModal = {
             | "approval" => suggestions.approvals
             | "priority" => suggestions.priorities
             | "severity" => suggestions.severities
+            | "project" => suggestions.projects
+            | "group" => suggestions.groups
             | _ => list{}
             }
 

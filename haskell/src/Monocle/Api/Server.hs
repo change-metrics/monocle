@@ -299,6 +299,25 @@ crawlerCommitInfo request = do
         . Enumerated
         $ Right err
 
+-- | /suggestions endpoint
+searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
+searchSuggestions request = do
+  tenants <- getConfig
+  let SearchPB.SuggestionsRequest {..} = request
+
+  let tenantM = Config.lookupTenant tenants (toStrict suggestionsRequestIndex)
+
+  case tenantM of
+    Just tenant -> do
+      now <- getCurrentTime
+      runTenantQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+    Nothing ->
+      -- Simply return empty suggestions in case of unknown tenant
+      pure $
+        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty
+  where
+    emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
+
 -- | /search/query endpoint
 searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do

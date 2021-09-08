@@ -253,6 +253,11 @@ getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index
       let users' = fromMaybe [] (Map.lookup groupName acc)
        in Map.insert groupName (users' <> [name]) acc
 
+getTenantProjectsNames :: Index -> [Text]
+getTenantProjectsNames index = map getName $ fromMaybe [] $ projects index
+  where
+    getName Project {..} = name
+
 -- | Get the Ident name for a Given alias
 --
 -- >>> :{

@@ -42,10 +42,10 @@ service Config {
 }
 
 service Search {
-  rpc Suggestions(monocle_search.SearchSuggestionsRequest)
-      returns (monocle_search.SearchSuggestionsResponse) {
+  rpc Suggestions(monocle_search.SuggestionsRequest)
+      returns (monocle_search.SuggestionsResponse) {
     option (google.api.http) = {
-      post: "/api/1/suggestions"
+      post: "/api/2/suggestions"
       body: "*"
     };
   }

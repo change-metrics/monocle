@@ -521,6 +521,32 @@ testGetChangesTops = withTenant doTest
           )
           results
 
+testGetSuggestions :: Assertion
+testGetSuggestions = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      tEnv <- ask
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      let neutron = SProject "openstack/neutron" [eve] [alice] [bob]
+      traverse_ (indexScenarioNM nova) ["42", "43"]
+      traverse_ (indexScenarioNO neutron) ["142", "143"]
+
+      runQueryM defaultQuery $ do
+        results <- Q.getSuggestions $ tenant tEnv
+        assertEqual'
+          "Check getChangesTops result"
+          ( SearchPB.SuggestionsResponse
+              mempty
+              (V.fromList ["bob", "eve"])
+              (V.fromList ["OK"])
+              mempty
+              mempty
+              mempty
+              mempty
+          )
+          results
+
 -- Tests scenario helpers
 
 -- $setup
