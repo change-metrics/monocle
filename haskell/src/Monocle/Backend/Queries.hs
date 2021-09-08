@@ -11,6 +11,7 @@ import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
+import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
@@ -1015,15 +1016,15 @@ getActivityStats = do
               $ haBuckets hbSubBuckets
        in SearchPB.Histo {..}
 
-getSuggestions :: QueryM SearchPB.SuggestionsResponse
-getSuggestions = do
+getSuggestions :: Config.Index -> QueryM SearchPB.SuggestionsResponse
+getSuggestions index = do
   suggestionsResponseTaskTypes <- getTop "tasks_data.ttype"
   suggestionsResponseAuthors <- getTop "author.muid"
   suggestionsResponseApprovals <- getTop "approval"
   suggestionsResponsePriorities <- getTop "tasks_data.priority"
   suggestionsResponseSeverities <- getTop "tasks_data.severity"
-  let suggestionsResponseProjects = mempty
-  let suggestionsResponseGroups = mempty
+  let suggestionsResponseProjects = V.fromList $ toLazy <$> Config.getTenantProjectsNames index
+  let suggestionsResponseGroups = V.fromList $ toLazy . fst <$> Config.getTenantGroups index
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do

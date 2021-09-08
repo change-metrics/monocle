@@ -310,14 +310,7 @@ searchSuggestions request = do
   case tenantM of
     Just tenant -> do
       now <- getCurrentTime
-      suggestions <- runTenantQueryM tenant (emptyQ now) $ do Q.getSuggestions
-      pure $
-        suggestions
-          { SearchPB.suggestionsResponseProjects =
-              V.fromList $ toLazy <$> Config.getTenantProjectsNames tenant,
-            SearchPB.suggestionsResponseGroups =
-              V.fromList $ toLazy . fst <$> Config.getTenantGroups tenant
-          }
+      runTenantQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
