@@ -314,20 +314,9 @@ searchSuggestions request = do
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
-        SearchPB.SuggestionsResponse
-          (V.fromList [])
-          (V.fromList [])
-          (V.fromList [])
-          (V.fromList [])
-          (V.fromList [])
+        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty
   where
-    emptyQ now' =
-      let queryGet = Q.blankQueryModifier
-          queryMinBoundsSet = True
-          oneYearAgo date = Q.subUTCTimeSecond date (3600 * 24 * 365)
-          now'' = Q.dropTime now'
-          queryBounds = (oneYearAgo now'', now'')
-       in Q.Query {..}
+    emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
 -- | /search/query endpoint
 searchQuery :: QueryRequest -> AppM QueryResponse

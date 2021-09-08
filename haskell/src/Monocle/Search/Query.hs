@@ -19,9 +19,8 @@ module Monocle.Search.Query
     defaultQueryFlavor,
     dropDate,
     dropField,
-    subUTCTimeSecond,
-    dropTime,
-    blankQueryModifier,
+    blankQuery,
+    yearAgo,
   )
 where
 
@@ -72,8 +71,15 @@ data QueryFlavor = QueryFlavor
 defaultQueryFlavor :: QueryFlavor
 defaultQueryFlavor = QueryFlavor Author CreatedAt
 
-blankQueryModifier :: (Maybe Expr -> Maybe Expr) -> Maybe QueryFlavor -> [BH.Query]
-blankQueryModifier _ _ = []
+blankQuery :: UTCTime -> UTCTime -> Query
+blankQuery since to =
+  let queryGet _ _ = []
+      queryMinBoundsSet = True
+      queryBounds = (dropTime to, dropTime since)
+   in Query {..}
+
+yearAgo :: UTCTime -> UTCTime
+yearAgo since = subUTCTimeSecond since (3600 * 24 * 365)
 
 data Query = Query
   { -- | queryGet provide the bloodhound query.

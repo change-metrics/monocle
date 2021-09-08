@@ -1017,16 +1017,11 @@ getActivityStats = do
 
 getSuggestions :: QueryM SearchPB.SuggestionsResponse
 getSuggestions = do
-  topAuthors <- getTop "author.muid"
-  topTaskTypes <- getTop "tasks_data.ttype"
-  topSeverity <- getTop "tasks_data.severity"
-  topPriority <- getTop "tasks_data.priority"
-  topApproval <- getTop "approval"
-  let suggestionsResponseTaskTypes = topTaskTypes
-      suggestionsResponseAuthors = topAuthors
-      suggestionsResponseApprovals = topApproval
-      suggestionsResponsePriorities = topPriority
-      suggestionsResponseSeverities = topSeverity
+  suggestionsResponseTaskTypes <- getTop "tasks_data.ttype"
+  suggestionsResponseAuthors <- getTop "author.muid"
+  suggestionsResponseApprovals <- getTop "approval"
+  suggestionsResponsePriorities <- getTop "tasks_data.priority"
+  suggestionsResponseSeverities <- getTop "tasks_data.severity"
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do
