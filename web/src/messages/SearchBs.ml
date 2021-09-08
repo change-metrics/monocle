@@ -14,6 +14,8 @@ type suggestions_response_mutable = {
   mutable approvals : string list;
   mutable priorities : string list;
   mutable severities : string list;
+  mutable projects : string list;
+  mutable groups : string list;
 }
 
 let default_suggestions_response_mutable () : suggestions_response_mutable = {
@@ -22,6 +24,8 @@ let default_suggestions_response_mutable () : suggestions_response_mutable = {
   approvals = [];
   priorities = [];
   severities = [];
+  projects = [];
+  groups = [];
 }
 
 type fields_request_mutable = {
@@ -464,6 +468,24 @@ let rec decode_suggestions_response json =
         Pbrt_bs.string json "suggestions_response" "severities"
       ) a |> Array.to_list;
     end
+    | "projects" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "projects" in 
+        Pbrt_bs.array_ a "suggestions_response" "projects"
+      in
+      v.projects <- Array.map (fun json -> 
+        Pbrt_bs.string json "suggestions_response" "projects"
+      ) a |> Array.to_list;
+    end
+    | "groups" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "groups" in 
+        Pbrt_bs.array_ a "suggestions_response" "groups"
+      in
+      v.groups <- Array.map (fun json -> 
+        Pbrt_bs.string json "suggestions_response" "groups"
+      ) a |> Array.to_list;
+    end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -473,6 +495,8 @@ let rec decode_suggestions_response json =
     SearchTypes.approvals = v.approvals;
     SearchTypes.priorities = v.priorities;
     SearchTypes.severities = v.severities;
+    SearchTypes.projects = v.projects;
+    SearchTypes.groups = v.groups;
   } : SearchTypes.suggestions_response)
 
 let rec decode_fields_request json =
@@ -1459,6 +1483,10 @@ let rec encode_suggestions_response (v:SearchTypes.suggestions_response) =
   Js.Dict.set json "priorities" (Js.Json.array a);
   let a = v.SearchTypes.severities |> Array.of_list |> Array.map Js.Json.string in
   Js.Dict.set json "severities" (Js.Json.array a);
+  let a = v.SearchTypes.projects |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "projects" (Js.Json.array a);
+  let a = v.SearchTypes.groups |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "groups" (Js.Json.array a);
   json
 
 let rec encode_fields_request (v:SearchTypes.fields_request) = 

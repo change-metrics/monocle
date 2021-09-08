@@ -14,6 +14,8 @@ type suggestions_response = {
   approvals : string list;
   priorities : string list;
   severities : string list;
+  projects : string list;
+  groups : string list;
 }
 
 type fields_request = {
@@ -261,6 +263,8 @@ val default_suggestions_response :
   ?approvals:string list ->
   ?priorities:string list ->
   ?severities:string list ->
+  ?projects:string list ->
+  ?groups:string list ->
   unit ->
   suggestions_response
 (** [default_suggestions_response ()] is the default value for type [suggestions_response] *)

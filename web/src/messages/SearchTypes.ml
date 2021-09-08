@@ -11,6 +11,8 @@ type suggestions_response = {
   approvals : string list;
   priorities : string list;
   severities : string list;
+  projects : string list;
+  groups : string list;
 }
 
 type fields_request = {
@@ -255,12 +257,16 @@ let rec default_suggestions_response
   ?approvals:((approvals:string list) = [])
   ?priorities:((priorities:string list) = [])
   ?severities:((severities:string list) = [])
+  ?projects:((projects:string list) = [])
+  ?groups:((groups:string list) = [])
   () : suggestions_response  = {
   task_types;
   authors;
   approvals;
   priorities;
   severities;
+  projects;
+  groups;
 }
 
 let rec default_fields_request 

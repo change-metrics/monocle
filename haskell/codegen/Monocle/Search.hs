@@ -134,7 +134,9 @@ data SuggestionsResponse = SuggestionsResponse
     suggestionsResponseAuthors :: Hs.Vector Hs.Text,
     suggestionsResponseApprovals :: Hs.Vector Hs.Text,
     suggestionsResponsePriorities :: Hs.Vector Hs.Text,
-    suggestionsResponseSeverities :: Hs.Vector Hs.Text
+    suggestionsResponseSeverities :: Hs.Vector Hs.Text,
+    suggestionsResponseProjects :: Hs.Vector Hs.Text,
+    suggestionsResponseGroups :: Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -152,7 +154,9 @@ instance HsProtobuf.Message SuggestionsResponse where
         suggestionsResponseAuthors = suggestionsResponseAuthors,
         suggestionsResponseApprovals = suggestionsResponseApprovals,
         suggestionsResponsePriorities = suggestionsResponsePriorities,
-        suggestionsResponseSeverities = suggestionsResponseSeverities
+        suggestionsResponseSeverities = suggestionsResponseSeverities,
+        suggestionsResponseProjects = suggestionsResponseProjects,
+        suggestionsResponseGroups = suggestionsResponseGroups
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -183,6 +187,18 @@ instance HsProtobuf.Message SuggestionsResponse where
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
                     suggestionsResponseSeverities
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    suggestionsResponseProjects
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 7)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    suggestionsResponseGroups
                 )
             )
           ]
@@ -224,6 +240,20 @@ instance HsProtobuf.Message SuggestionsResponse where
                   (HsProtobuf.FieldNumber 5)
               )
           )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 6)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 7)
+              )
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -259,26 +289,44 @@ instance HsProtobuf.Message SuggestionsResponse where
           (HsProtobuf.Single "severities")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "projects")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 7)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "groups")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB SuggestionsResponse where
-  toJSONPB (SuggestionsResponse f1 f2 f3 f4 f5) =
+  toJSONPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.object
         [ "task_types" .= f1,
           "authors" .= f2,
           "approvals" .= f3,
           "priorities" .= f4,
-          "severities" .= f5
+          "severities" .= f5,
+          "projects" .= f6,
+          "groups" .= f7
         ]
     )
-  toEncodingPB (SuggestionsResponse f1 f2 f3 f4 f5) =
+  toEncodingPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7) =
     ( HsJSONPB.pairs
         [ "task_types" .= f1,
           "authors" .= f2,
           "approvals" .= f3,
           "priorities" .= f4,
-          "severities" .= f5
+          "severities" .= f5,
+          "projects" .= f6,
+          "groups" .= f7
         ]
     )
 
@@ -292,6 +340,8 @@ instance HsJSONPB.FromJSONPB SuggestionsResponse where
               <*> obj .: "approvals"
               <*> obj .: "priorities"
               <*> obj .: "severities"
+              <*> obj .: "projects"
+              <*> obj .: "groups"
         )
     )
 
@@ -315,6 +365,10 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
       suggestionsResponsePriorities <- declare_priorities Proxy.Proxy
       let declare_severities = HsJSONPB.declareSchemaRef
       suggestionsResponseSeverities <- declare_severities Proxy.Proxy
+      let declare_projects = HsJSONPB.declareSchemaRef
+      suggestionsResponseProjects <- declare_projects Proxy.Proxy
+      let declare_groups = HsJSONPB.declareSchemaRef
+      suggestionsResponseGroups <- declare_groups Proxy.Proxy
       let _ =
             Hs.pure SuggestionsResponse
               <*> HsJSONPB.asProxy declare_task_types
@@ -322,6 +376,8 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
               <*> HsJSONPB.asProxy declare_approvals
               <*> HsJSONPB.asProxy declare_priorities
               <*> HsJSONPB.asProxy declare_severities
+              <*> HsJSONPB.asProxy declare_projects
+              <*> HsJSONPB.asProxy declare_groups
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -345,7 +401,9 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
                           ),
                           ( "severities",
                             suggestionsResponseSeverities
-                          )
+                          ),
+                          ("projects", suggestionsResponseProjects),
+                          ("groups", suggestionsResponseGroups)
                         ]
                   }
             }

@@ -536,11 +536,13 @@ testGetSuggestions = withTenant doTest
         assertEqual'
           "Check getChangesTops result"
           ( SearchPB.SuggestionsResponse
-              (V.fromList [])
+              mempty
               (V.fromList ["bob", "eve"])
               (V.fromList ["OK"])
-              (V.fromList [])
-              (V.fromList [])
+              mempty
+              mempty
+              mempty
+              mempty
           )
           results
 

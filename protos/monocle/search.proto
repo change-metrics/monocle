@@ -20,6 +20,8 @@ message SuggestionsResponse {
   repeated string approvals = 3;
   repeated string priorities = 4;
   repeated string severities = 5;
+  repeated string projects = 6;
+  repeated string groups = 7;
 }
 
 message FieldsRequest {

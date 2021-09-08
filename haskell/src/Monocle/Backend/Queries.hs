@@ -1022,6 +1022,8 @@ getSuggestions = do
   suggestionsResponseApprovals <- getTop "approval"
   suggestionsResponsePriorities <- getTop "tasks_data.priority"
   suggestionsResponseSeverities <- getTop "tasks_data.severity"
+  let suggestionsResponseProjects = mempty
+  let suggestionsResponseGroups = mempty
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do

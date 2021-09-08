@@ -961,6 +961,14 @@ components:
                     type: array
                     items:
                         type: string
+                projects:
+                    type: array
+                    items:
+                        type: string
+                groups:
+                    type: array
+                    items:
+                        type: string
         monocle_search_TermCount:
             properties:
                 term:
