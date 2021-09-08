@@ -7,11 +7,11 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetProjects, configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchFields, searchQuery, userGroupGet, userGroupList)
+import Monocle.Api.Server (configGetProjects, configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
 import Monocle.Config (GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse, HealthRequest, HealthResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
-import Monocle.Search (FieldsRequest, FieldsResponse, QueryRequest, QueryResponse)
+import Monocle.Search (FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant
@@ -20,6 +20,7 @@ type MonocleAPI =
   "get_workspaces" :> ReqBody '[JSON] GetWorkspacesRequest :> Post '[PBJSON, JSON] GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] GetProjectsRequest :> Post '[PBJSON, JSON] GetProjectsResponse
     :<|> "health" :> ReqBody '[JSON] HealthRequest :> Post '[PBJSON, JSON] HealthResponse
+    :<|> "suggestions" :> ReqBody '[JSON] SuggestionsRequest :> Post '[PBJSON, JSON] SuggestionsResponse
     :<|> "search" :> "fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
     :<|> "search" :> "query" :> ReqBody '[JSON] QueryRequest :> Post '[PBJSON, JSON] QueryResponse
     :<|> "user_group" :> "list" :> ReqBody '[JSON] ListRequest :> Post '[PBJSON, JSON] ListResponse
@@ -33,6 +34,7 @@ server =
   configGetWorkspaces
     :<|> configGetProjects
     :<|> configHealth
+    :<|> searchSuggestions
     :<|> searchFields
     :<|> searchQuery
     :<|> userGroupList

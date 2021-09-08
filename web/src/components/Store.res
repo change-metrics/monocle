@@ -33,7 +33,7 @@ module UrlData = {
 }
 
 module Store = {
-  type suggestionsR = RemoteData.t<SearchTypes.search_suggestions_response>
+  type suggestionsR = RemoteData.t<SearchTypes.suggestions_response>
   type fieldsRespR = RemoteData.t<SearchTypes.fields_response>
   type userGroupsR = RemoteData.t<UserGroupTypes.list_response>
   type projectsR = RemoteData.t<ConfigTypes.get_projects_response>

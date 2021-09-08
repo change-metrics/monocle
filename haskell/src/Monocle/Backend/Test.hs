@@ -535,7 +535,7 @@ testGetSuggestions = withTenant doTest
         results <- Q.getSuggestions
         assertEqual'
           "Check getChangesTops result"
-          ( SearchPB.SearchSuggestionsResponse
+          ( SearchPB.SuggestionsResponse
               (V.fromList [])
               (V.fromList ["bob", "eve"])
               (V.fromList ["OK"])

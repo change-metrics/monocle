@@ -7,22 +7,6 @@ info:
     description: The monocle HTTP API
     version: 0.0.1
 paths:
-    /api/1/suggestions:
-        post:
-            operationId: Search_Suggestions
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_search_SearchSuggestionsRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_search_SearchSuggestionsResponse'
     /api/1/task_data_add:
         post:
             summary: Add task data
@@ -207,6 +191,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_search_QueryResponse'
+    /api/2/suggestions:
+        post:
+            operationId: Search_Suggestions
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_search_SuggestionsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_search_SuggestionsResponse'
     /api/2/user_group/get:
         post:
             operationId: UserGroup_Get
@@ -935,11 +935,11 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_Histo'
-        monocle_search_SearchSuggestionsRequest:
+        monocle_search_SuggestionsRequest:
             properties:
                 index:
                     type: string
-        monocle_search_SearchSuggestionsResponse:
+        monocle_search_SuggestionsResponse:
             properties:
                 task_types:
                     type: array

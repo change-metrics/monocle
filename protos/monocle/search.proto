@@ -10,11 +10,11 @@ import "google/protobuf/timestamp.proto";
 import "monocle/task_data.proto";
 import "monocle/change.proto";
 
-message SearchSuggestionsRequest {
+message SuggestionsRequest {
   string index = 1;
 }
 
-message SearchSuggestionsResponse {
+message SuggestionsResponse {
   repeated string task_types = 1;
   repeated string authors = 2;
   repeated string approvals = 3;

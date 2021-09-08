@@ -3,11 +3,11 @@
 
 (** {2 Protobuf JSON Encoding} *)
 
-val encode_search_suggestions_request : SearchTypes.search_suggestions_request -> Js.Json.t Js.Dict.t
-(** [encode_search_suggestions_request v dict] encodes [v] int the given JSON [dict] *)
+val encode_suggestions_request : SearchTypes.suggestions_request -> Js.Json.t Js.Dict.t
+(** [encode_suggestions_request v dict] encodes [v] int the given JSON [dict] *)
 
-val encode_search_suggestions_response : SearchTypes.search_suggestions_response -> Js.Json.t Js.Dict.t
-(** [encode_search_suggestions_response v dict] encodes [v] int the given JSON [dict] *)
+val encode_suggestions_response : SearchTypes.suggestions_response -> Js.Json.t Js.Dict.t
+(** [encode_suggestions_response v dict] encodes [v] int the given JSON [dict] *)
 
 val encode_fields_request : SearchTypes.fields_request -> Js.Json.t Js.Dict.t
 (** [encode_fields_request v dict] encodes [v] int the given JSON [dict] *)
@@ -99,11 +99,11 @@ val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 
 (** {2 BS Decoding} *)
 
-val decode_search_suggestions_request : Js.Json.t Js.Dict.t -> SearchTypes.search_suggestions_request
-(** [decode_search_suggestions_request decoder] decodes a [search_suggestions_request] value from [decoder] *)
+val decode_suggestions_request : Js.Json.t Js.Dict.t -> SearchTypes.suggestions_request
+(** [decode_suggestions_request decoder] decodes a [suggestions_request] value from [decoder] *)
 
-val decode_search_suggestions_response : Js.Json.t Js.Dict.t -> SearchTypes.search_suggestions_response
-(** [decode_search_suggestions_response decoder] decodes a [search_suggestions_response] value from [decoder] *)
+val decode_suggestions_response : Js.Json.t Js.Dict.t -> SearchTypes.suggestions_response
+(** [decode_suggestions_response decoder] decodes a [suggestions_response] value from [decoder] *)
 
 val decode_fields_request : Js.Json.t Js.Dict.t -> SearchTypes.fields_request
 (** [decode_fields_request decoder] decodes a [fields_request] value from [decoder] *)

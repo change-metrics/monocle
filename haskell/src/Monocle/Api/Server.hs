@@ -300,12 +300,12 @@ crawlerCommitInfo request = do
         $ Right err
 
 -- | /suggestions endpoint
-suggestions :: SearchPB.SearchSuggestionsRequest -> AppM SearchPB.SearchSuggestionsResponse
-suggestions request = do
+searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
+searchSuggestions request = do
   tenants <- getConfig
-  let SearchPB.SearchSuggestionsRequest {..} = request
+  let SearchPB.SuggestionsRequest {..} = request
 
-  let tenantM = Config.lookupTenant tenants (toStrict searchSuggestionsRequestIndex)
+  let tenantM = Config.lookupTenant tenants (toStrict suggestionsRequestIndex)
 
   case tenantM of
     Just tenant -> do
@@ -314,7 +314,7 @@ suggestions request = do
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
-        SearchPB.SearchSuggestionsResponse
+        SearchPB.SuggestionsResponse
           (V.fromList [])
           (V.fromList [])
           (V.fromList [])

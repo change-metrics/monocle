@@ -47,13 +47,13 @@ module Search = {
   @module("axios")
   external suggestionsRaw: (string, 'a) => axios<'b> = "post"
 
-  let suggestions = (request: SearchTypes.search_suggestions_request): axios<
-    SearchTypes.search_suggestions_response,
+  let suggestions = (request: SearchTypes.suggestions_request): axios<
+    SearchTypes.suggestions_response,
   > =>
-    request->SearchBs.encode_search_suggestions_request
-    |> suggestionsRaw(serverUrl ++ "/api/1/suggestions")
+    request->SearchBs.encode_suggestions_request
+    |> suggestionsRaw(serverUrl ++ "/api/2/suggestions")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->SearchBs.decode_search_suggestions_response}->Js.Promise.resolve
+      {data: resp.data->SearchBs.decode_suggestions_response}->Js.Promise.resolve
     )
   @module("axios")
   external fieldsRaw: (string, 'a) => axios<'b> = "post"

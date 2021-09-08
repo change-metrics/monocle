@@ -337,7 +337,7 @@ module FilterBox = {
     ~updateFilters: string => unit,
     ~showChangeParams: bool,
     ~projects: list<ConfigTypes.project_definition>,
-    ~suggestions: SearchTypes.search_suggestions_response,
+    ~suggestions: SearchTypes.suggestions_response,
   ) => {
     let states = Filters.useFilters([
       (

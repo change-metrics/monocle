@@ -4,11 +4,11 @@
 
 (** {2 Types} *)
 
-type search_suggestions_request = {
+type suggestions_request = {
   index : string;
 }
 
-type search_suggestions_response = {
+type suggestions_response = {
   task_types : string list;
   authors : string list;
   approvals : string list;
@@ -249,21 +249,21 @@ type query_response =
 
 (** {2 Default values} *)
 
-val default_search_suggestions_request : 
+val default_suggestions_request : 
   ?index:string ->
   unit ->
-  search_suggestions_request
-(** [default_search_suggestions_request ()] is the default value for type [search_suggestions_request] *)
+  suggestions_request
+(** [default_suggestions_request ()] is the default value for type [suggestions_request] *)
 
-val default_search_suggestions_response : 
+val default_suggestions_response : 
   ?task_types:string list ->
   ?authors:string list ->
   ?approvals:string list ->
   ?priorities:string list ->
   ?severities:string list ->
   unit ->
-  search_suggestions_response
-(** [default_search_suggestions_response ()] is the default value for type [search_suggestions_response] *)
+  suggestions_response
+(** [default_suggestions_response ()] is the default value for type [suggestions_response] *)
 
 val default_fields_request : 
   ?version:string ->

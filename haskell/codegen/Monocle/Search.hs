@@ -41,33 +41,33 @@ import qualified Proto3.Wire as HsProtobuf
 import qualified Unsafe.Coerce as Hs
 import qualified Prelude as Hs
 
-newtype SearchSuggestionsRequest = SearchSuggestionsRequest
-  { searchSuggestionsRequestIndex ::
+newtype SuggestionsRequest = SuggestionsRequest
+  { suggestionsRequestIndex ::
       Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named SearchSuggestionsRequest where
-  nameOf _ = (Hs.fromString "SearchSuggestionsRequest")
+instance HsProtobuf.Named SuggestionsRequest where
+  nameOf _ = (Hs.fromString "SuggestionsRequest")
 
-instance HsProtobuf.HasDefault SearchSuggestionsRequest
+instance HsProtobuf.HasDefault SuggestionsRequest
 
-instance HsProtobuf.Message SearchSuggestionsRequest where
+instance HsProtobuf.Message SuggestionsRequest where
   encodeMessage
     _
-    SearchSuggestionsRequest
-      { searchSuggestionsRequestIndex =
-          searchSuggestionsRequestIndex
+    SuggestionsRequest
+      { suggestionsRequestIndex =
+          suggestionsRequestIndex
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                searchSuggestionsRequestIndex
+                suggestionsRequestIndex
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure SearchSuggestionsRequest)
+    (Hs.pure SuggestionsRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -82,38 +82,38 @@ instance HsProtobuf.Message SearchSuggestionsRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB SearchSuggestionsRequest where
-  toJSONPB (SearchSuggestionsRequest f1) =
+instance HsJSONPB.ToJSONPB SuggestionsRequest where
+  toJSONPB (SuggestionsRequest f1) =
     (HsJSONPB.object ["index" .= f1])
-  toEncodingPB (SearchSuggestionsRequest f1) =
+  toEncodingPB (SuggestionsRequest f1) =
     (HsJSONPB.pairs ["index" .= f1])
 
-instance HsJSONPB.FromJSONPB SearchSuggestionsRequest where
+instance HsJSONPB.FromJSONPB SuggestionsRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "SearchSuggestionsRequest"
-        (\obj -> (Hs.pure SearchSuggestionsRequest) <*> obj .: "index")
+        "SuggestionsRequest"
+        (\obj -> (Hs.pure SuggestionsRequest) <*> obj .: "index")
     )
 
-instance HsJSONPB.ToJSON SearchSuggestionsRequest where
+instance HsJSONPB.ToJSON SuggestionsRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON SearchSuggestionsRequest where
+instance HsJSONPB.FromJSON SuggestionsRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema SearchSuggestionsRequest where
+instance HsJSONPB.ToSchema SuggestionsRequest where
   declareNamedSchema _ =
     do
       let declare_index = HsJSONPB.declareSchemaRef
-      searchSuggestionsRequestIndex <- declare_index Proxy.Proxy
+      suggestionsRequestIndex <- declare_index Proxy.Proxy
       let _ =
-            Hs.pure SearchSuggestionsRequest
+            Hs.pure SuggestionsRequest
               <*> HsJSONPB.asProxy declare_index
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "SearchSuggestionsRequest",
+                Hs.Just "SuggestionsRequest",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -123,80 +123,72 @@ instance HsJSONPB.ToSchema SearchSuggestionsRequest where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("index", searchSuggestionsRequestIndex)]
+                        [("index", suggestionsRequestIndex)]
                   }
             }
         )
 
-data SearchSuggestionsResponse = SearchSuggestionsResponse
-  { searchSuggestionsResponseTaskTypes ::
+data SuggestionsResponse = SuggestionsResponse
+  { suggestionsResponseTaskTypes ::
       Hs.Vector Hs.Text,
-    searchSuggestionsResponseAuthors ::
-      Hs.Vector Hs.Text,
-    searchSuggestionsResponseApprovals ::
-      Hs.Vector Hs.Text,
-    searchSuggestionsResponsePriorities ::
-      Hs.Vector Hs.Text,
-    searchSuggestionsResponseSeverities ::
-      Hs.Vector Hs.Text
+    suggestionsResponseAuthors :: Hs.Vector Hs.Text,
+    suggestionsResponseApprovals :: Hs.Vector Hs.Text,
+    suggestionsResponsePriorities :: Hs.Vector Hs.Text,
+    suggestionsResponseSeverities :: Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named SearchSuggestionsResponse where
-  nameOf _ = (Hs.fromString "SearchSuggestionsResponse")
+instance HsProtobuf.Named SuggestionsResponse where
+  nameOf _ = (Hs.fromString "SuggestionsResponse")
 
-instance HsProtobuf.HasDefault SearchSuggestionsResponse
+instance HsProtobuf.HasDefault SuggestionsResponse
 
-instance HsProtobuf.Message SearchSuggestionsResponse where
+instance HsProtobuf.Message SuggestionsResponse where
   encodeMessage
     _
-    SearchSuggestionsResponse
-      { searchSuggestionsResponseTaskTypes =
-          searchSuggestionsResponseTaskTypes,
-        searchSuggestionsResponseAuthors =
-          searchSuggestionsResponseAuthors,
-        searchSuggestionsResponseApprovals =
-          searchSuggestionsResponseApprovals,
-        searchSuggestionsResponsePriorities =
-          searchSuggestionsResponsePriorities,
-        searchSuggestionsResponseSeverities =
-          searchSuggestionsResponseSeverities
+    SuggestionsResponse
+      { suggestionsResponseTaskTypes =
+          suggestionsResponseTaskTypes,
+        suggestionsResponseAuthors = suggestionsResponseAuthors,
+        suggestionsResponseApprovals = suggestionsResponseApprovals,
+        suggestionsResponsePriorities = suggestionsResponsePriorities,
+        suggestionsResponseSeverities = suggestionsResponseSeverities
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    searchSuggestionsResponseTaskTypes
+                    suggestionsResponseTaskTypes
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    searchSuggestionsResponseAuthors
+                    suggestionsResponseAuthors
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    searchSuggestionsResponseApprovals
+                    suggestionsResponseApprovals
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    searchSuggestionsResponsePriorities
+                    suggestionsResponsePriorities
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
-                    searchSuggestionsResponseSeverities
+                    suggestionsResponseSeverities
                 )
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure SearchSuggestionsResponse)
+    (Hs.pure SuggestionsResponse)
       <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
               @(_ (Hs.Vector Hs.Text))
               ( HsProtobuf.at
@@ -270,8 +262,8 @@ instance HsProtobuf.Message SearchSuggestionsResponse where
       )
     ]
 
-instance HsJSONPB.ToJSONPB SearchSuggestionsResponse where
-  toJSONPB (SearchSuggestionsResponse f1 f2 f3 f4 f5) =
+instance HsJSONPB.ToJSONPB SuggestionsResponse where
+  toJSONPB (SuggestionsResponse f1 f2 f3 f4 f5) =
     ( HsJSONPB.object
         [ "task_types" .= f1,
           "authors" .= f2,
@@ -280,7 +272,7 @@ instance HsJSONPB.ToJSONPB SearchSuggestionsResponse where
           "severities" .= f5
         ]
     )
-  toEncodingPB (SearchSuggestionsResponse f1 f2 f3 f4 f5) =
+  toEncodingPB (SuggestionsResponse f1 f2 f3 f4 f5) =
     ( HsJSONPB.pairs
         [ "task_types" .= f1,
           "authors" .= f2,
@@ -290,12 +282,12 @@ instance HsJSONPB.ToJSONPB SearchSuggestionsResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB SearchSuggestionsResponse where
+instance HsJSONPB.FromJSONPB SuggestionsResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "SearchSuggestionsResponse"
+        "SuggestionsResponse"
         ( \obj ->
-            (Hs.pure SearchSuggestionsResponse) <*> obj .: "task_types"
+            (Hs.pure SuggestionsResponse) <*> obj .: "task_types"
               <*> obj .: "authors"
               <*> obj .: "approvals"
               <*> obj .: "priorities"
@@ -303,34 +295,28 @@ instance HsJSONPB.FromJSONPB SearchSuggestionsResponse where
         )
     )
 
-instance HsJSONPB.ToJSON SearchSuggestionsResponse where
+instance HsJSONPB.ToJSON SuggestionsResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON SearchSuggestionsResponse where
+instance HsJSONPB.FromJSON SuggestionsResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema SearchSuggestionsResponse where
+instance HsJSONPB.ToSchema SuggestionsResponse where
   declareNamedSchema _ =
     do
       let declare_task_types = HsJSONPB.declareSchemaRef
-      searchSuggestionsResponseTaskTypes <-
-        declare_task_types
-          Proxy.Proxy
+      suggestionsResponseTaskTypes <- declare_task_types Proxy.Proxy
       let declare_authors = HsJSONPB.declareSchemaRef
-      searchSuggestionsResponseAuthors <- declare_authors Proxy.Proxy
+      suggestionsResponseAuthors <- declare_authors Proxy.Proxy
       let declare_approvals = HsJSONPB.declareSchemaRef
-      searchSuggestionsResponseApprovals <- declare_approvals Proxy.Proxy
+      suggestionsResponseApprovals <- declare_approvals Proxy.Proxy
       let declare_priorities = HsJSONPB.declareSchemaRef
-      searchSuggestionsResponsePriorities <-
-        declare_priorities
-          Proxy.Proxy
+      suggestionsResponsePriorities <- declare_priorities Proxy.Proxy
       let declare_severities = HsJSONPB.declareSchemaRef
-      searchSuggestionsResponseSeverities <-
-        declare_severities
-          Proxy.Proxy
+      suggestionsResponseSeverities <- declare_severities Proxy.Proxy
       let _ =
-            Hs.pure SearchSuggestionsResponse
+            Hs.pure SuggestionsResponse
               <*> HsJSONPB.asProxy declare_task_types
               <*> HsJSONPB.asProxy declare_authors
               <*> HsJSONPB.asProxy declare_approvals
@@ -339,7 +325,7 @@ instance HsJSONPB.ToSchema SearchSuggestionsResponse where
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "SearchSuggestionsResponse",
+                Hs.Just "SuggestionsResponse",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -350,19 +336,15 @@ instance HsJSONPB.ToSchema SearchSuggestionsResponse where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ( "task_types",
-                            searchSuggestionsResponseTaskTypes
+                            suggestionsResponseTaskTypes
                           ),
-                          ( "authors",
-                            searchSuggestionsResponseAuthors
-                          ),
-                          ( "approvals",
-                            searchSuggestionsResponseApprovals
-                          ),
+                          ("authors", suggestionsResponseAuthors),
+                          ("approvals", suggestionsResponseApprovals),
                           ( "priorities",
-                            searchSuggestionsResponsePriorities
+                            suggestionsResponsePriorities
                           ),
                           ( "severities",
-                            searchSuggestionsResponseSeverities
+                            suggestionsResponseSeverities
                           )
                         ]
                   }
