@@ -61,7 +61,7 @@ runMacroscope verbose confPath interval client = do
       case catched of
         Right comp -> pure comp
         Left exc ->
-          let (name, _, _, _) = crawler
+          let (_, _, Config.Crawler {..}, _) = crawler
            in monocleLog $
                 "Skipping crawler: " <> name <> ". Unexpected exception catched: " <> show exc
 
