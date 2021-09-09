@@ -61,7 +61,7 @@ module Content = {
       <ul>
         <FakeInput value="state:open approved score>42" />
         <FakeInput
-          value="(repo:openstack/nova or repo:openstack/neutron) and group:qa and updated_at > 2020"
+          value="(repo:openstack/nova or repo:openstack/neutron) and group:qa and updated_at>2020"
         />
         <FakeInput value="author_regex:\"Foo B.*\" and not state:open" />
       </ul>

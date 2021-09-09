@@ -6,7 +6,7 @@ This document introduces the Monocle Query Language standard.
 Example queries:
 
 - `state:open and review_count:0`
-- `(repo : openstack/nova or repo: openstack/neutron) and user_group:qa and updated_at > 2020`
+- `(repo:openstack/nova or repo:openstack/neutron) and user_group:qa and updated_at>2020`
 
 
 # Backus–Naur form
@@ -37,12 +37,10 @@ label-char = %x41-5A / %x61-7A / "_"
 ; operators are skipped so that we can lex 'name:value' in three token
 value-char =
                       ; 21 is '!' and 22 is '"'
-      %x23-25         ; 26 is '&'
-    / %x27            ; 28 is '(' and 29 is ')'
+      %x23-27         ; 28 is '(' and 29 is ')'
     / %x2A-39         ; 3A is ':'
     / %x3B            ; 3C is '<' and 3D is '=' and 3E is '>'
-    / %x3F-7B         ; 7C is '|'
-    / %x7D-10FFFF     ; todo: skip ∧, ∨ and ¬
+    / %x3F-10FFFF
 
 ; Any char excluding double quote
 quoted-char = %x20-21 / %x23-10FFFF
@@ -53,16 +51,12 @@ field = 1*label-char
 value = quoted-value / 1*value-char
 
 ; boolean operator
-and = "and" / "AND" / "∧" / "&&"
-or  = "or"  / "OR"  / "∨" / "||"
-not = "not" / "NOT" / "¬" / "!"
+and = "and" / "AND"
+or  = "or"  / "OR"
+not = "not" / "NOT"
 
 ; field operator
-eq = ":" / "=" / "=="
-gt = ">"
-ge = ">="
-lt = "<"
-le = "<="
+operator = ":" / ">" / ">=" / "<" / "<="
 
 expression =
     ; boolean operator
@@ -70,15 +64,7 @@ expression =
     / expression whsp1 or whsp1 expression
     / expression whsp1 expression ; implicit AND
     / not whsp1 expression
-
-    ; field operator
-    / field whsp eq whsp value
-    / field whsp gt whsp value
-    / field whsp ge whsp value
-    / field whsp lt whsp value
-    / field whsp le whsp value
-
-    ; priority operator
+    / field operator value
     / "(" whsp expression whsp ")"
 ```
 
