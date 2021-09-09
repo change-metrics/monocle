@@ -209,7 +209,9 @@ def downgrade(tenant):
                     api_key=key,
                 )
             )
-        elif provider.get("github_organization"):
+        if provider == "TaskDataProvider":
+            continue
+        if provider.get("github_organization"):
             key = get_env(provider.get("github_token", "GITHUB_TOKEN"))
             for repo in provider.get("github_repositories", [None]):
                 tenant["crawler"]["github_orgs"].append(
