@@ -223,7 +223,13 @@ module DataItem = {
             <Approvals withGroup={true} approvals={change.approval} />
             {switch change.task_data {
             | list{} => React.null
-            | xs => xs->Belt.List.map(td => <TaskData td />)->Belt.List.toArray->React.array
+            | xs =>
+              <MStack>
+                {xs
+                ->Belt.List.map(td => <MStackItem> <TaskData td /> </MStackItem>)
+                ->Belt.List.toArray
+                ->React.array}
+              </MStack>
             }}
           </CardBody>
         </Card>
