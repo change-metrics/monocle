@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- [api] Peer strengh and repo summary query slowness has been reduced.
+
 ### Upgrade
 
 ## [1.0.0] - 2021-08-17
