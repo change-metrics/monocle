@@ -41,6 +41,16 @@ type query_error = {
   position : int32;
 }
 
+type check_request = {
+  index : string;
+  username : string;
+  query : string;
+}
+
+type check_response =
+  | Success of string
+  | Error of query_error
+
 type order_direction =
   | Asc 
   | Desc 
@@ -300,6 +310,18 @@ let rec default_query_error
   message;
   position;
 }
+
+let rec default_check_request 
+  ?index:((index:string) = "")
+  ?username:((username:string) = "")
+  ?query:((query:string) = "")
+  () : check_request  = {
+  index;
+  username;
+  query;
+}
+
+let rec default_check_response () : check_response = Success ("")
 
 let rec default_order_direction () = (Asc:order_direction)
 

@@ -882,6 +882,324 @@ instance HsJSONPB.ToSchema QueryError where
             }
         )
 
+data CheckRequest = CheckRequest
+  { checkRequestIndex :: Hs.Text,
+    checkRequestUsername :: Hs.Text,
+    checkRequestQuery :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named CheckRequest where
+  nameOf _ = (Hs.fromString "CheckRequest")
+
+instance HsProtobuf.HasDefault CheckRequest
+
+instance HsProtobuf.Message CheckRequest where
+  encodeMessage
+    _
+    CheckRequest
+      { checkRequestIndex = checkRequestIndex,
+        checkRequestUsername = checkRequestUsername,
+        checkRequestQuery = checkRequestQuery
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                checkRequestIndex
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                checkRequestUsername
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                checkRequestQuery
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure CheckRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "index")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "username")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "query")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB CheckRequest where
+  toJSONPB (CheckRequest f1 f2 f3) =
+    ( HsJSONPB.object
+        ["index" .= f1, "username" .= f2, "query" .= f3]
+    )
+  toEncodingPB (CheckRequest f1 f2 f3) =
+    (HsJSONPB.pairs ["index" .= f1, "username" .= f2, "query" .= f3])
+
+instance HsJSONPB.FromJSONPB CheckRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "CheckRequest"
+        ( \obj ->
+            (Hs.pure CheckRequest) <*> obj .: "index" <*> obj .: "username"
+              <*> obj .: "query"
+        )
+    )
+
+instance HsJSONPB.ToJSON CheckRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON CheckRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema CheckRequest where
+  declareNamedSchema _ =
+    do
+      let declare_index = HsJSONPB.declareSchemaRef
+      checkRequestIndex <- declare_index Proxy.Proxy
+      let declare_username = HsJSONPB.declareSchemaRef
+      checkRequestUsername <- declare_username Proxy.Proxy
+      let declare_query = HsJSONPB.declareSchemaRef
+      checkRequestQuery <- declare_query Proxy.Proxy
+      let _ =
+            Hs.pure CheckRequest <*> HsJSONPB.asProxy declare_index
+              <*> HsJSONPB.asProxy declare_username
+              <*> HsJSONPB.asProxy declare_query
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "CheckRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("index", checkRequestIndex),
+                          ("username", checkRequestUsername),
+                          ("query", checkRequestQuery)
+                        ]
+                  }
+            }
+        )
+
+newtype CheckResponse = CheckResponse
+  { checkResponseResult ::
+      Hs.Maybe CheckResponseResult
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named CheckResponse where
+  nameOf _ = (Hs.fromString "CheckResponse")
+
+instance HsProtobuf.HasDefault CheckResponse
+
+instance HsProtobuf.Message CheckResponse where
+  encodeMessage
+    _
+    CheckResponse {checkResponseResult = checkResponseResult} =
+      ( Hs.mconcat
+          [ case checkResponseResult of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  CheckResponseResultSuccess y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 1)
+                        (HsProtobuf.ForceEmit y)
+                    )
+                  CheckResponseResultError y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 2)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.QueryError)
+                            @(HsProtobuf.Nested Monocle.Search.QueryError)
+                            (Hs.Just y)
+                        )
+                    )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure CheckResponse)
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 1),
+                  (Hs.pure (Hs.Just Hs.. CheckResponseResultSuccess))
+                    <*> HsProtobuf.decodeMessageField
+                ),
+                ( (HsProtobuf.FieldNumber 2),
+                  (Hs.pure (Hs.fmap CheckResponseResultError))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.QueryError))
+                            @(_ (Hs.Maybe Monocle.Search.QueryError))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
+          )
+  dotProto _ = []
+
+instance HsJSONPB.ToJSONPB CheckResponse where
+  toJSONPB (CheckResponse f1_or_f2) =
+    ( HsJSONPB.object
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (CheckResponseResultSuccess f1) ->
+                        (HsJSONPB.pair "success" f1)
+                      Hs.Just (CheckResponseResultError f2) -> (HsJSONPB.pair "error" f2)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("result" .= (HsJSONPB.objectOrNull [encodeResult] options))
+                        options
+                    else encodeResult options
+          )
+        ]
+    )
+  toEncodingPB (CheckResponse f1_or_f2) =
+    ( HsJSONPB.pairs
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (CheckResponseResultSuccess f1) ->
+                        (HsJSONPB.pair "success" f1)
+                      Hs.Just (CheckResponseResultError f2) -> (HsJSONPB.pair "error" f2)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("result" .= (HsJSONPB.pairsOrNull [encodeResult] options)) options
+                    else encodeResult options
+          )
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB CheckResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "CheckResponse"
+        ( \obj ->
+            (Hs.pure CheckResponse)
+              <*> ( let parseResult parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. CheckResponseResultSuccess
+                                <$> (HsJSONPB.parseField parseObj "success"),
+                              Hs.Just Hs.. CheckResponseResultError
+                                <$> (HsJSONPB.parseField parseObj "error"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "result")
+                            Hs.>>= (HsJSONPB.withObject "result" parseResult)
+                        )
+                          <|> (parseResult obj)
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON CheckResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON CheckResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema CheckResponse where
+  declareNamedSchema _ =
+    do
+      let declare_result = HsJSONPB.declareSchemaRef
+      checkResponseResult <- declare_result Proxy.Proxy
+      let _ = Hs.pure CheckResponse <*> HsJSONPB.asProxy declare_result
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "CheckResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("result", checkResponseResult)]
+                  }
+            }
+        )
+
+data CheckResponseResult
+  = CheckResponseResultSuccess Hs.Text
+  | CheckResponseResultError Monocle.Search.QueryError
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named CheckResponseResult where
+  nameOf _ = (Hs.fromString "CheckResponseResult")
+
+instance HsJSONPB.ToSchema CheckResponseResult where
+  declareNamedSchema _ =
+    do
+      let declare_success = HsJSONPB.declareSchemaRef
+      checkResponseResultSuccess <- declare_success Proxy.Proxy
+      let _ =
+            Hs.pure CheckResponseResultSuccess
+              <*> HsJSONPB.asProxy declare_success
+      let declare_error = HsJSONPB.declareSchemaRef
+      checkResponseResultError <- declare_error Proxy.Proxy
+      let _ =
+            Hs.pure CheckResponseResultError
+              <*> HsJSONPB.asProxy declare_error
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "CheckResponseResult",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("success", checkResponseResultSuccess),
+                          ("error", checkResponseResultError)
+                        ],
+                    HsJSONPB._schemaMinProperties = Hs.Just 1,
+                    HsJSONPB._schemaMaxProperties = Hs.Just 1
+                  }
+            }
+        )
+
 data Order = Order
   { orderField :: Hs.Text,
     orderDirection ::

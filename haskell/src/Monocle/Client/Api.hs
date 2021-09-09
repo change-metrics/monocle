@@ -31,6 +31,9 @@ searchSuggestions = monocleReq "api/2/suggestions"
 searchFields :: (MonadThrow m, MonadIO m) => MonocleClient -> FieldsRequest -> m FieldsResponse
 searchFields = monocleReq "api/2/search/fields"
 
+searchCheck :: (MonadThrow m, MonadIO m) => MonocleClient -> CheckRequest -> m CheckResponse
+searchCheck = monocleReq "api/2/search/check"
+
 searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
 

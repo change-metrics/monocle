@@ -44,6 +44,16 @@ type query_error = {
   position : int32;
 }
 
+type check_request = {
+  index : string;
+  username : string;
+  query : string;
+}
+
+type check_response =
+  | Success of string
+  | Error of query_error
+
 type order_direction =
   | Asc 
   | Desc 
@@ -298,6 +308,17 @@ val default_query_error :
   unit ->
   query_error
 (** [default_query_error ()] is the default value for type [query_error] *)
+
+val default_check_request : 
+  ?index:string ->
+  ?username:string ->
+  ?query:string ->
+  unit ->
+  check_request
+(** [default_check_request ()] is the default value for type [check_request] *)
+
+val default_check_response : unit -> check_response
+(** [default_check_response ()] is the default value for type [check_response] *)
 
 val default_order_direction : unit -> order_direction
 (** [default_order_direction ()] is the default value for type [order_direction] *)
