@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - [macroscope] Added support for GitHub Issues crawler.
 - [config] Support update_since date format as "YYYY-mm-dd" for macroscope crawlers.
 - [web] Added suggestions in Fields selector for projects and groups.
+- [web] Display Task Data info in Board Kanban view.
 
 ### Changed
 

@@ -192,6 +192,22 @@ let oneLineStyle = ReactDOM.Style.make(
   (),
 )
 
+module TaskDatas = {
+  @react.component
+  let make = (~change: SearchTypes.change) => {
+    switch change.task_data {
+    | list{} => React.null
+    | xs =>
+      <MStack>
+        {xs
+        ->Belt.List.map(td => <MStackItem> <TaskData td /> </MStackItem>)
+        ->Belt.List.toArray
+        ->React.array}
+      </MStack>
+    }
+  }
+}
+
 module DataItem = {
   @react.component
   let make = (~store: Store.t, ~change: SearchTypes.change) =>
@@ -221,16 +237,7 @@ module DataItem = {
               <RelativeDate title=", updated " date={change.updated_at->getDate} />
             </div>
             <Approvals withGroup={true} approvals={change.approval} />
-            {switch change.task_data {
-            | list{} => React.null
-            | xs =>
-              <MStack>
-                {xs
-                ->Belt.List.map(td => <MStackItem> <TaskData td /> </MStackItem>)
-                ->Belt.List.toArray
-                ->React.array}
-              </MStack>
-            }}
+            <TaskDatas change />
           </CardBody>
         </Card>
       </DataListCell>
@@ -251,7 +258,7 @@ module RowItem = {
           <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
-          <th role="columnheader"> {"Approvals"->str} </th>
+          <th role="columnheader"> {"Approvals / Tasks MD"->str} </th>
         </tr>
       </thead>
   }
@@ -276,7 +283,9 @@ module RowItem = {
       <td role="cell">
         <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
       </td>
-      <td role="cell"> <Approvals withGroup={false} approvals={change.approval} /> </td>
+      <td role="cell">
+        <Approvals withGroup={false} approvals={change.approval} /> <TaskDatas change />
+      </td>
     </tr>
 }
 
