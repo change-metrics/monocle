@@ -132,6 +132,18 @@ docTypeToText = \case
   ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
   ElkChange -> "Change"
 
+eventTypesAsText :: [Text]
+eventTypesAsText =
+  toText . docTypeToText
+    <$> [ ElkChangeCreatedEvent,
+          ElkChangeMergedEvent,
+          ElkChangeReviewedEvent,
+          ElkChangeCommentedEvent,
+          ElkChangeAbandonedEvent,
+          ElkChangeCommitPushedEvent,
+          ElkChangeCommitForcePushedEvent
+        ]
+
 instance ToJSON ELKDocType where
   toJSON v = String $ toText $ docTypeToText v
 

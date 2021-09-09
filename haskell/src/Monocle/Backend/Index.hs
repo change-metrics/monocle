@@ -375,6 +375,13 @@ indexDocs docs = do
     -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
+runSimpleSearch :: FromJSON a => BH.Search -> TenantM [a]
+runSimpleSearch search = catMaybes <$> run
+  where
+    run = do
+      index <- getIndexName
+      fmap BH.hitSource <$> simpleSearch index search
+
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
 
@@ -427,6 +434,47 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerType,
         crawlerTypeValue
       ]
+
+-- TODO - need to harmonize Crawlers Metadata ID format
+getTDCrawlerMetadataDocId :: Text -> BH.DocId
+getTDCrawlerMetadataDocId name = BH.DocId $ "crawler/" <> name <> "/tasks_crawler"
+
+getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
+getTDCrawlerMetadata name = getDocument $ getTDCrawlerMetadataDocId name
+
+setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
+setTDCrawlerCommitDate name commitDate = do
+  let elkcmLastCommitAt = commitDate
+      elkcmCrawlerType = ""
+      elkcmCrawlerTypeValue = ""
+      elkcmCrawlerName = ""
+      doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
+  indexDocs [(toJSON doc, getTDCrawlerMetadataDocId name)]
+
+getTDCrawlerCommitDate :: Text -> TenantM (Maybe UTCTime)
+getTDCrawlerCommitDate name = do
+  metadata <- getTDCrawlerMetadata name
+  pure $ elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+
+getChangesByURL :: [Text] -> TenantM [ELKChange]
+getChangesByURL urls = runSimpleSearch search
+  where
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+          BH.TermsQuery "url" $ fromList urls
+        ]
+
+getChangesEventsByURL :: [Text] -> TenantM [ELKChangeEvent]
+getChangesEventsByURL urls = runSimpleSearch search
+  where
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ BH.TermsQuery "type" $ fromList eventTypesAsText,
+          BH.TermsQuery "url" $ fromList urls
+        ]
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
