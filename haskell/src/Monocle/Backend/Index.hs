@@ -375,12 +375,15 @@ indexDocs docs = do
     -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
-runSimpleSearch :: FromJSON a => BH.Search -> TenantM [a]
-runSimpleSearch search = catMaybes <$> run
+runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
+runSimpleSearch search size = catMaybes <$> run
   where
     run = do
       index <- getIndexName
-      fmap BH.hitSource <$> simpleSearch index search
+      fmap BH.hitSource
+        <$> simpleSearch
+          index
+          (search {BH.size = BH.Size size})
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
@@ -456,7 +459,12 @@ getTDCrawlerCommitDate name = do
   metadata <- getTDCrawlerMetadata name
   pure $ elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
 
-getChangesByURL :: [Text] -> TenantM [ELKChange]
+getChangesByURL ::
+  -- | List of URLs
+  [Text] ->
+  -- | Page size
+  Int ->
+  TenantM [ELKChange]
 getChangesByURL urls = runSimpleSearch search
   where
     search = BH.mkSearch (Just query) Nothing
@@ -466,7 +474,12 @@ getChangesByURL urls = runSimpleSearch search
           BH.TermsQuery "url" $ fromList urls
         ]
 
-getChangesEventsByURL :: [Text] -> TenantM [ELKChangeEvent]
+getChangesEventsByURL ::
+  -- | List of URLs
+  [Text] ->
+  -- | Page size
+  Int ->
+  TenantM [ELKChangeEvent]
 getChangesEventsByURL urls = runSimpleSearch search
   where
     search = BH.mkSearch (Just query) Nothing
