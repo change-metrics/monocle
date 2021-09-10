@@ -522,17 +522,17 @@ taskDataAdd tds = do
   let urls = toText . taskDataChangeUrl <$> tds
       inputTaskDataLimit = 500
   -- get changes that matches those URLs
-  mc <- getChangesByURL urls inputTaskDataLimit
+  changes <- getChangesByURL urls inputTaskDataLimit
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
   -- TODO re-add when ELKChangeevent have taskData attribut
   -- me <- getChangesEventsByURL urls 10000
   -- Init the HashTable that we are going to use as a facility for processing
-  mcHT <- liftIO $ initHT mc
+  changesHT <- liftIO $ initHT changes
   -- Update the HashTable based on incomming TDs and return orphan TDs
-  orphanTaskDataDocs <- liftIO $ updateMCWithTD mcHT tds
+  orphanTaskDataDocs <- liftIO $ updateChangesWithTD changesHT
   -- Get TDs from the HashTable
-  taskDataDocs <- fmap snd <$> liftIO (H.toList mcHT)
+  taskDataDocs <- fmap snd <$> liftIO (H.toList changesHT)
   -- Get the TDs form matching change events
   -- TODO ELKChangeevent needs to have taskData attribute
   -- taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
@@ -540,17 +540,18 @@ taskDataAdd tds = do
   updateDocs (taskDataDocToBHDoc <$> orphanTaskDataDocs <> taskDataDocs)
   where
     initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
-    initHT mc = H.fromList $ getMCsTuple <$> mc
-    getMCsTuple ELKChange {elkchangeUrl, elkchangeId, elkchangeTasksData} =
-      (elkchangeUrl, TaskDataDoc elkchangeId (fromMaybe [] elkchangeTasksData))
-    updateMCWithTD ::
+    initHT changes = H.fromList $ getMCsTuple <$> changes
+      where
+        getMCsTuple ELKChange {elkchangeUrl, elkchangeId, elkchangeTasksData} =
+          (elkchangeUrl, TaskDataDoc elkchangeId (fromMaybe [] elkchangeTasksData))
+
+    updateChangesWithTD ::
       -- | The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
-      -- | The list of Task Data to process
-      [TaskData] ->
       -- | IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
-    updateMCWithTD ht tds' = catMaybes <$> traverse handle (toELKTaskData <$> tds')
+    updateChangesWithTD ht =
+      catMaybes <$> traverse handle (toELKTaskData <$> tds)
       where
         handle ::
           -- | The input Task Data we want to append or update
