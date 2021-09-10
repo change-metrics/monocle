@@ -11,6 +11,7 @@ import Monocle.Search.Lexer (Token (..), lex)
 import qualified Monocle.Search.Lexer as L
 import Monocle.Search.Syntax (Expr (..), ParseError (..))
 import Relude
+import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
 
 -- $setup
@@ -53,7 +54,7 @@ exprParser aliases = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
 
     fieldExprWithOperator field = do
       operator <- do
-        operatorToken <- tokens [Equal, Greater, Lower, GreaterEqual, LowerEqual]
+        operatorToken <- tokens [Equal, Greater, Lower, GreaterEqual, LowerEqual] <?> "operator"
         pure $ case operatorToken of
           Equal -> EqExpr
           Greater -> GtExpr
@@ -65,11 +66,14 @@ exprParser aliases = Combinators.choice [Megaparsec.try boolExpr, closedExpr]
 
     parenExpr =
       -- Here it is safe to run 'exprParser' because 'parenExpr' first parses an 'OpenParenthesis'
-      Combinators.between (token OpenParenthesis) (token CloseParenthesis) (exprParser aliases)
+      Combinators.between
+        (token OpenParenthesis <?> "open paren")
+        (token CloseParenthesis <?> "closing paren")
+        (exprParser aliases)
 
 -- | 'literal' parses a literal token, returning it's value
 literal :: Parser Text
-literal = Megaparsec.token isLiteral Set.empty
+literal = Megaparsec.token isLiteral Set.empty <?> "literal"
   where
     isLiteral (L.LocatedToken _ (Literal v) _) = Just v
     isLiteral _ = Nothing
@@ -91,13 +95,26 @@ parse :: [(Text, Expr)] -> Text -> Either ParseError (Maybe Expr)
 parse aliases code = do
   tokens' <- lex code
   case Megaparsec.parse (Combinators.optional (exprParser aliases) <* Megaparsec.eof) "<input>" tokens' of
-    Left err -> Left (mkErr err)
+    Left err -> {- trace ("parser:" <> show err) -} (Left (mkErr (T.length code) err))
     Right expr -> Right expr
   where
-    mkErr :: Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> ParseError
-    mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
+    hasLabel label = Set.member (Megaparsec.Label (fromList label))
+    formatExpected :: Text -> (Set.Set (Megaparsec.ErrorItem (Megaparsec.Token [L.LocatedToken]))) -> Text
+    formatExpected def set
+      | hasLabel "literal" set = "Expected value"
+      | hasLabel "operator" set = "Expected operator (`:`, `>`, ...)"
+      | hasLabel "closing paren" set = "Expected closing paren `)`"
+      | otherwise =
+        -- TODO: add missing <?> label in the parser
+        def
+    mkErr :: Int -> Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> ParseError
+    mkErr len (Megaparsec.ParseErrorBundle (be :| _) _) =
       let (offset, message) = case be of
-            Megaparsec.TrivialError _ (Just (Megaparsec.Tokens (L.LocatedToken start _ _end :| _))) _ -> (start, "Unexpected token")
-            Megaparsec.TrivialError _ (Just Megaparsec.EndOfInput) _ -> (T.length code, "Unexpected end of input")
+            Megaparsec.TrivialError _ (Just (Megaparsec.Tokens (L.LocatedToken start tok end :| _))) xs
+              | tok `elem` [And, Or, Not] -> (end, "Expected expression")
+              | tok == CloseParenthesis -> (end, "Missing opening paren `(`")
+              | otherwise -> (start, formatExpected "Unexpected token" xs)
+            Megaparsec.TrivialError _ (Just Megaparsec.EndOfInput) xs ->
+              (len, formatExpected "Unexpected end of query" xs)
             x -> error $ "Unknown parsec error: " <> show x
-       in ParseError ("Invalid syntax: " <> message) offset
+       in ParseError message offset
