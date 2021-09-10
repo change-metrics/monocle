@@ -550,24 +550,18 @@ taskDataAdd tds = do
       HashTable LText TaskDataDoc ->
       -- | IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
-    updateChangesWithTD ht =
-      catMaybes <$> traverse handle (toELKTaskData <$> tds)
+    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toELKTaskData <$> tds)
       where
-        handle ::
+        handleTD ::
           -- | The input Task Data we want to append or update
           ELKTaskData ->
           -- | IO Action with maybe an orphan task data if a matching change does not exists
           IO (Maybe TaskDataOrphanDoc)
-        handle td = do
-          let changeURL = toLazy $ tdChangeUrl td
-          exists <- H.lookup ht changeURL
-          case exists of
-            -- Cannot a change matching this TD -> this TD will be orphan
-            Nothing -> pure $ Just TaskDataDoc {tddId = toLazy $ tdUrl td, tddTd = [td]}
-            -- Found a change matching this TD -> update existing TDs with new TD
-            Just taskDataDoc -> do
-              void $ H.insert ht changeURL $ updateTDD taskDataDoc td
-              pure Nothing
+        handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
+          -- Cannot find a change matching this TD -> this TD will be orphan
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = toLazy $ tdUrl td, tddTd = [td]})
+          -- Found a change matching this TD -> update existing TDs with new TD
+          Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
 
         updateTDD ::
           -- | The value of the HashMap we are working on
