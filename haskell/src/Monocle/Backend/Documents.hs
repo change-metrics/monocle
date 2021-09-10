@@ -61,7 +61,7 @@ instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 -- TODO: Replace by the existing Monocle.TaskData.NewTaskData
-data TaskData = TaskData
+data ELKTaskData = ELKTaskData
   { tdTid :: Text,
     tdTtype :: [Text],
     -- TODO: Handle `2021-05-18T04:31:18` (without the trailing Z)
@@ -75,10 +75,10 @@ data TaskData = TaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON TaskData where
+instance ToJSON ELKTaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON TaskData where
+instance FromJSON ELKTaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeState
@@ -196,7 +196,7 @@ data ELKChange = ELKChange
     elkchangeApproval :: Maybe [LText],
     elkchangeDraft :: Bool,
     elkchangeSelfMerged :: Maybe Bool,
-    elkchangeTasksData :: Maybe [TaskData]
+    elkchangeTasksData :: Maybe [ELKTaskData]
   }
   deriving (Show, Eq, Generic)
 

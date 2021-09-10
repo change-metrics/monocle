@@ -6,7 +6,7 @@ import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), ELKTaskData (..), File (..), changeStateToText, docTypeToText)
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -535,7 +535,7 @@ searchQuery request = do
           commitDeletions = elkcommitDeletions
        in SearchPB.Commit {..}
 
-    toTaskData :: TaskData -> TaskDataPB.TaskData
+    toTaskData :: ELKTaskData -> TaskDataPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing
           taskDataChangeUrl = toLazy $ tdUrl td
