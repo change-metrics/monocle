@@ -363,17 +363,31 @@ toELKChange Change {..} =
       Change_ChangeStateMerged -> ElkChangeMerged
       Change_ChangeStateClosed -> ElkChangeClosed
 
-indexDocs :: [(Value, BH.DocId)] -> TenantM ()
-indexDocs docs = do
+runAddDocsBulkOPs ::
+  -- | The helper function to create the bulk operation
+  (BH.IndexName -> (Value, BH.DocId) -> BH.BulkOperation) ->
+  -- | The docs payload
+  [(Value, BH.DocId)] ->
+  TenantM ()
+runAddDocsBulkOPs bulkOp docs = do
   index <- getIndexName
-  let stream = V.fromList $ fmap (toBulkIndex index) docs
+  let stream = V.fromList $ fmap (bulkOp index) docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
+
+indexDocs :: [(Value, BH.DocId)] -> TenantM ()
+indexDocs = runAddDocsBulkOPs toBulkIndex
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
+
+updateDocs :: [(Value, BH.DocId)] -> TenantM ()
+updateDocs = runAddDocsBulkOPs toBulkUpdate
+  where
+    -- BulkUpdate operation: Update the document, merging the new value with the existing one.
+    toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
 runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
 runSimpleSearch search size = catMaybes <$> run
