@@ -206,6 +206,17 @@ instance ToJSON ELKChange where
 instance FromJSON ELKChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+newtype ELKChangeTD = ELKChangeTD
+  { elkchangetdTasksData :: Maybe [ELKTaskData]
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKChangeTD where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKChangeTD where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data ELKChangeEvent = ELKChangeEvent
   { elkchangeeventId :: LText,
     elkchangeeventNumber :: Word32,

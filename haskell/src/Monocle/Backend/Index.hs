@@ -508,12 +508,13 @@ getChangesEventsByURL urls = runSimpleSearch search
 
 type HashTable k v = H.BasicHashTable k v
 
-data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]}
+data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]} deriving (Show)
 
 type TaskDataOrphanDoc = TaskDataDoc
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
-taskDataDocToBHDoc TaskDataDoc {..} = (toJSON $ Just tddTd, BH.DocId $ toText tddId)
+taskDataDocToBHDoc TaskDataDoc {..} =
+  (toJSON $ ELKChangeTD $ Just tddTd, BH.DocId $ toText tddId)
 
 taskDataAdd :: [TaskData] -> TenantM ()
 taskDataAdd tds = do
@@ -524,7 +525,8 @@ taskDataAdd tds = do
   mc <- getChangesByURL urls inputTaskDataLimit
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
-  me <- getChangesEventsByURL urls (inputTaskDataLimit * 100)
+  -- TODO re-add when ELKChangeevent have taskData attribut
+  -- me <- getChangesEventsByURL urls 10000
   -- Init the HashTable that we are going to use as a facility for processing
   mcHT <- liftIO $ initHT mc
   -- Update the HashTable based on incomming TDs and return orphan TDs
@@ -532,9 +534,10 @@ taskDataAdd tds = do
   -- Get TDs from the HashTable
   taskDataDocs <- fmap snd <$> liftIO (H.toList mcHT)
   -- Get the TDs form matching change events
-  taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
+  -- TODO ELKChangeevent needs to have taskData attribute
+  -- taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
   -- Let's push the data
-  updateDocs (taskDataDocToBHDoc <$> orphanTaskDataDocs <> taskDataDocs <> taskDataDocs')
+  updateDocs (taskDataDocToBHDoc <$> orphanTaskDataDocs <> taskDataDocs)
   where
     initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
     initHT mc = H.fromList $ getMCsTuple <$> mc
@@ -589,12 +592,12 @@ taskDataAdd tds = do
           where
             insertHT :: TaskDataDoc -> IO ()
             insertHT = H.insert ht changeURL
-    getTDforEventFromHT :: HashTable LText TaskDataDoc -> ELKChangeEvent -> IO (Maybe TaskDataDoc)
-    getTDforEventFromHT ht changeEvent = do
-      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
-      case mcM of
-        Nothing -> pure Nothing
-        Just mc -> pure $ Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+    -- getTDforEventFromHT :: HashTable LText TaskDataDoc -> ELKChangeEvent -> IO (Maybe TaskDataDoc)
+    -- getTDforEventFromHT ht changeEvent = do
+    --   mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+    --   case mcM of
+    --     Nothing -> pure Nothing
+    --     Just mc -> pure $ Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
 
     toELKTaskData :: TaskData -> ELKTaskData
     toELKTaskData TaskData {..} =

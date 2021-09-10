@@ -8,6 +8,7 @@ import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import qualified Google.Protobuf.Timestamp as TS
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
@@ -18,6 +19,7 @@ import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
+import Monocle.TaskData
 import Relude.Unsafe ((!!))
 
 fakeDate :: UTCTime
@@ -547,6 +549,61 @@ testGetSuggestions = withTenant doTest
           )
           results
 
+testTaskDataAdd :: Assertion
+testTaskDataAdd = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43", "44"]
+
+      _ <- I.taskDataAdd [mkTaskData "42", mkTaskData "43"]
+      changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 3
+      assertEqual'
+        "Check adding matching taskData"
+        [ ("44", Nothing),
+          ( "43",
+            Just
+              [ ELKTaskData
+                  { tdTid = "",
+                    tdTtype = [],
+                    tdChangeUrl = "https://fakeprovider/43",
+                    tdSeverity = "",
+                    tdPriority = "",
+                    tdScore = 0,
+                    tdUrl = "https://tdprovider/42-43",
+                    tdTitle = ""
+                  }
+              ]
+          ),
+          ( "42",
+            Just
+              [ ELKTaskData
+                  { tdTid = "",
+                    tdTtype = [],
+                    tdChangeUrl = "https://fakeprovider/42",
+                    tdSeverity = "",
+                    tdPriority = "",
+                    tdScore = 0,
+                    tdUrl = "https://tdprovider/42-42",
+                    tdTitle = ""
+                  }
+              ]
+          )
+        ]
+        ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+    mkTaskData changeId =
+      let taskDataUpdatedAt = Just $ TS.fromUTCTime fakeDate
+          taskDataChangeUrl = "https://fakeprovider/" <> changeId
+          taskDataTtype = mempty
+          taskDataTid = ""
+          taskDataUrl = "https://tdprovider/42-" <> changeId
+          taskDataTitle = ""
+          taskDataSeverity = ""
+          taskDataPriority = ""
+          taskDataScore = 0
+       in TaskData {..}
+
 -- Tests scenario helpers
 
 -- $setup
@@ -656,7 +713,8 @@ mkChange ts start author changeId name state' =
       elkchangeRepositoryFullname = name,
       elkchangeCreatedAt = mkDate ts start,
       elkchangeAuthor = author,
-      elkchangeChangeId = "change-" <> changeId
+      elkchangeChangeId = "change-" <> changeId,
+      elkchangeUrl = "https://fakeprovider/" <> changeId
     }
 
 mkEvent ::
@@ -684,7 +742,8 @@ mkEvent ts start etype author onAuthor changeId name =
       elkchangeeventId = docTypeToText etype <> "-" <> changeId,
       elkchangeeventCreatedAt = mkDate ts start,
       elkchangeeventOnCreatedAt = mkDate ts start,
-      elkchangeeventChangeId = "change-" <> changeId
+      elkchangeeventChangeId = "change-" <> changeId,
+      elkchangeeventUrl = "https://fakeprovider/" <> changeId
     }
 
 -- | 'nominalMerge' is the most simple scenario
