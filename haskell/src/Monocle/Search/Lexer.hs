@@ -43,16 +43,16 @@ data LocatedToken = LocatedToken {start :: Int, token :: Token, end :: Int}
 tokenParser :: Parser Token
 tokenParser =
   Combinators.choice
-    [ And <$ keyword ["and", "AND"] ["∧", "&&"],
-      Or <$ keyword ["or", "OR"] ["∨", "||"],
-      Not <$ keyword ["not", "NOT"] ["¬", "!"],
-      Equal <$ keyword [] [":", "=", "=="],
-      Greater <$ symbol ">",
-      GreaterEqual <$ symbol ">=",
-      Lower <$ symbol "<",
-      LowerEqual <$ symbol "<=",
-      OpenParenthesis <$ symbol "(",
-      CloseParenthesis <$ symbol ")",
+    [ And <$ keywords ["and", "AND"],
+      Or <$ keywords ["or", "OR"],
+      Not <$ keywords ["not", "NOT"],
+      Equal <$ op ":",
+      Greater <$ op ">",
+      GreaterEqual <$ op ">=",
+      Lower <$ op "<",
+      LowerEqual <$ op "<=",
+      OpenParenthesis <$ keyword "(",
+      CloseParenthesis <$ keyword ")",
       Literal <$> literal
     ]
 
@@ -61,31 +61,28 @@ locatedTokenParser = LocatedToken <$> Megaparsec.getOffset <*> tokenParser <*> M
 
 -- | 'literal' parses a literal field or value
 literal :: Parser Text
-literal = Lexer.lexeme Megaparsec.Char.space $ Combinators.choice [direct, quoted]
+literal = Combinators.choice [direct, quoted] <* Megaparsec.Char.space
   where
     direct = Megaparsec.takeWhile1P Nothing isValueChar
     quoted = "\"" *> Megaparsec.takeWhile1P Nothing isText <* "\""
     isValueChar c =
-      ('\x23' <= c && c <= '\x25')
-        || c == '\x27'
+      ('\x23' <= c && c <= '\x27')
         || ('\x2A' <= c && c <= '\x39')
         || c == '\x3B'
-        || ('\x3F' <= c && c <= '\x7B')
-        || ('\x7D' <= c && c <= '\x10FFFF')
+        || ('\x3F' <= c && c <= '\x10FFFF')
     isText c = ('\x20' <= c && c <= '\x21') || ('\x23' <= c && c <= '\x10FFFF')
 
--- | 'symbol' parses a known symbol
-symbol :: Text -> Parser Text
-symbol = Lexer.symbol Megaparsec.Char.space
+-- | 'keywords' parses one of the keywords
+keywords :: [Text] -> Parser Text
+keywords = Combinators.choice . map keyword
 
--- | 'text' parses a known text with a required trailing space
-name :: Text -> Parser Text
-name = Lexer.symbol $ Megaparsec.Char.space1 <|> Megaparsec.eof
+-- | 'keyword' parses a keyword with optional space around
+keyword :: Text -> Parser Text
+keyword = Lexer.symbol Megaparsec.Char.space
 
--- | 'keyword' parses a list of known names or symbols
-keyword :: [Text] -> [Text] -> Parser Text
-keyword names symbols =
-  Megaparsec.try $ Combinators.choice (map name names <|> map symbol symbols)
+-- | 'op' parses an operator without space arounds
+op :: Text -> Parser Text
+op = Megaparsec.chunk
 
 -- | 'tokenParser' parses all the token until the end of file
 tokensParser :: Parser [LocatedToken]

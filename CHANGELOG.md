@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 
+- [api] Support for unicode operators and whitespace around non boolean operators in the query language.
+
 ### Fixed
 
 - [api] Peer strengh and repo summary query slowness has been reduced.

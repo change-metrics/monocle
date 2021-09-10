@@ -80,7 +80,7 @@ monocleSearchLanguage =
       testCase
         "Lexer paren"
         ( lexMatch
-            "(a>42 or a = 0) and b: d"
+            "(a>42 or a:0 ) and b:d"
             [ L.OpenParenthesis,
               L.Literal "a",
               L.Greater,
@@ -101,7 +101,7 @@ monocleSearchLanguage =
         (lexMatch "field:\"A value\"" [L.Literal "field", L.Equal, L.Literal "A value"]),
       testCase
         "Lexer unicode"
-        (lexMatch "!field:λr🌈bow" [L.Not, L.Literal "field", L.Equal, L.Literal "λr🌈bow"]),
+        (lexMatch "not field:λr🌈bow" [L.Not, L.Literal "field", L.Equal, L.Literal "λr🌈bow"]),
       testCase
         "Lexer quoted unicode"
         (lexMatch "\"Zuul ▲ user\"" [L.Literal "Zuul ▲ user"]),
@@ -157,19 +157,19 @@ monocleSearchLanguage =
       testCase
         "Query state"
         ( queryMatch
-            "state: abandoned"
+            "state:abandoned"
             "{\"term\":{\"state\":{\"value\":\"CLOSED\"}}}"
         ),
       testCase
         "Query date"
         ( queryMatch
-            "updated_at > 2021 and updated_at < 2021-05"
+            "updated_at>2021 and updated_at<2021-05"
             "{\"bool\":{\"must\":[{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"updated_at\":{\"boost\":1,\"lt\":\"2021-05-01T00:00:00Z\"}}}]}}"
         ),
       testCase
         "Query relative date"
         ( queryMatch
-            "updated_at > now-3weeks"
+            "updated_at>now-3weeks"
             "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
         ),
       testCase
