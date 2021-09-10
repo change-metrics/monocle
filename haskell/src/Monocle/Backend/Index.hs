@@ -565,33 +565,23 @@ taskDataAdd tds = do
             Nothing -> pure $ Just TaskDataDoc {tddId = toLazy $ tdUrl td, tddTd = [td]}
             -- Found a change matching this TD -> update existing TDs with new TD
             Just taskDataDoc -> do
-              _ <- updateHT changeURL taskDataDoc td
+              void $ H.insert ht changeURL $ updateTDD taskDataDoc td
               pure Nothing
-        updateHT ::
-          -- | The key of the HashMap entry we are working on
-          LText ->
+
+        updateTDD ::
           -- | The value of the HashMap we are working on
           TaskDataDoc ->
           -- | The input Task Data we want to append or update
           ELKTaskData ->
-          IO ()
-        updateHT changeURL taskDataDoc td = do
+          TaskDataDoc
+        updateTDD taskDataDoc td = do
           let changeTDs = tddTd taskDataDoc
-          case nonEmpty [td' | td' <- changeTDs, tdUrl td' == tdUrl td] of
-            -- No previous TD in that matching change -> simply add to the existing list of TDs
-            Nothing -> do
-              _ <- insertHT $ taskDataDoc {tddTd = td : changeTDs}
-              pure ()
-            -- Got a matching previous TD -> remove it from the list and add the new one
-            Just tds'' -> do
-              -- We cannot get multiple matching TaskData - do not check but keep only head
-              let prevTDID = tdTid $ head tds''
-                  filteredTDs = [td' | td' <- changeTDs, tdTid td' /= prevTDID]
-              _ <- insertHT $ taskDataDoc {tddTd = td : filteredTDs}
-              pure ()
-          where
-            insertHT :: TaskDataDoc -> IO ()
-            insertHT = H.insert ht changeURL
+              -- The td has been updated so we remove any previous instance
+              isOldTD td' = tdUrl td' == tdUrl td
+              -- And we cons the new td.
+              currentTDs = td : filter (not . isOldTD) changeTDs
+           in taskDataDoc {tddTd = currentTDs}
+
     -- getTDforEventFromHT :: HashTable LText TaskDataDoc -> ELKChangeEvent -> IO (Maybe TaskDataDoc)
     -- getTDforEventFromHT ht changeEvent = do
     --   mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
