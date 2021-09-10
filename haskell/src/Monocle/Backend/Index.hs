@@ -5,6 +5,7 @@ import Data.Aeson
   ( KeyValue ((.=)),
     object,
   )
+import qualified Data.HashTable.IO as H
 import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
@@ -17,6 +18,7 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.TaskData
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 
@@ -488,6 +490,7 @@ getChangesByURL urls = runSimpleSearch search
           BH.TermsQuery "url" $ fromList urls
         ]
 
+-- TODO: previous implementation was using scan an not limit
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
@@ -502,6 +505,108 @@ getChangesEventsByURL urls = runSimpleSearch search
         [ BH.TermsQuery "type" $ fromList eventTypesAsText,
           BH.TermsQuery "url" $ fromList urls
         ]
+
+type HashTable k v = H.BasicHashTable k v
+
+data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]}
+
+type TaskDataOrphanDoc = TaskDataDoc
+
+taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
+taskDataDocToBHDoc TaskDataDoc {..} = (toJSON $ Just tddTd, BH.DocId $ toText tddId)
+
+taskDataAdd :: [TaskData] -> TenantM ()
+taskDataAdd tds = do
+  -- extract change URLs from input TDs
+  let urls = toText . taskDataChangeUrl <$> tds
+      inputTaskDataLimit = 500
+  -- get changes that matches those URLs
+  mc <- getChangesByURL urls inputTaskDataLimit
+  -- TODO remove the limit here by using the scan search
+  -- get change events that matches those URLs
+  me <- getChangesEventsByURL urls (inputTaskDataLimit * 100)
+  -- Init the HashTable that we are going to use as a facility for processing
+  mcHT <- liftIO $ initHT mc
+  -- Update the HashTable based on incomming TDs and return orphan TDs
+  orphanTaskDataDocs <- liftIO $ updateMCWithTD mcHT tds
+  -- Get TDs from the HashTable
+  taskDataDocs <- fmap snd <$> liftIO (H.toList mcHT)
+  -- Get the TDs form matching change events
+  taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
+  -- Let's push the data
+  updateDocs (taskDataDocToBHDoc <$> orphanTaskDataDocs <> taskDataDocs <> taskDataDocs')
+  where
+    initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
+    initHT mc = H.fromList $ getMCsTuple <$> mc
+    getMCsTuple ELKChange {elkchangeUrl, elkchangeId, elkchangeTasksData} =
+      (elkchangeUrl, TaskDataDoc elkchangeId (fromMaybe [] elkchangeTasksData))
+    updateMCWithTD ::
+      -- | The local cache in form of HashMap
+      HashTable LText TaskDataDoc ->
+      -- | The list of Task Data to process
+      [TaskData] ->
+      -- | IO action with the list of orphan Task Data
+      IO [TaskDataOrphanDoc]
+    updateMCWithTD ht tds' = catMaybes <$> traverse handle (toELKTaskData <$> tds')
+      where
+        handle ::
+          -- | The input Task Data we want to append or update
+          ELKTaskData ->
+          -- | IO Action with maybe an orphan task data if a matching change does not exists
+          IO (Maybe TaskDataOrphanDoc)
+        handle td = do
+          let changeURL = toLazy $ tdChangeUrl td
+          exists <- H.lookup ht changeURL
+          case exists of
+            -- Cannot a change matching this TD -> this TD will be orphan
+            Nothing -> pure $ Just TaskDataDoc {tddId = toLazy $ tdUrl td, tddTd = [td]}
+            -- Found a change matching this TD -> update existing TDs with new TD
+            Just taskDataDoc -> do
+              _ <- updateHT changeURL taskDataDoc td
+              pure Nothing
+        updateHT ::
+          -- | The key of the HashMap entry we are working on
+          LText ->
+          -- | The value of the HashMap we are working on
+          TaskDataDoc ->
+          -- | The input Task Data we want to append or update
+          ELKTaskData ->
+          IO ()
+        updateHT changeURL taskDataDoc td = do
+          let changeTDs = tddTd taskDataDoc
+          case nonEmpty [td' | td' <- changeTDs, tdUrl td' == tdUrl td] of
+            -- No previous TD in that matching change -> simply add to the existing list of TDs
+            Nothing -> do
+              _ <- insertHT $ taskDataDoc {tddTd = td : changeTDs}
+              pure ()
+            -- Got a matching previous TD -> remove it from the list and add the new one
+            Just tds'' -> do
+              -- We cannot get multiple matching TaskData - do not check but keep only head
+              let prevTDID = tdTid $ head tds''
+                  filteredTDs = [td' | td' <- changeTDs, tdTid td' /= prevTDID]
+              _ <- insertHT $ taskDataDoc {tddTd = td : filteredTDs}
+              pure ()
+          where
+            insertHT :: TaskDataDoc -> IO ()
+            insertHT = H.insert ht changeURL
+    getTDforEventFromHT :: HashTable LText TaskDataDoc -> ELKChangeEvent -> IO (Maybe TaskDataDoc)
+    getTDforEventFromHT ht changeEvent = do
+      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+      case mcM of
+        Nothing -> pure Nothing
+        Just mc -> pure $ Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+
+    toELKTaskData :: TaskData -> ELKTaskData
+    toELKTaskData TaskData {..} =
+      let tdTid = toText taskDataTid
+          tdTtype = toList $ toText <$> taskDataTtype
+          tdChangeUrl = toText taskDataChangeUrl
+          tdSeverity = toText taskDataSeverity
+          tdPriority = toText taskDataPriority
+          tdScore = fromInteger $ toInteger taskDataScore
+          tdUrl = toText taskDataUrl
+          tdTitle = toText taskDataTitle
+       in ELKTaskData {..}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
