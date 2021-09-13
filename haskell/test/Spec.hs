@@ -386,7 +386,7 @@ monocleWebApiTests =
       testCase
         "taskDataGetLastUpdated"
         ( test
-            taskDataGetLastUpdated
+            taskDataTaskDataGetLastUpdated
             taskDataGetLastUpdatedInput
             taskDataGetLastUpdatedOutput
         )

@@ -91,25 +91,25 @@ service UserGroup {
 
 service TaskData {
   // Commit the last updated timestamp
-  rpc Commit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
+  rpc TaskDataCommit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
     option (google.api.http) = {
-      post: "/api/1/task_data_commit"
+      post: "/api/2/task_data/commit"
       body: "*"
     };
   }
   // Commit the last updated timestamp
-  rpc GetLastUpdated(monocle_task_data.TaskDataGetLastUpdatedRequest)
+  rpc TaskDataGetLastUpdated(monocle_task_data.TaskDataGetLastUpdatedRequest)
       returns (monocle_task_data.TaskDataGetLastUpdatedResponse) {
     option (google.api.http) = {
-      post: "/api/1/task_data_get_last_updated"
+      post: "/api/2/task_data/get_last_updated"
       body: "*"
     };
   }
 
   // Add task data
-  rpc Add(monocle_task_data.AddRequest) returns (monocle_task_data.AddResponse) {
+  rpc TaskDataAdd(monocle_task_data.TaskDataAddRequest) returns (monocle_task_data.TaskDataAddResponse) {
     option (google.api.http) = {
-      post: "/api/1/task_data_add"
+      post: "/api/2/task_data/add"
       body: "*"
     };
   }

@@ -299,6 +299,16 @@ crawlerCommitInfo request = do
         . Enumerated
         $ Right err
 
+-- | /task_data endpoints
+taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
+taskDataTaskDataAdd _ = pure $ TaskDataPB.TaskDataAddResponse Nothing
+
+taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
+taskDataTaskDataCommit _ = pure $ TaskDataPB.TaskDataCommitResponse Nothing
+
+taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
+taskDataTaskDataGetLastUpdated _ = pure $ TaskDataPB.TaskDataGetLastUpdatedResponse Nothing
+
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
 searchSuggestions request = do

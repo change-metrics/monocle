@@ -23,7 +23,7 @@ withMockClient withClient cb = withMockedManager monocleMockApplication go
 monocleMockResponse :: HM.HashMap (ByteString, ByteString) LByteString
 monocleMockResponse =
   fromList
-    [ (("POST", "/api/1/task_data_get_last_updated"), "{\"timestamp\": \"2021-01-01T00:00:00Z\"}")
+    [ (("POST", "/api/2/task_data/get_last_updated"), "{\"timestamp\": \"2021-01-01T00:00:00Z\"}")
     ]
 
 -- | The application to serve mocked responses.

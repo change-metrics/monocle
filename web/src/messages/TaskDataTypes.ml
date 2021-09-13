@@ -44,14 +44,14 @@ type task_data = {
   score : int32;
 }
 
-type add_request = {
+type task_data_add_request = {
   index : string;
   crawler : string;
   apikey : string;
   items : task_data list;
 }
 
-type add_response =
+type task_data_add_response =
   | Error of task_data_commit_error
 
 let rec default_task_data_commit_request 
@@ -104,16 +104,16 @@ let rec default_task_data
   score;
 }
 
-let rec default_add_request 
+let rec default_task_data_add_request 
   ?index:((index:string) = "")
   ?crawler:((crawler:string) = "")
   ?apikey:((apikey:string) = "")
   ?items:((items:task_data list) = [])
-  () : add_request  = {
+  () : task_data_add_request  = {
   index;
   crawler;
   apikey;
   items;
 }
 
-let rec default_add_response () : add_response = Error (default_task_data_commit_error ())
+let rec default_task_data_add_response () : task_data_add_response = Error (default_task_data_commit_error ())

@@ -58,14 +58,14 @@ message TaskData {
   int32 score = 9;
 }
 
-message AddRequest {
+message TaskDataAddRequest {
   string index = 1;
   string crawler = 2;
   string apikey = 3;
   repeated TaskData items = 4;
 }
 
-message AddResponse {
+message TaskDataAddResponse {
   oneof result {
     // TODO: define a header message with generic error
     // then do not re-use the commit error enum.

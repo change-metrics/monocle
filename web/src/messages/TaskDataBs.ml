@@ -48,14 +48,14 @@ let default_task_data_mutable () : task_data_mutable = {
   score = 0l;
 }
 
-type add_request_mutable = {
+type task_data_add_request_mutable = {
   mutable index : string;
   mutable crawler : string;
   mutable apikey : string;
   mutable items : TaskDataTypes.task_data list;
 }
 
-let default_add_request_mutable () : add_request_mutable = {
+let default_task_data_add_request_mutable () : task_data_add_request_mutable = {
   index = "";
   crawler = "";
   apikey = "";
@@ -218,28 +218,28 @@ let rec decode_task_data json =
     TaskDataTypes.score = v.score;
   } : TaskDataTypes.task_data)
 
-let rec decode_add_request json =
-  let v = default_add_request_mutable () in
+let rec decode_task_data_add_request json =
+  let v = default_task_data_add_request_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
   for i = 0 to last_key_index do
     match Array.unsafe_get keys i with
     | "index" -> 
       let json = Js.Dict.unsafeGet json "index" in
-      v.index <- Pbrt_bs.string json "add_request" "index"
+      v.index <- Pbrt_bs.string json "task_data_add_request" "index"
     | "crawler" -> 
       let json = Js.Dict.unsafeGet json "crawler" in
-      v.crawler <- Pbrt_bs.string json "add_request" "crawler"
+      v.crawler <- Pbrt_bs.string json "task_data_add_request" "crawler"
     | "apikey" -> 
       let json = Js.Dict.unsafeGet json "apikey" in
-      v.apikey <- Pbrt_bs.string json "add_request" "apikey"
+      v.apikey <- Pbrt_bs.string json "task_data_add_request" "apikey"
     | "items" -> begin
       let a = 
         let a = Js.Dict.unsafeGet json "items" in 
-        Pbrt_bs.array_ a "add_request" "items"
+        Pbrt_bs.array_ a "task_data_add_request" "items"
       in
       v.items <- Array.map (fun json -> 
-        (decode_task_data (Pbrt_bs.object_ json "add_request" "items"))
+        (decode_task_data (Pbrt_bs.object_ json "task_data_add_request" "items"))
       ) a |> Array.to_list;
     end
     
@@ -250,17 +250,17 @@ let rec decode_add_request json =
     TaskDataTypes.crawler = v.crawler;
     TaskDataTypes.apikey = v.apikey;
     TaskDataTypes.items = v.items;
-  } : TaskDataTypes.add_request)
+  } : TaskDataTypes.task_data_add_request)
 
-let rec decode_add_response json =
+let rec decode_task_data_add_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
-    | -1 -> Pbrt_bs.E.malformed_variant "add_response"
+    | -1 -> Pbrt_bs.E.malformed_variant "task_data_add_response"
     | i -> 
       begin match Array.unsafe_get keys i with
       | "error" -> 
         let json = Js.Dict.unsafeGet json "error" in
-        (TaskDataTypes.Error ((decode_task_data_commit_error json)) : TaskDataTypes.add_response)
+        (TaskDataTypes.Error ((decode_task_data_commit_error json)) : TaskDataTypes.task_data_add_response)
       
       | _ -> loop (i - 1)
       end
@@ -348,7 +348,7 @@ let rec encode_task_data (v:TaskDataTypes.task_data) =
   Js.Dict.set json "score" (Js.Json.number (Int32.to_float v.TaskDataTypes.score));
   json
 
-let rec encode_add_request (v:TaskDataTypes.add_request) = 
+let rec encode_task_data_add_request (v:TaskDataTypes.task_data_add_request) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.TaskDataTypes.index);
   Js.Dict.set json "crawler" (Js.Json.string v.TaskDataTypes.crawler);
@@ -366,7 +366,7 @@ let rec encode_add_request (v:TaskDataTypes.add_request) =
   end;
   json
 
-let rec encode_add_response (v:TaskDataTypes.add_response) = 
+let rec encode_task_data_add_response (v:TaskDataTypes.task_data_add_response) = 
   let json = Js.Dict.empty () in
   begin match v with
   | TaskDataTypes.Error v ->

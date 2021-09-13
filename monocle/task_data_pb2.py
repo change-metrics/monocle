@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\021monocle/task_data",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x17monocle/task_data.proto\x12\x11monocle_task_data\x1a\x1fgoogle/protobuf/timestamp.proto"v\n\x15TaskDataCommitRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12-\n\ttimestamp\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"\x8c\x01\n\x16TaskDataCommitResponse\x12\x37\n\x05\x65rror\x18\x01 \x01(\x0e\x32&.monocle_task_data.TaskDataCommitErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"?\n\x1dTaskDataGetLastUpdatedRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t"\x9c\x01\n\x1eTaskDataGetLastUpdatedResponse\x12?\n\x05\x65rror\x18\x01 \x01(\x0e\x32..monocle_task_data.TaskDataGetLastUpdatedErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"\xb9\x01\n\x08TaskData\x12.\n\nupdated_at\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x12\n\nchange_url\x18\x02 \x01(\t\x12\r\n\x05ttype\x18\x03 \x03(\t\x12\x0b\n\x03tid\x18\x04 \x01(\t\x12\x0b\n\x03url\x18\x05 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x10\n\x08severity\x18\x07 \x01(\t\x12\x10\n\x08priority\x18\x08 \x01(\t\x12\r\n\x05score\x18\t \x01(\x05"h\n\nAddRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12*\n\x05items\x18\x04 \x03(\x0b\x32\x1b.monocle_task_data.TaskData"P\n\x0b\x41\x64\x64Response\x12\x37\n\x05\x65rror\x18\x01 \x01(\x0e\x32&.monocle_task_data.TaskDataCommitErrorH\x00\x42\x08\n\x06result*\x81\x01\n\x13TaskDataCommitError\x12\x10\n\x0cUnknownIndex\x10\x00\x12\x12\n\x0eUnknownCrawler\x10\x01\x12\x11\n\rUnknownApiKey\x10\x02\x12"\n\x1e\x43ommitDateInferiorThanPrevious\x10\x03\x12\r\n\tAddFailed\x10\x04*I\n\x1bTaskDataGetLastUpdatedError\x12\x13\n\x0fGetUnknownIndex\x10\x00\x12\x15\n\x11GetUnknownCrawler\x10\x01\x42\x13Z\x11monocle/task_datab\x06proto3',
+    serialized_pb=b'\n\x17monocle/task_data.proto\x12\x11monocle_task_data\x1a\x1fgoogle/protobuf/timestamp.proto"v\n\x15TaskDataCommitRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12-\n\ttimestamp\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"\x8c\x01\n\x16TaskDataCommitResponse\x12\x37\n\x05\x65rror\x18\x01 \x01(\x0e\x32&.monocle_task_data.TaskDataCommitErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"?\n\x1dTaskDataGetLastUpdatedRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t"\x9c\x01\n\x1eTaskDataGetLastUpdatedResponse\x12?\n\x05\x65rror\x18\x01 \x01(\x0e\x32..monocle_task_data.TaskDataGetLastUpdatedErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"\xb9\x01\n\x08TaskData\x12.\n\nupdated_at\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x12\n\nchange_url\x18\x02 \x01(\t\x12\r\n\x05ttype\x18\x03 \x03(\t\x12\x0b\n\x03tid\x18\x04 \x01(\t\x12\x0b\n\x03url\x18\x05 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x10\n\x08severity\x18\x07 \x01(\t\x12\x10\n\x08priority\x18\x08 \x01(\t\x12\r\n\x05score\x18\t \x01(\x05"p\n\x12TaskDataAddRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12*\n\x05items\x18\x04 \x03(\x0b\x32\x1b.monocle_task_data.TaskData"X\n\x13TaskDataAddResponse\x12\x37\n\x05\x65rror\x18\x01 \x01(\x0e\x32&.monocle_task_data.TaskDataCommitErrorH\x00\x42\x08\n\x06result*\x81\x01\n\x13TaskDataCommitError\x12\x10\n\x0cUnknownIndex\x10\x00\x12\x12\n\x0eUnknownCrawler\x10\x01\x12\x11\n\rUnknownApiKey\x10\x02\x12"\n\x1e\x43ommitDateInferiorThanPrevious\x10\x03\x12\r\n\tAddFailed\x10\x04*I\n\x1bTaskDataGetLastUpdatedError\x12\x13\n\x0fGetUnknownIndex\x10\x00\x12\x15\n\x11GetUnknownCrawler\x10\x01\x42\x13Z\x11monocle/task_datab\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
     ],
@@ -78,8 +78,8 @@ _TASKDATACOMMITERROR = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=943,
-    serialized_end=1072,
+    serialized_start=959,
+    serialized_end=1088,
 )
 _sym_db.RegisterEnumDescriptor(_TASKDATACOMMITERROR)
 
@@ -110,8 +110,8 @@ _TASKDATAGETLASTUPDATEDERROR = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1074,
-    serialized_end=1147,
+    serialized_start=1090,
+    serialized_end=1163,
 )
 _sym_db.RegisterEnumDescriptor(_TASKDATAGETLASTUPDATEDERROR)
 
@@ -616,9 +616,9 @@ _TASKDATA = _descriptor.Descriptor(
 )
 
 
-_ADDREQUEST = _descriptor.Descriptor(
-    name="AddRequest",
-    full_name="monocle_task_data.AddRequest",
+_TASKDATAADDREQUEST = _descriptor.Descriptor(
+    name="TaskDataAddRequest",
+    full_name="monocle_task_data.TaskDataAddRequest",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -626,7 +626,7 @@ _ADDREQUEST = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="index",
-            full_name="monocle_task_data.AddRequest.index",
+            full_name="monocle_task_data.TaskDataAddRequest.index",
             index=0,
             number=1,
             type=9,
@@ -645,7 +645,7 @@ _ADDREQUEST = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="crawler",
-            full_name="monocle_task_data.AddRequest.crawler",
+            full_name="monocle_task_data.TaskDataAddRequest.crawler",
             index=1,
             number=2,
             type=9,
@@ -664,7 +664,7 @@ _ADDREQUEST = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="apikey",
-            full_name="monocle_task_data.AddRequest.apikey",
+            full_name="monocle_task_data.TaskDataAddRequest.apikey",
             index=2,
             number=3,
             type=9,
@@ -683,7 +683,7 @@ _ADDREQUEST = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="items",
-            full_name="monocle_task_data.AddRequest.items",
+            full_name="monocle_task_data.TaskDataAddRequest.items",
             index=3,
             number=4,
             type=11,
@@ -710,13 +710,13 @@ _ADDREQUEST = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=754,
-    serialized_end=858,
+    serialized_end=866,
 )
 
 
-_ADDRESPONSE = _descriptor.Descriptor(
-    name="AddResponse",
-    full_name="monocle_task_data.AddResponse",
+_TASKDATAADDRESPONSE = _descriptor.Descriptor(
+    name="TaskDataAddResponse",
+    full_name="monocle_task_data.TaskDataAddResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -724,7 +724,7 @@ _ADDRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="error",
-            full_name="monocle_task_data.AddResponse.error",
+            full_name="monocle_task_data.TaskDataAddResponse.error",
             index=0,
             number=1,
             type=14,
@@ -752,15 +752,15 @@ _ADDRESPONSE = _descriptor.Descriptor(
     oneofs=[
         _descriptor.OneofDescriptor(
             name="result",
-            full_name="monocle_task_data.AddResponse.result",
+            full_name="monocle_task_data.TaskDataAddResponse.result",
             index=0,
             containing_type=None,
             create_key=_descriptor._internal_create_key,
             fields=[],
         ),
     ],
-    serialized_start=860,
-    serialized_end=940,
+    serialized_start=868,
+    serialized_end=956,
 )
 
 _TASKDATACOMMITREQUEST.fields_by_name[
@@ -803,14 +803,14 @@ _TASKDATAGETLASTUPDATEDRESPONSE.fields_by_name[
 _TASKDATA.fields_by_name[
     "updated_at"
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
-_ADDREQUEST.fields_by_name["items"].message_type = _TASKDATA
-_ADDRESPONSE.fields_by_name["error"].enum_type = _TASKDATACOMMITERROR
-_ADDRESPONSE.oneofs_by_name["result"].fields.append(
-    _ADDRESPONSE.fields_by_name["error"]
+_TASKDATAADDREQUEST.fields_by_name["items"].message_type = _TASKDATA
+_TASKDATAADDRESPONSE.fields_by_name["error"].enum_type = _TASKDATACOMMITERROR
+_TASKDATAADDRESPONSE.oneofs_by_name["result"].fields.append(
+    _TASKDATAADDRESPONSE.fields_by_name["error"]
 )
-_ADDRESPONSE.fields_by_name["error"].containing_oneof = _ADDRESPONSE.oneofs_by_name[
-    "result"
-]
+_TASKDATAADDRESPONSE.fields_by_name[
+    "error"
+].containing_oneof = _TASKDATAADDRESPONSE.oneofs_by_name["result"]
 DESCRIPTOR.message_types_by_name["TaskDataCommitRequest"] = _TASKDATACOMMITREQUEST
 DESCRIPTOR.message_types_by_name["TaskDataCommitResponse"] = _TASKDATACOMMITRESPONSE
 DESCRIPTOR.message_types_by_name[
@@ -820,8 +820,8 @@ DESCRIPTOR.message_types_by_name[
     "TaskDataGetLastUpdatedResponse"
 ] = _TASKDATAGETLASTUPDATEDRESPONSE
 DESCRIPTOR.message_types_by_name["TaskData"] = _TASKDATA
-DESCRIPTOR.message_types_by_name["AddRequest"] = _ADDREQUEST
-DESCRIPTOR.message_types_by_name["AddResponse"] = _ADDRESPONSE
+DESCRIPTOR.message_types_by_name["TaskDataAddRequest"] = _TASKDATAADDREQUEST
+DESCRIPTOR.message_types_by_name["TaskDataAddResponse"] = _TASKDATAADDRESPONSE
 DESCRIPTOR.enum_types_by_name["TaskDataCommitError"] = _TASKDATACOMMITERROR
 DESCRIPTOR.enum_types_by_name[
     "TaskDataGetLastUpdatedError"
@@ -883,27 +883,27 @@ TaskData = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(TaskData)
 
-AddRequest = _reflection.GeneratedProtocolMessageType(
-    "AddRequest",
+TaskDataAddRequest = _reflection.GeneratedProtocolMessageType(
+    "TaskDataAddRequest",
     (_message.Message,),
     {
-        "DESCRIPTOR": _ADDREQUEST,
+        "DESCRIPTOR": _TASKDATAADDREQUEST,
         "__module__": "monocle.task_data_pb2"
-        # @@protoc_insertion_point(class_scope:monocle_task_data.AddRequest)
+        # @@protoc_insertion_point(class_scope:monocle_task_data.TaskDataAddRequest)
     },
 )
-_sym_db.RegisterMessage(AddRequest)
+_sym_db.RegisterMessage(TaskDataAddRequest)
 
-AddResponse = _reflection.GeneratedProtocolMessageType(
-    "AddResponse",
+TaskDataAddResponse = _reflection.GeneratedProtocolMessageType(
+    "TaskDataAddResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _ADDRESPONSE,
+        "DESCRIPTOR": _TASKDATAADDRESPONSE,
         "__module__": "monocle.task_data_pb2"
-        # @@protoc_insertion_point(class_scope:monocle_task_data.AddResponse)
+        # @@protoc_insertion_point(class_scope:monocle_task_data.TaskDataAddResponse)
     },
 )
-_sym_db.RegisterMessage(AddResponse)
+_sym_db.RegisterMessage(TaskDataAddResponse)
 
 
 DESCRIPTOR._options = None

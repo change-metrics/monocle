@@ -1170,52 +1170,55 @@ instance HsJSONPB.ToSchema TaskData where
             }
         )
 
-data AddRequest = AddRequest
-  { addRequestIndex :: Hs.Text,
-    addRequestCrawler :: Hs.Text,
-    addRequestApikey :: Hs.Text,
-    addRequestItems :: Hs.Vector Monocle.TaskData.TaskData
+data TaskDataAddRequest = TaskDataAddRequest
+  { taskDataAddRequestIndex ::
+      Hs.Text,
+    taskDataAddRequestCrawler :: Hs.Text,
+    taskDataAddRequestApikey :: Hs.Text,
+    taskDataAddRequestItems ::
+      Hs.Vector Monocle.TaskData.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddRequest where
-  nameOf _ = (Hs.fromString "AddRequest")
+instance HsProtobuf.Named TaskDataAddRequest where
+  nameOf _ = (Hs.fromString "TaskDataAddRequest")
 
-instance HsProtobuf.HasDefault AddRequest
+instance HsProtobuf.HasDefault TaskDataAddRequest
 
-instance HsProtobuf.Message AddRequest where
+instance HsProtobuf.Message TaskDataAddRequest where
   encodeMessage
     _
-    AddRequest
-      { addRequestIndex = addRequestIndex,
-        addRequestCrawler = addRequestCrawler,
-        addRequestApikey = addRequestApikey,
-        addRequestItems = addRequestItems
+    TaskDataAddRequest
+      { taskDataAddRequestIndex =
+          taskDataAddRequestIndex,
+        taskDataAddRequestCrawler = taskDataAddRequestCrawler,
+        taskDataAddRequestApikey = taskDataAddRequestApikey,
+        taskDataAddRequestItems = taskDataAddRequestItems
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                addRequestIndex
+                taskDataAddRequestIndex
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                addRequestCrawler
+                taskDataAddRequestCrawler
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                addRequestApikey
+                taskDataAddRequestApikey
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 ( Hs.coerce @(Hs.Vector Monocle.TaskData.TaskData)
                     @(HsProtobuf.NestedVec Monocle.TaskData.TaskData)
-                    addRequestItems
+                    taskDataAddRequestItems
                 )
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure AddRequest)
+    (Hs.pure TaskDataAddRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -1268,54 +1271,56 @@ instance HsProtobuf.Message AddRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB AddRequest where
-  toJSONPB (AddRequest f1 f2 f3 f4) =
+instance HsJSONPB.ToJSONPB TaskDataAddRequest where
+  toJSONPB (TaskDataAddRequest f1 f2 f3 f4) =
     ( HsJSONPB.object
         ["index" .= f1, "crawler" .= f2, "apikey" .= f3, "items" .= f4]
     )
-  toEncodingPB (AddRequest f1 f2 f3 f4) =
+  toEncodingPB (TaskDataAddRequest f1 f2 f3 f4) =
     ( HsJSONPB.pairs
         ["index" .= f1, "crawler" .= f2, "apikey" .= f3, "items" .= f4]
     )
 
-instance HsJSONPB.FromJSONPB AddRequest where
+instance HsJSONPB.FromJSONPB TaskDataAddRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "AddRequest"
+        "TaskDataAddRequest"
         ( \obj ->
-            (Hs.pure AddRequest) <*> obj .: "index" <*> obj .: "crawler"
+            (Hs.pure TaskDataAddRequest) <*> obj .: "index"
+              <*> obj .: "crawler"
               <*> obj .: "apikey"
               <*> obj .: "items"
         )
     )
 
-instance HsJSONPB.ToJSON AddRequest where
+instance HsJSONPB.ToJSON TaskDataAddRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON AddRequest where
+instance HsJSONPB.FromJSON TaskDataAddRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddRequest where
+instance HsJSONPB.ToSchema TaskDataAddRequest where
   declareNamedSchema _ =
     do
       let declare_index = HsJSONPB.declareSchemaRef
-      addRequestIndex <- declare_index Proxy.Proxy
+      taskDataAddRequestIndex <- declare_index Proxy.Proxy
       let declare_crawler = HsJSONPB.declareSchemaRef
-      addRequestCrawler <- declare_crawler Proxy.Proxy
+      taskDataAddRequestCrawler <- declare_crawler Proxy.Proxy
       let declare_apikey = HsJSONPB.declareSchemaRef
-      addRequestApikey <- declare_apikey Proxy.Proxy
+      taskDataAddRequestApikey <- declare_apikey Proxy.Proxy
       let declare_items = HsJSONPB.declareSchemaRef
-      addRequestItems <- declare_items Proxy.Proxy
+      taskDataAddRequestItems <- declare_items Proxy.Proxy
       let _ =
-            Hs.pure AddRequest <*> HsJSONPB.asProxy declare_index
+            Hs.pure TaskDataAddRequest
+              <*> HsJSONPB.asProxy declare_index
               <*> HsJSONPB.asProxy declare_crawler
               <*> HsJSONPB.asProxy declare_apikey
               <*> HsJSONPB.asProxy declare_items
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddRequest",
+                Hs.Just "TaskDataAddRequest",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -1325,58 +1330,64 @@ instance HsJSONPB.ToSchema AddRequest where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [ ("index", addRequestIndex),
-                          ("crawler", addRequestCrawler),
-                          ("apikey", addRequestApikey),
-                          ("items", addRequestItems)
+                        [ ("index", taskDataAddRequestIndex),
+                          ("crawler", taskDataAddRequestCrawler),
+                          ("apikey", taskDataAddRequestApikey),
+                          ("items", taskDataAddRequestItems)
                         ]
                   }
             }
         )
 
-newtype AddResponse = AddResponse
-  { addResponseResult ::
-      Hs.Maybe AddResponseResult
+newtype TaskDataAddResponse = TaskDataAddResponse
+  { taskDataAddResponseResult ::
+      Hs.Maybe TaskDataAddResponseResult
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddResponse where
-  nameOf _ = (Hs.fromString "AddResponse")
+instance HsProtobuf.Named TaskDataAddResponse where
+  nameOf _ = (Hs.fromString "TaskDataAddResponse")
 
-instance HsProtobuf.HasDefault AddResponse
+instance HsProtobuf.HasDefault TaskDataAddResponse
 
-instance HsProtobuf.Message AddResponse where
-  encodeMessage _ AddResponse {addResponseResult = addResponseResult} =
-    ( Hs.mconcat
-        [ case addResponseResult of
-            Hs.Nothing -> Hs.mempty
-            Hs.Just x ->
-              case x of
-                AddResponseResultError y ->
-                  ( HsProtobuf.encodeMessageField
-                      (HsProtobuf.FieldNumber 1)
-                      (HsProtobuf.ForceEmit y)
-                  )
-        ]
-    )
+instance HsProtobuf.Message TaskDataAddResponse where
+  encodeMessage
+    _
+    TaskDataAddResponse
+      { taskDataAddResponseResult =
+          taskDataAddResponseResult
+      } =
+      ( Hs.mconcat
+          [ case taskDataAddResponseResult of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  TaskDataAddResponseResultError y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 1)
+                        (HsProtobuf.ForceEmit y)
+                    )
+          ]
+      )
   decodeMessage _ =
-    (Hs.pure AddResponse)
+    (Hs.pure TaskDataAddResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
               [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. AddResponseResultError))
+                  (Hs.pure (Hs.Just Hs.. TaskDataAddResponseResultError))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
           )
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB AddResponse where
-  toJSONPB (AddResponse f1) =
+instance HsJSONPB.ToJSONPB TaskDataAddResponse where
+  toJSONPB (TaskDataAddResponse f1) =
     ( HsJSONPB.object
         [ ( let encodeResult =
                   ( case f1 of
-                      Hs.Just (AddResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (TaskDataAddResponseResultError f1) ->
+                        (HsJSONPB.pair "error" f1)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -1388,11 +1399,12 @@ instance HsJSONPB.ToJSONPB AddResponse where
           )
         ]
     )
-  toEncodingPB (AddResponse f1) =
+  toEncodingPB (TaskDataAddResponse f1) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
                   ( case f1 of
-                      Hs.Just (AddResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (TaskDataAddResponseResultError f1) ->
+                        (HsJSONPB.pair "error" f1)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -1403,15 +1415,15 @@ instance HsJSONPB.ToJSONPB AddResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB AddResponse where
+instance HsJSONPB.FromJSONPB TaskDataAddResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "AddResponse"
+        "TaskDataAddResponse"
         ( \obj ->
-            (Hs.pure AddResponse)
+            (Hs.pure TaskDataAddResponse)
               <*> ( let parseResult parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. AddResponseResultError
+                            [ Hs.Just Hs.. TaskDataAddResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error"),
                               Hs.pure Hs.Nothing
                             ]
@@ -1423,23 +1435,25 @@ instance HsJSONPB.FromJSONPB AddResponse where
         )
     )
 
-instance HsJSONPB.ToJSON AddResponse where
+instance HsJSONPB.ToJSON TaskDataAddResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON AddResponse where
+instance HsJSONPB.FromJSON TaskDataAddResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddResponse where
+instance HsJSONPB.ToSchema TaskDataAddResponse where
   declareNamedSchema _ =
     do
       let declare_result = HsJSONPB.declareSchemaRef
-      addResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure AddResponse <*> HsJSONPB.asProxy declare_result
+      taskDataAddResponseResult <- declare_result Proxy.Proxy
+      let _ =
+            Hs.pure TaskDataAddResponse
+              <*> HsJSONPB.asProxy declare_result
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddResponse",
+                Hs.Just "TaskDataAddResponse",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -1449,33 +1463,33 @@ instance HsJSONPB.ToSchema AddResponse where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("result", addResponseResult)]
+                        [("result", taskDataAddResponseResult)]
                   }
             }
         )
 
-data AddResponseResult
-  = AddResponseResultError
+data TaskDataAddResponseResult
+  = TaskDataAddResponseResultError
       ( HsProtobuf.Enumerated
           Monocle.TaskData.TaskDataCommitError
       )
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named AddResponseResult where
-  nameOf _ = (Hs.fromString "AddResponseResult")
+instance HsProtobuf.Named TaskDataAddResponseResult where
+  nameOf _ = (Hs.fromString "TaskDataAddResponseResult")
 
-instance HsJSONPB.ToSchema AddResponseResult where
+instance HsJSONPB.ToSchema TaskDataAddResponseResult where
   declareNamedSchema _ =
     do
       let declare_error = HsJSONPB.declareSchemaRef
-      addResponseResultError <- declare_error Proxy.Proxy
+      taskDataAddResponseResultError <- declare_error Proxy.Proxy
       let _ =
-            Hs.pure AddResponseResultError
+            Hs.pure TaskDataAddResponseResultError
               <*> HsJSONPB.asProxy declare_error
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
-                Hs.Just "AddResponseResult",
+                Hs.Just "TaskDataAddResponseResult",
               HsJSONPB._namedSchemaSchema =
                 Hs.mempty
                   { HsJSONPB._schemaParamSchema =
@@ -1485,7 +1499,7 @@ instance HsJSONPB.ToSchema AddResponseResult where
                         },
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
-                        [("error", addResponseResultError)],
+                        [("error", taskDataAddResponseResultError)],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
                     HsJSONPB._schemaMaxProperties = Hs.Just 1
                   }
