@@ -103,6 +103,7 @@ library
                      , MonadRandom
                      , aeson
                      , aeson-casing
+                     , base64                     < 0.4.2.5
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , bugzilla-redhat            >= 0.3.2

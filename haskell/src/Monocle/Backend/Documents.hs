@@ -116,6 +116,7 @@ data ELKDocType
   | ElkChangeCommitForcePushedEvent
   | ElkChangeCommitPushedEvent
   | ElkChange
+  | ElkOrphanTaskData
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [ELKDocType]
@@ -131,6 +132,7 @@ docTypeToText = \case
   ElkChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
   ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
   ElkChange -> "Change"
+  ElkOrphanTaskData -> "OrphanTaskData"
 
 eventTypesAsText :: [Text]
 eventTypesAsText =
@@ -160,6 +162,7 @@ instance FromJSON ELKDocType where
           "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
           "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
           "Change" -> pure ElkChange
+          "OrphanTaskData" -> pure ElkOrphanTaskData
           anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
       )
 
@@ -215,6 +218,18 @@ instance ToJSON ELKChangeTD where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 instance FromJSON ELKChangeTD where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+data ELKChangeOrphanTD = ELKChangeOrphanTD
+  { elkchangeorphantdType :: ELKDocType,
+    elkchangeorphantdTasksData :: Maybe [ELKTaskData]
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKChangeOrphanTD where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeEvent = ELKChangeEvent

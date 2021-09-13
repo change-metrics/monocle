@@ -5,6 +5,7 @@ import Data.Aeson
   ( KeyValue ((.=)),
     object,
   )
+import Data.ByteString.Base64 (encodeBase64)
 import qualified Data.HashTable.IO as H
 import qualified Data.Text as Text
 import Data.Time
@@ -250,8 +251,8 @@ ensureIndex = do
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
-deleteIndex :: TenantM ()
-deleteIndex = do
+removeIndex :: TenantM ()
+removeIndex = do
   indexName <- getIndexName
   _resp <- BH.deleteIndex indexName
   False <- BH.indexExists indexName
@@ -391,6 +392,10 @@ updateDocs = runAddDocsBulkOPs toBulkUpdate
     -- BulkUpdate operation: Update the document, merging the new value with the existing one.
     toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
+-- | Generated base64 encoding of Text
+getBase64Text :: Text -> Text
+getBase64Text docId = encodeBase64 $ encodeUtf8 docId
+
 runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
 runSimpleSearch search size = catMaybes <$> run
   where
@@ -429,8 +434,8 @@ checkDocExists docId = do
   index <- getIndexName
   BH.documentExists index docId
 
-getDocument :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
-getDocument docId = do
+getDocumentById :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
+getDocumentById docId = do
   index <- getIndexName
   resp <- BH.getDocument index docId
   if isNotFound resp
@@ -459,7 +464,7 @@ getTDCrawlerMetadataDocId :: Text -> BH.DocId
 getTDCrawlerMetadataDocId name = BH.DocId $ "crawler/" <> name <> "/tasks_crawler"
 
 getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
-getTDCrawlerMetadata name = getDocument $ getTDCrawlerMetadataDocId name
+getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
 
 setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
 setTDCrawlerCommitDate name commitDate = do
@@ -516,6 +521,10 @@ taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
   (toJSON $ ELKChangeTD $ Just tddTd, BH.DocId $ toText tddId)
 
+orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
+orphanTaskDataDocToBHDoc TaskDataDoc {..} =
+  (toJSON $ ELKChangeOrphanTD ElkOrphanTaskData (Just tddTd), BH.DocId $ toText tddId)
+
 taskDataAdd :: [TaskData] -> TenantM ()
 taskDataAdd tds = do
   -- extract change URLs from input TDs
@@ -537,7 +546,8 @@ taskDataAdd tds = do
   -- TODO ELKChangeevent needs to have taskData attribute
   -- taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
   -- Let's push the data
-  updateDocs (taskDataDocToBHDoc <$> orphanTaskDataDocs <> taskDataDocs)
+  updateDocs (taskDataDocToBHDoc <$> taskDataDocs)
+  indexDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
   where
     initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
     initHT changes = H.fromList $ getMCsTuple <$> changes
@@ -559,9 +569,11 @@ taskDataAdd tds = do
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
-          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = toLazy $ tdUrl td, tddTd = [td]})
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td, tddTd = [td]})
           -- Found a change matching this TD -> update existing TDs with new TD
           Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
+          where
+            urlToId = toLazy . getBase64Text
 
         updateTDD ::
           -- | The value of the HashMap we are working on

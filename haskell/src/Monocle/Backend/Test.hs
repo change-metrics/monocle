@@ -85,12 +85,12 @@ withTenant cb = bracket_ create delete run
     testName = "test-tenant"
     config = Config.defaultTenant testName
     create = testTenantM config I.ensureIndex
-    delete = testTenantM config I.deleteIndex
+    delete = testTenantM config I.removeIndex
     run = testTenantM config cb
 
 checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
 checkELKChangeField docId field value = do
-  docM <- I.getDocument docId
+  docM <- I.getDocumentById docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
@@ -557,7 +557,9 @@ testTaskDataAdd = withTenant doTest
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
       traverse_ (indexScenarioNM nova) ["42", "43", "44"]
 
-      _ <- I.taskDataAdd [mkTaskData "42", mkTaskData "43"]
+      -- Send Task data with a matching changes
+      void $ I.taskDataAdd [mkTaskData "42", mkTaskData "43"]
+      -- Ensure only changes 42 and 43 got a Task data associated
       changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 3
       assertEqual'
         "Check adding matching taskData"
@@ -592,6 +594,35 @@ testTaskDataAdd = withTenant doTest
           )
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+
+      -- Send a Task data w/o a matching change
+      let td = mkTaskData "45"
+      void $ I.taskDataAdd [td]
+      -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
+      orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
+      assertEqual'
+        "Check Task data stored as Orphan Task Data"
+        ( Just
+            ( ELKChangeOrphanTD
+                { elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdTasksData =
+                    Just
+                      [ ELKTaskData
+                          { tdTid = "",
+                            tdTtype = [],
+                            tdChangeUrl = "https://fakeprovider/45",
+                            tdSeverity = "",
+                            tdPriority = "",
+                            tdScore = 0,
+                            tdUrl = "https://tdprovider/42-45",
+                            tdTitle = ""
+                          }
+                      ]
+                }
+            )
+        )
+        orphanTdM
+
     mkTaskData changeId =
       let taskDataUpdatedAt = Just $ TS.fromUTCTime fakeDate
           taskDataChangeUrl = "https://fakeprovider/" <> changeId
@@ -603,6 +634,8 @@ testTaskDataAdd = withTenant doTest
           taskDataPriority = ""
           taskDataScore = 0
        in TaskData {..}
+    getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
+    getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
 -- Tests scenario helpers
 
