@@ -68,7 +68,7 @@ module Content = {
       <h4> {"Syntax"->str} </h4>
       <p>
         {"Queries are defined using expressions such as "->str}
-        <Code value="state: open" />
+        <Code value="state:open" />
         {". Expressions can be combined using boolean operators: "->str}
         <Code value="and" />
         {", "->str}

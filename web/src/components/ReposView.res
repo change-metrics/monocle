@@ -17,11 +17,11 @@ module ChangeLink = {
   let path = "changes"
 
   let getFilter = (name: string, cStateM: option<string>) =>
-    "repo: " ++
+    "repo:" ++
     name ++
     " " ++
     switch cStateM {
-    | Some(cState) => "state: " ++ cState
+    | Some(cState) => "state:" ++ cState
     | None => ""
     }
 
