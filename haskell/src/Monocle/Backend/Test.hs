@@ -3,6 +3,7 @@ module Monocle.Backend.Test where
 
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
+import Data.List (partition)
 import qualified Data.Text as Text
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -594,6 +595,51 @@ testTaskDataAdd = withTenant doTest
           )
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+      -- Ensure associated ChangeEvents got the Task data attibutes
+      events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 100
+      let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
+          createdEventWithTD =
+            filter
+              (\e -> (e & elkchangeeventType) == ElkChangeCreatedEvent)
+              withTD
+      assertEqual' "Check events count that got a Task data" 8 (length withTD)
+      assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
+      assertEqual'
+        "Check Change events got the task data attribute"
+        [ ( "ChangeCreatedEvent-42",
+            Just
+              [ ELKTaskData
+                  { tdTid = "",
+                    tdTtype = [],
+                    tdChangeUrl = "https://fakeprovider/42",
+                    tdSeverity = "",
+                    tdPriority = "",
+                    tdScore = 0,
+                    tdUrl = "https://tdprovider/42-42",
+                    tdTitle = ""
+                  }
+              ]
+          ),
+          ( "ChangeCreatedEvent-43",
+            Just
+              [ ELKTaskData
+                  { tdTid = "",
+                    tdTtype = [],
+                    tdChangeUrl = "https://fakeprovider/43",
+                    tdSeverity = "",
+                    tdPriority = "",
+                    tdScore = 0,
+                    tdUrl = "https://tdprovider/42-43",
+                    tdTitle = ""
+                  }
+              ]
+          )
+        ]
+        ( ( \ELKChangeEvent {..} ->
+              (elkchangeeventId, elkchangeeventTasksData)
+          )
+            <$> createdEventWithTD
+        )
 
       -- Send a Task data w/o a matching change
       let td = mkTaskData "45"

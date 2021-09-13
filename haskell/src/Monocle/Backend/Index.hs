@@ -535,8 +535,7 @@ taskDataAdd tds = do
   changes <- getChangesByURL urls inputTaskDataLimit
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
-  -- TODO re-add when ELKChangeevent have taskData attribut
-  -- me <- getChangesEventsByURL urls 10000
+  changeEvents <- getChangesEventsByURL urls 10000
   -- Init the HashTable that we are going to use as a facility for processing
   changesHT <- liftIO $ initHT changes
   -- Update the HashTable based on incomming TDs and return orphan TDs
@@ -544,10 +543,12 @@ taskDataAdd tds = do
   -- Get TDs from the HashTable
   taskDataDocs <- fmap snd <$> liftIO (H.toList changesHT)
   -- Get the TDs form matching change events
-  -- TODO ELKChangeevent needs to have taskData attribute
-  -- taskDataDocs' <- liftIO $ fmap catMaybes <$> sequence $ getTDforEventFromHT mcHT <$> me
+  taskDataDocs' <-
+    liftIO $
+      fmap catMaybes <$> sequence $
+        getTDforEventFromHT changesHT <$> changeEvents
   -- Let's push the data
-  updateDocs (taskDataDocToBHDoc <$> taskDataDocs)
+  updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
   indexDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
   where
     initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
@@ -590,12 +591,18 @@ taskDataAdd tds = do
               currentTDs = td : filter (not . isOldTD) changeTDs
            in taskDataDoc {tddTd = currentTDs}
 
-    -- getTDforEventFromHT :: HashTable LText TaskDataDoc -> ELKChangeEvent -> IO (Maybe TaskDataDoc)
-    -- getTDforEventFromHT ht changeEvent = do
-    --   mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
-    --   case mcM of
-    --     Nothing -> pure Nothing
-    --     Just mc -> pure $ Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+    getTDforEventFromHT ::
+      -- | The local cache in form of HashMap
+      HashTable LText TaskDataDoc ->
+      -- | The ChangeEvent to look for
+      ELKChangeEvent ->
+      -- | IO Action returning maybe a TaskData
+      IO (Maybe TaskDataDoc)
+    getTDforEventFromHT ht changeEvent = do
+      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+      pure $ case mcM of
+        Nothing -> Nothing
+        Just mc -> Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
 
     toELKTaskData :: TaskData -> ELKTaskData
     toELKTaskData TaskData {..} =
