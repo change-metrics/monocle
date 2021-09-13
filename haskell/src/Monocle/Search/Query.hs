@@ -32,7 +32,7 @@ import Data.Time.Clock (UTCTime (..), secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
-import Monocle.Prelude
+import Monocle.Prelude hiding (parseDateValue)
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax

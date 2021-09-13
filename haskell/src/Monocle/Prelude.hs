@@ -45,6 +45,7 @@ module Monocle.Prelude
     diffUTCTime,
     formatTime',
     threadDelay,
+    parseDateValue,
 
     -- * lens
     Lens',
@@ -77,8 +78,8 @@ import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
-import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
-import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time
+import Data.Time.Clock (getCurrentTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Proto3.Suite (Enumerated (..))
@@ -114,6 +115,12 @@ elapsedSeconds a b = nominalDiffTimeToSeconds $ diffUTCTime b a
 -- | Helper to format time without timezone
 formatTime' :: Text -> UTCTime -> Text
 formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatText)
+
+-- | Helper
+parseDateValue :: String -> Maybe UTCTime
+parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z"
+  where
+    tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
 -- | Numerical type to count documents
 newtype Count = MkCount Word32

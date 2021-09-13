@@ -5,8 +5,20 @@ module Monocle.Api.Server where
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
+import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), ELKTaskData (..), File (..), changeStateToText, docTypeToText)
+import Monocle.Backend.Documents
+  ( Author (..),
+    Commit (..),
+    ELKChange (..),
+    ELKChangeEvent (..),
+    ELKCrawlerMetadata (..),
+    ELKCrawlerMetadataObject (..),
+    ELKTaskData (..),
+    File (..),
+    changeStateToText,
+    docTypeToText,
+  )
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -301,13 +313,117 @@ crawlerCommitInfo request = do
 
 -- | /task_data endpoints
 taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
-taskDataTaskDataAdd _ = pure $ TaskDataPB.TaskDataAddResponse Nothing
+taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
+  tenants <- getConfig
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict taskDataAddRequestIndex)
+            `orDie` TaskDataPB.TaskDataCommitErrorUnknownApiKey
+
+        void $
+          Config.lookupCrawler index (toStrict taskDataAddRequestCrawler)
+            `orDie` TaskDataPB.TaskDataCommitErrorUnknownCrawler
+
+        when
+          (Config.crawlers_api_key index /= Just (toStrict taskDataAddRequestApikey))
+          (Left TaskDataPB.TaskDataCommitErrorUnknownApiKey)
+
+        pure index
+  case requestE of
+    Left err -> do
+      pure $
+        TaskDataPB.TaskDataAddResponse
+          . Just
+          . TaskDataPB.TaskDataAddResponseResultError
+          . Enumerated
+          $ Right err
+    Right index -> do
+      void $ runTenantM index $ do I.taskDataAdd $ toList taskDataAddRequestItems
+      pure $ TaskDataPB.TaskDataAddResponse Nothing
 
 taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
-taskDataTaskDataCommit _ = pure $ TaskDataPB.TaskDataCommitResponse Nothing
+taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
+  tenants <- getConfig
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict taskDataCommitRequestIndex)
+            `orDie` TaskDataPB.TaskDataCommitErrorUnknownApiKey
+
+        _crawler <-
+          Config.lookupCrawler index (toStrict taskDataCommitRequestCrawler)
+            `orDie` TaskDataPB.TaskDataCommitErrorUnknownCrawler
+        when
+          (Config.crawlers_api_key index /= Just (toStrict taskDataCommitRequestApikey))
+          (Left TaskDataPB.TaskDataCommitErrorUnknownApiKey)
+
+        void taskDataCommitRequestTimestamp `orDie` TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
+
+        pure (index, _crawler)
+  case requestE of
+    Left err -> pure $ toErr err
+    Right (index, _crawler) ->
+      do
+        let ts = fromMaybe (error "Missing commit timestamp in request") taskDataCommitRequestTimestamp
+            ts' = T.toUTCTime ts
+        crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataCommitRequestCrawler
+        let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
+            currentTS =
+              fromMaybe
+                (error "Unable to get a valid crawler metadata TS")
+                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since _crawler)))
+        if ts' < currentTS
+          then pure $ toErr TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
+          else do
+            void $ runTenantM index $ do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts'
+            pure $ toSuccess ts'
+  where
+    toSuccess ts' =
+      TaskDataPB.TaskDataCommitResponse
+        . Just
+        . TaskDataPB.TaskDataCommitResponseResultTimestamp
+        $ T.fromUTCTime ts'
+    toErr err =
+      TaskDataPB.TaskDataCommitResponse
+        . Just
+        . TaskDataPB.TaskDataCommitResponseResultError
+        . Enumerated
+        $ Right err
 
 taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
-taskDataTaskDataGetLastUpdated _ = pure $ TaskDataPB.TaskDataGetLastUpdatedResponse Nothing
+taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = do
+  tenants <- getConfig
+  let requestE = do
+        index <-
+          Config.lookupTenant tenants (toStrict taskDataGetLastUpdatedRequestIndex)
+            `orDie` TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownIndex
+
+        _crawler <-
+          Config.lookupCrawler index (toStrict taskDataGetLastUpdatedRequestCrawler)
+            `orDie` TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownCrawler
+
+        pure (index, _crawler)
+  case requestE of
+    Left err -> pure $ toErr err
+    Right (index, _crawler) ->
+      do
+        crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataGetLastUpdatedRequestCrawler
+        let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
+            currentTS =
+              fromMaybe
+                (error "Unable to get a valid crawler metadata TS")
+                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since _crawler)))
+        pure $
+          TaskDataPB.TaskDataGetLastUpdatedResponse
+            . Just
+            . TaskDataPB.TaskDataGetLastUpdatedResponseResultTimestamp
+            $ T.fromUTCTime currentTS
+  where
+    toErr err =
+      TaskDataPB.TaskDataGetLastUpdatedResponse
+        . Just
+        . TaskDataPB.TaskDataGetLastUpdatedResponseResultError
+        . Enumerated
+        $ Right err
 
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
