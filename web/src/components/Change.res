@@ -219,9 +219,9 @@ module DataItem = {
             <Mergeable state={change.state} mergeable={change.mergeable} />
             <ExternalLink href={change.url} />
             <ProjectLink store project={change.repository_fullname} />
-            {"<"->str}
-            <BranchLink store branch={change.target_branch} />
-            {">"->str}
+            {list{"master", "main", "devel"}->elemText(change.target_branch)
+              ? React.null
+              : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
             <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
               {"Complexicity: "->str}
               <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
