@@ -4,6 +4,7 @@
 module Monocle.Search.Lexer (Token (..), LocatedToken (..), lex) where
 
 import qualified Control.Monad.Combinators as Combinators
+import qualified Data.Set as Set
 import Monocle.Search.Syntax (ParseError (..))
 import Relude
 import qualified Text.Megaparsec as Megaparsec
@@ -94,8 +95,14 @@ lex code = case Megaparsec.parse tokensParser "<input>" code of
   Left err -> Left (mkErr err)
   Right tokens -> Right tokens
   where
+    formatExpected :: (Set.Set (Megaparsec.ErrorItem (Megaparsec.Token Text))) -> Text
+    formatExpected set
+      | Set.member (Megaparsec.Tokens ('"' :| "")) set = "Expected field value (spaces are not allowed after operator)"
+      | Set.member (Megaparsec.Tokens (':' :| "")) set = "Expected field operator: `:`, `>`, ..."
+      | otherwise = "Invalid token"
+    mkErr :: Megaparsec.ParseErrorBundle Text Void -> ParseError
     mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
-      let offset = case be of
-            Megaparsec.TrivialError x _ _ -> x
-            Megaparsec.FancyError x _ -> x
-       in ParseError "Invalid token" offset
+      let (offset, msg) = case be of
+            Megaparsec.TrivialError x _ xs -> (x, formatExpected xs)
+            Megaparsec.FancyError x _ -> (x, "Invalid token")
+       in ParseError msg offset

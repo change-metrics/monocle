@@ -50,6 +50,19 @@ message QueryError {
   uint32 position = 2;
 }
 
+message CheckRequest {
+  string index = 1;
+  string username = 2;
+  string query = 3;
+}
+
+message CheckResponse {
+  oneof result {
+    string success = 1;
+    QueryError error = 2;
+  }
+}
+
 message Order {
   string field = 1;
   enum Direction {

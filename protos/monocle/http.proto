@@ -56,6 +56,13 @@ service Search {
       body: "*"
     };
   }
+  rpc Check(monocle_search.CheckRequest)
+      returns (monocle_search.CheckResponse) {
+    option (google.api.http) = {
+      post: "/api/2/search/check"
+      body: "*"
+    };
+  }
   rpc Query(monocle_search.QueryRequest)
       returns (monocle_search.QueryResponse) {
     option (google.api.http) = {

@@ -318,31 +318,51 @@ searchSuggestions request = do
   where
     emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
--- | /search/query endpoint
-searchQuery :: QueryRequest -> AppM QueryResponse
-searchQuery request = do
+-- | A helper function to decode search query
+validateSearchRequest :: LText -> LText -> LText -> AppM (Either ParseError (Config.Index, Q.Query))
+validateSearchRequest tenantName queryText username = do
   tenants <- getConfig
-  let SearchPB.QueryRequest {..} = request
   now <- getCurrentTime
-
   let requestE =
         do
           tenant <-
-            Config.lookupTenant tenants (toStrict queryRequestIndex)
+            Config.lookupTenant tenants (toStrict tenantName)
               `orDie` ParseError "unknown tenant" 0
 
-          expr <- P.parse (Q.loadAliases' tenant) (toStrict queryRequestQuery)
+          expr <- P.parse (Q.loadAliases' tenant) (toStrict queryText)
 
           query <-
-            Q.queryWithMods now (toStrict queryRequestUsername) (Just tenant) expr
+            Q.queryWithMods now (toStrict username) (Just tenant) expr
 
-          -- Date histogram needs explicit bound to be set:
-          let queryWithBound = Q.ensureMinBound query
+          pure (tenant, query)
 
-          pure (tenant, queryWithBound, fromPBEnum queryRequestQueryType)
+  pure requestE
+
+-- | /search/check endpoint
+searchCheck :: SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
+searchCheck request = do
+  let SearchPB.CheckRequest {..} = request
+
+  requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
+
+  pure $
+    SearchPB.CheckResponse $
+      Just $ case requestE of
+        Right _ -> SearchPB.CheckResponseResultSuccess "ok"
+        Left (ParseError msg offset) ->
+          SearchPB.CheckResponseResultError $
+            SearchPB.QueryError (toLazy msg) (fromInteger . toInteger $ offset)
+
+-- | /search/query endpoint
+searchQuery :: QueryRequest -> AppM QueryResponse
+searchQuery request = do
+  let SearchPB.QueryRequest {..} = request
+
+  requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
 
   case requestE of
-    Right (tenant, query, queryType) -> runTenantQueryM tenant query $ do
+    Right (tenant, query) -> runTenantQueryM tenant (Q.ensureMinBound query) $ do
+      let queryType = fromPBEnum queryRequestQueryType
       liftTenantM $ monocleLogEvent $ Searching queryType queryRequestQuery query
 
       case queryType of

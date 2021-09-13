@@ -159,6 +159,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_HealthResponse'
+    /api/2/search/check:
+        post:
+            operationId: Search_Check
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_search_CheckRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_search_CheckResponse'
     /api/2/search/fields:
         post:
             operationId: Search_Fields
@@ -710,6 +726,20 @@ components:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
                 approvals:
                     $ref: '#/components/schemas/monocle_search_TermsCount'
+        monocle_search_CheckRequest:
+            properties:
+                index:
+                    type: string
+                username:
+                    type: string
+                query:
+                    type: string
+        monocle_search_CheckResponse:
+            properties:
+                success:
+                    type: string
+                error:
+                    $ref: '#/components/schemas/monocle_search_QueryError'
         monocle_search_Commit:
             properties:
                 sha:

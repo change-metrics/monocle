@@ -109,6 +109,36 @@ monocleSearchLanguage =
         "Lexer does not escape"
         (lexMatch "\"test\\\"" [L.Literal "test\\"]),
       testCase
+        "Error basic"
+        (errMatch "a" 1 "Expected operator (`:`, `>`, ...)"),
+      testCase
+        "Error simple"
+        (errMatch "a:" 2 "Expected value"),
+      testCase
+        "Error typo"
+        (errMatch "a:42 nor b:23" 5 "Unexpected token"),
+      testCase
+        "Error missing right expr"
+        (errMatch "a:41 or" 7 "Expected expression"),
+      testCase
+        "Error not expr"
+        (errMatch "a:41 not" 8 "Expected expression"),
+      testCase
+        "Error space"
+        (errMatch "a: b" 2 "Expected field value (spaces are not allowed after operator)"),
+      testCase
+        "Error ("
+        (errMatch "(a:42" 5 "Expected closing paren `)`"),
+      testCase
+        "Error ("
+        (errMatch "a:42)" 5 "Missing opening paren `(`"),
+      testCase
+        "Error field"
+        (errMatch "bad:cofee" 0 "Unknown field: bad"),
+      testCase
+        "Error value"
+        (errMatch "from:hier" 0 "Invalid date: hier"),
+      testCase
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
@@ -288,9 +318,15 @@ monocleSearchLanguage =
     prettyQuery = fmap encodePretty <$> getQueryBH
 
     -- Create a Query object
-    mkQuery code = case P.parse [] code >>= Q.queryWithMods now mempty (Just testTenant) of
+    mkQuery' code = P.parse [] code >>= Q.queryWithMods now mempty (Just testTenant)
+    mkQuery code = case mkQuery' code of
       Left e -> error $ show e
       Right q -> q
+
+    errMatch :: Text -> Int -> Text -> Assertion
+    errMatch code pos msg = case mkQuery' code of
+      Left e -> assertEqual "error matched" (S.ParseError msg pos) e
+      Right _ -> error $ "Query didn't failed: " <> show code
 
     d :: String -> UTCTime
     d date = fromMaybe (error "nop") (readMaybe $ date <> " 00:00:00 Z")

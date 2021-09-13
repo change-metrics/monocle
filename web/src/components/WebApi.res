@@ -65,6 +65,15 @@ module Search = {
       {data: resp.data->SearchBs.decode_fields_response}->Js.Promise.resolve
     )
   @module("axios")
+  external checkRaw: (string, 'a) => axios<'b> = "post"
+
+  let check = (request: SearchTypes.check_request): axios<SearchTypes.check_response> =>
+    request->SearchBs.encode_check_request
+    |> checkRaw(serverUrl ++ "/api/2/search/check")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_check_response}->Js.Promise.resolve
+    )
+  @module("axios")
   external queryRaw: (string, 'a) => axios<'b> = "post"
 
   let query = (request: SearchTypes.query_request): axios<SearchTypes.query_response> =>

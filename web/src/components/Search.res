@@ -166,6 +166,10 @@ module TextInputUp = {
     [
       | @as("search") #Search
     ]=?,
+    ~validated: @string
+    [
+      | @as("warning") #Error
+    ]=?,
     ~id: string,
     ~onChange: (string, ReactEvent.Mouse.t) => unit=?,
     ~onKeyUp: ReactEvent.Keyboard.t => unit=?,
@@ -185,6 +189,7 @@ module Bar = {
     ~setValue: string => unit,
     ~onSave: string => unit,
     ~showTooltips: bool=true,
+    ~error: option<string>,
   ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
     let appendExpr = expr => {
@@ -202,6 +207,9 @@ module Bar = {
       | "Enter" => onSave(value)
       | _ => ignore()
       }
+    let id = "col-search"
+    let onChange = (v, _) => setValue(v)
+    let _type = #Text
     <MGrid>
       <MGridItemXl2>
         <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
@@ -211,14 +219,14 @@ module Bar = {
         </Patternfly.Button>
       </MGridItemXl2>
       <MGridItemXl10>
-        <TextInputUp
-          id="col-search"
-          value={value}
-          onChange={(v, _) => setValue(v)}
-          onKeyUp
-          _type=#Text
-          iconVariant=#Search
-        />
+        {
+          // Patternfly TextInput doesn't render properly when both validated and iconVariant are set.
+          // Instead of doing complicated dynamic props, this switch duplicate the common props
+          switch error {
+          | Some(_) => <TextInputUp id value onChange onKeyUp _type validated=#Error />
+          | None => <TextInputUp id value onChange onKeyUp _type iconVariant=#Search />
+          }
+        }
       </MGridItemXl10>
     </MGrid>
   }
@@ -326,6 +334,13 @@ module Order = {
   }
 }
 
+let formatError = (query, message, position) => {
+  let from = position->Int32.to_int
+  // When the error position starts at 0, no need to include the context since it is
+  // already visible in the search bar
+  message ++ (from == 0 ? "" : " (" ++ Js.String.sliceToEnd(~from, query) ++ ")")
+}
+
 module Top = {
   @react.component
   let make = (~store: Store.t, ~withLimit: bool=false) => {
@@ -334,6 +349,7 @@ module Top = {
     let (value, setValue') = React.useState(() => state.query)
     let (limit, setLimit') = React.useState(() => state.limit)
     let (savedValue, setSavedValue) = React.useState(() => state.query)
+    let (error, setError) = React.useState(() => None)
     let setValue = v => setValue'(_ => v)
 
     // Update changed value
@@ -348,11 +364,25 @@ module Top = {
     }, [state.query])
 
     // Dispatch the value upstream
+    let handleCheck = (newValue, res: WebApi.axiosResponse<SearchTypes.check_response>) => {
+      switch res.data {
+      | SearchTypes.Success(_) => {
+          setError(_ => None)
+          setSavedValue(_ => newValue)
+          newValue->Store.Store.SetQuery->dispatch
+        }
+      | Error({message, position}) => setError(_ => formatError(newValue, message, position)->Some)
+      }->Js.Promise.resolve
+    }
     let onSave = newValue => {
-      setSavedValue(_ => newValue)
-      newValue->Store.Store.SetQuery->dispatch
+      (WebApi.Search.check({
+        index: state.index,
+        username: "",
+        query: value,
+      }) |> Js.Promise.then_(handleCheck(newValue)))->ignore
     }
     let onClick = _ => onSave(value)
+
     let setLimit = str => {
       let v = str == "" ? 0 : str->int_of_string
       setLimit'(_ => v)
@@ -361,7 +391,7 @@ module Top = {
 
     <Patternfly.Layout.Bullseye>
       <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
-        <Bar value setValue onSave store />
+        <Bar value setValue onSave store error />
         {value != savedValue
           ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
           : React.null}
@@ -377,6 +407,13 @@ module Top = {
             </div>
           : React.null}
       </div>
+      {
+        // Not the prettiest thing, but this gets the job done
+        switch error {
+        | Some(title) => <> <br /> <Alert variant=#Danger title /> </>
+        | None => React.null
+        }
+      }
     </Patternfly.Layout.Bullseye>
   }
 }

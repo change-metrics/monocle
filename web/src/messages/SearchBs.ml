@@ -66,6 +66,18 @@ let default_query_error_mutable () : query_error_mutable = {
   position = 0l;
 }
 
+type check_request_mutable = {
+  mutable index : string;
+  mutable username : string;
+  mutable query : string;
+}
+
+let default_check_request_mutable () : check_request_mutable = {
+  index = "";
+  username = "";
+  query = "";
+}
+
 type order_mutable = {
   mutable field : string;
   mutable direction : SearchTypes.order_direction;
@@ -590,6 +602,48 @@ let rec decode_query_error json =
     SearchTypes.message = v.message;
     SearchTypes.position = v.position;
   } : SearchTypes.query_error)
+
+let rec decode_check_request json =
+  let v = default_check_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "index" -> 
+      let json = Js.Dict.unsafeGet json "index" in
+      v.index <- Pbrt_bs.string json "check_request" "index"
+    | "username" -> 
+      let json = Js.Dict.unsafeGet json "username" in
+      v.username <- Pbrt_bs.string json "check_request" "username"
+    | "query" -> 
+      let json = Js.Dict.unsafeGet json "query" in
+      v.query <- Pbrt_bs.string json "check_request" "query"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.index = v.index;
+    SearchTypes.username = v.username;
+    SearchTypes.query = v.query;
+  } : SearchTypes.check_request)
+
+let rec decode_check_response json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "check_response"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "success" -> 
+        let json = Js.Dict.unsafeGet json "success" in
+        (SearchTypes.Success (Pbrt_bs.string json "check_response" "Success") : SearchTypes.check_response)
+      | "error" -> 
+        let json = Js.Dict.unsafeGet json "error" in
+        (SearchTypes.Error ((decode_query_error (Pbrt_bs.object_ json "check_response" "Error"))) : SearchTypes.check_response)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
 
 let rec decode_order_direction (json:Js.Json.t) =
   match Pbrt_bs.string json "order_direction" "value" with
@@ -1528,6 +1582,26 @@ let rec encode_query_error (v:SearchTypes.query_error) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "message" (Js.Json.string v.SearchTypes.message);
   Js.Dict.set json "position" (Js.Json.number (Int32.to_float v.SearchTypes.position));
+  json
+
+let rec encode_check_request (v:SearchTypes.check_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
+  Js.Dict.set json "username" (Js.Json.string v.SearchTypes.username);
+  Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
+  json
+
+let rec encode_check_response (v:SearchTypes.check_response) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | SearchTypes.Success v ->
+    Js.Dict.set json "success" (Js.Json.string v);
+  | SearchTypes.Error v ->
+    begin (* error field *)
+      let json' = encode_query_error v in
+      Js.Dict.set json "error" (Js.Json.object_ json');
+    end;
+  end;
   json
 
 let rec encode_order_direction (v:SearchTypes.order_direction) : string = 
