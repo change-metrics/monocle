@@ -5,7 +5,7 @@ import Data.Aeson
   ( KeyValue ((.=)),
     object,
   )
-import Data.ByteString.Base64 (encodeBase64)
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
 import qualified Data.Text as Text
 import Data.Time
@@ -395,7 +395,7 @@ updateDocs = runAddDocsBulkOPs toBulkUpdate
 
 -- | Generated base64 encoding of Text
 getBase64Text :: Text -> Text
-getBase64Text docId = encodeBase64 $ encodeUtf8 docId
+getBase64Text docId = decodeUtf8 $ B64.encode $ encodeUtf8 docId
 
 runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
 runSimpleSearch search size = catMaybes <$> run
