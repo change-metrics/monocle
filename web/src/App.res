@@ -135,7 +135,7 @@ let make = () => {
       }}
       {sep}
     </PageSection>
-    <PageSection variant=#Light sticky=#Bottom className="footer"> <Footer /> </PageSection>
+    <PageSection variant=#Light className="footer"> <Footer /> </PageSection>
   </Page>
 }
 
