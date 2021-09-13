@@ -288,7 +288,8 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       elkchangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
-        _anyOtherApprovals -> Nothing
+        _anyOtherApprovals -> Nothing,
+      elkchangeeventTasksData = Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> ELKDocType

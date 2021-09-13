@@ -247,7 +247,8 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventBranch :: LText,
     elkchangeeventOnCreatedAt :: UTCTime,
     elkchangeeventCreatedAt :: UTCTime,
-    elkchangeeventApproval :: Maybe [LText]
+    elkchangeeventApproval :: Maybe [LText],
+    elkchangeeventTasksData :: Maybe [ELKTaskData]
   }
   deriving (Show, Eq, Generic)
 

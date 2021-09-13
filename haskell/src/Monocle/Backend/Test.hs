@@ -671,6 +671,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventCreatedAt = fakeDate
     elkchangeeventOnCreatedAt = fakeDate
     elkchangeeventApproval = Nothing
+    elkchangeeventTasksData = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
