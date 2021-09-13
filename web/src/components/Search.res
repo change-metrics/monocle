@@ -213,7 +213,7 @@ module Bar = {
     <MGrid>
       <MGridItemXl2>
         <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
-        {showTooltips ? <HelpSearch.Tooltip /> : React.null}
+        {showTooltips ? <HelpSearch.Tooltip store /> : React.null}
         <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
           {"Add filter"->str}
         </Patternfly.Button>

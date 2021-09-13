@@ -56,7 +56,7 @@ module App = {
         (
           "search help",
           <>
-            <div className="container"> <HelpSearch.Tooltip /> {"test"->str} </div>
+            <div className="container"> <HelpSearch.Tooltip store /> {"test"->str} </div>
             <div className="container"> <HelpSearch.Content fields={Fixture.fields.fields} /> </div>
           </>,
         ),
