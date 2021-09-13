@@ -109,11 +109,11 @@ let make = (~group: string, ~store: Store.t) => {
   <MStack>
     <MStackItem>
       <h3> {group->str} </h3>
-      {switch useAutoGetOn(() => WebApi.UserGroup.get(request), state.query) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok(group)) => <GroupTable group />
-      }}
+      <NetworkRender
+        get={() => WebApi.UserGroup.get(request)}
+        trigger={state.query}
+        render={group => <GroupTable group />}
+      />
     </MStackItem>
   </MStack>
 }

@@ -90,7 +90,8 @@ let make = (~store: Store.t) => {
           let reposum = repos.reposum
           switch reposum->Belt.List.length {
           | 0 => <p> {"No repository matched"->str} </p>
-          | _ => <MCenteredContent>
+          | _ =>
+            <MCenteredContent>
               <Card isCompact=true>
                 <CardTitle> {"Repository summary"->str} </CardTitle>
                 <CardBody> <RepoSummaryTable store repos=reposum /> </CardBody>

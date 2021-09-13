@@ -156,6 +156,16 @@ let useAutoGetOn = (get: axiosGetCallback<'data>, key: string): option<result<'d
 }
 let useAutoGet = x => x->useAutoGetOn("")
 
+module NetworkRender = {
+  @react.component
+  let make = (~get, ~trigger, ~render) =>
+    switch useAutoGetOn(get, trigger) {
+    | None => <Spinner />
+    | Some(Error(title)) => <Alert variant=#Danger title />
+    | Some(Ok(resp)) => render(resp)
+    }
+}
+
 // Convenient functions
 
 let str = React.string
