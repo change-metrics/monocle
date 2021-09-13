@@ -81,29 +81,25 @@ let make = (~store: Store.t) => {
   let request = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
 
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
-    | None => <Spinner />
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok(SearchTypes.Error(err))) =>
-      <Alert
-        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-      />
-    | Some(Ok(SearchTypes.Repos_summary(repos))) =>
-      let reposum = repos.reposum
-      switch reposum->Belt.List.length {
-      | 0 => <p> {"No repository matched"->str} </p>
-      | n => {
-          Js.log("Render: " ++ n->string_of_int)
-          <MCenteredContent>
-            <Card isCompact=true>
-              <CardTitle> {"Repository summary"->str} </CardTitle>
-              <CardBody> <RepoSummaryTable store repos=reposum /> </CardBody>
-            </Card>
-          </MCenteredContent>
-        }
-      }
-    | Some(Ok(_)) => React.null
-    }}
+    <Search.QueryRender
+      request
+      trigger={state.query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Repos_summary(repos) =>
+          let reposum = repos.reposum
+          switch reposum->Belt.List.length {
+          | 0 => <p> {"No repository matched"->str} </p>
+          | _ => <MCenteredContent>
+              <Card isCompact=true>
+                <CardTitle> {"Repository summary"->str} </CardTitle>
+                <CardBody> <RepoSummaryTable store repos=reposum /> </CardBody>
+              </Card>
+            </MCenteredContent>
+          }
+        | _ => React.null
+        }}
+    />
   </div>
 }
 let default = make

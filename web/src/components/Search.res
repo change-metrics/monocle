@@ -10,6 +10,20 @@ open Prelude
 let startWithFieldModalOpen = false
 let startWithOrderModalOpen = false
 
+module QueryRender = {
+  @react.component
+  let make = (~request, ~trigger, ~render) =>
+    switch useAutoGetOn(() => WebApi.Search.query(request), trigger) {
+    | None => <Spinner />
+    | Some(Error(title)) => <Alert variant=#Danger title />
+    | Some(Ok(SearchTypes.Error(err))) =>
+      <Alert
+        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
+      />
+    | Some(Ok(resp)) => render(resp)
+    }
+}
+
 module FieldSelectorModal = {
   module FieldSelector = {
     @react.component
