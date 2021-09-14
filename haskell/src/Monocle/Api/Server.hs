@@ -12,8 +12,6 @@ import Monocle.Backend.Documents
     Commit (..),
     ELKChange (..),
     ELKChangeEvent (..),
-    ELKCrawlerMetadata (..),
-    ELKCrawlerMetadataObject (..),
     ELKTaskData (..),
     File (..),
     changeStateToText,
@@ -385,12 +383,8 @@ taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
     Left err -> pure $ toErr err
     Right (index, crawler, ts) ->
       do
-        crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataCommitRequestCrawler
-        let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
-            currentTS =
-              fromMaybe
-                (error "Unable to get a valid crawler metadata TS")
-                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since crawler)))
+        currentTS <- runTenantM index $ do
+          I.getTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) crawler
         if ts < currentTS
           then pure $ toErr TDDateInvalid
           else do
@@ -430,12 +424,8 @@ taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = d
     Left err -> pure $ toErr err
     Right (index, crawler, _) ->
       do
-        crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataGetLastUpdatedRequestCrawler
-        let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
-            currentTS =
-              fromMaybe
-                (error "Unable to get a valid crawler metadata TS")
-                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since crawler)))
+        currentTS <- runTenantM index $ do
+          I.getTDCrawlerCommitDate (toText taskDataGetLastUpdatedRequestCrawler) crawler
         pure $
           TaskDataPB.TaskDataGetLastUpdatedResponse
             . Just

@@ -460,9 +460,8 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
--- TODO - need to harmonize Crawlers Metadata ID format
 getTDCrawlerMetadataDocId :: Text -> BH.DocId
-getTDCrawlerMetadataDocId name = BH.DocId $ "crawler/" <> name <> "/tasks_crawler"
+getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
 
 getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
 getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
@@ -476,10 +475,15 @@ setTDCrawlerCommitDate name commitDate = do
       doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
   indexDocs [(toJSON doc, getTDCrawlerMetadataDocId name)]
 
-getTDCrawlerCommitDate :: Text -> TenantM (Maybe UTCTime)
-getTDCrawlerCommitDate name = do
+getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
+getTDCrawlerCommitDate name crawler = do
   metadata <- getTDCrawlerMetadata name
-  pure $ elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+  let commitDate = elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+      currentTS =
+        fromMaybe
+          (error "Unable to get a valid crawler metadata TS")
+          (commitDate <|> parseDateValue (toString (Config.update_since crawler)))
+  pure currentTS
 
 getChangesByURL ::
   -- | List of URLs

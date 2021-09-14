@@ -683,6 +683,32 @@ testTaskDataAdd = withTenant doTest
     getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
+testTaskDataCommit :: Assertion
+testTaskDataCommit = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let crawlerName = "testCrawler"
+          crawlerConfig =
+            let name = crawlerName
+                provider = Config.TaskDataProvider
+                update_since = "2020-01-01"
+             in Config.Crawler {..}
+      -- Test get default commit date from config (as no previous crawler metadata)
+      commitDate <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check default date"
+        ( fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z")
+        )
+        commitDate
+      -- Test that we can commit a date and make sure we get it back
+      void $ I.setTDCrawlerCommitDate crawlerName fakeDate
+      commitDate' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check commited date "
+        fakeDate
+        commitDate'
+
 -- Tests scenario helpers
 
 -- $setup

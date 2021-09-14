@@ -64,7 +64,8 @@ monocleIntegrationTests =
         "Index OrganizationCrawlerMetadata"
         testOrganizationCrawlerMetadata,
       testCase "Test suggestions" testGetSuggestions,
-      testCase "Test taskData add" testTaskDataAdd
+      testCase "Test taskData add" testTaskDataAdd,
+      testCase "Test taskData commit" testTaskDataCommit
     ]
 
 monocleSearchLanguage :: TestTree
