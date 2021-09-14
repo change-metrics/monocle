@@ -650,20 +650,19 @@ testTaskDataAdd = withTenant doTest
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( ELKChangeOrphanTD
-                { elkchangeorphantdType = ElkOrphanTaskData,
+                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  elkchangeorphantdType = ElkOrphanTaskData,
                   elkchangeorphantdTasksData =
-                    Just
-                      [ ELKTaskData
-                          { tdTid = "",
-                            tdTtype = [],
-                            tdChangeUrl = "https://fakeprovider/45",
-                            tdSeverity = "",
-                            tdPriority = "",
-                            tdScore = 0,
-                            tdUrl = "https://tdprovider/42-45",
-                            tdTitle = ""
-                          }
-                      ]
+                    ELKTaskData
+                      { tdTid = "",
+                        tdTtype = [],
+                        tdChangeUrl = "https://fakeprovider/45",
+                        tdSeverity = "",
+                        tdPriority = "",
+                        tdScore = 0,
+                        tdUrl = "https://tdprovider/42-45",
+                        tdTitle = ""
+                      }
                 }
             )
         )

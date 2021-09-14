@@ -202,7 +202,7 @@ instance ToJSON ChangesIndexMapping where
                           "total_orphans_updated" .= object ["type" .= ("integer" :: Text)]
                         ]
                   ],
-              "task_data"
+              "tasks_data"
                 .= object
                   [ "properties"
                       .= object
@@ -537,7 +537,14 @@ taskDataDocToBHDoc TaskDataDoc {..} =
 
 orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
-  (toJSON $ ELKChangeOrphanTD ElkOrphanTaskData (Just tddTd), BH.DocId $ toText tddId)
+  let td = head $ fromList tddTd
+   in ( toJSON $
+          ELKChangeOrphanTD
+            (toText tddId)
+            ElkOrphanTaskData
+            td,
+        BH.DocId $ toText tddId
+      )
 
 taskDataLenLimit :: Int
 taskDataLenLimit = 500

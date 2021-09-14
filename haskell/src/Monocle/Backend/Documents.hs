@@ -221,8 +221,9 @@ instance FromJSON ELKChangeTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeOrphanTD = ELKChangeOrphanTD
-  { elkchangeorphantdType :: ELKDocType,
-    elkchangeorphantdTasksData :: Maybe [ELKTaskData]
+  { elkchangeorphantdId :: Text,
+    elkchangeorphantdType :: ELKDocType,
+    elkchangeorphantdTasksData :: ELKTaskData
   }
   deriving (Show, Eq, Generic)
 
