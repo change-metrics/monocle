@@ -192,14 +192,14 @@ module Board = {
         defaultPositiveApprovals,
       },
       {
-        Column.name: "Done",
-        order: mkOrder("updated_at", Desc->Some),
-        query: "state:merged and updated_at>now-1week",
-      },
-      {
         Column.name: "Oldies",
         order: mkOrder("updated_at", Desc->Some),
         query: "state:open and updated_at<now-3week",
+      },
+      {
+        Column.name: "Done",
+        order: mkOrder("updated_at", Desc->Some),
+        query: "state:merged and updated_at>now-1week",
       },
     },
     style: Table,

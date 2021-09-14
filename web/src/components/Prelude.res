@@ -137,24 +137,46 @@ let usePagination = (rows: array<'a>): (array<'a>, React.element) => {
 
 // Network helpers
 
+type remoteData<'data> = NotAsked | Loading(option<'data>) | Loaded('data) | Failure(string)
+
 // useAutoGet perform the 'get' effect when the calling component is mounted.
-type result<'a, 'b> = Belt.Result.t<'a, 'b>
-type auto<'data> = option<result<'data, string>>
-let useAutoGetOn = (get: axiosGetCallback<'data>, key: string): option<result<'data, string>> => {
-  let (state, set') = React.useState(_ => None)
-  let set = x => set'(_ => x->Some)->Js.Promise.resolve
+let useAutoGetOn = (get: axiosGetCallback<'data>, trigger: string): remoteData<'data> => {
+  let (state, set') = React.useState(_ => NotAsked)
+  let set = x => set'(_ => x)->Js.Promise.resolve
+  let handleBegin = switch state {
+  | Loaded(data) => data->Some->Loading
+  | _ => None->Loading
+  }
   let handleErr = err => {
     Js.log(err)
-    "Network error"->Error->set
+    "Network error"->Failure->set
   }
-  let handleOk = resp => resp.data->Ok->set
+  let handleOk = resp => resp.data->Loaded->set
   React.useEffect1(() => {
+    set'(_ => handleBegin)
     (get() |> Js.Promise.then_(handleOk) |> Js.Promise.catch(handleErr))->ignore
     None
-  }, [key])
+  }, [trigger])
   state
 }
 let useAutoGet = x => x->useAutoGetOn("")
+
+module NetworkRender = {
+  @react.component
+  let make = (~get, ~trigger, ~render) =>
+    switch useAutoGetOn(get, trigger) {
+    | NotAsked => "Unknown"->React.string
+    | Loading(respM) => <>
+        <Spinner />
+        {switch respM {
+        | Some(resp) => render(resp)
+        | None => React.null
+        }}
+      </>
+    | Failure(title) => <Alert variant=#Danger title />
+    | Loaded(resp) => render(resp)
+    }
+}
 
 // Convenient functions
 
@@ -543,6 +565,8 @@ let horizontalSpacing = ReactDOM.Style.make(~paddingLeft="5px", ~paddingRight="5
 
 module ExternalLink = {
   @react.component
-  let make = (~href) =>
-    <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}> {`🔗`->str} </a>
+  let make = (~href, ~title) =>
+    <a href target="_blank" rel="noopener noreferre" style={horizontalSpacing}>
+      {(`🔗 ` ++ title)->str}
+    </a>
 }

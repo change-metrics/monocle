@@ -21,21 +21,19 @@ module Indice = {
 
 module Indices = {
   @react.component
-  let make = (~store: Store.t) => {
-    let indices = useAutoGet(() => WebApi.Config.getWorkspaces({void: ""}))
-    <>
-      <h2> {"Available Workspaces"->React.string} </h2>
-      <Layout.Stack>
-        {switch indices {
-        | None => <Spinner />
-        | Some(Error(title)) => <Alert variant=#Danger title />
-        | Some(Ok({workspaces})) if workspaces->Belt.List.length > 0 =>
-          workspaces->Belt.List.map(Indice.card(store))->Belt.List.toArray->React.array
-        | _ => <Alert variant=#Warning title={"Please create a workspace."} />
-        }}
-      </Layout.Stack>
-    </>
-  }
+  let make = (~store: Store.t) => <>
+    <h2> {"Available Workspaces"->React.string} </h2>
+    <Layout.Stack>
+      <NetworkRender
+        get={() => WebApi.Config.getWorkspaces({void: ""})}
+        trigger={""}
+        render={(resp: ConfigTypes.get_workspaces_response) =>
+          resp.workspaces->Belt.List.length > 0
+            ? resp.workspaces->Belt.List.map(Indice.card(store))->Belt.List.toArray->React.array
+            : <Alert variant=#Warning title={"Please create a workspace."} />}
+      />
+    </Layout.Stack>
+  </>
 }
 
 let default = Indices.make

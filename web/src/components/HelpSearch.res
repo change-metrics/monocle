@@ -68,7 +68,7 @@ module Content = {
       <h4> {"Syntax"->str} </h4>
       <p>
         {"Queries are defined using expressions such as "->str}
-        <Code value="state: open" />
+        <Code value="state:open" />
         {". Expressions can be combined using boolean operators: "->str}
         <Code value="and" />
         {", "->str}
@@ -120,21 +120,49 @@ module View = {
     </div>
 }
 
-module Tooltip = {
+module HelpLink = {
+  let href = "/help/search"
+
   @react.component
-  let make = () => {
-    let href = "/help/search"
+  let make = (~onClose) => {
     let onClick = e => {
       e->ReactEvent.Mouse.preventDefault
       href->RescriptReactRouter.push
+      onClose()
     }
+
     <a
       href
       onClick
       style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}
       target="_blank">
-      <Patternfly.Icons.OutlinedQuestionCircle />
+      {`🔗`->str}
     </a>
+  }
+}
+
+module SearchHelpModal = {
+  @react.component
+  let make = (~isOpen, ~onClose, ~store: Store.t) =>
+    <Patternfly.Modal
+      title="Search help" variant=#Large isOpen onClose header={<HelpLink onClose />}>
+      <View store />
+    </Patternfly.Modal>
+}
+
+module Tooltip = {
+  @react.component
+  let make = (~store: Store.t) => {
+    let (showHelpModal, setShowHelpModal) = React.useState(_ => false)
+    <>
+      <SearchHelpModal store isOpen={showHelpModal} onClose={_ => setShowHelpModal(_ => false)} />
+      <a
+        onClick={_ => setShowHelpModal(_ => true)}
+        style={ReactDOM.Style.make(~color="#007bff", ())}>
+        <Patternfly.Icons.OutlinedQuestionCircle />
+      </a>
+      {" "->str}
+    </>
   }
 }
 

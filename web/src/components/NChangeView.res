@@ -93,46 +93,45 @@ module ChangesTopPies = {
       filter->Store.Store.SetFilter->dispatch
       href->RescriptReactRouter.push
     }
-    switch useAutoGetOn(() => WebApi.Search.query(request), query) {
-    | None => <Spinner />
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok(SearchTypes.Error(err))) =>
-      <Alert
-        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-      />
-    | Some(Ok(SearchTypes.Changes_tops(items))) =>
-      <MExpandablePanel
-        title={"Show changes pie charts"} stateControler={(state.changes_pies_panel, tee)}>
-        <MGrid>
-          <MGridItemXl4>
-            <CPie
-              data={items.authors->Belt.Option.getExn->adapt(_ => true)}
-              title={"Changes per author"}
-              handleClick={handlePieClick(state, dispatch, ~field="author")}
-            />
-          </MGridItemXl4>
-          <MGridItemXl4>
-            <CPie
-              data={items.repos->Belt.Option.getExn->adapt(_ => true)}
-              title={"Changes per repository"}
-              handleClick={handlePieClick(state, dispatch, ~field="repo")}
-            />
-          </MGridItemXl4>
-          <MGridItemXl4>
-            <CPie
-              palette=approvals_palette
-              data={items.approvals
-              ->Belt.Option.getExn
-              ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
-              title={"Changes per approval"}
-              other_label={"No approval"}
-              handleClick={handlePieClick(state, dispatch, ~field="approval")}
-            />
-          </MGridItemXl4>
-        </MGrid>
-      </MExpandablePanel>
-    | Some(Ok(_)) => <Alert title={"Invalid response"} />
-    }
+    <Search.QueryRender
+      request
+      trigger={query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Changes_tops(items) =>
+          <MExpandablePanel
+            title={"Show changes pie charts"} stateControler={(state.changes_pies_panel, tee)}>
+            <MGrid>
+              <MGridItemXl4>
+                <CPie
+                  data={items.authors->Belt.Option.getExn->adapt(_ => true)}
+                  title={"Changes per author"}
+                  handleClick={handlePieClick(state, dispatch, ~field="author")}
+                />
+              </MGridItemXl4>
+              <MGridItemXl4>
+                <CPie
+                  data={items.repos->Belt.Option.getExn->adapt(_ => true)}
+                  title={"Changes per repository"}
+                  handleClick={handlePieClick(state, dispatch, ~field="repo")}
+                />
+              </MGridItemXl4>
+              <MGridItemXl4>
+                <CPie
+                  palette=approvals_palette
+                  data={items.approvals
+                  ->Belt.Option.getExn
+                  ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
+                  title={"Changes per approval"}
+                  other_label={"No approval"}
+                  handleClick={handlePieClick(state, dispatch, ~field="approval")}
+                />
+              </MGridItemXl4>
+            </MGrid>
+          </MExpandablePanel>
+        | _ => <Alert title={"Invalid response"} />
+        }}
+    />
   }
 }
 
@@ -146,33 +145,32 @@ let make = (~store: Store.t) => {
   }
 
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), query ++ state.order->orderToQS) {
-    | None => <Spinner />
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok(SearchTypes.Error(err))) =>
-      <Alert
-        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-      />
-    | Some(Ok(SearchTypes.Changes(items))) => {
-        let changes = items.changes->Belt.List.toArray
-        switch changes->Belt.Array.length {
-        | 0 => <p> {"No changes matched"->str} </p>
-        | _ =>
-          <MStack>
-            <MStackItem>
-              <MCenteredContent> <ChangesTopPies store /> </MCenteredContent>
-            </MStackItem>
-            <MStackItem>
-              <MCenteredContent> <Search.Filter store /> </MCenteredContent>
-            </MStackItem>
-            <MStackItem>
-              <MCenteredContent> <ChangeList store changes /> </MCenteredContent>
-            </MStackItem>
-          </MStack>
-        }
-      }
-    | Some(Ok(_)) => <Alert title={"Invalid response"} />
-    }}
+    <Search.QueryRender
+      request
+      trigger={query ++ state.order->orderToQS}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Changes(items) => {
+            let changes = items.changes->Belt.List.toArray
+            switch changes->Belt.Array.length {
+            | 0 => <p> {"No changes matched"->str} </p>
+            | _ =>
+              <MStack>
+                <MStackItem>
+                  <MCenteredContent> <ChangesTopPies store /> </MCenteredContent>
+                </MStackItem>
+                <MStackItem>
+                  <MCenteredContent> <Search.Filter store /> </MCenteredContent>
+                </MStackItem>
+                <MStackItem>
+                  <MCenteredContent> <ChangeList store changes /> </MCenteredContent>
+                </MStackItem>
+              </MStack>
+            }
+          }
+        | _ => <Alert title={"Invalid response"} />
+        }}
+    />
   </div>
 }
 

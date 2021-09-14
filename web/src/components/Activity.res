@@ -23,26 +23,23 @@ module ChangesLifeCycleStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
 
-    {
-      switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok(SearchTypes.Error(err))) =>
-        <Alert
-          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-        />
-      | Some(Ok(SearchTypes.Lifecycle_stats(data))) =>
-        <CChangesLifeCycleStats
-          store
-          data
-          created_histo={data.created_histo->Belt.List.toArray}
-          updated_histo={data.updated_histo->Belt.List.toArray}
-          merged_histo={data.merged_histo->Belt.List.toArray}
-          abandoned_histo={data.abandoned_histo->Belt.List.toArray}
-        />
-      | Some(Ok(_)) => /* Response does not match request */ React.null
-      }
-    }
+    <Search.QueryRender
+      request
+      trigger={state.query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Lifecycle_stats(data) =>
+          <CChangesLifeCycleStats
+            store
+            data
+            created_histo={data.created_histo->Belt.List.toArray}
+            updated_histo={data.updated_histo->Belt.List.toArray}
+            merged_histo={data.merged_histo->Belt.List.toArray}
+            abandoned_histo={data.abandoned_histo->Belt.List.toArray}
+          />
+        | _ => /* Response does not match request */ React.null
+        }}
+    />
   }
 }
 
@@ -61,23 +58,20 @@ module ChangesReviewStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
 
-    {
-      switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok(SearchTypes.Error(err))) =>
-        <Alert
-          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-        />
-      | Some(Ok(SearchTypes.Review_stats(data))) =>
-        <CChangesReviewStats
-          data
-          comment_histo={data.comment_histo->Belt.List.toArray}
-          review_histo={data.review_histo->Belt.List.toArray}
-        />
-      | Some(Ok(_)) => /* Response does not match request */ React.null
-      }
-    }
+    <Search.QueryRender
+      request
+      trigger={state.query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Review_stats(data) =>
+          <CChangesReviewStats
+            data
+            comment_histo={data.comment_histo->Belt.List.toArray}
+            review_histo={data.review_histo->Belt.List.toArray}
+          />
+        | _ => /* Response does not match request */ React.null
+        }}
+    />
   }
 }
 
@@ -100,12 +94,16 @@ module ChangesMergedDuration = {
       let link = "/" ++ state.index ++ "/change/" ++ changeId
       link->RescriptReactRouter.push
     }
-    switch useAutoGetOn(() => WebApi.Search.query(request), query) {
-    | None => <Spinner />
-    | Some(Ok(SearchTypes.Changes(items))) =>
-      <DurationComplexicityGraph data={items.changes->Belt.List.toArray} onClick />
-    | _ => React.null
-    }
+    <Search.QueryRender
+      request
+      trigger={state.query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Changes(items) =>
+          <DurationComplexicityGraph data={items.changes->Belt.List.toArray} onClick />
+        | _ => React.null
+        }}
+    />
   }
 }
 
@@ -127,26 +125,23 @@ module AuthorHistoStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_active_authors_stats)
 
-    {
-      switch useAutoGetOn(() => WebApi.Search.query(request), state.query) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok(SearchTypes.Error(err))) =>
-        <Alert
-          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-        />
-      | Some(Ok(SearchTypes.Activity_stats(data))) =>
-        <CAuthorsHistoStats
-          change_authors={data.change_authors}
-          comment_authors={data.comment_authors}
-          review_authors={data.review_authors}
-          change_histo={data.changes_histo->Belt.List.toArray}
-          comment_histo={data.comments_histo->Belt.List.toArray}
-          review_histo={data.reviews_histo->Belt.List.toArray}
-        />
-      | Some(Ok(_)) => /* Response does not match request */ React.null
-      }
-    }
+    <Search.QueryRender
+      request
+      trigger={state.query}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Activity_stats(data) =>
+          <CAuthorsHistoStats
+            change_authors={data.change_authors}
+            comment_authors={data.comment_authors}
+            review_authors={data.review_authors}
+            change_histo={data.changes_histo->Belt.List.toArray}
+            comment_histo={data.comments_histo->Belt.List.toArray}
+            review_histo={data.reviews_histo->Belt.List.toArray}
+          />
+        | _ => /* Response does not match request */ React.null
+        }}
+    />
   }
 }
 

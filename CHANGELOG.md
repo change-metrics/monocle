@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - [config] Support update_since date format as "YYYY-mm-dd" for macroscope crawlers.
 - [web] Added suggestions in Fields selector for projects and groups.
 - [web] Display Task Data info in Board Kanban view.
+- [web] Make the search help a modal.
+- [web] Display a spinner when the query is refreshing.
 
 ### Changed
 
@@ -18,10 +20,13 @@ All notable changes to this project will be documented in this file.
 - [web] Board - add column for branch and make it clickable
 - [web] Display "Abandoned" is state instead of "closed" and do not display mergeable status.
 - [web] Board - improve editor layout.
+- [web] Make change title links to the external change page.
+- [web] Adjust the default board to show Done at the end.
 
 ### Removed
 
 - [api] Support for unicode operators and whitespace around non boolean operators in the query language.
+- [web] Footer stickyness.
 
 ### Fixed
 

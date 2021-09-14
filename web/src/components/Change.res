@@ -149,9 +149,13 @@ module BranchLink = {
 
 module ChangeLink = {
   @react.component
-  let make = (~store: Store.t, ~id, ~title) => {
+  let make = (~store: Store.t, ~id) => {
     let (state, _) = store
-    <MLink.Direct link={"/" ++ state.index ++ "/change/" ++ id} name={title} />
+    <>
+      {"("->str}
+      <MLink.Direct link={"/" ++ state.index ++ "/change/" ++ id} name={"details"} />
+      {")"->str}
+    </>
   }
 }
 
@@ -215,22 +219,22 @@ module DataItem = {
       <DataListCell>
         <Card isCompact={true}>
           <CardHeader>
-            <State state={change.state} draft={change.draft} />
-            <Mergeable state={change.state} mergeable={change.mergeable} />
-            <ExternalLink href={change.url} />
-            <ProjectLink store project={change.repository_fullname} />
-            {"<"->str}
-            <BranchLink store branch={change.target_branch} />
-            {">"->str}
-            <span style={ReactDOM.Style.make(~textAlign="right", ~width="100%", ())}>
-              {"Complexicity: "->str}
-              <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
+            <span style={ReactDOM.Style.make(~width="100%", ())}>
+              <State state={change.state} draft={change.draft} />
+              <Mergeable state={change.state} mergeable={change.mergeable} />
+              <ProjectLink store project={change.repository_fullname} />
+              {list{"master", "main", "devel"}->elemText(change.target_branch)
+                ? React.null
+                : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
+              <ExternalLink href={change.url} title={change.title} />
+              <ChangeLink store id={change.change_id} />
+              <span style={ReactDOM.Style.make(~float="right", ())}>
+                {"Complexicity: "->str}
+                <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
+              </span>
             </span>
           </CardHeader>
           <CardBody>
-            <div style={oneLineStyle}>
-              {"Title: "->str} <ChangeLink store id={change.change_id} title={change.title} />
-            </div>
             <div style={oneLineStyle}>
               <RelativeDate title="Created " date={change.created_at->getDate} />
               <AuthorLink store title=" by " author={change.author} />
@@ -266,8 +270,9 @@ module RowItem = {
   let make = (~store: Store.t, ~change: SearchTypes.change) =>
     <tr role="row">
       <td role="cell">
-        <ExternalLink href={change.url} />
-        <ChangeLink store id={change.change_id} title={change.title} />
+        <ExternalLink href={change.url} title={change.title} />
+        // show details button, currently commented as it looks a bit noisy...
+        // <ChangeLink store id={change.change_id} title={change.title} />
       </td>
       <td role="cell">
         <div style={oneLineStyle}>

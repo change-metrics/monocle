@@ -18,31 +18,27 @@ module MostActiveAuthor = {
       limit: limit->Int32.of_int,
     }
     <div>
-      {switch useAutoGetOn(
-        () => WebApi.Search.query(request),
-        state.query ++ limit->string_of_int,
-      ) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok(SearchTypes.Error(err))) =>
-        <Alert
-          title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-        />
-      | Some(Ok(SearchTypes.Top_authors(tsc))) =>
-        <Card isCompact=true>
-          <CardTitle>
-            <MGrid>
-              <MGridItem> {title} </MGridItem>
-              <MGridItem>
-                <LimitSelector limit setLimit default=10 values=limit_values />
-              </MGridItem>
-            </MGrid>
-          </CardTitle>
-          <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
-        </Card>
+      <Search.QueryRender
+        request
+        trigger={state.query ++ limit->string_of_int}
+        render={resp =>
+          switch resp {
+          | SearchTypes.Top_authors(tsc) =>
+            <Card isCompact=true>
+              <CardTitle>
+                <MGrid>
+                  <MGridItem> {title} </MGridItem>
+                  <MGridItem>
+                    <LimitSelector limit setLimit default=10 values=limit_values />
+                  </MGridItem>
+                </MGrid>
+              </CardTitle>
+              <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
+            </Card>
 
-      | Some(Ok(_)) => React.null
-      }}
+          | _ => React.null
+          }}
+      />
     </div>
   }
 }

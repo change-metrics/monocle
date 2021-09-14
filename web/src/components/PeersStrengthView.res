@@ -72,41 +72,40 @@ let make = (~store: Store.t) => {
     limit: limit->Int32.of_int,
   }
   <div>
-    {switch useAutoGetOn(() => WebApi.Search.query(request), state.query ++ limit->string_of_int) {
-    | None => <Spinner />
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok(SearchTypes.Error(err))) =>
-      <Alert
-        title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
-      />
-    | Some(Ok(SearchTypes.Authors_peers(tps))) =>
-      <MCenteredContent>
-        <Card isCompact=true>
-          <CardTitle>
-            <MGrid>
-              <MGridItemXl9>
-                <Title headingLevel=#H3>
-                  <Tooltip content=tooltip_content> <Patternfly.Icons.Integration /> </Tooltip>
-                  {(" " ++ "Peers Strength")->str}
-                </Title>
-              </MGridItemXl9>
-              <MGridItemXl3>
-                <LimitSelector limit setLimit default=25 values=limit_values />
-              </MGridItemXl3>
-            </MGrid>
-          </CardTitle>
-          <CardBody>
-            <MGrid>
-              <MGridItemXl5> <PeersStrengthTable items={tps.author_peer} /> </MGridItemXl5>
-              <MGridItemXl7>
-                <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
-              </MGridItemXl7>
-            </MGrid>
-          </CardBody>
-        </Card>
-      </MCenteredContent>
-    | Some(Ok(_)) => React.null
-    }}
+    <Search.QueryRender
+      request
+      trigger={state.query ++ limit->string_of_int}
+      render={resp =>
+        switch resp {
+        | SearchTypes.Authors_peers(tps) =>
+          <MCenteredContent>
+            <Card isCompact=true>
+              <CardTitle>
+                <MGrid>
+                  <MGridItemXl9>
+                    <Title headingLevel=#H3>
+                      <Tooltip content=tooltip_content> <Patternfly.Icons.Integration /> </Tooltip>
+                      {(" " ++ "Peers Strength")->str}
+                    </Title>
+                  </MGridItemXl9>
+                  <MGridItemXl3>
+                    <LimitSelector limit setLimit default=25 values=limit_values />
+                  </MGridItemXl3>
+                </MGrid>
+              </CardTitle>
+              <CardBody>
+                <MGrid>
+                  <MGridItemXl5> <PeersStrengthTable items={tps.author_peer} /> </MGridItemXl5>
+                  <MGridItemXl7>
+                    <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
+                  </MGridItemXl7>
+                </MGrid>
+              </CardBody>
+            </Card>
+          </MCenteredContent>
+        | _ => React.null
+        }}
+    />
   </div>
 }
 
