@@ -340,11 +340,7 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
       when (Config.crawlers_api_key index /= (toStrict <$> apiKey)) (Left TDUnknownApiKey)
     when checkCommitDate $
       void commitDate `orDie` TDDateInvalid
-    let ts =
-          if checkCommitDate
-            then T.toUTCTime $ fromMaybe (error "Missing commit timestamp in request") commitDate
-            else -- Probably not the better way but here return a placeholer date (will be ignored by the caller)
-              fromMaybe (error "wrong date format") (readMaybe "1980-01-01 00:00:00 Z")
+    let ts = T.toUTCTime $ fromMaybe (error "Missing commit timestamp in request") commitDate
     pure (index, crawler, ts)
 
 taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
