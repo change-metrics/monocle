@@ -468,12 +468,19 @@ getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
 
 setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
 setTDCrawlerCommitDate name commitDate = do
+  index <- getIndexName
   let elkcmLastCommitAt = commitDate
       elkcmCrawlerType = ""
       elkcmCrawlerTypeValue = ""
       elkcmCrawlerName = ""
       doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
-  indexDocs [(toJSON doc, getTDCrawlerMetadataDocId name)]
+      docID = getTDCrawlerMetadataDocId name
+  exists <- BH.documentExists index docID
+  void $
+    if exists
+      then BH.updateDocument index BH.defaultIndexDocumentSettings doc docID
+      else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
+  void $ BH.refreshIndex index
 
 getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
 getTDCrawlerCommitDate name crawler = do

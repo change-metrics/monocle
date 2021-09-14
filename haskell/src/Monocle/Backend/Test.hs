@@ -708,6 +708,13 @@ testTaskDataCommit = withTenant doTest
         "Task data crawler metadata - check commited date "
         fakeDate
         commitDate'
+      -- Test that we can update the commit and that we get it back
+      void $ I.setTDCrawlerCommitDate crawlerName fakeDateAlt
+      commitDate'' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check updated commited date "
+        fakeDateAlt
+        commitDate''
 
 -- Tests scenario helpers
 
