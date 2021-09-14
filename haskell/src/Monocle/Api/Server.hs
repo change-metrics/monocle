@@ -312,118 +312,147 @@ crawlerCommitInfo request = do
         $ Right err
 
 -- | /task_data endpoints
+data TDError = TDUnknownApiKey | TDUnknownCrawler | TDUnknownIndex | TDDateInvalid deriving (Show)
+
+validateTaskDataRequest ::
+  -- | The index name
+  LText ->
+  -- | The crawler name
+  LText ->
+  -- | The api key
+  Maybe LText ->
+  -- | True if the timestamp must be checked
+  Bool ->
+  -- | the commit timestamp
+  Maybe T.Timestamp ->
+  -- | an AppM with either an Error or extracted info
+  AppM (Either TDError (Config.Index, Config.Crawler, UTCTime))
+validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
+  tenants <- getConfig
+  pure $ do
+    index <- Config.lookupTenant tenants (toStrict indexName) `orDie` TDUnknownIndex
+    crawler <- Config.lookupCrawler index (toStrict crawlerName) `orDie` TDUnknownCrawler
+    when (isJust apiKey) $
+      when (Config.crawlers_api_key index /= (toStrict <$> apiKey)) (Left TDUnknownApiKey)
+    when checkCommitDate $
+      void commitDate `orDie` TDDateInvalid
+    let ts =
+          if checkCommitDate
+            then T.toUTCTime $ fromMaybe (error "Missing commit timestamp in request") commitDate
+            else -- Probably not the better way but here return a placeholer date (will be ignored by the caller)
+              fromMaybe (error "wrong date format") (readMaybe "1980-01-01 00:00:00 Z")
+    pure (index, crawler, ts)
+
 taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
 taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
-  tenants <- getConfig
-  let requestE = do
-        index <-
-          Config.lookupTenant tenants (toStrict taskDataAddRequestIndex)
-            `orDie` TaskDataPB.TaskDataCommitErrorUnknownApiKey
+  requestE <-
+    validateTaskDataRequest
+      taskDataAddRequestIndex
+      taskDataAddRequestCrawler
+      (Just taskDataAddRequestApikey)
+      False
+      Nothing
 
-        void $
-          Config.lookupCrawler index (toStrict taskDataAddRequestCrawler)
-            `orDie` TaskDataPB.TaskDataCommitErrorUnknownCrawler
-
-        when
-          (Config.crawlers_api_key index /= Just (toStrict taskDataAddRequestApikey))
-          (Left TaskDataPB.TaskDataCommitErrorUnknownApiKey)
-
-        pure index
   case requestE of
-    Left err -> do
-      pure $
-        TaskDataPB.TaskDataAddResponse
-          . Just
-          . TaskDataPB.TaskDataAddResponseResultError
-          . Enumerated
-          $ Right err
-    Right index -> do
+    Left err -> pure $ toErr err
+    Right (index, _, _) -> do
       void $ runTenantM index $ do I.taskDataAdd $ toList taskDataAddRequestItems
       pure $ TaskDataPB.TaskDataAddResponse Nothing
+  where
+    toErr =
+      TaskDataPB.TaskDataAddResponse
+        . Just
+        . TaskDataPB.TaskDataAddResponseResultError
+        . Enumerated
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
+      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
+      otherErr -> error $ "Error is invalid for TaskDataAddResponse: " <> show otherErr
 
 taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
 taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
-  tenants <- getConfig
-  let requestE = do
-        index <-
-          Config.lookupTenant tenants (toStrict taskDataCommitRequestIndex)
-            `orDie` TaskDataPB.TaskDataCommitErrorUnknownApiKey
-
-        _crawler <-
-          Config.lookupCrawler index (toStrict taskDataCommitRequestCrawler)
-            `orDie` TaskDataPB.TaskDataCommitErrorUnknownCrawler
-        when
-          (Config.crawlers_api_key index /= Just (toStrict taskDataCommitRequestApikey))
-          (Left TaskDataPB.TaskDataCommitErrorUnknownApiKey)
-
-        void taskDataCommitRequestTimestamp `orDie` TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
-
-        pure (index, _crawler)
+  requestE <-
+    validateTaskDataRequest
+      taskDataCommitRequestIndex
+      taskDataCommitRequestCrawler
+      (Just taskDataCommitRequestApikey)
+      True
+      taskDataCommitRequestTimestamp
   case requestE of
     Left err -> pure $ toErr err
-    Right (index, _crawler) ->
+    Right (index, crawler, ts) ->
       do
-        let ts = fromMaybe (error "Missing commit timestamp in request") taskDataCommitRequestTimestamp
-            ts' = T.toUTCTime ts
         crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataCommitRequestCrawler
         let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
             currentTS =
               fromMaybe
                 (error "Unable to get a valid crawler metadata TS")
-                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since _crawler)))
-        if ts' < currentTS
-          then pure $ toErr TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
+                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since crawler)))
+        if ts < currentTS
+          then pure $ toErr TDDateInvalid
           else do
-            void $ runTenantM index $ do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts'
-            pure $ toSuccess ts'
+            void $
+              runTenantM index $
+                do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts
+            pure $ toSuccess ts
   where
-    toSuccess ts' =
+    toSuccess =
       TaskDataPB.TaskDataCommitResponse
         . Just
         . TaskDataPB.TaskDataCommitResponseResultTimestamp
-        $ T.fromUTCTime ts'
-    toErr err =
+        . T.fromUTCTime
+    toErr =
       TaskDataPB.TaskDataCommitResponse
         . Just
         . TaskDataPB.TaskDataCommitResponseResultError
         . Enumerated
-        $ Right err
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
+      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
+      TDDateInvalid -> TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
 
 taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
 taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = do
-  tenants <- getConfig
-  let requestE = do
-        index <-
-          Config.lookupTenant tenants (toStrict taskDataGetLastUpdatedRequestIndex)
-            `orDie` TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownIndex
-
-        _crawler <-
-          Config.lookupCrawler index (toStrict taskDataGetLastUpdatedRequestCrawler)
-            `orDie` TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownCrawler
-
-        pure (index, _crawler)
+  requestE <-
+    validateTaskDataRequest
+      taskDataGetLastUpdatedRequestIndex
+      taskDataGetLastUpdatedRequestCrawler
+      Nothing
+      False
+      Nothing
   case requestE of
     Left err -> pure $ toErr err
-    Right (index, _crawler) ->
+    Right (index, crawler, _) ->
       do
         crawlerMetadataM <- runTenantM index $ do I.getTDCrawlerMetadata $ toText taskDataGetLastUpdatedRequestCrawler
         let currentCrawlerTSM = elkcmLastCommitAt . elkcmCrawlerMetadata <$> crawlerMetadataM
             currentTS =
               fromMaybe
                 (error "Unable to get a valid crawler metadata TS")
-                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since _crawler)))
+                (currentCrawlerTSM <|> parseDateValue (toString (Config.update_since crawler)))
         pure $
           TaskDataPB.TaskDataGetLastUpdatedResponse
             . Just
             . TaskDataPB.TaskDataGetLastUpdatedResponseResultTimestamp
             $ T.fromUTCTime currentTS
   where
-    toErr err =
+    toErr =
       TaskDataPB.TaskDataGetLastUpdatedResponse
         . Just
         . TaskDataPB.TaskDataGetLastUpdatedResponseResultError
         . Enumerated
-        $ Right err
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownCrawler -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownIndex
+      otherErr -> error $ "Error is invalid for TaskDataGetLastUpdated: " <> show otherErr
 
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse

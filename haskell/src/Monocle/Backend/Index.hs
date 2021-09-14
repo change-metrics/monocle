@@ -395,7 +395,7 @@ updateDocs = runAddDocsBulkOPs toBulkUpdate
 
 -- | Generated base64 encoding of Text
 getBase64Text :: Text -> Text
-getBase64Text docId = decodeUtf8 $ B64.encode $ encodeUtf8 docId
+getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
 runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
 runSimpleSearch search size = catMaybes <$> run
