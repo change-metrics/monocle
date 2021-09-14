@@ -310,7 +310,13 @@ crawlerCommitInfo request = do
         $ Right err
 
 -- | /task_data endpoints
-data TDError = TDUnknownApiKey | TDUnknownCrawler | TDUnknownIndex | TDDateInvalid deriving (Show)
+data TDError
+  = TDUnknownApiKey
+  | TDUnknownCrawler
+  | TDUnknownIndex
+  | TDDateInvalid
+  | TDAddLenExcedeed
+  deriving (Show)
 
 validateTaskDataRequest ::
   -- | The index name
@@ -354,8 +360,11 @@ taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
   case requestE of
     Left err -> pure $ toErr err
     Right (index, _, _) -> do
-      void $ runTenantM index $ do I.taskDataAdd $ toList taskDataAddRequestItems
-      pure $ TaskDataPB.TaskDataAddResponse Nothing
+      if length taskDataAddRequestItems > I.taskDataLenLimit
+        then do pure $ toErr TDAddLenExcedeed
+        else do
+          void $ runTenantM index $ I.taskDataAdd $ toList taskDataAddRequestItems
+          pure $ TaskDataPB.TaskDataAddResponse Nothing
   where
     toErr =
       TaskDataPB.TaskDataAddResponse
@@ -368,6 +377,7 @@ taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
       TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
       TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
       TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
+      TDAddLenExcedeed -> TaskDataPB.TaskDataCommitErrorAddFailed
       otherErr -> error $ "Error is invalid for TaskDataAddResponse: " <> show otherErr
 
 taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
@@ -410,6 +420,7 @@ taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
       TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
       TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
       TDDateInvalid -> TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
+      otherErr -> error $ "Error is invalid for TaskDataCommitResponse: " <> show otherErr
 
 taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
 taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = do

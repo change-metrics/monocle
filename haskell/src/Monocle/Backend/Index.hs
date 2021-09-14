@@ -539,13 +539,15 @@ orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
   (toJSON $ ELKChangeOrphanTD ElkOrphanTaskData (Just tddTd), BH.DocId $ toText tddId)
 
+taskDataLenLimit :: Int
+taskDataLenLimit = 500
+
 taskDataAdd :: [TaskData] -> TenantM ()
 taskDataAdd tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
-      inputTaskDataLimit = 500
   -- get changes that matches those URLs
-  changes <- getChangesByURL urls inputTaskDataLimit
+  changes <- getChangesByURL urls taskDataLenLimit
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
   changeEvents <- getChangesEventsByURL urls
