@@ -596,7 +596,7 @@ testTaskDataAdd = withTenant doTest
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
-      events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 100
+      events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
           createdEventWithTD =
             filter

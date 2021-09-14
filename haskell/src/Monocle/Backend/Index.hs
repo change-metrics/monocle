@@ -507,15 +507,17 @@ getChangesByURL urls = runSimpleSearch search
           BH.TermsQuery "url" $ fromList urls
         ]
 
--- TODO: previous implementation was using scan an not limit
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
-  -- | Page size
-  Int ->
   TenantM [ELKChangeEvent]
-getChangesEventsByURL urls = runSimpleSearch search
+getChangesEventsByURL urls = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
   where
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeEvent]
+    scanSearch index = BH.scanSearch index search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
@@ -546,7 +548,7 @@ taskDataAdd tds = do
   changes <- getChangesByURL urls inputTaskDataLimit
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
-  changeEvents <- getChangesEventsByURL urls 10000
+  changeEvents <- getChangesEventsByURL urls
   -- Init the HashTable that we are going to use as a facility for processing
   changesHT <- liftIO $ initHT changes
   -- Update the HashTable based on incomming TDs and return orphan TDs
