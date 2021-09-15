@@ -393,6 +393,12 @@ updateDocs = runAddDocsBulkOPs toBulkUpdate
     -- BulkUpdate operation: Update the document, merging the new value with the existing one.
     toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
+upsertDocs :: [(Value, BH.DocId)] -> TenantM ()
+upsertDocs = runAddDocsBulkOPs toBulkUpsert
+  where
+    -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
+    toBulkUpsert index (doc, docId) = BH.BulkUpsert index docId (BH.UpsertDoc doc) []
+
 -- | Generated base64 encoding of Text
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
@@ -571,7 +577,7 @@ taskDataAdd tds = do
         getTDforEventFromHT changesHT <$> changeEvents
   -- Let's push the data
   updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
-  indexDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
+  upsertDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
   where
     initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
     initHT changes = H.fromList $ getMCsTuple <$> changes

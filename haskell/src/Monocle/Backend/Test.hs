@@ -641,32 +641,51 @@ testTaskDataAdd = withTenant doTest
             <$> createdEventWithTD
         )
 
-      -- Send a Task data w/o a matching change
+      -- Send a Task data w/o a matching change (orphan task data)
       let td = mkTaskData "45"
       void $ I.taskDataAdd [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
+      let expectedELKTD =
+            ELKTaskData
+              { tdTid = "",
+                tdTtype = [],
+                tdChangeUrl = "https://fakeprovider/45",
+                tdSeverity = "",
+                tdPriority = "",
+                tdScore = 0,
+                tdUrl = "https://tdprovider/42-45",
+                tdTitle = ""
+              }
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( ELKChangeOrphanTD
                 { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
                   elkchangeorphantdType = ElkOrphanTaskData,
-                  elkchangeorphantdTasksData =
-                    ELKTaskData
-                      { tdTid = "",
-                        tdTtype = [],
-                        tdChangeUrl = "https://fakeprovider/45",
-                        tdSeverity = "",
-                        tdPriority = "",
-                        tdScore = 0,
-                        tdUrl = "https://tdprovider/42-45",
-                        tdTitle = ""
-                      }
+                  elkchangeorphantdTasksData = expectedELKTD
                 }
             )
         )
         orphanTdM
+
+      -- Send the same orphan task data with an updated field and ensure it has been
+      -- updated in the Database
+      let td' = td {taskDataSeverity = "urgent"}
+      void $ I.taskDataAdd [td']
+      orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
+      let expectedELKTD' = expectedELKTD {tdSeverity = "urgent"}
+      assertEqual'
+        "Check Task data stored as Orphan Task Data"
+        ( Just
+            ( ELKChangeOrphanTD
+                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdTasksData = expectedELKTD'
+                }
+            )
+        )
+        orphanTdM'
 
     mkTaskData changeId =
       let taskDataUpdatedAt = Just $ TS.fromUTCTime fakeDate
