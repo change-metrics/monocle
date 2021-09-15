@@ -5,8 +5,18 @@ module Monocle.Api.Server where
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
+import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (Author (..), Commit (..), ELKChange (..), ELKChangeEvent (..), File (..), TaskData (..), changeStateToText, docTypeToText)
+import Monocle.Backend.Documents
+  ( Author (..),
+    Commit (..),
+    ELKChange (..),
+    ELKChangeEvent (..),
+    ELKTaskData (..),
+    File (..),
+    changeStateToText,
+    docTypeToText,
+  )
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
@@ -299,6 +309,148 @@ crawlerCommitInfo request = do
         . Enumerated
         $ Right err
 
+-- | /task_data endpoints
+data TDError
+  = TDUnknownApiKey
+  | TDUnknownCrawler
+  | TDUnknownIndex
+  | TDDateInvalid
+  | TDAddLenExcedeed
+  deriving (Show)
+
+validateTaskDataRequest ::
+  -- | The index name
+  LText ->
+  -- | The crawler name
+  LText ->
+  -- | The api key
+  Maybe LText ->
+  -- | True if the timestamp must be checked
+  Bool ->
+  -- | the commit timestamp
+  Maybe T.Timestamp ->
+  -- | an AppM with either an Error or extracted info
+  AppM (Either TDError (Config.Index, Config.Crawler, UTCTime))
+validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
+  tenants <- getConfig
+  pure $ do
+    index <- Config.lookupTenant tenants (toStrict indexName) `orDie` TDUnknownIndex
+    crawler <- Config.lookupCrawler index (toStrict crawlerName) `orDie` TDUnknownCrawler
+    when (isJust apiKey) $
+      when (Config.crawlers_api_key index /= (toStrict <$> apiKey)) (Left TDUnknownApiKey)
+    when checkCommitDate $
+      void commitDate `orDie` TDDateInvalid
+    let ts = T.toUTCTime $ fromMaybe (error "Missing commit timestamp in request") commitDate
+    pure (index, crawler, ts)
+
+taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
+taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
+  requestE <-
+    validateTaskDataRequest
+      taskDataAddRequestIndex
+      taskDataAddRequestCrawler
+      (Just taskDataAddRequestApikey)
+      False
+      Nothing
+
+  case requestE of
+    Left err -> pure $ toErr err
+    Right (index, _, _) -> do
+      if length taskDataAddRequestItems > I.taskDataLenLimit
+        then do pure $ toErr TDAddLenExcedeed
+        else do
+          void $ runTenantM index $ I.taskDataAdd $ toList taskDataAddRequestItems
+          pure $ TaskDataPB.TaskDataAddResponse Nothing
+  where
+    toErr =
+      TaskDataPB.TaskDataAddResponse
+        . Just
+        . TaskDataPB.TaskDataAddResponseResultError
+        . Enumerated
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
+      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
+      TDAddLenExcedeed -> TaskDataPB.TaskDataCommitErrorAddFailed
+      otherErr -> error $ "Error is invalid for TaskDataAddResponse: " <> show otherErr
+
+taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
+taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
+  requestE <-
+    validateTaskDataRequest
+      taskDataCommitRequestIndex
+      taskDataCommitRequestCrawler
+      (Just taskDataCommitRequestApikey)
+      True
+      taskDataCommitRequestTimestamp
+  case requestE of
+    Left err -> pure $ toErr err
+    Right (index, crawler, ts) ->
+      do
+        currentTS <- runTenantM index $ do
+          I.getTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) crawler
+        if ts < currentTS
+          then pure $ toErr TDDateInvalid
+          else do
+            void $
+              runTenantM index $
+                do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts
+            pure $ toSuccess ts
+  where
+    toSuccess =
+      TaskDataPB.TaskDataCommitResponse
+        . Just
+        . TaskDataPB.TaskDataCommitResponseResultTimestamp
+        . T.fromUTCTime
+    toErr =
+      TaskDataPB.TaskDataCommitResponse
+        . Just
+        . TaskDataPB.TaskDataCommitResponseResultError
+        . Enumerated
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
+      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
+      TDDateInvalid -> TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
+      otherErr -> error $ "Error is invalid for TaskDataCommitResponse: " <> show otherErr
+
+taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
+taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = do
+  requestE <-
+    validateTaskDataRequest
+      taskDataGetLastUpdatedRequestIndex
+      taskDataGetLastUpdatedRequestCrawler
+      Nothing
+      False
+      Nothing
+  case requestE of
+    Left err -> pure $ toErr err
+    Right (index, crawler, _) ->
+      do
+        currentTS <- runTenantM index $ do
+          I.getTDCrawlerCommitDate (toText taskDataGetLastUpdatedRequestCrawler) crawler
+        pure $
+          TaskDataPB.TaskDataGetLastUpdatedResponse
+            . Just
+            . TaskDataPB.TaskDataGetLastUpdatedResponseResultTimestamp
+            $ T.fromUTCTime currentTS
+  where
+    toErr =
+      TaskDataPB.TaskDataGetLastUpdatedResponse
+        . Just
+        . TaskDataPB.TaskDataGetLastUpdatedResponseResultError
+        . Enumerated
+        . Right
+        . convertErr
+    convertErr = \case
+      TDUnknownCrawler -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownCrawler
+      TDUnknownIndex -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownIndex
+      otherErr -> error $ "Error is invalid for TaskDataGetLastUpdated: " <> show otherErr
+
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
 searchSuggestions request = do
@@ -485,7 +637,7 @@ searchQuery request = do
           changeEventChangeId = elkchangeeventChangeId
           changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
           changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
-          changeEventAuthor = authorMuid elkchangeeventAuthor
+          changeEventAuthor = maybe "backend-ghost" authorMuid elkchangeeventAuthor
           changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
           changeEventBranch = elkchangeeventBranch
        in SearchPB.ChangeEvent {..}
@@ -535,7 +687,7 @@ searchQuery request = do
           commitDeletions = elkcommitDeletions
        in SearchPB.Commit {..}
 
-    toTaskData :: TaskData -> TaskDataPB.TaskData
+    toTaskData :: ELKTaskData -> TaskDataPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing
           taskDataChangeUrl = toLazy $ tdUrl td

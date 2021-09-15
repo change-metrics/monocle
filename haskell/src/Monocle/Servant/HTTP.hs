@@ -7,12 +7,13 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetProjects, configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
+import Monocle.Api.Server (configGetProjects, configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchCheck, searchFields, searchQuery, searchSuggestions, taskDataTaskDataAdd, taskDataTaskDataCommit, taskDataTaskDataGetLastUpdated, userGroupGet, userGroupList)
 import Monocle.Config (GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse, HealthRequest, HealthResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
 import Monocle.Search (CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
+import Monocle.TaskData (TaskDataAddRequest, TaskDataAddResponse, TaskDataCommitRequest, TaskDataCommitResponse, TaskDataGetLastUpdatedRequest, TaskDataGetLastUpdatedResponse)
 import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant
 
@@ -26,6 +27,9 @@ type MonocleAPI =
     :<|> "search" :> "query" :> ReqBody '[JSON] QueryRequest :> Post '[PBJSON, JSON] QueryResponse
     :<|> "user_group" :> "list" :> ReqBody '[JSON] ListRequest :> Post '[PBJSON, JSON] ListResponse
     :<|> "user_group" :> "get" :> ReqBody '[JSON] GetRequest :> Post '[PBJSON, JSON] GetResponse
+    :<|> "task_data" :> "commit" :> ReqBody '[JSON] TaskDataCommitRequest :> Post '[PBJSON, JSON] TaskDataCommitResponse
+    :<|> "task_data" :> "get_last_updated" :> ReqBody '[JSON] TaskDataGetLastUpdatedRequest :> Post '[PBJSON, JSON] TaskDataGetLastUpdatedResponse
+    :<|> "task_data" :> "add" :> ReqBody '[JSON] TaskDataAddRequest :> Post '[PBJSON, JSON] TaskDataAddResponse
     :<|> "crawler" :> "add" :> ReqBody '[JSON] AddDocRequest :> Post '[PBJSON, JSON] AddDocResponse
     :<|> "crawler" :> "commit" :> ReqBody '[JSON] CommitRequest :> Post '[PBJSON, JSON] CommitResponse
     :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] CommitInfoRequest :> Post '[PBJSON, JSON] CommitInfoResponse
@@ -41,6 +45,9 @@ server =
     :<|> searchQuery
     :<|> userGroupList
     :<|> userGroupGet
+    :<|> taskDataTaskDataCommit
+    :<|> taskDataTaskDataGetLastUpdated
+    :<|> taskDataTaskDataAdd
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo

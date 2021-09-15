@@ -61,11 +61,10 @@ instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 -- TODO: Replace by the existing Monocle.TaskData.NewTaskData
-data TaskData = TaskData
+data ELKTaskData = ELKTaskData
   { tdTid :: Text,
     tdTtype :: [Text],
-    -- TODO: Handle `2021-05-18T04:31:18` (without the trailing Z)
-    -- tdUpdatedAt :: UTCTime,
+    tdUpdatedAt :: UTCTime,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,
@@ -75,10 +74,10 @@ data TaskData = TaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON TaskData where
+instance ToJSON ELKTaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON TaskData where
+instance FromJSON ELKTaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeState
@@ -116,6 +115,7 @@ data ELKDocType
   | ElkChangeCommitForcePushedEvent
   | ElkChangeCommitPushedEvent
   | ElkChange
+  | ElkOrphanTaskData
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [ELKDocType]
@@ -131,6 +131,19 @@ docTypeToText = \case
   ElkChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
   ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
   ElkChange -> "Change"
+  ElkOrphanTaskData -> "OrphanTaskData"
+
+eventTypesAsText :: [Text]
+eventTypesAsText =
+  toText . docTypeToText
+    <$> [ ElkChangeCreatedEvent,
+          ElkChangeMergedEvent,
+          ElkChangeReviewedEvent,
+          ElkChangeCommentedEvent,
+          ElkChangeAbandonedEvent,
+          ElkChangeCommitPushedEvent,
+          ElkChangeCommitForcePushedEvent
+        ]
 
 instance ToJSON ELKDocType where
   toJSON v = String $ toText $ docTypeToText v
@@ -148,6 +161,7 @@ instance FromJSON ELKDocType where
           "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
           "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
           "Change" -> pure ElkChange
+          "OrphanTaskData" -> pure ElkOrphanTaskData
           anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
       )
 
@@ -184,7 +198,7 @@ data ELKChange = ELKChange
     elkchangeApproval :: Maybe [LText],
     elkchangeDraft :: Bool,
     elkchangeSelfMerged :: Maybe Bool,
-    elkchangeTasksData :: Maybe [TaskData]
+    elkchangeTasksData :: Maybe [ELKTaskData]
   }
   deriving (Show, Eq, Generic)
 
@@ -192,6 +206,30 @@ instance ToJSON ELKChange where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 instance FromJSON ELKChange where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+newtype ELKChangeTD = ELKChangeTD
+  { elkchangetdTasksData :: Maybe [ELKTaskData]
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKChangeTD where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKChangeTD where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+data ELKChangeOrphanTD = ELKChangeOrphanTD
+  { elkchangeorphantdId :: Text,
+    elkchangeorphantdType :: ELKDocType,
+    elkchangeorphantdTasksData :: ELKTaskData
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ELKChangeOrphanTD where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON ELKChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeEvent = ELKChangeEvent
@@ -204,12 +242,15 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventRepositoryPrefix :: LText,
     elkchangeeventRepositoryShortname :: LText,
     elkchangeeventRepositoryFullname :: LText,
-    elkchangeeventAuthor :: Author,
+    -- elkchangeeventAuthor is optional due to the fact Gerrit closer
+    -- does not set any author for ChangeAbandonedEvent
+    elkchangeeventAuthor :: Maybe Author,
     elkchangeeventOnAuthor :: Author,
     elkchangeeventBranch :: LText,
     elkchangeeventOnCreatedAt :: UTCTime,
     elkchangeeventCreatedAt :: UTCTime,
-    elkchangeeventApproval :: Maybe [LText]
+    elkchangeeventApproval :: Maybe [LText],
+    elkchangeeventTasksData :: Maybe [ELKTaskData]
   }
   deriving (Show, Eq, Generic)
 

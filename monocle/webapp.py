@@ -39,7 +39,6 @@ from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
 from monocle.task_data import TaskCrawler
-from monocle.webapi import task_data_service
 from monocle import env
 
 
@@ -226,9 +225,6 @@ def task_data():
         else:
             commit_date = metadata["last_commit_at"]
         return jsonify(commit_date + "Z")
-
-
-task_data_service(app)
 
 
 def main():

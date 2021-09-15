@@ -88,13 +88,13 @@ pattern GetLastUpdatedSuccess ts =
 
 data ProcessResult' = Amended' | AmendError' Text deriving stock (Show)
 
-pattern AddSuccess' :: AddResponse
-pattern AddSuccess' = AddResponse Nothing
+pattern AddSuccess' :: TaskDataAddResponse
+pattern AddSuccess' = TaskDataAddResponse Nothing
 
-pattern AddError' :: Enumerated TaskDataCommitError -> AddResponse
-pattern AddError' err = AddResponse (Just (AddResponseResultError err))
+pattern AddError' :: Enumerated TaskDataCommitError -> TaskDataAddResponse
+pattern AddError' err = TaskDataAddResponse (Just (TaskDataAddResponseResultError err))
 
-processBatchTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> [TaskData] -> m ProcessResult'
+processBatchTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m TaskDataAddResponse) -> [TaskData] -> m ProcessResult'
 processBatchTD postFunc tds = do
   log $ LogPostData (length tds)
   resp <- postFunc tds
@@ -103,7 +103,7 @@ processBatchTD postFunc tds = do
     (AddError' err) -> AmendError' (show err)
     anyOtherResponse -> AmendError' ("Unknown error: " <> show anyOtherResponse)
 
-processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m AddResponse) -> Stream (Of TaskData) m () -> m [ProcessResult']
+processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m TaskDataAddResponse) -> Stream (Of TaskData) m () -> m [ProcessResult']
 processTD postFunc =
   S.toList_
     . S.mapM (processBatchTD postFunc)
@@ -125,7 +125,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
   startTime <- log' LogStarting
   since <- maybe getTimestampFromApi pure sinceM
   postResultE <-
-    runLentilleM $ processTD (retry . taskDataAdd monocleClient . mkRequest) $ getStream since tdf
+    runLentilleM $ processTD (retry . taskDataTaskDataAdd monocleClient . mkRequest) $ getStream since tdf
   case postResultE of
     Right _ -> pure ()
     Left err ->
@@ -140,7 +140,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
 
     commitTimestamp startTime = do
       commitResp <-
-        taskDataCommit
+        taskDataTaskDataCommit
           monocleClient
           ( TaskDataCommitRequest
               indexName
@@ -158,7 +158,7 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
           pure False
     getTimestampFromApi = do
       resp <-
-        taskDataGetLastUpdated
+        taskDataTaskDataGetLastUpdated
           monocleClient
           ( TaskDataGetLastUpdatedRequest
               indexName
@@ -168,9 +168,9 @@ runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
         GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
         anyOtherResponse ->
           error $ "Could not get initial timestamp: " <> show anyOtherResponse
-    mkRequest :: [TaskData] -> AddRequest
+    mkRequest :: [TaskData] -> TaskDataAddRequest
     mkRequest =
-      AddRequest
+      TaskDataAddRequest
         indexName
         crawlerName
         apiKey

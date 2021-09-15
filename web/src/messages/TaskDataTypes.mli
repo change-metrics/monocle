@@ -47,14 +47,14 @@ type task_data = {
   score : int32;
 }
 
-type add_request = {
+type task_data_add_request = {
   index : string;
   crawler : string;
   apikey : string;
   items : task_data list;
 }
 
-type add_response =
+type task_data_add_response =
   | Error of task_data_commit_error
 
 
@@ -102,14 +102,14 @@ val default_task_data :
   task_data
 (** [default_task_data ()] is the default value for type [task_data] *)
 
-val default_add_request : 
+val default_task_data_add_request : 
   ?index:string ->
   ?crawler:string ->
   ?apikey:string ->
   ?items:task_data list ->
   unit ->
-  add_request
-(** [default_add_request ()] is the default value for type [add_request] *)
+  task_data_add_request
+(** [default_task_data_add_request ()] is the default value for type [task_data_add_request] *)
 
-val default_add_response : unit -> add_response
-(** [default_add_response ()] is the default value for type [add_response] *)
+val default_task_data_add_response : unit -> task_data_add_response
+(** [default_task_data_add_response ()] is the default value for type [task_data_add_response] *)

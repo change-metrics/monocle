@@ -107,35 +107,37 @@ module UserGroup = {
 
 module TaskData = {
   @module("axios")
-  external commitRaw: (string, 'a) => axios<'b> = "post"
+  external taskDataCommitRaw: (string, 'a) => axios<'b> = "post"
 
-  let commit = (request: TaskDataTypes.task_data_commit_request): axios<
+  let taskDataCommit = (request: TaskDataTypes.task_data_commit_request): axios<
     TaskDataTypes.task_data_commit_response,
   > =>
     request->TaskDataBs.encode_task_data_commit_request
-    |> commitRaw(serverUrl ++ "/api/1/task_data_commit")
+    |> taskDataCommitRaw(serverUrl ++ "/api/2/task_data/commit")
     |> Js.Promise.then_(resp =>
       {data: resp.data->TaskDataBs.decode_task_data_commit_response}->Js.Promise.resolve
     )
   @module("axios")
-  external getLastUpdatedRaw: (string, 'a) => axios<'b> = "post"
+  external taskDataGetLastUpdatedRaw: (string, 'a) => axios<'b> = "post"
 
-  let getLastUpdated = (request: TaskDataTypes.task_data_get_last_updated_request): axios<
+  let taskDataGetLastUpdated = (request: TaskDataTypes.task_data_get_last_updated_request): axios<
     TaskDataTypes.task_data_get_last_updated_response,
   > =>
     request->TaskDataBs.encode_task_data_get_last_updated_request
-    |> getLastUpdatedRaw(serverUrl ++ "/api/1/task_data_get_last_updated")
+    |> taskDataGetLastUpdatedRaw(serverUrl ++ "/api/2/task_data/get_last_updated")
     |> Js.Promise.then_(resp =>
       {data: resp.data->TaskDataBs.decode_task_data_get_last_updated_response}->Js.Promise.resolve
     )
   @module("axios")
-  external addRaw: (string, 'a) => axios<'b> = "post"
+  external taskDataAddRaw: (string, 'a) => axios<'b> = "post"
 
-  let add = (request: TaskDataTypes.add_request): axios<TaskDataTypes.add_response> =>
-    request->TaskDataBs.encode_add_request
-    |> addRaw(serverUrl ++ "/api/1/task_data_add")
+  let taskDataAdd = (request: TaskDataTypes.task_data_add_request): axios<
+    TaskDataTypes.task_data_add_response,
+  > =>
+    request->TaskDataBs.encode_task_data_add_request
+    |> taskDataAddRaw(serverUrl ++ "/api/2/task_data/add")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->TaskDataBs.decode_add_response}->Js.Promise.resolve
+      {data: resp.data->TaskDataBs.decode_task_data_add_response}->Js.Promise.resolve
     )
 }
 

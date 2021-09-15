@@ -5,6 +5,8 @@ import Data.Aeson
   ( KeyValue ((.=)),
     object,
   )
+import qualified Data.ByteString.Base64 as B64
+import qualified Data.HashTable.IO as H
 import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
@@ -17,6 +19,7 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.TaskData
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 
@@ -199,7 +202,7 @@ instance ToJSON ChangesIndexMapping where
                           "total_orphans_updated" .= object ["type" .= ("integer" :: Text)]
                         ]
                   ],
-              "task_data"
+              "tasks_data"
                 .= object
                   [ "properties"
                       .= object
@@ -248,8 +251,8 @@ ensureIndex = do
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
-deleteIndex :: TenantM ()
-deleteIndex = do
+removeIndex :: TenantM ()
+removeIndex = do
   indexName <- getIndexName
   _resp <- BH.deleteIndex indexName
   False <- BH.indexExists indexName
@@ -278,14 +281,15 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventRepositoryPrefix = changeEventRepositoryPrefix,
       elkchangeeventRepositoryFullname = changeEventRepositoryFullname,
       elkchangeeventRepositoryShortname = changeEventRepositoryShortname,
-      elkchangeeventAuthor = toAuthor changeEventAuthor,
+      elkchangeeventAuthor = Just $ toAuthor changeEventAuthor,
       elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
       elkchangeeventBranch = changeEventBranch,
       elkchangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
       elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       elkchangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
-        _anyOtherApprovals -> Nothing
+        _anyOtherApprovals -> Nothing,
+      elkchangeeventTasksData = Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> ELKDocType
@@ -363,17 +367,70 @@ toELKChange Change {..} =
       Change_ChangeStateMerged -> ElkChangeMerged
       Change_ChangeStateClosed -> ElkChangeClosed
 
-indexDocs :: [(Value, BH.DocId)] -> TenantM ()
-indexDocs docs = do
+toELKTaskData :: TaskData -> ELKTaskData
+toELKTaskData TaskData {..} =
+  let tdTid = toText taskDataTid
+      tdTtype = toList $ toText <$> taskDataTtype
+      tdChangeUrl = toText taskDataChangeUrl
+      tdSeverity = toText taskDataSeverity
+      tdPriority = toText taskDataPriority
+      tdScore = fromInteger $ toInteger taskDataScore
+      tdUrl = toText taskDataUrl
+      tdTitle = toText taskDataTitle
+      -- We might get a maybe Timestamp - do not fail if Nothing
+      tdUpdatedAt = maybe defaultDate T.toUTCTime taskDataUpdatedAt
+   in ELKTaskData {..}
+  where
+    defaultDate :: UTCTime =
+      fromMaybe
+        (error "Unable to parse data")
+        (readMaybe "1960-01-01 00:00:00 Z")
+
+runAddDocsBulkOPs ::
+  -- | The helper function to create the bulk operation
+  (BH.IndexName -> (Value, BH.DocId) -> BH.BulkOperation) ->
+  -- | The docs payload
+  [(Value, BH.DocId)] ->
+  TenantM ()
+runAddDocsBulkOPs bulkOp docs = do
   index <- getIndexName
-  let stream = V.fromList $ fmap (toBulkIndex index) docs
+  let stream = V.fromList $ fmap (bulkOp index) docs
   _ <- BH.bulk stream
   -- Bulk loads require an index refresh before new data is loaded.
   _ <- BH.refreshIndex index
   pure ()
+
+indexDocs :: [(Value, BH.DocId)] -> TenantM ()
+indexDocs = runAddDocsBulkOPs toBulkIndex
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
+
+updateDocs :: [(Value, BH.DocId)] -> TenantM ()
+updateDocs = runAddDocsBulkOPs toBulkUpdate
+  where
+    -- BulkUpdate operation: Update the document, merging the new value with the existing one.
+    toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
+
+upsertDocs :: [(Value, BH.DocId)] -> TenantM ()
+upsertDocs = runAddDocsBulkOPs toBulkUpsert
+  where
+    -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
+    toBulkUpsert index (doc, docId) = BH.BulkUpsert index docId (BH.UpsertDoc doc) []
+
+-- | Generated base64 encoding of Text
+getBase64Text :: Text -> Text
+getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
+
+runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
+runSimpleSearch search size = catMaybes <$> run
+  where
+    run = do
+      index <- getIndexName
+      fmap BH.hitSource
+        <$> simpleSearch
+          index
+          (search {BH.size = BH.Size size})
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
@@ -403,8 +460,8 @@ checkDocExists docId = do
   index <- getIndexName
   BH.documentExists index docId
 
-getDocument :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
-getDocument docId = do
+getDocumentById :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
+getDocumentById docId = do
   index <- getIndexName
   resp <- BH.getDocument index docId
   if isNotFound resp
@@ -428,6 +485,172 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
+getTDCrawlerMetadataDocId :: Text -> BH.DocId
+getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
+
+getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
+getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
+
+setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
+setTDCrawlerCommitDate name commitDate = do
+  index <- getIndexName
+  let elkcmLastCommitAt = commitDate
+      elkcmCrawlerType = ""
+      elkcmCrawlerTypeValue = ""
+      elkcmCrawlerName = ""
+      doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
+      docID = getTDCrawlerMetadataDocId name
+  exists <- BH.documentExists index docID
+  void $
+    if exists
+      then BH.updateDocument index BH.defaultIndexDocumentSettings doc docID
+      else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
+  void $ BH.refreshIndex index
+
+getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
+getTDCrawlerCommitDate name crawler = do
+  metadata <- getTDCrawlerMetadata name
+  let commitDate = elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+      currentTS =
+        fromMaybe
+          (error "Unable to get a valid crawler metadata TS")
+          (commitDate <|> parseDateValue (toString (Config.update_since crawler)))
+  pure currentTS
+
+getChangesByURL ::
+  -- | List of URLs
+  [Text] ->
+  -- | Page size
+  Int ->
+  TenantM [ELKChange]
+getChangesByURL urls = runSimpleSearch search
+  where
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+          BH.TermsQuery "url" $ fromList urls
+        ]
+
+getChangesEventsByURL ::
+  -- | List of URLs
+  [Text] ->
+  TenantM [ELKChangeEvent]
+getChangesEventsByURL urls = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
+  where
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeEvent]
+    scanSearch index = BH.scanSearch index search
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ BH.TermsQuery "type" $ fromList eventTypesAsText,
+          BH.TermsQuery "url" $ fromList urls
+        ]
+
+type HashTable k v = H.BasicHashTable k v
+
+data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]} deriving (Show)
+
+type TaskDataOrphanDoc = TaskDataDoc
+
+taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
+taskDataDocToBHDoc TaskDataDoc {..} =
+  (toJSON $ ELKChangeTD $ Just tddTd, BH.DocId $ toText tddId)
+
+orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
+orphanTaskDataDocToBHDoc TaskDataDoc {..} =
+  let td = head $ fromList tddTd
+   in ( toJSON $
+          ELKChangeOrphanTD
+            (toText tddId)
+            ElkOrphanTaskData
+            td,
+        BH.DocId $ toText tddId
+      )
+
+taskDataLenLimit :: Int
+taskDataLenLimit = 500
+
+taskDataAdd :: [TaskData] -> TenantM ()
+taskDataAdd tds = do
+  -- extract change URLs from input TDs
+  let urls = toText . taskDataChangeUrl <$> tds
+  -- get changes that matches those URLs
+  changes <- getChangesByURL urls taskDataLenLimit
+  -- TODO remove the limit here by using the scan search
+  -- get change events that matches those URLs
+  changeEvents <- getChangesEventsByURL urls
+  -- Init the HashTable that we are going to use as a facility for processing
+  changesHT <- liftIO $ initHT changes
+  -- Update the HashTable based on incomming TDs and return orphan TDs
+  orphanTaskDataDocs <- liftIO $ updateChangesWithTD changesHT
+  -- Get TDs from the HashTable
+  taskDataDocs <- fmap snd <$> liftIO (H.toList changesHT)
+  -- Get the TDs form matching change events
+  taskDataDocs' <-
+    liftIO $
+      fmap catMaybes <$> sequence $
+        getTDforEventFromHT changesHT <$> changeEvents
+  -- Let's push the data
+  updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
+  upsertDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
+  where
+    initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
+    initHT changes = H.fromList $ getMCsTuple <$> changes
+      where
+        getMCsTuple ELKChange {elkchangeUrl, elkchangeId, elkchangeTasksData} =
+          (elkchangeUrl, TaskDataDoc elkchangeId (fromMaybe [] elkchangeTasksData))
+
+    updateChangesWithTD ::
+      -- | The local cache in form of HashMap
+      HashTable LText TaskDataDoc ->
+      -- | IO action with the list of orphan Task Data
+      IO [TaskDataOrphanDoc]
+    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toELKTaskData <$> tds)
+      where
+        handleTD ::
+          -- | The input Task Data we want to append or update
+          ELKTaskData ->
+          -- | IO Action with maybe an orphan task data if a matching change does not exists
+          IO (Maybe TaskDataOrphanDoc)
+        handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
+          -- Cannot find a change matching this TD -> this TD will be orphan
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td, tddTd = [td]})
+          -- Found a change matching this TD -> update existing TDs with new TD
+          Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
+          where
+            urlToId = toLazy . getBase64Text
+
+        updateTDD ::
+          -- | The value of the HashMap we are working on
+          TaskDataDoc ->
+          -- | The input Task Data we want to append or update
+          ELKTaskData ->
+          TaskDataDoc
+        updateTDD taskDataDoc td = do
+          let changeTDs = tddTd taskDataDoc
+              -- The td has been updated so we remove any previous instance
+              isOldTD td' = tdUrl td' == tdUrl td
+              -- And we cons the new td.
+              currentTDs = td : filter (not . isOldTD) changeTDs
+           in taskDataDoc {tddTd = currentTDs}
+
+    getTDforEventFromHT ::
+      -- | The local cache in form of HashMap
+      HashTable LText TaskDataDoc ->
+      -- | The ChangeEvent to look for
+      ELKChangeEvent ->
+      -- | IO Action returning maybe a TaskData
+      IO (Maybe TaskDataDoc)
+    getTDforEventFromHT ht changeEvent = do
+      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+      pure $ case mcM of
+        Nothing -> Nothing
+        Just mc -> Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
 getWorkerName :: Config.Crawler -> Text
@@ -438,11 +661,6 @@ getWorkerUpdatedSince Config.Crawler {..} =
   fromMaybe
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (toString update_since)
-
-parseDateValue :: String -> Maybe UTCTime
-parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z"
-  where
-    tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
 getLastUpdated crawler entity offset = do

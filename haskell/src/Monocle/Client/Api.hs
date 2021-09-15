@@ -43,14 +43,14 @@ userGroupList = monocleReq "api/2/user_group/list"
 userGroupGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
 userGroupGet = monocleReq "api/2/user_group/get"
 
-taskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
-taskDataCommit = monocleReq "api/1/task_data_commit"
+taskDataTaskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
+taskDataTaskDataCommit = monocleReq "api/2/task_data/commit"
 
-taskDataGetLastUpdated :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataGetLastUpdatedRequest -> m TaskDataGetLastUpdatedResponse
-taskDataGetLastUpdated = monocleReq "api/1/task_data_get_last_updated"
+taskDataTaskDataGetLastUpdated :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataGetLastUpdatedRequest -> m TaskDataGetLastUpdatedResponse
+taskDataTaskDataGetLastUpdated = monocleReq "api/2/task_data/get_last_updated"
 
-taskDataAdd :: (MonadThrow m, MonadIO m) => MonocleClient -> AddRequest -> m AddResponse
-taskDataAdd = monocleReq "api/1/task_data_add"
+taskDataTaskDataAdd :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataAddRequest -> m TaskDataAddResponse
+taskDataTaskDataAdd = monocleReq "api/2/task_data/add"
 
 crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
 crawlerAddDoc = monocleReq "api/2/crawler/add"

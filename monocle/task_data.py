@@ -22,8 +22,8 @@ import monocle.task_data_pb2 as PBTD
 
 @dataclass(frozen=True)
 class TaskData:
-    crawler_name: str
-    updated_at: datetime
+    crawler_name: Optional[str]
+    updated_at: Optional[datetime]
     change_url: str
     ttype: List[str]
     tid: str
@@ -122,8 +122,8 @@ def createInputTaskData(data: List, crawler_name: str) -> InputTaskData:
 def createELTaskData(data: List) -> InputTaskData:
     def createTaskData(td: Dict) -> TaskData:
         return TaskData(
-            crawler_name=td["crawler_name"],
-            updated_at=td["updated_at"],
+            crawler_name=td.get("crawler_name"),
+            updated_at=td.get("updated_at"),
             change_url=td["change_url"],
             ttype=td["ttype"],
             tid=td["tid"],

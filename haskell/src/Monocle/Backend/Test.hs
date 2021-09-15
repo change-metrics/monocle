@@ -3,11 +3,13 @@ module Monocle.Backend.Test where
 
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
+import Data.List (partition)
 import qualified Data.Text as Text
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
@@ -18,6 +20,7 @@ import Monocle.Prelude
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
+import Monocle.TaskData
 import Relude.Unsafe ((!!))
 
 fakeDate :: UTCTime
@@ -83,12 +86,12 @@ withTenant cb = bracket_ create delete run
     testName = "test-tenant"
     config = Config.defaultTenant testName
     create = testTenantM config I.ensureIndex
-    delete = testTenantM config I.deleteIndex
+    delete = testTenantM config I.removeIndex
     run = testTenantM config cb
 
 checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
 checkELKChangeField docId field value = do
-  docM <- I.getDocument docId
+  docM <- I.getDocumentById docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
@@ -547,6 +550,130 @@ testGetSuggestions = withTenant doTest
           )
           results
 
+testTaskDataAdd :: Assertion
+testTaskDataAdd = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let nova = SProject "openstack/nova" [alice] [alice] [eve]
+      traverse_ (indexScenarioNM nova) ["42", "43", "44"]
+
+      -- Send Task data with a matching changes
+      let td42 = mkTaskData "42"
+          td43 = mkTaskData "43"
+      void $ I.taskDataAdd [td42, td43]
+      -- Ensure only changes 42 and 43 got a Task data associated
+      changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 3
+      assertEqual'
+        "Check adding matching taskData"
+        [ ("44", Nothing),
+          ("43", Just [I.toELKTaskData td43]),
+          ("42", Just [I.toELKTaskData td42])
+        ]
+        ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+      -- Ensure associated ChangeEvents got the Task data attibutes
+      events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
+      let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
+          createdEventWithTD =
+            filter
+              (\e -> (e & elkchangeeventType) == ElkChangeCreatedEvent)
+              withTD
+      assertEqual' "Check events count that got a Task data" 8 (length withTD)
+      assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
+      assertEqual'
+        "Check Change events got the task data attribute"
+        [ ("ChangeCreatedEvent-42", Just [I.toELKTaskData td42]),
+          ("ChangeCreatedEvent-43", Just [I.toELKTaskData td43])
+        ]
+        ( ( \ELKChangeEvent {..} ->
+              (elkchangeeventId, elkchangeeventTasksData)
+          )
+            <$> createdEventWithTD
+        )
+
+      -- Send a Task data w/o a matching change (orphan task data)
+      let td = mkTaskData "45"
+      void $ I.taskDataAdd [td]
+      -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
+      orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
+      let expectedELKTD = I.toELKTaskData td
+      assertEqual'
+        "Check Task data stored as Orphan Task Data"
+        ( Just
+            ( ELKChangeOrphanTD
+                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdTasksData = expectedELKTD
+                }
+            )
+        )
+        orphanTdM
+
+      -- Send the same orphan task data with an updated field and ensure it has been
+      -- updated in the Database
+      let td' = td {taskDataSeverity = "urgent"}
+      void $ I.taskDataAdd [td']
+      orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
+      let expectedELKTD' = expectedELKTD {tdSeverity = "urgent"}
+      assertEqual'
+        "Check Task data stored as Orphan Task Data"
+        ( Just
+            ( ELKChangeOrphanTD
+                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdTasksData = expectedELKTD'
+                }
+            )
+        )
+        orphanTdM'
+
+    mkTaskData changeId =
+      let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
+          taskDataChangeUrl = "https://fakeprovider/" <> changeId
+          taskDataTtype = mempty
+          taskDataTid = ""
+          taskDataUrl = "https://tdprovider/42-" <> changeId
+          taskDataTitle = ""
+          taskDataSeverity = ""
+          taskDataPriority = ""
+          taskDataScore = 0
+       in TaskData {..}
+    getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
+    getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
+
+testTaskDataCommit :: Assertion
+testTaskDataCommit = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      let crawlerName = "testCrawler"
+          crawlerConfig =
+            let name = crawlerName
+                provider = Config.TaskDataProvider
+                update_since = "2020-01-01"
+             in Config.Crawler {..}
+      -- Test get default commit date from config (as no previous crawler metadata)
+      commitDate <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check default date"
+        ( fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z")
+        )
+        commitDate
+      -- Test that we can commit a date and make sure we get it back
+      void $ I.setTDCrawlerCommitDate crawlerName fakeDate
+      commitDate' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check commited date "
+        fakeDate
+        commitDate'
+      -- Test that we can update the commit and that we get it back
+      void $ I.setTDCrawlerCommitDate crawlerName fakeDateAlt
+      commitDate'' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
+      assertEqual'
+        "Task data crawler metadata - check updated commited date "
+        fakeDateAlt
+        commitDate''
+
 -- Tests scenario helpers
 
 -- $setup
@@ -575,17 +702,18 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventRepositoryPrefix = mempty
     elkchangeeventRepositoryShortname = mempty
     elkchangeeventRepositoryFullname = mempty
-    elkchangeeventAuthor = fakeAuthor
+    elkchangeeventAuthor = Just fakeAuthor
     elkchangeeventOnAuthor = fakeAuthor
     elkchangeeventBranch = mempty
     elkchangeeventCreatedAt = fakeDate
     elkchangeeventOnCreatedAt = fakeDate
     elkchangeeventApproval = Nothing
+    elkchangeeventTasksData = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
   where
-    author = toStrict . authorMuid
+    author = maybe "no-author" (toStrict . authorMuid)
     date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
       SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
@@ -656,7 +784,8 @@ mkChange ts start author changeId name state' =
       elkchangeRepositoryFullname = name,
       elkchangeCreatedAt = mkDate ts start,
       elkchangeAuthor = author,
-      elkchangeChangeId = "change-" <> changeId
+      elkchangeChangeId = "change-" <> changeId,
+      elkchangeUrl = "https://fakeprovider/" <> changeId
     }
 
 mkEvent ::
@@ -677,14 +806,15 @@ mkEvent ::
   ELKChangeEvent
 mkEvent ts start etype author onAuthor changeId name =
   emptyEvent
-    { elkchangeeventAuthor = author,
+    { elkchangeeventAuthor = Just author,
       elkchangeeventOnAuthor = onAuthor,
       elkchangeeventType = etype,
       elkchangeeventRepositoryFullname = name,
       elkchangeeventId = docTypeToText etype <> "-" <> changeId,
       elkchangeeventCreatedAt = mkDate ts start,
       elkchangeeventOnCreatedAt = mkDate ts start,
-      elkchangeeventChangeId = "change-" <> changeId
+      elkchangeeventChangeId = "change-" <> changeId,
+      elkchangeeventUrl = "https://fakeprovider/" <> changeId
     }
 
 -- | 'nominalMerge' is the most simple scenario

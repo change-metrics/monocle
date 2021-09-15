@@ -237,7 +237,7 @@ class TaskData(google.protobuf.message.Message):
 
 global___TaskData = TaskData
 
-class AddRequest(google.protobuf.message.Message):
+class TaskDataAddRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     INDEX_FIELD_NUMBER: builtins.int
     CRAWLER_FIELD_NUMBER: builtins.int
@@ -274,9 +274,9 @@ class AddRequest(google.protobuf.message.Message):
         ],
     ) -> None: ...
 
-global___AddRequest = AddRequest
+global___TaskDataAddRequest = TaskDataAddRequest
 
-class AddResponse(google.protobuf.message.Message):
+class TaskDataAddResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ERROR_FIELD_NUMBER: builtins.int
     error: global___TaskDataCommitError.V = ...
@@ -297,4 +297,4 @@ class AddResponse(google.protobuf.message.Message):
         self, oneof_group: typing_extensions.Literal["result", b"result"]
     ) -> typing_extensions.Literal["error"]: ...
 
-global___AddResponse = AddResponse
+global___TaskDataAddResponse = TaskDataAddResponse
