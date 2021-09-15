@@ -64,8 +64,7 @@ instance FromJSON Commit where
 data ELKTaskData = ELKTaskData
   { tdTid :: Text,
     tdTtype :: [Text],
-    -- TODO: Handle `2021-05-18T04:31:18` (without the trailing Z)
-    -- tdUpdatedAt :: UTCTime,
+    tdUpdatedAt :: UTCTime,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,

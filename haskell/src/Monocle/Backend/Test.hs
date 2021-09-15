@@ -9,7 +9,7 @@ import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
-import qualified Google.Protobuf.Timestamp as TS
+import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
@@ -559,40 +559,16 @@ testTaskDataAdd = withTenant doTest
       traverse_ (indexScenarioNM nova) ["42", "43", "44"]
 
       -- Send Task data with a matching changes
-      void $ I.taskDataAdd [mkTaskData "42", mkTaskData "43"]
+      let td42 = mkTaskData "42"
+          td43 = mkTaskData "43"
+      void $ I.taskDataAdd [td42, td43]
       -- Ensure only changes 42 and 43 got a Task data associated
       changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 3
       assertEqual'
         "Check adding matching taskData"
         [ ("44", Nothing),
-          ( "43",
-            Just
-              [ ELKTaskData
-                  { tdTid = "",
-                    tdTtype = [],
-                    tdChangeUrl = "https://fakeprovider/43",
-                    tdSeverity = "",
-                    tdPriority = "",
-                    tdScore = 0,
-                    tdUrl = "https://tdprovider/42-43",
-                    tdTitle = ""
-                  }
-              ]
-          ),
-          ( "42",
-            Just
-              [ ELKTaskData
-                  { tdTid = "",
-                    tdTtype = [],
-                    tdChangeUrl = "https://fakeprovider/42",
-                    tdSeverity = "",
-                    tdPriority = "",
-                    tdScore = 0,
-                    tdUrl = "https://tdprovider/42-42",
-                    tdTitle = ""
-                  }
-              ]
-          )
+          ("43", Just [I.toELKTaskData td43]),
+          ("42", Just [I.toELKTaskData td42])
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
@@ -606,34 +582,8 @@ testTaskDataAdd = withTenant doTest
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
       assertEqual'
         "Check Change events got the task data attribute"
-        [ ( "ChangeCreatedEvent-42",
-            Just
-              [ ELKTaskData
-                  { tdTid = "",
-                    tdTtype = [],
-                    tdChangeUrl = "https://fakeprovider/42",
-                    tdSeverity = "",
-                    tdPriority = "",
-                    tdScore = 0,
-                    tdUrl = "https://tdprovider/42-42",
-                    tdTitle = ""
-                  }
-              ]
-          ),
-          ( "ChangeCreatedEvent-43",
-            Just
-              [ ELKTaskData
-                  { tdTid = "",
-                    tdTtype = [],
-                    tdChangeUrl = "https://fakeprovider/43",
-                    tdSeverity = "",
-                    tdPriority = "",
-                    tdScore = 0,
-                    tdUrl = "https://tdprovider/42-43",
-                    tdTitle = ""
-                  }
-              ]
-          )
+        [ ("ChangeCreatedEvent-42", Just [I.toELKTaskData td42]),
+          ("ChangeCreatedEvent-43", Just [I.toELKTaskData td43])
         ]
         ( ( \ELKChangeEvent {..} ->
               (elkchangeeventId, elkchangeeventTasksData)
@@ -646,17 +596,7 @@ testTaskDataAdd = withTenant doTest
       void $ I.taskDataAdd [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
-      let expectedELKTD =
-            ELKTaskData
-              { tdTid = "",
-                tdTtype = [],
-                tdChangeUrl = "https://fakeprovider/45",
-                tdSeverity = "",
-                tdPriority = "",
-                tdScore = 0,
-                tdUrl = "https://tdprovider/42-45",
-                tdTitle = ""
-              }
+      let expectedELKTD = I.toELKTaskData td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
@@ -688,7 +628,7 @@ testTaskDataAdd = withTenant doTest
         orphanTdM'
 
     mkTaskData changeId =
-      let taskDataUpdatedAt = Just $ TS.fromUTCTime fakeDate
+      let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
           taskDataChangeUrl = "https://fakeprovider/" <> changeId
           taskDataTtype = mempty
           taskDataTid = ""

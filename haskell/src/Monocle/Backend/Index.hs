@@ -367,6 +367,25 @@ toELKChange Change {..} =
       Change_ChangeStateMerged -> ElkChangeMerged
       Change_ChangeStateClosed -> ElkChangeClosed
 
+toELKTaskData :: TaskData -> ELKTaskData
+toELKTaskData TaskData {..} =
+  let tdTid = toText taskDataTid
+      tdTtype = toList $ toText <$> taskDataTtype
+      tdChangeUrl = toText taskDataChangeUrl
+      tdSeverity = toText taskDataSeverity
+      tdPriority = toText taskDataPriority
+      tdScore = fromInteger $ toInteger taskDataScore
+      tdUrl = toText taskDataUrl
+      tdTitle = toText taskDataTitle
+      -- We might get a maybe Timestamp - do not fail if Nothing
+      tdUpdatedAt = maybe defaultDate T.toUTCTime taskDataUpdatedAt
+   in ELKTaskData {..}
+  where
+    defaultDate :: UTCTime =
+      fromMaybe
+        (error "Unable to parse data")
+        (readMaybe "1960-01-01 00:00:00 Z")
+
 runAddDocsBulkOPs ::
   -- | The helper function to create the bulk operation
   (BH.IndexName -> (Value, BH.DocId) -> BH.BulkOperation) ->
@@ -631,18 +650,6 @@ taskDataAdd tds = do
       pure $ case mcM of
         Nothing -> Nothing
         Just mc -> Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
-
-    toELKTaskData :: TaskData -> ELKTaskData
-    toELKTaskData TaskData {..} =
-      let tdTid = toText taskDataTid
-          tdTtype = toList $ toText <$> taskDataTtype
-          tdChangeUrl = toText taskDataChangeUrl
-          tdSeverity = toText taskDataSeverity
-          tdPriority = toText taskDataPriority
-          tdScore = fromInteger $ toInteger taskDataScore
-          tdUrl = toText taskDataUrl
-          tdTitle = toText taskDataTitle
-       in ELKTaskData {..}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
