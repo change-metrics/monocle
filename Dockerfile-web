@@ -17,7 +17,7 @@
 # base image
 FROM registry.fedoraproject.org/fedora:33
 
-RUN dnf update -y && dnf install -y nodejs
+RUN dnf update -y && dnf install -y nodejs git
 
 # set working directory
 WORKDIR /app
