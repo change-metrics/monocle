@@ -637,7 +637,7 @@ searchQuery request = do
           changeEventChangeId = elkchangeeventChangeId
           changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
           changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
-          changeEventAuthor = authorMuid elkchangeeventAuthor
+          changeEventAuthor = maybe "backend-ghost" authorMuid elkchangeeventAuthor
           changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
           changeEventBranch = elkchangeeventBranch
        in SearchPB.ChangeEvent {..}

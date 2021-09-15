@@ -702,7 +702,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventRepositoryPrefix = mempty
     elkchangeeventRepositoryShortname = mempty
     elkchangeeventRepositoryFullname = mempty
-    elkchangeeventAuthor = fakeAuthor
+    elkchangeeventAuthor = Just fakeAuthor
     elkchangeeventOnAuthor = fakeAuthor
     elkchangeeventBranch = mempty
     elkchangeeventCreatedAt = fakeDate
@@ -713,7 +713,7 @@ emptyEvent = ELKChangeEvent {..}
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
   where
-    author = toStrict . authorMuid
+    author = maybe "no-author" (toStrict . authorMuid)
     date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
       SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
@@ -806,7 +806,7 @@ mkEvent ::
   ELKChangeEvent
 mkEvent ts start etype author onAuthor changeId name =
   emptyEvent
-    { elkchangeeventAuthor = author,
+    { elkchangeeventAuthor = Just author,
       elkchangeeventOnAuthor = onAuthor,
       elkchangeeventType = etype,
       elkchangeeventRepositoryFullname = name,

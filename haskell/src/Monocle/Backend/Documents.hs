@@ -242,7 +242,9 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventRepositoryPrefix :: LText,
     elkchangeeventRepositoryShortname :: LText,
     elkchangeeventRepositoryFullname :: LText,
-    elkchangeeventAuthor :: Author,
+    -- elkchangeeventAuthor is optional due to the fact Gerrit closer
+    -- does not set any author for ChangeAbandonedEvent
+    elkchangeeventAuthor :: Maybe Author,
     elkchangeeventOnAuthor :: Author,
     elkchangeeventBranch :: LText,
     elkchangeeventOnCreatedAt :: UTCTime,
