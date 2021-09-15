@@ -142,6 +142,7 @@ let make = (~store: Store.t) => {
   let request = {
     ...Store.mkSearchRequest(state, SearchTypes.Query_change),
     query: query,
+    limit: 256->Int32.of_int,
   }
 
   <div>

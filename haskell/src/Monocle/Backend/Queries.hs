@@ -552,19 +552,19 @@ getReposSummary = do
       withModified (Q.dropField (`elem` ["repo", "repo_regex", "project"]))
     withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
 
-    getRepoSummary fn = withRepo fn $ do
+    getRepoSummary fullname = withRepo fullname $ do
       -- Prepare the queries
       let eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
           changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      totalChanges' <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
-      openChanges' <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
-      mergedChanges' <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
+      totalChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
+      openChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
+      mergedChanges <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
 
       -- Return summary
-      let abandonedChanges' = totalChanges' - (openChanges' + mergedChanges')
-      pure $ RepoSummary fn totalChanges' abandonedChanges' mergedChanges' openChanges'
+      let abandonedChanges = totalChanges - (openChanges + mergedChanges)
+      pure $ RepoSummary {..}
 
 -- | get authors tops
 getMostActiveAuthorByChangeCreated :: Word32 -> QueryM TermsResultWTH
