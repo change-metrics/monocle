@@ -919,13 +919,16 @@ components:
             properties:
                 fullname:
                     type: string
-                total_changes:
+                created_changes:
                     type: integer
                     format: uint32
                 abandoned_changes:
                     type: integer
                     format: uint32
                 merged_changes:
+                    type: integer
+                    format: uint32
+                updated_changes:
                     type: integer
                     format: uint32
                 open_changes:

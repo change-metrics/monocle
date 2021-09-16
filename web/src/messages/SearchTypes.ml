@@ -185,9 +185,10 @@ type activity_stats = {
 
 type repo_summary = {
   fullname : string;
-  total_changes : int32;
+  created_changes : int32;
   abandoned_changes : int32;
   merged_changes : int32;
+  updated_changes : int32;
   open_changes : int32;
 }
 
@@ -523,15 +524,17 @@ let rec default_activity_stats
 
 let rec default_repo_summary 
   ?fullname:((fullname:string) = "")
-  ?total_changes:((total_changes:int32) = 0l)
+  ?created_changes:((created_changes:int32) = 0l)
   ?abandoned_changes:((abandoned_changes:int32) = 0l)
   ?merged_changes:((merged_changes:int32) = 0l)
+  ?updated_changes:((updated_changes:int32) = 0l)
   ?open_changes:((open_changes:int32) = 0l)
   () : repo_summary  = {
   fullname;
-  total_changes;
+  created_changes;
   abandoned_changes;
   merged_changes;
+  updated_changes;
   open_changes;
 }
 

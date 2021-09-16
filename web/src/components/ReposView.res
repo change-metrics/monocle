@@ -45,6 +45,7 @@ module RepoSummaryTable = {
   let make = (~store: Store.t, ~repos: list<SearchTypes.repo_summary>) => {
     let columnNames = [
       "Repository",
+      "Open changes",
       "Created changes",
       "Updated changes",
       "Merged changes",
@@ -54,18 +55,20 @@ module RepoSummaryTable = {
     let isOrdered = (first: SearchTypes.repo_summary, second: SearchTypes.repo_summary, index) =>
       switch index {
       | 0 => first.fullname < second.fullname
-      | 1 => first.total_changes < second.total_changes
-      | 2 => first.open_changes < second.open_changes
-      | 3 => first.merged_changes < second.merged_changes
-      | 4 => first.abandoned_changes < second.abandoned_changes
+      | 1 => first.open_changes < second.open_changes
+      | 2 => first.created_changes < second.created_changes
+      | 3 => first.updated_changes < second.updated_changes
+      | 4 => first.merged_changes < second.merged_changes
+      | 5 => first.abandoned_changes < second.abandoned_changes
       | _ => false
       }
 
     let mkLink = (entity: ChangeLink.t, label: string) => <ChangeLink store entity name={label} />
     let formatters: list<SearchTypes.repo_summary => React.element> = list{
       repo => repo.fullname->str,
-      repo => ChangeLink.AllChanges(repo.fullname)->mkLink(repo.total_changes->int32_str),
       repo => ChangeLink.OpenChanges(repo.fullname)->mkLink(repo.open_changes->int32_str),
+      repo => repo.created_changes->int32_str->str,
+      repo => repo.updated_changes->int32_str->str,
       repo => ChangeLink.MergedChanges(repo.fullname)->mkLink(repo.merged_changes->int32_str),
       repo => ChangeLink.AbandonedChanges(repo.fullname)->mkLink(repo.abandoned_changes->int32_str),
     }

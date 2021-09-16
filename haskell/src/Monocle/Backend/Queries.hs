@@ -532,9 +532,10 @@ getRepos =
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
-    totalChanges :: Count,
+    createdChanges :: Count,
     abandonedChanges :: Count,
     mergedChanges :: Count,
+    updatedChanges :: Count,
     openChanges :: Count
   }
   deriving (Show, Eq)
@@ -551,6 +552,7 @@ getReposSummary = do
       -- This is important for project with huge list of repository regex.
       withModified (Q.dropField (`elem` ["repo", "repo_regex", "project"]))
     withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
+    withoutDate = withModified Q.dropDate
 
     getRepoSummary fullname = withRepo fullname $ do
       -- Prepare the queries
@@ -558,12 +560,12 @@ getReposSummary = do
           changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      totalChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
-      openChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
+      createdChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
+      updatedChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
       mergedChanges <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
+      openChanges <- withFilter (changeState ElkChangeOpen) (withoutDate countDocs)
+      abandonedChanges <- withFilter [documentType ElkChangeAbandonedEvent] (eventQF countDocs)
 
-      -- Return summary
-      let abandonedChanges = totalChanges - (openChanges + mergedChanges)
       pure $ RepoSummary {..}
 
 -- | get authors tops

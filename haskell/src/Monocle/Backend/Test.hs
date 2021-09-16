@@ -285,23 +285,34 @@ testReposSummary = withTenant doTest
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
+      indexScenario (nominalOpen (scenarioProject "openstack/swift") "45" fakeDate 3600)
 
       results <- runQueryM defaultQuery Q.getReposSummary
       assertEqual'
         "Check buckets names"
         [ Q.RepoSummary
             { fullname = "openstack/neutron",
-              totalChanges = 2,
+              createdChanges = 2,
               abandonedChanges = 0,
               mergedChanges = 2,
+              updatedChanges = 0,
               openChanges = 0
             },
           Q.RepoSummary
             { fullname = "openstack/nova",
-              totalChanges = 1,
+              createdChanges = 1,
               abandonedChanges = 0,
               mergedChanges = 1,
+              updatedChanges = 0,
               openChanges = 0
+            },
+          Q.RepoSummary
+            { fullname = "openstack/swift",
+              createdChanges = 1,
+              abandonedChanges = 0,
+              mergedChanges = 0,
+              updatedChanges = 1,
+              openChanges = 1
             }
         ]
         results

@@ -618,9 +618,10 @@ searchQuery request = do
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =
       let repoSummaryFullname = toLazy fullname
-          repoSummaryTotalChanges = countToWord totalChanges
+          repoSummaryCreatedChanges = countToWord createdChanges
           repoSummaryAbandonedChanges = countToWord abandonedChanges
           repoSummaryMergedChanges = countToWord mergedChanges
+          repoSummaryUpdatedChanges = countToWord updatedChanges
           repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
 

@@ -261,10 +261,11 @@ message LifecycleStats {
 
 message RepoSummary {
   string fullname = 1;
-  uint32 total_changes = 2;
+  uint32 created_changes = 2;
   uint32 abandoned_changes = 3;
   uint32 merged_changes = 4;
-  uint32 open_changes = 5;
+  uint32 updated_changes = 5;
+  uint32 open_changes = 6;
 }
 
 message ReposSummary {

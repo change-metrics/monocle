@@ -5330,9 +5330,10 @@ instance HsJSONPB.ToSchema LifecycleStats where
 
 data RepoSummary = RepoSummary
   { repoSummaryFullname :: Hs.Text,
-    repoSummaryTotalChanges :: Hs.Word32,
+    repoSummaryCreatedChanges :: Hs.Word32,
     repoSummaryAbandonedChanges :: Hs.Word32,
     repoSummaryMergedChanges :: Hs.Word32,
+    repoSummaryUpdatedChanges :: Hs.Word32,
     repoSummaryOpenChanges :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -5347,9 +5348,10 @@ instance HsProtobuf.Message RepoSummary where
     _
     RepoSummary
       { repoSummaryFullname = repoSummaryFullname,
-        repoSummaryTotalChanges = repoSummaryTotalChanges,
+        repoSummaryCreatedChanges = repoSummaryCreatedChanges,
         repoSummaryAbandonedChanges = repoSummaryAbandonedChanges,
         repoSummaryMergedChanges = repoSummaryMergedChanges,
+        repoSummaryUpdatedChanges = repoSummaryUpdatedChanges,
         repoSummaryOpenChanges = repoSummaryOpenChanges
       } =
       ( Hs.mconcat
@@ -5359,7 +5361,7 @@ instance HsProtobuf.Message RepoSummary where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                repoSummaryTotalChanges
+                repoSummaryCreatedChanges
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
@@ -5371,6 +5373,10 @@ instance HsProtobuf.Message RepoSummary where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
+                repoSummaryUpdatedChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
                 repoSummaryOpenChanges
             )
           ]
@@ -5397,6 +5403,10 @@ instance HsProtobuf.Message RepoSummary where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 5)
           )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 6)
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -5408,7 +5418,7 @@ instance HsProtobuf.Message RepoSummary where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "total_changes")
+          (HsProtobuf.Single "created_changes")
           []
           ""
       ),
@@ -5429,6 +5439,13 @@ instance HsProtobuf.Message RepoSummary where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 5)
           (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "updated_changes")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "open_changes")
           []
           ""
@@ -5436,22 +5453,24 @@ instance HsProtobuf.Message RepoSummary where
     ]
 
 instance HsJSONPB.ToJSONPB RepoSummary where
-  toJSONPB (RepoSummary f1 f2 f3 f4 f5) =
+  toJSONPB (RepoSummary f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.object
         [ "fullname" .= f1,
-          "total_changes" .= f2,
+          "created_changes" .= f2,
           "abandoned_changes" .= f3,
           "merged_changes" .= f4,
-          "open_changes" .= f5
+          "updated_changes" .= f5,
+          "open_changes" .= f6
         ]
     )
-  toEncodingPB (RepoSummary f1 f2 f3 f4 f5) =
+  toEncodingPB (RepoSummary f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.pairs
         [ "fullname" .= f1,
-          "total_changes" .= f2,
+          "created_changes" .= f2,
           "abandoned_changes" .= f3,
           "merged_changes" .= f4,
-          "open_changes" .= f5
+          "updated_changes" .= f5,
+          "open_changes" .= f6
         ]
     )
 
@@ -5461,9 +5480,10 @@ instance HsJSONPB.FromJSONPB RepoSummary where
         "RepoSummary"
         ( \obj ->
             (Hs.pure RepoSummary) <*> obj .: "fullname"
-              <*> obj .: "total_changes"
+              <*> obj .: "created_changes"
               <*> obj .: "abandoned_changes"
               <*> obj .: "merged_changes"
+              <*> obj .: "updated_changes"
               <*> obj .: "open_changes"
         )
     )
@@ -5480,21 +5500,24 @@ instance HsJSONPB.ToSchema RepoSummary where
     do
       let declare_fullname = HsJSONPB.declareSchemaRef
       repoSummaryFullname <- declare_fullname Proxy.Proxy
-      let declare_total_changes = HsJSONPB.declareSchemaRef
-      repoSummaryTotalChanges <- declare_total_changes Proxy.Proxy
+      let declare_created_changes = HsJSONPB.declareSchemaRef
+      repoSummaryCreatedChanges <- declare_created_changes Proxy.Proxy
       let declare_abandoned_changes = HsJSONPB.declareSchemaRef
       repoSummaryAbandonedChanges <-
         declare_abandoned_changes
           Proxy.Proxy
       let declare_merged_changes = HsJSONPB.declareSchemaRef
       repoSummaryMergedChanges <- declare_merged_changes Proxy.Proxy
+      let declare_updated_changes = HsJSONPB.declareSchemaRef
+      repoSummaryUpdatedChanges <- declare_updated_changes Proxy.Proxy
       let declare_open_changes = HsJSONPB.declareSchemaRef
       repoSummaryOpenChanges <- declare_open_changes Proxy.Proxy
       let _ =
             Hs.pure RepoSummary <*> HsJSONPB.asProxy declare_fullname
-              <*> HsJSONPB.asProxy declare_total_changes
+              <*> HsJSONPB.asProxy declare_created_changes
               <*> HsJSONPB.asProxy declare_abandoned_changes
               <*> HsJSONPB.asProxy declare_merged_changes
+              <*> HsJSONPB.asProxy declare_updated_changes
               <*> HsJSONPB.asProxy declare_open_changes
       Hs.return
         ( HsJSONPB.NamedSchema
@@ -5510,12 +5533,17 @@ instance HsJSONPB.ToSchema RepoSummary where
                     HsJSONPB._schemaProperties =
                       HsJSONPB.insOrdFromList
                         [ ("fullname", repoSummaryFullname),
-                          ("total_changes", repoSummaryTotalChanges),
+                          ( "created_changes",
+                            repoSummaryCreatedChanges
+                          ),
                           ( "abandoned_changes",
                             repoSummaryAbandonedChanges
                           ),
                           ( "merged_changes",
                             repoSummaryMergedChanges
+                          ),
+                          ( "updated_changes",
+                            repoSummaryUpdatedChanges
                           ),
                           ("open_changes", repoSummaryOpenChanges)
                         ]

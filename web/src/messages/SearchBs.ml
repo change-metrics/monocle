@@ -296,17 +296,19 @@ let default_activity_stats_mutable () : activity_stats_mutable = {
 
 type repo_summary_mutable = {
   mutable fullname : string;
-  mutable total_changes : int32;
+  mutable created_changes : int32;
   mutable abandoned_changes : int32;
   mutable merged_changes : int32;
+  mutable updated_changes : int32;
   mutable open_changes : int32;
 }
 
 let default_repo_summary_mutable () : repo_summary_mutable = {
   fullname = "";
-  total_changes = 0l;
+  created_changes = 0l;
   abandoned_changes = 0l;
   merged_changes = 0l;
+  updated_changes = 0l;
   open_changes = 0l;
 }
 
@@ -1206,15 +1208,18 @@ let rec decode_repo_summary json =
     | "fullname" -> 
       let json = Js.Dict.unsafeGet json "fullname" in
       v.fullname <- Pbrt_bs.string json "repo_summary" "fullname"
-    | "total_changes" -> 
-      let json = Js.Dict.unsafeGet json "total_changes" in
-      v.total_changes <- Pbrt_bs.int32 json "repo_summary" "total_changes"
+    | "created_changes" -> 
+      let json = Js.Dict.unsafeGet json "created_changes" in
+      v.created_changes <- Pbrt_bs.int32 json "repo_summary" "created_changes"
     | "abandoned_changes" -> 
       let json = Js.Dict.unsafeGet json "abandoned_changes" in
       v.abandoned_changes <- Pbrt_bs.int32 json "repo_summary" "abandoned_changes"
     | "merged_changes" -> 
       let json = Js.Dict.unsafeGet json "merged_changes" in
       v.merged_changes <- Pbrt_bs.int32 json "repo_summary" "merged_changes"
+    | "updated_changes" -> 
+      let json = Js.Dict.unsafeGet json "updated_changes" in
+      v.updated_changes <- Pbrt_bs.int32 json "repo_summary" "updated_changes"
     | "open_changes" -> 
       let json = Js.Dict.unsafeGet json "open_changes" in
       v.open_changes <- Pbrt_bs.int32 json "repo_summary" "open_changes"
@@ -1223,9 +1228,10 @@ let rec decode_repo_summary json =
   done;
   ({
     SearchTypes.fullname = v.fullname;
-    SearchTypes.total_changes = v.total_changes;
+    SearchTypes.created_changes = v.created_changes;
     SearchTypes.abandoned_changes = v.abandoned_changes;
     SearchTypes.merged_changes = v.merged_changes;
+    SearchTypes.updated_changes = v.updated_changes;
     SearchTypes.open_changes = v.open_changes;
   } : SearchTypes.repo_summary)
 
@@ -1941,9 +1947,10 @@ let rec encode_activity_stats (v:SearchTypes.activity_stats) =
 let rec encode_repo_summary (v:SearchTypes.repo_summary) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "fullname" (Js.Json.string v.SearchTypes.fullname);
-  Js.Dict.set json "total_changes" (Js.Json.number (Int32.to_float v.SearchTypes.total_changes));
+  Js.Dict.set json "created_changes" (Js.Json.number (Int32.to_float v.SearchTypes.created_changes));
   Js.Dict.set json "abandoned_changes" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned_changes));
   Js.Dict.set json "merged_changes" (Js.Json.number (Int32.to_float v.SearchTypes.merged_changes));
+  Js.Dict.set json "updated_changes" (Js.Json.number (Int32.to_float v.SearchTypes.updated_changes));
   Js.Dict.set json "open_changes" (Js.Json.number (Int32.to_float v.SearchTypes.open_changes));
   json
 

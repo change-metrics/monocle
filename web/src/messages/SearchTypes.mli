@@ -188,9 +188,10 @@ type activity_stats = {
 
 type repo_summary = {
   fullname : string;
-  total_changes : int32;
+  created_changes : int32;
   abandoned_changes : int32;
   merged_changes : int32;
+  updated_changes : int32;
   open_changes : int32;
 }
 
@@ -463,9 +464,10 @@ val default_activity_stats :
 
 val default_repo_summary : 
   ?fullname:string ->
-  ?total_changes:int32 ->
+  ?created_changes:int32 ->
   ?abandoned_changes:int32 ->
   ?merged_changes:int32 ->
+  ?updated_changes:int32 ->
   ?open_changes:int32 ->
   unit ->
   repo_summary

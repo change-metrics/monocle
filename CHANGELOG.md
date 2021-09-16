@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - [web] Display Task Data info in Board Kanban view.
 - [web] Make the search help a modal.
 - [web] Display a spinner when the query is refreshing.
+- [web] Total open changes on repository summary page.
 
 ### Changed
 
