@@ -145,22 +145,9 @@ const ChangesLifeCycleStats = (prop) => (
                 <ListGroup.Item>
                   <MonoLink
                     store={prop.store}
-                    filter="state:open"
-                    path="changes"
-                    name={prop.data.opened + ' opened changes'}
-                  />
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <MonoLink
-                    store={prop.store}
                     filter="state:abandoned"
                     path="changes"
-                    name={
-                      prop.data.abandoned +
-                      ' changes abandoned: ' +
-                      prop.data.abandoned_ratio +
-                      '%'
-                    }
+                    name={prop.data.abandoned + ' changes abandoned'}
                   />
                 </ListGroup.Item>
                 <ListGroup.Item>
@@ -168,12 +155,7 @@ const ChangesLifeCycleStats = (prop) => (
                     store={prop.store}
                     filter="state:merged"
                     path="changes"
-                    name={
-                      prop.data.merged +
-                      ' changes merged: ' +
-                      prop.data.merged_ratio +
-                      '%'
-                    }
+                    name={prop.data.merged + ' changes merged'}
                   />
                 </ListGroup.Item>
                 <ListGroup.Item>

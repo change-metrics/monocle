@@ -818,21 +818,12 @@ components:
                         $ref: '#/components/schemas/monocle_search_Histo'
                 created:
                     $ref: '#/components/schemas/monocle_search_ReviewCount'
-                opened:
-                    type: integer
-                    format: uint32
                 abandoned:
                     type: integer
                     format: uint32
-                abandoned_ratio:
-                    type: number
-                    format: float
                 merged:
                     type: integer
                     format: uint32
-                merged_ratio:
-                    type: number
-                    format: float
                 self_merged:
                     type: integer
                     format: uint32

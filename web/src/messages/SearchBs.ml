@@ -366,11 +366,8 @@ type lifecycle_stats_mutable = {
   mutable merged_histo : SearchTypes.histo list;
   mutable abandoned_histo : SearchTypes.histo list;
   mutable created : SearchTypes.review_count option;
-  mutable opened : int32;
   mutable abandoned : int32;
-  mutable abandoned_ratio : float;
   mutable merged : int32;
-  mutable merged_ratio : float;
   mutable self_merged : int32;
   mutable self_merged_ratio : float;
   mutable ttm_mean : float;
@@ -387,11 +384,8 @@ let default_lifecycle_stats_mutable () : lifecycle_stats_mutable = {
   merged_histo = [];
   abandoned_histo = [];
   created = None;
-  opened = 0l;
   abandoned = 0l;
-  abandoned_ratio = 0.;
   merged = 0l;
-  merged_ratio = 0.;
   self_merged = 0l;
   self_merged_ratio = 0.;
   ttm_mean = 0.;
@@ -1394,21 +1388,12 @@ let rec decode_lifecycle_stats json =
     | "created" -> 
       let json = Js.Dict.unsafeGet json "created" in
       v.created <- Some ((decode_review_count (Pbrt_bs.object_ json "lifecycle_stats" "created")))
-    | "opened" -> 
-      let json = Js.Dict.unsafeGet json "opened" in
-      v.opened <- Pbrt_bs.int32 json "lifecycle_stats" "opened"
     | "abandoned" -> 
       let json = Js.Dict.unsafeGet json "abandoned" in
       v.abandoned <- Pbrt_bs.int32 json "lifecycle_stats" "abandoned"
-    | "abandoned_ratio" -> 
-      let json = Js.Dict.unsafeGet json "abandoned_ratio" in
-      v.abandoned_ratio <- Pbrt_bs.float json "lifecycle_stats" "abandoned_ratio"
     | "merged" -> 
       let json = Js.Dict.unsafeGet json "merged" in
       v.merged <- Pbrt_bs.int32 json "lifecycle_stats" "merged"
-    | "merged_ratio" -> 
-      let json = Js.Dict.unsafeGet json "merged_ratio" in
-      v.merged_ratio <- Pbrt_bs.float json "lifecycle_stats" "merged_ratio"
     | "self_merged" -> 
       let json = Js.Dict.unsafeGet json "self_merged" in
       v.self_merged <- Pbrt_bs.int32 json "lifecycle_stats" "self_merged"
@@ -1442,11 +1427,8 @@ let rec decode_lifecycle_stats json =
     SearchTypes.merged_histo = v.merged_histo;
     SearchTypes.abandoned_histo = v.abandoned_histo;
     SearchTypes.created = v.created;
-    SearchTypes.opened = v.opened;
     SearchTypes.abandoned = v.abandoned;
-    SearchTypes.abandoned_ratio = v.abandoned_ratio;
     SearchTypes.merged = v.merged;
-    SearchTypes.merged_ratio = v.merged_ratio;
     SearchTypes.self_merged = v.self_merged;
     SearchTypes.self_merged_ratio = v.self_merged_ratio;
     SearchTypes.ttm_mean = v.ttm_mean;
@@ -2067,11 +2049,8 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
       Js.Dict.set json "created" (Js.Json.object_ json');
     end;
   end;
-  Js.Dict.set json "opened" (Js.Json.number (Int32.to_float v.SearchTypes.opened));
   Js.Dict.set json "abandoned" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned));
-  Js.Dict.set json "abandoned_ratio" (Js.Json.number v.SearchTypes.abandoned_ratio);
   Js.Dict.set json "merged" (Js.Json.number (Int32.to_float v.SearchTypes.merged));
-  Js.Dict.set json "merged_ratio" (Js.Json.number v.SearchTypes.merged_ratio);
   Js.Dict.set json "self_merged" (Js.Json.number (Int32.to_float v.SearchTypes.self_merged));
   Js.Dict.set json "self_merged_ratio" (Js.Json.number v.SearchTypes.self_merged_ratio);
   Js.Dict.set json "ttm_mean" (Js.Json.number v.SearchTypes.ttm_mean);
