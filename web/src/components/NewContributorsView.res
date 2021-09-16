@@ -17,37 +17,23 @@ let make = (~store: Store.t) => {
     ...Store.mkSearchRequest(state, SearchTypes.Query_new_changes_authors),
     limit: limit->Int32.of_int,
   }
-  <div>
-    <Search.QueryRender
-      request
-      trigger={state.query ++ limit->string_of_int}
-      render={resp =>
-        switch resp {
-        | SearchTypes.New_authors(na) =>
-          <MCenteredContent>
-            <Card isCompact=true>
-              <CardTitle>
-                <MGrid>
-                  <MGridItemXl9>
-                    <Title headingLevel=#H3>
-                      <Tooltip content=tooltip_content> <Patternfly.Icons.Plus /> </Tooltip>
-                      {(" " ++ "New change' authors")->str}
-                    </Title>
-                  </MGridItemXl9>
-                  <MGridItemXl3>
-                    <LimitSelector limit setLimit default=25 values=limit_values />
-                  </MGridItemXl3>
-                </MGrid>
-              </CardTitle>
-              <CardBody>
-                <MGrid> <TopTermsTable items={na.termcount} columnNames /> </MGrid>
-              </CardBody>
-            </Card>
-          </MCenteredContent>
-        | _ => React.null
-        }}
-    />
-  </div>
+  let limitSelector = <LimitSelector limit setLimit default=25 values=limit_values />
+  let title = "New change' authors"
+  let icon = <Patternfly.Icons.Plus />
+  <Search.QueryRender
+    request
+    trigger={state.query ++ limit->string_of_int}
+    render={resp =>
+      switch resp {
+      | SearchTypes.New_authors(na) =>
+        <MCenteredContent>
+          <MonoCard title tooltip_content icon limitSelector>
+            <TopTermsTable items={na.termcount} columnNames />
+          </MonoCard>
+        </MCenteredContent>
+      | _ => React.null
+      }}
+  />
 }
 
 let default = make
