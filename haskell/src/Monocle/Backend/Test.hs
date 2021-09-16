@@ -291,17 +291,17 @@ testReposSummary = withTenant doTest
         "Check buckets names"
         [ Q.RepoSummary
             { fullname = "openstack/neutron",
-              totalChanges = 2,
+              createdChanges = 2,
               abandonedChanges = 0,
               mergedChanges = 2,
-              openChanges = 0
+              updatedChanges = 0
             },
           Q.RepoSummary
             { fullname = "openstack/nova",
-              totalChanges = 1,
+              createdChanges = 1,
               abandonedChanges = 0,
               mergedChanges = 1,
-              openChanges = 0
+              updatedChanges = 0
             }
         ]
         results

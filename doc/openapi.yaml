@@ -919,7 +919,7 @@ components:
             properties:
                 fullname:
                     type: string
-                total_changes:
+                created_changes:
                     type: integer
                     format: uint32
                 abandoned_changes:
@@ -928,7 +928,7 @@ components:
                 merged_changes:
                     type: integer
                     format: uint32
-                open_changes:
+                updated_changes:
                     type: integer
                     format: uint32
         monocle_search_ReposSummary:

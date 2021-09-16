@@ -532,10 +532,10 @@ getRepos =
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
-    totalChanges :: Count,
+    createdChanges :: Count,
     abandonedChanges :: Count,
     mergedChanges :: Count,
-    openChanges :: Count
+    updatedChanges :: Count
   }
   deriving (Show, Eq)
 
@@ -558,12 +558,12 @@ getReposSummary = do
           changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      totalChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
-      openChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
+      createdChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
+      updatedChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
       mergedChanges <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
 
       -- Return summary
-      let abandonedChanges = totalChanges - (openChanges + mergedChanges)
+      let abandonedChanges = createdChanges - (updatedChanges + mergedChanges)
       pure $ RepoSummary {..}
 
 -- | get authors tops

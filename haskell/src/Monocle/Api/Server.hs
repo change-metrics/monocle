@@ -618,10 +618,10 @@ searchQuery request = do
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =
       let repoSummaryFullname = toLazy fullname
-          repoSummaryTotalChanges = countToWord totalChanges
+          repoSummaryCreatedChanges = countToWord createdChanges
           repoSummaryAbandonedChanges = countToWord abandonedChanges
           repoSummaryMergedChanges = countToWord mergedChanges
-          repoSummaryOpenChanges = countToWord openChanges
+          repoSummaryUpdatedChanges = countToWord updatedChanges
        in SearchPB.RepoSummary {..}
 
     toChangeEventsResult :: (ELKChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents
