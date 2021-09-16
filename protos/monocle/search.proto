@@ -265,6 +265,7 @@ message RepoSummary {
   uint32 abandoned_changes = 3;
   uint32 merged_changes = 4;
   uint32 updated_changes = 5;
+  uint32 open_changes = 6;
 }
 
 message ReposSummary {

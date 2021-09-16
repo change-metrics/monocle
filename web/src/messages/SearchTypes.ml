@@ -189,6 +189,7 @@ type repo_summary = {
   abandoned_changes : int32;
   merged_changes : int32;
   updated_changes : int32;
+  open_changes : int32;
 }
 
 type repos_summary = {
@@ -527,12 +528,14 @@ let rec default_repo_summary
   ?abandoned_changes:((abandoned_changes:int32) = 0l)
   ?merged_changes:((merged_changes:int32) = 0l)
   ?updated_changes:((updated_changes:int32) = 0l)
+  ?open_changes:((open_changes:int32) = 0l)
   () : repo_summary  = {
   fullname;
   created_changes;
   abandoned_changes;
   merged_changes;
   updated_changes;
+  open_changes;
 }
 
 let rec default_repos_summary 

@@ -931,6 +931,9 @@ components:
                 updated_changes:
                     type: integer
                     format: uint32
+                open_changes:
+                    type: integer
+                    format: uint32
         monocle_search_ReposSummary:
             properties:
                 reposum:

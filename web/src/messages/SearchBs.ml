@@ -300,6 +300,7 @@ type repo_summary_mutable = {
   mutable abandoned_changes : int32;
   mutable merged_changes : int32;
   mutable updated_changes : int32;
+  mutable open_changes : int32;
 }
 
 let default_repo_summary_mutable () : repo_summary_mutable = {
@@ -308,6 +309,7 @@ let default_repo_summary_mutable () : repo_summary_mutable = {
   abandoned_changes = 0l;
   merged_changes = 0l;
   updated_changes = 0l;
+  open_changes = 0l;
 }
 
 type repos_summary_mutable = {
@@ -1218,6 +1220,9 @@ let rec decode_repo_summary json =
     | "updated_changes" -> 
       let json = Js.Dict.unsafeGet json "updated_changes" in
       v.updated_changes <- Pbrt_bs.int32 json "repo_summary" "updated_changes"
+    | "open_changes" -> 
+      let json = Js.Dict.unsafeGet json "open_changes" in
+      v.open_changes <- Pbrt_bs.int32 json "repo_summary" "open_changes"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -1227,6 +1232,7 @@ let rec decode_repo_summary json =
     SearchTypes.abandoned_changes = v.abandoned_changes;
     SearchTypes.merged_changes = v.merged_changes;
     SearchTypes.updated_changes = v.updated_changes;
+    SearchTypes.open_changes = v.open_changes;
   } : SearchTypes.repo_summary)
 
 let rec decode_repos_summary json =
@@ -1945,6 +1951,7 @@ let rec encode_repo_summary (v:SearchTypes.repo_summary) =
   Js.Dict.set json "abandoned_changes" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned_changes));
   Js.Dict.set json "merged_changes" (Js.Json.number (Int32.to_float v.SearchTypes.merged_changes));
   Js.Dict.set json "updated_changes" (Js.Json.number (Int32.to_float v.SearchTypes.updated_changes));
+  Js.Dict.set json "open_changes" (Js.Json.number (Int32.to_float v.SearchTypes.open_changes));
   json
 
 let rec encode_repos_summary (v:SearchTypes.repos_summary) = 

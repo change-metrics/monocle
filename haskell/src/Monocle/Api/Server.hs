@@ -622,6 +622,7 @@ searchQuery request = do
           repoSummaryAbandonedChanges = countToWord abandonedChanges
           repoSummaryMergedChanges = countToWord mergedChanges
           repoSummaryUpdatedChanges = countToWord updatedChanges
+          repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
 
     toChangeEventsResult :: (ELKChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents

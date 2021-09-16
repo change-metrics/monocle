@@ -192,6 +192,7 @@ type repo_summary = {
   abandoned_changes : int32;
   merged_changes : int32;
   updated_changes : int32;
+  open_changes : int32;
 }
 
 type repos_summary = {
@@ -467,6 +468,7 @@ val default_repo_summary :
   ?abandoned_changes:int32 ->
   ?merged_changes:int32 ->
   ?updated_changes:int32 ->
+  ?open_changes:int32 ->
   unit ->
   repo_summary
 (** [default_repo_summary ()] is the default value for type [repo_summary] *)

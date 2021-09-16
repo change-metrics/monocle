@@ -5333,7 +5333,8 @@ data RepoSummary = RepoSummary
     repoSummaryCreatedChanges :: Hs.Word32,
     repoSummaryAbandonedChanges :: Hs.Word32,
     repoSummaryMergedChanges :: Hs.Word32,
-    repoSummaryUpdatedChanges :: Hs.Word32
+    repoSummaryUpdatedChanges :: Hs.Word32,
+    repoSummaryOpenChanges :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -5350,7 +5351,8 @@ instance HsProtobuf.Message RepoSummary where
         repoSummaryCreatedChanges = repoSummaryCreatedChanges,
         repoSummaryAbandonedChanges = repoSummaryAbandonedChanges,
         repoSummaryMergedChanges = repoSummaryMergedChanges,
-        repoSummaryUpdatedChanges = repoSummaryUpdatedChanges
+        repoSummaryUpdatedChanges = repoSummaryUpdatedChanges,
+        repoSummaryOpenChanges = repoSummaryOpenChanges
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -5372,6 +5374,10 @@ instance HsProtobuf.Message RepoSummary where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 repoSummaryUpdatedChanges
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                repoSummaryOpenChanges
             )
           ]
       )
@@ -5396,6 +5402,10 @@ instance HsProtobuf.Message RepoSummary where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 5)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 6)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -5432,26 +5442,35 @@ instance HsProtobuf.Message RepoSummary where
           (HsProtobuf.Single "updated_changes")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "open_changes")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB RepoSummary where
-  toJSONPB (RepoSummary f1 f2 f3 f4 f5) =
+  toJSONPB (RepoSummary f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.object
         [ "fullname" .= f1,
           "created_changes" .= f2,
           "abandoned_changes" .= f3,
           "merged_changes" .= f4,
-          "updated_changes" .= f5
+          "updated_changes" .= f5,
+          "open_changes" .= f6
         ]
     )
-  toEncodingPB (RepoSummary f1 f2 f3 f4 f5) =
+  toEncodingPB (RepoSummary f1 f2 f3 f4 f5 f6) =
     ( HsJSONPB.pairs
         [ "fullname" .= f1,
           "created_changes" .= f2,
           "abandoned_changes" .= f3,
           "merged_changes" .= f4,
-          "updated_changes" .= f5
+          "updated_changes" .= f5,
+          "open_changes" .= f6
         ]
     )
 
@@ -5465,6 +5484,7 @@ instance HsJSONPB.FromJSONPB RepoSummary where
               <*> obj .: "abandoned_changes"
               <*> obj .: "merged_changes"
               <*> obj .: "updated_changes"
+              <*> obj .: "open_changes"
         )
     )
 
@@ -5490,12 +5510,15 @@ instance HsJSONPB.ToSchema RepoSummary where
       repoSummaryMergedChanges <- declare_merged_changes Proxy.Proxy
       let declare_updated_changes = HsJSONPB.declareSchemaRef
       repoSummaryUpdatedChanges <- declare_updated_changes Proxy.Proxy
+      let declare_open_changes = HsJSONPB.declareSchemaRef
+      repoSummaryOpenChanges <- declare_open_changes Proxy.Proxy
       let _ =
             Hs.pure RepoSummary <*> HsJSONPB.asProxy declare_fullname
               <*> HsJSONPB.asProxy declare_created_changes
               <*> HsJSONPB.asProxy declare_abandoned_changes
               <*> HsJSONPB.asProxy declare_merged_changes
               <*> HsJSONPB.asProxy declare_updated_changes
+              <*> HsJSONPB.asProxy declare_open_changes
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -5521,7 +5544,8 @@ instance HsJSONPB.ToSchema RepoSummary where
                           ),
                           ( "updated_changes",
                             repoSummaryUpdatedChanges
-                          )
+                          ),
+                          ("open_changes", repoSummaryOpenChanges)
                         ]
                   }
             }
