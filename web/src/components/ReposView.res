@@ -45,8 +45,8 @@ module RepoSummaryTable = {
   let make = (~store: Store.t, ~repos: list<SearchTypes.repo_summary>) => {
     let columnNames = [
       "Repository",
-      "Total changes",
-      "Open changes",
+      "Created changes",
+      "Updated changes",
       "Merged changes",
       "Abandoned changes",
     ]
