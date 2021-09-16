@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - [web] Board - improve editor layout.
 - [web] Make change title links to the external change page.
 - [web] Adjust the default board to show Done at the end.
+- [web] Adjust changes view to display a maximum of 256 changes.
+- [web] Nomenclature of columns in Repository view.
 
 ### Removed
 
