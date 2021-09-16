@@ -564,9 +564,8 @@ getReposSummary = do
       updatedChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
       mergedChanges <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
       openChanges <- withFilter (changeState ElkChangeOpen) (withoutDate countDocs)
+      abandonedChanges <- withFilter [documentType ElkChangeAbandonedEvent] (eventQF countDocs)
 
-      -- Return summary
-      let abandonedChanges = createdChanges - (updatedChanges + mergedChanges)
       pure $ RepoSummary {..}
 
 -- | get authors tops
