@@ -8,7 +8,12 @@ open Prelude
 
 module MostActiveAuthor = {
   @react.component
-  let make = (~store: Store.t, ~qtype: SearchTypes.query_request_query_type, ~title: string) => {
+  let make = (
+    ~store: Store.t,
+    ~qtype: SearchTypes.query_request_query_type,
+    ~title: string,
+    ~tooltip_content: string,
+  ) => {
     let (state, _) = store
     let (limit, setLimit) = React.useState(() => 10)
     let limit_values = list{10, 25, 50, 100, 500}
@@ -17,29 +22,27 @@ module MostActiveAuthor = {
       ...Store.mkSearchRequest(state, qtype),
       limit: limit->Int32.of_int,
     }
-    <div>
-      <QueryRender
-        request
-        trigger={state.query ++ limit->string_of_int}
-        render={resp =>
-          switch resp {
-          | SearchTypes.Top_authors(tsc) =>
-            <Card isCompact=true>
-              <CardTitle>
-                <MGrid>
-                  <MGridItem> {title} </MGridItem>
-                  <MGridItem>
-                    <LimitSelector limit setLimit default=10 values=limit_values />
-                  </MGridItem>
-                </MGrid>
-              </CardTitle>
-              <CardBody> <TopTermsTable items=tsc.termcount columnNames /> </CardBody>
-            </Card>
-
-          | _ => React.null
-          }}
-      />
-    </div>
+    let trigger = state.query ++ limit->string_of_int
+    let limitSelector = <LimitSelector limit setLimit default=10 values=limit_values />
+    let icon = <Patternfly.Icons.TrendUp />
+    let match = resp =>
+      switch resp {
+      | SearchTypes.Top_authors(data) => Some(data)
+      | _ => None
+      }
+    let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
+      <TopTermsTable items=data.termcount columnNames />
+    <QueryRenderCard
+      request
+      trigger
+      title
+      tooltip_content
+      icon
+      limitSelector
+      match
+      childrenBuilder
+      isCentered=false
+    />
   }
 }
 
@@ -52,15 +55,41 @@ module TopMetricsInfo = {
     | ByMostReviewed
     | ByMostCommented
 
-  let getQD = (qt: t): (SearchTypes.query_request_query_type, string) =>
+  let getQD = (qt: t): (SearchTypes.query_request_query_type, string, string) => {
+    let tooltip_prefix = "This shows a list of change' authors ordered by the amount of "
     switch qt {
-    | ByChangeCreated => (SearchTypes.Query_top_authors_changes_created, "By changes created")
-    | ByChangeMerged => (SearchTypes.Query_top_authors_changes_merged, "By changes merged")
-    | ByChangeReviewed => (SearchTypes.Query_top_authors_changes_reviewed, "By reviews")
-    | ByChangeCommented => (SearchTypes.Query_top_authors_changes_commented, "By comments")
-    | ByMostReviewed => (SearchTypes.Query_top_reviewed_authors, "By changes reviewed")
-    | ByMostCommented => (SearchTypes.Query_top_commented_authors, "By changes commented")
+    | ByChangeCreated => (
+        SearchTypes.Query_top_authors_changes_created,
+        "By changes created",
+        tooltip_prefix ++ "changes they created",
+      )
+    | ByChangeMerged => (
+        SearchTypes.Query_top_authors_changes_merged,
+        "By changes merged",
+        tooltip_prefix ++ "changes they merged",
+      )
+    | ByChangeReviewed => (
+        SearchTypes.Query_top_authors_changes_reviewed,
+        "By reviews",
+        tooltip_prefix ++ "reviews they performed",
+      )
+    | ByChangeCommented => (
+        SearchTypes.Query_top_authors_changes_commented,
+        "By comments",
+        tooltip_prefix ++ "comments they wrote",
+      )
+    | ByMostReviewed => (
+        SearchTypes.Query_top_reviewed_authors,
+        "By changes reviewed",
+        tooltip_prefix ++ "reviews they got",
+      )
+    | ByMostCommented => (
+        SearchTypes.Query_top_commented_authors,
+        "By changes commented",
+        tooltip_prefix ++ "comments they received",
+      )
     }
+  }
 }
 
 @react.component
@@ -72,8 +101,8 @@ let make = (~store: Store.t) => {
     (ByMostReviewed, ByMostCommented),
   ]
   let getItem = (item: t) => {
-    let (qtype, title) = item->TopMetricsInfo.getQD
-    <MostActiveAuthor store qtype title />
+    let (qtype, title, tooltip_content) = item->TopMetricsInfo.getQD
+    <MostActiveAuthor store qtype title tooltip_content />
   }
   let getItemL = ((l, _)) => l->getItem
   let getItemR = ((_, r)) => r->getItem
