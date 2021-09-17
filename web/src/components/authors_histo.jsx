@@ -78,42 +78,38 @@ class AuthorsHisto extends React.Component {
     const data = this.prepareDataSet(this.props.data)
     return (
       <Row>
-        <Col>
+        <Col md={3}>
+          <ListGroup>
+            <ListGroup.Item>
+              Change authors:{' '}
+              {this.props.data.change_authors}
+            </ListGroup.Item>
+            <ListGroup.Item>
+              Review authors:{' '}
+              {this.props.data.review_authors}
+            </ListGroup.Item>
+            <ListGroup.Item>
+              Comment authors:{' '}
+              {this.props.data.comment_authors}
+            </ListGroup.Item>
+          </ListGroup>
+        </Col>
+        <Col md={9}>
           <Card>
             <Card.Body>
-              <Row>
-                <Col md={3}>
-                  <ListGroup>
-                    <ListGroup.Item>
-                      Change authors:{' '}
-                      {this.props.data.change_authors}
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      Review authors:{' '}
-                      {this.props.data.review_authors}
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      Comment authors:{' '}
-                      {this.props.data.comment_authors}
-                    </ListGroup.Item>
-                  </ListGroup>
-                </Col>
-                <Col md={9}>
-                  <Line
-                    data={data}
-                    width={100}
-                    // On small screen the legend takes the whole height so detect and adjust
-                    height={hasSmallWidth() ? 90 : 30}
-                    options={{
-                      legend: {
-                        labels: {
-                          boxWidth: 30
-                        }
+                <Line
+                  data={data}
+                  width={50}
+                  // On small screen the legend takes the whole height so detect and adjust
+                  height={hasSmallWidth() ? 90 : 30}
+                  options={{
+                    legend: {
+                      labels: {
+                        boxWidth: 30
                       }
-                    }}
-                  />
-                </Col>
-              </Row>
+                    }
+                  }}
+                />
             </Card.Body>
           </Card>
         </Col>
@@ -133,19 +129,6 @@ AuthorsHisto.propTypes = {
   })
 }
 
-const CAuthorsHistoStats = (prop) => (
-  <Row>
-    <Col>
-      <Card>
-        <Card.Header>
-          <Card.Title>Active authors</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          <AuthorsHisto data={prop} />
-        </Card.Body>
-      </Card>
-    </Col>
-  </Row>
-)
+const CAuthorsHistoStats = (prop) => <AuthorsHisto data={prop} />
 
 export { CAuthorsHistoStats }
