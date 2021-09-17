@@ -100,7 +100,6 @@ You should be able to access the web UI at <http://localhost:8080>.
 After a change in the configuration file, the api and crawler services need to be restarted:
 
 ```ShellSession
-$ docker-compose restart api-legacy
 $ docker-compose restart crawler-legacy
 ```
 
@@ -383,7 +382,6 @@ Database objects must be updated to reflect the configuration. Once `config.yaml
 ```bash
 docker-compose restart crawler-legacy
 docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
-docker-compose restart api-legacy
 ```
 
 ### Full configuration file example

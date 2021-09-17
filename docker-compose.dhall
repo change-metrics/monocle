@@ -97,57 +97,6 @@ let createElasticService =
                                          }
                                    )
 
-let createApiLegacyService =
-      \(dev : Bool) ->
-        let service =
-              { ports = Some [ mkPort "API" 9876 9876 ]
-              , healthcheck = Some Compose.Healthcheck::{
-                , test = Some
-                    ( Compose.StringOrList.String
-                        "python -c \"import requests,sys; r=requests.get('http://localhost:9876/api/0/health'); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
-                    )
-                , retries = Some 6
-                , timeout = Some "60s"
-                }
-              , depends_on = Some [ "elastic" ]
-              , command = Some
-                  ( Compose.StringOrList.String
-                      "uwsgi --http :9876 --socket :9877 --manage-script-name --mount /app=monocle.webapp:app"
-                  )
-              , volumes = Some [ "./etc:/etc/monocle:z" ]
-              , env_file = envFile
-              , environment = Some
-                  ( Compose.ListOrDict.Dict
-                      [ { mapKey = "CONFIG"
-                        , mapValue = "/etc/monocle/config.yaml"
-                        }
-                      , { mapKey = "ELASTIC_CONN", mapValue = "elastic:9200" }
-                      , { mapKey = "CLIENT_ID"
-                        , mapValue = "\${GITHUB_CLIENT_ID:-}"
-                        }
-                      , { mapKey = "CLIENT_SECRET"
-                        , mapValue = "\${GITHUB_CLIENT_SECRET:-}"
-                        }
-                      , { mapKey = "PUBLIC_URL"
-                        , mapValue =
-                            "\${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
-                        }
-                      ]
-                  )
-              }
-
-        in  if    dev
-            then  Compose.Service::(     service
-                                     //  { build = Some
-                                             (Compose.Build.String ".")
-                                         }
-                                   )
-            else  Compose.Service::(     service
-                                     //  { image = Some (monocleImage "backend")
-                                         , restart = Some "unless-stopped"
-                                         }
-                                   )
-
 let createApiService =
       \(dev : Bool) ->
         let service =
@@ -283,8 +232,7 @@ let createWebService =
 let createServices =
       \(dev : Bool) ->
         toMap
-          { api-legacy = createApiLegacyService dev
-          , api = createApiService dev
+          { api = createApiService dev
           , web = createWebService dev
           , crawler-legacy = createCrawlerLegacyService dev
           , crawler = createCrawlerService dev

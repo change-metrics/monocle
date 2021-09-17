@@ -98,9 +98,6 @@ jobs:
       - name: Check services are running
         run: test -z "$(sudo docker-compose ps -a | grep Exit)"
 
-      - name: Check api-legacy service
-        run: curl -s http://localhost:9876/api/0/indices
-
       - name: Check api service
         run: curl -s http://localhost:8080/api/2/get_workspaces
 

@@ -9,7 +9,6 @@ package "backend" {
 
   package "legacy" {
     agent "crawler" as LegacyWorker
-    agent "api" as LegacyApi
   }
 }
 actor user as User
