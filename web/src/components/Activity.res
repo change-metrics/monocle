@@ -23,7 +23,7 @@ module ChangesLifeCycleStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
 
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>
@@ -58,7 +58,7 @@ module ChangesReviewStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
 
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>
@@ -94,7 +94,7 @@ module ChangesMergedDuration = {
       let link = "/" ++ state.index ++ "/change/" ++ changeId
       link->RescriptReactRouter.push
     }
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>
@@ -125,7 +125,7 @@ module AuthorHistoStats = {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_active_authors_stats)
 
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>

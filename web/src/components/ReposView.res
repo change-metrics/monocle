@@ -84,7 +84,7 @@ let make = (~store: Store.t) => {
   let request = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
 
   <div>
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>

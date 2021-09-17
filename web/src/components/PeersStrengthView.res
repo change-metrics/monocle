@@ -71,28 +71,23 @@ let make = (~store: Store.t) => {
     ...Store.mkSearchRequest(state, SearchTypes.Query_top_authors_peers),
     limit: limit->Int32.of_int,
   }
+  let trigger = state.query ++ limit->string_of_int
   let limitSelector = <LimitSelector limit setLimit default=25 values=limit_values />
   let title = "Peers Strength"
   let icon = <Patternfly.Icons.Integration />
-  <Search.QueryRender
-    request
-    trigger={state.query ++ limit->string_of_int}
-    render={resp =>
-      switch resp {
-      | SearchTypes.Authors_peers(tps) =>
-        <MCenteredContent>
-          <MonoCard title tooltip_content icon limitSelector>
-            <MGrid>
-              <MGridItemXl5> <PeersStrengthTable items={tps.author_peer} /> </MGridItemXl5>
-              <MGridItemXl7>
-                <ConnectionDiagram data={tps.author_peer->ConnectionDiagram.adapt} />
-              </MGridItemXl7>
-            </MGrid>
-          </MonoCard>
-        </MCenteredContent>
-      | _ => React.null
-      }}
-  />
+  let match = resp =>
+    switch resp {
+    | SearchTypes.Authors_peers(tps) => Some(tps)
+    | _ => None
+    }
+  let childrenBuilder = (data: Web.SearchTypes.authors_peers) =>
+    <MGrid>
+      <MGridItemXl5> <PeersStrengthTable items={data.author_peer} /> </MGridItemXl5>
+      <MGridItemXl7>
+        <ConnectionDiagram data={data.author_peer->ConnectionDiagram.adapt} />
+      </MGridItemXl7>
+    </MGrid>
+  <QueryRenderCard request trigger title tooltip_content icon limitSelector match childrenBuilder />
 }
 
 let default = make

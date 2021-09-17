@@ -18,7 +18,7 @@ module MostActiveAuthor = {
       limit: limit->Int32.of_int,
     }
     <div>
-      <Search.QueryRender
+      <QueryRender
         request
         trigger={state.query ++ limit->string_of_int}
         render={resp =>

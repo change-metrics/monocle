@@ -93,7 +93,7 @@ module ChangesTopPies = {
       filter->Store.Store.SetFilter->dispatch
       href->RescriptReactRouter.push
     }
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={query}
       render={resp =>
@@ -146,7 +146,7 @@ let make = (~store: Store.t) => {
   }
 
   <div>
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={query ++ state.order->orderToQS}
       render={resp =>

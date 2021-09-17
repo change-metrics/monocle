@@ -1,3 +1,5 @@
+open Prelude
+
 module CChange = {
   @react.component @module("./change.jsx")
   external make: (
@@ -17,7 +19,7 @@ let make = (~store: Store.t, ~change: string) => {
   }
 
   <div className="container">
-    <Search.QueryRender
+    <QueryRender
       request
       trigger={state.query}
       render={resp =>

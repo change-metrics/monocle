@@ -10,24 +10,6 @@ open Prelude
 let startWithFieldModalOpen = false
 let startWithOrderModalOpen = false
 
-module QueryRender = {
-  @react.component
-  let make = (~request, ~trigger, ~render) =>
-    <NetworkRender
-      get={() => WebApi.Search.query(request)}
-      trigger
-      render={resp =>
-        switch resp {
-        | SearchTypes.Error(err) =>
-          <Alert
-            title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))}
-            variant=#Danger
-          />
-        | resp => render(resp)
-        }}
-    />
-}
-
 module FieldSelectorModal = {
   module FieldSelector = {
     @react.component

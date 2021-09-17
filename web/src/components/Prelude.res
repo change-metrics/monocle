@@ -575,7 +575,7 @@ module MonoCard = {
   @react.component
   let make = (
     ~title: string,
-    ~tooltip_content,
+    ~tooltip_content: string,
     ~icon: React.element,
     ~limitSelector: option<React.element>=?,
     ~children,
@@ -595,4 +595,58 @@ module MonoCard = {
       </CardTitle>
       <CardBody> {children} </CardBody>
     </Card>
+}
+
+module QueryRender = {
+  @react.component
+  let make = (~request, ~trigger, ~render) =>
+    <NetworkRender
+      get={() => WebApi.Search.query(request)}
+      trigger
+      render={resp =>
+        switch resp {
+        | SearchTypes.Error(err) =>
+          <Alert
+            title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))}
+            variant=#Danger
+          />
+        | resp => render(resp)
+        }}
+    />
+}
+
+module QueryRenderCard = {
+  @react.component
+  let make = (
+    // The request to perform by the card
+    ~request: Web.SearchTypes.query_request,
+    // The string to watch for change to run the request
+    ~trigger: string,
+    // THe title of the card
+    ~title: string,
+    // The content of the tooltip displayed by the icon
+    ~tooltip_content: string,
+    // The icon
+    ~icon: React.element,
+    // An option limitSelector component
+    ~limitSelector: option<React.element>=?,
+    // A matcher function to extract data from the response
+    ~match: Web.SearchTypes.query_response => option<'a>,
+    // The child builder
+    ~childrenBuilder: 'a => React.element,
+    // Center the child content
+    ~isCentered: bool=true,
+  ) => {
+    let render = resp => {
+      switch match(resp) {
+      | Some(data) => {
+          let content =
+            <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
+          isCentered ? <MCenteredContent> {content} </MCenteredContent> : {content}
+        }
+      | None => React.null
+      }
+    }
+    <QueryRender request trigger render />
+  }
 }
