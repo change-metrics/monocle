@@ -332,8 +332,8 @@ monocleSearchLanguage =
 
     d :: String -> UTCTime
     d date = fromMaybe (error "nop") (readMaybe $ date <> " 00:00:00 Z")
-    threeWeek = fromMaybe (error "nop") (readMaybe "2021-05-10 00:00:00 Z")
-    now = fromMaybe (error "nop") (readMaybe "2021-05-31 00:00:00 Z")
+    threeWeek = [utctime|2021-05-10 00:00:00|]
+    now = [utctime|2021-05-31 00:00:00|]
     lexMatch code tokens = assertEqual "match" (Right tokens) (fmap L.token <$> L.lex code)
     parseMatch = parseMatch' []
     parseMatch' aliases code expr =

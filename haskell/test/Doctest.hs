@@ -22,6 +22,7 @@ main = doctest (opts <> ["-isrc", "src/"])
           "NumericUnderscores",
           "OverloadedStrings",
           "PatternSynonyms",
+          "QuasiQuotes",
           "RecordWildCards",
           "ScopedTypeVariables",
           "TypeApplications",

@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude
   ( module Relude,
@@ -47,6 +49,9 @@ module Monocle.Prelude
     threadDelay,
     parseDateValue,
 
+    -- * qq-literals
+    utctime,
+
     -- * lens
     Lens',
     lens,
@@ -82,12 +87,20 @@ import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
+import Language.Haskell.TH.Quote (QuasiQuoter)
 import Proto3.Suite (Enumerated (..))
+import QQLiterals (qqLiteral)
 import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
 import Test.Tasty.HUnit
+
+eitherParseUTCTime :: String -> Either String UTCTime
+eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMaybe (x <> " Z"))
+
+utctime :: QuasiQuoter
+utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
@@ -99,15 +112,12 @@ getEnv' var = do
   where
     exceptEnv = fromMaybe (error $ "ERROR: Missing environment variable named " <> var)
 
--- $setup
--- >>> let mkDate s = (fromMaybe (error "oops") $ readMaybe s) :: UTCTime
-
 -- | A lifted version of getCurrentTime
 getCurrentTime :: MonadIO m => m UTCTime
 getCurrentTime = liftIO Data.Time.Clock.getCurrentTime
 
 -- | Return the seconds elapsed between a and b
--- >>> elapsedSeconds (mkDate "2000-01-01 00:00:00 Z") (mkDate "2000-01-01 01:00:00 Z")
+-- >>> elapsedSeconds [utctime|2000-01-01 00:00:00|] [utctime|2000-01-01 01:00:00|]
 -- 3600.000000000000
 elapsedSeconds :: UTCTime -> UTCTime -> Pico
 elapsedSeconds a b = nominalDiffTimeToSeconds $ diffUTCTime b a

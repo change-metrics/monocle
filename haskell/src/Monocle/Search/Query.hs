@@ -445,7 +445,7 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases ind
   (xs, _) -> Left xs
   where
     fakeNow :: UTCTime
-    fakeNow = fromMaybe (error "not utctime?") $ readMaybe "2021-06-02 23:00:00 Z"
+    fakeNow = [utctime|2021-06-02 23:00:00|]
     loadAlias :: (Text, Text) -> Either Text (Text, Expr)
     loadAlias (name, code) = do
       let toError :: Either ParseError a -> Either Text a
