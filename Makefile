@@ -7,7 +7,10 @@ MESSAGES_V2 = monocle/search.proto monocle/config.proto monocle/user_group.proto
 BACKEND_ONLY = monocle/change.proto monocle/project.proto monocle/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
-codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell
+codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell codegen-doc
+
+codegen-doc:
+	plantuml ./doc/architecture.plantuml
 
 codegen-stubs:
 	mkdir -p srcgen/

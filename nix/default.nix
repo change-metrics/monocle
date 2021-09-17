@@ -394,9 +394,11 @@ let
     sha256 = "03ky469sk0gkndxs4v8civ6x70mnnihgzaaqj51rr1xc14h40qss";
   };
   go-req = [ gnostic ];
+  doc-req = [ pkgs.plantuml ];
 
   # all requirement
-  all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req;
+  all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req
+    ++ doc-req;
 
 in rec {
   codegen-shell = pkgs.stdenv.mkDerivation {
