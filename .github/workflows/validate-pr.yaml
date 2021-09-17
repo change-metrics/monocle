@@ -118,7 +118,12 @@ jobs:
 
       - name: Install npm packages
         run: |
+          sudo apt-get install git
           cd web ; npm install
+
+      - name: Run npm test
+        run: |
+          cd web ; npm run test
 
       - name: Run npm format
         run: |
