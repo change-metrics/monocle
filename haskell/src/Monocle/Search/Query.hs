@@ -138,17 +138,15 @@ fields =
     ("from", (fieldDate, flavoredField, "Range starting date")),
     ("to", (fieldDate, flavoredField, "Range ending date")),
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
-    ("repo", (fieldText, "repository_fullname", "Repository name")),
-    ("repo_regex", (fieldRegex, "repository_fullname", "Repository regex")),
+    ("repo", (fieldRegex, "repository_fullname", "Repository name")),
     ("project", (fieldText, "project_def", "Project definition name")),
-    ("author", (fieldText, flavoredField, "Author name")),
-    ("author_regex", (fieldRegex, flavoredField, "Author regex")),
+    ("author", (fieldRegex, flavoredField, "Author name")),
     ("group", (fieldText, flavoredField, "Group definition name")),
-    ("branch", (fieldText, "target_branch", "Branch name")),
+    ("branch", (fieldRegex, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
     ("severity", (fieldText, "tasks_data.severity", "Task severity")),
-    ("task", (fieldText, "tasks_data.ttype", "Task type")),
+    ("tag", (fieldRegex, "tasks_data.ttype", "Task type")),
     ("score", (fieldNumber, "tasks_data.score", "PM score"))
   ]
 
@@ -160,7 +158,7 @@ queryFieldToDocument name = do
 -- | Resolves the actual document field for a given flavor
 getFlavoredField :: QueryFlavor -> Field -> Maybe Field
 getFlavoredField QueryFlavor {..} field
-  | field `elem` ["author", "author_regex", "group"] = Just $ case qfAuthor of
+  | field `elem` ["author", "group"] = Just $ case qfAuthor of
     Author -> "author"
     OnAuthor -> "on_author"
   | field `elem` ["from", "to"] = rangeField qfRange

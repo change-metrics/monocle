@@ -183,7 +183,7 @@ monocleSearchLanguage =
       testCase
         "Query regex"
         ( queryMatch
-            "repo_regex:openstack/.*nova.*"
+            "repo:openstack/.*nova.*"
             "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"openstack/.*nova.*\"}}}"
         ),
       testCase
@@ -234,14 +234,14 @@ monocleSearchLanguage =
         ( queryMatchFlavor
             (Q.QueryFlavor Q.Author Q.UpdatedAt)
             "author:alice"
-            "{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}"
+            "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}"
         ),
       testCase
         "Query on author"
         ( queryMatchFlavor
             (Q.QueryFlavor Q.OnAuthor Q.UpdatedAt)
             "author:alice"
-            "{\"term\":{\"on_author.muid\":{\"value\":\"alice\"}}}"
+            "{\"regexp\":{\"on_author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}"
         ),
       testCase
         "Query default bound"
@@ -286,20 +286,20 @@ monocleSearchLanguage =
     testSimpleQueryM :: Assertion
     testSimpleQueryM = mkQueryM "author:alice" $ do
       q <- prettyQuery
-      liftIO $ assertEqual "simple queryM work" (Just "{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}") q
+      liftIO $ assertEqual "simple queryM work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}") q
       dropQuery $ do
         emptyQ <- prettyQuery
         liftIO $ assertEqual "dropQuery work" Nothing emptyQ
         withModified (const $ Just (S.EqExpr "author" "bob")) $ do
           newQ <- prettyQuery
-          liftIO $ assertEqual "withModified work" (Just "{\"term\":{\"author.muid\":{\"value\":\"bob\"}}}") newQ
+          liftIO $ assertEqual "withModified work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"bob\"}}}") newQ
 
     testEnsureMinBound :: Assertion
     testEnsureMinBound = do
       testTenantM testTenant $ do
         runQueryM (Q.ensureMinBound $ mkQuery "author:alice") $ do
           got <- prettyQuery
-          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"term\":{\"author.muid\":{\"value\":\"alice\"}}}]}}"
+          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
           liftIO $ assertEqual "bound ensured with query" (Just expected) got
         runQueryM (Q.ensureMinBound $ mkQuery "") $ do
           got <- prettyQuery
@@ -309,11 +309,11 @@ monocleSearchLanguage =
     testDropDate :: Assertion
     testDropDate = mkQueryM "from:2020 repo:zuul" $ do
       got <- prettyQuery
-      let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}]}}"
+      let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}]}}"
       liftIO $ assertEqual "match" (Just expected) got
       withModified Q.dropDate $ do
         newQ <- prettyQuery
-        liftIO $ assertEqual "drop date worked" (Just "{\"term\":{\"repository_fullname\":{\"value\":\"zuul\"}}}") newQ
+        liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
 
     -- Get pretty query
     prettyQuery :: QueryM (Maybe LByteString)

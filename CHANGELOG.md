@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - [web] Adjust the default board to show Done at the end.
 - [web] Adjust changes view to display a maximum of 256 changes.
 - [web] Nomenclature of columns in Repository view.
+- [api] repo, branch and author are now regex query
+- [api] task query are now named tag and it is a regex
 
 ### Removed
 
