@@ -25,9 +25,7 @@ module Monocle.Search.Query
 where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
-import Data.Char (isDigit)
 import Data.List (lookup)
-import qualified Data.Text as Text
 import Data.Time.Clock (UTCTime (..), secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
@@ -36,6 +34,10 @@ import Monocle.Prelude hiding (parseDateValue)
 import Monocle.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax
+import qualified Text.ParserCombinators.ReadP as ReadP
+import qualified Text.ParserCombinators.ReadPrec as ReadPrec (lift)
+import Text.Read (readPrec)
+import qualified Text.Read.Lex (readDecP)
 
 -- | Handle author filter:
 -- The event author of a comment event is the comment author.
@@ -181,27 +183,46 @@ subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
 subUTCTimeSecond date sec =
   addUTCTime (secondsToNominalDiffTime (fromInteger sec * (-1))) date
 
-parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
-parseRelativeDateValue now txt
-  | "now" == txt = Just now
-  | Text.isPrefixOf "now-" txt = tryParseRange (Text.drop 4 txt)
-  | otherwise = Nothing
+data TimeRange = Hour | Day | Week
+  deriving (Show)
+
+timeRangeReader :: ReadP.ReadP TimeRange
+timeRangeReader = (hourR <|> dayR <|> weekR) <* ReadP.optional (ReadP.char 's')
   where
-    tryParseRange :: Text -> Maybe UTCTime
-    tryParseRange txt' = do
-      let countTxt = Text.takeWhile isDigit txt'
-          valTxt = Text.dropWhileEnd (== 's') $ Text.drop (Text.length countTxt) txt'
-          hour = 3600
+    hourR = Hour <$ ReadP.string "hour"
+    dayR = Day <$ ReadP.string "day"
+    weekR = Week <$ ReadP.string "week"
+
+instance Read TimeRange where
+  readPrec = ReadPrec.lift timeRangeReader
+
+data RelativeTime = MkRelativeTime Word TimeRange
+  deriving (Show)
+
+relTimeReader :: ReadP.ReadP RelativeTime
+relTimeReader = ReadP.string "now" *> (relR <|> pure defTime)
+  where
+    defTime = MkRelativeTime 0 Hour
+    relR = ReadP.char '-' *> (MkRelativeTime <$> countR <*> timeRangeReader)
+    countR :: ReadP.ReadP Word
+    countR = Text.Read.Lex.readDecP
+
+instance Read RelativeTime where
+  readPrec = ReadPrec.lift relTimeReader
+
+parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
+parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (toString txt)
+  where
+    relTimeToUTCTime :: RelativeTime -> UTCTime
+    relTimeToUTCTime (MkRelativeTime count range) =
+      let hour = 3600
           day = hour * 24
-          week = day * 7
-      count <- readMaybe (toString countTxt)
-      diffsec <-
-        (* count) <$> case valTxt of
-          "hour" -> Just hour
-          "day" -> Just day
-          "week" -> Just week
-          _ -> Nothing
-      pure $ subUTCTimeSecond now diffsec
+          diffsec =
+            (fromInteger . toInteger $ count) * case range of
+              Hour -> hour
+              Day -> day
+              Week -> day * 7
+       in subUTCTimeSecond now diffsec
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (toString txt) of
@@ -269,11 +290,16 @@ mkRangeValue op field fieldType value = do
                   $ parseRelativeDateValue now value <|> parseDateValue value
               )
 
+      when (date < oldestDate) (throwParseError $ "Date is too old: " <> show date)
+
       updateBound op date
 
       pure $ toRangeValueD op date
     Field_TypeFIELD_NUMBER -> toParseError $ toRangeValue op <$> parseNumber value
     _anyOtherField -> toParseError . Left $ "Field " <> field <> " does not support range operator"
+
+oldestDate :: UTCTime
+oldestDate = fromMaybe (error "oops") (readMaybe "1970-01-01 00:00:00 UTC")
 
 mkRangeQuery :: RangeOp -> Field -> Text -> Parser BH.Query
 mkRangeQuery op field value = do
@@ -290,9 +316,12 @@ mkRangeQuery op field value = do
       mkAnd [mkQuery "created_at", mkQuery "on_created_at"]
     _ -> mkQuery fieldName
 
+throwParseError :: Text -> Parser a
+throwParseError msg = lift . lift $ throwE (ParseError msg 0)
+
 toParseError :: Either Text a -> Parser a
 toParseError e = case e of
-  Left msg -> lift . lift $ throwE (ParseError msg 0)
+  Left msg -> throwParseError msg
   Right x -> pure x
 
 mkProjectQuery :: Config.Project -> BH.Query
