@@ -378,7 +378,7 @@ toELKTaskData TaskData {..} =
       tdUrl = toText taskDataUrl
       tdTitle = toText taskDataTitle
       -- We might get a maybe Timestamp - do not fail if Nothing
-      tdUpdatedAt = maybe defaultDate T.toUTCTime taskDataUpdatedAt
+      tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ELKTaskData {..}
   where
     defaultDate :: UTCTime =

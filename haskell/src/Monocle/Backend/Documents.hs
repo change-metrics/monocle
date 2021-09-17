@@ -4,6 +4,7 @@ module Monocle.Backend.Documents where
 import Data.Aeson (FromJSON, ToJSON, Value (String), genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Relude
 
 data Author = Author
@@ -60,11 +61,25 @@ instance ToJSON Commit where
 instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+-- | A custom utctime that supports optional 'Z' trailing suffix
+newtype UTCTimePlus = UTCTimePlus UTCTime deriving stock (Show, Eq)
+
+instance ToJSON UTCTimePlus where
+  toJSON (UTCTimePlus utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
+
+instance FromJSON UTCTimePlus where
+  parseJSON = withText "UTCTimePlus" (parse . toString)
+    where
+      oldFormat = "%FT%T"
+      utcFormat = "%FT%TZ"
+      tryParse f s = parseTimeM False defaultTimeLocale f s
+      parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
+
 -- TODO: Replace by the existing Monocle.TaskData.NewTaskData
 data ELKTaskData = ELKTaskData
   { tdTid :: Text,
     tdTtype :: [Text],
-    tdUpdatedAt :: UTCTime,
+    tdUpdatedAt :: UTCTimePlus,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,
