@@ -615,6 +615,16 @@ module QueryRender = {
     />
 }
 
+// This structure could be used to harmonize the QueryRender and NetworkRender
+module Renderer = {
+  type t<'response, 'data> = {
+    title: string,
+    tooltipContent: string,
+    matcher: 'response => option<'data>,
+    card: 'data => React.element,
+  }
+}
+
 module QueryRenderCard = {
   @react.component
   let make = (
