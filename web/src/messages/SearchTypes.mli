@@ -225,11 +225,8 @@ type lifecycle_stats = {
   merged_histo : histo list;
   abandoned_histo : histo list;
   created : review_count option;
-  opened : int32;
   abandoned : int32;
-  abandoned_ratio : float;
   merged : int32;
-  merged_ratio : float;
   self_merged : int32;
   self_merged_ratio : float;
   ttm_mean : float;
@@ -513,11 +510,8 @@ val default_lifecycle_stats :
   ?merged_histo:histo list ->
   ?abandoned_histo:histo list ->
   ?created:review_count option ->
-  ?opened:int32 ->
   ?abandoned:int32 ->
-  ?abandoned_ratio:float ->
   ?merged:int32 ->
-  ?merged_ratio:float ->
   ?self_merged:int32 ->
   ?self_merged_ratio:float ->
   ?ttm_mean:float ->

@@ -222,11 +222,8 @@ type lifecycle_stats = {
   merged_histo : histo list;
   abandoned_histo : histo list;
   created : review_count option;
-  opened : int32;
   abandoned : int32;
-  abandoned_ratio : float;
   merged : int32;
-  merged_ratio : float;
   self_merged : int32;
   self_merged_ratio : float;
   ttm_mean : float;
@@ -582,11 +579,8 @@ let rec default_lifecycle_stats
   ?merged_histo:((merged_histo:histo list) = [])
   ?abandoned_histo:((abandoned_histo:histo list) = [])
   ?created:((created:review_count option) = None)
-  ?opened:((opened:int32) = 0l)
   ?abandoned:((abandoned:int32) = 0l)
-  ?abandoned_ratio:((abandoned_ratio:float) = 0.)
   ?merged:((merged:int32) = 0l)
-  ?merged_ratio:((merged_ratio:float) = 0.)
   ?self_merged:((self_merged:int32) = 0l)
   ?self_merged_ratio:((self_merged_ratio:float) = 0.)
   ?ttm_mean:((ttm_mean:float) = 0.)
@@ -601,11 +595,8 @@ let rec default_lifecycle_stats
   merged_histo;
   abandoned_histo;
   created;
-  opened;
   abandoned;
-  abandoned_ratio;
   merged;
-  merged_ratio;
   self_merged;
   self_merged_ratio;
   ttm_mean;

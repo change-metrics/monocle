@@ -570,3 +570,29 @@ module ExternalLink = {
       {(`🔗 ` ++ title)->str}
     </a>
 }
+
+module MonoCard = {
+  @react.component
+  let make = (
+    ~title: string,
+    ~tooltip_content,
+    ~icon: React.element,
+    ~limitSelector: option<React.element>=?,
+    ~children,
+  ) =>
+    <Card isCompact=true>
+      <CardTitle>
+        <MGrid>
+          <MGridItemXl9>
+            <Title headingLevel=#H3>
+              <Tooltip content=tooltip_content> {icon} </Tooltip> {(" " ++ title)->str}
+            </Title>
+          </MGridItemXl9>
+          {limitSelector->Belt.Option.isSome
+            ? <MGridItemXl3> {limitSelector} </MGridItemXl3>
+            : React.null}
+        </MGrid>
+      </CardTitle>
+      <CardBody> {children} </CardBody>
+    </Card>
+}

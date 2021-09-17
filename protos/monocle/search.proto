@@ -239,11 +239,8 @@ message LifecycleStats {
 
   ReviewCount created = 5;
 
-  uint32 opened = 10;
   uint32 abandoned = 11;
-  float abandoned_ratio = 12;
   uint32 merged = 13;
-  float merged_ratio = 14;
   uint32 self_merged = 15;
   float self_merged_ratio = 16;
 

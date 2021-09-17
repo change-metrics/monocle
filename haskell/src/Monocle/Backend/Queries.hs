@@ -524,6 +524,26 @@ getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype]
       let i' = fromInteger $ toInteger i
        in if i' <= 0 then 10 else i'
 
+openChangesCount :: QueryM Count
+openChangesCount = withFilter (changeState ElkChangeOpen) (withoutDate countDocs)
+  where
+    withoutDate = withModified Q.dropDate
+
+mergedChangesCount :: QueryM Count
+mergedChangesCount =
+  withFilter
+    [documentType ElkChangeMergedEvent]
+    (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
+
+abandonedChangesCount :: QueryM Count
+abandonedChangesCount =
+  withFilter
+    [documentType ElkChangeAbandonedEvent]
+    (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
+
+selfMergedChangeCount :: QueryM Count
+selfMergedChangeCount = withFilter selfMerged countDocs
+
 -- | The repos_summary query
 getRepos :: QueryM TermsResultWTH
 getRepos =
@@ -552,7 +572,6 @@ getReposSummary = do
       -- This is important for project with huge list of repository regex.
       withModified (Q.dropField (`elem` ["repo", "repo_regex", "project"]))
     withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
-    withoutDate = withModified Q.dropDate
 
     getRepoSummary fullname = withRepo fullname $ do
       -- Prepare the queries
@@ -562,9 +581,9 @@ getReposSummary = do
       -- Count the events
       createdChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
       updatedChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
-      mergedChanges <- withFilter [documentType ElkChangeMergedEvent] (eventQF countDocs)
-      openChanges <- withFilter (changeState ElkChangeOpen) (withoutDate countDocs)
-      abandonedChanges <- withFilter [documentType ElkChangeAbandonedEvent] (eventQF countDocs)
+      mergedChanges <- mergedChangesCount
+      openChanges <- openChangesCount
+      abandonedChanges <- abandonedChangesCount
 
       pure $ RepoSummary {..}
 
@@ -893,18 +912,14 @@ getLifecycleStats = do
         <*> pure (countToWord created)
     pure (created, Just stats)
 
-  opened <- withFilter (changeState ElkChangeOpen) countDocs
-  merged <- withFilter (changeState ElkChangeMerged) countDocs
-  selfMerged' <- withFilter selfMerged countDocs
-  abandoned <- withFilter (changeState ElkChangeClosed) countDocs
+  merged <- mergedChangesCount
+  selfMerged' <- selfMergedChangeCount
+  abandoned <- abandonedChangesCount
 
-  let lifecycleStatsOpened = countToWord opened
-      lifecycleStatsMerged = countToWord merged
-      lifecycleStatsMergedRatio = merged `ratioF` created
+  let lifecycleStatsMerged = countToWord merged
       lifecycleStatsSelfMerged = countToWord selfMerged'
-      lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` created
+      lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` merged
       lifecycleStatsAbandoned = countToWord abandoned
-      lifecycleStatsAbandonedRatio = abandoned `ratioF` created
 
   lifecycleStatsTtmMean <-
     double2Float

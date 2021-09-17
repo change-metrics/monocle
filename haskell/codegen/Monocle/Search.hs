@@ -4720,11 +4720,8 @@ data LifecycleStats = LifecycleStats
     lifecycleStatsMergedHisto :: Hs.Vector Monocle.Search.Histo,
     lifecycleStatsAbandonedHisto :: Hs.Vector Monocle.Search.Histo,
     lifecycleStatsCreated :: Hs.Maybe Monocle.Search.ReviewCount,
-    lifecycleStatsOpened :: Hs.Word32,
     lifecycleStatsAbandoned :: Hs.Word32,
-    lifecycleStatsAbandonedRatio :: Hs.Float,
     lifecycleStatsMerged :: Hs.Word32,
-    lifecycleStatsMergedRatio :: Hs.Float,
     lifecycleStatsSelfMerged :: Hs.Word32,
     lifecycleStatsSelfMergedRatio :: Hs.Float,
     lifecycleStatsTtmMean :: Hs.Float,
@@ -4751,11 +4748,8 @@ instance HsProtobuf.Message LifecycleStats where
         lifecycleStatsMergedHisto = lifecycleStatsMergedHisto,
         lifecycleStatsAbandonedHisto = lifecycleStatsAbandonedHisto,
         lifecycleStatsCreated = lifecycleStatsCreated,
-        lifecycleStatsOpened = lifecycleStatsOpened,
         lifecycleStatsAbandoned = lifecycleStatsAbandoned,
-        lifecycleStatsAbandonedRatio = lifecycleStatsAbandonedRatio,
         lifecycleStatsMerged = lifecycleStatsMerged,
-        lifecycleStatsMergedRatio = lifecycleStatsMergedRatio,
         lifecycleStatsSelfMerged = lifecycleStatsSelfMerged,
         lifecycleStatsSelfMergedRatio = lifecycleStatsSelfMergedRatio,
         lifecycleStatsTtmMean = lifecycleStatsTtmMean,
@@ -4803,24 +4797,12 @@ instance HsProtobuf.Message LifecycleStats where
                 )
             ),
             ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 10)
-                lifecycleStatsOpened
-            ),
-            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 11)
                 lifecycleStatsAbandoned
             ),
             ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 12)
-                lifecycleStatsAbandonedRatio
-            ),
-            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 13)
                 lifecycleStatsMerged
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 14)
-                lifecycleStatsMergedRatio
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 15)
@@ -4895,23 +4877,11 @@ instance HsProtobuf.Message LifecycleStats where
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 10)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 11)
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 12)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 13)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 14)
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
@@ -4992,13 +4962,6 @@ instance HsProtobuf.Message LifecycleStats where
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 10)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "opened")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 11)
           (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "abandoned")
@@ -5006,23 +4969,9 @@ instance HsProtobuf.Message LifecycleStats where
           ""
       ),
       ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 12)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "abandoned_ratio")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 13)
           (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "merged")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 14)
-          (HsProtobuf.Prim HsProtobuf.Float)
-          (HsProtobuf.Single "merged_ratio")
           []
           ""
       ),
@@ -5092,11 +5041,8 @@ instance HsJSONPB.ToJSONPB LifecycleStats where
         f3
         f4
         f5
-        f10
         f11
-        f12
         f13
-        f14
         f15
         f16
         f30
@@ -5112,11 +5058,8 @@ instance HsJSONPB.ToJSONPB LifecycleStats where
             "merged_histo" .= f3,
             "abandoned_histo" .= f4,
             "created" .= f5,
-            "opened" .= f10,
             "abandoned" .= f11,
-            "abandoned_ratio" .= f12,
             "merged" .= f13,
-            "merged_ratio" .= f14,
             "self_merged" .= f15,
             "self_merged_ratio" .= f16,
             "ttm_mean" .= f30,
@@ -5134,11 +5077,8 @@ instance HsJSONPB.ToJSONPB LifecycleStats where
         f3
         f4
         f5
-        f10
         f11
-        f12
         f13
-        f14
         f15
         f16
         f30
@@ -5154,11 +5094,8 @@ instance HsJSONPB.ToJSONPB LifecycleStats where
             "merged_histo" .= f3,
             "abandoned_histo" .= f4,
             "created" .= f5,
-            "opened" .= f10,
             "abandoned" .= f11,
-            "abandoned_ratio" .= f12,
             "merged" .= f13,
-            "merged_ratio" .= f14,
             "self_merged" .= f15,
             "self_merged_ratio" .= f16,
             "ttm_mean" .= f30,
@@ -5180,11 +5117,8 @@ instance HsJSONPB.FromJSONPB LifecycleStats where
               <*> obj .: "merged_histo"
               <*> obj .: "abandoned_histo"
               <*> obj .: "created"
-              <*> obj .: "opened"
               <*> obj .: "abandoned"
-              <*> obj .: "abandoned_ratio"
               <*> obj .: "merged"
-              <*> obj .: "merged_ratio"
               <*> obj .: "self_merged"
               <*> obj .: "self_merged_ratio"
               <*> obj .: "ttm_mean"
@@ -5216,16 +5150,10 @@ instance HsJSONPB.ToSchema LifecycleStats where
       lifecycleStatsAbandonedHisto <- declare_abandoned_histo Proxy.Proxy
       let declare_created = HsJSONPB.declareSchemaRef
       lifecycleStatsCreated <- declare_created Proxy.Proxy
-      let declare_opened = HsJSONPB.declareSchemaRef
-      lifecycleStatsOpened <- declare_opened Proxy.Proxy
       let declare_abandoned = HsJSONPB.declareSchemaRef
       lifecycleStatsAbandoned <- declare_abandoned Proxy.Proxy
-      let declare_abandoned_ratio = HsJSONPB.declareSchemaRef
-      lifecycleStatsAbandonedRatio <- declare_abandoned_ratio Proxy.Proxy
       let declare_merged = HsJSONPB.declareSchemaRef
       lifecycleStatsMerged <- declare_merged Proxy.Proxy
-      let declare_merged_ratio = HsJSONPB.declareSchemaRef
-      lifecycleStatsMergedRatio <- declare_merged_ratio Proxy.Proxy
       let declare_self_merged = HsJSONPB.declareSchemaRef
       lifecycleStatsSelfMerged <- declare_self_merged Proxy.Proxy
       let declare_self_merged_ratio = HsJSONPB.declareSchemaRef
@@ -5259,11 +5187,8 @@ instance HsJSONPB.ToSchema LifecycleStats where
               <*> HsJSONPB.asProxy declare_merged_histo
               <*> HsJSONPB.asProxy declare_abandoned_histo
               <*> HsJSONPB.asProxy declare_created
-              <*> HsJSONPB.asProxy declare_opened
               <*> HsJSONPB.asProxy declare_abandoned
-              <*> HsJSONPB.asProxy declare_abandoned_ratio
               <*> HsJSONPB.asProxy declare_merged
-              <*> HsJSONPB.asProxy declare_merged_ratio
               <*> HsJSONPB.asProxy declare_self_merged
               <*> HsJSONPB.asProxy declare_self_merged_ratio
               <*> HsJSONPB.asProxy declare_ttm_mean
@@ -5296,13 +5221,8 @@ instance HsJSONPB.ToSchema LifecycleStats where
                             lifecycleStatsAbandonedHisto
                           ),
                           ("created", lifecycleStatsCreated),
-                          ("opened", lifecycleStatsOpened),
                           ("abandoned", lifecycleStatsAbandoned),
-                          ( "abandoned_ratio",
-                            lifecycleStatsAbandonedRatio
-                          ),
                           ("merged", lifecycleStatsMerged),
-                          ("merged_ratio", lifecycleStatsMergedRatio),
                           ("self_merged", lifecycleStatsSelfMerged),
                           ( "self_merged_ratio",
                             lifecycleStatsSelfMergedRatio
