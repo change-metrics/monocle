@@ -566,7 +566,7 @@ searchQuery request = do
             . map toAPeerResult
             <$> Q.getAuthorsPeersStrength queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
-          results <- Q.getNewContributors
+          results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
           pure $
             SearchPB.QueryResponse . Just $
               SearchPB.QueryResponseResultNewAuthors $

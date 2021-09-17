@@ -129,83 +129,72 @@ ChangeLifeCycleEventsHisto.propTypes = {
 
 const ChangesLifeCycleStats = (prop) => (
   <Row>
-    <Col>
-      <Card>
-        <Card.Header>
-          <Card.Title>Changes lifecycle stats</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={4}>
-              <ListGroup>
-                <ListGroup.Item>
-                  {prop.data.created.events_count} changes created by{' '}
-                  {prop.data.created.authors_count} authors
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <MonoLink
-                    store={prop.store}
-                    filter="state:abandoned"
-                    path="changes"
-                    name={prop.data.abandoned + ' changes abandoned'}
-                  />
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <MonoLink
-                    store={prop.store}
-                    filter="state:merged"
-                    path="changes"
-                    name={prop.data.merged + ' changes merged'}
-                  />
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <MonoLink
-                    store={prop.store}
-                    filter="state:self_merged"
-                    path="changes"
-                    name={
-                      prop.data.self_merged +
-                      ' changes self merged: ' +
-                      prop.data.self_merged_ratio +
-                      '%'
-                    }
-                  />
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  Mean Time To Merge:{' '}
-                  {moment.duration(prop.data.ttm_mean, 'seconds').humanize()}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  Median Deviation of TTM:{' '}
-                  {moment
-                    .duration(prop.data.ttm_variability, 'seconds')
-                    .humanize()}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  {prop.data.updates_of_changes} updates of changes
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  Changes with tests: {prop.data.changes_with_tests}%
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  {prop.data.iterations_per_change} iterations per change
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  {prop.data.commits_per_change.toFixed(2)} commits per change
-                </ListGroup.Item>
-              </ListGroup>
-            </Col>
-            <Col md={8}>
-              <ChangeLifeCycleEventsHisto
-                created={prop.created_histo}
-                updated={prop.updated_histo}
-                merged={prop.merged_histo}
-                abandoned={prop.abandoned_histo}
-              />
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+    <Col md={3}>
+      <ListGroup>
+        <ListGroup.Item>
+          {prop.data.created.events_count} changes created by{' '}
+          {prop.data.created.authors_count} authors
+        </ListGroup.Item>
+        <ListGroup.Item>
+          <MonoLink
+            store={prop.store}
+            filter="state:abandoned"
+            path="changes"
+            name={prop.data.abandoned + ' changes abandoned'}
+          />
+        </ListGroup.Item>
+        <ListGroup.Item>
+          <MonoLink
+            store={prop.store}
+            filter="state:merged"
+            path="changes"
+            name={prop.data.merged + ' changes merged'}
+          />
+        </ListGroup.Item>
+        <ListGroup.Item>
+          <MonoLink
+            store={prop.store}
+            filter="state:self_merged"
+            path="changes"
+            name={
+              prop.data.self_merged +
+              ' changes self merged: ' +
+              prop.data.self_merged_ratio +
+              '%'
+            }
+          />
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Mean Time To Merge:{' '}
+          {moment.duration(prop.data.ttm_mean, 'seconds').humanize()}
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Median Deviation of TTM:{' '}
+          {moment
+            .duration(prop.data.ttm_variability, 'seconds')
+            .humanize()}
+        </ListGroup.Item>
+        <ListGroup.Item>
+          {prop.data.updates_of_changes} updates of changes
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Changes with tests: {prop.data.changes_with_tests}%
+        </ListGroup.Item>
+        <ListGroup.Item>
+          {prop.data.iterations_per_change} iterations per change
+        </ListGroup.Item>
+        <ListGroup.Item>
+          {prop.data.commits_per_change.toFixed(2)} commits per change
+        </ListGroup.Item>
+      </ListGroup>
+    </Col>
+    <Col md={9}>
+      <ChangeLifeCycleEventsHisto
+        created={prop.created_histo}
+        updated={prop.updated_histo}
+        merged={prop.merged_histo}
+        abandoned={prop.abandoned_histo}
+      />
     </Col>
   </Row>
 )

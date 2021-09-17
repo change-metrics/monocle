@@ -49,18 +49,10 @@ class DurationComplexityGraph extends ComplexityGraph {
 }
 
 const ChangesReviewStats = (prop) => (
-  <Row>
-    <Col>
-      <Card>
-        <Card.Header>
-          <Card.Title>Changes merge duration</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
-        </Card.Body>
-      </Card>
-    </Col>
-  </Row>
+  <Card.Body>
+    <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
+  </Card.Body>
 )
+
 
 export default ChangesReviewStats

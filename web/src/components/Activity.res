@@ -22,23 +22,27 @@ module ChangesLifeCycleStats = {
   let make = (~store: Store.t) => {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
+    let trigger = state.query
+    let title = "Changes lifecycle stats"
+    let tooltip_content = "This shows trends of change related metrics such as the evolution of the amount of change created"
+    let icon = <Patternfly.Icons.Running />
 
-    <Search.QueryRender
-      request
-      trigger={state.query}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Lifecycle_stats(data) =>
-          <CChangesLifeCycleStats
-            store
-            data
-            created_histo={data.created_histo->Belt.List.toArray}
-            updated_histo={data.updated_histo->Belt.List.toArray}
-            merged_histo={data.merged_histo->Belt.List.toArray}
-            abandoned_histo={data.abandoned_histo->Belt.List.toArray}
-          />
-        | _ => /* Response does not match request */ React.null
-        }}
+    let match = resp =>
+      switch resp {
+      | SearchTypes.Lifecycle_stats(data) => Some(data)
+      | _ => None
+      }
+    let childrenBuilder = (data: Web.SearchTypes.lifecycle_stats) =>
+      <CChangesLifeCycleStats
+        store
+        data
+        created_histo={data.created_histo->Belt.List.toArray}
+        updated_histo={data.updated_histo->Belt.List.toArray}
+        merged_histo={data.merged_histo->Belt.List.toArray}
+        abandoned_histo={data.abandoned_histo->Belt.List.toArray}
+      />
+    <QueryRenderCard
+      request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
   }
 }
@@ -57,20 +61,24 @@ module ChangesReviewStats = {
   let make = (~store: Store.t) => {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
+    let trigger = state.query
+    let title = "Changes review stats"
+    let tooltip_content = "This shows trends of reviews and comments"
+    let icon = <Patternfly.Icons.OutlinedComments />
 
-    <Search.QueryRender
-      request
-      trigger={state.query}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Review_stats(data) =>
-          <CChangesReviewStats
-            data
-            comment_histo={data.comment_histo->Belt.List.toArray}
-            review_histo={data.review_histo->Belt.List.toArray}
-          />
-        | _ => /* Response does not match request */ React.null
-        }}
+    let match = resp =>
+      switch resp {
+      | SearchTypes.Review_stats(data) => Some(data)
+      | _ => None
+      }
+    let childrenBuilder = (data: Web.SearchTypes.review_stats) =>
+      <CChangesReviewStats
+        data
+        comment_histo={data.comment_histo->Belt.List.toArray}
+        review_histo={data.review_histo->Belt.List.toArray}
+      />
+    <QueryRenderCard
+      request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
   }
 }
@@ -94,15 +102,20 @@ module ChangesMergedDuration = {
       let link = "/" ++ state.index ++ "/change/" ++ changeId
       link->RescriptReactRouter.push
     }
-    <Search.QueryRender
-      request
-      trigger={state.query}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Changes(items) =>
-          <DurationComplexicityGraph data={items.changes->Belt.List.toArray} onClick />
-        | _ => React.null
-        }}
+    let trigger = state.query
+    let title = "Changes merge duration"
+    let tooltip_content = "This shows the delay in days to merge by change complexity"
+    let icon = <Patternfly.Icons.OutlinedClock />
+    let match = resp =>
+      switch resp {
+      | SearchTypes.Changes(data) => Some(data)
+      | _ => None
+      }
+    let childrenBuilder = (data: Web.SearchTypes.changes) =>
+      <DurationComplexicityGraph data={data.changes->Belt.List.toArray} onClick />
+
+    <QueryRenderCard
+      request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
   }
 }
@@ -124,23 +137,27 @@ module AuthorHistoStats = {
   let make = (~store: Store.t) => {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_active_authors_stats)
+    let trigger = state.query
+    let title = "Active authors"
+    let tooltip_content = "This shows trends of review and comment activities"
+    let icon = <Patternfly.Icons.Users />
 
-    <Search.QueryRender
-      request
-      trigger={state.query}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Activity_stats(data) =>
-          <CAuthorsHistoStats
-            change_authors={data.change_authors}
-            comment_authors={data.comment_authors}
-            review_authors={data.review_authors}
-            change_histo={data.changes_histo->Belt.List.toArray}
-            comment_histo={data.comments_histo->Belt.List.toArray}
-            review_histo={data.reviews_histo->Belt.List.toArray}
-          />
-        | _ => /* Response does not match request */ React.null
-        }}
+    let match = resp =>
+      switch resp {
+      | SearchTypes.Activity_stats(data) => Some(data)
+      | _ => None
+      }
+    let childrenBuilder = (data: Web.SearchTypes.activity_stats) =>
+      <CAuthorsHistoStats
+        change_authors={data.change_authors}
+        comment_authors={data.comment_authors}
+        review_authors={data.review_authors}
+        change_histo={data.changes_histo->Belt.List.toArray}
+        comment_histo={data.comments_histo->Belt.List.toArray}
+        review_histo={data.reviews_histo->Belt.List.toArray}
+      />
+    <QueryRenderCard
+      request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
   }
 }

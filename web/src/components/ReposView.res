@@ -80,30 +80,19 @@ module RepoSummaryTable = {
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
-
   let request = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
+  let trigger = state.query
+  let tooltip_content = "This shows the list of repositories (which received some activities) along with some metrics"
+  let title = "Repository summary"
+  let icon = <Patternfly.Icons.Repository />
+  let match = resp =>
+    switch resp {
+    | SearchTypes.Repos_summary(data) => Some(data.reposum)
+    | _ => None
+    }
+  let childrenBuilder = (repos: list<Web.SearchTypes.repo_summary>) =>
+    <RepoSummaryTable store repos />
 
-  <div>
-    <Search.QueryRender
-      request
-      trigger={state.query}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Repos_summary(repos) =>
-          let reposum = repos.reposum
-          switch reposum->Belt.List.length {
-          | 0 => <p> {"No repository matched"->str} </p>
-          | _ =>
-            <MCenteredContent>
-              <Card isCompact=true>
-                <CardTitle> {"Repository summary"->str} </CardTitle>
-                <CardBody> <RepoSummaryTable store repos=reposum /> </CardBody>
-              </Card>
-            </MCenteredContent>
-          }
-        | _ => React.null
-        }}
-    />
-  </div>
+  <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }
 let default = make

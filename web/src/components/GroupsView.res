@@ -15,9 +15,11 @@ module GroupItem = {
 
 @react.component
 let make = (~store: Store.t) => {
-  <div className="container">
-    <h2> {"Available User Groups"->str} </h2>
-    <Layout.Stack>
+  let title = "User Groups"
+  let tooltip_content = "This shows the list of available user groups"
+  let icon = <Patternfly.Icons.Users />
+  <MCenteredContent>
+    <MonoCard title tooltip_content icon>
       {switch Store.Fetch.user_groups(store) {
       | None => <Spinner />
       | Some(Error(title)) => <Alert variant=#Danger title />
@@ -28,8 +30,8 @@ let make = (~store: Store.t) => {
         ->Belt.List.toArray
         ->React.array
       }}
-    </Layout.Stack>
-  </div>
+    </MonoCard>
+  </MCenteredContent>
 }
 
 let default = make

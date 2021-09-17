@@ -109,42 +109,31 @@ ChangeReviewEventsHisto.propTypes = {
 
 const ChangesReviewStats = (prop) => (
   <Row>
-    <Col>
-      <Card>
-        <Card.Header>
-          <Card.Title>Changes review stats</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={4}>
-              <ListGroup>
-                <ListGroup.Item>
-                  {prop.data.comment_count.events_count} changes commented by{' '}
-                  {prop.data.comment_count.authors_count} authors
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  {prop.data.review_count.events_count} changes reviewed by{' '}
-                  {prop.data.review_count.authors_count} authors
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  Mean time for the first comment:{' '}
-                  {secondsToDhms(prop.data.comment_delay)}
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  Mean time for the first review:{' '}
-                  {secondsToDhms(prop.data.review_delay)}
-                </ListGroup.Item>
-              </ListGroup>
-            </Col>
-            <Col md={8}>
-              <ChangeReviewEventsHisto
-                comment={prop.comment_histo}
-                review={prop.review_histo}
-              />
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+    <Col md={3}>
+      <ListGroup>
+        <ListGroup.Item>
+          {prop.data.comment_count.events_count} changes commented by{' '}
+          {prop.data.comment_count.authors_count} authors
+        </ListGroup.Item>
+        <ListGroup.Item>
+          {prop.data.review_count.events_count} changes reviewed by{' '}
+          {prop.data.review_count.authors_count} authors
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Mean time for the first comment:{' '}
+          {secondsToDhms(prop.data.comment_delay)}
+        </ListGroup.Item>
+        <ListGroup.Item>
+          Mean time for the first review:{' '}
+          {secondsToDhms(prop.data.review_delay)}
+        </ListGroup.Item>
+      </ListGroup>
+    </Col>
+    <Col md={9}>
+      <ChangeReviewEventsHisto
+        comment={prop.comment_histo}
+        review={prop.review_histo}
+      />
     </Col>
   </Row>
 )

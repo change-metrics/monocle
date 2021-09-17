@@ -106,15 +106,19 @@ module GroupTable = {
 let make = (~group: string, ~store: Store.t) => {
   let (state, _) = store
   let request: UserGroupTypes.get_request = {index: state.index, name: group, query: state.query}
-  <MStack>
-    <MStackItem>
-      <h3> {group->str} </h3>
+  let title = group
+  let tooltip_content =
+    "This shows for each member " ++
+    "the ratio between changes created " ++ "and changes reviewed as well as daily activity charts"
+  let icon = <Patternfly.Icons.UsersAlt />
+  <MCenteredContent>
+    <MonoCard title tooltip_content icon>
       <NetworkRender
         get={() => WebApi.UserGroup.get(request)}
         trigger={state.query}
         render={group => <GroupTable group />}
       />
-    </MStackItem>
-  </MStack>
+    </MonoCard>
+  </MCenteredContent>
 }
 let default = make

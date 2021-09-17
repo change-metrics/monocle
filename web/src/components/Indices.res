@@ -11,9 +11,7 @@ module Indice = {
     let onClick = _ => {
       store->Store.changeIndex(name)
     }
-    <Tooltip position=#Bottom content={"Click to get the metric"}>
-      <a onClick> {name->React.string} </a>
-    </Tooltip>
+    <a onClick> {name->React.string} </a>
   }
   let card: (Store.t, ConfigTypes.workspace) => React.element = (store, ws) =>
     <MSimpleCard key={ws.name}> {make({"store": store, "name": ws.name})} </MSimpleCard>
@@ -21,19 +19,23 @@ module Indice = {
 
 module Indices = {
   @react.component
-  let make = (~store: Store.t) => <>
-    <h2> {"Available Workspaces"->React.string} </h2>
-    <Layout.Stack>
-      <NetworkRender
-        get={() => WebApi.Config.getWorkspaces({void: ""})}
-        trigger={""}
-        render={(resp: ConfigTypes.get_workspaces_response) =>
-          resp.workspaces->Belt.List.length > 0
-            ? resp.workspaces->Belt.List.map(Indice.card(store))->Belt.List.toArray->React.array
-            : <Alert variant=#Warning title={"Please create a workspace."} />}
-      />
-    </Layout.Stack>
-  </>
+  let make = (~store: Store.t) => {
+    let title = "Workspaces"
+    let tooltip_content = "This shows the list of available workspaces"
+    let icon = <Patternfly.Icons.Bundle />
+    <MCenteredContent>
+      <MonoCard title tooltip_content icon>
+        <NetworkRender
+          get={() => WebApi.Config.getWorkspaces({void: ""})}
+          trigger={""}
+          render={(resp: ConfigTypes.get_workspaces_response) =>
+            resp.workspaces->Belt.List.length > 0
+              ? resp.workspaces->Belt.List.map(Indice.card(store))->Belt.List.toArray->React.array
+              : <Alert variant=#Warning title={"Please create a workspace."} />}
+        />
+      </MonoCard>
+    </MCenteredContent>
+  }
 }
 
 let default = Indices.make

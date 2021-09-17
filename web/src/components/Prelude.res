@@ -428,24 +428,6 @@ module SortableTable = {
   }
 }
 
-module TopTermsTable = {
-  @react.component
-  let make = (~items: list<SearchTypes.term_count>, ~columnNames: array<string>) => {
-    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
-      switch index {
-      | 0 => first.term < second.term
-      | 1 => first.count < second.count
-      | _ => false
-      }
-    let formatters: list<SearchTypes.term_count => React.element> = list{
-      item => item.term->str,
-      item => item.count->int32_str->str,
-    }
-
-    <SortableTable items defaultSortedColumn=1 columnNames isOrdered formatters />
-  }
-}
-
 module MSelect = {
   let maxCount = 20
 
@@ -575,7 +557,7 @@ module MonoCard = {
   @react.component
   let make = (
     ~title: string,
-    ~tooltip_content,
+    ~tooltip_content: string,
     ~icon: React.element,
     ~limitSelector: option<React.element>=?,
     ~children,
@@ -595,4 +577,68 @@ module MonoCard = {
       </CardTitle>
       <CardBody> {children} </CardBody>
     </Card>
+}
+
+module QueryRender = {
+  @react.component
+  let make = (~request, ~trigger, ~render) =>
+    <NetworkRender
+      get={() => WebApi.Search.query(request)}
+      trigger
+      render={resp =>
+        switch resp {
+        | SearchTypes.Error(err) =>
+          <Alert
+            title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))}
+            variant=#Danger
+          />
+        | resp => render(resp)
+        }}
+    />
+}
+
+// This structure could be used to harmonize the QueryRender and NetworkRender
+module Renderer = {
+  type t<'response, 'data> = {
+    title: string,
+    tooltipContent: string,
+    matcher: 'response => option<'data>,
+    card: 'data => React.element,
+  }
+}
+
+module QueryRenderCard = {
+  @react.component
+  let make = (
+    // The request to perform by the card
+    ~request: Web.SearchTypes.query_request,
+    // The string to watch for change to run the request
+    ~trigger: string,
+    // THe title of the card
+    ~title: string,
+    // The content of the tooltip displayed by the icon
+    ~tooltip_content: string,
+    // The icon
+    ~icon: React.element,
+    // An option limitSelector component
+    ~limitSelector: option<React.element>=?,
+    // A matcher function to extract data from the response
+    ~match: Web.SearchTypes.query_response => option<'a>,
+    // The child builder
+    ~childrenBuilder: 'a => React.element,
+    // Center the child content
+    ~isCentered: bool=true,
+  ) => {
+    let render = resp => {
+      switch match(resp) {
+      | Some(data) => {
+          let content =
+            <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
+          isCentered ? <MCenteredContent> {content} </MCenteredContent> : {content}
+        }
+      | None => React.null
+      }
+    }
+    <QueryRender request trigger render />
+  }
 }

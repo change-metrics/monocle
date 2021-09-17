@@ -34,20 +34,21 @@ module ProjectsSummaryTable = {
 
 @react.component
 let make = (~store: Store.t) => {
-  <MCenteredContent>
-    <Layout.Stack>
-      {switch Store.Fetch.projects(store) {
-      | None => <Spinner />
-      | Some(Error(title)) => <Alert variant=#Danger title />
-      | Some(Ok({projects: list{}})) => <Alert variant=#Warning title={"Please define projects."} />
-      | Some(Ok({projects})) =>
-        <Card isCompact=true>
-          <CardTitle> {"Projects"->str} </CardTitle>
-          <CardBody> <ProjectsSummaryTable store projects /> </CardBody>
-        </Card>
-      }}
-    </Layout.Stack>
-  </MCenteredContent>
+  let title = "Projects"
+  let tooltip_content =
+    "This shows the list of defined projects." ++
+    " A project is composed of multiple" ++
+    " repositories and can also be set " ++ "on a specific branch."
+  let icon = <Patternfly.Icons.Project />
+  switch Store.Fetch.projects(store) {
+  | None => <Spinner />
+  | Some(Error(title)) => <Alert variant=#Danger title />
+  | Some(Ok({projects: list{}})) => <Alert variant=#Warning title={"Please define projects."} />
+  | Some(Ok({projects})) =>
+    <MCenteredContent>
+      <MonoCard title tooltip_content icon> <ProjectsSummaryTable store projects /> </MonoCard>
+    </MCenteredContent>
+  }
 }
 
 let default = make
