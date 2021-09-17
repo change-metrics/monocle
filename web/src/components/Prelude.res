@@ -428,24 +428,6 @@ module SortableTable = {
   }
 }
 
-module TopTermsTable = {
-  @react.component
-  let make = (~items: list<SearchTypes.term_count>, ~columnNames: array<string>) => {
-    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
-      switch index {
-      | 0 => first.term < second.term
-      | 1 => first.count < second.count
-      | _ => false
-      }
-    let formatters: list<SearchTypes.term_count => React.element> = list{
-      item => item.term->str,
-      item => item.count->int32_str->str,
-    }
-
-    <SortableTable items defaultSortedColumn=1 columnNames isOrdered formatters />
-  }
-}
-
 module MSelect = {
   let maxCount = 20
 
