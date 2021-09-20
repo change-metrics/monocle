@@ -121,9 +121,9 @@ fields :: [(FieldType, [Field])]
 fields = [
     (FieldDate,   ["updated_at", "created_at"])
   , (FieldNumber, ["pm_score", "review_count", "comment_count"])
-  , (FieldText,   ["repo",    "repo_regexp"])
-  , (FieldText,   ["user",    "user_regexp",    "user_group"])
-  , (FieldText,   ["project", "project_regexp", "project_group"])
+  , (FieldText,   ["repo"])
+  , (FieldText,   ["user",    "user_group"])
+  , (FieldText,   ["project", "project_group"])
 ]
 ```
 

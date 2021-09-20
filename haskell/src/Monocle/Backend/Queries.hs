@@ -570,7 +570,7 @@ getReposSummary = do
       -- Remove the initial repo filter to speedup the summary query.
       -- It is not necessary to keep such filter as we already got the repos list.
       -- This is important for project with huge list of repository regex.
-      withModified (Q.dropField (`elem` ["repo", "repo_regex", "project"]))
+      withModified (Q.dropField (`elem` ["repo", "project"]))
     withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
 
     getRepoSummary fullname = withRepo fullname $ do
