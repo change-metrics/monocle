@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.1.0] - 2021-09-21
+
+### Added
+
 - [macroscope] Added support for BugZilla crawler.
 - [macroscope] Added support for GitHub Issues crawler.
 - [config] Support update_since date format as "YYYY-mm-dd" for macroscope crawlers.
@@ -36,8 +46,6 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - [api] Peer strengh and repo summary query slowness has been reduced.
-
-### Upgrade
 
 ## [1.0.0] - 2021-08-17
 
