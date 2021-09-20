@@ -381,10 +381,7 @@ toELKTaskData TaskData {..} =
       tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ELKTaskData {..}
   where
-    defaultDate :: UTCTime =
-      fromMaybe
-        (error "Unable to parse data")
-        (readMaybe "1960-01-01 00:00:00 Z")
+    defaultDate = [utctime|1960-01-01 00:00:00|]
 
 runAddDocsBulkOPs ::
   -- | The helper function to create the bulk operation

@@ -24,10 +24,10 @@ import Monocle.TaskData
 import Relude.Unsafe ((!!))
 
 fakeDate :: UTCTime
-fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
+fakeDate = [utctime|2021-05-31 10:00:00|]
 
 fakeDateAlt :: UTCTime
-fakeDateAlt = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z")
+fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 
 fakeAuthor :: Author
 fakeAuthor = Author "John" "John"
@@ -178,7 +178,7 @@ testProjectCrawlerMetadata = withTenant doTest
         crawlerName = "test-crawler"
         worker =
           let name = crawlerName
-              update_since = toText fakeDefaultDateStr
+              update_since = show fakeDefaultDate
               provider =
                 let gitlab_url = Just "https://localhost"
                     gitlab_token = Nothing
@@ -186,11 +186,10 @@ testProjectCrawlerMetadata = withTenant doTest
                     gitlab_organization = "centos"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
-        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
-        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
-        fakeDateB = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z" :: Maybe UTCTime)
-        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
-        fakeDateC = fromMaybe (error "nop") (readMaybe "2021-06-02 23:00:00 Z" :: Maybe UTCTime)
+        fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
+        fakeDateB = [utctime|2021-05-31 10:00:00|]
+        fakeDateA = [utctime|2021-06-01 20:00:00|]
+        fakeDateC = [utctime|2021-06-02 23:00:00|]
 
 testOrganizationCrawlerMetadata :: Assertion
 testOrganizationCrawlerMetadata = withTenant doTest
@@ -215,9 +214,8 @@ testOrganizationCrawlerMetadata = withTenant doTest
       assertEqual' "check got oldest updated entity" ("gitlab-org", fakeDateA) lastUpdated'
       where
         entityType = CrawlerPB.CommitInfoRequest_EntityTypeOrganization
-        fakeDefaultDateStr = "2020-01-01 00:00:00 Z"
-        fakeDefaultDate = fromMaybe (error "nop") (readMaybe fakeDefaultDateStr :: Maybe UTCTime)
-        fakeDateA = fromMaybe (error "nop") (readMaybe "2021-06-01 20:00:00 Z" :: Maybe UTCTime)
+        fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
+        fakeDateA = [utctime|2021-06-01 20:00:00|]
         crawlerName = "test-crawler"
         getProjectCrawlerDocId =
           I.getCrawlerMetadataDocId
@@ -226,7 +224,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
             )
         worker =
           let name = crawlerName
-              update_since = toText fakeDefaultDateStr
+              update_since = show fakeDefaultDate
               provider =
                 let gitlab_url = Just "https://localhost"
                     gitlab_token = Nothing
@@ -271,8 +269,8 @@ defaultQuery :: Q.Query
 defaultQuery =
   let queryGet _ = const []
       queryBounds =
-        ( fromMaybe (error "nop") (readMaybe "2000-01-01 00:00:00 Z"),
-          fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+        ( [utctime|2000-01-01 00:00:00|],
+          [utctime|2099-12-31 23:59:59|]
         )
       queryMinBoundsSet = False
    in Q.Query {..}
@@ -412,7 +410,7 @@ testGetNewContributors = withTenant doTest
             let queryGet _ = const []
                 queryBounds =
                   ( addUTCTime 3600 fakeDate,
-                    fromMaybe (error "nop") (readMaybe "2099-12-31 23:59:59 Z")
+                    [utctime|2099-12-31 23:59:59|]
                   )
                 queryMinBoundsSet = True
              in Q.Query {..}
@@ -667,8 +665,7 @@ testTaskDataCommit = withTenant doTest
       commitDate <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
       assertEqual'
         "Task data crawler metadata - check default date"
-        ( fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z")
-        )
+        [utctime|2020-01-01 00:00:00|]
         commitDate
       -- Test that we can commit a date and make sure we get it back
       void $ I.setTDCrawlerCommitDate crawlerName fakeDate
@@ -689,7 +686,7 @@ testTaskDataCommit = withTenant doTest
 
 -- $setup
 -- >>> import Data.Time.Clock
--- >>> let now = fromMaybe (error "") (readMaybe "2021-06-10 01:21:03Z")
+-- >>> let now = [utctime|2021-06-10 01:21:03|]
 
 -- | 'randomAuthor' returns a random element of the given list
 randomAuthor :: (MonadRandom m) => [a] -> m a
