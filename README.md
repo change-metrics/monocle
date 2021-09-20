@@ -1,34 +1,41 @@
 # Monocle
 
-The main idea behind Monocle is to detect anomalies in the way changes
-are produced in your project on GitHub, GitLab and Gerrit.
+Monocle is designed for development teams to provide:
 
-Monocle is in an early phase of development. Feedback is highly welcome.
+- analytics on project changes
+- boards to display changes by criteria
 
-Checkout the [changemetrics.io website](https://changemetrics.io) and
-join us in the Matrix room at [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org).
+It helps teams and individual to better organize daily duties
+and to detect anomalies in the way changes are produced.
 
-## Components
+Monocle supports GitHub, GitLab and Gerrit.
 
-![architecture](./doc/architecture.png)
+Explore the website and blog: [changemetrics.io website](https://changemetrics.io)
 
-Monocle is composed of the following services:
+Try on the demo instance: [demo.changemetrics.io](https://demo.changemetrics.io)
 
-1. an Elasticsearch data store.
-2. an api service to perform user query and index crawler output.
-3. a crawler service to retrieve change from provider.
-4. a web proxy and web application to browse metrics.
+Chat with us in the project Matrix room: [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org)
 
-The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
+## Screenshots of Monocle from the demo instance
 
-Some legacy component are still required until they are migrated to the new OpenAPI (see the related [topic](https://github.com/change-metrics/monocle/labels/legacy)):
+The activity view:
 
-5. an api service to perform filter based query.
-6. a crawler service to index github and gerrit changes.
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-activity.png" width="70%" height="70%" />
+
+The developer board:
+
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-board.png" width="70%" height="70%" />
+
+The peers strength view:
+
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-peers-strength.png" width="70%" height="70%" />
 
 ## Installation
 
-The process below describes how to index changes from a GitHub repository, a full GitHub organisation and Gerrit repositories, and then how to start the web UI to browse metrics using `docker-compose`.
+The process below describes how to index changes from GitHub repositories
+and then how to start the web UI to browse metrics.
+
+The deployment is based on Docker via a docker-compose definition.
 
 ### Clone and create the needed directories
 
@@ -43,14 +50,14 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 0.9.0 in the .env file. Please refer
+by setting the MONOCLE_VERSION to 1.1.0 in the .env file. Please refer
 to [System configuration section](#system).
 
 ### Create the config.yaml file
 
 The `config.yaml` file is used by the crawler and api services.
 
-If you want to crawl GitHub public repositories, generate a personal access
+To crawl GitHub public repositories, you must generate a personal access
 token on GitHub (w/o any specific rights) at https://github.com/settings/tokens.
 
 Then create the config file `etc/config.yaml`. Here is an example your could start with.
@@ -97,7 +104,7 @@ $ docker-compose logs -f crawler-legacy
 
 You should be able to access the web UI at <http://localhost:8080>.
 
-After a change in the configuration file, the api and crawler services need to be restarted:
+After a change in the configuration file, the crawler-legacy service need to be restarted:
 
 ```ShellSession
 $ docker-compose restart crawler-legacy
@@ -443,17 +450,6 @@ A new field `self_merged` has been added. Previously indexed changes can be upda
 docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <index-name> --run-migrate self-merge
 ```
 
-## Using external authentication system
-
-Monocle is supporting the "REMOTE_USER" header, which is mostly used
-by sign-on solutions. When Web server takes care of authentitaction,
-it set a "REMOTE_USER" environment variable, which can be used by Monocle.
-To check that, you are able to run simple curl command:
-
-```Shell
-curl --header "REMOTE_USER: Daniel" -XGET http://localhost:9876/api/0/whoami
-```
-
 #### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
@@ -498,6 +494,23 @@ docker-compose run --rm --no-deps crawler-legacy curl \
 -XPUT http://localhost:9200/monocle.changes.1.<workspace-name>/_settings \
 -H "Content-Type: application/json" -d '{"index": {"max_regex_length": 50000}}'
 ```
+
+## Components
+
+![architecture](./doc/architecture.png)
+
+Monocle is composed of the following services:
+
+1. an Elasticsearch data store.
+2. an api service to perform user query and index crawler output.
+3. a crawler service to retrieve change from provider.
+4. a web proxy and web application to browse metrics.
+
+The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
+
+Some legacy component are still required until they are migrated to the new OpenAPI (see the related [topic](https://github.com/change-metrics/monocle/labels/legacy)):
+
+5. a crawler service to index github and gerrit changes.
 
 ## Contributing
 
