@@ -101,7 +101,7 @@ monocleReq path MonocleClient {..} body =
 retry :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
 retry action =
   Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries 5)
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries 6)
     [handler]
     (const action)
   where
@@ -112,6 +112,6 @@ retry action =
         let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
             arg = decodeUtf8 $ HTTP.queryString req
             loc = if num == 0 then url <> arg else url
-        log . LogNetworkFailure $ show num <> "/5 " <> loc <> " failed: " <> show ctx
+        log . LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx
         pure True
       InvalidUrlException _ _ -> pure False
