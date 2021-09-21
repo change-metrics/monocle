@@ -6,7 +6,7 @@ Monocle is designed for development teams to provide:
 - boards to display changes by criteria
 
 It helps teams and individual to better organize daily duties
-and to detect anomalies in the way changes are produced.
+and to detect anomalies in the way changes are produced and reviewed.
 
 Monocle supports GitHub, GitLab and Gerrit.
 
