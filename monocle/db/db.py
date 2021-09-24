@@ -467,7 +467,9 @@ class ELmonocleDB:
 
     def get_task_crawler_metadata(self, name: str) -> Dict:
         try:
-            ret = self.es.get(
+            # mypy fails with `Too many positional arguments for "get" of "Elasticsearch"`
+            # and that does not seems true
+            ret = self.es.get(  # type: ignore
                 self.index, self.compute_crawler_id_by_name(name, "tasks_crawler")
             )
             return ret["_source"]["crawler_metadata"]
@@ -507,7 +509,9 @@ class ELmonocleDB:
         }
         ret = None
         try:
-            self.es.update(
+            # mypy fails with `Too many positional arguments for "update" of "Elasticsearch"`
+            # and that does not seems true
+            self.es.update(  # type: ignore
                 self.index,
                 self.compute_crawler_id_by_name(name, "tasks_crawler"),
                 body=body,
