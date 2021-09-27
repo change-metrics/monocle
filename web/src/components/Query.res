@@ -75,4 +75,142 @@ module Expr = {
   // this let sub expression such as bool expression call the main parser.
   let rec expr = lazy (allBoolExpr(expr)->orElse(lazy closedExpr(expr)))
   let exprParser: parser<t> = Lazy.force(expr)->andThen(e => eof->fmap(_ => e))
+
+  let prettyValue = v => Js.String.indexOf(" ", v) >= 0 ? "\"" ++ v ++ "\"" : v
+
+  // Pretty print an expression
+  let rec pretty = expr => {
+    // add paren around or expr
+    let parenOr = expr =>
+      switch expr {
+      | OrExpr(_, _) => "(" ++ pretty(expr) ++ ")"
+      | _ => pretty(expr)
+      }
+
+    // add paren around and expr
+    let parenAnd = expr =>
+      switch expr {
+      | AndExpr(_, _) => "(" ++ pretty(expr) ++ ")"
+      | _ => pretty(expr)
+      }
+
+    switch expr {
+    | AndExpr(x, y) => parenOr(x) ++ " " ++ parenOr(y)
+    | OrExpr(x, y) => parenAnd(x) ++ " or " ++ parenAnd(y)
+    | NotExpr(x) =>
+      switch x {
+      | NotExpr(y) => pretty(y) // not (not y) == y
+      | AndExpr(_, _)
+      | OrExpr(_, _) =>
+        "not (" ++ pretty(x) ++ ")"
+      | _ => "not " ++ pretty(x)
+      }
+
+    | EqExpr(f, v) => f ++ ":" ++ prettyValue(v)
+    | GtExpr(f, v) => f ++ ">" ++ prettyValue(v)
+    | LtExpr(f, v) => f ++ "<" ++ prettyValue(v)
+    | GteExpr(f, v) => f ++ ">=" ++ prettyValue(v)
+    | LteExpr(f, v) => f ++ "<=" ++ prettyValue(v)
+    | AliasExpr(x) => x
+    }
+  }
+
+  // for some reason, we can't pass data constructor to function
+  // so let's create helper function
+  let andE = (x, y) => AndExpr(x, y)
+  let orE = (x, y) => OrExpr(x, y)
+
+  // Remove a field matching the predicate
+  let dropField: (string => bool, t) => option<t> = (pred, expr) => {
+    // recursively go
+    let rec go = e => {
+      // for boolean operator, we check both branch
+      let tryBoth = (op, x, y) =>
+        switch (go(x), go(y)) {
+        | (Some(x), Some(y)) => Some(op(x, y)) // the field was not found, we can reconstruct the expr
+        | (x, None) => x
+        | (None, y) => y
+        }
+
+      // for field expr, we check if the field match the pred
+      let unlessField = (field, x) => pred(field) ? None : Some(x)
+
+      switch e {
+      | AndExpr(x, y) => tryBoth(andE, x, y)
+      | OrExpr(x, y) => tryBoth(orE, x, y)
+      | NotExpr(x) =>
+        switch go(x) {
+        | None => None
+        | Some(x) => Some(NotExpr(x))
+        }
+      | EqExpr(f, _) => unlessField(f, e)
+      | GtExpr(f, _) => unlessField(f, e)
+      | LtExpr(f, _) => unlessField(f, e)
+      | GteExpr(f, _) => unlessField(f, e)
+      | LteExpr(f, _) => unlessField(f, e)
+      | AliasExpr(_) => Some(e)
+      }
+    }
+    go(expr)
+  }
+
+  // Try adding a field using an OrExpr
+  let addField: (string, string, t) => (t, bool) = (field, value, expr) => {
+    // recursively go
+    let rec go = e => {
+      // for boolean oeprator, we try both branch
+      let tryBoth = (op, x, y) => {
+        let (x, addedX) = go(x)
+        let (y, addedY) = go(y)
+        (op(x, y), addedX || addedY)
+      }
+      switch e {
+      | EqExpr(f, _) if f == field => (OrExpr(e, EqExpr(field, value)), true)
+      | AndExpr(x, y) => tryBoth(andE, x, y)
+      | OrExpr(x, y) => tryBoth(orE, x, y)
+      | _ => (e, false)
+      }
+    }
+    go(expr)
+  }
+}
+
+let parse: string => option<Expr.t> = (code: string) =>
+  switch run(Expr.exprParser, code) |> get_exn {
+  | v => Some(v)
+  | exception _ => None
+  }
+
+let addOrUpdate = (code: string, field: string, value: string) => {
+  let newExpr = Expr.EqExpr(field, value)
+  switch parse(code) {
+  | None => {
+      Js.log2("Could not parse", code)
+      code ++ " " ++ Expr.pretty(newExpr)
+    }
+  | Some(expr) =>
+    Expr.pretty(
+      switch Expr.dropField(v => field == v, expr) {
+      | None => newExpr
+      | Some(expr) => Expr.AndExpr(expr, newExpr)
+      },
+    )
+  }
+}
+
+let addField = (code: string, field: string, value: string) => {
+  let newExpr = Expr.EqExpr(field, value)
+  switch parse(code) {
+  | None => {
+      Js.log2("Could not parse", code)
+      code ++ " " ++ Expr.pretty(newExpr)
+    }
+  | Some(expr) =>
+    Expr.pretty(
+      switch Expr.addField(field, value, expr) {
+      | (expr, true) => expr
+      | (expr, false) => Expr.AndExpr(expr, newExpr)
+      },
+    )
+  }
 }
