@@ -109,3 +109,53 @@ class HealthResponse(google.protobuf.message.Message):
     ) -> None: ...
 
 global___HealthResponse = HealthResponse
+
+class Workspace(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    NAME_FIELD_NUMBER: builtins.int
+    name: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        name: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["name", b"name"]
+    ) -> None: ...
+
+global___Workspace = Workspace
+
+class GetWorkspacesRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    VOID_FIELD_NUMBER: builtins.int
+    void: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        void: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["void", b"void"]
+    ) -> None: ...
+
+global___GetWorkspacesRequest = GetWorkspacesRequest
+
+class GetWorkspacesResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    WORKSPACES_FIELD_NUMBER: builtins.int
+    @property
+    def workspaces(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Workspace
+    ]: ...
+    def __init__(
+        self,
+        *,
+        workspaces: typing.Optional[typing.Iterable[global___Workspace]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["workspaces", b"workspaces"]
+    ) -> None: ...
+
+global___GetWorkspacesResponse = GetWorkspacesResponse
