@@ -14,7 +14,7 @@ import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
-class SearchSuggestionsRequest(google.protobuf.message.Message):
+class SuggestionsRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     INDEX_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
@@ -27,15 +27,17 @@ class SearchSuggestionsRequest(google.protobuf.message.Message):
         self, field_name: typing_extensions.Literal["index", b"index"]
     ) -> None: ...
 
-global___SearchSuggestionsRequest = SearchSuggestionsRequest
+global___SuggestionsRequest = SuggestionsRequest
 
-class SearchSuggestionsResponse(google.protobuf.message.Message):
+class SuggestionsResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     TASK_TYPES_FIELD_NUMBER: builtins.int
     AUTHORS_FIELD_NUMBER: builtins.int
     APPROVALS_FIELD_NUMBER: builtins.int
     PRIORITIES_FIELD_NUMBER: builtins.int
     SEVERITIES_FIELD_NUMBER: builtins.int
+    PROJECTS_FIELD_NUMBER: builtins.int
+    GROUPS_FIELD_NUMBER: builtins.int
     task_types: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
@@ -51,6 +53,12 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
     severities: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
+    projects: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    groups: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     def __init__(
         self,
         *,
@@ -59,6 +67,8 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
         approvals: typing.Optional[typing.Iterable[typing.Text]] = ...,
         priorities: typing.Optional[typing.Iterable[typing.Text]] = ...,
         severities: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        projects: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        groups: typing.Optional[typing.Iterable[typing.Text]] = ...,
     ) -> None: ...
     def ClearField(
         self,
@@ -67,8 +77,12 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
             b"approvals",
             "authors",
             b"authors",
+            "groups",
+            b"groups",
             "priorities",
             b"priorities",
+            "projects",
+            b"projects",
             "severities",
             b"severities",
             "task_types",
@@ -76,7 +90,7 @@ class SearchSuggestionsResponse(google.protobuf.message.Message):
         ],
     ) -> None: ...
 
-global___SearchSuggestionsResponse = SearchSuggestionsResponse
+global___SuggestionsResponse = SuggestionsResponse
 
 class FieldsRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
@@ -176,6 +190,61 @@ class QueryError(google.protobuf.message.Message):
 
 global___QueryError = QueryError
 
+class CheckRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    INDEX_FIELD_NUMBER: builtins.int
+    USERNAME_FIELD_NUMBER: builtins.int
+    QUERY_FIELD_NUMBER: builtins.int
+    index: typing.Text = ...
+    username: typing.Text = ...
+    query: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        index: typing.Text = ...,
+        username: typing.Text = ...,
+        query: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "index", b"index", "query", b"query", "username", b"username"
+        ],
+    ) -> None: ...
+
+global___CheckRequest = CheckRequest
+
+class CheckResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    SUCCESS_FIELD_NUMBER: builtins.int
+    ERROR_FIELD_NUMBER: builtins.int
+    success: typing.Text = ...
+    @property
+    def error(self) -> global___QueryError: ...
+    def __init__(
+        self,
+        *,
+        success: typing.Text = ...,
+        error: typing.Optional[global___QueryError] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "result", b"result", "success", b"success"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "error", b"error", "result", b"result", "success", b"success"
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["result", b"result"]
+    ) -> typing_extensions.Literal["success", "error"]: ...
+
+global___CheckResponse = CheckResponse
+
 class Order(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     class _Direction(
@@ -217,7 +286,6 @@ class QueryRequest(google.protobuf.message.Message):
     ):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
         QUERY_CHANGE = QueryRequest.QueryType.V(0)
-        QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
         QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
         QUERY_TOP_AUTHORS_CHANGES_CREATED = QueryRequest.QueryType.V(3)
         QUERY_TOP_AUTHORS_CHANGES_MERGED = QueryRequest.QueryType.V(4)
@@ -227,10 +295,14 @@ class QueryRequest(google.protobuf.message.Message):
         QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
         QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
         QUERY_NEW_CHANGES_AUTHORS = QueryRequest.QueryType.V(10)
+        QUERY_CHANGES_REVIEW_STATS = QueryRequest.QueryType.V(20)
+        QUERY_CHANGES_LIFECYCLE_STATS = QueryRequest.QueryType.V(21)
+        QUERY_ACTIVE_AUTHORS_STATS = QueryRequest.QueryType.V(22)
+        QUERY_CHANGE_AND_EVENTS = QueryRequest.QueryType.V(30)
+        QUERY_CHANGES_TOPS = QueryRequest.QueryType.V(31)
     class QueryType(metaclass=_QueryType):
         V = typing.NewType("V", builtins.int)
     QUERY_CHANGE = QueryRequest.QueryType.V(0)
-    QUERY_CHANGE_LIFECYCLE = QueryRequest.QueryType.V(1)
     QUERY_REPOS_SUMMARY = QueryRequest.QueryType.V(2)
     QUERY_TOP_AUTHORS_CHANGES_CREATED = QueryRequest.QueryType.V(3)
     QUERY_TOP_AUTHORS_CHANGES_MERGED = QueryRequest.QueryType.V(4)
@@ -240,6 +312,11 @@ class QueryRequest(google.protobuf.message.Message):
     QUERY_TOP_COMMENTED_AUTHORS = QueryRequest.QueryType.V(8)
     QUERY_TOP_AUTHORS_PEERS = QueryRequest.QueryType.V(9)
     QUERY_NEW_CHANGES_AUTHORS = QueryRequest.QueryType.V(10)
+    QUERY_CHANGES_REVIEW_STATS = QueryRequest.QueryType.V(20)
+    QUERY_CHANGES_LIFECYCLE_STATS = QueryRequest.QueryType.V(21)
+    QUERY_ACTIVE_AUTHORS_STATS = QueryRequest.QueryType.V(22)
+    QUERY_CHANGE_AND_EVENTS = QueryRequest.QueryType.V(30)
+    QUERY_CHANGES_TOPS = QueryRequest.QueryType.V(31)
 
     INDEX_FIELD_NUMBER: builtins.int
     USERNAME_FIELD_NUMBER: builtins.int
@@ -247,11 +324,13 @@ class QueryRequest(google.protobuf.message.Message):
     QUERY_TYPE_FIELD_NUMBER: builtins.int
     ORDER_FIELD_NUMBER: builtins.int
     LIMIT_FIELD_NUMBER: builtins.int
+    CHANGE_ID_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     username: typing.Text = ...
     query: typing.Text = ...
     query_type: global___QueryRequest.QueryType.V = ...
     limit: builtins.int = ...
+    change_id: typing.Text = ...
     @property
     def order(self) -> global___Order: ...
     def __init__(
@@ -263,6 +342,7 @@ class QueryRequest(google.protobuf.message.Message):
         query_type: global___QueryRequest.QueryType.V = ...,
         order: typing.Optional[global___Order] = ...,
         limit: builtins.int = ...,
+        change_id: typing.Text = ...,
     ) -> None: ...
     def HasField(
         self, field_name: typing_extensions.Literal["order", b"order"]
@@ -270,6 +350,8 @@ class QueryRequest(google.protobuf.message.Message):
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
+            "change_id",
+            b"change_id",
             "index",
             b"index",
             "limit",
@@ -578,6 +660,256 @@ class Changes(google.protobuf.message.Message):
 
 global___Changes = Changes
 
+class ChangeEvent(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ID_FIELD_NUMBER: builtins.int
+    TYPE_FIELD_NUMBER: builtins.int
+    CHANGE_ID_FIELD_NUMBER: builtins.int
+    CREATED_AT_FIELD_NUMBER: builtins.int
+    ON_CREATED_AT_FIELD_NUMBER: builtins.int
+    AUTHOR_FIELD_NUMBER: builtins.int
+    ON_AUTHOR_FIELD_NUMBER: builtins.int
+    BRANCH_FIELD_NUMBER: builtins.int
+    id: typing.Text = ...
+    type: typing.Text = ...
+    change_id: typing.Text = ...
+    author: typing.Text = ...
+    on_author: typing.Text = ...
+    branch: typing.Text = ...
+    @property
+    def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    @property
+    def on_created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        id: typing.Text = ...,
+        type: typing.Text = ...,
+        change_id: typing.Text = ...,
+        created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        on_created_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        author: typing.Text = ...,
+        on_author: typing.Text = ...,
+        branch: typing.Text = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "created_at", b"created_at", "on_created_at", b"on_created_at"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "author",
+            b"author",
+            "branch",
+            b"branch",
+            "change_id",
+            b"change_id",
+            "created_at",
+            b"created_at",
+            "id",
+            b"id",
+            "on_author",
+            b"on_author",
+            "on_created_at",
+            b"on_created_at",
+            "type",
+            b"type",
+        ],
+    ) -> None: ...
+
+global___ChangeEvent = ChangeEvent
+
+class ChangeAndEvents(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    CHANGE_FIELD_NUMBER: builtins.int
+    EVENTS_FIELD_NUMBER: builtins.int
+    @property
+    def change(self) -> global___Change: ...
+    @property
+    def events(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___ChangeEvent
+    ]: ...
+    def __init__(
+        self,
+        *,
+        change: typing.Optional[global___Change] = ...,
+        events: typing.Optional[typing.Iterable[global___ChangeEvent]] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["change", b"change"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal["change", b"change", "events", b"events"],
+    ) -> None: ...
+
+global___ChangeAndEvents = ChangeAndEvents
+
+class ReviewCount(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    AUTHORS_COUNT_FIELD_NUMBER: builtins.int
+    EVENTS_COUNT_FIELD_NUMBER: builtins.int
+    authors_count: builtins.int = ...
+    events_count: builtins.int = ...
+    def __init__(
+        self,
+        *,
+        authors_count: builtins.int = ...,
+        events_count: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "authors_count", b"authors_count", "events_count", b"events_count"
+        ],
+    ) -> None: ...
+
+global___ReviewCount = ReviewCount
+
+class Histo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DATE_FIELD_NUMBER: builtins.int
+    COUNT_FIELD_NUMBER: builtins.int
+    date: typing.Text = ...
+    count: builtins.int = ...
+    def __init__(
+        self,
+        *,
+        date: typing.Text = ...,
+        count: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["count", b"count", "date", b"date"]
+    ) -> None: ...
+
+global___Histo = Histo
+
+class ReviewStats(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    COMMENT_COUNT_FIELD_NUMBER: builtins.int
+    REVIEW_COUNT_FIELD_NUMBER: builtins.int
+    COMMENT_DELAY_FIELD_NUMBER: builtins.int
+    REVIEW_DELAY_FIELD_NUMBER: builtins.int
+    COMMENT_HISTO_FIELD_NUMBER: builtins.int
+    REVIEW_HISTO_FIELD_NUMBER: builtins.int
+    comment_delay: builtins.int = ...
+    review_delay: builtins.int = ...
+    @property
+    def comment_count(self) -> global___ReviewCount: ...
+    @property
+    def review_count(self) -> global___ReviewCount: ...
+    @property
+    def comment_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
+    @property
+    def review_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
+    def __init__(
+        self,
+        *,
+        comment_count: typing.Optional[global___ReviewCount] = ...,
+        review_count: typing.Optional[global___ReviewCount] = ...,
+        comment_delay: builtins.int = ...,
+        review_delay: builtins.int = ...,
+        comment_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        review_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "comment_count", b"comment_count", "review_count", b"review_count"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "comment_count",
+            b"comment_count",
+            "comment_delay",
+            b"comment_delay",
+            "comment_histo",
+            b"comment_histo",
+            "review_count",
+            b"review_count",
+            "review_delay",
+            b"review_delay",
+            "review_histo",
+            b"review_histo",
+        ],
+    ) -> None: ...
+
+global___ReviewStats = ReviewStats
+
+class ActivityStats(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    CHANGE_AUTHORS_FIELD_NUMBER: builtins.int
+    COMMENT_AUTHORS_FIELD_NUMBER: builtins.int
+    REVIEW_AUTHORS_FIELD_NUMBER: builtins.int
+    COMMENTS_HISTO_FIELD_NUMBER: builtins.int
+    REVIEWS_HISTO_FIELD_NUMBER: builtins.int
+    CHANGES_HISTO_FIELD_NUMBER: builtins.int
+    change_authors: builtins.int = ...
+    comment_authors: builtins.int = ...
+    review_authors: builtins.int = ...
+    @property
+    def comments_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
+    @property
+    def reviews_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
+    @property
+    def changes_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
+    def __init__(
+        self,
+        *,
+        change_authors: builtins.int = ...,
+        comment_authors: builtins.int = ...,
+        review_authors: builtins.int = ...,
+        comments_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        reviews_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        changes_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "change_authors",
+            b"change_authors",
+            "changes_histo",
+            b"changes_histo",
+            "comment_authors",
+            b"comment_authors",
+            "comments_histo",
+            b"comments_histo",
+            "review_authors",
+            b"review_authors",
+            "reviews_histo",
+            b"reviews_histo",
+        ],
+    ) -> None: ...
+
+global___ActivityStats = ActivityStats
+
 class QueryResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ERROR_FIELD_NUMBER: builtins.int
@@ -586,6 +918,11 @@ class QueryResponse(google.protobuf.message.Message):
     TOP_AUTHORS_FIELD_NUMBER: builtins.int
     AUTHORS_PEERS_FIELD_NUMBER: builtins.int
     NEW_AUTHORS_FIELD_NUMBER: builtins.int
+    REVIEW_STATS_FIELD_NUMBER: builtins.int
+    LIFECYCLE_STATS_FIELD_NUMBER: builtins.int
+    ACTIVITY_STATS_FIELD_NUMBER: builtins.int
+    CHANGE_EVENTS_FIELD_NUMBER: builtins.int
+    CHANGES_TOPS_FIELD_NUMBER: builtins.int
     @property
     def error(self) -> global___QueryError: ...
     @property
@@ -598,6 +935,16 @@ class QueryResponse(google.protobuf.message.Message):
     def authors_peers(self) -> global___AuthorsPeers: ...
     @property
     def new_authors(self) -> global___TermsCount: ...
+    @property
+    def review_stats(self) -> global___ReviewStats: ...
+    @property
+    def lifecycle_stats(self) -> global___LifecycleStats: ...
+    @property
+    def activity_stats(self) -> global___ActivityStats: ...
+    @property
+    def change_events(self) -> global___ChangeAndEvents: ...
+    @property
+    def changes_tops(self) -> global___ChangesTops: ...
     def __init__(
         self,
         *,
@@ -607,22 +954,37 @@ class QueryResponse(google.protobuf.message.Message):
         top_authors: typing.Optional[global___TermsCount] = ...,
         authors_peers: typing.Optional[global___AuthorsPeers] = ...,
         new_authors: typing.Optional[global___TermsCount] = ...,
+        review_stats: typing.Optional[global___ReviewStats] = ...,
+        lifecycle_stats: typing.Optional[global___LifecycleStats] = ...,
+        activity_stats: typing.Optional[global___ActivityStats] = ...,
+        change_events: typing.Optional[global___ChangeAndEvents] = ...,
+        changes_tops: typing.Optional[global___ChangesTops] = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
+            "activity_stats",
+            b"activity_stats",
             "authors_peers",
             b"authors_peers",
+            "change_events",
+            b"change_events",
             "changes",
             b"changes",
+            "changes_tops",
+            b"changes_tops",
             "error",
             b"error",
+            "lifecycle_stats",
+            b"lifecycle_stats",
             "new_authors",
             b"new_authors",
             "repos_summary",
             b"repos_summary",
             "result",
             b"result",
+            "review_stats",
+            b"review_stats",
             "top_authors",
             b"top_authors",
         ],
@@ -630,18 +992,28 @@ class QueryResponse(google.protobuf.message.Message):
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
+            "activity_stats",
+            b"activity_stats",
             "authors_peers",
             b"authors_peers",
+            "change_events",
+            b"change_events",
             "changes",
             b"changes",
+            "changes_tops",
+            b"changes_tops",
             "error",
             b"error",
+            "lifecycle_stats",
+            b"lifecycle_stats",
             "new_authors",
             b"new_authors",
             "repos_summary",
             b"repos_summary",
             "result",
             b"result",
+            "review_stats",
+            b"review_stats",
             "top_authors",
             b"top_authors",
         ],
@@ -655,279 +1027,150 @@ class QueryResponse(google.protobuf.message.Message):
         "top_authors",
         "authors_peers",
         "new_authors",
+        "review_stats",
+        "lifecycle_stats",
+        "activity_stats",
+        "change_events",
+        "changes_tops",
     ]: ...
 
 global___QueryResponse = QueryResponse
 
-class ChangesHistos(google.protobuf.message.Message):
+class LifecycleStats(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class Event(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-        DOC_COUNT_FIELD_NUMBER: builtins.int
-        KEY_FIELD_NUMBER: builtins.int
-        KEY_AS_STRING_FIELD_NUMBER: builtins.int
-        doc_count: builtins.int = ...
-        key: builtins.int = ...
-        key_as_string: typing.Text = ...
-        def __init__(
-            self,
-            *,
-            doc_count: builtins.int = ...,
-            key: builtins.int = ...,
-            key_as_string: typing.Text = ...,
-        ) -> None: ...
-        def ClearField(
-            self,
-            field_name: typing_extensions.Literal[
-                "doc_count",
-                b"doc_count",
-                "key",
-                b"key",
-                "key_as_string",
-                b"key_as_string",
-            ],
-        ) -> None: ...
-    CHANGEABANDONEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGECOMMITFORCEPUSHEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGECOMMITPUSHEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGECREATEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGEMERGEDEVENT_FIELD_NUMBER: builtins.int
-    @property
-    def ChangeAbandonedEvent(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___ChangesHistos.Event
-    ]: ...
-    @property
-    def ChangeCommitForcePushedEvent(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___ChangesHistos.Event
-    ]: ...
-    @property
-    def ChangeCommitPushedEvent(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___ChangesHistos.Event
-    ]: ...
-    @property
-    def ChangeCreatedEvent(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___ChangesHistos.Event
-    ]: ...
-    @property
-    def ChangeMergedEvent(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___ChangesHistos.Event
-    ]: ...
-    def __init__(
-        self,
-        *,
-        ChangeAbandonedEvent: typing.Optional[
-            typing.Iterable[global___ChangesHistos.Event]
-        ] = ...,
-        ChangeCommitForcePushedEvent: typing.Optional[
-            typing.Iterable[global___ChangesHistos.Event]
-        ] = ...,
-        ChangeCommitPushedEvent: typing.Optional[
-            typing.Iterable[global___ChangesHistos.Event]
-        ] = ...,
-        ChangeCreatedEvent: typing.Optional[
-            typing.Iterable[global___ChangesHistos.Event]
-        ] = ...,
-        ChangeMergedEvent: typing.Optional[
-            typing.Iterable[global___ChangesHistos.Event]
-        ] = ...,
-    ) -> None: ...
-    def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "ChangeAbandonedEvent",
-            b"ChangeAbandonedEvent",
-            "ChangeCommitForcePushedEvent",
-            b"ChangeCommitForcePushedEvent",
-            "ChangeCommitPushedEvent",
-            b"ChangeCommitPushedEvent",
-            "ChangeCreatedEvent",
-            b"ChangeCreatedEvent",
-            "ChangeMergedEvent",
-            b"ChangeMergedEvent",
-        ],
-    ) -> None: ...
-
-global___ChangesHistos = ChangesHistos
-
-class ChangesLifecycle(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class Event(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-        AUTHORS_COUNT_FIELD_NUMBER: builtins.int
-        EVENTS_COUNT_FIELD_NUMBER: builtins.int
-        authors_count: builtins.int = ...
-        events_count: builtins.int = ...
-        def __init__(
-            self,
-            *,
-            authors_count: builtins.int = ...,
-            events_count: builtins.int = ...,
-        ) -> None: ...
-        def ClearField(
-            self,
-            field_name: typing_extensions.Literal[
-                "authors_count", b"authors_count", "events_count", b"events_count"
-            ],
-        ) -> None: ...
-    class Ratios(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-        ABANDONED_FIELD_NUMBER: builtins.int
-        ITERATIONS_FIELD_NUMBER: builtins.int
-        MERGED_FIELD_NUMBER: builtins.int
-        SELF_MERGED_FIELD_NUMBER: builtins.int
-        abandoned: builtins.float = ...
-        iterations: builtins.float = ...
-        merged: builtins.float = ...
-        self_merged: builtins.float = ...
-        def __init__(
-            self,
-            *,
-            abandoned: builtins.float = ...,
-            iterations: builtins.float = ...,
-            merged: builtins.float = ...,
-            self_merged: builtins.float = ...,
-        ) -> None: ...
-        def ClearField(
-            self,
-            field_name: typing_extensions.Literal[
-                "abandoned",
-                b"abandoned",
-                "iterations",
-                b"iterations",
-                "merged",
-                b"merged",
-                "self_merged",
-                b"self_merged",
-            ],
-        ) -> None: ...
-    CHANGECOMMITFORCEPUSHEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGECOMMITPUSHEDEVENT_FIELD_NUMBER: builtins.int
-    CHANGECREATEDEVENT_FIELD_NUMBER: builtins.int
+    CREATED_HISTO_FIELD_NUMBER: builtins.int
+    UPDATED_HISTO_FIELD_NUMBER: builtins.int
+    MERGED_HISTO_FIELD_NUMBER: builtins.int
+    ABANDONED_HISTO_FIELD_NUMBER: builtins.int
+    CREATED_FIELD_NUMBER: builtins.int
     ABANDONED_FIELD_NUMBER: builtins.int
-    COMMITS_FIELD_NUMBER: builtins.int
-    DURATION_FIELD_NUMBER: builtins.int
-    DURATION_VARIABILITY_FIELD_NUMBER: builtins.int
-    HISTOS_FIELD_NUMBER: builtins.int
     MERGED_FIELD_NUMBER: builtins.int
-    OPENED_FIELD_NUMBER: builtins.int
-    RATIOS_FIELD_NUMBER: builtins.int
     SELF_MERGED_FIELD_NUMBER: builtins.int
-    TESTS_FIELD_NUMBER: builtins.int
+    SELF_MERGED_RATIO_FIELD_NUMBER: builtins.int
+    TTM_MEAN_FIELD_NUMBER: builtins.int
+    TTM_VARIABILITY_FIELD_NUMBER: builtins.int
+    UPDATES_OF_CHANGES_FIELD_NUMBER: builtins.int
+    CHANGES_WITH_TESTS_FIELD_NUMBER: builtins.int
+    ITERATIONS_PER_CHANGE_FIELD_NUMBER: builtins.int
+    COMMITS_PER_CHANGE_FIELD_NUMBER: builtins.int
     abandoned: builtins.int = ...
-    commits: builtins.float = ...
-    duration: builtins.float = ...
-    duration_variability: builtins.float = ...
     merged: builtins.int = ...
-    opened: builtins.int = ...
     self_merged: builtins.int = ...
-    tests: builtins.float = ...
+    self_merged_ratio: builtins.float = ...
+    ttm_mean: builtins.float = ...
+    ttm_variability: builtins.float = ...
+    updates_of_changes: builtins.int = ...
+    changes_with_tests: builtins.float = ...
+    iterations_per_change: builtins.float = ...
+    commits_per_change: builtins.float = ...
     @property
-    def ChangeCommitForcePushedEvent(self) -> global___ChangesLifecycle.Event: ...
+    def created_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
     @property
-    def ChangeCommitPushedEvent(self) -> global___ChangesLifecycle.Event: ...
+    def updated_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
     @property
-    def ChangeCreatedEvent(self) -> global___ChangesLifecycle.Event: ...
+    def merged_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
     @property
-    def histos(self) -> global___ChangesHistos: ...
+    def abandoned_histo(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___Histo
+    ]: ...
     @property
-    def ratios(self) -> global___ChangesLifecycle.Ratios: ...
+    def created(self) -> global___ReviewCount: ...
     def __init__(
         self,
         *,
-        ChangeCommitForcePushedEvent: typing.Optional[
-            global___ChangesLifecycle.Event
-        ] = ...,
-        ChangeCommitPushedEvent: typing.Optional[global___ChangesLifecycle.Event] = ...,
-        ChangeCreatedEvent: typing.Optional[global___ChangesLifecycle.Event] = ...,
+        created_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        updated_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        merged_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        abandoned_histo: typing.Optional[typing.Iterable[global___Histo]] = ...,
+        created: typing.Optional[global___ReviewCount] = ...,
         abandoned: builtins.int = ...,
-        commits: builtins.float = ...,
-        duration: builtins.float = ...,
-        duration_variability: builtins.float = ...,
-        histos: typing.Optional[global___ChangesHistos] = ...,
         merged: builtins.int = ...,
-        opened: builtins.int = ...,
-        ratios: typing.Optional[global___ChangesLifecycle.Ratios] = ...,
         self_merged: builtins.int = ...,
-        tests: builtins.float = ...,
+        self_merged_ratio: builtins.float = ...,
+        ttm_mean: builtins.float = ...,
+        ttm_variability: builtins.float = ...,
+        updates_of_changes: builtins.int = ...,
+        changes_with_tests: builtins.float = ...,
+        iterations_per_change: builtins.float = ...,
+        commits_per_change: builtins.float = ...,
     ) -> None: ...
     def HasField(
-        self,
-        field_name: typing_extensions.Literal[
-            "ChangeCommitForcePushedEvent",
-            b"ChangeCommitForcePushedEvent",
-            "ChangeCommitPushedEvent",
-            b"ChangeCommitPushedEvent",
-            "ChangeCreatedEvent",
-            b"ChangeCreatedEvent",
-            "histos",
-            b"histos",
-            "ratios",
-            b"ratios",
-        ],
+        self, field_name: typing_extensions.Literal["created", b"created"]
     ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "ChangeCommitForcePushedEvent",
-            b"ChangeCommitForcePushedEvent",
-            "ChangeCommitPushedEvent",
-            b"ChangeCommitPushedEvent",
-            "ChangeCreatedEvent",
-            b"ChangeCreatedEvent",
             "abandoned",
             b"abandoned",
-            "commits",
-            b"commits",
-            "duration",
-            b"duration",
-            "duration_variability",
-            b"duration_variability",
-            "histos",
-            b"histos",
+            "abandoned_histo",
+            b"abandoned_histo",
+            "changes_with_tests",
+            b"changes_with_tests",
+            "commits_per_change",
+            b"commits_per_change",
+            "created",
+            b"created",
+            "created_histo",
+            b"created_histo",
+            "iterations_per_change",
+            b"iterations_per_change",
             "merged",
             b"merged",
-            "opened",
-            b"opened",
-            "ratios",
-            b"ratios",
+            "merged_histo",
+            b"merged_histo",
             "self_merged",
             b"self_merged",
-            "tests",
-            b"tests",
+            "self_merged_ratio",
+            b"self_merged_ratio",
+            "ttm_mean",
+            b"ttm_mean",
+            "ttm_variability",
+            b"ttm_variability",
+            "updated_histo",
+            b"updated_histo",
+            "updates_of_changes",
+            b"updates_of_changes",
         ],
     ) -> None: ...
 
-global___ChangesLifecycle = ChangesLifecycle
+global___LifecycleStats = LifecycleStats
 
 class RepoSummary(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     FULLNAME_FIELD_NUMBER: builtins.int
-    TOTAL_CHANGES_FIELD_NUMBER: builtins.int
+    CREATED_CHANGES_FIELD_NUMBER: builtins.int
     ABANDONED_CHANGES_FIELD_NUMBER: builtins.int
     MERGED_CHANGES_FIELD_NUMBER: builtins.int
+    UPDATED_CHANGES_FIELD_NUMBER: builtins.int
     OPEN_CHANGES_FIELD_NUMBER: builtins.int
     fullname: typing.Text = ...
-    total_changes: builtins.int = ...
+    created_changes: builtins.int = ...
     abandoned_changes: builtins.int = ...
     merged_changes: builtins.int = ...
+    updated_changes: builtins.int = ...
     open_changes: builtins.int = ...
     def __init__(
         self,
         *,
         fullname: typing.Text = ...,
-        total_changes: builtins.int = ...,
+        created_changes: builtins.int = ...,
         abandoned_changes: builtins.int = ...,
         merged_changes: builtins.int = ...,
+        updated_changes: builtins.int = ...,
         open_changes: builtins.int = ...,
     ) -> None: ...
     def ClearField(
@@ -935,14 +1178,16 @@ class RepoSummary(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "abandoned_changes",
             b"abandoned_changes",
+            "created_changes",
+            b"created_changes",
             "fullname",
             b"fullname",
             "merged_changes",
             b"merged_changes",
             "open_changes",
             b"open_changes",
-            "total_changes",
-            b"total_changes",
+            "updated_changes",
+            b"updated_changes",
         ],
     ) -> None: ...
 
@@ -989,6 +1234,8 @@ global___TermCount = TermCount
 class TermsCount(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     TERMCOUNT_FIELD_NUMBER: builtins.int
+    TOTAL_HITS_FIELD_NUMBER: builtins.int
+    total_hits: builtins.int = ...
     @property
     def termcount(
         self,
@@ -999,9 +1246,13 @@ class TermsCount(google.protobuf.message.Message):
         self,
         *,
         termcount: typing.Optional[typing.Iterable[global___TermCount]] = ...,
+        total_hits: builtins.int = ...,
     ) -> None: ...
     def ClearField(
-        self, field_name: typing_extensions.Literal["termcount", b"termcount"]
+        self,
+        field_name: typing_extensions.Literal[
+            "termcount", b"termcount", "total_hits", b"total_hits"
+        ],
     ) -> None: ...
 
 global___TermsCount = TermsCount
@@ -1049,3 +1300,36 @@ class AuthorsPeers(google.protobuf.message.Message):
     ) -> None: ...
 
 global___AuthorsPeers = AuthorsPeers
+
+class ChangesTops(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    AUTHORS_FIELD_NUMBER: builtins.int
+    REPOS_FIELD_NUMBER: builtins.int
+    APPROVALS_FIELD_NUMBER: builtins.int
+    @property
+    def authors(self) -> global___TermsCount: ...
+    @property
+    def repos(self) -> global___TermsCount: ...
+    @property
+    def approvals(self) -> global___TermsCount: ...
+    def __init__(
+        self,
+        *,
+        authors: typing.Optional[global___TermsCount] = ...,
+        repos: typing.Optional[global___TermsCount] = ...,
+        approvals: typing.Optional[global___TermsCount] = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "approvals", b"approvals", "authors", b"authors", "repos", b"repos"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "approvals", b"approvals", "authors", b"authors", "repos", b"repos"
+        ],
+    ) -> None: ...
+
+global___ChangesTops = ChangesTops
