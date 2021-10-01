@@ -33,18 +33,26 @@ module TaskData = {
       | _ => #Green
       }
     @react.component
-    let make = (~ps, ~name) => {
-      let label = name ++ ": " ++ ps
-      <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
-    }
+    let make = (~ps, ~name) =>
+      switch ps {
+      | "" => React.null
+      | _ => {
+          let label = name ++ ": " ++ ps
+          <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
+        }
+      }
   }
 
   module TaskScore = {
     @react.component
-    let make = (~score) => {
-      let label = "Score: " ++ string_of_int(Int32.to_int(score))
-      <Patternfly.Label> {label} </Patternfly.Label>
-    }
+    let make = (~score) =>
+      switch Int32.to_int(score) {
+      | 0 => React.null
+      | score => {
+          let label = "Score: " ++ string_of_int(score)
+          <Patternfly.Label> {label} </Patternfly.Label>
+        }
+      }
   }
 
   module TaskLink = {
