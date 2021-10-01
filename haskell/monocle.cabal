@@ -247,6 +247,7 @@ test-suite monocle-test
   build-depends:       base                       < 5
                      , aeson-pretty
                      , bugzilla-redhat            >= 0.3.2
+                     , fakedata                   >= 1.0
                      , http-client                < 0.8
                      , http-mock                  < 0.2
                      , http-types                 < 0.13
@@ -262,6 +263,7 @@ test-suite monocle-test
                      , wai                        < 3.3
                      , warp                       < 3.4
   other-modules:       Monocle.Mock
+                     , Monocle.Provisioner
                      , Lentille.BugzillaMock
                      , Lentille.Bugzilla.Spec
   ghc-options:         -threaded

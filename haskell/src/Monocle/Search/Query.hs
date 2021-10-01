@@ -26,7 +26,7 @@ where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.List (lookup)
-import Data.Time.Clock (UTCTime (..), secondsToNominalDiffTime)
+import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
 import qualified Monocle.Api.Config as Config
@@ -246,11 +246,6 @@ note :: Text -> Maybe a -> Either Text a
 note err value = case value of
   Just a -> Right a
   Nothing -> Left err
-
--- | dropTime ensures the encoded date does not have millisecond.
--- This actually discard hour differences
-dropTime :: UTCTime -> UTCTime
-dropTime (UTCTime day _sec) = UTCTime day 0
 
 toRangeValueD :: RangeOp -> (UTCTime -> BH.RangeValue)
 toRangeValueD op = case op of

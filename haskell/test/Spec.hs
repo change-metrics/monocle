@@ -10,6 +10,7 @@ import Monocle.Client.Api
 import Monocle.Env
 import Monocle.Mock
 import Monocle.Prelude
+import Monocle.Provisioner (runProvisioner)
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
@@ -32,6 +33,11 @@ main = do
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
         pure [monocleIntegrationTests]
+
+  provisionerM <- lookupEnv "PROVISIONER"
+  case provisionerM of
+    Just provisioner -> runProvisioner (toText provisioner) >> exitSuccess
+    Nothing -> pure ()
 
   defaultMain
     ( testGroup "Tests" $
