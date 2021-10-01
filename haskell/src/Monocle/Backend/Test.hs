@@ -646,6 +646,7 @@ testTaskDataAdd = withTenant doTest
           taskDataSeverity = ""
           taskDataPriority = ""
           taskDataScore = 0
+          taskDataPrefix = "lada"
        in TaskData {..}
     getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url

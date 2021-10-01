@@ -140,6 +140,7 @@ transformResponse searchResult =
         <*> pure "low"
         <*> pure "low"
         <*> pure 0
+        <*> pure "gh#"
       where
         getLabelsE :: Either Text [LText]
         getLabelsE = case partitionEithers (getLabels issue) of

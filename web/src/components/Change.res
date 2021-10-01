@@ -48,12 +48,20 @@ module TaskData = {
   }
 
   module TaskLink = {
+    let getName = (td: TaskDataTypes.task_data) =>
+      switch td.prefix {
+      | "" => " " ++ td.url
+      | prefix if Js.String.endsWith("#", prefix) => " " ++ prefix ++ td.tid
+      | prefix => " " ++ prefix
+      }
+
     @react.component
     let make = (~td: TaskDataTypes.task_data) =>
       switch td.url {
+      // legacy hard-coded prefix, to be removed using a janitor process to update existing task datas.
       | url if Js.String.indexOf("show_bug.cgi", url) >= 0 =>
         <a href=url> <Patternfly.Icons.ExternalLinkAlt /> {(" rhbz#" ++ td.tid)->str} </a>
-      | url => <a href=url> {url->str} </a>
+      | url => <a href=url> {td->getName->str} </a>
       }
   }
 
