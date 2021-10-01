@@ -559,6 +559,20 @@ testGetSuggestions = withTenant doTest
           )
           results
 
+mkTaskData :: LText -> TaskData
+mkTaskData changeId =
+  let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
+      taskDataChangeUrl = "https://fakeprovider/" <> changeId
+      taskDataTtype = mempty
+      taskDataTid = ""
+      taskDataUrl = "https://tdprovider/42-" <> changeId
+      taskDataTitle = ""
+      taskDataSeverity = ""
+      taskDataPriority = ""
+      taskDataScore = 0
+      taskDataPrefix = "lada"
+   in TaskData {..}
+
 testTaskDataAdd :: Assertion
 testTaskDataAdd = withTenant doTest
   where
@@ -636,18 +650,6 @@ testTaskDataAdd = withTenant doTest
         )
         orphanTdM'
 
-    mkTaskData changeId =
-      let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
-          taskDataChangeUrl = "https://fakeprovider/" <> changeId
-          taskDataTtype = mempty
-          taskDataTid = ""
-          taskDataUrl = "https://tdprovider/42-" <> changeId
-          taskDataTitle = ""
-          taskDataSeverity = ""
-          taskDataPriority = ""
-          taskDataScore = 0
-          taskDataPrefix = "lada"
-       in TaskData {..}
     getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
@@ -682,6 +684,23 @@ testTaskDataCommit = withTenant doTest
         "Task data crawler metadata - check updated commited date "
         fakeDateAlt
         commitDate''
+
+testTaskDataAdoption :: Assertion
+testTaskDataAdoption = withTenant doTest
+  where
+    doTest :: TenantM ()
+    doTest = do
+      -- Send Task data w/o a matching change (orphan task data)
+      let td42 = mkTaskData "42"
+          td43 = mkTaskData "43"
+      void $ I.taskDataAdd [td42, td43]
+      oTDs <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+      assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
+
+      -- Declare adoption of an orphan TD and check for one remaining orphan TD
+      void $ I.getOrphanTaskDataAndDeclareAdoption $ toText . taskDataChangeUrl <$> [td42]
+      oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+      assertEqual' "Check remaining one orphan TD" 2 (length oTDs')
 
 -- Tests scenario helpers
 

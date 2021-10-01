@@ -527,7 +527,7 @@ getChangesByURL urls = runSimpleSearch search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
-        [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkChange) Nothing,
           BH.TermsQuery "url" $ fromList urls
         ]
 
@@ -551,9 +551,43 @@ getChangesEventsByURL urls = do
 
 type HashTable k v = H.BasicHashTable k v
 
-data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]} deriving (Show)
+data TaskDataDoc = TaskDataDoc
+  { tddId :: LText,
+    tddTd :: [ELKTaskData]
+  }
+  deriving (Show)
 
 type TaskDataOrphanDoc = TaskDataDoc
+
+getOrphanTaskDataByChangeURL :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataByChangeURL urls = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
+  where
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeOrphanTD]
+    scanSearch index = BH.scanSearch index search
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
+          mkAnd
+            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkOrphanTaskData) Nothing,
+              BH.TermsQuery "tasks_data.change_url" $ fromList urls
+            ]
+        ]
+
+getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption urls = do
+  oTDs <- getOrphanTaskDataByChangeURL urls
+  void $ updateDocs $ toAdoptedDoc <$> oTDs
+  pure oTDs
+  where
+    toAdoptedDoc :: ELKChangeOrphanTD -> (Value, BH.DocId)
+    toAdoptedDoc (ELKChangeOrphanTD id' _ _) =
+      ( toJSON $ ELKChangeOrphanTDAdopted id' ElkOrphanTaskData $ ELKTaskDataAdopted "",
+        BH.DocId id'
+      )
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =

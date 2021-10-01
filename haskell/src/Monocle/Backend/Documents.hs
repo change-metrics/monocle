@@ -1,7 +1,7 @@
 -- | Data types for ELK documents
 module Monocle.Backend.Documents where
 
-import Data.Aeson (FromJSON, ToJSON, Value (String), genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
+import Data.Aeson (FromJSON, ToJSON, Value (String), defaultOptions, genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
@@ -75,7 +75,6 @@ instance FromJSON UTCTimePlus where
       tryParse f s = parseTimeM False defaultTimeLocale f s
       parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
--- TODO: Replace by the existing Monocle.TaskData.NewTaskData
 data ELKTaskData = ELKTaskData
   { tdTid :: Text,
     tdTtype :: [Text],
@@ -247,6 +246,23 @@ instance ToJSON ELKChangeOrphanTD where
 
 instance FromJSON ELKChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+data ELKTaskDataAdopted = ELKTaskDataAdopted
+  {_adopted :: Text}
+  deriving (Generic)
+
+instance ToJSON ELKTaskDataAdopted where
+  toJSON = genericToJSON defaultOptions
+
+data ELKChangeOrphanTDAdopted = ELKChangeOrphanTDAdopted
+  { elkchangeorphantdadptId :: Text,
+    elkchangeorphantdadptType :: ELKDocType,
+    elkchangeorphantdadptTasksData :: ELKTaskDataAdopted
+  }
+  deriving (Generic)
+
+instance ToJSON ELKChangeOrphanTDAdopted where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
 
 data ELKChangeEvent = ELKChangeEvent
   { elkchangeeventId :: LText,
