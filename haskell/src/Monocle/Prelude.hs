@@ -48,6 +48,7 @@ module Monocle.Prelude
     formatTime',
     threadDelay,
     parseDateValue,
+    dropTime,
 
     -- * qq-literals
     utctime,
@@ -101,6 +102,11 @@ eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMa
 
 utctime :: QuasiQuoter
 utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
+
+-- | dropTime ensures the encoded date does not have millisecond.
+-- This actually discard hour differences
+dropTime :: UTCTime -> UTCTime
+dropTime (UTCTime day _sec) = UTCTime day 0
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs

@@ -61,6 +61,16 @@ let
             broken = false;
           };
 
+          # use a more recent version that is not broken in nix
+          fakedata = let
+            fakedataSrc = builtins.fetchGit {
+              url = "https://github.com/fakedata-haskell/fakedata.git";
+              rev = "8ede9a9dbf1325df0295883eab59e74108729a28";
+              submodules = true;
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
+
           monocle =
             hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell) { };
 

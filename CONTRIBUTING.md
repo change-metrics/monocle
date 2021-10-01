@@ -221,6 +221,18 @@ cd haskell
 cabal test
 ```
 
+Or using ghcid to automatically run the test when the code changes:
+
+```ShellSession
+ghcid --test 'Monocle.Test.Spec.main'
+```
+
+Similarly the api can be automatically restarted:
+
+```ShellSession
+ghcid --test 'Monocle.Api.run 19875 "http://localhost:19200" "../etc/config.yaml"'
+```
+
 ## Update API (protobuf)
 
 The APIs are defined using protobuf. To change them, first you need to update the
