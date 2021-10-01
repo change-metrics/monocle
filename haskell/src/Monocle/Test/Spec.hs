@@ -1,21 +1,21 @@
-module Main (main) where
+module Monocle.Test.Spec (main) where
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Google.Protobuf.Timestamp
 import Lentille.Bugzilla.Spec
 import qualified Monocle.Api.Config as Config
+import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client
 import Monocle.Client.Api
 import Monocle.Env
-import Monocle.Mock
 import Monocle.Prelude
-import Monocle.Provisioner (runProvisioner)
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
 import Monocle.TaskData
+import Monocle.Test.Mock
 import System.Environment (setEnv)
 import Test.Tasty
 import Test.Tasty.HUnit

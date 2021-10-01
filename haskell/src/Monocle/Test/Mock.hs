@@ -1,5 +1,5 @@
 -- |
-module Monocle.Mock
+module Monocle.Test.Mock
   ( withMockClient,
   )
 where
