@@ -183,6 +183,7 @@ class TaskData(google.protobuf.message.Message):
     SEVERITY_FIELD_NUMBER: builtins.int
     PRIORITY_FIELD_NUMBER: builtins.int
     SCORE_FIELD_NUMBER: builtins.int
+    PREFIX_FIELD_NUMBER: builtins.int
     change_url: typing.Text = ...
     ttype: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
@@ -193,6 +194,7 @@ class TaskData(google.protobuf.message.Message):
     severity: typing.Text = ...
     priority: typing.Text = ...
     score: builtins.int = ...
+    prefix: typing.Text = ...
     @property
     def updated_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     def __init__(
@@ -207,6 +209,7 @@ class TaskData(google.protobuf.message.Message):
         severity: typing.Text = ...,
         priority: typing.Text = ...,
         score: builtins.int = ...,
+        prefix: typing.Text = ...,
     ) -> None: ...
     def HasField(
         self, field_name: typing_extensions.Literal["updated_at", b"updated_at"]
@@ -216,6 +219,8 @@ class TaskData(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "change_url",
             b"change_url",
+            "prefix",
+            b"prefix",
             "priority",
             b"priority",
             "score",

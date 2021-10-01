@@ -45,6 +45,7 @@ type task_data = {
   severity : string;
   priority : string;
   score : int32;
+  prefix : string;
 }
 
 type task_data_add_request = {
@@ -98,6 +99,7 @@ val default_task_data :
   ?severity:string ->
   ?priority:string ->
   ?score:int32 ->
+  ?prefix:string ->
   unit ->
   task_data
 (** [default_task_data ()] is the default value for type [task_data] *)

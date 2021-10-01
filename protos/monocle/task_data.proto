@@ -56,6 +56,7 @@ message TaskData {
   string severity = 7;
   string priority = 8;
   int32 score = 9;
+  string prefix = 10;
 }
 
 message TaskDataAddRequest {

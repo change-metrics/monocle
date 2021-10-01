@@ -42,6 +42,7 @@ type task_data = {
   severity : string;
   priority : string;
   score : int32;
+  prefix : string;
 }
 
 type task_data_add_request = {
@@ -92,6 +93,7 @@ let rec default_task_data
   ?severity:((severity:string) = "")
   ?priority:((priority:string) = "")
   ?score:((score:int32) = 0l)
+  ?prefix:((prefix:string) = "")
   () : task_data  = {
   updated_at;
   change_url;
@@ -102,6 +104,7 @@ let rec default_task_data
   severity;
   priority;
   score;
+  prefix;
 }
 
 let rec default_task_data_add_request 
