@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | A test module to load some fake data
-module Monocle.Provisioner where
+module Monocle.Backend.Provisioner where
 
 -- import qualified Monocle.Backend.Index as I
 

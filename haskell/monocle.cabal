@@ -104,12 +104,13 @@ library
                      , MonadRandom
                      , aeson
                      , aeson-casing
+                     , aeson-pretty
                      , base64-bytestring          < 1.2.1.1
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
                      , bugzilla-redhat            >= 0.3.2
-                     , bytestring                 >= 0.10
                      , byteslice                  ^>= 0.2
+                     , bytestring                 >= 0.10
                      , connection
                      , containers                 ^>= 0.6
                      , dhall                      ^>= 1.39
@@ -117,42 +118,47 @@ library
                      , directory
                      , either                     ^>= 5
                      , exceptions                 < 0.11
+                     , fakedata                   >= 1.0
                      , fast-logger
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
+                     , http-mock                  < 0.2
                      , http-types                 ^>=0.12
                      , json-syntax                ^>= 0.2
                      , lens
                      , megaparsec                 < 10
+                     , monocle
                      , morpheus-graphql-client    ^>= 0.17
                      , mtl
+                     , network                    < 4
                      , network-uri                < 2.6.5
                      , parser-combinators         < 1.3
                      , prometheus-client          ^>= 1.0
                      , prometheus-metrics-ghc     ^>= 1.0
-                     , wai-middleware-prometheus  ^>= 1.0
                      , proto3-suite               >= 0.4.2
                      , qq-literals
-                     , relude                     > 1.0.0.0
+                     , relude                     > 1.0 && < 1.1
                      , retry                      < 0.9
-                     , say                        ^>= 0.1
                      , safe-exceptions            < 0.1.7.3
+                     , say                        ^>= 0.1
                      , servant                    ^>= 0.18.2
                      , servant-options            ^>= 0.1
                      , servant-server             ^>= 0.18.2
                      , streaming                  < 0.3
+                     , tasty                      < 1.5
                      , tasty-hunit                < 0.11
                      , template-haskell
                      , text-short                 ^>= 0.1
                      , text-time                  ^>= 0.3
-                     , time                       < 1.10
+                     , time
                      , transformers
                      , unliftio-core
-                     , vector
+                     , vector                     < 0.13
                      , wai                        ^>= 3.2.3
                      , wai-cors                   ^>= 0.2
                      , wai-logger                 ^>= 2.3
+                     , wai-middleware-prometheus  ^>= 1.0
                      , warp                       ^>= 3.3.15
   hs-source-dirs:      src
   exposed-modules:     Monocle.Prelude
@@ -177,6 +183,8 @@ library
                      , Monocle.Backend.Index
                      , Monocle.Backend.Queries
                      , Monocle.Backend.Test
+                     , Monocle.Backend.Provisioner
+                     , Monocle.Test.Spec
 
                      -- megaparsec search language
                      , Monocle.Search.CLI
@@ -214,6 +222,9 @@ library
                      , Monocle.Project
 
   other-modules:       Database.Bloodhound.Raw
+                     , Monocle.Mock
+                     , Lentille.BugzillaMock
+                     , Lentille.Bugzilla.Spec
 
 executable monocle-search
   import:              common-options
@@ -244,28 +255,7 @@ test-suite monocle-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base                       < 5
-                     , aeson-pretty
-                     , bugzilla-redhat            >= 0.3.2
-                     , fakedata                   >= 1.0
-                     , http-client                < 0.8
-                     , http-mock                  < 0.2
-                     , http-types                 < 0.13
-                     , monocle
-                     , network                    < 4
-                     , proto3-suite               >= 0.4.2
-                     , relude                     > 1.0 && < 1.1
-                     , tasty                      < 1.5
-                     , tasty-hunit                < 0.11
-                     , time
-                     , vector                     < 0.13
-                     , wai                        < 3.3
-                     , wai                        < 3.3
-                     , warp                       < 3.4
-  other-modules:       Monocle.Mock
-                     , Monocle.Provisioner
-                     , Lentille.BugzillaMock
-                     , Lentille.Bugzilla.Spec
+  build-depends:       base, monocle
   ghc-options:         -threaded
                        -rtsopts
                        -with-rtsopts=-N
