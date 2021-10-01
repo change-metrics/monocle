@@ -3,8 +3,6 @@
 -- | A test module to load some fake data
 module Monocle.Backend.Provisioner where
 
--- import qualified Monocle.Backend.Index as I
-
 import Data.Time.Clock.System
 import qualified Faker
 import qualified Faker.Combinators
@@ -31,7 +29,8 @@ setChangeID xs = do
   -- create ids using epoch as a prefix
   MkSystemTime sec _ <- getSystemTime
   let mkid x = show sec <> show x
-  pure $ zipWith (\c x -> c {elkchangeId = mkid x}) xs ([0 ..] :: [Int])
+  let newChanges = zipWith (\c x -> c {elkchangeId = mkid x}) xs ([0 ..] :: [Int])
+  pure $ map (\c -> c {elkchangeUrl = "http://review.example.org/" <> elkchangeId c}) newChanges
 
 -- | Creates a bunch of event in the last 3 weeks
 createFakeEvents :: IO [T.ScenarioEvent]
