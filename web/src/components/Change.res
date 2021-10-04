@@ -33,27 +33,43 @@ module TaskData = {
       | _ => #Green
       }
     @react.component
-    let make = (~ps, ~name) => {
-      let label = name ++ ": " ++ ps
-      <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
-    }
+    let make = (~ps, ~name) =>
+      switch ps {
+      | "" => React.null
+      | _ => {
+          let label = name ++ ": " ++ ps
+          <Patternfly.Label color={ps->getLabelColor}> {label} </Patternfly.Label>
+        }
+      }
   }
 
   module TaskScore = {
     @react.component
-    let make = (~score) => {
-      let label = "Score: " ++ string_of_int(Int32.to_int(score))
-      <Patternfly.Label> {label} </Patternfly.Label>
-    }
+    let make = (~score) =>
+      switch Int32.to_int(score) {
+      | 0 => React.null
+      | score => {
+          let label = "Score: " ++ string_of_int(score)
+          <Patternfly.Label> {label} </Patternfly.Label>
+        }
+      }
   }
 
   module TaskLink = {
+    let getName = (td: TaskDataTypes.task_data) =>
+      switch td.prefix {
+      | "" => " " ++ td.url
+      | prefix if Js.String.endsWith("#", prefix) => " " ++ prefix ++ td.tid
+      | prefix => " " ++ prefix
+      }
+
     @react.component
     let make = (~td: TaskDataTypes.task_data) =>
       switch td.url {
+      // legacy hard-coded prefix, to be removed using a janitor process to update existing task datas.
       | url if Js.String.indexOf("show_bug.cgi", url) >= 0 =>
         <a href=url> <Patternfly.Icons.ExternalLinkAlt /> {(" rhbz#" ++ td.tid)->str} </a>
-      | url => <a href=url> {url->str} </a>
+      | url => <a href=url> {td->getName->str} </a>
       }
   }
 

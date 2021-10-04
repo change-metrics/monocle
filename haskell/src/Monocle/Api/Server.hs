@@ -699,6 +699,7 @@ searchQuery request = do
           taskDataSeverity = toLazy $ tdSeverity td
           taskDataPriority = toLazy $ tdPriority td
           taskDataScore = fromInteger $ toInteger $ tdScore td
+          taskDataPrefix = toLazy $ tdPrefix td
        in TaskDataPB.TaskData {..}
 
 searchFields :: FieldsRequest -> AppM FieldsResponse

@@ -85,7 +85,8 @@ data ELKTaskData = ELKTaskData
     tdPriority :: Text,
     tdScore :: Int,
     tdUrl :: Text,
-    tdTitle :: Text
+    tdTitle :: Text,
+    tdPrefix :: Text
   }
   deriving (Show, Eq, Generic)
 

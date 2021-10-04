@@ -219,6 +219,7 @@ instance ToJSON ChangesIndexMapping where
                           "priority" .= object ["type" .= ("keyword" :: Text)],
                           "score" .= object ["type" .= ("integer" :: Text)],
                           "url" .= object ["type" .= ("keyword" :: Text)],
+                          "prefix" .= object ["type" .= ("keyword" :: Text)],
                           "title"
                             .= object
                               [ "type" .= ("text" :: Text),
@@ -377,6 +378,7 @@ toELKTaskData TaskData {..} =
       tdScore = fromInteger $ toInteger taskDataScore
       tdUrl = toText taskDataUrl
       tdTitle = toText taskDataTitle
+      tdPrefix = toText taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ELKTaskData {..}

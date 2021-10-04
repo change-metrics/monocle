@@ -156,6 +156,7 @@ toTaskData bz = map mkTaskData ebugs
         (toLazy $ bugSeverity bz)
         (toLazy $ bugPriority bz)
         (fromInteger . toInteger . bugPmScore $ bz)
+        (toLazy $ "rhbz#")
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData ::

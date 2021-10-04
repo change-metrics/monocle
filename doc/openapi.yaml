@@ -1033,6 +1033,8 @@ components:
                 score:
                     type: integer
                     format: int32
+                prefix:
+                    type: string
         monocle_task_data_TaskDataAddRequest:
             properties:
                 index:

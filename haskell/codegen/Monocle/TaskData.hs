@@ -877,7 +877,8 @@ data TaskData = TaskData
     taskDataTitle :: Hs.Text,
     taskDataSeverity :: Hs.Text,
     taskDataPriority :: Hs.Text,
-    taskDataScore :: Hs.Int32
+    taskDataScore :: Hs.Int32,
+    taskDataPrefix :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -898,7 +899,8 @@ instance HsProtobuf.Message TaskData where
         taskDataTitle = taskDataTitle,
         taskDataSeverity = taskDataSeverity,
         taskDataPriority = taskDataPriority,
-        taskDataScore = taskDataScore
+        taskDataScore = taskDataScore,
+        taskDataPrefix = taskDataPrefix
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -941,6 +943,10 @@ instance HsProtobuf.Message TaskData where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 9)
                 taskDataScore
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                taskDataPrefix
             )
           ]
       )
@@ -988,6 +994,10 @@ instance HsProtobuf.Message TaskData where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 9)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 10)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -1058,11 +1068,18 @@ instance HsProtobuf.Message TaskData where
           (HsProtobuf.Single "score")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "prefix")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB TaskData where
-  toJSONPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
+  toJSONPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9 f10) =
     ( HsJSONPB.object
         [ "updated_at" .= f1,
           "change_url" .= f2,
@@ -1072,10 +1089,11 @@ instance HsJSONPB.ToJSONPB TaskData where
           "title" .= f6,
           "severity" .= f7,
           "priority" .= f8,
-          "score" .= f9
+          "score" .= f9,
+          "prefix" .= f10
         ]
     )
-  toEncodingPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9) =
+  toEncodingPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9 f10) =
     ( HsJSONPB.pairs
         [ "updated_at" .= f1,
           "change_url" .= f2,
@@ -1085,7 +1103,8 @@ instance HsJSONPB.ToJSONPB TaskData where
           "title" .= f6,
           "severity" .= f7,
           "priority" .= f8,
-          "score" .= f9
+          "score" .= f9,
+          "prefix" .= f10
         ]
     )
 
@@ -1102,6 +1121,7 @@ instance HsJSONPB.FromJSONPB TaskData where
               <*> obj .: "severity"
               <*> obj .: "priority"
               <*> obj .: "score"
+              <*> obj .: "prefix"
         )
     )
 
@@ -1133,6 +1153,8 @@ instance HsJSONPB.ToSchema TaskData where
       taskDataPriority <- declare_priority Proxy.Proxy
       let declare_score = HsJSONPB.declareSchemaRef
       taskDataScore <- declare_score Proxy.Proxy
+      let declare_prefix = HsJSONPB.declareSchemaRef
+      taskDataPrefix <- declare_prefix Proxy.Proxy
       let _ =
             Hs.pure TaskData <*> HsJSONPB.asProxy declare_updated_at
               <*> HsJSONPB.asProxy declare_change_url
@@ -1143,6 +1165,7 @@ instance HsJSONPB.ToSchema TaskData where
               <*> HsJSONPB.asProxy declare_severity
               <*> HsJSONPB.asProxy declare_priority
               <*> HsJSONPB.asProxy declare_score
+              <*> HsJSONPB.asProxy declare_prefix
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -1164,7 +1187,8 @@ instance HsJSONPB.ToSchema TaskData where
                           ("title", taskDataTitle),
                           ("severity", taskDataSeverity),
                           ("priority", taskDataPriority),
-                          ("score", taskDataScore)
+                          ("score", taskDataScore),
+                          ("prefix", taskDataPrefix)
                         ]
                   }
             }

@@ -34,6 +34,7 @@ type task_data_mutable = {
   mutable severity : string;
   mutable priority : string;
   mutable score : int32;
+  mutable prefix : string;
 }
 
 let default_task_data_mutable () : task_data_mutable = {
@@ -46,6 +47,7 @@ let default_task_data_mutable () : task_data_mutable = {
   severity = "";
   priority = "";
   score = 0l;
+  prefix = "";
 }
 
 type task_data_add_request_mutable = {
@@ -203,6 +205,9 @@ let rec decode_task_data json =
     | "score" -> 
       let json = Js.Dict.unsafeGet json "score" in
       v.score <- Pbrt_bs.int32 json "task_data" "score"
+    | "prefix" -> 
+      let json = Js.Dict.unsafeGet json "prefix" in
+      v.prefix <- Pbrt_bs.string json "task_data" "prefix"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -216,6 +221,7 @@ let rec decode_task_data json =
     TaskDataTypes.severity = v.severity;
     TaskDataTypes.priority = v.priority;
     TaskDataTypes.score = v.score;
+    TaskDataTypes.prefix = v.prefix;
   } : TaskDataTypes.task_data)
 
 let rec decode_task_data_add_request json =
@@ -346,6 +352,7 @@ let rec encode_task_data (v:TaskDataTypes.task_data) =
   Js.Dict.set json "severity" (Js.Json.string v.TaskDataTypes.severity);
   Js.Dict.set json "priority" (Js.Json.string v.TaskDataTypes.priority);
   Js.Dict.set json "score" (Js.Json.number (Int32.to_float v.TaskDataTypes.score));
+  Js.Dict.set json "prefix" (Js.Json.string v.TaskDataTypes.prefix);
   json
 
 let rec encode_task_data_add_request (v:TaskDataTypes.task_data_add_request) = 
