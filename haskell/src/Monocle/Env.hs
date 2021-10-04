@@ -111,6 +111,12 @@ type QueryM = ReaderT QueryEnv TenantM
 runQueryM :: Q.Query -> QueryM a -> TenantM a
 runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
 
+-- | 'runQueryStream' run a QueryM stream into a TenantM
+-- Checkout the tutorial about mmoprh:
+--   https://hackage.haskell.org/package/mmorph-1.2.0/docs/Control-Monad-Morph.html#g:3
+runQueryStream :: Q.Query -> Stream (Of elem) QueryM res -> Stream (Of elem) TenantM res
+runQueryStream query = hoist (runQueryM query)
+
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query
 mkQuery bhq =

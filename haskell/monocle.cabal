@@ -120,6 +120,7 @@ library
                      , lens
                      , megaparsec                 < 10
                      , morpheus-graphql-client    ^>= 0.17
+                     , mmorph
                      , mtl
                      , network                    < 4
                      , network-uri                < 2.6.5
