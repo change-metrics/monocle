@@ -271,77 +271,77 @@ toAuthor Nothing =
     "backend-ghost"
     "backend-ghost"
 
-toELKChangeEvent :: ChangeEvent -> ELKChangeEvent
-toELKChangeEvent ChangeEvent {..} =
-  ELKChangeEvent
-    { elkchangeeventId = changeEventId,
-      elkchangeeventNumber = fromIntegral changeEventNumber,
-      elkchangeeventType = getEventType changeEventType,
-      elkchangeeventChangeId = changeEventChangeId,
-      elkchangeeventUrl = changeEventUrl,
-      elkchangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
-      elkchangeeventRepositoryPrefix = changeEventRepositoryPrefix,
-      elkchangeeventRepositoryFullname = changeEventRepositoryFullname,
-      elkchangeeventRepositoryShortname = changeEventRepositoryShortname,
-      elkchangeeventAuthor = Just $ toAuthor changeEventAuthor,
-      elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
-      elkchangeeventBranch = changeEventBranch,
-      elkchangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
-      elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
-      elkchangeeventApproval = case changeEventType of
+toEChangeEvent :: ChangeEvent -> EChangeEvent
+toEChangeEvent ChangeEvent {..} =
+  EChangeEvent
+    { echangeeventId = changeEventId,
+      echangeeventNumber = fromIntegral changeEventNumber,
+      echangeeventType = getEventType changeEventType,
+      echangeeventChangeId = changeEventChangeId,
+      echangeeventUrl = changeEventUrl,
+      echangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
+      echangeeventRepositoryPrefix = changeEventRepositoryPrefix,
+      echangeeventRepositoryFullname = changeEventRepositoryFullname,
+      echangeeventRepositoryShortname = changeEventRepositoryShortname,
+      echangeeventAuthor = Just $ toAuthor changeEventAuthor,
+      echangeeventOnAuthor = toAuthor changeEventOnAuthor,
+      echangeeventBranch = changeEventBranch,
+      echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
+      echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
+      echangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
         _anyOtherApprovals -> Nothing,
-      elkchangeeventTasksData = Nothing
+      echangeeventTasksData = Nothing
     }
   where
-    getEventType :: Maybe ChangeEventType -> ELKDocType
+    getEventType :: Maybe ChangeEventType -> EDocType
     getEventType eventTypeM = case eventTypeM of
       Just eventType -> case eventType of
-        ChangeEventTypeChangeCreated ChangeCreatedEvent -> ElkChangeCreatedEvent
-        ChangeEventTypeChangeCommented ChangeCommentedEvent -> ElkChangeCommentedEvent
-        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> ElkChangeAbandonedEvent
-        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> ElkChangeReviewedEvent
-        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> ElkChangeCommitForcePushedEvent
-        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> ElkChangeCommitPushedEvent
-        ChangeEventTypeChangeMerged ChangeMergedEvent -> ElkChangeMergedEvent
+        ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
+        ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
+        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
+        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
+        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
+        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
+        ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
       Nothing -> error "changeEventType field is mandatory"
 
-toELKChange :: Change -> ELKChange
-toELKChange Change {..} =
-  ELKChange
-    { elkchangeId = changeId,
-      elkchangeType = ElkChange,
-      elkchangeTitle = changeTitle,
-      elkchangeUrl = changeUrl,
-      elkchangeCommitCount = fromInteger . toInteger $ changeCommitCount,
-      elkchangeNumber = fromInteger . toInteger $ changeNumber,
-      elkchangeChangeId = changeChangeId,
-      elkchangeText = changeText,
-      elkchangeAdditions = fromInteger $ toInteger changeAdditions,
-      elkchangeDeletions = fromInteger $ toInteger changeDeletions,
-      elkchangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
-      elkchangeChangedFiles = map toFile $ toList changeChangedFiles,
-      elkchangeCommits = map toCommit $ toList changeCommits,
-      elkchangeRepositoryPrefix = changeRepositoryPrefix,
-      elkchangeRepositoryFullname = changeRepositoryFullname,
-      elkchangeRepositoryShortname = changeRepositoryShortname,
-      elkchangeAuthor = toAuthor changeAuthor,
-      elkchangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
-      elkchangeBranch = changeBranch,
-      elkchangeTargetBranch = changeTargetBranch,
-      elkchangeCreatedAt = T.toUTCTime $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
-      elkchangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
-      elkchangeUpdatedAt = T.toUTCTime $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
-      elkchangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
-      elkchangeState = toState $ fromPBEnum changeState,
-      elkchangeDuration = toDuration <$> changeOptionalDuration,
-      elkchangeMergeable = changeMergeable,
-      elkchangeLabels = toList changeLabels,
-      elkchangeAssignees = map toAuthor $ toList $ fmap Just changeAssignees,
-      elkchangeApproval = Just $ toList changeApprovals,
-      elkchangeDraft = changeDraft,
-      elkchangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
-      elkchangeTasksData = Nothing
+toEChange :: Change -> EChange
+toEChange Change {..} =
+  EChange
+    { echangeId = changeId,
+      echangeType = EChangeDoc,
+      echangeTitle = changeTitle,
+      echangeUrl = changeUrl,
+      echangeCommitCount = fromInteger . toInteger $ changeCommitCount,
+      echangeNumber = fromInteger . toInteger $ changeNumber,
+      echangeChangeId = changeChangeId,
+      echangeText = changeText,
+      echangeAdditions = fromInteger $ toInteger changeAdditions,
+      echangeDeletions = fromInteger $ toInteger changeDeletions,
+      echangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
+      echangeChangedFiles = map toFile $ toList changeChangedFiles,
+      echangeCommits = map toCommit $ toList changeCommits,
+      echangeRepositoryPrefix = changeRepositoryPrefix,
+      echangeRepositoryFullname = changeRepositoryFullname,
+      echangeRepositoryShortname = changeRepositoryShortname,
+      echangeAuthor = toAuthor changeAuthor,
+      echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
+      echangeBranch = changeBranch,
+      echangeTargetBranch = changeTargetBranch,
+      echangeCreatedAt = T.toUTCTime $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
+      echangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
+      echangeUpdatedAt = T.toUTCTime $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
+      echangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
+      echangeState = toState $ fromPBEnum changeState,
+      echangeDuration = toDuration <$> changeOptionalDuration,
+      echangeMergeable = changeMergeable,
+      echangeLabels = toList changeLabels,
+      echangeAssignees = map toAuthor $ toList $ fmap Just changeAssignees,
+      echangeApproval = Just $ toList changeApprovals,
+      echangeDraft = changeDraft,
+      echangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
+      echangeTasksData = Nothing
     }
   where
     toFile :: ChangedFile -> File
@@ -350,14 +350,14 @@ toELKChange Change {..} =
     toCommit :: Monocle.Change.Commit -> Monocle.Backend.Documents.Commit
     toCommit Monocle.Change.Commit {..} =
       Monocle.Backend.Documents.Commit
-        { elkcommitSha = commitSha,
-          elkcommitAuthor = toAuthor commitAuthor,
-          elkcommitCommitter = toAuthor commitCommitter,
-          elkcommitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
-          elkcommitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
-          elkcommitDeletions = fromIntegral commitDeletions,
-          elkcommitAdditions = fromIntegral commitAdditions,
-          elkcommitTitle = commitTitle
+        { commitSha = commitSha,
+          commitAuthor = toAuthor commitAuthor,
+          commitCommitter = toAuthor commitCommitter,
+          commitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
+          commitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
+          commitDeletions = fromIntegral commitDeletions,
+          commitAdditions = fromIntegral commitAdditions,
+          commitTitle = commitTitle
         }
     toMergedByAuthor (ChangeOptionalMergedByMergedBy m) = toAuthor (Just m)
     toMergedAt (ChangeOptionalMergedAtMergedAt t) = T.toUTCTime t
@@ -365,12 +365,12 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
     toState cstate = case cstate of
-      Change_ChangeStateOpen -> ElkChangeOpen
-      Change_ChangeStateMerged -> ElkChangeMerged
-      Change_ChangeStateClosed -> ElkChangeClosed
+      Change_ChangeStateOpen -> EChangeOpen
+      Change_ChangeStateMerged -> EChangeMerged
+      Change_ChangeStateClosed -> EChangeClosed
 
-toELKTaskData :: TaskData -> ELKTaskData
-toELKTaskData TaskData {..} =
+toETaskData :: TaskData -> ETaskData
+toETaskData TaskData {..} =
   let tdTid = toText taskDataTid
       tdTtype = toList $ toText <$> taskDataTtype
       tdChangeUrl = toText taskDataChangeUrl
@@ -382,7 +382,7 @@ toELKTaskData TaskData {..} =
       tdPrefix = toText taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
-   in ELKTaskData {..}
+   in ETaskData {..}
   where
     defaultDate = [utctime|1960-01-01 00:00:00|]
 
@@ -431,19 +431,19 @@ runScanSearch search = do
     scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit a]
     scanSearch index = BH.scanSearch index search
 
-getChangeDocId :: ELKChange -> BH.DocId
-getChangeDocId change = BH.DocId . toText $ elkchangeId change
+getChangeDocId :: EChange -> BH.DocId
+getChangeDocId change = BH.DocId . toText $ echangeId change
 
-indexChanges :: [ELKChange] -> TenantM ()
+indexChanges :: [EChange] -> TenantM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
-    ensureType change = change {elkchangeType = ElkChange}
+    ensureType change = change {echangeType = EChangeDoc}
 
-getEventDocId :: ELKChangeEvent -> BH.DocId
-getEventDocId event = BH.DocId . toStrict $ elkchangeeventId event
+getEventDocId :: EChangeEvent -> BH.DocId
+getEventDocId event = BH.DocId . toStrict $ echangeeventId event
 
-indexEvents :: [ELKChangeEvent] -> TenantM ()
+indexEvents :: [EChangeEvent] -> TenantM ()
 indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, getEventDocId ev)
@@ -487,17 +487,17 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
 getTDCrawlerMetadataDocId :: Text -> BH.DocId
 getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
 
-getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
+getTDCrawlerMetadata :: Text -> TenantM (Maybe ECrawlerMetadata)
 getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
 
 setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
 setTDCrawlerCommitDate name commitDate = do
   index <- getIndexName
-  let elkcmLastCommitAt = commitDate
-      elkcmCrawlerType = ""
-      elkcmCrawlerTypeValue = ""
-      elkcmCrawlerName = ""
-      doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
+  let ecmLastCommitAt = commitDate
+      ecmCrawlerType = ""
+      ecmCrawlerTypeValue = ""
+      ecmCrawlerName = ""
+      doc = ECrawlerMetadata $ ECrawlerMetadataObject {..}
       docID = getTDCrawlerMetadataDocId name
   exists <- BH.documentExists index docID
   void $
@@ -509,7 +509,7 @@ setTDCrawlerCommitDate name commitDate = do
 getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
 getTDCrawlerCommitDate name crawler = do
   metadata <- getTDCrawlerMetadata name
-  let commitDate = elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+  let commitDate = ecmLastCommitAt . ecmCrawlerMetadata <$> metadata
       currentTS =
         fromMaybe
           (error "Unable to get a valid crawler metadata TS")
@@ -519,20 +519,20 @@ getTDCrawlerCommitDate name crawler = do
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
-  TenantM [ELKChange]
+  TenantM [EChange]
 getChangesByURL urls = runScanSearch search
   where
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
-        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkChange) Nothing,
+        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EChangeDoc) Nothing,
           BH.TermsQuery "url" $ fromList urls
         ]
 
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
-  TenantM [ELKChangeEvent]
+  TenantM [EChangeEvent]
 getChangesEventsByURL urls = runScanSearch search
   where
     search = BH.mkSearch (Just query) Nothing
@@ -546,43 +546,43 @@ type HashTable k v = H.BasicHashTable k v
 
 data TaskDataDoc = TaskDataDoc
   { tddId :: LText,
-    tddTd :: [ELKTaskData]
+    tddTd :: [ETaskData]
   }
   deriving (Show)
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: [Text] -> TenantM [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
   pure $ catMaybes $ BH.hitSource <$> results
   where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeOrphanTD]
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit EChangeOrphanTD]
     scanSearch index = BH.scanSearch index search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
         [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
           mkAnd
-            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkOrphanTaskData) Nothing,
+            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EOrphanTaskData) Nothing,
               BH.TermsQuery "tasks_data.change_url" $ fromList urls
             ]
         ]
 
-getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
   pure oTDs
   where
-    toAdoptedDoc :: ELKChangeOrphanTD -> (Value, BH.DocId)
-    toAdoptedDoc (ELKChangeOrphanTD id' _ _) =
-      ( toJSON $ ELKChangeOrphanTDAdopted id' ElkOrphanTaskData $ ELKTaskDataAdopted "",
+    toAdoptedDoc :: EChangeOrphanTD -> (Value, BH.DocId)
+    toAdoptedDoc (EChangeOrphanTD id' _ _) =
+      ( toJSON $ EChangeOrphanTDAdopted id' EOrphanTaskData $ ETaskDataAdopted "",
         BH.DocId id'
       )
 
-updateChangesAndEventsFromOrphanTaskData :: [ELKChange] -> [ELKChangeEvent] -> TenantM ()
+updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> TenantM ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
@@ -591,8 +591,8 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
     -- For each change and event extract (changeUrl, object ID)
     getFlatMapping :: [(LText, LText)]
     getFlatMapping =
-      ((\c -> (elkchangeUrl c, elkchangeId c)) <$> changes)
-        <> ((\c -> (elkchangeeventUrl c, elkchangeeventId c)) <$> events)
+      ((\c -> (echangeUrl c, echangeId c)) <$> changes)
+        <> ((\c -> (echangeeventUrl c, echangeeventId c)) <$> events)
     -- Create a Map where each key (changeUrl) maps a list of object ID
     uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
     uMapping cM fm = case fm of
@@ -602,26 +602,26 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
         updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
     -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
     -- for Changes and Events
-    getTaskDatas :: [ELKChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
+    getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
     getTaskDatas adopted assocs = concatMap getTDs assocs
       where
         getTDs :: (LText, [LText]) -> [TaskDataDoc]
         getTDs (url, ids) =
-          let mTDs = elkchangeorphantdTasksData <$> filterByUrl url adopted
+          let mTDs = echangeorphantdTasksData <$> filterByUrl url adopted
            in flip TaskDataDoc mTDs <$> ids
-        filterByUrl url = filter (\td -> tdChangeUrl (elkchangeorphantdTasksData td) == toText url)
+        filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == toText url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
-  (toJSON $ ELKChangeTD $ Just tddTd, BH.DocId $ toText tddId)
+  (toJSON $ EChangeTD $ Just tddTd, BH.DocId $ toText tddId)
 
 orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
   let td = head $ fromList tddTd
    in ( toJSON $
-          ELKChangeOrphanTD
+          EChangeOrphanTD
             (toText tddId)
-            ElkOrphanTaskData
+            EOrphanTaskData
             td,
         BH.DocId $ toText tddId
       )
@@ -650,22 +650,22 @@ taskDataAdd tds = do
   updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
   upsertDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
   where
-    initHT :: [ELKChange] -> IO (HashTable LText TaskDataDoc)
+    initHT :: [EChange] -> IO (HashTable LText TaskDataDoc)
     initHT changes = H.fromList $ getMCsTuple <$> changes
       where
-        getMCsTuple ELKChange {elkchangeUrl, elkchangeId, elkchangeTasksData} =
-          (elkchangeUrl, TaskDataDoc elkchangeId (fromMaybe [] elkchangeTasksData))
+        getMCsTuple EChange {echangeUrl, echangeId, echangeTasksData} =
+          (echangeUrl, TaskDataDoc echangeId (fromMaybe [] echangeTasksData))
 
     updateChangesWithTD ::
       -- | The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
       -- | IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
-    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toELKTaskData <$> tds)
+    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData <$> tds)
       where
         handleTD ::
           -- | The input Task Data we want to append or update
-          ELKTaskData ->
+          ETaskData ->
           -- | IO Action with maybe an orphan task data if a matching change does not exists
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
@@ -680,7 +680,7 @@ taskDataAdd tds = do
           -- | The value of the HashMap we are working on
           TaskDataDoc ->
           -- | The input Task Data we want to append or update
-          ELKTaskData ->
+          ETaskData ->
           TaskDataDoc
         updateTDD taskDataDoc td = do
           let changeTDs = tddTd taskDataDoc
@@ -694,14 +694,14 @@ taskDataAdd tds = do
       -- | The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
       -- | The ChangeEvent to look for
-      ELKChangeEvent ->
+      EChangeEvent ->
       -- | IO Action returning maybe a TaskData
       IO (Maybe TaskDataDoc)
     getTDforEventFromHT ht changeEvent = do
-      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+      mcM <- H.lookup ht $ echangeeventUrl changeEvent
       pure $ case mcM of
         Nothing -> Nothing
-        Just mc -> Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+        Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 
@@ -740,8 +740,8 @@ getLastUpdated crawler entity offset = do
         [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
           BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
         ]
-    getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
-      (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+    getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
+      (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
 
 getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
@@ -763,9 +763,9 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
   where
     id' = getId entity
     cm =
-      ELKCrawlerMetadata
-        { elkcmCrawlerMetadata =
-            ELKCrawlerMetadataObject
+      ECrawlerMetadata
+        { ecmCrawlerMetadata =
+            ECrawlerMetadataObject
               (toLazy crawlerName)
               (toLazy $ crawlerType entity)
               (toLazy $ getName entity)

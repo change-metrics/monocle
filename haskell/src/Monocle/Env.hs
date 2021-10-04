@@ -208,8 +208,8 @@ data SystemEvent
 
 sysEventToText :: SystemEvent -> ByteString
 sysEventToText = \case
-  Ready tenantCount port elkUrl ->
-    "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elk: " <> encodeUtf8 elkUrl
+  Ready tenantCount port url ->
+    "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
   ReloadConfig fp ->
     "Reloading " <> encodeUtf8 fp
 

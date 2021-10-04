@@ -1,4 +1,4 @@
--- | Data types for ELK documents
+-- | Data types for Elasticsearch documents
 module Monocle.Backend.Documents where
 
 import Data.Aeson (FromJSON, ToJSON, Value (String), defaultOptions, genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
@@ -44,14 +44,14 @@ instance FromJSON SimpleFile where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data Commit = Commit
-  { elkcommitSha :: LText,
-    elkcommitAuthor :: Author,
-    elkcommitCommitter :: Author,
-    elkcommitAuthoredAt :: UTCTime,
-    elkcommitCommittedAt :: UTCTime,
-    elkcommitAdditions :: Word32,
-    elkcommitDeletions :: Word32,
-    elkcommitTitle :: LText
+  { commitSha :: LText,
+    commitAuthor :: Author,
+    commitCommitter :: Author,
+    commitAuthoredAt :: UTCTime,
+    commitCommittedAt :: UTCTime,
+    commitAdditions :: Word32,
+    commitDeletions :: Word32,
+    commitTitle :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -75,7 +75,7 @@ instance FromJSON UTCTimePlus where
       tryParse f s = parseTimeM False defaultTimeLocale f s
       parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
-data ELKTaskData = ELKTaskData
+data ETaskData = ETaskData
   { tdTid :: Text,
     tdTtype :: [Text],
     tdUpdatedAt :: UTCTimePlus,
@@ -89,230 +89,230 @@ data ELKTaskData = ELKTaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKTaskData where
+instance ToJSON ETaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKTaskData where
+instance FromJSON ETaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKChangeState
-  = ElkChangeOpen
-  | ElkChangeMerged
-  | ElkChangeClosed
+data EChangeState
+  = EChangeOpen
+  | EChangeMerged
+  | EChangeClosed
   deriving (Eq, Show)
 
-changeStateToText :: ELKChangeState -> Text
+changeStateToText :: EChangeState -> Text
 changeStateToText = \case
-  ElkChangeOpen -> "OPEN"
-  ElkChangeMerged -> "MERGED"
-  ElkChangeClosed -> "CLOSED"
+  EChangeOpen -> "OPEN"
+  EChangeMerged -> "MERGED"
+  EChangeClosed -> "CLOSED"
 
-instance ToJSON ELKChangeState where
+instance ToJSON EChangeState where
   toJSON v = String $ toText $ changeStateToText v
 
-instance FromJSON ELKChangeState where
+instance FromJSON EChangeState where
   parseJSON =
     withText
-      "ElkChangeState"
+      "EChangeState"
       ( \case
-          "OPEN" -> pure ElkChangeOpen
-          "MERGED" -> pure ElkChangeMerged
-          "CLOSED" -> pure ElkChangeClosed
-          _anyOtherValue -> fail "Unknown Monocle ELK change state"
+          "OPEN" -> pure EChangeOpen
+          "MERGED" -> pure EChangeMerged
+          "CLOSED" -> pure EChangeClosed
+          _anyOtherValue -> fail "Unknown Monocle Elastic change state"
       )
 
-data ELKDocType
-  = ElkChangeCreatedEvent
-  | ElkChangeMergedEvent
-  | ElkChangeReviewedEvent
-  | ElkChangeCommentedEvent
-  | ElkChangeAbandonedEvent
-  | ElkChangeCommitForcePushedEvent
-  | ElkChangeCommitPushedEvent
-  | ElkChange
-  | ElkOrphanTaskData
+data EDocType
+  = EChangeCreatedEvent
+  | EChangeMergedEvent
+  | EChangeReviewedEvent
+  | EChangeCommentedEvent
+  | EChangeAbandonedEvent
+  | EChangeCommitForcePushedEvent
+  | EChangeCommitPushedEvent
+  | EChangeDoc
+  | EOrphanTaskData
   deriving (Eq, Show, Enum, Bounded)
 
-allEventTypes :: [ELKDocType]
-allEventTypes = filter (/= ElkChange) [minBound .. maxBound]
+allEventTypes :: [EDocType]
+allEventTypes = filter (/= EChangeDoc) [minBound .. maxBound]
 
-docTypeToText :: ELKDocType -> LText
+docTypeToText :: EDocType -> LText
 docTypeToText = \case
-  ElkChangeCreatedEvent -> "ChangeCreatedEvent"
-  ElkChangeMergedEvent -> "ChangeMergedEvent"
-  ElkChangeReviewedEvent -> "ChangeReviewedEvent"
-  ElkChangeCommentedEvent -> "ChangeCommentedEvent"
-  ElkChangeAbandonedEvent -> "ChangeAbandonedEvent"
-  ElkChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
-  ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
-  ElkChange -> "Change"
-  ElkOrphanTaskData -> "OrphanTaskData"
+  EChangeCreatedEvent -> "ChangeCreatedEvent"
+  EChangeMergedEvent -> "ChangeMergedEvent"
+  EChangeReviewedEvent -> "ChangeReviewedEvent"
+  EChangeCommentedEvent -> "ChangeCommentedEvent"
+  EChangeAbandonedEvent -> "ChangeAbandonedEvent"
+  EChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
+  EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
+  EChangeDoc -> "Change"
+  EOrphanTaskData -> "OrphanTaskData"
 
 eventTypesAsText :: [Text]
 eventTypesAsText =
   toText . docTypeToText
-    <$> [ ElkChangeCreatedEvent,
-          ElkChangeMergedEvent,
-          ElkChangeReviewedEvent,
-          ElkChangeCommentedEvent,
-          ElkChangeAbandonedEvent,
-          ElkChangeCommitPushedEvent,
-          ElkChangeCommitForcePushedEvent
+    <$> [ EChangeCreatedEvent,
+          EChangeMergedEvent,
+          EChangeReviewedEvent,
+          EChangeCommentedEvent,
+          EChangeAbandonedEvent,
+          EChangeCommitPushedEvent,
+          EChangeCommitForcePushedEvent
         ]
 
-instance ToJSON ELKDocType where
+instance ToJSON EDocType where
   toJSON v = String $ toText $ docTypeToText v
 
-instance FromJSON ELKDocType where
+instance FromJSON EDocType where
   parseJSON =
     withText
-      "ElkDocType"
+      "EDocType"
       ( \case
-          "ChangeCreatedEvent" -> pure ElkChangeCreatedEvent
-          "ChangeMergedEvent" -> pure ElkChangeMergedEvent
-          "ChangeReviewedEvent" -> pure ElkChangeReviewedEvent
-          "ChangeCommentedEvent" -> pure ElkChangeCommentedEvent
-          "ChangeAbandonedEvent" -> pure ElkChangeAbandonedEvent
-          "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
-          "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
-          "Change" -> pure ElkChange
-          "OrphanTaskData" -> pure ElkOrphanTaskData
-          anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
+          "ChangeCreatedEvent" -> pure EChangeCreatedEvent
+          "ChangeMergedEvent" -> pure EChangeMergedEvent
+          "ChangeReviewedEvent" -> pure EChangeReviewedEvent
+          "ChangeCommentedEvent" -> pure EChangeCommentedEvent
+          "ChangeAbandonedEvent" -> pure EChangeAbandonedEvent
+          "ChangeCommitForcePushedEvent" -> pure EChangeCommitForcePushedEvent
+          "ChangeCommitPushedEvent" -> pure EChangeCommitPushedEvent
+          "Change" -> pure EChangeDoc
+          "OrphanTaskData" -> pure EOrphanTaskData
+          anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> toString anyOtherValue
       )
 
-data ELKChange = ELKChange
-  { elkchangeId :: LText,
-    elkchangeNumber :: Int,
-    elkchangeType :: ELKDocType,
-    elkchangeChangeId :: LText,
-    elkchangeTitle :: LText,
-    elkchangeText :: LText,
-    elkchangeUrl :: LText,
-    elkchangeCommitCount :: Word32,
-    elkchangeAdditions :: Word32,
-    elkchangeDeletions :: Word32,
-    elkchangeChangedFilesCount :: Word32,
-    elkchangeChangedFiles :: [File],
-    elkchangeCommits :: [Commit],
-    elkchangeRepositoryPrefix :: LText,
-    elkchangeRepositoryShortname :: LText,
-    elkchangeRepositoryFullname :: LText,
-    elkchangeAuthor :: Author,
-    elkchangeMergedBy :: Maybe Author,
-    elkchangeBranch :: LText,
-    elkchangeTargetBranch :: LText,
-    elkchangeCreatedAt :: UTCTime,
-    elkchangeMergedAt :: Maybe UTCTime,
-    elkchangeUpdatedAt :: UTCTime,
-    elkchangeClosedAt :: Maybe UTCTime,
-    elkchangeState :: ELKChangeState,
-    elkchangeDuration :: Maybe Int,
-    elkchangeMergeable :: LText,
-    elkchangeLabels :: [LText],
-    elkchangeAssignees :: [Author],
-    elkchangeApproval :: Maybe [LText],
-    elkchangeDraft :: Bool,
-    elkchangeSelfMerged :: Maybe Bool,
-    elkchangeTasksData :: Maybe [ELKTaskData]
+data EChange = EChange
+  { echangeId :: LText,
+    echangeNumber :: Int,
+    echangeType :: EDocType,
+    echangeChangeId :: LText,
+    echangeTitle :: LText,
+    echangeText :: LText,
+    echangeUrl :: LText,
+    echangeCommitCount :: Word32,
+    echangeAdditions :: Word32,
+    echangeDeletions :: Word32,
+    echangeChangedFilesCount :: Word32,
+    echangeChangedFiles :: [File],
+    echangeCommits :: [Commit],
+    echangeRepositoryPrefix :: LText,
+    echangeRepositoryShortname :: LText,
+    echangeRepositoryFullname :: LText,
+    echangeAuthor :: Author,
+    echangeMergedBy :: Maybe Author,
+    echangeBranch :: LText,
+    echangeTargetBranch :: LText,
+    echangeCreatedAt :: UTCTime,
+    echangeMergedAt :: Maybe UTCTime,
+    echangeUpdatedAt :: UTCTime,
+    echangeClosedAt :: Maybe UTCTime,
+    echangeState :: EChangeState,
+    echangeDuration :: Maybe Int,
+    echangeMergeable :: LText,
+    echangeLabels :: [LText],
+    echangeAssignees :: [Author],
+    echangeApproval :: Maybe [LText],
+    echangeDraft :: Bool,
+    echangeSelfMerged :: Maybe Bool,
+    echangeTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChange where
+instance ToJSON EChange where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChange where
+instance FromJSON EChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-newtype ELKChangeTD = ELKChangeTD
-  { elkchangetdTasksData :: Maybe [ELKTaskData]
+newtype EChangeTD = EChangeTD
+  { echangetdTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeTD where
+instance ToJSON EChangeTD where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeTD where
+instance FromJSON EChangeTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKChangeOrphanTD = ELKChangeOrphanTD
-  { elkchangeorphantdId :: Text,
-    elkchangeorphantdType :: ELKDocType,
-    elkchangeorphantdTasksData :: ELKTaskData
+data EChangeOrphanTD = EChangeOrphanTD
+  { echangeorphantdId :: Text,
+    echangeorphantdType :: EDocType,
+    echangeorphantdTasksData :: ETaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeOrphanTD where
+instance ToJSON EChangeOrphanTD where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeOrphanTD where
+instance FromJSON EChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKTaskDataAdopted = ELKTaskDataAdopted
+data ETaskDataAdopted = ETaskDataAdopted
   {_adopted :: Text}
   deriving (Generic)
 
-instance ToJSON ELKTaskDataAdopted where
+instance ToJSON ETaskDataAdopted where
   toJSON = genericToJSON defaultOptions
 
-data ELKChangeOrphanTDAdopted = ELKChangeOrphanTDAdopted
-  { elkchangeorphantdadptId :: Text,
-    elkchangeorphantdadptType :: ELKDocType,
-    elkchangeorphantdadptTasksData :: ELKTaskDataAdopted
+data EChangeOrphanTDAdopted = EChangeOrphanTDAdopted
+  { echangeorphantdadptId :: Text,
+    echangeorphantdadptType :: EDocType,
+    echangeorphantdadptTasksData :: ETaskDataAdopted
   }
   deriving (Generic)
 
-instance ToJSON ELKChangeOrphanTDAdopted where
+instance ToJSON EChangeOrphanTDAdopted where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-data ELKChangeEvent = ELKChangeEvent
-  { elkchangeeventId :: LText,
-    elkchangeeventNumber :: Word32,
-    elkchangeeventType :: ELKDocType,
-    elkchangeeventChangeId :: LText,
-    elkchangeeventUrl :: LText,
-    elkchangeeventChangedFiles :: [SimpleFile],
-    elkchangeeventRepositoryPrefix :: LText,
-    elkchangeeventRepositoryShortname :: LText,
-    elkchangeeventRepositoryFullname :: LText,
-    -- elkchangeeventAuthor is optional due to the fact Gerrit closer
+data EChangeEvent = EChangeEvent
+  { echangeeventId :: LText,
+    echangeeventNumber :: Word32,
+    echangeeventType :: EDocType,
+    echangeeventChangeId :: LText,
+    echangeeventUrl :: LText,
+    echangeeventChangedFiles :: [SimpleFile],
+    echangeeventRepositoryPrefix :: LText,
+    echangeeventRepositoryShortname :: LText,
+    echangeeventRepositoryFullname :: LText,
+    -- echangeeventAuthor is optional due to the fact Gerrit closer
     -- does not set any author for ChangeAbandonedEvent
-    elkchangeeventAuthor :: Maybe Author,
-    elkchangeeventOnAuthor :: Author,
-    elkchangeeventBranch :: LText,
-    elkchangeeventOnCreatedAt :: UTCTime,
-    elkchangeeventCreatedAt :: UTCTime,
-    elkchangeeventApproval :: Maybe [LText],
-    elkchangeeventTasksData :: Maybe [ELKTaskData]
+    echangeeventAuthor :: Maybe Author,
+    echangeeventOnAuthor :: Author,
+    echangeeventBranch :: LText,
+    echangeeventOnCreatedAt :: UTCTime,
+    echangeeventCreatedAt :: UTCTime,
+    echangeeventApproval :: Maybe [LText],
+    echangeeventTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeEvent where
+instance ToJSON EChangeEvent where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeEvent where
+instance FromJSON EChangeEvent where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKCrawlerMetadataObject = ELKCrawlerMetadataObject
-  { elkcmCrawlerName :: LText,
-    elkcmCrawlerType :: LText,
-    elkcmCrawlerTypeValue :: LText,
-    elkcmLastCommitAt :: UTCTime
+data ECrawlerMetadataObject = ECrawlerMetadataObject
+  { ecmCrawlerName :: LText,
+    ecmCrawlerType :: LText,
+    ecmCrawlerTypeValue :: LText,
+    ecmLastCommitAt :: UTCTime
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKCrawlerMetadataObject where
+instance ToJSON ECrawlerMetadataObject where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKCrawlerMetadataObject where
+instance FromJSON ECrawlerMetadataObject where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-newtype ELKCrawlerMetadata = ELKCrawlerMetadata
-  { elkcmCrawlerMetadata :: ELKCrawlerMetadataObject
+newtype ECrawlerMetadata = ECrawlerMetadata
+  { ecmCrawlerMetadata :: ECrawlerMetadataObject
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKCrawlerMetadata where
+instance ToJSON ECrawlerMetadata where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKCrawlerMetadata where
+instance FromJSON ECrawlerMetadata where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase

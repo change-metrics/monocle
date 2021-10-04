@@ -71,11 +71,11 @@ aesonDecode dat = do
 -- | Test decoding the full data type
 aesonDecodeData :: LBS.ByteString -> Int
 aesonDecodeData dat =
-  getELK (Aeson.eitherDecode dat)
+  getE (Aeson.eitherDecode dat)
   where
-    getELK :: Either String (BH.SearchResult D.ELKChangeEvent) -> Int
-    getELK (Right _) = 42
-    getELK _ = error "oops"
+    getE :: Either String (BH.SearchResult D.EChangeEvent) -> Int
+    getE (Right _) = 42
+    getE _ = error "oops"
 
 getData :: IO LBS.ByteString
 getData = do
@@ -99,7 +99,7 @@ main = do
                   "decode"
                   [ bench "decode" $ whnf jsonDecode dat,
                     bench "aeson-value" $ whnf aesonDecode dat,
-                    bench "aeson-elk" $ whnf aesonDecodeData dat
+                    bench "aeson-elastic" $ whnf aesonDecodeData dat
                   ]
               ]
         ]

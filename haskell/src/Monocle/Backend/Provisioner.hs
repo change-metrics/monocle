@@ -24,13 +24,13 @@ runProvisioner tenantName = do
   putTextLn $ "[provisioner] Done."
 
 -- | Ensure changes have a unique ID
-setChangeID :: [ELKChange] -> IO [ELKChange]
+setChangeID :: [EChange] -> IO [EChange]
 setChangeID xs = do
   -- create ids using epoch as a prefix
   MkSystemTime sec _ <- getSystemTime
   let mkid x = show sec <> show x
-  let newChanges = zipWith (\c x -> c {elkchangeId = mkid x}) xs ([0 ..] :: [Int])
-  pure $ map (\c -> c {elkchangeUrl = "http://review.example.org/" <> elkchangeId c}) newChanges
+  let newChanges = zipWith (\c x -> c {echangeId = mkid x}) xs ([0 ..] :: [Int])
+  pure $ map (\c -> c {echangeUrl = "http://review.example.org/" <> echangeId c}) newChanges
 
 -- | Creates a bunch of event in the last 3 weeks
 createFakeEvents :: IO [T.ScenarioEvent]
@@ -58,39 +58,39 @@ fakeAuthor = do
 fakeText :: Faker.Fake LText
 fakeText = toLazy <$> Faker.TvShow.Futurama.quotes
 
-fakeChange :: UTCTime -> UTCTime -> Faker.Fake ELKChange
+fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
 fakeChange from to = do
-  elkchangeId <- pure $ ""
-  elkchangeType <- pure $ ElkChange
-  elkchangeNumber <- pure $ 1
-  elkchangeChangeId <- pure $ "change-id"
-  elkchangeTitle <- fakeTitle
-  elkchangeUrl <- pure $ ""
-  elkchangeCommitCount <- fakeCommitCount
-  elkchangeAdditions <- fakeFileCount
-  elkchangeDeletions <- fakeFileCount
-  elkchangeChangedFilesCount <- fakeFileCount
-  elkchangeChangedFiles <- pure $ [File 0 0 "/fake/path"]
-  elkchangeText <- fakeText
-  elkchangeCommits <- pure $ []
-  elkchangeRepositoryPrefix <- pure $ ""
-  elkchangeRepositoryFullname <- pure $ ""
-  elkchangeRepositoryShortname <- pure $ ""
-  elkchangeAuthor <- fakeAuthor
-  elkchangeBranch <- pure $ ""
-  elkchangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from to
-  elkchangeUpdatedAt <- dropTime <$> Faker.DateTime.utcBetween elkchangeCreatedAt to
-  elkchangeMergedBy <- pure $ Nothing
-  elkchangeTargetBranch <- pure $ "main"
-  elkchangeMergedAt <- pure $ Nothing
-  elkchangeClosedAt <- pure $ Nothing
-  elkchangeDuration <- pure $ Nothing
-  elkchangeApproval <- pure $ Just ["OK"]
-  elkchangeSelfMerged <- pure $ Nothing
-  elkchangeTasksData <- pure $ Nothing
-  elkchangeState <- pure $ ElkChangeOpen
-  elkchangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
-  elkchangeLabels <- pure $ []
-  elkchangeAssignees <- pure $ []
-  elkchangeDraft <- pure $ False
-  pure $ ELKChange {..}
+  echangeId <- pure $ ""
+  echangeType <- pure $ EChangeDoc
+  echangeNumber <- pure $ 1
+  echangeChangeId <- pure $ "change-id"
+  echangeTitle <- fakeTitle
+  echangeUrl <- pure $ ""
+  echangeCommitCount <- fakeCommitCount
+  echangeAdditions <- fakeFileCount
+  echangeDeletions <- fakeFileCount
+  echangeChangedFilesCount <- fakeFileCount
+  echangeChangedFiles <- pure $ [File 0 0 "/fake/path"]
+  echangeText <- fakeText
+  echangeCommits <- pure $ []
+  echangeRepositoryPrefix <- pure $ ""
+  echangeRepositoryFullname <- pure $ ""
+  echangeRepositoryShortname <- pure $ ""
+  echangeAuthor <- fakeAuthor
+  echangeBranch <- pure $ ""
+  echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from to
+  echangeUpdatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeCreatedAt to
+  echangeMergedBy <- pure $ Nothing
+  echangeTargetBranch <- pure $ "main"
+  echangeMergedAt <- pure $ Nothing
+  echangeClosedAt <- pure $ Nothing
+  echangeDuration <- pure $ Nothing
+  echangeApproval <- pure $ Just ["OK"]
+  echangeSelfMerged <- pure $ Nothing
+  echangeTasksData <- pure $ Nothing
+  echangeState <- pure $ EChangeOpen
+  echangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
+  echangeLabels <- pure $ []
+  echangeAssignees <- pure $ []
+  echangeDraft <- pure $ False
+  pure $ EChange {..}

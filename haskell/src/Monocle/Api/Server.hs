@@ -10,9 +10,9 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
   ( Author (..),
     Commit (..),
-    ELKChange (..),
-    ELKChangeEvent (..),
-    ELKTaskData (..),
+    EChange (..),
+    EChangeEvent (..),
+    ETaskData (..),
     File (..),
     changeStateToText,
     docTypeToText,
@@ -204,8 +204,8 @@ crawlerAddDoc request = do
   where
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
-      let changes' = map I.toELKChange $ toList changes
-          events' = map I.toELKChangeEvent $ toList events
+      let changes' = map I.toEChange $ toList changes
+          events' = map I.toEChangeEvent $ toList events
       I.indexChanges changes'
       I.indexEvents events'
       I.updateChangesAndEventsFromOrphanTaskData changes' events'
@@ -628,52 +628,52 @@ searchQuery request = do
           repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
 
-    toChangeEventsResult :: (ELKChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents
+    toChangeEventsResult :: (EChange, [EChangeEvent]) -> SearchPB.ChangeAndEvents
     toChangeEventsResult (change, events) =
       let changeAndEventsChange = Just (toChangeResult change)
           changeAndEventsEvents = V.fromList $ toEventResult <$> events
        in SearchPB.ChangeAndEvents {..}
 
-    toEventResult :: ELKChangeEvent -> SearchPB.ChangeEvent
-    toEventResult ELKChangeEvent {..} =
-      let changeEventId = elkchangeeventId
-          changeEventType = docTypeToText elkchangeeventType
-          changeEventChangeId = elkchangeeventChangeId
-          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
-          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
-          changeEventAuthor = maybe "backend-ghost" authorMuid elkchangeeventAuthor
-          changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
-          changeEventBranch = elkchangeeventBranch
+    toEventResult :: EChangeEvent -> SearchPB.ChangeEvent
+    toEventResult EChangeEvent {..} =
+      let changeEventId = echangeeventId
+          changeEventType = docTypeToText echangeeventType
+          changeEventChangeId = echangeeventChangeId
+          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventCreatedAt
+          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventOnCreatedAt
+          changeEventAuthor = maybe "backend-ghost" authorMuid echangeeventAuthor
+          changeEventOnAuthor = authorMuid echangeeventOnAuthor
+          changeEventBranch = echangeeventBranch
        in SearchPB.ChangeEvent {..}
 
-    toChangeResult :: ELKChange -> SearchPB.Change
+    toChangeResult :: EChange -> SearchPB.Change
     toChangeResult change =
-      let changeTitle = elkchangeTitle change
-          changeUrl = elkchangeUrl change
-          changeCreatedAt = (Just . Timestamp.fromUTCTime $ elkchangeCreatedAt change)
-          changeUpdatedAt = (Just . Timestamp.fromUTCTime $ elkchangeUpdatedAt change)
-          changeRepositoryFullname = elkchangeRepositoryFullname change
-          changeState = toLazy . changeStateToText $ elkchangeState change
-          changeBranch = elkchangeBranch change
-          changeTargetBranch = elkchangeTargetBranch change
-          changeTaskData = V.fromList . maybe [] (map toTaskData) $ elkchangeTasksData change
-          changeChangeId = elkchangeChangeId change
-          changeAuthor = authorMuid . elkchangeAuthor $ change
-          changeText = elkchangeText change
-          changeAdditions = elkchangeAdditions change
-          changeDeletions = elkchangeDeletions change
-          changeChangedFilesCount = elkchangeChangedFilesCount change
-          changeApproval = V.fromList $ fromMaybe [] $ elkchangeApproval change
-          changeAssignees = V.fromList (fmap authorMuid (elkchangeAssignees change))
-          changeLabels = V.fromList $ elkchangeLabels change
-          changeDraft = elkchangeDraft change
-          changeMergeable = elkchangeMergeable change == "MERGEABLE"
-          changeCommits = V.fromList . map toCommit $ elkchangeCommits change
-          changeChangedFiles = V.fromList . map toFile $ elkchangeChangedFiles change
+      let changeTitle = echangeTitle change
+          changeUrl = echangeUrl change
+          changeCreatedAt = (Just . Timestamp.fromUTCTime $ echangeCreatedAt change)
+          changeUpdatedAt = (Just . Timestamp.fromUTCTime $ echangeUpdatedAt change)
+          changeRepositoryFullname = echangeRepositoryFullname change
+          changeState = toLazy . changeStateToText $ echangeState change
+          changeBranch = echangeBranch change
+          changeTargetBranch = echangeTargetBranch change
+          changeTaskData = V.fromList . maybe [] (map toTaskData) $ echangeTasksData change
+          changeChangeId = echangeChangeId change
+          changeAuthor = authorMuid . echangeAuthor $ change
+          changeText = echangeText change
+          changeAdditions = echangeAdditions change
+          changeDeletions = echangeDeletions change
+          changeChangedFilesCount = echangeChangedFilesCount change
+          changeApproval = V.fromList $ fromMaybe [] $ echangeApproval change
+          changeAssignees = V.fromList (fmap authorMuid (echangeAssignees change))
+          changeLabels = V.fromList $ echangeLabels change
+          changeDraft = echangeDraft change
+          changeMergeable = echangeMergeable change == "MERGEABLE"
+          changeCommits = V.fromList . map toCommit $ echangeCommits change
+          changeChangedFiles = V.fromList . map toFile $ echangeChangedFiles change
           -- consistency rename from commit_count to commits_count
-          changeCommitsCount = elkchangeCommitCount change
-          changeMergedAt = toTS =<< elkchangeMergedAt change
-          changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< elkchangeMergedBy change
+          changeCommitsCount = echangeCommitCount change
+          changeMergedAt = toTS =<< echangeMergedAt change
+          changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< echangeMergedBy change
        in SearchPB.Change {..}
 
     toTS = Just . Timestamp.fromUTCTime
@@ -681,17 +681,18 @@ searchQuery request = do
 
     toCommit :: Commit -> SearchPB.Commit
     toCommit Commit {..} =
-      let commitSha = elkcommitSha
-          commitTitle = elkcommitTitle
-          commitAuthor = authorMuid elkcommitAuthor
-          commitAuthoredAt = toTS elkcommitAuthoredAt
-          commitCommitter = authorMuid elkcommitCommitter
-          commitCommittedAt = toTS elkcommitCommittedAt
-          commitAdditions = elkcommitAdditions
-          commitDeletions = elkcommitDeletions
-       in SearchPB.Commit {..}
+      SearchPB.Commit
+        { commitSha = commitSha,
+          commitTitle = commitTitle,
+          commitAuthor = authorMuid commitAuthor,
+          commitAuthoredAt = toTS commitAuthoredAt,
+          commitCommitter = authorMuid commitCommitter,
+          commitCommittedAt = toTS commitCommittedAt,
+          commitAdditions = commitAdditions,
+          commitDeletions = commitDeletions
+        }
 
-    toTaskData :: ELKTaskData -> TaskDataPB.TaskData
+    toTaskData :: ETaskData -> TaskDataPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing
           taskDataChangeUrl = toLazy $ tdUrl td

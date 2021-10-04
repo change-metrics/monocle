@@ -32,51 +32,51 @@ fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 fakeAuthor :: Author
 fakeAuthor = Author "John" "John"
 
-mkFakeChange :: Int -> LText -> ELKChange
+mkFakeChange :: Int -> LText -> EChange
 mkFakeChange number title =
   fakeChange
-    { elkchangeId = "aFakeId-" <> show number,
-      elkchangeNumber = number,
-      elkchangeTitle = title,
-      elkchangeUrl = "https://fakehost/change/" <> show number
+    { echangeId = "aFakeId-" <> show number,
+      echangeNumber = number,
+      echangeTitle = title,
+      echangeUrl = "https://fakehost/change/" <> show number
     }
 
-fakeChange :: ELKChange
+fakeChange :: EChange
 fakeChange =
-  ELKChange
-    { elkchangeId = "",
-      elkchangeType = ElkChange,
-      elkchangeNumber = 1,
-      elkchangeChangeId = "change-id",
-      elkchangeTitle = "",
-      elkchangeUrl = "",
-      elkchangeCommitCount = 1,
-      elkchangeAdditions = 1,
-      elkchangeDeletions = 1,
-      elkchangeChangedFilesCount = 1,
-      elkchangeChangedFiles = [File 0 0 "/fake/path"],
-      elkchangeText = "",
-      elkchangeCommits = [],
-      elkchangeRepositoryPrefix = "",
-      elkchangeRepositoryFullname = "",
-      elkchangeRepositoryShortname = "",
-      elkchangeAuthor = fakeAuthor,
-      elkchangeBranch = "",
-      elkchangeCreatedAt = fakeDate,
-      elkchangeUpdatedAt = fakeDate,
-      elkchangeMergedBy = Nothing,
-      elkchangeTargetBranch = "main",
-      elkchangeMergedAt = Nothing,
-      elkchangeClosedAt = Nothing,
-      elkchangeDuration = Nothing,
-      elkchangeApproval = Just ["OK"],
-      elkchangeSelfMerged = Nothing,
-      elkchangeTasksData = Nothing,
-      elkchangeState = ElkChangeOpen,
-      elkchangeMergeable = "",
-      elkchangeLabels = [],
-      elkchangeAssignees = [],
-      elkchangeDraft = False
+  EChange
+    { echangeId = "",
+      echangeType = EChangeDoc,
+      echangeNumber = 1,
+      echangeChangeId = "change-id",
+      echangeTitle = "",
+      echangeUrl = "",
+      echangeCommitCount = 1,
+      echangeAdditions = 1,
+      echangeDeletions = 1,
+      echangeChangedFilesCount = 1,
+      echangeChangedFiles = [File 0 0 "/fake/path"],
+      echangeText = "",
+      echangeCommits = [],
+      echangeRepositoryPrefix = "",
+      echangeRepositoryFullname = "",
+      echangeRepositoryShortname = "",
+      echangeAuthor = fakeAuthor,
+      echangeBranch = "",
+      echangeCreatedAt = fakeDate,
+      echangeUpdatedAt = fakeDate,
+      echangeMergedBy = Nothing,
+      echangeTargetBranch = "main",
+      echangeMergedAt = Nothing,
+      echangeClosedAt = Nothing,
+      echangeDuration = Nothing,
+      echangeApproval = Just ["OK"],
+      echangeSelfMerged = Nothing,
+      echangeTasksData = Nothing,
+      echangeState = EChangeOpen,
+      echangeMergeable = "",
+      echangeLabels = [],
+      echangeAssignees = [],
+      echangeDraft = False
     }
 
 withTenant :: TenantM () -> IO ()
@@ -89,8 +89,8 @@ withTenant cb = bracket_ create delete run
     delete = testTenantM config I.removeIndex
     run = testTenantM config cb
 
-checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
-checkELKChangeField docId field value = do
+checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> TenantM ()
+checkEChangeField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
@@ -116,22 +116,22 @@ testIndexChanges = withTenant doTest
       -- Index two Changes and check present in database
       I.indexChanges [fakeChange1, fakeChange2]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange1)
-        elkchangeTitle
-        (elkchangeTitle fakeChange1)
+        echangeTitle
+        (echangeTitle fakeChange1)
       checkDocExists' $ I.getChangeDocId fakeChange2
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange2)
-        elkchangeTitle
-        (elkchangeTitle fakeChange2)
+        echangeTitle
+        (echangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       I.indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange1Updated)
-        elkchangeTitle
-        (elkchangeTitle fakeChange1Updated)
+        echangeTitle
+        (echangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
       checkChangesCount 2
       where
@@ -139,7 +139,7 @@ testIndexChanges = withTenant doTest
           exists <- I.checkDocExists dId
           assertEqual' "check doc exists" exists True
         fakeChange1 = mkFakeChange 1 "My change 1"
-        fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
+        fakeChange1Updated = fakeChange1 {echangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
 
 -- | A lifted version of assertEqual
@@ -589,27 +589,27 @@ testTaskDataAdd = withTenant doTest
       changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       assertEqual'
         "Check adding matching taskData"
-        [ ("42", Just [I.toELKTaskData td42]),
-          ("43", Just [I.toELKTaskData td43]),
+        [ ("42", Just [I.toETaskData td42]),
+          ("43", Just [I.toETaskData td43]),
           ("44", Nothing)
         ]
-        ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+        ((\EChange {..} -> (echangeId, echangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
       events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
-      let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
+      let (withTD, withoutTD) = partition (isJust . echangeeventTasksData) events
           createdEventWithTD =
             filter
-              (\e -> (e & elkchangeeventType) == ElkChangeCreatedEvent)
+              (\e -> (e & echangeeventType) == EChangeCreatedEvent)
               withTD
       assertEqual' "Check events count that got a Task data" 8 (length withTD)
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
       assertEqual'
         "Check Change events got the task data attribute"
-        [ ("ChangeCreatedEvent-42", Just [I.toELKTaskData td42]),
-          ("ChangeCreatedEvent-43", Just [I.toELKTaskData td43])
+        [ ("ChangeCreatedEvent-42", Just [I.toETaskData td42]),
+          ("ChangeCreatedEvent-43", Just [I.toETaskData td43])
         ]
-        ( ( \ELKChangeEvent {..} ->
-              (elkchangeeventId, elkchangeeventTasksData)
+        ( ( \EChangeEvent {..} ->
+              (echangeeventId, echangeeventTasksData)
           )
             <$> createdEventWithTD
         )
@@ -619,14 +619,14 @@ testTaskDataAdd = withTenant doTest
       void $ I.taskDataAdd [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
-      let expectedELKTD = I.toELKTaskData td
+      let expectedTD = I.toETaskData td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
-            ( ELKChangeOrphanTD
-                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = ElkOrphanTaskData,
-                  elkchangeorphantdTasksData = expectedELKTD
+            ( EChangeOrphanTD
+                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  echangeorphantdType = EOrphanTaskData,
+                  echangeorphantdTasksData = expectedTD
                 }
             )
         )
@@ -637,20 +637,20 @@ testTaskDataAdd = withTenant doTest
       let td' = td {taskDataSeverity = "urgent"}
       void $ I.taskDataAdd [td']
       orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
-      let expectedELKTD' = expectedELKTD {tdSeverity = "urgent"}
+      let expectedTD' = expectedTD {tdSeverity = "urgent"}
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
-            ( ELKChangeOrphanTD
-                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = ElkOrphanTaskData,
-                  elkchangeorphantdTasksData = expectedELKTD'
+            ( EChangeOrphanTD
+                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  echangeorphantdType = EOrphanTaskData,
+                  echangeorphantdTasksData = expectedTD'
                 }
             )
         )
         orphanTdM'
 
-    getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
+    getOrphanTd :: Text -> TenantM (Maybe EChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
 testTaskDataCommit :: Assertion
@@ -713,11 +713,11 @@ testTaskDataAdoption = withTenant doTest
         let haveTDs =
               all
                 (== True)
-                $ (isJust . elkchangeTasksData <$> changes')
-                  <> (isJust . elkchangeeventTasksData <$> events')
+                $ (isJust . echangeTasksData <$> changes')
+                  <> (isJust . echangeeventTasksData <$> events')
         assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
       where
-        getScenarioEvtObj :: ScenarioEvent -> Maybe ELKChangeEvent
+        getScenarioEvtObj :: ScenarioEvent -> Maybe EChangeEvent
         getScenarioEvtObj (SCreation obj) = Just obj
         getScenarioEvtObj (SComment obj) = Just obj
         getScenarioEvtObj (SReview obj) = Just obj
@@ -740,28 +740,28 @@ randomAuthor xs = do
   i <- getRandomR (0, n -1)
   return (xs !! i)
 
-emptyChange :: ELKChange
+emptyChange :: EChange
 emptyChange = fakeChange
 
-emptyEvent :: ELKChangeEvent
-emptyEvent = ELKChangeEvent {..}
+emptyEvent :: EChangeEvent
+emptyEvent = EChangeEvent {..}
   where
-    elkchangeeventId = mempty
-    elkchangeeventNumber = 0
-    elkchangeeventChangeId = mempty
-    elkchangeeventType = ElkChangeCreatedEvent
-    elkchangeeventUrl = mempty
-    elkchangeeventChangedFiles = mempty
-    elkchangeeventRepositoryPrefix = mempty
-    elkchangeeventRepositoryShortname = mempty
-    elkchangeeventRepositoryFullname = mempty
-    elkchangeeventAuthor = Just fakeAuthor
-    elkchangeeventOnAuthor = fakeAuthor
-    elkchangeeventBranch = mempty
-    elkchangeeventCreatedAt = fakeDate
-    elkchangeeventOnCreatedAt = fakeDate
-    elkchangeeventApproval = Nothing
-    elkchangeeventTasksData = Nothing
+    echangeeventId = mempty
+    echangeeventNumber = 0
+    echangeeventChangeId = mempty
+    echangeeventType = EChangeCreatedEvent
+    echangeeventUrl = mempty
+    echangeeventChangedFiles = mempty
+    echangeeventRepositoryPrefix = mempty
+    echangeeventRepositoryShortname = mempty
+    echangeeventRepositoryFullname = mempty
+    echangeeventAuthor = Just fakeAuthor
+    echangeeventOnAuthor = fakeAuthor
+    echangeeventBranch = mempty
+    echangeeventCreatedAt = fakeDate
+    echangeeventOnCreatedAt = fakeDate
+    echangeeventApproval = Nothing
+    echangeeventTasksData = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
@@ -769,14 +769,14 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
     author = maybe "no-author" (toStrict . authorMuid)
     date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
-      SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
-      SCreation ELKChangeEvent {..} ->
-        ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
-          <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
+      SChange EChange {..} -> "Change[" <> toStrict echangeChangeId <> "]"
+      SCreation EChangeEvent {..} ->
+        ("Change[" <> date echangeeventOnCreatedAt <> " ")
+          <> (toStrict echangeeventChangeId <> " created by " <> author echangeeventAuthor)
           <> "]"
-      SComment ELKChangeEvent {..} -> "Commented[" <> author elkchangeeventAuthor <> "]"
-      SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
-      SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
+      SComment EChangeEvent {..} -> "Commented[" <> author echangeeventAuthor <> "]"
+      SReview EChangeEvent {..} -> "Reviewed[" <> author echangeeventAuthor <> "]"
+      SMerge EChangeEvent {..} -> "Merged[" <> date echangeeventOnCreatedAt <> "]"
 
 -- Tests scenario data types
 
@@ -790,11 +790,11 @@ data ScenarioProject = SProject
 
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
 data ScenarioEvent
-  = SChange ELKChange
-  | SCreation ELKChangeEvent
-  | SReview ELKChangeEvent
-  | SComment ELKChangeEvent
-  | SMerge ELKChangeEvent
+  = SChange EChange
+  | SCreation EChangeEvent
+  | SReview EChangeEvent
+  | SComment EChangeEvent
+  | SMerge EChangeEvent
 
 indexScenario :: [ScenarioEvent] -> TenantM ()
 indexScenario xs = sequence_ $ indexDoc <$> xs
@@ -827,18 +827,18 @@ mkChange ::
   -- Repository fullname
   LText ->
   -- Change State
-  ELKChangeState ->
-  ELKChange
+  EChangeState ->
+  EChange
 mkChange ts start author changeId name state' =
   emptyChange
-    { elkchangeType = ElkChange,
-      elkchangeId = changeId,
-      elkchangeState = state',
-      elkchangeRepositoryFullname = name,
-      elkchangeCreatedAt = mkDate ts start,
-      elkchangeAuthor = author,
-      elkchangeChangeId = "change-" <> changeId,
-      elkchangeUrl = "https://fakeprovider/" <> changeId
+    { echangeType = EChangeDoc,
+      echangeId = changeId,
+      echangeState = state',
+      echangeRepositoryFullname = name,
+      echangeCreatedAt = mkDate ts start,
+      echangeAuthor = author,
+      echangeChangeId = "change-" <> changeId,
+      echangeUrl = "https://fakeprovider/" <> changeId
     }
 
 mkEvent ::
@@ -847,7 +847,7 @@ mkEvent ::
   -- Start time
   UTCTime ->
   -- Type of Event
-  ELKDocType ->
+  EDocType ->
   -- Author of the event
   Author ->
   -- Author of the related change
@@ -856,18 +856,18 @@ mkEvent ::
   LText ->
   -- Repository fullname
   LText ->
-  ELKChangeEvent
+  EChangeEvent
 mkEvent ts start etype author onAuthor changeId name =
   emptyEvent
-    { elkchangeeventAuthor = Just author,
-      elkchangeeventOnAuthor = onAuthor,
-      elkchangeeventType = etype,
-      elkchangeeventRepositoryFullname = name,
-      elkchangeeventId = docTypeToText etype <> "-" <> changeId,
-      elkchangeeventCreatedAt = mkDate ts start,
-      elkchangeeventOnCreatedAt = mkDate ts start,
-      elkchangeeventChangeId = "change-" <> changeId,
-      elkchangeeventUrl = "https://fakeprovider/" <> changeId
+    { echangeeventAuthor = Just author,
+      echangeeventOnAuthor = onAuthor,
+      echangeeventType = etype,
+      echangeeventRepositoryFullname = name,
+      echangeeventId = docTypeToText etype <> "-" <> changeId,
+      echangeeventCreatedAt = mkDate ts start,
+      echangeeventOnCreatedAt = mkDate ts start,
+      echangeeventChangeId = "change-" <> changeId,
+      echangeeventUrl = "https://fakeprovider/" <> changeId
     }
 
 -- | 'nominalMerge' is the most simple scenario
@@ -882,25 +882,25 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name ElkChangeMerged
+      let mkChange' ts author = mkChange ts start author changeId name EChangeMerged
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ElkChangeCreatedEvent author author
+      let create = mkEvent' 0 EChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The comment
       commenter <- randomAuthor $ maintainers <> commenters
-      let comment = mkEvent' (duration `div` 2) ElkChangeCommentedEvent commenter author
+      let comment = mkEvent' (duration `div` 2) EChangeCommentedEvent commenter author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
+      let review = mkEvent' (duration `div` 2) EChangeReviewedEvent reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent' duration ElkChangeMergedEvent approver author
+      let merge = mkEvent' duration EChangeMergedEvent approver author
 
       -- The event lists
       pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]
@@ -913,17 +913,17 @@ nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name ElkChangeOpen
+      let mkChange' ts author = mkChange ts start author changeId name EChangeOpen
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ElkChangeCreatedEvent author author
+      let create = mkEvent' 0 EChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
+      let review = mkEvent' (duration `div` 2) EChangeReviewedEvent reviewer author
 
       -- The event lists
       pure [SChange change, SCreation create, SReview review]
