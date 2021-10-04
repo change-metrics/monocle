@@ -619,14 +619,14 @@ testTaskDataAdd = withTenant doTest
       void $ I.taskDataAdd [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
-      let expectedELKTD = I.toETaskData td
+      let expectedTD = I.toETaskData td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
                 { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
                   echangeorphantdType = EOrphanTaskData,
-                  echangeorphantdTasksData = expectedELKTD
+                  echangeorphantdTasksData = expectedTD
                 }
             )
         )
@@ -637,14 +637,14 @@ testTaskDataAdd = withTenant doTest
       let td' = td {taskDataSeverity = "urgent"}
       void $ I.taskDataAdd [td']
       orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
-      let expectedELKTD' = expectedELKTD {tdSeverity = "urgent"}
+      let expectedTD' = expectedTD {tdSeverity = "urgent"}
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
                 { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
                   echangeorphantdType = EOrphanTaskData,
-                  echangeorphantdTasksData = expectedELKTD'
+                  echangeorphantdTasksData = expectedTD'
                 }
             )
         )

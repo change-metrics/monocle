@@ -1,4 +1,4 @@
--- | Data types for ELK documents
+-- | Data types for Elasticsearch documents
 module Monocle.Backend.Documents where
 
 import Data.Aeson (FromJSON, ToJSON, Value (String), defaultOptions, genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
@@ -113,12 +113,12 @@ instance ToJSON EChangeState where
 instance FromJSON EChangeState where
   parseJSON =
     withText
-      "ElkChangeState"
+      "EChangeState"
       ( \case
           "OPEN" -> pure EChangeOpen
           "MERGED" -> pure EChangeMerged
           "CLOSED" -> pure EChangeClosed
-          _anyOtherValue -> fail "Unknown Monocle ELK change state"
+          _anyOtherValue -> fail "Unknown Monocle Elastic change state"
       )
 
 data EDocType
@@ -166,7 +166,7 @@ instance ToJSON EDocType where
 instance FromJSON EDocType where
   parseJSON =
     withText
-      "ElkDocType"
+      "EDocType"
       ( \case
           "ChangeCreatedEvent" -> pure EChangeCreatedEvent
           "ChangeMergedEvent" -> pure EChangeMergedEvent

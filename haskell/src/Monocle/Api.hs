@@ -28,10 +28,10 @@ app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
     mkAppM apM = runReaderT (unApp apM) env
 
 run :: Int -> Text -> FilePath -> IO ()
-run port elkUrl configFile = withLogger (run' port elkUrl configFile)
+run port url configFile = withLogger (run' port url configFile)
 
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
-run' port elkUrl configFile glLogger = do
+run' port url configFile glLogger = do
   reloadableConfig <- Config.loadConfig configFile
   config <- newIORef reloadableConfig
   let tenants' = Config.configWorkspaces reloadableConfig
@@ -49,13 +49,13 @@ run' port elkUrl configFile glLogger = do
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
 
-  bhEnv <- mkEnv elkUrl
+  bhEnv <- mkEnv url
   let aEnv = Env {..}
   retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      logEvent glLogger $ Ready (length tenants') port elkUrl
+      logEvent glLogger $ Ready (length tenants') port url
       Warp.runSettings
         settings
         . cors (const $ Just policy)
