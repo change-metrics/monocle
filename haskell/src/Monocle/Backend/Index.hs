@@ -350,14 +350,14 @@ toELKChange Change {..} =
     toCommit :: Monocle.Change.Commit -> Monocle.Backend.Documents.Commit
     toCommit Monocle.Change.Commit {..} =
       Monocle.Backend.Documents.Commit
-        { elkcommitSha = commitSha,
-          elkcommitAuthor = toAuthor commitAuthor,
-          elkcommitCommitter = toAuthor commitCommitter,
-          elkcommitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
-          elkcommitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
-          elkcommitDeletions = fromIntegral commitDeletions,
-          elkcommitAdditions = fromIntegral commitAdditions,
-          elkcommitTitle = commitTitle
+        { commitSha = commitSha,
+          commitAuthor = toAuthor commitAuthor,
+          commitCommitter = toAuthor commitCommitter,
+          commitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
+          commitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
+          commitDeletions = fromIntegral commitDeletions,
+          commitAdditions = fromIntegral commitAdditions,
+          commitTitle = commitTitle
         }
     toMergedByAuthor (ChangeOptionalMergedByMergedBy m) = toAuthor (Just m)
     toMergedAt (ChangeOptionalMergedAtMergedAt t) = T.toUTCTime t

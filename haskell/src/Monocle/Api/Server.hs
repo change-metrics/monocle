@@ -681,15 +681,16 @@ searchQuery request = do
 
     toCommit :: Commit -> SearchPB.Commit
     toCommit Commit {..} =
-      let commitSha = elkcommitSha
-          commitTitle = elkcommitTitle
-          commitAuthor = authorMuid elkcommitAuthor
-          commitAuthoredAt = toTS elkcommitAuthoredAt
-          commitCommitter = authorMuid elkcommitCommitter
-          commitCommittedAt = toTS elkcommitCommittedAt
-          commitAdditions = elkcommitAdditions
-          commitDeletions = elkcommitDeletions
-       in SearchPB.Commit {..}
+      SearchPB.Commit
+        { commitSha = commitSha,
+          commitTitle = commitTitle,
+          commitAuthor = authorMuid commitAuthor,
+          commitAuthoredAt = toTS commitAuthoredAt,
+          commitCommitter = authorMuid commitCommitter,
+          commitCommittedAt = toTS commitCommittedAt,
+          commitAdditions = commitAdditions,
+          commitDeletions = commitDeletions
+        }
 
     toTaskData :: ETaskData -> TaskDataPB.TaskData
     toTaskData td =

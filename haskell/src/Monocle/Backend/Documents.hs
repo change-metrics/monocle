@@ -44,14 +44,14 @@ instance FromJSON SimpleFile where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data Commit = Commit
-  { elkcommitSha :: LText,
-    elkcommitAuthor :: Author,
-    elkcommitCommitter :: Author,
-    elkcommitAuthoredAt :: UTCTime,
-    elkcommitCommittedAt :: UTCTime,
-    elkcommitAdditions :: Word32,
-    elkcommitDeletions :: Word32,
-    elkcommitTitle :: LText
+  { commitSha :: LText,
+    commitAuthor :: Author,
+    commitCommitter :: Author,
+    commitAuthoredAt :: UTCTime,
+    commitCommittedAt :: UTCTime,
+    commitAdditions :: Word32,
+    commitDeletions :: Word32,
+    commitTitle :: LText
   }
   deriving (Show, Eq, Generic)
 
