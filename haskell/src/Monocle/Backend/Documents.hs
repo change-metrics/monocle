@@ -95,29 +95,29 @@ instance ToJSON ETaskData where
 instance FromJSON ETaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKChangeState
-  = ElkChangeOpen
-  | ElkChangeMerged
-  | ElkChangeClosed
+data EChangeState
+  = EChangeOpen
+  | EChangeMerged
+  | EChangeClosed
   deriving (Eq, Show)
 
-changeStateToText :: ELKChangeState -> Text
+changeStateToText :: EChangeState -> Text
 changeStateToText = \case
-  ElkChangeOpen -> "OPEN"
-  ElkChangeMerged -> "MERGED"
-  ElkChangeClosed -> "CLOSED"
+  EChangeOpen -> "OPEN"
+  EChangeMerged -> "MERGED"
+  EChangeClosed -> "CLOSED"
 
-instance ToJSON ELKChangeState where
+instance ToJSON EChangeState where
   toJSON v = String $ toText $ changeStateToText v
 
-instance FromJSON ELKChangeState where
+instance FromJSON EChangeState where
   parseJSON =
     withText
       "ElkChangeState"
       ( \case
-          "OPEN" -> pure ElkChangeOpen
-          "MERGED" -> pure ElkChangeMerged
-          "CLOSED" -> pure ElkChangeClosed
+          "OPEN" -> pure EChangeOpen
+          "MERGED" -> pure EChangeMerged
+          "CLOSED" -> pure EChangeClosed
           _anyOtherValue -> fail "Unknown Monocle ELK change state"
       )
 
@@ -205,7 +205,7 @@ data ELKChange = ELKChange
     elkchangeMergedAt :: Maybe UTCTime,
     elkchangeUpdatedAt :: UTCTime,
     elkchangeClosedAt :: Maybe UTCTime,
-    elkchangeState :: ELKChangeState,
+    elkchangeState :: EChangeState,
     elkchangeDuration :: Maybe Int,
     elkchangeMergeable :: LText,
     elkchangeLabels :: [LText],

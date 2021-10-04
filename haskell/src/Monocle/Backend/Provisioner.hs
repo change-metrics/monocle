@@ -88,7 +88,7 @@ fakeChange from to = do
   elkchangeApproval <- pure $ Just ["OK"]
   elkchangeSelfMerged <- pure $ Nothing
   elkchangeTasksData <- pure $ Nothing
-  elkchangeState <- pure $ ElkChangeOpen
+  elkchangeState <- pure $ EChangeOpen
   elkchangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
   elkchangeLabels <- pure $ []
   elkchangeAssignees <- pure $ []

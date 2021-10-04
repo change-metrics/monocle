@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (ELKChange (..), ELKChangeEvent (..), ELKChangeState (..), ELKDocType (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChangeState (..), ELKChange (..), ELKChangeEvent (..), ELKDocType (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -165,7 +165,7 @@ changeReviewRatio = withFlavor qf $ do
     qf = QueryFlavor Author CreatedAt
 
 -- | Add a change state filter to the query
-changeState :: ELKChangeState -> [BH.Query]
+changeState :: EChangeState -> [BH.Query]
 changeState state' =
   [ BH.TermQuery (BH.Term "type" "Change") Nothing,
     BH.TermQuery (BH.Term "state" $ changeStateToText state') Nothing
@@ -212,9 +212,9 @@ getEventCounts :: QueryM EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
-    <$> withFilter (changeState ElkChangeOpen) countDocs
-      <*> withFilter (changeState ElkChangeMerged) countDocs
-      <*> withFilter (changeState ElkChangeClosed) countDocs
+    <$> withFilter (changeState EChangeOpen) countDocs
+      <*> withFilter (changeState EChangeMerged) countDocs
+      <*> withFilter (changeState EChangeClosed) countDocs
       <*> withFilter selfMergedQ countDocs
   where
     selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
@@ -525,7 +525,7 @@ getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype]
        in if i' <= 0 then 10 else i'
 
 openChangesCount :: QueryM Count
-openChangesCount = withFilter (changeState ElkChangeOpen) (withoutDate countDocs)
+openChangesCount = withFilter (changeState EChangeOpen) (withoutDate countDocs)
   where
     withoutDate = withModified Q.dropDate
 
@@ -580,7 +580,7 @@ getReposSummary = do
 
       -- Count the events
       createdChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
-      updatedChanges <- withFilter (changeState ElkChangeOpen) (changeQF countDocs)
+      updatedChanges <- withFilter (changeState EChangeOpen) (changeQF countDocs)
       mergedChanges <- mergedChangesCount
       openChanges <- openChangesCount
       abandonedChanges <- abandonedChangesCount
@@ -923,10 +923,10 @@ getLifecycleStats = do
 
   lifecycleStatsTtmMean <-
     double2Float
-      <$> withFilter (changeState ElkChangeMerged) (averageDuration qf)
+      <$> withFilter (changeState EChangeMerged) (averageDuration qf)
   lifecycleStatsTtmVariability <-
     double2Float
-      <$> withFilter (changeState ElkChangeMerged) (medianDeviationDuration qf)
+      <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
 
   updated <-
     withFilter
@@ -941,7 +941,7 @@ getLifecycleStats = do
 
   lifecycleStatsCommitsPerChange <-
     double2Float
-      <$> withFilter (changeState ElkChangeMerged) (changeMergedAvgCommits qf)
+      <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
 
   pure $ SearchPB.LifecycleStats {..}
   where

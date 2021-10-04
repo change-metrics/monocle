@@ -365,9 +365,9 @@ toELKChange Change {..} =
     toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
     toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
     toState cstate = case cstate of
-      Change_ChangeStateOpen -> ElkChangeOpen
-      Change_ChangeStateMerged -> ElkChangeMerged
-      Change_ChangeStateClosed -> ElkChangeClosed
+      Change_ChangeStateOpen -> EChangeOpen
+      Change_ChangeStateMerged -> EChangeMerged
+      Change_ChangeStateClosed -> EChangeClosed
 
 toETaskData :: TaskData -> ETaskData
 toETaskData TaskData {..} =
