@@ -250,6 +250,12 @@ monocleSearchLanguage =
             "{\"regexp\":{\"on_author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}"
         ),
       testCase
+        "Query multi-or"
+        ( queryMatch
+            "score:1 (score:2 or score:3 or score:4) score:5 score:6"
+            "{\"bool\":{\"must\":[{\"term\":{\"tasks_data.score\":{\"value\":\"1\"}}},{\"bool\":{\"should\":[{\"term\":{\"tasks_data.score\":{\"value\":\"2\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"3\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"4\"}}}]}},{\"term\":{\"tasks_data.score\":{\"value\":\"5\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"6\"}}}]}}"
+        ),
+      testCase
         "Query default bound"
         (queryMatchBound "state:open" (threeWeek, now)),
       testCase
