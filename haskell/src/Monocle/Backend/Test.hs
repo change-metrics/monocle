@@ -623,10 +623,10 @@ testTaskDataAdd = withTenant doTest
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
-            ( ELKChangeOrphanTD
-                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = EOrphanTaskData,
-                  elkchangeorphantdTasksData = expectedELKTD
+            ( EChangeOrphanTD
+                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  echangeorphantdType = EOrphanTaskData,
+                  echangeorphantdTasksData = expectedELKTD
                 }
             )
         )
@@ -641,16 +641,16 @@ testTaskDataAdd = withTenant doTest
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
-            ( ELKChangeOrphanTD
-                { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = EOrphanTaskData,
-                  elkchangeorphantdTasksData = expectedELKTD'
+            ( EChangeOrphanTD
+                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                  echangeorphantdType = EOrphanTaskData,
+                  echangeorphantdTasksData = expectedELKTD'
                 }
             )
         )
         orphanTdM'
 
-    getOrphanTd :: Text -> TenantM (Maybe ELKChangeOrphanTD)
+    getOrphanTd :: Text -> TenantM (Maybe EChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
 testTaskDataCommit :: Assertion

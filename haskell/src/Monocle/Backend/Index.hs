@@ -552,13 +552,13 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: [Text] -> TenantM [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
   pure $ catMaybes $ BH.hitSource <$> results
   where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeOrphanTD]
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit EChangeOrphanTD]
     scanSearch index = BH.scanSearch index search
     search = BH.mkSearch (Just query) Nothing
     query =
@@ -570,15 +570,15 @@ getOrphanTaskDataByChangeURL urls = do
             ]
         ]
 
-getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
   pure oTDs
   where
-    toAdoptedDoc :: ELKChangeOrphanTD -> (Value, BH.DocId)
-    toAdoptedDoc (ELKChangeOrphanTD id' _ _) =
-      ( toJSON $ ELKChangeOrphanTDAdopted id' EOrphanTaskData $ ELKTaskDataAdopted "",
+    toAdoptedDoc :: EChangeOrphanTD -> (Value, BH.DocId)
+    toAdoptedDoc (EChangeOrphanTD id' _ _) =
+      ( toJSON $ EChangeOrphanTDAdopted id' EOrphanTaskData $ ETaskDataAdopted "",
         BH.DocId id'
       )
 
@@ -602,24 +602,24 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
         updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
     -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
     -- for Changes and Events
-    getTaskDatas :: [ELKChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
+    getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
     getTaskDatas adopted assocs = concatMap getTDs assocs
       where
         getTDs :: (LText, [LText]) -> [TaskDataDoc]
         getTDs (url, ids) =
-          let mTDs = elkchangeorphantdTasksData <$> filterByUrl url adopted
+          let mTDs = echangeorphantdTasksData <$> filterByUrl url adopted
            in flip TaskDataDoc mTDs <$> ids
-        filterByUrl url = filter (\td -> tdChangeUrl (elkchangeorphantdTasksData td) == toText url)
+        filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == toText url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
-  (toJSON $ ELKChangeTD $ Just tddTd, BH.DocId $ toText tddId)
+  (toJSON $ EChangeTD $ Just tddTd, BH.DocId $ toText tddId)
 
 orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
   let td = head $ fromList tddTd
    in ( toJSON $
-          ELKChangeOrphanTD
+          EChangeOrphanTD
             (toText tddId)
             EOrphanTaskData
             td,

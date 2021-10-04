@@ -223,45 +223,45 @@ instance ToJSON EChange where
 instance FromJSON EChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-newtype ELKChangeTD = ELKChangeTD
-  { elkchangetdTasksData :: Maybe [ETaskData]
+newtype EChangeTD = EChangeTD
+  { echangetdTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeTD where
+instance ToJSON EChangeTD where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeTD where
+instance FromJSON EChangeTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKChangeOrphanTD = ELKChangeOrphanTD
-  { elkchangeorphantdId :: Text,
-    elkchangeorphantdType :: EDocType,
-    elkchangeorphantdTasksData :: ETaskData
+data EChangeOrphanTD = EChangeOrphanTD
+  { echangeorphantdId :: Text,
+    echangeorphantdType :: EDocType,
+    echangeorphantdTasksData :: ETaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeOrphanTD where
+instance ToJSON EChangeOrphanTD where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeOrphanTD where
+instance FromJSON EChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKTaskDataAdopted = ELKTaskDataAdopted
+data ETaskDataAdopted = ETaskDataAdopted
   {_adopted :: Text}
   deriving (Generic)
 
-instance ToJSON ELKTaskDataAdopted where
+instance ToJSON ETaskDataAdopted where
   toJSON = genericToJSON defaultOptions
 
-data ELKChangeOrphanTDAdopted = ELKChangeOrphanTDAdopted
-  { elkchangeorphantdadptId :: Text,
-    elkchangeorphantdadptType :: EDocType,
-    elkchangeorphantdadptTasksData :: ELKTaskDataAdopted
+data EChangeOrphanTDAdopted = EChangeOrphanTDAdopted
+  { echangeorphantdadptId :: Text,
+    echangeorphantdadptType :: EDocType,
+    echangeorphantdadptTasksData :: ETaskDataAdopted
   }
   deriving (Generic)
 
-instance ToJSON ELKChangeOrphanTDAdopted where
+instance ToJSON EChangeOrphanTDAdopted where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 data EChangeEvent = EChangeEvent
