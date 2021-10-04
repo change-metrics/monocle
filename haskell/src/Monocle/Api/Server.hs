@@ -204,8 +204,11 @@ crawlerAddDoc request = do
   where
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
-      I.indexChanges (map I.toELKChange $ toList changes)
-      I.indexEvents (map I.toELKChangeEvent $ toList events)
+      let changes' = map I.toELKChange $ toList changes
+          events' = map I.toELKChangeEvent $ toList events
+      I.indexChanges changes'
+      I.indexEvents events'
+      I.updateChangesAndEventsFromOrphanTaskData changes' events'
       pure $ CrawlerPB.AddDocResponse Nothing
     addProjects crawler organizationName projects = do
       monocleLogEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
@@ -356,7 +359,7 @@ taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
   case requestE of
     Left err -> pure $ toErr err
     Right (index, _, _) -> do
-      if length taskDataAddRequestItems > I.taskDataLenLimit
+      if length taskDataAddRequestItems > 500
         then do pure $ toErr TDAddLenExcedeed
         else do
           void $ runTenantM index $ I.taskDataAdd $ toList taskDataAddRequestItems

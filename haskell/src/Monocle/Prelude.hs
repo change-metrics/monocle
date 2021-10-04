@@ -72,6 +72,7 @@ module Monocle.Prelude
     doSearch,
     mkAnd,
     mkOr,
+    mkNot,
     mkTerm,
 
     -- * proto3
@@ -209,6 +210,9 @@ mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> andQ) [] []
 
 mkOr :: [BH.Query] -> BH.Query
 mkOr orQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [] orQ
+
+mkNot :: [BH.Query] -> BH.Query
+mkNot notQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] notQ []
 
 mkTerm :: Text -> Text -> BH.Query
 mkTerm name value = BH.TermQuery (BH.Term name value) Nothing

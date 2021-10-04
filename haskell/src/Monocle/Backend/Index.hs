@@ -7,6 +7,7 @@ import Data.Aeson
   )
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
+import qualified Data.Map as Map
 import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
@@ -421,15 +422,14 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
-runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
-runSimpleSearch search size = catMaybes <$> run
+runScanSearch :: forall a. FromJSON a => BH.Search -> TenantM [a]
+runScanSearch search = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
   where
-    run = do
-      index <- getIndexName
-      fmap BH.hitSource
-        <$> simpleSearch
-          index
-          (search {BH.size = BH.Size size})
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit a]
+    scanSearch index = BH.scanSearch index search
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
@@ -519,15 +519,13 @@ getTDCrawlerCommitDate name crawler = do
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
-  -- | Page size
-  Int ->
   TenantM [ELKChange]
-getChangesByURL urls = runSimpleSearch search
+getChangesByURL urls = runScanSearch search
   where
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
-        [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkChange) Nothing,
           BH.TermsQuery "url" $ fromList urls
         ]
 
@@ -535,13 +533,8 @@ getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
   TenantM [ELKChangeEvent]
-getChangesEventsByURL urls = do
-  index <- getIndexName
-  results <- scanSearch index
-  pure $ catMaybes $ BH.hitSource <$> results
+getChangesEventsByURL urls = runScanSearch search
   where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeEvent]
-    scanSearch index = BH.scanSearch index search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
@@ -551,9 +544,72 @@ getChangesEventsByURL urls = do
 
 type HashTable k v = H.BasicHashTable k v
 
-data TaskDataDoc = TaskDataDoc {tddId :: LText, tddTd :: [ELKTaskData]} deriving (Show)
+data TaskDataDoc = TaskDataDoc
+  { tddId :: LText,
+    tddTd :: [ELKTaskData]
+  }
+  deriving (Show)
 
 type TaskDataOrphanDoc = TaskDataDoc
+
+getOrphanTaskDataByChangeURL :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataByChangeURL urls = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
+  where
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeOrphanTD]
+    scanSearch index = BH.scanSearch index search
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      mkAnd
+        [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
+          mkAnd
+            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkOrphanTaskData) Nothing,
+              BH.TermsQuery "tasks_data.change_url" $ fromList urls
+            ]
+        ]
+
+getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [ELKChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption urls = do
+  oTDs <- getOrphanTaskDataByChangeURL urls
+  void $ updateDocs $ toAdoptedDoc <$> oTDs
+  pure oTDs
+  where
+    toAdoptedDoc :: ELKChangeOrphanTD -> (Value, BH.DocId)
+    toAdoptedDoc (ELKChangeOrphanTD id' _ _) =
+      ( toJSON $ ELKChangeOrphanTDAdopted id' ElkOrphanTaskData $ ELKTaskDataAdopted "",
+        BH.DocId id'
+      )
+
+updateChangesAndEventsFromOrphanTaskData :: [ELKChange] -> [ELKChangeEvent] -> TenantM ()
+updateChangesAndEventsFromOrphanTaskData changes events = do
+  let mapping = uMapping Map.empty getFlatMapping
+  adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
+  updateDocs $ taskDataDocToBHDoc <$> getTaskDatas adoptedTDs (Map.assocs mapping)
+  where
+    -- For each change and event extract (changeUrl, object ID)
+    getFlatMapping :: [(LText, LText)]
+    getFlatMapping =
+      ((\c -> (elkchangeUrl c, elkchangeId c)) <$> changes)
+        <> ((\c -> (elkchangeeventUrl c, elkchangeeventId c)) <$> events)
+    -- Create a Map where each key (changeUrl) maps a list of object ID
+    uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
+    uMapping cM fm = case fm of
+      [] -> cM
+      (x : xs) -> let nM = Map.alter (updateE $ snd x) (fst x) cM in uMapping nM xs
+      where
+        updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
+    -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
+    -- for Changes and Events
+    getTaskDatas :: [ELKChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
+    getTaskDatas adopted assocs = concatMap getTDs assocs
+      where
+        getTDs :: (LText, [LText]) -> [TaskDataDoc]
+        getTDs (url, ids) =
+          let mTDs = elkchangeorphantdTasksData <$> filterByUrl url adopted
+           in flip TaskDataDoc mTDs <$> ids
+        filterByUrl url = filter (\td -> tdChangeUrl (elkchangeorphantdTasksData td) == toText url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
@@ -570,15 +626,12 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
         BH.DocId $ toText tddId
       )
 
-taskDataLenLimit :: Int
-taskDataLenLimit = 500
-
 taskDataAdd :: [TaskData] -> TenantM ()
 taskDataAdd tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
-  changes <- getChangesByURL urls taskDataLenLimit
+  changes <- getChangesByURL urls
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
   changeEvents <- getChangesEventsByURL urls
