@@ -422,15 +422,14 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
-runSimpleSearch :: FromJSON a => BH.Search -> Int -> TenantM [a]
-runSimpleSearch search size = catMaybes <$> run
+runScanSearch :: forall a. FromJSON a => BH.Search -> TenantM [a]
+runScanSearch search = do
+  index <- getIndexName
+  results <- scanSearch index
+  pure $ catMaybes $ BH.hitSource <$> results
   where
-    run = do
-      index <- getIndexName
-      fmap BH.hitSource
-        <$> simpleSearch
-          index
-          (search {BH.size = BH.Size size})
+    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit a]
+    scanSearch index = BH.scanSearch index search
 
 getChangeDocId :: ELKChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ elkchangeId change
@@ -520,10 +519,8 @@ getTDCrawlerCommitDate name crawler = do
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
-  -- | Page size
-  Int ->
   TenantM [ELKChange]
-getChangesByURL urls = runSimpleSearch search
+getChangesByURL urls = runScanSearch search
   where
     search = BH.mkSearch (Just query) Nothing
     query =
@@ -536,13 +533,8 @@ getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
   TenantM [ELKChangeEvent]
-getChangesEventsByURL urls = do
-  index <- getIndexName
-  results <- scanSearch index
-  pure $ catMaybes $ BH.hitSource <$> results
+getChangesEventsByURL urls = runScanSearch search
   where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit ELKChangeEvent]
-    scanSearch index = BH.scanSearch index search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
@@ -634,15 +626,12 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
         BH.DocId $ toText tddId
       )
 
-taskDataLenLimit :: Int
-taskDataLenLimit = 500
-
 taskDataAdd :: [TaskData] -> TenantM ()
 taskDataAdd tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
-  changes <- getChangesByURL urls taskDataLenLimit
+  changes <- getChangesByURL urls
   -- TODO remove the limit here by using the scan search
   -- get change events that matches those URLs
   changeEvents <- getChangesEventsByURL urls

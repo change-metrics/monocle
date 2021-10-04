@@ -586,12 +586,12 @@ testTaskDataAdd = withTenant doTest
           td43 = mkTaskData "43"
       void $ I.taskDataAdd [td42, td43]
       -- Ensure only changes 42 and 43 got a Task data associated
-      changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"]) 3
+      changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       assertEqual'
         "Check adding matching taskData"
-        [ ("44", Nothing),
+        [ ("42", Just [I.toELKTaskData td42]),
           ("43", Just [I.toELKTaskData td43]),
-          ("42", Just [I.toELKTaskData td42])
+          ("44", Nothing)
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
@@ -708,7 +708,7 @@ testTaskDataAdoption = withTenant doTest
         oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check remaining one orphan TD" 1 (length oTDs')
         -- Check that change and related events got the task data attribute
-        changes' <- I.getChangesByURL [changeUrl] 500
+        changes' <- I.getChangesByURL [changeUrl]
         events' <- I.getChangesEventsByURL [changeUrl]
         let haveTDs =
               all

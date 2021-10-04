@@ -359,7 +359,7 @@ taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
   case requestE of
     Left err -> pure $ toErr err
     Right (index, _, _) -> do
-      if length taskDataAddRequestItems > I.taskDataLenLimit
+      if length taskDataAddRequestItems > 500
         then do pure $ toErr TDAddLenExcedeed
         else do
           void $ runTenantM index $ I.taskDataAdd $ toList taskDataAddRequestItems
