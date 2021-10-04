@@ -596,10 +596,10 @@ testTaskDataAdd = withTenant doTest
         ((\EChange {..} -> (echangeId, echangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
       events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
-      let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
+      let (withTD, withoutTD) = partition (isJust . echangeeventTasksData) events
           createdEventWithTD =
             filter
-              (\e -> (e & elkchangeeventType) == EChangeCreatedEvent)
+              (\e -> (e & echangeeventType) == EChangeCreatedEvent)
               withTD
       assertEqual' "Check events count that got a Task data" 8 (length withTD)
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
@@ -608,8 +608,8 @@ testTaskDataAdd = withTenant doTest
         [ ("ChangeCreatedEvent-42", Just [I.toETaskData td42]),
           ("ChangeCreatedEvent-43", Just [I.toETaskData td43])
         ]
-        ( ( \ELKChangeEvent {..} ->
-              (elkchangeeventId, elkchangeeventTasksData)
+        ( ( \EChangeEvent {..} ->
+              (echangeeventId, echangeeventTasksData)
           )
             <$> createdEventWithTD
         )
@@ -714,10 +714,10 @@ testTaskDataAdoption = withTenant doTest
               all
                 (== True)
                 $ (isJust . echangeTasksData <$> changes')
-                  <> (isJust . elkchangeeventTasksData <$> events')
+                  <> (isJust . echangeeventTasksData <$> events')
         assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
       where
-        getScenarioEvtObj :: ScenarioEvent -> Maybe ELKChangeEvent
+        getScenarioEvtObj :: ScenarioEvent -> Maybe EChangeEvent
         getScenarioEvtObj (SCreation obj) = Just obj
         getScenarioEvtObj (SComment obj) = Just obj
         getScenarioEvtObj (SReview obj) = Just obj
@@ -743,25 +743,25 @@ randomAuthor xs = do
 emptyChange :: EChange
 emptyChange = fakeChange
 
-emptyEvent :: ELKChangeEvent
-emptyEvent = ELKChangeEvent {..}
+emptyEvent :: EChangeEvent
+emptyEvent = EChangeEvent {..}
   where
-    elkchangeeventId = mempty
-    elkchangeeventNumber = 0
-    elkchangeeventChangeId = mempty
-    elkchangeeventType = EChangeCreatedEvent
-    elkchangeeventUrl = mempty
-    elkchangeeventChangedFiles = mempty
-    elkchangeeventRepositoryPrefix = mempty
-    elkchangeeventRepositoryShortname = mempty
-    elkchangeeventRepositoryFullname = mempty
-    elkchangeeventAuthor = Just fakeAuthor
-    elkchangeeventOnAuthor = fakeAuthor
-    elkchangeeventBranch = mempty
-    elkchangeeventCreatedAt = fakeDate
-    elkchangeeventOnCreatedAt = fakeDate
-    elkchangeeventApproval = Nothing
-    elkchangeeventTasksData = Nothing
+    echangeeventId = mempty
+    echangeeventNumber = 0
+    echangeeventChangeId = mempty
+    echangeeventType = EChangeCreatedEvent
+    echangeeventUrl = mempty
+    echangeeventChangedFiles = mempty
+    echangeeventRepositoryPrefix = mempty
+    echangeeventRepositoryShortname = mempty
+    echangeeventRepositoryFullname = mempty
+    echangeeventAuthor = Just fakeAuthor
+    echangeeventOnAuthor = fakeAuthor
+    echangeeventBranch = mempty
+    echangeeventCreatedAt = fakeDate
+    echangeeventOnCreatedAt = fakeDate
+    echangeeventApproval = Nothing
+    echangeeventTasksData = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
@@ -770,13 +770,13 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
     date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
       SChange EChange {..} -> "Change[" <> toStrict echangeChangeId <> "]"
-      SCreation ELKChangeEvent {..} ->
-        ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
-          <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
+      SCreation EChangeEvent {..} ->
+        ("Change[" <> date echangeeventOnCreatedAt <> " ")
+          <> (toStrict echangeeventChangeId <> " created by " <> author echangeeventAuthor)
           <> "]"
-      SComment ELKChangeEvent {..} -> "Commented[" <> author elkchangeeventAuthor <> "]"
-      SReview ELKChangeEvent {..} -> "Reviewed[" <> author elkchangeeventAuthor <> "]"
-      SMerge ELKChangeEvent {..} -> "Merged[" <> date elkchangeeventOnCreatedAt <> "]"
+      SComment EChangeEvent {..} -> "Commented[" <> author echangeeventAuthor <> "]"
+      SReview EChangeEvent {..} -> "Reviewed[" <> author echangeeventAuthor <> "]"
+      SMerge EChangeEvent {..} -> "Merged[" <> date echangeeventOnCreatedAt <> "]"
 
 -- Tests scenario data types
 
@@ -791,10 +791,10 @@ data ScenarioProject = SProject
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
 data ScenarioEvent
   = SChange EChange
-  | SCreation ELKChangeEvent
-  | SReview ELKChangeEvent
-  | SComment ELKChangeEvent
-  | SMerge ELKChangeEvent
+  | SCreation EChangeEvent
+  | SReview EChangeEvent
+  | SComment EChangeEvent
+  | SMerge EChangeEvent
 
 indexScenario :: [ScenarioEvent] -> TenantM ()
 indexScenario xs = sequence_ $ indexDoc <$> xs
@@ -856,18 +856,18 @@ mkEvent ::
   LText ->
   -- Repository fullname
   LText ->
-  ELKChangeEvent
+  EChangeEvent
 mkEvent ts start etype author onAuthor changeId name =
   emptyEvent
-    { elkchangeeventAuthor = Just author,
-      elkchangeeventOnAuthor = onAuthor,
-      elkchangeeventType = etype,
-      elkchangeeventRepositoryFullname = name,
-      elkchangeeventId = docTypeToText etype <> "-" <> changeId,
-      elkchangeeventCreatedAt = mkDate ts start,
-      elkchangeeventOnCreatedAt = mkDate ts start,
-      elkchangeeventChangeId = "change-" <> changeId,
-      elkchangeeventUrl = "https://fakeprovider/" <> changeId
+    { echangeeventAuthor = Just author,
+      echangeeventOnAuthor = onAuthor,
+      echangeeventType = etype,
+      echangeeventRepositoryFullname = name,
+      echangeeventId = docTypeToText etype <> "-" <> changeId,
+      echangeeventCreatedAt = mkDate ts start,
+      echangeeventOnCreatedAt = mkDate ts start,
+      echangeeventChangeId = "change-" <> changeId,
+      echangeeventUrl = "https://fakeprovider/" <> changeId
     }
 
 -- | 'nominalMerge' is the most simple scenario

@@ -271,27 +271,27 @@ toAuthor Nothing =
     "backend-ghost"
     "backend-ghost"
 
-toELKChangeEvent :: ChangeEvent -> ELKChangeEvent
-toELKChangeEvent ChangeEvent {..} =
-  ELKChangeEvent
-    { elkchangeeventId = changeEventId,
-      elkchangeeventNumber = fromIntegral changeEventNumber,
-      elkchangeeventType = getEventType changeEventType,
-      elkchangeeventChangeId = changeEventChangeId,
-      elkchangeeventUrl = changeEventUrl,
-      elkchangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
-      elkchangeeventRepositoryPrefix = changeEventRepositoryPrefix,
-      elkchangeeventRepositoryFullname = changeEventRepositoryFullname,
-      elkchangeeventRepositoryShortname = changeEventRepositoryShortname,
-      elkchangeeventAuthor = Just $ toAuthor changeEventAuthor,
-      elkchangeeventOnAuthor = toAuthor changeEventOnAuthor,
-      elkchangeeventBranch = changeEventBranch,
-      elkchangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
-      elkchangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
-      elkchangeeventApproval = case changeEventType of
+toEChangeEvent :: ChangeEvent -> EChangeEvent
+toEChangeEvent ChangeEvent {..} =
+  EChangeEvent
+    { echangeeventId = changeEventId,
+      echangeeventNumber = fromIntegral changeEventNumber,
+      echangeeventType = getEventType changeEventType,
+      echangeeventChangeId = changeEventChangeId,
+      echangeeventUrl = changeEventUrl,
+      echangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
+      echangeeventRepositoryPrefix = changeEventRepositoryPrefix,
+      echangeeventRepositoryFullname = changeEventRepositoryFullname,
+      echangeeventRepositoryShortname = changeEventRepositoryShortname,
+      echangeeventAuthor = Just $ toAuthor changeEventAuthor,
+      echangeeventOnAuthor = toAuthor changeEventOnAuthor,
+      echangeeventBranch = changeEventBranch,
+      echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
+      echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
+      echangeeventApproval = case changeEventType of
         Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
         _anyOtherApprovals -> Nothing,
-      elkchangeeventTasksData = Nothing
+      echangeeventTasksData = Nothing
     }
   where
     getEventType :: Maybe ChangeEventType -> EDocType
@@ -440,10 +440,10 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
     toDoc change = (toJSON change, getChangeDocId change)
     ensureType change = change {echangeType = EChangeDoc}
 
-getEventDocId :: ELKChangeEvent -> BH.DocId
-getEventDocId event = BH.DocId . toStrict $ elkchangeeventId event
+getEventDocId :: EChangeEvent -> BH.DocId
+getEventDocId event = BH.DocId . toStrict $ echangeeventId event
 
-indexEvents :: [ELKChangeEvent] -> TenantM ()
+indexEvents :: [EChangeEvent] -> TenantM ()
 indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, getEventDocId ev)
@@ -532,7 +532,7 @@ getChangesByURL urls = runScanSearch search
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
-  TenantM [ELKChangeEvent]
+  TenantM [EChangeEvent]
 getChangesEventsByURL urls = runScanSearch search
   where
     search = BH.mkSearch (Just query) Nothing
@@ -582,7 +582,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
         BH.DocId id'
       )
 
-updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [ELKChangeEvent] -> TenantM ()
+updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> TenantM ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
@@ -592,7 +592,7 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
     getFlatMapping :: [(LText, LText)]
     getFlatMapping =
       ((\c -> (echangeUrl c, echangeId c)) <$> changes)
-        <> ((\c -> (elkchangeeventUrl c, elkchangeeventId c)) <$> events)
+        <> ((\c -> (echangeeventUrl c, echangeeventId c)) <$> events)
     -- Create a Map where each key (changeUrl) maps a list of object ID
     uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
     uMapping cM fm = case fm of
@@ -694,14 +694,14 @@ taskDataAdd tds = do
       -- | The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
       -- | The ChangeEvent to look for
-      ELKChangeEvent ->
+      EChangeEvent ->
       -- | IO Action returning maybe a TaskData
       IO (Maybe TaskDataDoc)
     getTDforEventFromHT ht changeEvent = do
-      mcM <- H.lookup ht $ elkchangeeventUrl changeEvent
+      mcM <- H.lookup ht $ echangeeventUrl changeEvent
       pure $ case mcM of
         Nothing -> Nothing
-        Just mc -> Just $ TaskDataDoc {tddId = elkchangeeventId changeEvent, tddTd = tddTd mc}
+        Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
 
 type EntityType = CrawlerPB.CommitInfoRequest_EntityType
 

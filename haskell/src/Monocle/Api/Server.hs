@@ -11,7 +11,7 @@ import Monocle.Backend.Documents
   ( Author (..),
     Commit (..),
     EChange (..),
-    ELKChangeEvent (..),
+    EChangeEvent (..),
     ETaskData (..),
     File (..),
     changeStateToText,
@@ -205,7 +205,7 @@ crawlerAddDoc request = do
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
       let changes' = map I.toEChange $ toList changes
-          events' = map I.toELKChangeEvent $ toList events
+          events' = map I.toEChangeEvent $ toList events
       I.indexChanges changes'
       I.indexEvents events'
       I.updateChangesAndEventsFromOrphanTaskData changes' events'
@@ -628,22 +628,22 @@ searchQuery request = do
           repoSummaryOpenChanges = countToWord openChanges
        in SearchPB.RepoSummary {..}
 
-    toChangeEventsResult :: (EChange, [ELKChangeEvent]) -> SearchPB.ChangeAndEvents
+    toChangeEventsResult :: (EChange, [EChangeEvent]) -> SearchPB.ChangeAndEvents
     toChangeEventsResult (change, events) =
       let changeAndEventsChange = Just (toChangeResult change)
           changeAndEventsEvents = V.fromList $ toEventResult <$> events
        in SearchPB.ChangeAndEvents {..}
 
-    toEventResult :: ELKChangeEvent -> SearchPB.ChangeEvent
-    toEventResult ELKChangeEvent {..} =
-      let changeEventId = elkchangeeventId
-          changeEventType = docTypeToText elkchangeeventType
-          changeEventChangeId = elkchangeeventChangeId
-          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventCreatedAt
-          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ elkchangeeventOnCreatedAt
-          changeEventAuthor = maybe "backend-ghost" authorMuid elkchangeeventAuthor
-          changeEventOnAuthor = authorMuid elkchangeeventOnAuthor
-          changeEventBranch = elkchangeeventBranch
+    toEventResult :: EChangeEvent -> SearchPB.ChangeEvent
+    toEventResult EChangeEvent {..} =
+      let changeEventId = echangeeventId
+          changeEventType = docTypeToText echangeeventType
+          changeEventChangeId = echangeeventChangeId
+          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventCreatedAt
+          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventOnCreatedAt
+          changeEventAuthor = maybe "backend-ghost" authorMuid echangeeventAuthor
+          changeEventOnAuthor = authorMuid echangeeventOnAuthor
+          changeEventBranch = echangeeventBranch
        in SearchPB.ChangeEvent {..}
 
     toChangeResult :: EChange -> SearchPB.Change

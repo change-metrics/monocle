@@ -264,32 +264,32 @@ data ELKChangeOrphanTDAdopted = ELKChangeOrphanTDAdopted
 instance ToJSON ELKChangeOrphanTDAdopted where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-data ELKChangeEvent = ELKChangeEvent
-  { elkchangeeventId :: LText,
-    elkchangeeventNumber :: Word32,
-    elkchangeeventType :: EDocType,
-    elkchangeeventChangeId :: LText,
-    elkchangeeventUrl :: LText,
-    elkchangeeventChangedFiles :: [SimpleFile],
-    elkchangeeventRepositoryPrefix :: LText,
-    elkchangeeventRepositoryShortname :: LText,
-    elkchangeeventRepositoryFullname :: LText,
-    -- elkchangeeventAuthor is optional due to the fact Gerrit closer
+data EChangeEvent = EChangeEvent
+  { echangeeventId :: LText,
+    echangeeventNumber :: Word32,
+    echangeeventType :: EDocType,
+    echangeeventChangeId :: LText,
+    echangeeventUrl :: LText,
+    echangeeventChangedFiles :: [SimpleFile],
+    echangeeventRepositoryPrefix :: LText,
+    echangeeventRepositoryShortname :: LText,
+    echangeeventRepositoryFullname :: LText,
+    -- echangeeventAuthor is optional due to the fact Gerrit closer
     -- does not set any author for ChangeAbandonedEvent
-    elkchangeeventAuthor :: Maybe Author,
-    elkchangeeventOnAuthor :: Author,
-    elkchangeeventBranch :: LText,
-    elkchangeeventOnCreatedAt :: UTCTime,
-    elkchangeeventCreatedAt :: UTCTime,
-    elkchangeeventApproval :: Maybe [LText],
-    elkchangeeventTasksData :: Maybe [ETaskData]
+    echangeeventAuthor :: Maybe Author,
+    echangeeventOnAuthor :: Author,
+    echangeeventBranch :: LText,
+    echangeeventOnCreatedAt :: UTCTime,
+    echangeeventCreatedAt :: UTCTime,
+    echangeeventApproval :: Maybe [LText],
+    echangeeventTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChangeEvent where
+instance ToJSON EChangeEvent where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChangeEvent where
+instance FromJSON EChangeEvent where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKCrawlerMetadataObject = ELKCrawlerMetadataObject

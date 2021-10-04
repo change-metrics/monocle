@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (EChange (..), EChangeState (..), EDocType (..), ELKChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChange (..), EChangeState (..), EDocType (..), EChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -136,7 +136,7 @@ changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
     doSearch orderM limit
 
-changeEvents :: LText -> Word32 -> QueryM (EChange, [ELKChangeEvent])
+changeEvents :: LText -> Word32 -> QueryM (EChange, [EChangeEvent])
 changeEvents changeID limit = dropQuery $
   withFilter [mkTerm "change_id" (toText changeID)] $ do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
