@@ -75,7 +75,7 @@ instance FromJSON UTCTimePlus where
       tryParse f s = parseTimeM False defaultTimeLocale f s
       parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
-data ELKTaskData = ELKTaskData
+data ETaskData = ETaskData
   { tdTid :: Text,
     tdTtype :: [Text],
     tdUpdatedAt :: UTCTimePlus,
@@ -89,10 +89,10 @@ data ELKTaskData = ELKTaskData
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKTaskData where
+instance ToJSON ETaskData where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKTaskData where
+instance FromJSON ETaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data ELKChangeState
@@ -213,7 +213,7 @@ data ELKChange = ELKChange
     elkchangeApproval :: Maybe [LText],
     elkchangeDraft :: Bool,
     elkchangeSelfMerged :: Maybe Bool,
-    elkchangeTasksData :: Maybe [ELKTaskData]
+    elkchangeTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
@@ -224,7 +224,7 @@ instance FromJSON ELKChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 newtype ELKChangeTD = ELKChangeTD
-  { elkchangetdTasksData :: Maybe [ELKTaskData]
+  { elkchangetdTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
@@ -237,7 +237,7 @@ instance FromJSON ELKChangeTD where
 data ELKChangeOrphanTD = ELKChangeOrphanTD
   { elkchangeorphantdId :: Text,
     elkchangeorphantdType :: ELKDocType,
-    elkchangeorphantdTasksData :: ELKTaskData
+    elkchangeorphantdTasksData :: ETaskData
   }
   deriving (Show, Eq, Generic)
 
@@ -282,7 +282,7 @@ data ELKChangeEvent = ELKChangeEvent
     elkchangeeventOnCreatedAt :: UTCTime,
     elkchangeeventCreatedAt :: UTCTime,
     elkchangeeventApproval :: Maybe [LText],
-    elkchangeeventTasksData :: Maybe [ELKTaskData]
+    elkchangeeventTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 

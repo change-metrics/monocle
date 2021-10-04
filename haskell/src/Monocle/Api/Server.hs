@@ -12,7 +12,7 @@ import Monocle.Backend.Documents
     Commit (..),
     ELKChange (..),
     ELKChangeEvent (..),
-    ELKTaskData (..),
+    ETaskData (..),
     File (..),
     changeStateToText,
     docTypeToText,
@@ -691,7 +691,7 @@ searchQuery request = do
           commitDeletions = elkcommitDeletions
        in SearchPB.Commit {..}
 
-    toTaskData :: ELKTaskData -> TaskDataPB.TaskData
+    toTaskData :: ETaskData -> TaskDataPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing
           taskDataChangeUrl = toLazy $ tdUrl td

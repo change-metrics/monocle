@@ -589,8 +589,8 @@ testTaskDataAdd = withTenant doTest
       changes <- I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       assertEqual'
         "Check adding matching taskData"
-        [ ("42", Just [I.toELKTaskData td42]),
-          ("43", Just [I.toELKTaskData td43]),
+        [ ("42", Just [I.toETaskData td42]),
+          ("43", Just [I.toETaskData td43]),
           ("44", Nothing)
         ]
         ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
@@ -605,8 +605,8 @@ testTaskDataAdd = withTenant doTest
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
       assertEqual'
         "Check Change events got the task data attribute"
-        [ ("ChangeCreatedEvent-42", Just [I.toELKTaskData td42]),
-          ("ChangeCreatedEvent-43", Just [I.toELKTaskData td43])
+        [ ("ChangeCreatedEvent-42", Just [I.toETaskData td42]),
+          ("ChangeCreatedEvent-43", Just [I.toETaskData td43])
         ]
         ( ( \ELKChangeEvent {..} ->
               (elkchangeeventId, elkchangeeventTasksData)
@@ -619,7 +619,7 @@ testTaskDataAdd = withTenant doTest
       void $ I.taskDataAdd [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
-      let expectedELKTD = I.toELKTaskData td
+      let expectedELKTD = I.toETaskData td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just

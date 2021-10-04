@@ -369,8 +369,8 @@ toELKChange Change {..} =
       Change_ChangeStateMerged -> ElkChangeMerged
       Change_ChangeStateClosed -> ElkChangeClosed
 
-toELKTaskData :: TaskData -> ELKTaskData
-toELKTaskData TaskData {..} =
+toETaskData :: TaskData -> ETaskData
+toETaskData TaskData {..} =
   let tdTid = toText taskDataTid
       tdTtype = toList $ toText <$> taskDataTtype
       tdChangeUrl = toText taskDataChangeUrl
@@ -382,7 +382,7 @@ toELKTaskData TaskData {..} =
       tdPrefix = toText taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
-   in ELKTaskData {..}
+   in ETaskData {..}
   where
     defaultDate = [utctime|1960-01-01 00:00:00|]
 
@@ -546,7 +546,7 @@ type HashTable k v = H.BasicHashTable k v
 
 data TaskDataDoc = TaskDataDoc
   { tddId :: LText,
-    tddTd :: [ELKTaskData]
+    tddTd :: [ETaskData]
   }
   deriving (Show)
 
@@ -661,11 +661,11 @@ taskDataAdd tds = do
       HashTable LText TaskDataDoc ->
       -- | IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
-    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toELKTaskData <$> tds)
+    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData <$> tds)
       where
         handleTD ::
           -- | The input Task Data we want to append or update
-          ELKTaskData ->
+          ETaskData ->
           -- | IO Action with maybe an orphan task data if a matching change does not exists
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
@@ -680,7 +680,7 @@ taskDataAdd tds = do
           -- | The value of the HashMap we are working on
           TaskDataDoc ->
           -- | The input Task Data we want to append or update
-          ELKTaskData ->
+          ETaskData ->
           TaskDataDoc
         updateTDD taskDataDoc td = do
           let changeTDs = tddTd taskDataDoc
