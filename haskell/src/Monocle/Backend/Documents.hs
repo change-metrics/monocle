@@ -292,27 +292,27 @@ instance ToJSON EChangeEvent where
 instance FromJSON EChangeEvent where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ELKCrawlerMetadataObject = ELKCrawlerMetadataObject
-  { elkcmCrawlerName :: LText,
-    elkcmCrawlerType :: LText,
-    elkcmCrawlerTypeValue :: LText,
-    elkcmLastCommitAt :: UTCTime
+data ECrawlerMetadataObject = ECrawlerMetadataObject
+  { ecmCrawlerName :: LText,
+    ecmCrawlerType :: LText,
+    ecmCrawlerTypeValue :: LText,
+    ecmLastCommitAt :: UTCTime
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKCrawlerMetadataObject where
+instance ToJSON ECrawlerMetadataObject where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKCrawlerMetadataObject where
+instance FromJSON ECrawlerMetadataObject where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-newtype ELKCrawlerMetadata = ELKCrawlerMetadata
-  { elkcmCrawlerMetadata :: ELKCrawlerMetadataObject
+newtype ECrawlerMetadata = ECrawlerMetadata
+  { ecmCrawlerMetadata :: ECrawlerMetadataObject
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKCrawlerMetadata where
+instance ToJSON ECrawlerMetadata where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKCrawlerMetadata where
+instance FromJSON ECrawlerMetadata where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase

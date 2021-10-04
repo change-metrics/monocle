@@ -487,17 +487,17 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
 getTDCrawlerMetadataDocId :: Text -> BH.DocId
 getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
 
-getTDCrawlerMetadata :: Text -> TenantM (Maybe ELKCrawlerMetadata)
+getTDCrawlerMetadata :: Text -> TenantM (Maybe ECrawlerMetadata)
 getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
 
 setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
 setTDCrawlerCommitDate name commitDate = do
   index <- getIndexName
-  let elkcmLastCommitAt = commitDate
-      elkcmCrawlerType = ""
-      elkcmCrawlerTypeValue = ""
-      elkcmCrawlerName = ""
-      doc = ELKCrawlerMetadata $ ELKCrawlerMetadataObject {..}
+  let ecmLastCommitAt = commitDate
+      ecmCrawlerType = ""
+      ecmCrawlerTypeValue = ""
+      ecmCrawlerName = ""
+      doc = ECrawlerMetadata $ ECrawlerMetadataObject {..}
       docID = getTDCrawlerMetadataDocId name
   exists <- BH.documentExists index docID
   void $
@@ -509,7 +509,7 @@ setTDCrawlerCommitDate name commitDate = do
 getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
 getTDCrawlerCommitDate name crawler = do
   metadata <- getTDCrawlerMetadata name
-  let commitDate = elkcmLastCommitAt . elkcmCrawlerMetadata <$> metadata
+  let commitDate = ecmLastCommitAt . ecmCrawlerMetadata <$> metadata
       currentTS =
         fromMaybe
           (error "Unable to get a valid crawler metadata TS")
@@ -740,8 +740,8 @@ getLastUpdated crawler entity offset = do
         [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
           BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
         ]
-    getRespFromMetadata (ELKCrawlerMetadata ELKCrawlerMetadataObject {..}) =
-      (toStrict elkcmCrawlerTypeValue, elkcmLastCommitAt)
+    getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
+      (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
 
 getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
@@ -763,9 +763,9 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
   where
     id' = getId entity
     cm =
-      ELKCrawlerMetadata
-        { elkcmCrawlerMetadata =
-            ELKCrawlerMetadataObject
+      ECrawlerMetadata
+        { ecmCrawlerMetadata =
+            ECrawlerMetadataObject
               (toLazy crawlerName)
               (toLazy $ crawlerType entity)
               (toLazy $ getName entity)
