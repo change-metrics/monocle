@@ -18,7 +18,6 @@ import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import qualified Monocle.Search.Query as Q
-import Streaming.Prelude (Of, Stream)
 import qualified Streaming.Prelude as Streaming
 
 -------------------------------------------------------------------------------
@@ -97,7 +96,7 @@ scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
 scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource $ scanSearch
 
 -- | scan search the document id, here is an example usage for the REPL:
--- λ> testTenantM (defaultTenant "zuul") $ runQueryM (mkQuery Nothing) $ Streaming.print scanSearchId
+-- λ> testTenantM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
 -- DocId ...
 -- DocId ...
 scanSearchId :: Stream (Of BH.DocId) QueryM ()
@@ -106,6 +105,9 @@ scanSearchId = Streaming.map BH.hitDocId $ anyScan
     -- here we need to help ghc figures out what fromJSON to use
     anyScan :: Stream (Of (BH.Hit (Value))) QueryM ()
     anyScan = scanSearch
+
+scanSearchSimple :: FromJSON resp => QueryM [resp]
+scanSearchSimple = Streaming.toList_ scanSearchHit
 
 -- | Get search results hits
 doSearch :: FromJSON resp => Maybe SearchPB.Order -> Word32 -> QueryM [resp]

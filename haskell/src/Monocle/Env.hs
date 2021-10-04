@@ -112,9 +112,9 @@ runQueryM :: Q.Query -> QueryM a -> TenantM a
 runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
-mkQuery :: Maybe BH.Query -> Q.Query
+mkQuery :: [BH.Query] -> Q.Query
 mkQuery bhq =
-  let queryGet _mod _flavor = maybeToList bhq
+  let queryGet _mod _flavor = bhq
       queryBounds = (error "no bound", error "no bound")
       queryMinBoundsSet = False
    in Q.Query {..}

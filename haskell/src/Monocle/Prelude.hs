@@ -10,6 +10,10 @@ module Monocle.Prelude
     getEnv',
     headMaybe,
 
+    -- * streaming
+    Stream,
+    Of,
+
     -- * exceptions
     MonadThrow,
     MonadMask,
@@ -96,6 +100,7 @@ import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
+import Streaming.Prelude (Of, Stream)
 import Test.Tasty.HUnit
 
 eitherParseUTCTime :: String -> Either String UTCTime

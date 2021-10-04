@@ -16,6 +16,7 @@ import qualified Database.Bloodhound.Raw as BHR
 import Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
+import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
@@ -422,15 +423,9 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
--- | TODO: implement using Monocle.Queries.scanSearch
-runScanSearch :: forall a. FromJSON a => BH.Search -> TenantM [a]
-runScanSearch search = do
-  index <- getIndexName
-  results <- scanSearch index
-  pure $ catMaybes $ BH.hitSource <$> results
-  where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit a]
-    scanSearch index = BH.scanSearch index search
+-- | A simple scan search that loads all the results in memory
+runScanSearch :: forall a. FromJSON a => BH.Query -> TenantM [a]
+runScanSearch query = runQueryM (mkQuery [query]) $ Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ echangeId change
@@ -520,10 +515,9 @@ getTDCrawlerCommitDate name crawler = do
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
-  TenantM [EChange]
-getChangesByURL urls = runScanSearch search
+  BH.Query
+getChangesByURL urls = query
   where
-    search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
         [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EChangeDoc) Nothing,
@@ -533,10 +527,9 @@ getChangesByURL urls = runScanSearch search
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
-  TenantM [EChangeEvent]
-getChangesEventsByURL urls = runScanSearch search
+  BH.Query
+getChangesEventsByURL urls = query
   where
-    search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
         [ BH.TermsQuery "type" $ fromList eventTypesAsText,
@@ -632,10 +625,9 @@ taskDataAdd tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
-  changes <- getChangesByURL urls
-  -- TODO remove the limit here by using the scan search
+  changes <- runScanSearch $ getChangesByURL urls
   -- get change events that matches those URLs
-  changeEvents <- getChangesEventsByURL urls
+  changeEvents <- runScanSearch $ getChangesEventsByURL urls
   -- Init the HashTable that we are going to use as a facility for processing
   changesHT <- liftIO $ initHT changes
   -- Update the HashTable based on incomming TDs and return orphan TDs
