@@ -589,14 +589,15 @@ testTaskDataAdd = withTenant doTest
       -- Send Task data with a matching changes
       let td42 = mkTaskData "42"
           td43 = mkTaskData "43"
-      void $ I.taskDataAdd [td42, td43]
+          crawlerName = "crawler"
+      void $ I.taskDataAdd crawlerName [td42, td43]
       -- Ensure only changes 42 and 43 got a Task data associated
       changes <- I.runScanSearch $ I.getChangesByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       assertEqual'
         "Check adding matching taskData"
         [ ("44", Nothing),
-          ("43", Just [I.toETaskData td43]),
-          ("42", Just [I.toETaskData td42])
+          ("43", Just [I.toETaskData crawlerName td43]),
+          ("42", Just [I.toETaskData crawlerName td42])
         ]
         ((\EChange {..} -> (echangeId, echangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
@@ -610,8 +611,8 @@ testTaskDataAdd = withTenant doTest
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
       assertEqual'
         "Check Change events got the task data attribute"
-        [ ("ChangeCreatedEvent-42", Just [I.toETaskData td42]),
-          ("ChangeCreatedEvent-43", Just [I.toETaskData td43])
+        [ ("ChangeCreatedEvent-42", Just [I.toETaskData crawlerName td42]),
+          ("ChangeCreatedEvent-43", Just [I.toETaskData crawlerName td43])
         ]
         ( ( \EChangeEvent {..} ->
               (echangeeventId, echangeeventTasksData)
@@ -621,10 +622,10 @@ testTaskDataAdd = withTenant doTest
 
       -- Send a Task data w/o a matching change (orphan task data)
       let td = mkTaskData "45"
-      void $ I.taskDataAdd [td]
+      void $ I.taskDataAdd crawlerName [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
-      let expectedTD = I.toETaskData td
+      let expectedTD = I.toETaskData crawlerName td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
@@ -640,7 +641,7 @@ testTaskDataAdd = withTenant doTest
       -- Send the same orphan task data with an updated field and ensure it has been
       -- updated in the Database
       let td' = td {taskDataSeverity = "urgent"}
-      void $ I.taskDataAdd [td']
+      void $ I.taskDataAdd crawlerName [td']
       orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
       let expectedTD' = expectedTD {tdSeverity = "urgent"}
       assertEqual'
@@ -699,7 +700,7 @@ testTaskDataAdoption = withTenant doTest
         -- Send Task data w/o a matching change (orphan task data)
         let td42 = mkTaskData "42"
             td43 = mkTaskData "43"
-        void $ I.taskDataAdd [td42, td43]
+        void $ I.taskDataAdd "crawlerName" [td42, td43]
         oTDs <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
 

@@ -370,8 +370,8 @@ toEChange Change {..} =
       Change_ChangeStateMerged -> EChangeMerged
       Change_ChangeStateClosed -> EChangeClosed
 
-toETaskData :: TaskData -> ETaskData
-toETaskData TaskData {..} =
+toETaskData :: Text -> TaskData -> ETaskData
+toETaskData tdCrawlerName TaskData {..} =
   let tdTid = toText taskDataTid
       tdTtype = toList $ toText <$> taskDataTtype
       tdChangeUrl = toText taskDataChangeUrl
@@ -620,8 +620,8 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
         BH.DocId $ toText tddId
       )
 
-taskDataAdd :: [TaskData] -> TenantM ()
-taskDataAdd tds = do
+taskDataAdd :: Text -> [TaskData] -> TenantM ()
+taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
@@ -654,7 +654,7 @@ taskDataAdd tds = do
       HashTable LText TaskDataDoc ->
       -- | IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
-    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData <$> tds)
+    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData crawlerName <$> tds)
       where
         handleTD ::
           -- | The input Task Data we want to append or update
