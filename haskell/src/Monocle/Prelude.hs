@@ -12,7 +12,8 @@ module Monocle.Prelude
 
     -- * streaming
     Stream,
-    Of,
+    Of (..),
+    toVector,
 
     -- * mmoprh
     hoist,
@@ -75,6 +76,8 @@ module Monocle.Prelude
 
     -- * bloodhound
     BH.MonadBH,
+    BH.DocId,
+    BH.BulkOperation (..),
     simpleSearch,
     doSearch,
     mkAnd,
@@ -88,6 +91,7 @@ module Monocle.Prelude
 where
 
 import Control.Concurrent (threadDelay)
+import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.Morph (hoist)
@@ -95,6 +99,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
+import Data.Vector (Vector)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import Language.Haskell.TH.Quote (QuasiQuoter)
@@ -104,7 +109,9 @@ import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Say (sayErr)
-import Streaming.Prelude (Of, Stream)
+import Streaming (Of (..))
+import Streaming.Prelude (Stream)
+import qualified Streaming.Prelude as S
 import Test.Tasty.HUnit
 
 eitherParseUTCTime :: String -> Either String UTCTime
@@ -192,6 +199,16 @@ monocleLog = sayErr
 fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
 fromPBEnum (Enumerated (Right x)) = x
+
+-------------------------------------------------------------------------------
+-- Streaming helpers
+
+-- | 'toVector' is an efficient convertion of stream into a vector.
+--   though we should be using a toChunkedVector :: Size -> Stream -> [Vector]
+toVector :: L.PrimMonad m => Stream (Of a) m () -> m (Vector a)
+toVector s = do
+  res :> _ <- L.impurely S.foldM L.vectorM s
+  pure res
 
 -------------------------------------------------------------------------------
 -- Bloodhound helpers

@@ -24,6 +24,8 @@ import Monocle.Prelude
 import Monocle.TaskData
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
+import qualified Streaming as S (chunksOf)
+import qualified Streaming.Prelude as S
 
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
@@ -386,6 +388,22 @@ toETaskData tdCrawlerName TaskData {..} =
    in ETaskData {..}
   where
     defaultDate = [utctime|1960-01-01 00:00:00|]
+
+-- | Apply a stream of bulk operation by chunk
+bulkStream :: Stream (Of BH.BulkOperation) TenantM () -> TenantM Int
+bulkStream s = do
+  (count :> _) <- S.sum . S.mapM callBulk . S.mapped S.toList . S.chunksOf 500 $ s
+  when (count > 0) $
+    -- TODO: check for refresh errors ?
+    void $ BH.refreshIndex =<< getIndexName
+  pure count
+  where
+    callBulk :: [BH.BulkOperation] -> TenantM Int
+    callBulk ops = do
+      let vector = V.fromList ops
+      _ <- BH.bulk vector
+      -- TODO: check for error
+      pure $ V.length vector
 
 runAddDocsBulkOPs ::
   -- | The helper function to create the bulk operation
