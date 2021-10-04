@@ -180,47 +180,47 @@ instance FromJSON EDocType where
           anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> toString anyOtherValue
       )
 
-data ELKChange = ELKChange
-  { elkchangeId :: LText,
-    elkchangeNumber :: Int,
-    elkchangeType :: EDocType,
-    elkchangeChangeId :: LText,
-    elkchangeTitle :: LText,
-    elkchangeText :: LText,
-    elkchangeUrl :: LText,
-    elkchangeCommitCount :: Word32,
-    elkchangeAdditions :: Word32,
-    elkchangeDeletions :: Word32,
-    elkchangeChangedFilesCount :: Word32,
-    elkchangeChangedFiles :: [File],
-    elkchangeCommits :: [Commit],
-    elkchangeRepositoryPrefix :: LText,
-    elkchangeRepositoryShortname :: LText,
-    elkchangeRepositoryFullname :: LText,
-    elkchangeAuthor :: Author,
-    elkchangeMergedBy :: Maybe Author,
-    elkchangeBranch :: LText,
-    elkchangeTargetBranch :: LText,
-    elkchangeCreatedAt :: UTCTime,
-    elkchangeMergedAt :: Maybe UTCTime,
-    elkchangeUpdatedAt :: UTCTime,
-    elkchangeClosedAt :: Maybe UTCTime,
-    elkchangeState :: EChangeState,
-    elkchangeDuration :: Maybe Int,
-    elkchangeMergeable :: LText,
-    elkchangeLabels :: [LText],
-    elkchangeAssignees :: [Author],
-    elkchangeApproval :: Maybe [LText],
-    elkchangeDraft :: Bool,
-    elkchangeSelfMerged :: Maybe Bool,
-    elkchangeTasksData :: Maybe [ETaskData]
+data EChange = EChange
+  { echangeId :: LText,
+    echangeNumber :: Int,
+    echangeType :: EDocType,
+    echangeChangeId :: LText,
+    echangeTitle :: LText,
+    echangeText :: LText,
+    echangeUrl :: LText,
+    echangeCommitCount :: Word32,
+    echangeAdditions :: Word32,
+    echangeDeletions :: Word32,
+    echangeChangedFilesCount :: Word32,
+    echangeChangedFiles :: [File],
+    echangeCommits :: [Commit],
+    echangeRepositoryPrefix :: LText,
+    echangeRepositoryShortname :: LText,
+    echangeRepositoryFullname :: LText,
+    echangeAuthor :: Author,
+    echangeMergedBy :: Maybe Author,
+    echangeBranch :: LText,
+    echangeTargetBranch :: LText,
+    echangeCreatedAt :: UTCTime,
+    echangeMergedAt :: Maybe UTCTime,
+    echangeUpdatedAt :: UTCTime,
+    echangeClosedAt :: Maybe UTCTime,
+    echangeState :: EChangeState,
+    echangeDuration :: Maybe Int,
+    echangeMergeable :: LText,
+    echangeLabels :: [LText],
+    echangeAssignees :: [Author],
+    echangeApproval :: Maybe [LText],
+    echangeDraft :: Bool,
+    echangeSelfMerged :: Maybe Bool,
+    echangeTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
-instance ToJSON ELKChange where
+instance ToJSON EChange where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
-instance FromJSON ELKChange where
+instance FromJSON EChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 newtype ELKChangeTD = ELKChangeTD

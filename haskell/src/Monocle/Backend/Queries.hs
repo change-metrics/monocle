@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (EChangeState (..), EDocType (..), ELKChange (..), ELKChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChange (..), EChangeState (..), EDocType (..), ELKChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -131,12 +131,12 @@ queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
 
 -------------------------------------------------------------------------------
 -- High level queries
-changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
+changes :: Maybe SearchPB.Order -> Word32 -> QueryM [EChange]
 changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
     doSearch orderM limit
 
-changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
+changeEvents :: LText -> Word32 -> QueryM (EChange, [ELKChangeEvent])
 changeEvents changeID limit = dropQuery $
   withFilter [mkTerm "change_id" (toText changeID)] $ do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1

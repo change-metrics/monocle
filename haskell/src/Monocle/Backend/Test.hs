@@ -32,51 +32,51 @@ fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 fakeAuthor :: Author
 fakeAuthor = Author "John" "John"
 
-mkFakeChange :: Int -> LText -> ELKChange
+mkFakeChange :: Int -> LText -> EChange
 mkFakeChange number title =
   fakeChange
-    { elkchangeId = "aFakeId-" <> show number,
-      elkchangeNumber = number,
-      elkchangeTitle = title,
-      elkchangeUrl = "https://fakehost/change/" <> show number
+    { echangeId = "aFakeId-" <> show number,
+      echangeNumber = number,
+      echangeTitle = title,
+      echangeUrl = "https://fakehost/change/" <> show number
     }
 
-fakeChange :: ELKChange
+fakeChange :: EChange
 fakeChange =
-  ELKChange
-    { elkchangeId = "",
-      elkchangeType = EChangeDoc,
-      elkchangeNumber = 1,
-      elkchangeChangeId = "change-id",
-      elkchangeTitle = "",
-      elkchangeUrl = "",
-      elkchangeCommitCount = 1,
-      elkchangeAdditions = 1,
-      elkchangeDeletions = 1,
-      elkchangeChangedFilesCount = 1,
-      elkchangeChangedFiles = [File 0 0 "/fake/path"],
-      elkchangeText = "",
-      elkchangeCommits = [],
-      elkchangeRepositoryPrefix = "",
-      elkchangeRepositoryFullname = "",
-      elkchangeRepositoryShortname = "",
-      elkchangeAuthor = fakeAuthor,
-      elkchangeBranch = "",
-      elkchangeCreatedAt = fakeDate,
-      elkchangeUpdatedAt = fakeDate,
-      elkchangeMergedBy = Nothing,
-      elkchangeTargetBranch = "main",
-      elkchangeMergedAt = Nothing,
-      elkchangeClosedAt = Nothing,
-      elkchangeDuration = Nothing,
-      elkchangeApproval = Just ["OK"],
-      elkchangeSelfMerged = Nothing,
-      elkchangeTasksData = Nothing,
-      elkchangeState = EChangeOpen,
-      elkchangeMergeable = "",
-      elkchangeLabels = [],
-      elkchangeAssignees = [],
-      elkchangeDraft = False
+  EChange
+    { echangeId = "",
+      echangeType = EChangeDoc,
+      echangeNumber = 1,
+      echangeChangeId = "change-id",
+      echangeTitle = "",
+      echangeUrl = "",
+      echangeCommitCount = 1,
+      echangeAdditions = 1,
+      echangeDeletions = 1,
+      echangeChangedFilesCount = 1,
+      echangeChangedFiles = [File 0 0 "/fake/path"],
+      echangeText = "",
+      echangeCommits = [],
+      echangeRepositoryPrefix = "",
+      echangeRepositoryFullname = "",
+      echangeRepositoryShortname = "",
+      echangeAuthor = fakeAuthor,
+      echangeBranch = "",
+      echangeCreatedAt = fakeDate,
+      echangeUpdatedAt = fakeDate,
+      echangeMergedBy = Nothing,
+      echangeTargetBranch = "main",
+      echangeMergedAt = Nothing,
+      echangeClosedAt = Nothing,
+      echangeDuration = Nothing,
+      echangeApproval = Just ["OK"],
+      echangeSelfMerged = Nothing,
+      echangeTasksData = Nothing,
+      echangeState = EChangeOpen,
+      echangeMergeable = "",
+      echangeLabels = [],
+      echangeAssignees = [],
+      echangeDraft = False
     }
 
 withTenant :: TenantM () -> IO ()
@@ -89,8 +89,8 @@ withTenant cb = bracket_ create delete run
     delete = testTenantM config I.removeIndex
     run = testTenantM config cb
 
-checkELKChangeField :: (Show a, Eq a) => BH.DocId -> (ELKChange -> a) -> a -> TenantM ()
-checkELKChangeField docId field value = do
+checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> TenantM ()
+checkEChangeField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
@@ -116,22 +116,22 @@ testIndexChanges = withTenant doTest
       -- Index two Changes and check present in database
       I.indexChanges [fakeChange1, fakeChange2]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange1)
-        elkchangeTitle
-        (elkchangeTitle fakeChange1)
+        echangeTitle
+        (echangeTitle fakeChange1)
       checkDocExists' $ I.getChangeDocId fakeChange2
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange2)
-        elkchangeTitle
-        (elkchangeTitle fakeChange2)
+        echangeTitle
+        (echangeTitle fakeChange2)
       -- Update a Change and ensure the document is updated in the database
       I.indexChanges [fakeChange1Updated]
       checkDocExists' $ I.getChangeDocId fakeChange1
-      checkELKChangeField
+      checkEChangeField
         (I.getChangeDocId fakeChange1Updated)
-        elkchangeTitle
-        (elkchangeTitle fakeChange1Updated)
+        echangeTitle
+        (echangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
       checkChangesCount 2
       where
@@ -139,7 +139,7 @@ testIndexChanges = withTenant doTest
           exists <- I.checkDocExists dId
           assertEqual' "check doc exists" exists True
         fakeChange1 = mkFakeChange 1 "My change 1"
-        fakeChange1Updated = fakeChange1 {elkchangeTitle = "My change 1 updated"}
+        fakeChange1Updated = fakeChange1 {echangeTitle = "My change 1 updated"}
         fakeChange2 = mkFakeChange 2 "My change 2"
 
 -- | A lifted version of assertEqual
@@ -593,7 +593,7 @@ testTaskDataAdd = withTenant doTest
           ("43", Just [I.toETaskData td43]),
           ("44", Nothing)
         ]
-        ((\ELKChange {..} -> (elkchangeId, elkchangeTasksData)) <$> changes)
+        ((\EChange {..} -> (echangeId, echangeTasksData)) <$> changes)
       -- Ensure associated ChangeEvents got the Task data attibutes
       events <- I.getChangesEventsByURL (map ("https://fakeprovider/" <>) ["42", "43", "44"])
       let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
@@ -713,7 +713,7 @@ testTaskDataAdoption = withTenant doTest
         let haveTDs =
               all
                 (== True)
-                $ (isJust . elkchangeTasksData <$> changes')
+                $ (isJust . echangeTasksData <$> changes')
                   <> (isJust . elkchangeeventTasksData <$> events')
         assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
       where
@@ -740,7 +740,7 @@ randomAuthor xs = do
   i <- getRandomR (0, n -1)
   return (xs !! i)
 
-emptyChange :: ELKChange
+emptyChange :: EChange
 emptyChange = fakeChange
 
 emptyEvent :: ELKChangeEvent
@@ -769,7 +769,7 @@ showEvents xs = Text.intercalate ", " $ sort (map go xs)
     author = maybe "no-author" (toStrict . authorMuid)
     date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
-      SChange ELKChange {..} -> "Change[" <> toStrict elkchangeChangeId <> "]"
+      SChange EChange {..} -> "Change[" <> toStrict echangeChangeId <> "]"
       SCreation ELKChangeEvent {..} ->
         ("Change[" <> date elkchangeeventOnCreatedAt <> " ")
           <> (toStrict elkchangeeventChangeId <> " created by " <> author elkchangeeventAuthor)
@@ -790,7 +790,7 @@ data ScenarioProject = SProject
 
 -- | 'ScenarioEvent' is a type of event generated for a given scenario.
 data ScenarioEvent
-  = SChange ELKChange
+  = SChange EChange
   | SCreation ELKChangeEvent
   | SReview ELKChangeEvent
   | SComment ELKChangeEvent
@@ -828,17 +828,17 @@ mkChange ::
   LText ->
   -- Change State
   EChangeState ->
-  ELKChange
+  EChange
 mkChange ts start author changeId name state' =
   emptyChange
-    { elkchangeType = EChangeDoc,
-      elkchangeId = changeId,
-      elkchangeState = state',
-      elkchangeRepositoryFullname = name,
-      elkchangeCreatedAt = mkDate ts start,
-      elkchangeAuthor = author,
-      elkchangeChangeId = "change-" <> changeId,
-      elkchangeUrl = "https://fakeprovider/" <> changeId
+    { echangeType = EChangeDoc,
+      echangeId = changeId,
+      echangeState = state',
+      echangeRepositoryFullname = name,
+      echangeCreatedAt = mkDate ts start,
+      echangeAuthor = author,
+      echangeChangeId = "change-" <> changeId,
+      echangeUrl = "https://fakeprovider/" <> changeId
     }
 
 mkEvent ::
