@@ -121,69 +121,69 @@ instance FromJSON EChangeState where
           _anyOtherValue -> fail "Unknown Monocle ELK change state"
       )
 
-data ELKDocType
-  = ElkChangeCreatedEvent
-  | ElkChangeMergedEvent
-  | ElkChangeReviewedEvent
-  | ElkChangeCommentedEvent
-  | ElkChangeAbandonedEvent
-  | ElkChangeCommitForcePushedEvent
-  | ElkChangeCommitPushedEvent
-  | ElkChange
-  | ElkOrphanTaskData
+data EDocType
+  = EChangeCreatedEvent
+  | EChangeMergedEvent
+  | EChangeReviewedEvent
+  | EChangeCommentedEvent
+  | EChangeAbandonedEvent
+  | EChangeCommitForcePushedEvent
+  | EChangeCommitPushedEvent
+  | EChangeDoc
+  | EOrphanTaskData
   deriving (Eq, Show, Enum, Bounded)
 
-allEventTypes :: [ELKDocType]
-allEventTypes = filter (/= ElkChange) [minBound .. maxBound]
+allEventTypes :: [EDocType]
+allEventTypes = filter (/= EChangeDoc) [minBound .. maxBound]
 
-docTypeToText :: ELKDocType -> LText
+docTypeToText :: EDocType -> LText
 docTypeToText = \case
-  ElkChangeCreatedEvent -> "ChangeCreatedEvent"
-  ElkChangeMergedEvent -> "ChangeMergedEvent"
-  ElkChangeReviewedEvent -> "ChangeReviewedEvent"
-  ElkChangeCommentedEvent -> "ChangeCommentedEvent"
-  ElkChangeAbandonedEvent -> "ChangeAbandonedEvent"
-  ElkChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
-  ElkChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
-  ElkChange -> "Change"
-  ElkOrphanTaskData -> "OrphanTaskData"
+  EChangeCreatedEvent -> "ChangeCreatedEvent"
+  EChangeMergedEvent -> "ChangeMergedEvent"
+  EChangeReviewedEvent -> "ChangeReviewedEvent"
+  EChangeCommentedEvent -> "ChangeCommentedEvent"
+  EChangeAbandonedEvent -> "ChangeAbandonedEvent"
+  EChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
+  EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
+  EChangeDoc -> "Change"
+  EOrphanTaskData -> "OrphanTaskData"
 
 eventTypesAsText :: [Text]
 eventTypesAsText =
   toText . docTypeToText
-    <$> [ ElkChangeCreatedEvent,
-          ElkChangeMergedEvent,
-          ElkChangeReviewedEvent,
-          ElkChangeCommentedEvent,
-          ElkChangeAbandonedEvent,
-          ElkChangeCommitPushedEvent,
-          ElkChangeCommitForcePushedEvent
+    <$> [ EChangeCreatedEvent,
+          EChangeMergedEvent,
+          EChangeReviewedEvent,
+          EChangeCommentedEvent,
+          EChangeAbandonedEvent,
+          EChangeCommitPushedEvent,
+          EChangeCommitForcePushedEvent
         ]
 
-instance ToJSON ELKDocType where
+instance ToJSON EDocType where
   toJSON v = String $ toText $ docTypeToText v
 
-instance FromJSON ELKDocType where
+instance FromJSON EDocType where
   parseJSON =
     withText
       "ElkDocType"
       ( \case
-          "ChangeCreatedEvent" -> pure ElkChangeCreatedEvent
-          "ChangeMergedEvent" -> pure ElkChangeMergedEvent
-          "ChangeReviewedEvent" -> pure ElkChangeReviewedEvent
-          "ChangeCommentedEvent" -> pure ElkChangeCommentedEvent
-          "ChangeAbandonedEvent" -> pure ElkChangeAbandonedEvent
-          "ChangeCommitForcePushedEvent" -> pure ElkChangeCommitForcePushedEvent
-          "ChangeCommitPushedEvent" -> pure ElkChangeCommitPushedEvent
-          "Change" -> pure ElkChange
-          "OrphanTaskData" -> pure ElkOrphanTaskData
-          anyOtherValue -> fail $ "Unknown Monocle ELK doc type: " <> toString anyOtherValue
+          "ChangeCreatedEvent" -> pure EChangeCreatedEvent
+          "ChangeMergedEvent" -> pure EChangeMergedEvent
+          "ChangeReviewedEvent" -> pure EChangeReviewedEvent
+          "ChangeCommentedEvent" -> pure EChangeCommentedEvent
+          "ChangeAbandonedEvent" -> pure EChangeAbandonedEvent
+          "ChangeCommitForcePushedEvent" -> pure EChangeCommitForcePushedEvent
+          "ChangeCommitPushedEvent" -> pure EChangeCommitPushedEvent
+          "Change" -> pure EChangeDoc
+          "OrphanTaskData" -> pure EOrphanTaskData
+          anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> toString anyOtherValue
       )
 
 data ELKChange = ELKChange
   { elkchangeId :: LText,
     elkchangeNumber :: Int,
-    elkchangeType :: ELKDocType,
+    elkchangeType :: EDocType,
     elkchangeChangeId :: LText,
     elkchangeTitle :: LText,
     elkchangeText :: LText,
@@ -236,7 +236,7 @@ instance FromJSON ELKChangeTD where
 
 data ELKChangeOrphanTD = ELKChangeOrphanTD
   { elkchangeorphantdId :: Text,
-    elkchangeorphantdType :: ELKDocType,
+    elkchangeorphantdType :: EDocType,
     elkchangeorphantdTasksData :: ETaskData
   }
   deriving (Show, Eq, Generic)
@@ -256,7 +256,7 @@ instance ToJSON ELKTaskDataAdopted where
 
 data ELKChangeOrphanTDAdopted = ELKChangeOrphanTDAdopted
   { elkchangeorphantdadptId :: Text,
-    elkchangeorphantdadptType :: ELKDocType,
+    elkchangeorphantdadptType :: EDocType,
     elkchangeorphantdadptTasksData :: ELKTaskDataAdopted
   }
   deriving (Generic)
@@ -267,7 +267,7 @@ instance ToJSON ELKChangeOrphanTDAdopted where
 data ELKChangeEvent = ELKChangeEvent
   { elkchangeeventId :: LText,
     elkchangeeventNumber :: Word32,
-    elkchangeeventType :: ELKDocType,
+    elkchangeeventType :: EDocType,
     elkchangeeventChangeId :: LText,
     elkchangeeventUrl :: LText,
     elkchangeeventChangedFiles :: [SimpleFile],

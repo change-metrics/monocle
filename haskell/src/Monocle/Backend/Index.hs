@@ -294,23 +294,23 @@ toELKChangeEvent ChangeEvent {..} =
       elkchangeeventTasksData = Nothing
     }
   where
-    getEventType :: Maybe ChangeEventType -> ELKDocType
+    getEventType :: Maybe ChangeEventType -> EDocType
     getEventType eventTypeM = case eventTypeM of
       Just eventType -> case eventType of
-        ChangeEventTypeChangeCreated ChangeCreatedEvent -> ElkChangeCreatedEvent
-        ChangeEventTypeChangeCommented ChangeCommentedEvent -> ElkChangeCommentedEvent
-        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> ElkChangeAbandonedEvent
-        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> ElkChangeReviewedEvent
-        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> ElkChangeCommitForcePushedEvent
-        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> ElkChangeCommitPushedEvent
-        ChangeEventTypeChangeMerged ChangeMergedEvent -> ElkChangeMergedEvent
+        ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
+        ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
+        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
+        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
+        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
+        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
+        ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
       Nothing -> error "changeEventType field is mandatory"
 
 toELKChange :: Change -> ELKChange
 toELKChange Change {..} =
   ELKChange
     { elkchangeId = changeId,
-      elkchangeType = ElkChange,
+      elkchangeType = EChangeDoc,
       elkchangeTitle = changeTitle,
       elkchangeUrl = changeUrl,
       elkchangeCommitCount = fromInteger . toInteger $ changeCommitCount,
@@ -438,7 +438,7 @@ indexChanges :: [ELKChange] -> TenantM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
-    ensureType change = change {elkchangeType = ElkChange}
+    ensureType change = change {elkchangeType = EChangeDoc}
 
 getEventDocId :: ELKChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ elkchangeeventId event
@@ -525,7 +525,7 @@ getChangesByURL urls = runScanSearch search
     search = BH.mkSearch (Just query) Nothing
     query =
       mkAnd
-        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkChange) Nothing,
+        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EChangeDoc) Nothing,
           BH.TermsQuery "url" $ fromList urls
         ]
 
@@ -565,7 +565,7 @@ getOrphanTaskDataByChangeURL urls = do
       mkAnd
         [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
           mkAnd
-            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText ElkOrphanTaskData) Nothing,
+            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EOrphanTaskData) Nothing,
               BH.TermsQuery "tasks_data.change_url" $ fromList urls
             ]
         ]
@@ -578,7 +578,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
   where
     toAdoptedDoc :: ELKChangeOrphanTD -> (Value, BH.DocId)
     toAdoptedDoc (ELKChangeOrphanTD id' _ _) =
-      ( toJSON $ ELKChangeOrphanTDAdopted id' ElkOrphanTaskData $ ELKTaskDataAdopted "",
+      ( toJSON $ ELKChangeOrphanTDAdopted id' EOrphanTaskData $ ELKTaskDataAdopted "",
         BH.DocId id'
       )
 
@@ -621,7 +621,7 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
    in ( toJSON $
           ELKChangeOrphanTD
             (toText tddId)
-            ElkOrphanTaskData
+            EOrphanTaskData
             td,
         BH.DocId $ toText tddId
       )

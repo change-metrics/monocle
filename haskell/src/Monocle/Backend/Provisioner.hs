@@ -61,7 +61,7 @@ fakeText = toLazy <$> Faker.TvShow.Futurama.quotes
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake ELKChange
 fakeChange from to = do
   elkchangeId <- pure $ ""
-  elkchangeType <- pure $ ElkChange
+  elkchangeType <- pure $ EChangeDoc
   elkchangeNumber <- pure $ 1
   elkchangeChangeId <- pure $ "change-id"
   elkchangeTitle <- fakeTitle

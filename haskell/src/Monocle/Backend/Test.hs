@@ -45,7 +45,7 @@ fakeChange :: ELKChange
 fakeChange =
   ELKChange
     { elkchangeId = "",
-      elkchangeType = ElkChange,
+      elkchangeType = EChangeDoc,
       elkchangeNumber = 1,
       elkchangeChangeId = "change-id",
       elkchangeTitle = "",
@@ -599,7 +599,7 @@ testTaskDataAdd = withTenant doTest
       let (withTD, withoutTD) = partition (isJust . elkchangeeventTasksData) events
           createdEventWithTD =
             filter
-              (\e -> (e & elkchangeeventType) == ElkChangeCreatedEvent)
+              (\e -> (e & elkchangeeventType) == EChangeCreatedEvent)
               withTD
       assertEqual' "Check events count that got a Task data" 8 (length withTD)
       assertEqual' "Check events count that miss a Task data" 4 (length withoutTD)
@@ -625,7 +625,7 @@ testTaskDataAdd = withTenant doTest
         ( Just
             ( ELKChangeOrphanTD
                 { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdType = EOrphanTaskData,
                   elkchangeorphantdTasksData = expectedELKTD
                 }
             )
@@ -643,7 +643,7 @@ testTaskDataAdd = withTenant doTest
         ( Just
             ( ELKChangeOrphanTD
                 { elkchangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
-                  elkchangeorphantdType = ElkOrphanTaskData,
+                  elkchangeorphantdType = EOrphanTaskData,
                   elkchangeorphantdTasksData = expectedELKTD'
                 }
             )
@@ -749,7 +749,7 @@ emptyEvent = ELKChangeEvent {..}
     elkchangeeventId = mempty
     elkchangeeventNumber = 0
     elkchangeeventChangeId = mempty
-    elkchangeeventType = ElkChangeCreatedEvent
+    elkchangeeventType = EChangeCreatedEvent
     elkchangeeventUrl = mempty
     elkchangeeventChangedFiles = mempty
     elkchangeeventRepositoryPrefix = mempty
@@ -831,7 +831,7 @@ mkChange ::
   ELKChange
 mkChange ts start author changeId name state' =
   emptyChange
-    { elkchangeType = ElkChange,
+    { elkchangeType = EChangeDoc,
       elkchangeId = changeId,
       elkchangeState = state',
       elkchangeRepositoryFullname = name,
@@ -847,7 +847,7 @@ mkEvent ::
   -- Start time
   UTCTime ->
   -- Type of Event
-  ELKDocType ->
+  EDocType ->
   -- Author of the event
   Author ->
   -- Author of the related change
@@ -887,20 +887,20 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ElkChangeCreatedEvent author author
+      let create = mkEvent' 0 EChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The comment
       commenter <- randomAuthor $ maintainers <> commenters
-      let comment = mkEvent' (duration `div` 2) ElkChangeCommentedEvent commenter author
+      let comment = mkEvent' (duration `div` 2) EChangeCommentedEvent commenter author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
+      let review = mkEvent' (duration `div` 2) EChangeReviewedEvent reviewer author
 
       -- The change merged event
       approver <- randomAuthor maintainers
-      let merge = mkEvent' duration ElkChangeMergedEvent approver author
+      let merge = mkEvent' duration EChangeMergedEvent approver author
 
       -- The event lists
       pure [SChange change, SCreation create, SComment comment, SReview review, SMerge merge]
@@ -918,12 +918,12 @@ nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
 
       -- The change creation
       author <- randomAuthor contributors
-      let create = mkEvent' 0 ElkChangeCreatedEvent author author
+      let create = mkEvent' 0 EChangeCreatedEvent author author
           change = mkChange' 0 author
 
       -- The review
       reviewer <- randomAuthor maintainers
-      let review = mkEvent' (duration `div` 2) ElkChangeReviewedEvent reviewer author
+      let review = mkEvent' (duration `div` 2) EChangeReviewedEvent reviewer author
 
       -- The event lists
       pure [SChange change, SCreation create, SReview review]

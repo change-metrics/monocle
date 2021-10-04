@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (EChangeState (..), ELKChange (..), ELKChangeEvent (..), ELKDocType (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChangeState (..), EDocType (..), ELKChange (..), ELKChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -133,7 +133,7 @@ queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
 -- High level queries
 changes :: Maybe SearchPB.Order -> Word32 -> QueryM [ELKChange]
 changes orderM limit =
-  withDocTypes [ElkChange] (QueryFlavor Author UpdatedAt) $
+  withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
     doSearch orderM limit
 
 changeEvents :: LText -> Word32 -> QueryM (ELKChange, [ELKChangeEvent])
@@ -150,9 +150,9 @@ changeEvents changeID limit = dropQuery $
 -- | The change created / review ratio
 changeReviewRatio :: QueryM Float
 changeReviewRatio = withFlavor qf $ do
-  commitCount <- withFilter [documentType ElkChangeCreatedEvent] $ countDocs
+  commitCount <- withFilter [documentType EChangeCreatedEvent] $ countDocs
   reviewCount <-
-    withFilter [documentTypes $ fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]] $
+    withFilter [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]] $
       countDocs
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
@@ -183,10 +183,10 @@ testIncluded =
     BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp ".*[Tt]est.*") BH.AllRegexpFlags Nothing
 
 -- | Add a document type filter to the query
-documentTypes :: NonEmpty ELKDocType -> BH.Query
+documentTypes :: NonEmpty EDocType -> BH.Query
 documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
 
-documentType :: ELKDocType -> BH.Query
+documentType :: EDocType -> BH.Query
 documentType x = documentTypes (x :| [])
 
 -- | User query
@@ -512,7 +512,7 @@ countAuthors :: QueryM Count
 countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
 getDocTypeTopCountByField ::
-  NonEmpty ELKDocType -> Text -> Maybe Word32 -> QueryM TermsResultWTH
+  NonEmpty EDocType -> Text -> Maybe Word32 -> QueryM TermsResultWTH
 getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] $ do
   -- Prepare the query
   query <- getQueryBH
@@ -532,13 +532,13 @@ openChangesCount = withFilter (changeState EChangeOpen) (withoutDate countDocs)
 mergedChangesCount :: QueryM Count
 mergedChangesCount =
   withFilter
-    [documentType ElkChangeMergedEvent]
+    [documentType EChangeMergedEvent]
     (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
 
 abandonedChangesCount :: QueryM Count
 abandonedChangesCount =
   withFilter
-    [documentType ElkChangeAbandonedEvent]
+    [documentType EChangeAbandonedEvent]
     (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
 
 selfMergedChangeCount :: QueryM Count
@@ -548,7 +548,7 @@ selfMergedChangeCount = withFilter selfMerged countDocs
 getRepos :: QueryM TermsResultWTH
 getRepos =
   withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (ElkChange :| []) "repository_fullname" (Just 5000)
+    getDocTypeTopCountByField (EChangeDoc :| []) "repository_fullname" (Just 5000)
 
 data RepoSummary = RepoSummary
   { fullname :: Text,
@@ -579,7 +579,7 @@ getReposSummary = do
           changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      createdChanges <- withFilter [documentType ElkChangeCreatedEvent] (eventQF countDocs)
+      createdChanges <- withFilter [documentType EChangeCreatedEvent] (eventQF countDocs)
       updatedChanges <- withFilter (changeState EChangeOpen) (changeQF countDocs)
       mergedChanges <- mergedChangesCount
       openChanges <- openChangesCount
@@ -591,32 +591,32 @@ getReposSummary = do
 getMostActiveAuthorByChangeCreated :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCreated limit =
   withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeCreatedEvent :| []) "author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeCreatedEvent :| []) "author.muid" (Just limit)
 
 getMostActiveAuthorByChangeMerged :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeMergedEvent :| []) "on_author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeMergedEvent :| []) "on_author.muid" (Just limit)
 
 getMostActiveAuthorByChangeReviewed :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeReviewed limit =
   withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeReviewedEvent :| []) "author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "author.muid" (Just limit)
 
 getMostActiveAuthorByChangeCommented :: Word32 -> QueryM TermsResultWTH
 getMostActiveAuthorByChangeCommented limit =
   withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeCommentedEvent :| []) "author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeCommentedEvent :| []) "author.muid" (Just limit)
 
 getMostReviewedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostReviewedAuthor limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeReviewedEvent :| []) "on_author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "on_author.muid" (Just limit)
 
 getMostCommentedAuthor :: Word32 -> QueryM TermsResultWTH
 getMostCommentedAuthor limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
-    getDocTypeTopCountByField (ElkChangeCommentedEvent :| []) "on_author.muid" (Just limit)
+    getDocTypeTopCountByField (EChangeCommentedEvent :| []) "on_author.muid" (Just limit)
 
 -- | peer strength authors
 data PeerStrengthResult = PeerStrengthResult
@@ -645,8 +645,8 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
           filter (\psr -> psrAuthor psr /= psrPeer psr) $
             concatMap transform authors_peers
   where
-    eventTypes :: NonEmpty ELKDocType
-    eventTypes = fromList [ElkChangeReviewedEvent, ElkChangeCommentedEvent]
+    eventTypes :: NonEmpty EDocType
+    eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]
     qf = QueryFlavor Author CreatedAt
     getAuthorPeers :: Text -> QueryM (Text, [TermResult])
     getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] $ do
@@ -721,7 +721,7 @@ getNewContributors = do
   let runQ =
         withFlavor (QueryFlavor Author CreatedAt) $
           getDocTypeTopCountByField
-            (ElkChangeCreatedEvent :| [])
+            (EChangeCreatedEvent :| [])
             "author.muid"
             (Just 5000)
 
@@ -738,7 +738,7 @@ getChangesTop :: Word32 -> Text -> QueryM TermsResultWTH
 getChangesTop limit attr =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField
-      (ElkChange :| [])
+      (EChangeDoc :| [])
       attr
       -- Ask for a large amount of buckets to hopefully
       -- get a total count that is accurate
@@ -857,30 +857,30 @@ changeMergedAvgCommits qf = queryAggValue =<< searchBody qf avg
   where
     avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("commit_count" :: Text)]]
 
-withDocTypes :: [ELKDocType] -> QueryFlavor -> QueryM a -> QueryM a
+withDocTypes :: [EDocType] -> QueryFlavor -> QueryM a -> QueryM a
 withDocTypes docTypes flavor qm =
   withFilter [mkOr $ toTermQuery <$> docTypes] $ withFlavor flavor qm
   where
     toTermQuery docType = mkTerm "type" (toText $ docTypeToText docType)
 
-withDocType :: ELKDocType -> QueryFlavor -> QueryM a -> QueryM a
+withDocType :: EDocType -> QueryFlavor -> QueryM a -> QueryM a
 withDocType docType = withDocTypes [docType]
 
 -- | changes review stats
 getReviewStats :: QueryM SearchPB.ReviewStats
 getReviewStats = do
-  reviewStatsCommentHisto <- getHisto' ElkChangeCommentedEvent
-  reviewStatsReviewHisto <- getHisto' ElkChangeReviewedEvent
+  reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
+  reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
 
-  commentCount <- withFilter [documentType ElkChangeCommentedEvent] statCount
-  reviewCount <- withFilter [documentType ElkChangeReviewedEvent] statCount
+  commentCount <- withFilter [documentType EChangeCommentedEvent] statCount
+  reviewCount <- withFilter [documentType EChangeReviewedEvent] statCount
 
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount
       withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter ev
 
-  firstComments <- withEvents [documentType ElkChangeCommentedEvent] firstEventOnChanges
-  firstReviews <- withEvents [documentType ElkChangeReviewedEvent] firstEventOnChanges
+  firstComments <- withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
+  firstReviews <- withEvents [documentType EChangeReviewedEvent] firstEventOnChanges
 
   let reviewStatsCommentDelay = firstEventAverageDuration firstComments
       reviewStatsReviewDelay = firstEventAverageDuration firstReviews
@@ -899,12 +899,12 @@ getReviewStats = do
 -- | changes lifecycle stats
 getLifecycleStats :: QueryM SearchPB.LifecycleStats
 getLifecycleStats = do
-  lifecycleStatsCreatedHisto <- getHisto' ElkChangeCreatedEvent
-  lifecycleStatsUpdatedHisto <- getHistos' [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]
-  lifecycleStatsMergedHisto <- getHisto' ElkChangeMergedEvent
-  lifecycleStatsAbandonedHisto <- getHisto' ElkChangeAbandonedEvent
+  lifecycleStatsCreatedHisto <- getHisto' EChangeCreatedEvent
+  lifecycleStatsUpdatedHisto <- getHistos' [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
+  lifecycleStatsMergedHisto <- getHisto' EChangeMergedEvent
+  lifecycleStatsAbandonedHisto <- getHisto' EChangeAbandonedEvent
 
-  (created, lifecycleStatsCreated) <- withDocType ElkChangeCreatedEvent qf $ do
+  (created, lifecycleStatsCreated) <- withDocType EChangeCreatedEvent qf $ do
     created <- countDocs
     stats <-
       SearchPB.ReviewCount
@@ -930,12 +930,12 @@ getLifecycleStats = do
 
   updated <-
     withFilter
-      [documentTypes $ fromList [ElkChangeCommitPushedEvent, ElkChangeCommitForcePushedEvent]]
+      [documentTypes $ fromList [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]]
       countEvents
 
   let lifecycleStatsUpdatesOfChanges = countToWord updated
 
-  tests <- withFilter [documentType ElkChange, testIncluded] countDocs
+  tests <- withFilter [documentType EChangeDoc, testIncluded] countDocs
   let lifecycleStatsChangesWithTests = tests `ratioF` created
       lifecycleStatsIterationsPerChange = updated `ratioN` created
 
@@ -1009,13 +1009,13 @@ getAuthorHisto qf = withFlavor qf $ do
 
 getActivityStats :: QueryM SearchPB.ActivityStats
 getActivityStats = do
-  changeCreatedHisto <- getHisto' ElkChangeCreatedEvent
-  changeCommentedHisto <- getHisto' ElkChangeCommentedEvent
-  changeReviewedHisto <- getHisto' ElkChangeReviewedEvent
+  changeCreatedHisto <- getHisto' EChangeCreatedEvent
+  changeCommentedHisto <- getHisto' EChangeCommentedEvent
+  changeReviewedHisto <- getHisto' EChangeReviewedEvent
 
-  changeAuthorsCount <- runCount ElkChangeCreatedEvent
-  commentAuthorsCount <- runCount ElkChangeCommentedEvent
-  reviewAuthorsCount <- runCount ElkChangeReviewedEvent
+  changeAuthorsCount <- runCount EChangeCreatedEvent
+  commentAuthorsCount <- runCount EChangeCommentedEvent
+  reviewAuthorsCount <- runCount EChangeReviewedEvent
 
   let activityStatsChangeAuthors = changeAuthorsCount
       activityStatsCommentAuthors = commentAuthorsCount
@@ -1052,5 +1052,5 @@ getSuggestions index = do
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do
-      tt <- getDocTypeTopCountByField (ElkChange :| []) field' (Just 1000)
+      tt <- getDocTypeTopCountByField (EChangeDoc :| []) field' (Just 1000)
       pure $ V.fromList $ toLazy . trTerm <$> tsrTR tt
