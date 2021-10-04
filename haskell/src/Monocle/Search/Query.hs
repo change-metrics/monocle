@@ -386,13 +386,20 @@ mkEqQuery field value' = do
 
 data BoolOp = And | Or
 
-mkBoolQuery :: BoolOp -> Expr -> Expr -> Parser BH.Query
-mkBoolQuery op e1 e2 = do
-  q1 <- query e1
-  q2 <- query e2
+-- | utility function to flatten boolean expression, so that:
+--    Or (Or e1 e2) e3  => [e1, e2, e3]
+takeWhileExpr :: BoolOp -> Expr -> [Expr]
+takeWhileExpr op expr = case (op, expr) of
+  (Or, OrExpr e1 e2) -> takeWhileExpr op e1 <> takeWhileExpr op e2
+  (And, AndExpr e1 e2) -> takeWhileExpr op e1 <> takeWhileExpr op e2
+  _anyOtherCase -> [expr]
+
+mkBoolQuery :: BoolOp -> [Expr] -> Parser BH.Query
+mkBoolQuery op es = do
+  qs <- traverse query es
   let (must, should) = case op of
-        And -> ([q1, q2], [])
-        Or -> ([], [q1, q2])
+        And -> (qs, [])
+        Or -> ([], qs)
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] should
 
 mkNotQuery :: Expr -> Parser BH.Query
@@ -409,8 +416,8 @@ mkNotQuery e1 = do
 -- [{"term":{"state":{"value":"OPEN"}}}]
 query :: Expr -> Parser BH.Query
 query expr = case expr of
-  AndExpr e1 e2 -> mkBoolQuery And e1 e2
-  OrExpr e1 e2 -> mkBoolQuery Or e1 e2
+  AndExpr {} -> mkBoolQuery And (takeWhileExpr And expr)
+  OrExpr {} -> mkBoolQuery Or (takeWhileExpr Or expr)
   EqExpr field value
     | field == "from" -> mkRangeQuery Gt "from" value
     | field == "to" -> mkRangeQuery Lt "from" value
