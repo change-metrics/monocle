@@ -7,6 +7,7 @@ import Data.Aeson
   )
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
+import qualified Data.Map as Map
 import qualified Data.Text as Text
 import Data.Time
 import qualified Data.Vector as V
@@ -588,6 +589,35 @@ getOrphanTaskDataAndDeclareAdoption urls = do
       ( toJSON $ ELKChangeOrphanTDAdopted id' ElkOrphanTaskData $ ELKTaskDataAdopted "",
         BH.DocId id'
       )
+
+updateChangesAndEventsFromOrphanTaskData :: [ELKChange] -> [ELKChangeEvent] -> TenantM ()
+updateChangesAndEventsFromOrphanTaskData changes events = do
+  let mapping = uMapping Map.empty getFlatMapping
+  adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
+  updateDocs $ taskDataDocToBHDoc <$> getTaskDatas adoptedTDs (Map.assocs mapping)
+  where
+    -- For each change and event extract (changeUrl, object ID)
+    getFlatMapping :: [(LText, LText)]
+    getFlatMapping =
+      ((\c -> (elkchangeUrl c, elkchangeId c)) <$> changes)
+        <> ((\c -> (elkchangeeventUrl c, elkchangeeventId c)) <$> events)
+    -- Create a Map where each key (changeUrl) maps a list of object ID
+    uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
+    uMapping cM fm = case fm of
+      [] -> cM
+      (x : xs) -> let nM = Map.alter (updateE $ snd x) (fst x) cM in uMapping nM xs
+      where
+        updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
+    -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
+    -- for Changes and Events
+    getTaskDatas :: [ELKChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
+    getTaskDatas adopted assocs = concatMap getTDs assocs
+      where
+        getTDs :: (LText, [LText]) -> [TaskDataDoc]
+        getTDs (url, ids) =
+          let mTDs = elkchangeorphantdTasksData <$> filterByUrl url adopted
+           in flip TaskDataDoc mTDs <$> ids
+        filterByUrl url = filter (\td -> tdChangeUrl (elkchangeorphantdTasksData td) == toText url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =

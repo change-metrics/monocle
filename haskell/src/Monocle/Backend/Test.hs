@@ -689,18 +689,43 @@ testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest
   where
     doTest :: TenantM ()
-    doTest = do
-      -- Send Task data w/o a matching change (orphan task data)
-      let td42 = mkTaskData "42"
-          td43 = mkTaskData "43"
-      void $ I.taskDataAdd [td42, td43]
-      oTDs <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
-      assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
+    doTest =
+      do
+        -- Send Task data w/o a matching change (orphan task data)
+        let td42 = mkTaskData "42"
+            td43 = mkTaskData "43"
+        void $ I.taskDataAdd [td42, td43]
+        oTDs <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+        assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
 
-      -- Declare adoption of an orphan TD and check for one remaining orphan TD
-      void $ I.getOrphanTaskDataAndDeclareAdoption $ toText . taskDataChangeUrl <$> [td42]
-      oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
-      assertEqual' "Check remaining one orphan TD" 2 (length oTDs')
+        -- Index a change and related events
+        let scenario = nominalMerge (SProject "openstack/nova" [alice, bob] [alice] [eve]) "42" fakeDate 3600
+            events = catMaybes $ getScenarioEvtObj <$> scenario
+            changes = catMaybes $ getScenarioChangeObj <$> scenario
+        indexScenario scenario
+        I.updateChangesAndEventsFromOrphanTaskData changes events
+        -- Check that the matching task data has been adopted
+        oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+        assertEqual' "Check remaining one orphan TD" 1 (length oTDs')
+        -- Check that change and related events got the task data attribute
+        changes' <- I.getChangesByURL [changeUrl] 500
+        events' <- I.getChangesEventsByURL [changeUrl]
+        let haveTDs =
+              all
+                (== True)
+                $ (isJust . elkchangeTasksData <$> changes')
+                  <> (isJust . elkchangeeventTasksData <$> events')
+        assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
+      where
+        getScenarioEvtObj :: ScenarioEvent -> Maybe ELKChangeEvent
+        getScenarioEvtObj (SCreation obj) = Just obj
+        getScenarioEvtObj (SComment obj) = Just obj
+        getScenarioEvtObj (SReview obj) = Just obj
+        getScenarioEvtObj (SMerge obj) = Just obj
+        getScenarioEvtObj _ = Nothing
+        getScenarioChangeObj (SChange obj) = Just obj
+        getScenarioChangeObj _ = Nothing
+        changeUrl = "https://fakeprovider/42"
 
 -- Tests scenario helpers
 
