@@ -78,6 +78,7 @@ instance FromJSON UTCTimePlus where
 -- TODO: Replace by the existing Monocle.TaskData.NewTaskData
 data ELKTaskData = ELKTaskData
   { tdTid :: Text,
+    tdCrawlerName :: Text,
     tdTtype :: [Text],
     tdUpdatedAt :: UTCTimePlus,
     tdChangeUrl :: Text,
