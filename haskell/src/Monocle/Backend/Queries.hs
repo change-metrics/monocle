@@ -18,6 +18,8 @@ import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import qualified Monocle.Search.Query as Q
+import Streaming.Prelude (Of, Stream)
+import qualified Streaming.Prelude as Streaming
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound. Only those should be using liftTenantM.
@@ -34,11 +36,20 @@ measureTenantM body action = do
   pure res
 
 -- | Call the search endpoint
-doSearchBH :: (ToJSON body, FromJSON resp) => body -> QueryM (BH.SearchResult resp)
-doSearchBH body = do
+doScrollSearchBH :: (ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> QueryM (BH.SearchResult resp)
+doScrollSearchBH scrollRequest body = do
   measureTenantM body $ do
     index <- getIndexName
-    BHR.search index body
+    BHR.search index body scrollRequest
+
+-- | A search without scroll
+doSearchBH :: (ToJSON body, FromJSON resp) => body -> QueryM (BH.SearchResult resp)
+doSearchBH = doScrollSearchBH BHR.NoScroll
+
+doAdvanceScrollBH :: FromJSON resp => BH.ScrollId -> QueryM (BH.SearchResult resp)
+doAdvanceScrollBH scroll = do
+  measureTenantM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) $ do
+    BHR.advance scroll
 
 doSearchHitBH :: (ToJSON body) => body -> QueryM [Json.Value]
 doSearchHitBH body = do
@@ -58,6 +69,43 @@ doCountBH body = do
 
 -------------------------------------------------------------------------------
 -- Mid level queries
+
+-- | scan search the result using a streaming
+scanSearch :: FromJSON resp => Stream (Of (BH.Hit resp)) QueryM ()
+scanSearch = do
+  resp <- lift $ do
+    query <- getQueryBH
+    doScrollSearchBH (BHR.GetScroll "1m") (BH.mkSearch query Nothing)
+  go (getHits resp) (BH.scrollId resp)
+  where
+    -- no more result, stop here
+    go [] _ = pure ()
+    -- no more scroll, yield the result and stop
+    go xs Nothing = Streaming.each xs
+    -- otherwise, keep on scrolling
+    go xs (Just sc) = do
+      Streaming.each xs
+      resp <- lift $ doAdvanceScrollBH sc
+      go (getHits resp) (BH.scrollId resp)
+
+    -- helper to get the hits of a search result
+    getHits = BH.hits . BH.searchHits
+
+-- | scan search the hit body, see the 'concat' doc for why we don't need catMaybes
+-- https://hackage.haskell.org/package/streaming-0.2.3.0/docs/Streaming-Prelude.html#v:concat
+scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
+scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource $ scanSearch
+
+-- | scan search the document id, here is an example usage for the REPL:
+-- λ> testTenantM (defaultTenant "zuul") $ runQueryM (mkQuery Nothing) $ Streaming.print scanSearchId
+-- DocId ...
+-- DocId ...
+scanSearchId :: Stream (Of BH.DocId) QueryM ()
+scanSearchId = Streaming.map BH.hitDocId $ anyScan
+  where
+    -- here we need to help ghc figures out what fromJSON to use
+    anyScan :: Stream (Of (BH.Hit (Value))) QueryM ()
+    anyScan = scanSearch
 
 -- | Get search results hits
 doSearch :: FromJSON resp => Maybe SearchPB.Order -> Word32 -> QueryM [resp]
@@ -434,7 +482,8 @@ instance FromJSON EventProjectBucketAggs where
 getProjectAgg :: BH.Query -> TenantM [EventProjectBucketAgg]
 getProjectAgg query = do
   index <- getIndexName
-  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg (Just query))
+  -- TODO: check why this is not calling the low-level function defined in this module
+  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg (Just query)) BHR.NoScroll
   pure $ unEPBuckets (parseAggregationResults "agg" res)
   where
     agg =

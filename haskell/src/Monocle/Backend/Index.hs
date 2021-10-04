@@ -422,6 +422,7 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
+-- | TODO: implement using Monocle.Queries.scanSearch
 runScanSearch :: forall a. FromJSON a => BH.Search -> TenantM [a]
 runScanSearch search = do
   index <- getIndexName

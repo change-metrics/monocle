@@ -283,7 +283,7 @@ monocleSearchLanguage =
       testCase "QueryM dropDate" testDropDate
     ]
   where
-    mkQueryM code = testTenantM testTenant . runQueryM (mkQuery code)
+    mkQueryM code = testTenantM testTenant . runQueryM (mkCodeQuery code)
 
     testWithFlavor :: Assertion
     testWithFlavor = mkQueryM "from:2021" $ do
@@ -310,11 +310,11 @@ monocleSearchLanguage =
     testEnsureMinBound :: Assertion
     testEnsureMinBound = do
       testTenantM testTenant $ do
-        runQueryM (Q.ensureMinBound $ mkQuery "author:alice") $ do
+        runQueryM (Q.ensureMinBound $ mkCodeQuery "author:alice") $ do
           got <- prettyQuery
           let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
           liftIO $ assertEqual "bound ensured with query" (Just expected) got
-        runQueryM (Q.ensureMinBound $ mkQuery "") $ do
+        runQueryM (Q.ensureMinBound $ mkCodeQuery "") $ do
           got <- prettyQuery
           let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
           liftIO $ assertEqual "match ensured without query" (Just expected) got
@@ -334,7 +334,7 @@ monocleSearchLanguage =
 
     -- Create a Query object
     mkQuery' code = P.parse [] code >>= Q.queryWithMods now mempty (Just testTenant)
-    mkQuery code = case mkQuery' code of
+    mkCodeQuery code = case mkQuery' code of
       Left e -> error $ show e
       Right q -> q
 

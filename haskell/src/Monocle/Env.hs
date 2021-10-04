@@ -78,6 +78,10 @@ testTenantM config tenantM = do
   withLogger $ \glLogger ->
     runReaderT (unTenant tenantM) (TenantEnv config Env {..})
 
+-- | Re-export utility function to create a config for testTenantM
+mkConfig :: Text -> Config.Index
+mkConfig name = Config.defaultTenant name
+
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where
   getBHEnv = asks (bhEnv . aEnv)
@@ -106,6 +110,14 @@ type QueryM = ReaderT QueryEnv TenantM
 -- | 'runQueryM' run the query context
 runQueryM :: Q.Query -> QueryM a -> TenantM a
 runQueryM query qm = runReaderT qm (QueryEnv query Nothing)
+
+-- | 'mkQuery' creates a Q.Query from a BH.Query
+mkQuery :: Maybe BH.Query -> Q.Query
+mkQuery bhq =
+  let queryGet _mod _flavor = maybeToList bhq
+      queryBounds = (error "no bound", error "no bound")
+      queryMinBoundsSet = False
+   in Q.Query {..}
 
 -- | 'runTenantQueryM' combine runTenantM and runQueryM
 runTenantQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a

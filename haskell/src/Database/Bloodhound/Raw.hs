@@ -1,5 +1,5 @@
 -- | A module for low-level function unavailable in bloodhound
-module Database.Bloodhound.Raw (search, searchHit, settings, aggWithDocValues) where
+module Database.Bloodhound.Raw (ScrollRequest (..), advance, search, searchHit, settings, aggWithDocValues) where
 
 import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
@@ -11,13 +11,18 @@ import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Method as HTTP
 
+data ScrollRequest = NoScroll | GetScroll ByteString
+
+type QS = [(ByteString, Maybe ByteString)]
+
 dispatch ::
   BH.MonadBH m =>
   HTTP.Method ->
   Text ->
   LByteString ->
+  QS ->
   m BH.Reply
-dispatch method url body = do
+dispatch method url body qs = do
   initReq <- liftIO $ HTTP.parseRequest (toString url)
   let request =
         initReq
@@ -27,38 +32,59 @@ dispatch method url body = do
             HTTP.requestBody = HTTP.RequestBodyLBS body
           }
   manager <- BH.bhManager <$> BH.getBHEnv
-  liftIO $ HTTP.httpLbs request manager
+  liftIO $ HTTP.httpLbs (setQs request) manager
+  where
+    setQs = case qs of
+      [] -> id
+      xs -> HTTP.setQueryString xs
+
+-- | Utility function to advance in scroll result. We can use the BH library
+--   because we no longer need to support a custom raw body once we have a scroll.
+advance :: (MonadIO m, MonadBH m, MonadThrow m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
+advance scroll = do
+  resp <- BH.advanceScroll scroll 60
+  case resp of
+    Left e -> handleError e
+    Right x -> pure x
+  where
+    handleError resp = do
+      monocleLog (show resp)
+      error "Elastic scroll response failed"
 
 settings :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> m ()
 settings (BH.IndexName index) body = do
   BH.Server s <- BH.bhServer <$> BH.getBHEnv
   let url = Text.intercalate "/" [s, index, "_settings"]
       method = HTTP.methodPut
-  resp <- dispatch method url (Aeson.encode body)
+  resp <- dispatch method url (Aeson.encode body) []
   case HTTP.responseBody resp of
     "{\"acknowledged\":true}" -> pure ()
     _ -> error $ "Settings apply failed: " <> show resp
 
-search' :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> m (BH.Reply)
-search' (BH.IndexName index) body = do
+search' :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> QS -> m (BH.Reply)
+search' (BH.IndexName index) body qs = do
   BH.Server s <- BH.bhServer <$> BH.getBHEnv
   let url = Text.intercalate "/" [s, index, "_search"]
       method = HTTP.methodPost
-  dispatch method url (Aeson.encode body)
+  dispatch method url (Aeson.encode body) qs
 
 search ::
   (MonadIO m, MonadBH m, MonadThrow m) =>
   (Aeson.ToJSON body, Aeson.FromJSON resp) =>
   BH.IndexName ->
   body ->
+  ScrollRequest ->
   m (BH.SearchResult resp)
-search index body = do
-  rawResp <- search' index body
+search index body scrollRequest = do
+  rawResp <- search' index body qs
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left _e -> handleError rawResp
     Right x -> pure x
   where
+    qs = case scrollRequest of
+      NoScroll -> []
+      GetScroll x -> [("scroll", Just x)]
     handleError resp = do
       monocleLog (show resp)
       error "Elastic response failed"
@@ -71,7 +97,7 @@ searchHit ::
   body ->
   m [Json.Value]
 searchHit index body = do
-  rawResp <- search' index body
+  rawResp <- search' index body []
   case decodeHits (Json.decodeThrow $ HTTP.responseBody rawResp) of
     Just xs -> pure xs
     Nothing -> error $ "Could not find hits in " <> show rawResp

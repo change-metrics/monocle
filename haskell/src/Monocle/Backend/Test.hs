@@ -22,6 +22,7 @@ import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 import Monocle.TaskData
 import Relude.Unsafe ((!!))
+import qualified Streaming.Prelude as Streaming
 
 fakeDate :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
@@ -134,6 +135,10 @@ testIndexChanges = withTenant doTest
         (echangeTitle fakeChange1Updated)
       -- Check total count of Change document in the database
       checkChangesCount 2
+      -- Check scanSearch has the same count
+      runQueryM (mkQuery Nothing) $ do
+        count <- Streaming.length_ $ Q.scanSearchId
+        assertEqual' "stream count match" 2 count
       where
         checkDocExists' dId = do
           exists <- I.checkDocExists dId
