@@ -51,7 +51,7 @@ run' port url configFile glLogger = do
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
-  retry $ liftIO $ traverse_ (\tenant -> runTenantM' bhEnv tenant I.ensureIndex) tenants'
+  retry $ liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) tenants'
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

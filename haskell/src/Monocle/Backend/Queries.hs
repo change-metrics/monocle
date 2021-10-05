@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (EChange (..), EChangeState (..), EDocType (..), EChangeEvent (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes, changeStateToText, docTypeToText)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -21,11 +21,11 @@ import qualified Monocle.Search.Query as Q
 import qualified Streaming.Prelude as Streaming
 
 -------------------------------------------------------------------------------
--- Low level wrappers for bloodhound. Only those should be using liftTenantM.
-measureTenantM :: ToJSON body => body -> TenantM a -> QueryM a
-measureTenantM body action = do
+-- Low level wrappers for bloodhound.
+measureQueryM :: ToJSON body => body -> QueryM a -> QueryM a
+measureQueryM body action = do
   prev <- getCurrentTime
-  res <- liftTenantM action
+  res <- action
   after <- getCurrentTime
   ctxM <- getContext
   case ctxM of
@@ -37,7 +37,7 @@ measureTenantM body action = do
 -- | Call the search endpoint
 doScrollSearchBH :: (ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> QueryM (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
-  measureTenantM body $ do
+  measureQueryM body $ do
     index <- getIndexName
     BHR.search index body scrollRequest
 
@@ -47,19 +47,19 @@ doSearchBH = doScrollSearchBH BHR.NoScroll
 
 doAdvanceScrollBH :: FromJSON resp => BH.ScrollId -> QueryM (BH.SearchResult resp)
 doAdvanceScrollBH scroll = do
-  measureTenantM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) $ do
+  measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) $ do
     BHR.advance scroll
 
 doSearchHitBH :: (ToJSON body) => body -> QueryM [Json.Value]
 doSearchHitBH body = do
-  measureTenantM body $ do
+  measureQueryM body $ do
     index <- getIndexName
     BHR.searchHit index body
 
 -- | Call the count endpoint
 doCountBH :: BH.Query -> QueryM Count
 doCountBH body = do
-  measureTenantM body $ do
+  measureQueryM body $ do
     index <- getIndexName
     resp <- BH.countByIndex index (BH.CountQuery body)
     case resp of
@@ -96,7 +96,7 @@ scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
 scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource $ scanSearch
 
 -- | scan search the document id, here is an example usage for the REPL:
--- λ> testTenantM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
+-- λ> testQueryM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
 -- DocId ...
 -- DocId ...
 scanSearchId :: Stream (Of BH.DocId) QueryM ()
@@ -481,7 +481,7 @@ instance FromJSON EventProjectBucketAggs where
   parseJSON (Object v) = EventProjectBucketAggs <$> v .: "buckets"
   parseJSON _ = mzero
 
-getProjectAgg :: BH.Query -> TenantM [EventProjectBucketAgg]
+getProjectAgg :: BH.Query -> QueryM [EventProjectBucketAgg]
 getProjectAgg query = do
   index <- getIndexName
   -- TODO: check why this is not calling the low-level function defined in this module

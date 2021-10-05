@@ -110,7 +110,7 @@ userGroupGet request = do
         pure (index, users, queryWithBound)
 
   case requestE of
-    Right (index, users, query) -> runTenantQueryM index query $ getGroupStats users
+    Right (index, users, query) -> runQueryM index query $ getGroupStats users
     Left err -> error (show err)
   where
     getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
@@ -197,7 +197,7 @@ crawlerAddDoc request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runTenantM index $ case toEntity entity of
+    Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
     Left err -> pure $ toErrorResponse err
@@ -250,7 +250,7 @@ crawlerCommit request = do
         pure (index, ts, toEntity entityPB)
 
   case requestE of
-    Right (index, ts, entity) -> runTenantM index $ do
+    Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
       monocleLogEvent $ UpdatingEntity crawlerName entity date
 
@@ -287,7 +287,7 @@ crawlerCommitInfo request = do
         pure (index, worker)
 
   case requestE of
-    Right (index, worker) -> runTenantM index $ do
+    Right (index, worker) -> runEmptyQueryM index $ do
       (name, ts) <- I.getLastUpdated worker entityType offset
       pure
         . CrawlerPB.CommitInfoResponse
@@ -361,7 +361,7 @@ taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
       if length taskDataAddRequestItems > 500
         then do pure $ toErr TDAddLenExcedeed
         else do
-          void $ runTenantM index $ I.taskDataAdd name $ toList taskDataAddRequestItems
+          void $ runEmptyQueryM index $ I.taskDataAdd name $ toList taskDataAddRequestItems
           pure $ TaskDataPB.TaskDataAddResponse Nothing
   where
     toErr =
@@ -392,13 +392,13 @@ taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
     Right (_, _ , Nothing) -> error "Missing commit timestamp in request"
     Right (index, crawler, Just ts) ->
       do
-        currentTS <- runTenantM index $ do
+        currentTS <- runEmptyQueryM index $ do
           I.getTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) crawler
         if ts < currentTS
           then pure $ toErr TDDateInvalid
           else do
             void $
-              runTenantM index $
+              runEmptyQueryM index $
                 do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts
             pure $ toSuccess ts
   where
@@ -434,7 +434,7 @@ taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = d
     Left err -> pure $ toErr err
     Right (index, crawler, _) ->
       do
-        currentTS <- runTenantM index $ do
+        currentTS <- runEmptyQueryM index $ do
           I.getTDCrawlerCommitDate (toText taskDataGetLastUpdatedRequestCrawler) crawler
         pure $
           TaskDataPB.TaskDataGetLastUpdatedResponse
@@ -465,7 +465,7 @@ searchSuggestions request = do
   case tenantM of
     Just tenant -> do
       now <- getCurrentTime
-      runTenantQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
@@ -516,9 +516,9 @@ searchQuery request = do
   requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
 
   case requestE of
-    Right (tenant, query) -> runTenantQueryM tenant (Q.ensureMinBound query) $ do
+    Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
       let queryType = fromPBEnum queryRequestQueryType
-      liftTenantM $ monocleLogEvent $ Searching queryType queryRequestQuery query
+      monocleLogEvent $ Searching queryType queryRequestQuery query
 
       case queryType of
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->

@@ -242,7 +242,7 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-ensureIndex :: TenantM ()
+ensureIndex :: QueryM ()
 ensureIndex = do
   indexName <- getIndexName
   config <- getIndexConfig
@@ -256,7 +256,7 @@ ensureIndex = do
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
-removeIndex :: TenantM ()
+removeIndex :: QueryM ()
 removeIndex = do
   indexName <- getIndexName
   _resp <- BH.deleteIndex indexName
@@ -390,7 +390,7 @@ toETaskData tdCrawlerName TaskData {..} =
     defaultDate = [utctime|1960-01-01 00:00:00|]
 
 -- | Apply a stream of bulk operation by chunk
-bulkStream :: Stream (Of BH.BulkOperation) TenantM () -> TenantM Int
+bulkStream :: Stream (Of BH.BulkOperation) QueryM () -> QueryM Int
 bulkStream s = do
   (count :> _) <- S.sum . S.mapM callBulk . S.mapped S.toList . S.chunksOf 500 $ s
   when (count > 0) $
@@ -398,7 +398,7 @@ bulkStream s = do
     void $ BH.refreshIndex =<< getIndexName
   pure count
   where
-    callBulk :: [BH.BulkOperation] -> TenantM Int
+    callBulk :: [BH.BulkOperation] -> QueryM Int
     callBulk ops = do
       let vector = V.fromList ops
       _ <- BH.bulk vector
@@ -410,7 +410,7 @@ runAddDocsBulkOPs ::
   (BH.IndexName -> (Value, BH.DocId) -> BH.BulkOperation) ->
   -- | The docs payload
   [(Value, BH.DocId)] ->
-  TenantM ()
+  QueryM ()
 runAddDocsBulkOPs bulkOp docs = do
   index <- getIndexName
   let stream = V.fromList $ fmap (bulkOp index) docs
@@ -419,19 +419,19 @@ runAddDocsBulkOPs bulkOp docs = do
   _ <- BH.refreshIndex index
   pure ()
 
-indexDocs :: [(Value, BH.DocId)] -> TenantM ()
+indexDocs :: [(Value, BH.DocId)] -> QueryM ()
 indexDocs = runAddDocsBulkOPs toBulkIndex
   where
     -- BulkIndex operation: Create the document, replacing it if it already exists.
     toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
-updateDocs :: [(Value, BH.DocId)] -> TenantM ()
+updateDocs :: [(Value, BH.DocId)] -> QueryM ()
 updateDocs = runAddDocsBulkOPs toBulkUpdate
   where
     -- BulkUpdate operation: Update the document, merging the new value with the existing one.
     toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
-upsertDocs :: [(Value, BH.DocId)] -> TenantM ()
+upsertDocs :: [(Value, BH.DocId)] -> QueryM ()
 upsertDocs = runAddDocsBulkOPs toBulkUpsert
   where
     -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
@@ -442,13 +442,13 @@ getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
 -- | A simple scan search that loads all the results in memory
-runScanSearch :: forall a. FromJSON a => BH.Query -> TenantM [a]
-runScanSearch query = runQueryM (mkQuery [query]) $ Q.scanSearchSimple
+runScanSearch :: forall a. FromJSON a => BH.Query -> QueryM [a]
+runScanSearch query = withQuery (mkQuery [query]) $ Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ echangeId change
 
-indexChanges :: [EChange] -> TenantM ()
+indexChanges :: [EChange] -> QueryM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   where
     toDoc change = (toJSON change, getChangeDocId change)
@@ -457,7 +457,7 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
 getEventDocId :: EChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . toStrict $ echangeeventId event
 
-indexEvents :: [EChangeEvent] -> TenantM ()
+indexEvents :: [EChangeEvent] -> QueryM ()
 indexEvents events = indexDocs (fmap toDoc events)
   where
     toDoc ev = (toJSON ev, getEventDocId ev)
@@ -468,12 +468,12 @@ statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 isNotFound :: BH.Reply -> Bool
 isNotFound = statusCheck (== 404)
 
-checkDocExists :: BH.DocId -> TenantM Bool
+checkDocExists :: BH.DocId -> QueryM Bool
 checkDocExists docId = do
   index <- getIndexName
   BH.documentExists index docId
 
-getDocumentById :: (FromJSON a) => BH.DocId -> TenantM (Maybe a)
+getDocumentById :: (FromJSON a) => BH.DocId -> QueryM (Maybe a)
 getDocumentById docId = do
   index <- getIndexName
   resp <- BH.getDocument index docId
@@ -501,10 +501,10 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
 getTDCrawlerMetadataDocId :: Text -> BH.DocId
 getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
 
-getTDCrawlerMetadata :: Text -> TenantM (Maybe ECrawlerMetadata)
+getTDCrawlerMetadata :: Text -> QueryM (Maybe ECrawlerMetadata)
 getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
 
-setTDCrawlerCommitDate :: Text -> UTCTime -> TenantM ()
+setTDCrawlerCommitDate :: Text -> UTCTime -> QueryM ()
 setTDCrawlerCommitDate name commitDate = do
   index <- getIndexName
   let ecmLastCommitAt = commitDate
@@ -520,7 +520,7 @@ setTDCrawlerCommitDate name commitDate = do
       else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
   void $ BH.refreshIndex index
 
-getTDCrawlerCommitDate :: Text -> Config.Crawler -> TenantM UTCTime
+getTDCrawlerCommitDate :: Text -> Config.Crawler -> QueryM UTCTime
 getTDCrawlerCommitDate name crawler = do
   metadata <- getTDCrawlerMetadata name
   let commitDate = ecmLastCommitAt . ecmCrawlerMetadata <$> metadata
@@ -564,7 +564,7 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: [Text] -> TenantM [EChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: [Text] -> QueryM [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
@@ -582,7 +582,7 @@ getOrphanTaskDataByChangeURL urls = do
             ]
         ]
 
-getOrphanTaskDataAndDeclareAdoption :: [Text] -> TenantM [EChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: [Text] -> QueryM [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
@@ -594,7 +594,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
         BH.DocId id'
       )
 
-updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> TenantM ()
+updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> QueryM ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
@@ -638,7 +638,7 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
         BH.DocId $ toText tddId
       )
 
-taskDataAdd :: Text -> [TaskData] -> TenantM ()
+taskDataAdd :: Text -> [TaskData] -> QueryM ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
   let urls = toText . taskDataChangeUrl <$> tds
@@ -725,7 +725,7 @@ getWorkerUpdatedSince Config.Crawler {..} =
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (toString update_since)
 
-getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> TenantM (Text, UTCTime)
+getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Text, UTCTime)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -760,7 +760,7 @@ getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> TenantM ()
+setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> QueryM ()
 setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index id'
@@ -787,10 +787,10 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
       Project _ -> "project"
       Organization _ -> "organization"
 
-setLastUpdated :: Text -> UTCTime -> Entity -> TenantM ()
+setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
-initCrawlerEntities :: [Entity] -> Config.Crawler -> TenantM ()
+initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
 initCrawlerEntities entities worker = traverse_ run entities
   where
     run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
@@ -801,7 +801,7 @@ getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
 getOrganizationEntityFromCrawler :: Config.Crawler -> Maybe Entity
 getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
 
-initCrawlerMetadata :: Config.Crawler -> TenantM ()
+initCrawlerMetadata :: Config.Crawler -> QueryM ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
     ( getProjectEntityFromCrawler crawler
