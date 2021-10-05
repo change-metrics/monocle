@@ -22,46 +22,46 @@ import qualified Streaming.Prelude as Streaming
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.
-measureQueryM :: ToJSON body => body -> QueryM a -> QueryM a
+measureQueryM :: (QueryMonad m, ToJSON body) => body -> m a -> m a
 measureQueryM body action = do
-  prev <- getCurrentTime
+  prev <- getCurrentTime'
   res <- action
-  after <- getCurrentTime
+  after <- getCurrentTime'
   ctxM <- getContext
   case ctxM of
     Just ctx ->
-      putTextLn $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
+      trace' $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
     Nothing -> pure ()
   pure res
 
 -- | Call the search endpoint
-doScrollSearchBH :: (ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> QueryM (BH.SearchResult resp)
+doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
   measureQueryM body $ do
     index <- getIndexName
-    BHR.search index body scrollRequest
+    elasticSearch index body scrollRequest
 
 -- | A search without scroll
-doSearchBH :: (ToJSON body, FromJSON resp) => body -> QueryM (BH.SearchResult resp)
+doSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => body -> m (BH.SearchResult resp)
 doSearchBH = doScrollSearchBH BHR.NoScroll
 
-doAdvanceScrollBH :: FromJSON resp => BH.ScrollId -> QueryM (BH.SearchResult resp)
+doAdvanceScrollBH :: (QueryMonad m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
 doAdvanceScrollBH scroll = do
   measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) $ do
-    BHR.advance scroll
+    elasticAdvance scroll
 
-doSearchHitBH :: (ToJSON body) => body -> QueryM [Json.Value]
+doSearchHitBH :: (QueryMonad m, ToJSON body) => body -> m [Json.Value]
 doSearchHitBH body = do
   measureQueryM body $ do
     index <- getIndexName
-    BHR.searchHit index body
+    elasticSearchHit index body
 
 -- | Call the count endpoint
-doCountBH :: BH.Query -> QueryM Count
+doCountBH :: QueryMonad m => BH.Query -> m Count
 doCountBH body = do
   measureQueryM body $ do
     index <- getIndexName
-    resp <- BH.countByIndex index (BH.CountQuery body)
+    resp <- elasticCountByIndex index (BH.CountQuery body)
     case resp of
       Left e -> error $ show e
       Right x -> pure $ naturalToCount (BH.crCount x)
@@ -110,7 +110,7 @@ scanSearchSimple :: FromJSON resp => QueryM [resp]
 scanSearchSimple = Streaming.toList_ scanSearchHit
 
 -- | Get search results hits
-doSearch :: FromJSON resp => Maybe SearchPB.Order -> Word32 -> QueryM [resp]
+doSearch :: QueryMonad m => FromJSON resp => Maybe SearchPB.Order -> Word32 -> m [resp]
 doSearch orderM limit = do
   query <- getQueryBH
   resp <-
@@ -136,7 +136,7 @@ doSearch orderM limit = do
       SearchPB.Order_DirectionDESC -> BH.Descending
 
 -- | Get search results hits, as fast as possible
-doFastSearch :: Word32 -> QueryM [Json.Value]
+doFastSearch :: QueryMonad m => Word32 -> m [Json.Value]
 doFastSearch limit = do
   query <- getQueryBH
   doSearchHitBH
@@ -145,26 +145,26 @@ doFastSearch limit = do
       }
 
 -- | Get document count matching the query
-countDocs :: QueryM Count
+countDocs :: QueryMonad m => m Count
 countDocs = do
   query <-
     fromMaybe (error "Need a query to count") <$> getQueryBH
   doCountBH query
 
 -- | Get aggregation results
-doAggregation :: (ToJSON body) => body -> QueryM BH.AggregationResults
+doAggregation :: QueryMonad m => (ToJSON body) => body -> m BH.AggregationResults
 doAggregation body = toAggRes <$> doSearchBH body
 
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
 
-aggSearch :: Maybe BH.Query -> BH.Aggregations -> QueryM AggregationResultsWTH
+aggSearch :: QueryMonad m => Maybe BH.Query -> BH.Aggregations -> m AggregationResultsWTH
 aggSearch query aggs = do
   resp <- doSearchBH (BH.mkAggregateSearch query aggs)
   let totalHits = BH.value $ BH.hitsTotal $ BH.searchHits resp
   pure $ AggregationResultsWTH (toAggRes resp) totalHits
 
-queryAggValue :: Value -> QueryM Double
+queryAggValue :: QueryMonad m => Value -> m Double
 queryAggValue search = getAggValue "agg1" <$> doAggregation search
   where
     getAggValue :: Text -> BH.AggregationResults -> Double
@@ -176,17 +176,17 @@ parseAggregationResults key res = getExn $ do
   value <- Map.lookup key res `orDie` ("No value found for: " <> toString key)
   Aeson.parseEither Aeson.parseJSON value
 
-queryAggResult :: FromJSON a => Value -> QueryM a
+queryAggResult :: QueryMonad m => FromJSON a => Value -> m a
 queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
 
 -------------------------------------------------------------------------------
 -- High level queries
-changes :: Maybe SearchPB.Order -> Word32 -> QueryM [EChange]
+changes :: QueryMonad m => Maybe SearchPB.Order -> Word32 -> m [EChange]
 changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
     doSearch orderM limit
 
-changeEvents :: LText -> Word32 -> QueryM (EChange, [EChangeEvent])
+changeEvents :: QueryMonad m => LText -> Word32 -> m (EChange, [EChangeEvent])
 changeEvents changeID limit = dropQuery $
   withFilter [mkTerm "change_id" (toText changeID)] $ do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
@@ -198,7 +198,7 @@ changeEvents changeID limit = dropQuery $
     pure (change, result)
 
 -- | The change created / review ratio
-changeReviewRatio :: QueryM Float
+changeReviewRatio :: QueryMonad m => m Float
 changeReviewRatio = withFlavor qf $ do
   commitCount <- withFilter [documentType EChangeCreatedEvent] $ countDocs
   reviewCount <-
@@ -258,7 +258,7 @@ data EventCounts = EventCounts
   }
   deriving (Eq, Show)
 
-getEventCounts :: QueryM EventCounts
+getEventCounts :: QueryMonad m => m EventCounts
 getEventCounts =
   -- TODO: ensure the right flavor is used
   EventCounts
@@ -401,7 +401,7 @@ firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedA
 firstEventAverageDuration :: [FirstEvent] -> Word32
 firstEventAverageDuration = truncate . fromMaybe 0 . average . map firstEventDuration
 
-firstEventOnChanges :: QueryM [FirstEvent]
+firstEventOnChanges :: QueryMonad m => m [FirstEvent]
 firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
   (minDate, _) <- Q.queryBounds <$> getQuery
 
@@ -419,7 +419,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
         | jceOnCreatedAt > minDate = True
         | otherwise = False
 
-  now <- getCurrentTime
+  now <- getCurrentTime'
 
   -- For each change, get the detail of the first event
   pure $ foldr toFirstEvent (initEvent now) <$> filter keepRecent changeMap
@@ -481,11 +481,10 @@ instance FromJSON EventProjectBucketAggs where
   parseJSON (Object v) = EventProjectBucketAggs <$> v .: "buckets"
   parseJSON _ = mzero
 
-getProjectAgg :: BH.Query -> QueryM [EventProjectBucketAgg]
+getProjectAgg :: QueryMonad m => BH.Query -> m [EventProjectBucketAgg]
 getProjectAgg query = do
-  index <- getIndexName
   -- TODO: check why this is not calling the low-level function defined in this module
-  res <- toAggRes <$> BHR.search index (BHR.aggWithDocValues agg (Just query)) BHR.NoScroll
+  res <- toAggRes <$> doSearchBH (BHR.aggWithDocValues agg (Just query))
   pure $ unEPBuckets (parseAggregationResults "agg" res)
   where
     agg =
@@ -525,7 +524,7 @@ getTermKey :: BH.TermsResult -> Text
 getTermKey (BH.TermsResult (BH.TextValue tv) _ _) = tv
 getTermKey BH.TermsResult {} = error "Unexpected match"
 
-getTermsAgg :: Maybe BH.Query -> Text -> Maybe Int -> QueryM TermsResultWTH
+getTermsAgg :: QueryMonad m => Maybe BH.Query -> Text -> Maybe Int -> m TermsResultWTH
 getTermsAgg query onTerm maxBuckets = do
   search <- aggSearch query aggs
   pure $
@@ -550,7 +549,7 @@ instance FromJSON CountValue where
   parseJSON (Object v) = CountValue <$> v .: "value"
   parseJSON _ = mzero
 
-getCardinalityAgg :: BH.FieldName -> Maybe Int -> QueryM Count
+getCardinalityAgg :: QueryMonad m => BH.FieldName -> Maybe Int -> m Count
 getCardinalityAgg (BH.FieldName fieldName) threshold = do
   bhQuery <- getQueryBH
 
@@ -559,11 +558,10 @@ getCardinalityAgg (BH.FieldName fieldName) threshold = do
       search = Aeson.object ["aggregations" .= agg, "size" .= (0 :: Word), "query" .= bhQuery]
   unCountValue . parseAggregationResults "agg1" <$> doAggregation search
 
-countAuthors :: QueryM Count
+countAuthors :: QueryMonad m => m Count
 countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
 
-getDocTypeTopCountByField ::
-  NonEmpty EDocType -> Text -> Maybe Word32 -> QueryM TermsResultWTH
+getDocTypeTopCountByField :: QueryMonad m => NonEmpty EDocType -> Text -> Maybe Word32 -> m TermsResultWTH
 getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] $ do
   -- Prepare the query
   query <- getQueryBH
@@ -575,28 +573,28 @@ getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype]
       let i' = fromInteger $ toInteger i
        in if i' <= 0 then 10 else i'
 
-openChangesCount :: QueryM Count
+openChangesCount :: QueryMonad m => m Count
 openChangesCount = withFilter (changeState EChangeOpen) (withoutDate countDocs)
   where
     withoutDate = withModified Q.dropDate
 
-mergedChangesCount :: QueryM Count
+mergedChangesCount :: QueryMonad m => m Count
 mergedChangesCount =
   withFilter
     [documentType EChangeMergedEvent]
     (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
 
-abandonedChangesCount :: QueryM Count
+abandonedChangesCount :: QueryMonad m => m Count
 abandonedChangesCount =
   withFilter
     [documentType EChangeAbandonedEvent]
     (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
 
-selfMergedChangeCount :: QueryM Count
+selfMergedChangeCount :: QueryMonad m => m Count
 selfMergedChangeCount = withFilter selfMerged countDocs
 
 -- | The repos_summary query
-getRepos :: QueryM TermsResultWTH
+getRepos :: QueryMonad m => m TermsResultWTH
 getRepos =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeDoc :| []) "repository_fullname" (Just 5000)
@@ -611,7 +609,7 @@ data RepoSummary = RepoSummary
   }
   deriving (Show, Eq)
 
-getReposSummary :: QueryM [RepoSummary]
+getReposSummary :: QueryMonad m => m [RepoSummary]
 getReposSummary = do
   repos <- getRepos
   let names = trTerm <$> tsrTR repos
@@ -639,32 +637,32 @@ getReposSummary = do
       pure $ RepoSummary {..}
 
 -- | get authors tops
-getMostActiveAuthorByChangeCreated :: Word32 -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeCreated :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeCreated limit =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeCreatedEvent :| []) "author.muid" (Just limit)
 
-getMostActiveAuthorByChangeMerged :: Word32 -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeMerged :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
     getDocTypeTopCountByField (EChangeMergedEvent :| []) "on_author.muid" (Just limit)
 
-getMostActiveAuthorByChangeReviewed :: Word32 -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeReviewed :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeReviewed limit =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeReviewedEvent :| []) "author.muid" (Just limit)
 
-getMostActiveAuthorByChangeCommented :: Word32 -> QueryM TermsResultWTH
+getMostActiveAuthorByChangeCommented :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeCommented limit =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeCommentedEvent :| []) "author.muid" (Just limit)
 
-getMostReviewedAuthor :: Word32 -> QueryM TermsResultWTH
+getMostReviewedAuthor :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostReviewedAuthor limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
     getDocTypeTopCountByField (EChangeReviewedEvent :| []) "on_author.muid" (Just limit)
 
-getMostCommentedAuthor :: Word32 -> QueryM TermsResultWTH
+getMostCommentedAuthor :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostCommentedAuthor limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
     getDocTypeTopCountByField (EChangeCommentedEvent :| []) "on_author.muid" (Just limit)
@@ -681,7 +679,7 @@ instance Ord PeerStrengthResult where
   (PeerStrengthResult _ _ x) `compare` (PeerStrengthResult _ _ y) =
     x `compare` y
 
-getAuthorsPeersStrength :: Word32 -> QueryM [PeerStrengthResult]
+getAuthorsPeersStrength :: QueryMonad m => Word32 -> m [PeerStrengthResult]
 getAuthorsPeersStrength limit = withFlavor qf $ do
   peers <-
     getDocTypeTopCountByField
@@ -699,7 +697,7 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
     eventTypes :: NonEmpty EDocType
     eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]
     qf = QueryFlavor Author CreatedAt
-    getAuthorPeers :: Text -> QueryM (Text, [TermResult])
+    getAuthorPeers :: QueryMonad m => Text -> m (Text, [TermResult])
     getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] $ do
       change_authors <-
         getDocTypeTopCountByField
@@ -757,7 +755,7 @@ dateInterval hi = formatTime' formatStr
       Month -> "%Y-%m"
       Year -> "%Y"
 
-getNewContributors :: QueryM [TermResult]
+getNewContributors :: QueryMonad m => m [TermResult]
 getNewContributors = do
   -- Get query min bound
   (minDate, _) <- Q.queryBounds <$> getQuery
@@ -785,7 +783,7 @@ getNewContributors = do
   pure $ filter (\tr -> trTerm tr `notElem` ba) (tsrTR afterAuthor)
 
 -- | getChangesTop
-getChangesTop :: Word32 -> Text -> QueryM TermsResultWTH
+getChangesTop :: QueryMonad m => Word32 -> Text -> m TermsResultWTH
 getChangesTop limit attr =
   withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField
@@ -795,16 +793,16 @@ getChangesTop limit attr =
       -- get a total count that is accurate
       (Just limit)
 
-getChangesTopAuthors :: Word32 -> QueryM TermsResultWTH
+getChangesTopAuthors :: QueryMonad m => Word32 -> m TermsResultWTH
 getChangesTopAuthors limit = getChangesTop limit "author.muid"
 
-getChangesTopRepos :: Word32 -> QueryM TermsResultWTH
+getChangesTopRepos :: QueryMonad m => Word32 -> m TermsResultWTH
 getChangesTopRepos limit = getChangesTop limit "repository_fullname"
 
-getChangesTopApprovals :: Word32 -> QueryM TermsResultWTH
+getChangesTopApprovals :: QueryMonad m => Word32 -> m TermsResultWTH
 getChangesTopApprovals limit = getChangesTop limit "approval"
 
-getChangesTops :: Word32 -> QueryM SearchPB.ChangesTops
+getChangesTops :: QueryMonad m => Word32 -> m SearchPB.ChangesTops
 getChangesTops limit = do
   authors <- getChangesTopAuthors limit
   repos <- getChangesTopRepos limit
@@ -829,7 +827,7 @@ getChangesTops limit = do
           }
 
 -- | getReviewHisto
-getHisto :: RangeFlavor -> QueryM (V.Vector HistoSimple)
+getHisto :: QueryMonad m => RangeFlavor -> m (V.Vector HistoSimple)
 getHisto rf = do
   query <- getQuery
   queryBH <- getQueryBH
@@ -864,7 +862,7 @@ getHisto rf = do
 
   hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-getHistoPB :: RangeFlavor -> QueryM (V.Vector SearchPB.Histo)
+getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector SearchPB.Histo)
 getHistoPB rf = fmap toPBHisto <$> getHisto rf
   where
     toPBHisto :: HistoSimple -> SearchPB.Histo
@@ -873,7 +871,7 @@ getHistoPB rf = fmap toPBHisto <$> getHisto rf
           histoCount = hbCount
        in SearchPB.Histo {..}
 
-searchBody :: QueryFlavor -> Value -> QueryM Value
+searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
 searchBody qf agg = withFlavor qf $ do
   queryBH <- getQueryBH
   pure $
@@ -889,12 +887,12 @@ searchBody qf agg = withFlavor qf $ do
         "query" .= fromMaybe (error "need query") queryBH
       ]
 
-averageDuration :: QueryFlavor -> QueryM Double
+averageDuration :: QueryMonad m => QueryFlavor -> m Double
 averageDuration qf = queryAggValue =<< searchBody qf avg
   where
     avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("duration" :: Text)]]
 
-medianDeviationDuration :: QueryFlavor -> QueryM Double
+medianDeviationDuration :: QueryMonad m => QueryFlavor -> m Double
 medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
   where
     deviation =
@@ -903,22 +901,22 @@ medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
             .= Aeson.object ["field" .= ("duration" :: Text)]
         ]
 
-changeMergedAvgCommits :: QueryFlavor -> QueryM Double
+changeMergedAvgCommits :: QueryMonad m => QueryFlavor -> m Double
 changeMergedAvgCommits qf = queryAggValue =<< searchBody qf avg
   where
     avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("commit_count" :: Text)]]
 
-withDocTypes :: [EDocType] -> QueryFlavor -> QueryM a -> QueryM a
+withDocTypes :: QueryMonad m => [EDocType] -> QueryFlavor -> m a -> m a
 withDocTypes docTypes flavor qm =
   withFilter [mkOr $ toTermQuery <$> docTypes] $ withFlavor flavor qm
   where
     toTermQuery docType = mkTerm "type" (toText $ docTypeToText docType)
 
-withDocType :: EDocType -> QueryFlavor -> QueryM a -> QueryM a
+withDocType :: QueryMonad m => EDocType -> QueryFlavor -> m a -> m a
 withDocType docType = withDocTypes [docType]
 
 -- | changes review stats
-getReviewStats :: QueryM SearchPB.ReviewStats
+getReviewStats :: QueryMonad m => m SearchPB.ReviewStats
 getReviewStats = do
   reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
   reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
@@ -939,7 +937,7 @@ getReviewStats = do
   pure $ SearchPB.ReviewStats {..}
   where
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    statCount :: QueryM SearchPB.ReviewCount
+    statCount :: QueryMonad m => m SearchPB.ReviewCount
     statCount =
       SearchPB.ReviewCount
         <$> fmap countToWord (withFlavor qf countAuthors)
@@ -948,7 +946,7 @@ getReviewStats = do
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
 
 -- | changes lifecycle stats
-getLifecycleStats :: QueryM SearchPB.LifecycleStats
+getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
 getLifecycleStats = do
   lifecycleStatsCreatedHisto <- getHisto' EChangeCreatedEvent
   lifecycleStatsUpdatedHisto <- getHistos' [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
@@ -1008,7 +1006,7 @@ getLifecycleStats = do
     ratioN x = fromFixed . ratio 1 x
 
 -- | authors activity stats
-getAuthorHisto :: QueryFlavor -> QueryM (V.Vector (HistoBucket HistoAuthors))
+getAuthorHisto :: QueryMonad m => QueryFlavor -> m (V.Vector (HistoBucket HistoAuthors))
 getAuthorHisto qf = withFlavor qf $ do
   query <- getQuery
   queryBH <- getQueryBH
@@ -1058,7 +1056,7 @@ getAuthorHisto qf = withFlavor qf $ do
 
   hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-getActivityStats :: QueryM SearchPB.ActivityStats
+getActivityStats :: QueryMonad m => m SearchPB.ActivityStats
 getActivityStats = do
   changeCreatedHisto <- getHisto' EChangeCreatedEvent
   changeCommentedHisto <- getHisto' EChangeCommentedEvent
@@ -1079,7 +1077,7 @@ getActivityStats = do
     qf = QueryFlavor Author CreatedAt
     runCount docType = countToWord <$> withDocType docType qf countAuthors
     getHisto' docType = withDocType docType qf getHistoPB'
-    getHistoPB' :: QueryM (V.Vector SearchPB.Histo)
+    getHistoPB' :: QueryMonad m => m (V.Vector SearchPB.Histo)
     getHistoPB' = fmap toPBHisto <$> getAuthorHisto qf
     toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
     toPBHisto HistoBucket {..} =
@@ -1091,7 +1089,7 @@ getActivityStats = do
               $ haBuckets hbSubBuckets
        in SearchPB.Histo {..}
 
-getSuggestions :: Config.Index -> QueryM SearchPB.SuggestionsResponse
+getSuggestions :: QueryMonad m => Config.Index -> m SearchPB.SuggestionsResponse
 getSuggestions index = do
   suggestionsResponseTaskTypes <- getTop "tasks_data.ttype"
   suggestionsResponseAuthors <- getTop "author.muid"

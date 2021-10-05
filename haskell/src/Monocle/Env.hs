@@ -1,15 +1,20 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | The library environment and logging functions
 module Monocle.Env where
 
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Database.Bloodhound as BH
+import qualified Database.Bloodhound.Raw as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
+import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
+import Say
 import Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
 
@@ -68,9 +73,34 @@ newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
   deriving newtype (MonadReader QueryEnv)
   deriving newtype (MonadUnliftIO)
 
--- | We can also derive a MonadBH from QueryM, we just needs to lift to the parent Reader
+-- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv
 instance BH.MonadBH QueryM where
   getBHEnv = QueryM (asks $ bhEnv . tEnv)
+
+-- | The QueryMonad is the main constraint used by the Queries module. Note that it implies ElasticMonad.
+class (Functor m, Applicative m, Monad m, MonadReader QueryEnv m, ElasticMonad m) => QueryMonad m where
+  -- | Get the current (UTC) time.
+  getCurrentTime' :: m UTCTime
+
+  -- | Log a debug
+  trace' :: Text -> m ()
+
+instance QueryMonad QueryM where
+  getCurrentTime' = liftIO getCurrentTime
+  trace' msg = liftIO $ say msg
+
+-- | A type class that defines the method available to query elastic
+class ElasticMonad m where
+  elasticSearch :: (ToJSON body, FromJSON resp) => BH.IndexName -> body -> BHR.ScrollRequest -> m (BH.SearchResult resp)
+  elasticCountByIndex :: BH.IndexName -> BH.CountQuery -> m (Either BH.EsError BH.CountResponse)
+  elasticSearchHit :: ToJSON body => BH.IndexName -> body -> m [Json.Value]
+  elasticAdvance :: FromJSON resp => BH.ScrollId -> m (BH.SearchResult resp)
+
+instance ElasticMonad QueryM where
+  elasticSearch = BHR.search
+  elasticSearchHit = BHR.searchHit
+  elasticAdvance = BHR.advance
+  elasticCountByIndex = BH.countByIndex
 
 -- | Run a QueryM computation without a Query, e.g. when adding task data.
 runEmptyQueryM :: Config.Index -> QueryM a -> AppM a
@@ -110,24 +140,24 @@ mkConfig :: Text -> Config.Index
 mkConfig name = Config.defaultTenant name
 
 -- | Utility function to hide the ReaderT layer
-getIndexName :: QueryM BH.IndexName
+getIndexName :: QueryMonad m => m BH.IndexName
 getIndexName = tenantIndexName <$> asks tenant
   where
     tenantIndexName :: Config.Index -> BH.IndexName
     tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | Utility function to hide the ReaderT layer
-getIndexConfig :: QueryM Config.Index
+getIndexConfig :: QueryMonad m => m Config.Index
 getIndexConfig = asks tenant
 
 -- | Utility function to hide the ReaderT layer
-getQuery :: QueryM Q.Query
+getQuery :: QueryMonad m => m Q.Query
 getQuery = asks tQuery
 
-getContext :: QueryM (Maybe Text)
+getContext :: QueryMonad m => m (Maybe Text)
 getContext = asks tContext
 
-getQueryBH :: QueryM (Maybe BH.Query)
+getQueryBH :: QueryMonad m => m (Maybe BH.Query)
 getQueryBH = mkFinalQuery Nothing
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
@@ -138,7 +168,7 @@ mkQuery bhq =
       queryMinBoundsSet = False
    in Q.Query {..}
 
-mkFinalQuery :: Maybe Q.QueryFlavor -> QueryM (Maybe BH.Query)
+mkFinalQuery :: QueryMonad m => Maybe Q.QueryFlavor -> m (Maybe BH.Query)
 mkFinalQuery flavorM = do
   query <- getQuery
   pure $ toBoolQuery $ Q.queryGet query id flavorM
@@ -148,12 +178,12 @@ mkFinalQuery flavorM = do
       [x] -> Just x
       xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
 
-withQuery :: Q.Query -> QueryM a -> QueryM a
+withQuery :: QueryMonad m => Q.Query -> m a -> m a
 withQuery query = local addQuery
   where
     addQuery e = e {tQuery = query}
 
-withContext :: HasCallStack => Text -> QueryM a -> QueryM a
+withContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
 withContext context = local setContext
   where
     setContext (QueryEnv tenant tEnv query _) = (QueryEnv tenant tEnv query (Just contextName))
@@ -161,7 +191,7 @@ withContext context = local setContext
     getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 
 -- | 'dropQuery' remove the query from the context
-dropQuery :: QueryM a -> QueryM a
+dropQuery :: QueryMonad m => m a -> m a
 dropQuery = local dropQuery'
   where
     -- we still want to call the provided modifier, so
@@ -171,7 +201,7 @@ dropQuery = local dropQuery'
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFlavor' change the query flavor
-withFlavor :: Q.QueryFlavor -> QueryM a -> QueryM a
+withFlavor :: QueryMonad m => Q.QueryFlavor -> m a -> m a
 withFlavor flavor = local setFlavor
   where
     -- the new flavor replaces the oldFlavor
@@ -181,7 +211,7 @@ withFlavor flavor = local setFlavor
 
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
-withModified :: (Maybe Expr -> Maybe Expr) -> QueryM a -> QueryM a
+withModified :: QueryMonad m => (Maybe Expr -> Maybe Expr) -> m a -> m a
 withModified modifier = local addModifier
   where
     -- The new modifier is composed with the previous one
@@ -191,7 +221,7 @@ withModified modifier = local addModifier
 
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
-withFilter :: [BH.Query] -> QueryM a -> QueryM a
+withFilter :: QueryMonad m => [BH.Query] -> m a -> m a
 withFilter extraQueries = local addFilter
   where
     -- The extra query is added to the resulting [BH.Query]
