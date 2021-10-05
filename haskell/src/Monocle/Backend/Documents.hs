@@ -77,6 +77,7 @@ instance FromJSON UTCTimePlus where
 
 data ETaskData = ETaskData
   { tdTid :: Text,
+    tdCrawlerName :: Text,
     tdTtype :: [Text],
     tdUpdatedAt :: UTCTimePlus,
     tdChangeUrl :: Text,

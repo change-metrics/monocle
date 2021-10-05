@@ -111,6 +111,7 @@ library
                      , exceptions                 < 0.11
                      , fakedata                   >= 1.0
                      , fast-logger
+                     , foldl
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
@@ -120,6 +121,7 @@ library
                      , lens
                      , megaparsec                 < 10
                      , morpheus-graphql-client    ^>= 0.17
+                     , mmorph
                      , mtl
                      , network                    < 4
                      , network-uri                < 2.6.5
@@ -174,6 +176,7 @@ library
                      , Monocle.Backend.Queries
                      , Monocle.Backend.Test
                      , Monocle.Backend.Provisioner
+                     , Monocle.Backend.Janitor
                      , Monocle.Test.Spec
 
                      -- megaparsec search language

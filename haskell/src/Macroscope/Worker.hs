@@ -27,7 +27,6 @@ import Monocle.Prelude
 import Monocle.Project (Project)
 import Monocle.TaskData
 import Proto3.Suite.Types (Enumerated (..))
-import Streaming (Of, Stream)
 import qualified Streaming as S
 import qualified Streaming.Prelude as S
 
