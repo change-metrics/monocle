@@ -3,15 +3,14 @@
 
 module Lentille.GitLab where
 
-import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
-import Lentille (LentilleError (DecodeError), LentilleStream, stopLentille)
-import Monocle.Client (mkManager, retry)
+import Lentille (LentilleError (DecodeError), LentilleStream, retry, stopLentille)
+import Monocle.Client (mkManager)
+import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.URI as URI
-import Relude
 import qualified Streaming.Prelude as S
 
 schemaLocation :: String

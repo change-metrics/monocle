@@ -1,9 +1,9 @@
 -- |
 module Monocle.Api (run) where
 
+import Lentille (retry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
-import Monocle.Client (retry)
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
@@ -24,7 +24,7 @@ monocleAPI = Proxy
 app :: AppEnv -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
   where
-    mkAppM :: AppM x -> Handler x
+    mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
 
 run :: Int -> Text -> FilePath -> IO ()

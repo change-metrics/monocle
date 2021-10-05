@@ -15,7 +15,7 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
 import Say
-import Servant (Handler)
+import qualified Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
 
 -------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ data AppEnv = AppEnv
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
-newtype AppM a = AppM {unApp :: ReaderT AppEnv Handler a}
+newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
   deriving newtype (MonadReader AppEnv)
 

@@ -17,11 +17,10 @@ where
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (LentilleStream, runLentilleM)
+import Lentille
 import Monocle.Change (Change, ChangeEvent)
-import Monocle.Client (MonocleClient, MonadRetry(..))
+import Monocle.Client (MonocleClient)
 import Monocle.Client.Api
-import Monocle.Client.Worker
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)

@@ -11,22 +11,14 @@ module Monocle.Client
     withClient,
     mkManager,
     monocleReq,
-
-    -- * Retry context
-    MonadRetry (..),
-    retry',
   )
 where
 
-import Control.Monad.Catch (Handler (Handler), MonadThrow)
-import Control.Retry (RetryStatus (..))
-import qualified Control.Retry as Retry
 import qualified Data.Text as T
-import Monocle.Client.Worker
+import Monocle.Prelude
 import qualified Network.Connection as Connection
 import Network.HTTP.Client
-  ( HttpException (..),
-    Manager,
+  ( Manager,
     RequestBody (..),
     httpLbs,
     method,
@@ -36,11 +28,9 @@ import Network.HTTP.Client
     requestHeaders,
     responseBody,
   )
-import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Client.TLS as HTTP
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
 import qualified Proto3.Suite.JSONPB as JSONPB
-import Relude
 
 -- | The MonocleClient record, use 'withClient' to create
 data MonocleClient = MonocleClient
@@ -101,30 +91,3 @@ monocleReq path MonocleClient {..} body =
     decodeResponse body' = case JSONPB.eitherDecode body' of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
-
--- | The MonadRetry enables the 'retry' function
-class MonadRetry m where
-  retry :: m a -> m a
-
-instance MonadRetry IO where
-  retry = retry'
-
--- | Use this retry'prime to implement MonadRetry in IO.
--- Retry 5 times network action, doubling backoff each time
-retry' :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
-retry' action =
-  Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries 6)
-    [handler]
-    (const action)
-  where
-    backoff = 500000 -- 500ms
-    -- Log network error
-    handler (RetryStatus num _ _) = Handler $ \case
-      HttpExceptionRequest req ctx -> do
-        let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-            arg = decodeUtf8 $ HTTP.queryString req
-            loc = if num == 0 then url <> arg else url
-        log . LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx
-        pure True
-      InvalidUrlException _ _ -> pure False

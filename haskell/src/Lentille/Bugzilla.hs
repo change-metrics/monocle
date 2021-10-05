@@ -19,14 +19,11 @@ module Lentille.Bugzilla
 where
 
 import Data.Aeson
-import Data.Time (UTCTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Client (MonadRetry (..))
-import Monocle.Client.Worker (LogEvent (LogGetBugs), MonadLog, log)
+import Lentille
+import Monocle.Prelude
 import Monocle.TaskData
-import Relude
-import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 import Web.Bugzilla.RedHat (BugzillaSession)
 import qualified Web.Bugzilla.RedHat as BZ
