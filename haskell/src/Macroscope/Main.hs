@@ -15,7 +15,7 @@ import Monocle.Client.Worker (MonadLog)
 import Monocle.Prelude
 
 -- | 'MacroM' is an alias for a bunch of constrain.
-class (MonadIO m, MonadFail m, MonadMask m, MonadLog m) => MacroM m
+class (MonadIO m, MonadFail m, MonadMask m, MonadLog m, MonadRetry m) => MacroM m
 
 instance MacroM IO
 

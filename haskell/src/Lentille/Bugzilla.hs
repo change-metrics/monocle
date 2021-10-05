@@ -22,8 +22,8 @@ import Data.Aeson
 import Data.Time (UTCTime)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Monocle.Client (retry)
-import Monocle.Client.Worker (LogEvent (LogGetBugs), MonadLog, MonadMask, log)
+import Monocle.Client (MonadRetry (..))
+import Monocle.Client.Worker (LogEvent (LogGetBugs), MonadLog, log)
 import Monocle.TaskData
 import Relude
 import Streaming (Of, Stream)
@@ -160,7 +160,7 @@ toTaskData bz = map mkTaskData ebugs
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData ::
-  (MonadMask m, MonadLog m, MonadIO m) => BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) m ()
+  (MonadLog m, MonadIO m, MonadRetry m) => BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) m ()
 getBZData bzSession product''' sinceTS = go 0
   where
     limit = 100

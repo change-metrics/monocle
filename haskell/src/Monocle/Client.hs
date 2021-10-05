@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
@@ -9,7 +11,10 @@ module Monocle.Client
     withClient,
     mkManager,
     monocleReq,
-    retry,
+
+    -- * Retry context
+    MonadRetry (..),
+    retry',
   )
 where
 
@@ -97,9 +102,17 @@ monocleReq path MonocleClient {..} body =
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
 
+-- | The MonadRetry enables the 'retry' function
+class MonadRetry m where
+  retry :: m a -> m a
+
+instance MonadRetry IO where
+  retry = retry'
+
+-- | Use this retry'prime to implement MonadRetry in IO.
 -- Retry 5 times network action, doubling backoff each time
-retry :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
-retry action =
+retry' :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
+retry' action =
   Retry.recovering
     (Retry.exponentialBackoff backoff <> Retry.limitRetries 6)
     [handler]
