@@ -1,22 +1,23 @@
 -- | This application evaluate different strategies to handle elasticsearch search result.
 -- The goal is to compute the average age of a ChangeEvents (created_at - on_created) as
 -- this seems to be a bottleneck of the changes review stats query.
---
--- Create a dataset by running: curl http://localhost:9200/index/_search -d '{todo: add type term query}' > data/sample.json
--- Then run the benchmark using `FP=$(pwd)/data/sample.json cabal bench`
 module Main where
 
 import Criterion.Main
+import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Bytes as B
 import qualified Data.Text.Short as TextShort
 import qualified Data.Text.Time as T
 import qualified Database.Bloodhound as BH
+import qualified Faker
+import qualified Faker.Combinators
 import qualified Json as Json
 import Monocle.Backend.Documents as D
+import Monocle.Backend.Provisioner (fakeChangeEvent)
 import Monocle.Prelude
-import System.Environment (getEnv)
+import System.Random (mkStdGen)
 
 -- | Test compute metric with Json
 jsonPerf :: LBS.ByteString -> Int
@@ -66,7 +67,7 @@ aesonDecode dat = do
   where
     getValue :: Either String (BH.SearchResult Aeson.Value) -> Int
     getValue (Right _) = 42
-    getValue _ = error "oops"
+    getValue x = error (show x)
 
 -- | Test decoding the full data type
 aesonDecodeData :: LBS.ByteString -> Int
@@ -75,21 +76,55 @@ aesonDecodeData dat =
   where
     getE :: Either String (BH.SearchResult D.EChangeEvent) -> Int
     getE (Right _) = 42
-    getE _ = error "oops"
+    getE x = error (show x)
 
-getData :: IO LBS.ByteString
-getData = do
-  fp <- getEnv "FP"
-  LBS.readFile fp
+getJsonData :: IO LBS.ByteString
+getJsonData = do
+  xs <-
+    Faker.generateWithSettings (Faker.setRandomGen stdGen $ Faker.setNonDeterministic Faker.defaultFakerSettings) $
+      Faker.Combinators.listOf total (fakeChangeEvent minDate maxDate)
+  pure $ Aeson.encode $ mkObj xs
+  where
+    minDate = [utctime|1970-01-01 00:00:00|]
+    maxDate = [utctime|2021-01-01 00:00:00|]
+
+    stdGen = mkStdGen 42
+    mkObj xs =
+      Aeson.object
+        [ "took" .= toJSON (4 :: Int),
+          "timed_out" .= toJSON False,
+          "_shards"
+            .= Aeson.object
+              [ "total" .= toJSON (1 :: Int),
+                "successful" .= toJSON (1 :: Int),
+                "skipped" .= toJSON (0 :: Int),
+                "failed" .= toJSON (0 :: Int)
+              ],
+          "hits"
+            .= Aeson.object
+              [ "total" .= Aeson.object ["value" .= (toJSON total), "relation" .= ("eq" :: Text)],
+                "max_score" .= toJSON (1 :: Float),
+                "hits" .= (Aeson.Array $ fromList $ map mkDoc xs)
+              ]
+        ]
+    total = 10000
+    mkDoc xs =
+      Aeson.object
+        [ "_index" .= ("test" :: Text),
+          "_type" .= ("_doc" :: Text),
+          "_id" .= ("fake" :: Text),
+          "_score" .= toJSON (1 :: Float),
+          "_source" .= toJSON xs
+        ]
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ["print"] -> print . jsonPerf =<< getData
+    ["print"] -> putTextLn . decodeUtf8 =<< getJsonData
     _ -> do
       defaultMain
-        [ env getData $ \dat ->
+        [ env getJsonData $ \dat ->
             bgroup
               "main"
               [ bgroup

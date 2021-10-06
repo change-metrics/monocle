@@ -94,3 +94,23 @@ fakeChange from to = do
   echangeAssignees <- pure $ []
   echangeDraft <- pure $ False
   pure $ EChange {..}
+
+fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
+fakeChangeEvent from to = do
+  echangeeventId <- pure ""
+  echangeeventNumber <- pure 0
+  echangeeventType <- Faker.Combinators.elements [minBound .. maxBound]
+  echangeeventChangeId <- pure ""
+  echangeeventUrl <- pure ""
+  echangeeventChangedFiles <- pure []
+  echangeeventRepositoryPrefix <- pure ""
+  echangeeventRepositoryShortname <- pure ""
+  echangeeventRepositoryFullname <- pure ""
+  echangeeventAuthor <- pure Nothing
+  echangeeventOnAuthor <- fakeAuthor
+  echangeeventBranch <- pure ""
+  echangeeventCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from to
+  echangeeventOnCreatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeeventCreatedAt to
+  echangeeventApproval <- pure Nothing
+  echangeeventTasksData <- pure Nothing
+  pure $ EChangeEvent {..}
