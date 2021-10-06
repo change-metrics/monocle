@@ -113,6 +113,7 @@ library
                      , fakedata                   >= 1.0
                      , fast-logger
                      , foldl
+                     , gerrit                     ^>= 0.1.0.0
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
@@ -197,6 +198,8 @@ library
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Group
                      , Lentille.GitLab.Adapter
+
+                     , Lentille.Gerrit
 
                      , Macroscope.Main
                      , Macroscope.Worker

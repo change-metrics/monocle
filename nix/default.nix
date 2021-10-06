@@ -61,6 +61,16 @@ let
             broken = false;
           };
 
+          # gerrit-haskell needs a new release, use current master for now
+          gerrit = let
+            src = builtins.fetchGit {
+              url = "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
+              ref = "master";
+              rev = "30648f1fe2938c8a3ed61f19c9c1055e0bc65aa4";
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "gerrit" src { });
+
           # use a more recent version that is not broken in nix
           fakedata = let
             fakedataSrc = builtins.fetchGit {

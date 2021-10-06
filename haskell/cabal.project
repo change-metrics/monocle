@@ -4,5 +4,10 @@ source-repository-package
   tag: 4775ebb759fe1b7cb5f880e4a41044b2363d98af
   -- Pull in version bump that needs a new release
 
+source-repository-package
+  type: git
+  location: https://softwarefactory-project.io/r/software-factory/gerrit-haskell
+  tag: 30648f1fe2938c8a3ed61f19c9c1055e0bc65aa4
+
 packages: .
 write-ghc-environment-files: always
