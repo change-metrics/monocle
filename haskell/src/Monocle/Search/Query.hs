@@ -408,12 +408,6 @@ mkNotQuery e1 = do
   pure $ BH.QueryBoolQuery $ BH.mkBoolQuery [] [] [q1] []
 
 -- | 'query' creates an elastic search query
---
--- >>> :{
---  let query = load Nothing mempty Nothing "state:open"
---   in putTextLn . decodeUtf8 . Aeson.encode $ (queryGet query id Nothing)
--- :}
--- [{"term":{"state":{"value":"OPEN"}}}]
 query :: Expr -> Parser BH.Query
 query expr = case expr of
   AndExpr {} -> mkBoolQuery And (takeWhileExpr And expr)
@@ -428,8 +422,8 @@ query expr = case expr of
   LtExpr field value -> mkRangeQuery Lt field value
   LtEqExpr field value -> mkRangeQuery Lte field value
 
-queryWithMods :: UTCTime -> Text -> Maybe Config.Index -> Maybe Expr -> Either ParseError Query
-queryWithMods now' username indexM exprM = do
+queryWithMods :: UTCTime -> Text -> Config.Index -> Maybe Expr -> Either ParseError Query
+queryWithMods now' username index exprM = do
   -- Compute whenever bound are provided
   (queryBounds, queryMinBoundsSet) <- case exprM of
     Nothing -> pure ((threeWeeksAgo now, now), False)
@@ -454,16 +448,13 @@ queryWithMods now' username indexM exprM = do
         . runReaderT (query expr)
         $ Env now username index flavor
     now = dropTime now'
-    index = fromMaybe (error "need index") indexM
     threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
 
 -- | Utility function to simply create a query
-load :: Maybe UTCTime -> Text -> Maybe Config.Index -> Text -> Query
-load nowM username indexM code = case P.parse [] code >>= queryWithMods now username indexM of
+load :: UTCTime -> Text -> Config.Index -> Text -> Query
+load now username index code = case P.parse [] code >>= queryWithMods now username index of
   Right x -> x
   Left err -> error (show err)
-  where
-    now = fromMaybe (error "need time") nowM
 
 loadAliases' :: Config.Index -> [(Text, Expr)]
 loadAliases' = fromRight (error "Alias loading failed") . loadAliases
@@ -488,7 +479,7 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases ind
       -- Try to evaluate the alias with fake value
       _testQuery <-
         toError $
-          queryWithMods fakeNow "self" (Just index) exprM
+          queryWithMods fakeNow "self" index exprM
 
       case exprM of
         Just expr ->
