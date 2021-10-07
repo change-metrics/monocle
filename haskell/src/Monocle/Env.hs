@@ -229,8 +229,14 @@ withFilter extraQueries = local addFilter
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
-data Entity = Project {getName :: Text} | Organization {getName :: Text}
+data Entity = Project Text | Organization Text | TaskDataEntity
   deriving (Eq, Show)
+
+getEntityName :: Entity -> Text
+getEntityName = \case
+  Project n -> n
+  Organization n -> n
+  TaskDataEntity -> ""
 
 -------------------------------------------------------------------------------
 -- logging function

@@ -161,10 +161,14 @@ pattern ProjectEntity project =
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
+pattern TDEntity td =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
+
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
   OrganizationEntity organizationName -> Organization $ toStrict organizationName
+  TDEntity _td -> TaskDataEntity
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
@@ -179,7 +183,7 @@ crawlerAddDoc request = do
           changes
           events
           projects
-          _taskDatas
+          taskDatas
         ) = request
 
   let requestE = do
@@ -201,8 +205,12 @@ crawlerAddDoc request = do
     Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
+      TaskDataEntity -> addTDs crawler taskDatas
     Left err -> pure $ toErrorResponse err
   where
+    addTDs (Config.Crawler {..}) taskDatas = do
+      I.taskDataAdd name $ toList taskDatas
+      pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
       let changes' = map I.toEChange $ toList changes
@@ -254,7 +262,7 @@ crawlerCommit request = do
     Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
       monocleLogEvent $ UpdatingEntity crawlerName entity date
-
+      -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (toStrict crawlerName) date entity
 
       pure . CrawlerPB.CommitResponse . Just $
