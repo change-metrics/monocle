@@ -1,10 +1,7 @@
 -- | Index management functions such as document mapping and ingest
 module Monocle.Backend.Index where
 
-import Data.Aeson
-  ( KeyValue ((.=)),
-    object,
-  )
+import Data.Aeson (object)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
 import qualified Data.Map as Map
