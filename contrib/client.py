@@ -6,7 +6,8 @@
 import argparse
 import json
 import monocle.webapi as M
-import monocle.task_data_pb2 as T
+import monocle.crawler_pb2 as Crawler
+import monocle.change_pb2 as Change
 
 
 def usage():
@@ -48,9 +49,10 @@ elif args.action == "add-td":
         print("usage: add-td workspace crawler apikey json")
         exit(1)
     tdjson = json.loads(td)
-    td = T.TaskData(**tdjson)
-    query = M.TaskDataAddRequest(
-        index=workspace, crawler=crawler, apikey=apikey, items=[td]
+    td = Change.TaskData(**tdjson)
+    entity = Crawler.Entity(td_name=crawler)
+    query = M.AddDocRequest(
+        index=workspace, crawler=crawler, apikey=apikey, entity=entity, task_datas=[td]
     )
-    resp = M.task_data_task_data_add(args.url, query)
+    resp = M.crawler_add_doc(args.url, query)
     print(resp)

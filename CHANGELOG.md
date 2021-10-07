@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 
+- [api] The legacy task data last_updated/add/commit are replaced by the new crawler commit_info/add/commit api.
+
 ### Fixed
 
 ## [1.1.0] - 2021-09-21
