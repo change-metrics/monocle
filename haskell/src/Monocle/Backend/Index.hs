@@ -681,7 +681,7 @@ taskDataAdd crawlerName tds = do
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
-          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td, tddTd = [td]})
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td <> tdChangeUrl td, tddTd = [td]})
           -- Found a change matching this TD -> update existing TDs with new TD
           Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
           where
