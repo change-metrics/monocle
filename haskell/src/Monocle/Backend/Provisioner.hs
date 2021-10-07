@@ -11,16 +11,18 @@ import qualified Faker.Movie.BackToTheFuture
 import qualified Faker.TvShow.Futurama
 import Monocle.Api.Config (defaultTenant)
 import Monocle.Backend.Documents
+import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Test as T
 import Monocle.Env (testQueryM)
 import Monocle.Prelude
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
-runProvisioner tenantName = do
-  events <- createFakeEvents
+runProvisioner tenantName = testQueryM (defaultTenant tenantName) $ do
+  I.ensureIndex
+  events <- liftIO $ createFakeEvents
   putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."
-  testQueryM (defaultTenant tenantName) $ T.indexScenario events
+  T.indexScenario events
   putTextLn $ "[provisioner] Done."
 
 -- | Ensure changes have a unique ID
