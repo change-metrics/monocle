@@ -13,8 +13,6 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
-from monocle import task_data_pb2 as monocle_dot_task__data__pb2
-from monocle import change_pb2 as monocle_dot_change__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -23,11 +21,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\016monocle/search",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17monocle/task_data.proto\x1a\x14monocle/change.proto"#\n\x12SuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"\x97\x01\n\x13SuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t\x12\x10\n\x08projects\x18\x06 \x03(\t\x12\x0e\n\x06groups\x18\x07 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r">\n\x0c\x43heckRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t"Y\n\rCheckResponse\x12\x11\n\x07success\x18\x01 \x01(\tH\x00\x12+\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x42\x08\n\x06result"j\n\x05Order\x12\r\n\x05\x66ield\x18\x01 \x01(\t\x12\x32\n\tdirection\x18\x02 \x01(\x0e\x32\x1f.monocle_search.Order.Direction"\x1e\n\tDirection\x12\x07\n\x03\x41SC\x10\x00\x12\x08\n\x04\x44\x45SC\x10\x01"\xae\x05\n\x0cQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12:\n\nquery_type\x18\x04 \x01(\x0e\x32&.monocle_search.QueryRequest.QueryType\x12$\n\x05order\x18\x05 \x01(\x0b\x32\x15.monocle_search.Order\x12\r\n\x05limit\x18\x06 \x01(\r\x12\x11\n\tchange_id\x18\x07 \x01(\t"\xe9\x03\n\tQueryType\x12\x10\n\x0cQUERY_CHANGE\x10\x00\x12\x17\n\x13QUERY_REPOS_SUMMARY\x10\x02\x12%\n!QUERY_TOP_AUTHORS_CHANGES_CREATED\x10\x03\x12$\n QUERY_TOP_AUTHORS_CHANGES_MERGED\x10\x04\x12&\n"QUERY_TOP_AUTHORS_CHANGES_REVIEWED\x10\x05\x12\'\n#QUERY_TOP_AUTHORS_CHANGES_COMMENTED\x10\x06\x12\x1e\n\x1aQUERY_TOP_REVIEWED_AUTHORS\x10\x07\x12\x1f\n\x1bQUERY_TOP_COMMENTED_AUTHORS\x10\x08\x12\x1b\n\x17QUERY_TOP_AUTHORS_PEERS\x10\t\x12\x1d\n\x19QUERY_NEW_CHANGES_AUTHORS\x10\n\x12\x1e\n\x1aQUERY_CHANGES_REVIEW_STATS\x10\x14\x12!\n\x1dQUERY_CHANGES_LIFECYCLE_STATS\x10\x15\x12\x1e\n\x1aQUERY_ACTIVE_AUTHORS_STATS\x10\x16\x12\x1b\n\x17QUERY_CHANGE_AND_EVENTS\x10\x1e\x12\x16\n\x12QUERY_CHANGES_TOPS\x10\x1f":\n\x04\x46ile\x12\x11\n\tadditions\x18\x01 \x01(\r\x12\x11\n\tdeletions\x18\x02 \x01(\r\x12\x0c\n\x04path\x18\x03 \x01(\t"\xd0\x01\n\x06\x43ommit\x12\x0b\n\x03sha\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\x12/\n\x0b\x61uthored_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tcommitter\x18\x05 \x01(\t\x12\x30\n\x0c\x63ommitted_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tadditions\x18\n \x01(\r\x12\x11\n\tdeletions\x18\x0b \x01(\r"\x91\x05\n\x06\x43hange\x12\x11\n\tchange_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0b\n\x03url\x18\x04 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x05 \x01(\t\x12\r\n\x05state\x18\x06 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x07 \x01(\t\x12\x15\n\rtarget_branch\x18\x08 \x01(\t\x12.\n\ncreated_at\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\tmerged_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x13\n\tmerged_by\x18\x0c \x01(\tH\x00\x12\x0c\n\x04text\x18\x0f \x01(\t\x12\x11\n\tadditions\x18\x14 \x01(\r\x12\x11\n\tdeletions\x18\x15 \x01(\r\x12\x10\n\x08\x61pproval\x18\x19 \x03(\t\x12\x11\n\tassignees\x18\x1a \x03(\t\x12\x0e\n\x06labels\x18\x1b \x03(\t\x12\r\n\x05\x64raft\x18\x1e \x01(\x08\x12\x11\n\tmergeable\x18  \x01(\x08\x12+\n\rchanged_files\x18\x32 \x03(\x0b\x32\x14.monocle_search.File\x12\x1b\n\x13\x63hanged_files_count\x18\x33 \x01(\r\x12\'\n\x07\x63ommits\x18< \x03(\x0b\x32\x16.monocle_search.Commit\x12\x15\n\rcommits_count\x18= \x01(\r\x12.\n\ttask_data\x18\x46 \x03(\x0b\x32\x1b.monocle_task_data.TaskDataB\x0c\n\nmerged_byM"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"\xd0\x01\n\x0b\x43hangeEvent\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x11\n\tchange_id\x18\x03 \x01(\t\x12.\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x31\n\ron_created_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x61uthor\x18\n \x01(\t\x12\x11\n\ton_author\x18\x0b \x01(\t\x12\x0e\n\x06\x62ranch\x18\x14 \x01(\t"f\n\x0f\x43hangeAndEvents\x12&\n\x06\x63hange\x18\x01 \x01(\x0b\x32\x16.monocle_search.Change\x12+\n\x06\x65vents\x18\x02 \x03(\x0b\x32\x1b.monocle_search.ChangeEvent":\n\x0bReviewCount\x12\x15\n\rauthors_count\x18\x01 \x01(\r\x12\x14\n\x0c\x65vents_count\x18\x02 \x01(\r"$\n\x05Histo\x12\x0c\n\x04\x64\x61te\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\r"\xfc\x01\n\x0bReviewStats\x12\x32\n\rcomment_count\x18\x01 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x31\n\x0creview_count\x18\x02 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x15\n\rcomment_delay\x18\x05 \x01(\r\x12\x14\n\x0creview_delay\x18\x06 \x01(\r\x12,\n\rcomment_histo\x18\n \x03(\x0b\x32\x15.monocle_search.Histo\x12+\n\x0creview_histo\x18\x0b \x03(\x0b\x32\x15.monocle_search.Histo"\xe3\x01\n\rActivityStats\x12\x16\n\x0e\x63hange_authors\x18\x01 \x01(\r\x12\x17\n\x0f\x63omment_authors\x18\x02 \x01(\r\x12\x16\n\x0ereview_authors\x18\x03 \x01(\r\x12-\n\x0e\x63omments_histo\x18\n \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rreviews_histo\x18\x0b \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rchanges_histo\x18\x0c \x03(\x0b\x32\x15.monocle_search.Histo"\xde\x04\n\rQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12*\n\x07\x63hanges\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x12\x35\n\rrepos_summary\x18\x03 \x01(\x0b\x32\x1c.monocle_search.ReposSummaryH\x00\x12\x31\n\x0btop_authors\x18\x04 \x01(\x0b\x32\x1a.monocle_search.TermsCountH\x00\x12\x35\n\rauthors_peers\x18\x05 \x01(\x0b\x32\x1c.monocle_search.AuthorsPeersH\x00\x12\x31\n\x0bnew_authors\x18\x06 \x01(\x0b\x32\x1a.monocle_search.TermsCountH\x00\x12\x33\n\x0creview_stats\x18\x14 \x01(\x0b\x32\x1b.monocle_search.ReviewStatsH\x00\x12\x39\n\x0flifecycle_stats\x18\x15 \x01(\x0b\x32\x1e.monocle_search.LifecycleStatsH\x00\x12\x37\n\x0e\x61\x63tivity_stats\x18\x16 \x01(\x0b\x32\x1d.monocle_search.ActivityStatsH\x00\x12\x38\n\rchange_events\x18\x1e \x01(\x0b\x32\x1f.monocle_search.ChangeAndEventsH\x00\x12\x33\n\x0c\x63hanges_tops\x18\x1f \x01(\x0b\x32\x1b.monocle_search.ChangesTopsH\x00\x42\x08\n\x06result"\xe8\x03\n\x0eLifecycleStats\x12,\n\rcreated_histo\x18\x01 \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rupdated_histo\x18\x02 \x03(\x0b\x32\x15.monocle_search.Histo\x12+\n\x0cmerged_histo\x18\x03 \x03(\x0b\x32\x15.monocle_search.Histo\x12.\n\x0f\x61\x62\x61ndoned_histo\x18\x04 \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\x07\x63reated\x18\x05 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x11\n\tabandoned\x18\x0b \x01(\r\x12\x0e\n\x06merged\x18\r \x01(\r\x12\x13\n\x0bself_merged\x18\x0f \x01(\r\x12\x19\n\x11self_merged_ratio\x18\x10 \x01(\x02\x12\x10\n\x08ttm_mean\x18\x1e \x01(\x02\x12\x17\n\x0fttm_variability\x18\x1f \x01(\x02\x12\x1a\n\x12updates_of_changes\x18  \x01(\r\x12\x1a\n\x12\x63hanges_with_tests\x18! \x01(\x02\x12\x1d\n\x15iterations_per_change\x18" \x01(\x02\x12\x1a\n\x12\x63ommits_per_change\x18# \x01(\x02"\x9a\x01\n\x0bRepoSummary\x12\x10\n\x08\x66ullname\x18\x01 \x01(\t\x12\x17\n\x0f\x63reated_changes\x18\x02 \x01(\r\x12\x19\n\x11\x61\x62\x61ndoned_changes\x18\x03 \x01(\r\x12\x16\n\x0emerged_changes\x18\x04 \x01(\r\x12\x17\n\x0fupdated_changes\x18\x05 \x01(\r\x12\x14\n\x0copen_changes\x18\x06 \x01(\r"<\n\x0cReposSummary\x12,\n\x07reposum\x18\x01 \x03(\x0b\x32\x1b.monocle_search.RepoSummary"(\n\tTermCount\x12\x0c\n\x04term\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\r"N\n\nTermsCount\x12,\n\ttermcount\x18\x01 \x03(\x0b\x32\x19.monocle_search.TermCount\x12\x12\n\ntotal_hits\x18\x02 \x01(\r"<\n\nAuthorPeer\x12\x0e\n\x06\x61uthor\x18\x01 \x01(\t\x12\x0c\n\x04peer\x18\x02 \x01(\t\x12\x10\n\x08strength\x18\x03 \x01(\r"?\n\x0c\x41uthorsPeers\x12/\n\x0b\x61uthor_peer\x18\x01 \x03(\x0b\x32\x1a.monocle_search.AuthorPeer"\x94\x01\n\x0b\x43hangesTops\x12+\n\x07\x61uthors\x18\x01 \x01(\x0b\x32\x1a.monocle_search.TermsCount\x12)\n\x05repos\x18\x02 \x01(\x0b\x32\x1a.monocle_search.TermsCount\x12-\n\tapprovals\x18\x03 \x01(\x0b\x32\x1a.monocle_search.TermsCountB\x10Z\x0emonocle/searchb\x06proto3',
+    serialized_pb=b'\n\x14monocle/search.proto\x12\x0emonocle_search\x1a\x1fgoogle/protobuf/timestamp.proto"\xc9\x01\n\x08TaskData\x12.\n\nupdated_at\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x12\n\nchange_url\x18\x02 \x01(\t\x12\r\n\x05ttype\x18\x03 \x03(\t\x12\x0b\n\x03tid\x18\x04 \x01(\t\x12\x0b\n\x03url\x18\x05 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x10\n\x08severity\x18\x07 \x01(\t\x12\x10\n\x08priority\x18\x08 \x01(\t\x12\r\n\x05score\x18\t \x01(\x05\x12\x0e\n\x06prefix\x18\n \x01(\t"#\n\x12SuggestionsRequest\x12\r\n\x05index\x18\x01 \x01(\t"\x97\x01\n\x13SuggestionsResponse\x12\x12\n\ntask_types\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\x11\n\tapprovals\x18\x03 \x03(\t\x12\x12\n\npriorities\x18\x04 \x03(\t\x12\x12\n\nseverities\x18\x05 \x03(\t\x12\x10\n\x08projects\x18\x06 \x03(\t\x12\x0e\n\x06groups\x18\x07 \x03(\t" \n\rFieldsRequest\x12\x0f\n\x07version\x18\x01 \x01(\t"\xaf\x01\n\x05\x46ield\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12(\n\x04type\x18\x03 \x01(\x0e\x32\x1a.monocle_search.Field.Type"Y\n\x04Type\x12\x0e\n\nFIELD_DATE\x10\x00\x12\x10\n\x0c\x46IELD_NUMBER\x10\x01\x12\x0e\n\nFIELD_TEXT\x10\x02\x12\x0e\n\nFIELD_BOOL\x10\x03\x12\x0f\n\x0b\x46IELD_REGEX\x10\x04"7\n\x0e\x46ieldsResponse\x12%\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x15.monocle_search.Field"/\n\nQueryError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\r">\n\x0c\x43heckRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t"Y\n\rCheckResponse\x12\x11\n\x07success\x18\x01 \x01(\tH\x00\x12+\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x42\x08\n\x06result"j\n\x05Order\x12\r\n\x05\x66ield\x18\x01 \x01(\t\x12\x32\n\tdirection\x18\x02 \x01(\x0e\x32\x1f.monocle_search.Order.Direction"\x1e\n\tDirection\x12\x07\n\x03\x41SC\x10\x00\x12\x08\n\x04\x44\x45SC\x10\x01"\xae\x05\n\x0cQueryRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12:\n\nquery_type\x18\x04 \x01(\x0e\x32&.monocle_search.QueryRequest.QueryType\x12$\n\x05order\x18\x05 \x01(\x0b\x32\x15.monocle_search.Order\x12\r\n\x05limit\x18\x06 \x01(\r\x12\x11\n\tchange_id\x18\x07 \x01(\t"\xe9\x03\n\tQueryType\x12\x10\n\x0cQUERY_CHANGE\x10\x00\x12\x17\n\x13QUERY_REPOS_SUMMARY\x10\x02\x12%\n!QUERY_TOP_AUTHORS_CHANGES_CREATED\x10\x03\x12$\n QUERY_TOP_AUTHORS_CHANGES_MERGED\x10\x04\x12&\n"QUERY_TOP_AUTHORS_CHANGES_REVIEWED\x10\x05\x12\'\n#QUERY_TOP_AUTHORS_CHANGES_COMMENTED\x10\x06\x12\x1e\n\x1aQUERY_TOP_REVIEWED_AUTHORS\x10\x07\x12\x1f\n\x1bQUERY_TOP_COMMENTED_AUTHORS\x10\x08\x12\x1b\n\x17QUERY_TOP_AUTHORS_PEERS\x10\t\x12\x1d\n\x19QUERY_NEW_CHANGES_AUTHORS\x10\n\x12\x1e\n\x1aQUERY_CHANGES_REVIEW_STATS\x10\x14\x12!\n\x1dQUERY_CHANGES_LIFECYCLE_STATS\x10\x15\x12\x1e\n\x1aQUERY_ACTIVE_AUTHORS_STATS\x10\x16\x12\x1b\n\x17QUERY_CHANGE_AND_EVENTS\x10\x1e\x12\x16\n\x12QUERY_CHANGES_TOPS\x10\x1f":\n\x04\x46ile\x12\x11\n\tadditions\x18\x01 \x01(\r\x12\x11\n\tdeletions\x18\x02 \x01(\r\x12\x0c\n\x04path\x18\x03 \x01(\t"\xd0\x01\n\x06\x43ommit\x12\x0b\n\x03sha\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\x12/\n\x0b\x61uthored_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tcommitter\x18\x05 \x01(\t\x12\x30\n\x0c\x63ommitted_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x11\n\tadditions\x18\n \x01(\r\x12\x11\n\tdeletions\x18\x0b \x01(\r"\x8e\x05\n\x06\x43hange\x12\x11\n\tchange_id\x18\x01 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x02 \x01(\t\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0b\n\x03url\x18\x04 \x01(\t\x12\x1b\n\x13repository_fullname\x18\x05 \x01(\t\x12\r\n\x05state\x18\x06 \x01(\t\x12\x0e\n\x06\x62ranch\x18\x07 \x01(\t\x12\x15\n\rtarget_branch\x18\x08 \x01(\t\x12.\n\ncreated_at\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nupdated_at\x18\n \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\tmerged_at\x18\x0b \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x13\n\tmerged_by\x18\x0c \x01(\tH\x00\x12\x0c\n\x04text\x18\x0f \x01(\t\x12\x11\n\tadditions\x18\x14 \x01(\r\x12\x11\n\tdeletions\x18\x15 \x01(\r\x12\x10\n\x08\x61pproval\x18\x19 \x03(\t\x12\x11\n\tassignees\x18\x1a \x03(\t\x12\x0e\n\x06labels\x18\x1b \x03(\t\x12\r\n\x05\x64raft\x18\x1e \x01(\x08\x12\x11\n\tmergeable\x18  \x01(\x08\x12+\n\rchanged_files\x18\x32 \x03(\x0b\x32\x14.monocle_search.File\x12\x1b\n\x13\x63hanged_files_count\x18\x33 \x01(\r\x12\'\n\x07\x63ommits\x18< \x03(\x0b\x32\x16.monocle_search.Commit\x12\x15\n\rcommits_count\x18= \x01(\r\x12+\n\ttask_data\x18\x46 \x03(\x0b\x32\x18.monocle_search.TaskDataB\x0c\n\nmerged_byM"2\n\x07\x43hanges\x12\'\n\x07\x63hanges\x18\x01 \x03(\x0b\x32\x16.monocle_search.Change"\xd0\x01\n\x0b\x43hangeEvent\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x11\n\tchange_id\x18\x03 \x01(\t\x12.\n\ncreated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x31\n\ron_created_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x61uthor\x18\n \x01(\t\x12\x11\n\ton_author\x18\x0b \x01(\t\x12\x0e\n\x06\x62ranch\x18\x14 \x01(\t"f\n\x0f\x43hangeAndEvents\x12&\n\x06\x63hange\x18\x01 \x01(\x0b\x32\x16.monocle_search.Change\x12+\n\x06\x65vents\x18\x02 \x03(\x0b\x32\x1b.monocle_search.ChangeEvent":\n\x0bReviewCount\x12\x15\n\rauthors_count\x18\x01 \x01(\r\x12\x14\n\x0c\x65vents_count\x18\x02 \x01(\r"$\n\x05Histo\x12\x0c\n\x04\x64\x61te\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\r"\xfc\x01\n\x0bReviewStats\x12\x32\n\rcomment_count\x18\x01 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x31\n\x0creview_count\x18\x02 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x15\n\rcomment_delay\x18\x05 \x01(\r\x12\x14\n\x0creview_delay\x18\x06 \x01(\r\x12,\n\rcomment_histo\x18\n \x03(\x0b\x32\x15.monocle_search.Histo\x12+\n\x0creview_histo\x18\x0b \x03(\x0b\x32\x15.monocle_search.Histo"\xe3\x01\n\rActivityStats\x12\x16\n\x0e\x63hange_authors\x18\x01 \x01(\r\x12\x17\n\x0f\x63omment_authors\x18\x02 \x01(\r\x12\x16\n\x0ereview_authors\x18\x03 \x01(\r\x12-\n\x0e\x63omments_histo\x18\n \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rreviews_histo\x18\x0b \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rchanges_histo\x18\x0c \x03(\x0b\x32\x15.monocle_search.Histo"\xde\x04\n\rQueryResponse\x12+\n\x05\x65rror\x18\x01 \x01(\x0b\x32\x1a.monocle_search.QueryErrorH\x00\x12*\n\x07\x63hanges\x18\x02 \x01(\x0b\x32\x17.monocle_search.ChangesH\x00\x12\x35\n\rrepos_summary\x18\x03 \x01(\x0b\x32\x1c.monocle_search.ReposSummaryH\x00\x12\x31\n\x0btop_authors\x18\x04 \x01(\x0b\x32\x1a.monocle_search.TermsCountH\x00\x12\x35\n\rauthors_peers\x18\x05 \x01(\x0b\x32\x1c.monocle_search.AuthorsPeersH\x00\x12\x31\n\x0bnew_authors\x18\x06 \x01(\x0b\x32\x1a.monocle_search.TermsCountH\x00\x12\x33\n\x0creview_stats\x18\x14 \x01(\x0b\x32\x1b.monocle_search.ReviewStatsH\x00\x12\x39\n\x0flifecycle_stats\x18\x15 \x01(\x0b\x32\x1e.monocle_search.LifecycleStatsH\x00\x12\x37\n\x0e\x61\x63tivity_stats\x18\x16 \x01(\x0b\x32\x1d.monocle_search.ActivityStatsH\x00\x12\x38\n\rchange_events\x18\x1e \x01(\x0b\x32\x1f.monocle_search.ChangeAndEventsH\x00\x12\x33\n\x0c\x63hanges_tops\x18\x1f \x01(\x0b\x32\x1b.monocle_search.ChangesTopsH\x00\x42\x08\n\x06result"\xe8\x03\n\x0eLifecycleStats\x12,\n\rcreated_histo\x18\x01 \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\rupdated_histo\x18\x02 \x03(\x0b\x32\x15.monocle_search.Histo\x12+\n\x0cmerged_histo\x18\x03 \x03(\x0b\x32\x15.monocle_search.Histo\x12.\n\x0f\x61\x62\x61ndoned_histo\x18\x04 \x03(\x0b\x32\x15.monocle_search.Histo\x12,\n\x07\x63reated\x18\x05 \x01(\x0b\x32\x1b.monocle_search.ReviewCount\x12\x11\n\tabandoned\x18\x0b \x01(\r\x12\x0e\n\x06merged\x18\r \x01(\r\x12\x13\n\x0bself_merged\x18\x0f \x01(\r\x12\x19\n\x11self_merged_ratio\x18\x10 \x01(\x02\x12\x10\n\x08ttm_mean\x18\x1e \x01(\x02\x12\x17\n\x0fttm_variability\x18\x1f \x01(\x02\x12\x1a\n\x12updates_of_changes\x18  \x01(\r\x12\x1a\n\x12\x63hanges_with_tests\x18! \x01(\x02\x12\x1d\n\x15iterations_per_change\x18" \x01(\x02\x12\x1a\n\x12\x63ommits_per_change\x18# \x01(\x02"\x9a\x01\n\x0bRepoSummary\x12\x10\n\x08\x66ullname\x18\x01 \x01(\t\x12\x17\n\x0f\x63reated_changes\x18\x02 \x01(\r\x12\x19\n\x11\x61\x62\x61ndoned_changes\x18\x03 \x01(\r\x12\x16\n\x0emerged_changes\x18\x04 \x01(\r\x12\x17\n\x0fupdated_changes\x18\x05 \x01(\r\x12\x14\n\x0copen_changes\x18\x06 \x01(\r"<\n\x0cReposSummary\x12,\n\x07reposum\x18\x01 \x03(\x0b\x32\x1b.monocle_search.RepoSummary"(\n\tTermCount\x12\x0c\n\x04term\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\r"N\n\nTermsCount\x12,\n\ttermcount\x18\x01 \x03(\x0b\x32\x19.monocle_search.TermCount\x12\x12\n\ntotal_hits\x18\x02 \x01(\r"<\n\nAuthorPeer\x12\x0e\n\x06\x61uthor\x18\x01 \x01(\t\x12\x0c\n\x04peer\x18\x02 \x01(\t\x12\x10\n\x08strength\x18\x03 \x01(\r"?\n\x0c\x41uthorsPeers\x12/\n\x0b\x61uthor_peer\x18\x01 \x03(\x0b\x32\x1a.monocle_search.AuthorPeer"\x94\x01\n\x0b\x43hangesTops\x12+\n\x07\x61uthors\x18\x01 \x01(\x0b\x32\x1a.monocle_search.TermsCount\x12)\n\x05repos\x18\x02 \x01(\x0b\x32\x1a.monocle_search.TermsCount\x12-\n\tapprovals\x18\x03 \x01(\x0b\x32\x1a.monocle_search.TermsCountB\x10Z\x0emonocle/searchb\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
-        monocle_dot_task__data__pb2.DESCRIPTOR,
-        monocle_dot_change__pb2.DESCRIPTOR,
     ],
 )
 
@@ -82,8 +78,8 @@ _FIELD_TYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=432,
-    serialized_end=521,
+    serialized_start=589,
+    serialized_end=678,
 )
 _sym_db.RegisterEnumDescriptor(_FIELD_TYPE)
 
@@ -113,8 +109,8 @@ _ORDER_DIRECTION = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=860,
-    serialized_end=890,
+    serialized_start=1017,
+    serialized_end=1047,
 )
 _sym_db.RegisterEnumDescriptor(_ORDER_DIRECTION)
 
@@ -248,10 +244,222 @@ _QUERYREQUEST_QUERYTYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1090,
-    serialized_end=1579,
+    serialized_start=1247,
+    serialized_end=1736,
 )
 _sym_db.RegisterEnumDescriptor(_QUERYREQUEST_QUERYTYPE)
+
+
+_TASKDATA = _descriptor.Descriptor(
+    name="TaskData",
+    full_name="monocle_search.TaskData",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="updated_at",
+            full_name="monocle_search.TaskData.updated_at",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="change_url",
+            full_name="monocle_search.TaskData.change_url",
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="ttype",
+            full_name="monocle_search.TaskData.ttype",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="tid",
+            full_name="monocle_search.TaskData.tid",
+            index=3,
+            number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="url",
+            full_name="monocle_search.TaskData.url",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="title",
+            full_name="monocle_search.TaskData.title",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="severity",
+            full_name="monocle_search.TaskData.severity",
+            index=6,
+            number=7,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="priority",
+            full_name="monocle_search.TaskData.priority",
+            index=7,
+            number=8,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="score",
+            full_name="monocle_search.TaskData.score",
+            index=8,
+            number=9,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="prefix",
+            full_name="monocle_search.TaskData.prefix",
+            index=9,
+            number=10,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=74,
+    serialized_end=275,
+)
 
 
 _SUGGESTIONSREQUEST = _descriptor.Descriptor(
@@ -290,8 +498,8 @@ _SUGGESTIONSREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=120,
-    serialized_end=155,
+    serialized_start=277,
+    serialized_end=312,
 )
 
 
@@ -445,8 +653,8 @@ _SUGGESTIONSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=158,
-    serialized_end=309,
+    serialized_start=315,
+    serialized_end=466,
 )
 
 
@@ -486,8 +694,8 @@ _FIELDSREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=311,
-    serialized_end=343,
+    serialized_start=468,
+    serialized_end=500,
 )
 
 
@@ -567,8 +775,8 @@ _FIELD = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=346,
-    serialized_end=521,
+    serialized_start=503,
+    serialized_end=678,
 )
 
 
@@ -608,8 +816,8 @@ _FIELDSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=523,
-    serialized_end=578,
+    serialized_start=680,
+    serialized_end=735,
 )
 
 
@@ -668,8 +876,8 @@ _QUERYERROR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=580,
-    serialized_end=627,
+    serialized_start=737,
+    serialized_end=784,
 )
 
 
@@ -747,8 +955,8 @@ _CHECKREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=629,
-    serialized_end=691,
+    serialized_start=786,
+    serialized_end=848,
 )
 
 
@@ -816,8 +1024,8 @@ _CHECKRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=693,
-    serialized_end=782,
+    serialized_start=850,
+    serialized_end=939,
 )
 
 
@@ -878,8 +1086,8 @@ _ORDER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=784,
-    serialized_end=890,
+    serialized_start=941,
+    serialized_end=1047,
 )
 
 
@@ -1035,8 +1243,8 @@ _QUERYREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=893,
-    serialized_end=1579,
+    serialized_start=1050,
+    serialized_end=1736,
 )
 
 
@@ -1114,8 +1322,8 @@ _FILE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1581,
-    serialized_end=1639,
+    serialized_start=1738,
+    serialized_end=1796,
 )
 
 
@@ -1288,8 +1496,8 @@ _COMMIT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1642,
-    serialized_end=1850,
+    serialized_start=1799,
+    serialized_end=2007,
 )
 
 
@@ -1794,8 +2002,8 @@ _CHANGE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=1853,
-    serialized_end=2510,
+    serialized_start=2010,
+    serialized_end=2664,
 )
 
 
@@ -1835,8 +2043,8 @@ _CHANGES = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2512,
-    serialized_end=2562,
+    serialized_start=2666,
+    serialized_end=2716,
 )
 
 
@@ -2009,8 +2217,8 @@ _CHANGEEVENT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2565,
-    serialized_end=2773,
+    serialized_start=2719,
+    serialized_end=2927,
 )
 
 
@@ -2069,8 +2277,8 @@ _CHANGEANDEVENTS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2775,
-    serialized_end=2877,
+    serialized_start=2929,
+    serialized_end=3031,
 )
 
 
@@ -2129,8 +2337,8 @@ _REVIEWCOUNT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2879,
-    serialized_end=2937,
+    serialized_start=3033,
+    serialized_end=3091,
 )
 
 
@@ -2189,8 +2397,8 @@ _HISTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2939,
-    serialized_end=2975,
+    serialized_start=3093,
+    serialized_end=3129,
 )
 
 
@@ -2325,8 +2533,8 @@ _REVIEWSTATS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2978,
-    serialized_end=3230,
+    serialized_start=3132,
+    serialized_end=3384,
 )
 
 
@@ -2461,8 +2669,8 @@ _ACTIVITYSTATS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=3233,
-    serialized_end=3460,
+    serialized_start=3387,
+    serialized_end=3614,
 )
 
 
@@ -2701,8 +2909,8 @@ _QUERYRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=3463,
-    serialized_end=4069,
+    serialized_start=3617,
+    serialized_end=4223,
 )
 
 
@@ -3008,8 +3216,8 @@ _LIFECYCLESTATS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4072,
-    serialized_end=4560,
+    serialized_start=4226,
+    serialized_end=4714,
 )
 
 
@@ -3144,8 +3352,8 @@ _REPOSUMMARY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4563,
-    serialized_end=4717,
+    serialized_start=4717,
+    serialized_end=4871,
 )
 
 
@@ -3185,8 +3393,8 @@ _REPOSSUMMARY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4719,
-    serialized_end=4779,
+    serialized_start=4873,
+    serialized_end=4933,
 )
 
 
@@ -3245,8 +3453,8 @@ _TERMCOUNT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4781,
-    serialized_end=4821,
+    serialized_start=4935,
+    serialized_end=4975,
 )
 
 
@@ -3305,8 +3513,8 @@ _TERMSCOUNT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4823,
-    serialized_end=4901,
+    serialized_start=4977,
+    serialized_end=5055,
 )
 
 
@@ -3384,8 +3592,8 @@ _AUTHORPEER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4903,
-    serialized_end=4963,
+    serialized_start=5057,
+    serialized_end=5117,
 )
 
 
@@ -3425,8 +3633,8 @@ _AUTHORSPEERS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=4965,
-    serialized_end=5028,
+    serialized_start=5119,
+    serialized_end=5182,
 )
 
 
@@ -3504,10 +3712,13 @@ _CHANGESTOPS = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=5031,
-    serialized_end=5179,
+    serialized_start=5185,
+    serialized_end=5333,
 )
 
+_TASKDATA.fields_by_name[
+    "updated_at"
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _FIELD.fields_by_name["type"].enum_type = _FIELD_TYPE
 _FIELD_TYPE.containing_type = _FIELD
 _FIELDSRESPONSE.fields_by_name["fields"].message_type = _FIELD
@@ -3546,7 +3757,7 @@ _CHANGE.fields_by_name[
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _CHANGE.fields_by_name["changed_files"].message_type = _FILE
 _CHANGE.fields_by_name["commits"].message_type = _COMMIT
-_CHANGE.fields_by_name["task_data"].message_type = monocle_dot_task__data__pb2._TASKDATA
+_CHANGE.fields_by_name["task_data"].message_type = _TASKDATA
 _CHANGE.oneofs_by_name["merged_byM"].fields.append(_CHANGE.fields_by_name["merged_by"])
 _CHANGE.fields_by_name["merged_by"].containing_oneof = _CHANGE.oneofs_by_name[
     "merged_byM"
@@ -3655,6 +3866,7 @@ _AUTHORSPEERS.fields_by_name["author_peer"].message_type = _AUTHORPEER
 _CHANGESTOPS.fields_by_name["authors"].message_type = _TERMSCOUNT
 _CHANGESTOPS.fields_by_name["repos"].message_type = _TERMSCOUNT
 _CHANGESTOPS.fields_by_name["approvals"].message_type = _TERMSCOUNT
+DESCRIPTOR.message_types_by_name["TaskData"] = _TASKDATA
 DESCRIPTOR.message_types_by_name["SuggestionsRequest"] = _SUGGESTIONSREQUEST
 DESCRIPTOR.message_types_by_name["SuggestionsResponse"] = _SUGGESTIONSRESPONSE
 DESCRIPTOR.message_types_by_name["FieldsRequest"] = _FIELDSREQUEST
@@ -3685,6 +3897,17 @@ DESCRIPTOR.message_types_by_name["AuthorPeer"] = _AUTHORPEER
 DESCRIPTOR.message_types_by_name["AuthorsPeers"] = _AUTHORSPEERS
 DESCRIPTOR.message_types_by_name["ChangesTops"] = _CHANGESTOPS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+TaskData = _reflection.GeneratedProtocolMessageType(
+    "TaskData",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _TASKDATA,
+        "__module__": "monocle.search_pb2"
+        # @@protoc_insertion_point(class_scope:monocle_search.TaskData)
+    },
+)
+_sym_db.RegisterMessage(TaskData)
 
 SuggestionsRequest = _reflection.GeneratedProtocolMessageType(
     "SuggestionsRequest",

@@ -8,11 +8,80 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
-import monocle.task_data_pb2
 import typing
 import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
+
+class TaskData(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    UPDATED_AT_FIELD_NUMBER: builtins.int
+    CHANGE_URL_FIELD_NUMBER: builtins.int
+    TTYPE_FIELD_NUMBER: builtins.int
+    TID_FIELD_NUMBER: builtins.int
+    URL_FIELD_NUMBER: builtins.int
+    TITLE_FIELD_NUMBER: builtins.int
+    SEVERITY_FIELD_NUMBER: builtins.int
+    PRIORITY_FIELD_NUMBER: builtins.int
+    SCORE_FIELD_NUMBER: builtins.int
+    PREFIX_FIELD_NUMBER: builtins.int
+    change_url: typing.Text = ...
+    ttype: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
+    tid: typing.Text = ...
+    url: typing.Text = ...
+    title: typing.Text = ...
+    severity: typing.Text = ...
+    priority: typing.Text = ...
+    score: builtins.int = ...
+    prefix: typing.Text = ...
+    @property
+    def updated_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    def __init__(
+        self,
+        *,
+        updated_at: typing.Optional[google.protobuf.timestamp_pb2.Timestamp] = ...,
+        change_url: typing.Text = ...,
+        ttype: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        tid: typing.Text = ...,
+        url: typing.Text = ...,
+        title: typing.Text = ...,
+        severity: typing.Text = ...,
+        priority: typing.Text = ...,
+        score: builtins.int = ...,
+        prefix: typing.Text = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["updated_at", b"updated_at"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "change_url",
+            b"change_url",
+            "prefix",
+            b"prefix",
+            "priority",
+            b"priority",
+            "score",
+            b"score",
+            "severity",
+            b"severity",
+            "tid",
+            b"tid",
+            "title",
+            b"title",
+            "ttype",
+            b"ttype",
+            "updated_at",
+            b"updated_at",
+            "url",
+            b"url",
+        ],
+    ) -> None: ...
+
+global___TaskData = TaskData
 
 class SuggestionsRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
@@ -529,7 +598,7 @@ class Change(google.protobuf.message.Message):
     def task_data(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        monocle.task_data_pb2.TaskData
+        global___TaskData
     ]: ...
     def __init__(
         self,
@@ -558,9 +627,7 @@ class Change(google.protobuf.message.Message):
         changed_files_count: builtins.int = ...,
         commits: typing.Optional[typing.Iterable[global___Commit]] = ...,
         commits_count: builtins.int = ...,
-        task_data: typing.Optional[
-            typing.Iterable[monocle.task_data_pb2.TaskData]
-        ] = ...,
+        task_data: typing.Optional[typing.Iterable[global___TaskData]] = ...,
     ) -> None: ...
     def HasField(
         self,

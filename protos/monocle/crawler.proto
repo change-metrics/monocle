@@ -7,8 +7,8 @@ option go_package = "monocle/crawler";
 
 import "google/protobuf/timestamp.proto";
 import "monocle/change.proto";
+import "monocle/search.proto";
 import "monocle/project.proto";
-import "monocle/task_data.proto";
 
 // A descriptive name of the entities being added
 message Entity {
@@ -31,7 +31,7 @@ message AddDocRequest {
   // projects are added when Entity is organization_name
   repeated monocle_project.Project projects = 7;
   // task_datas are added when Entity is td_name
-  repeated monocle_task_data.TaskData task_datas = 8;
+  repeated monocle_search.TaskData task_datas = 8;
 }
 
 enum AddDocError {

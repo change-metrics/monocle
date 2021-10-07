@@ -32,7 +32,7 @@ import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
 import qualified Monocle.Change
 import qualified Monocle.Project
-import qualified Monocle.TaskData
+import qualified Monocle.Search
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
@@ -250,7 +250,7 @@ data AddDocRequest = AddDocRequest
     addDocRequestChanges :: Hs.Vector Monocle.Change.Change,
     addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent,
     addDocRequestProjects :: Hs.Vector Monocle.Project.Project,
-    addDocRequestTaskDatas :: Hs.Vector Monocle.TaskData.TaskData
+    addDocRequestTaskDatas :: Hs.Vector Monocle.Search.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -315,8 +315,8 @@ instance HsProtobuf.Message AddDocRequest where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 8)
-                ( Hs.coerce @(Hs.Vector Monocle.TaskData.TaskData)
-                    @(HsProtobuf.NestedVec Monocle.TaskData.TaskData)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.TaskData)
+                    @(HsProtobuf.NestedVec Monocle.Search.TaskData)
                     addDocRequestTaskDatas
                 )
             )
@@ -364,8 +364,8 @@ instance HsProtobuf.Message AddDocRequest where
                   (HsProtobuf.FieldNumber 7)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.TaskData))
-              @(_ (Hs.Vector Monocle.TaskData.TaskData))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.TaskData))
+              @(_ (Hs.Vector Monocle.Search.TaskData))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 8)
@@ -444,7 +444,7 @@ instance HsProtobuf.Message AddDocRequest where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_task_data" Hs.:| ["TaskData"]))
+                      (HsProtobuf.Path ("monocle_search" Hs.:| ["TaskData"]))
                   )
               )
           )

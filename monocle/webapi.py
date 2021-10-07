@@ -102,44 +102,6 @@ def user_group_get(url: str, request: GetRequest) -> GetResponse:
     return pbjson.Parse(resp.content, GetResponse())
 
 
-# TaskData methods:
-from monocle.task_data_pb2 import TaskDataCommitRequest
-from monocle.task_data_pb2 import TaskDataCommitResponse
-from monocle.task_data_pb2 import TaskDataGetLastUpdatedRequest
-from monocle.task_data_pb2 import TaskDataGetLastUpdatedResponse
-from monocle.task_data_pb2 import TaskDataAddRequest
-from monocle.task_data_pb2 import TaskDataAddResponse
-
-
-def task_data_task_data_commit(
-    url: str, request: TaskDataCommitRequest
-) -> TaskDataCommitResponse:
-    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
-    resp = requests.post(url + "/api/2/task_data/commit", data=body, headers=headers)
-    resp.raise_for_status()
-    return pbjson.Parse(resp.content, TaskDataCommitResponse())
-
-
-def task_data_task_data_get_last_updated(
-    url: str, request: TaskDataGetLastUpdatedRequest
-) -> TaskDataGetLastUpdatedResponse:
-    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
-    resp = requests.post(
-        url + "/api/2/task_data/get_last_updated", data=body, headers=headers
-    )
-    resp.raise_for_status()
-    return pbjson.Parse(resp.content, TaskDataGetLastUpdatedResponse())
-
-
-def task_data_task_data_add(
-    url: str, request: TaskDataAddRequest
-) -> TaskDataAddResponse:
-    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
-    resp = requests.post(url + "/api/2/task_data/add", data=body, headers=headers)
-    resp.raise_for_status()
-    return pbjson.Parse(resp.content, TaskDataAddResponse())
-
-
 # Crawler methods:
 from monocle.crawler_pb2 import AddDocRequest
 from monocle.crawler_pb2 import AddDocResponse

@@ -43,15 +43,6 @@ userGroupList = monocleReq "api/2/user_group/list"
 userGroupGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
 userGroupGet = monocleReq "api/2/user_group/get"
 
-taskDataTaskDataCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataCommitRequest -> m TaskDataCommitResponse
-taskDataTaskDataCommit = monocleReq "api/2/task_data/commit"
-
-taskDataTaskDataGetLastUpdated :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataGetLastUpdatedRequest -> m TaskDataGetLastUpdatedResponse
-taskDataTaskDataGetLastUpdated = monocleReq "api/2/task_data/get_last_updated"
-
-taskDataTaskDataAdd :: (MonadThrow m, MonadIO m) => MonocleClient -> TaskDataAddRequest -> m TaskDataAddResponse
-taskDataTaskDataAdd = monocleReq "api/2/task_data/add"
-
 crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
 crawlerAddDoc = monocleReq "api/2/crawler/add"
 

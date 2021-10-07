@@ -3,6 +3,9 @@
 
 (** {2 Protobuf JSON Encoding} *)
 
+val encode_task_data : SearchTypes.task_data -> Js.Json.t Js.Dict.t
+(** [encode_task_data v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_suggestions_request : SearchTypes.suggestions_request -> Js.Json.t Js.Dict.t
 (** [encode_suggestions_request v dict] encodes [v] int the given JSON [dict] *)
 
@@ -104,6 +107,9 @@ val encode_query_response : SearchTypes.query_response -> Js.Json.t Js.Dict.t
 
 
 (** {2 BS Decoding} *)
+
+val decode_task_data : Js.Json.t Js.Dict.t -> SearchTypes.task_data
+(** [decode_task_data decoder] decodes a [task_data] value from [decoder] *)
 
 val decode_suggestions_request : Js.Json.t Js.Dict.t -> SearchTypes.suggestions_request
 (** [decode_suggestions_request decoder] decodes a [suggestions_request] value from [decoder] *)

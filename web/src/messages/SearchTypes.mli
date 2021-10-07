@@ -4,6 +4,19 @@
 
 (** {2 Types} *)
 
+type task_data = {
+  updated_at : TimestampTypes.timestamp option;
+  change_url : string;
+  ttype : string list;
+  tid : string;
+  url : string;
+  title : string;
+  severity : string;
+  priority : string;
+  score : int32;
+  prefix : string;
+}
+
 type suggestions_request = {
   index : string;
 }
@@ -135,7 +148,7 @@ and change = {
   changed_files_count : int32;
   commits : commit list;
   commits_count : int32;
-  task_data : TaskDataTypes.task_data list;
+  task_data : task_data list;
 }
 
 type changes = {
@@ -258,6 +271,21 @@ type query_response =
 
 
 (** {2 Default values} *)
+
+val default_task_data : 
+  ?updated_at:TimestampTypes.timestamp option ->
+  ?change_url:string ->
+  ?ttype:string list ->
+  ?tid:string ->
+  ?url:string ->
+  ?title:string ->
+  ?severity:string ->
+  ?priority:string ->
+  ?score:int32 ->
+  ?prefix:string ->
+  unit ->
+  task_data
+(** [default_task_data ()] is the default value for type [task_data] *)
 
 val default_suggestions_request : 
   ?index:string ->
@@ -392,7 +420,7 @@ val default_change :
   ?changed_files_count:int32 ->
   ?commits:commit list ->
   ?commits_count:int32 ->
-  ?task_data:TaskDataTypes.task_data list ->
+  ?task_data:task_data list ->
   unit ->
   change
 (** [default_change ()] is the default value for type [change] *)

@@ -10,6 +10,7 @@ import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import monocle.change_pb2
 import monocle.project_pb2
+import monocle.search_pb2
 import typing
 import typing_extensions
 
@@ -77,55 +78,46 @@ class Entity(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ORGANIZATION_NAME_FIELD_NUMBER: builtins.int
     PROJECT_NAME_FIELD_NUMBER: builtins.int
-    CHANGE_COMMIT_NAME_FIELD_NUMBER: builtins.int
-    CHANGE_EVENT_NAME_FIELD_NUMBER: builtins.int
+    TD_NAME_FIELD_NUMBER: builtins.int
     organization_name: typing.Text = ...
     project_name: typing.Text = ...
-    change_commit_name: typing.Text = ...
-    change_event_name: typing.Text = ...
+    td_name: typing.Text = ...
     def __init__(
         self,
         *,
         organization_name: typing.Text = ...,
         project_name: typing.Text = ...,
-        change_commit_name: typing.Text = ...,
-        change_event_name: typing.Text = ...,
+        td_name: typing.Text = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
-            "change_commit_name",
-            b"change_commit_name",
-            "change_event_name",
-            b"change_event_name",
             "entity",
             b"entity",
             "organization_name",
             b"organization_name",
             "project_name",
             b"project_name",
+            "td_name",
+            b"td_name",
         ],
     ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
-            "change_commit_name",
-            b"change_commit_name",
-            "change_event_name",
-            b"change_event_name",
             "entity",
             b"entity",
             "organization_name",
             b"organization_name",
             "project_name",
             b"project_name",
+            "td_name",
+            b"td_name",
         ],
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["entity", b"entity"]
-    ) -> typing_extensions.Literal[
-        "organization_name", "project_name", "change_commit_name", "change_event_name"
-    ]: ...
+    ) -> typing_extensions.Literal["organization_name", "project_name", "td_name"]: ...
 
 global___Entity = Entity
 
@@ -138,6 +130,7 @@ class AddDocRequest(google.protobuf.message.Message):
     CHANGES_FIELD_NUMBER: builtins.int
     EVENTS_FIELD_NUMBER: builtins.int
     PROJECTS_FIELD_NUMBER: builtins.int
+    TASK_DATAS_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     crawler: typing.Text = ...
     apikey: typing.Text = ...
@@ -161,6 +154,12 @@ class AddDocRequest(google.protobuf.message.Message):
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         monocle.project_pb2.Project
     ]: ...
+    @property
+    def task_datas(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        monocle.search_pb2.TaskData
+    ]: ...
     def __init__(
         self,
         *,
@@ -171,6 +170,7 @@ class AddDocRequest(google.protobuf.message.Message):
         changes: typing.Optional[typing.Iterable[monocle.change_pb2.Change]] = ...,
         events: typing.Optional[typing.Iterable[monocle.change_pb2.ChangeEvent]] = ...,
         projects: typing.Optional[typing.Iterable[monocle.project_pb2.Project]] = ...,
+        task_datas: typing.Optional[typing.Iterable[monocle.search_pb2.TaskData]] = ...,
     ) -> None: ...
     def HasField(
         self, field_name: typing_extensions.Literal["entity", b"entity"]
@@ -192,6 +192,8 @@ class AddDocRequest(google.protobuf.message.Message):
             b"index",
             "projects",
             b"projects",
+            "task_datas",
+            b"task_datas",
         ],
     ) -> None: ...
 
@@ -300,45 +302,33 @@ global___CommitResponse = CommitResponse
 
 class CommitInfoRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    class _EntityType(
-        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[EntityType.V],
-        builtins.type,
-    ):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
-        Organization = CommitInfoRequest.EntityType.V(0)
-        Project = CommitInfoRequest.EntityType.V(1)
-        ChangeCommit = CommitInfoRequest.EntityType.V(2)
-        ChangeComment = CommitInfoRequest.EntityType.V(3)
-    class EntityType(metaclass=_EntityType):
-        V = typing.NewType("V", builtins.int)
-    Organization = CommitInfoRequest.EntityType.V(0)
-    Project = CommitInfoRequest.EntityType.V(1)
-    ChangeCommit = CommitInfoRequest.EntityType.V(2)
-    ChangeComment = CommitInfoRequest.EntityType.V(3)
-
     INDEX_FIELD_NUMBER: builtins.int
     CRAWLER_FIELD_NUMBER: builtins.int
-    ENTITY_TYPE_FIELD_NUMBER: builtins.int
+    ENTITY_FIELD_NUMBER: builtins.int
     OFFSET_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     crawler: typing.Text = ...
-    entity_type: global___CommitInfoRequest.EntityType.V = ...
     offset: builtins.int = ...
+    @property
+    def entity(self) -> global___Entity: ...
     def __init__(
         self,
         *,
         index: typing.Text = ...,
         crawler: typing.Text = ...,
-        entity_type: global___CommitInfoRequest.EntityType.V = ...,
+        entity: typing.Optional[global___Entity] = ...,
         offset: builtins.int = ...,
     ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["entity", b"entity"]
+    ) -> builtins.bool: ...
     def ClearField(
         self,
         field_name: typing_extensions.Literal[
             "crawler",
             b"crawler",
-            "entity_type",
-            b"entity_type",
+            "entity",
+            b"entity",
             "index",
             b"index",
             "offset",

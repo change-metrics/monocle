@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 .PHONY: up-stage
 
-MESSAGES = monocle/user_group.proto monocle/task_data.proto monocle/search.proto monocle/config.proto
-BACKEND_ONLY = monocle/change.proto monocle/project.proto monocle/crawler.proto
+MESSAGES = monocle/user_group.proto monocle/search.proto monocle/config.proto
+CRAWLER = monocle/change.proto monocle/crawler.proto
+BACKEND_ONLY = monocle/project.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell codegen-doc
@@ -20,12 +21,12 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	sh -c 'for pb in $(MESSAGES) $(CRAWLER) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
 	find haskell/codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-python:
-	protoc $(PINCLUDE) --python_out=./ --mypy_out=./ $(MESSAGES)
+	protoc $(PINCLUDE) --python_out=./ --mypy_out=./ $(MESSAGES) $(CRAWLER)
 	black monocle/*.py*
 
 codegen-javascript:
