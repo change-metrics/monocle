@@ -507,14 +507,22 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_Change'
+                    description: changes are added when Entity is project_name
                 events:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_ChangeEvent'
+                    description: events are added when Entity is project_name
                 projects:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_project_Project'
+                    description: projects are added when Entity is organization_name
+                task_datas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_task_data_TaskData'
+                    description: task_datas are added when Entity is td_name
         monocle_crawler_AddDocResponse:
             properties:
                 error:
@@ -526,9 +534,8 @@ components:
                     type: string
                 crawler:
                     type: string
-                entity_type:
-                    type: integer
-                    format: enum
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_Entity'
                 offset:
                     type: integer
                     format: uint32
@@ -566,10 +573,9 @@ components:
                     type: string
                 project_name:
                     type: string
-                change_commit_name:
+                td_name:
                     type: string
-                change_event_name:
-                    type: string
+            description: A descriptive name of the entities being added
         monocle_project_Project:
             properties:
                 full_path:
