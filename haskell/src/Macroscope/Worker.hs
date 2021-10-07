@@ -20,6 +20,7 @@ import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Client (MonocleClient)
+import Monocle.Backend.Index (entityRequestProject, entityRequestOrganization, entityRequestTaskData)
 import Monocle.Client.Api
 import Monocle.Crawler
 import Monocle.Prelude
@@ -278,9 +279,9 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
 
     -- The type of the oldest entity for a given document stream
     entityType = case documentStream of
-      Projects _ -> CommitInfoRequest_EntityTypeOrganization
-      Changes _ -> CommitInfoRequest_EntityTypeProject
-      TaskDatas _ -> error "Not Implemented"
+      Projects _ -> entityRequestOrganization
+      Changes _ -> entityRequestProject
+      TaskDatas _ -> entityRequestTaskData
 
     getOldestEntity offset = do
       resp <-
@@ -289,7 +290,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           ( CommitInfoRequest
               indexName
               crawlerName
-              (Enumerated $ Right entityType)
+              (Just $ Entity $ Just entityType)
               offset
           )
       case resp of
@@ -307,6 +308,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
           addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
           addDocRequestProjects = V.fromList $ mapMaybe getProject' xs
+          addDocRequestTaskDatas = V.fromList $ mapMaybe getTD xs
        in AddDocRequest {..}
       where
         getEvents = \case
@@ -317,6 +319,9 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           _ -> Nothing
         getProject' = \case
           DTProject p -> Just p
+          _ -> Nothing
+        getTD = \case
+          DTTaskData td -> Just td
           _ -> Nothing
 
     -- 'commitTimestamp' post the commit date.

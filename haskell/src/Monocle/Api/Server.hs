@@ -179,6 +179,7 @@ crawlerAddDoc request = do
           changes
           events
           projects
+          _taskDatas
         ) = request
 
   let requestE = do
@@ -272,8 +273,7 @@ crawlerCommit request = do
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
   tenants <- getConfig
-  let (CrawlerPB.CommitInfoRequest indexName crawlerName entity offset) = request
-      entityType = fromPBEnum entity
+  let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 
   let requestE = do
         index <-
@@ -284,24 +284,25 @@ crawlerCommitInfo request = do
           Config.lookupCrawler index (toStrict crawlerName)
             `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
 
-        pure (index, worker)
+        pure (index, worker, entityM)
 
   case requestE of
-    Right (index, worker) -> runEmptyQueryM index $ do
-      (name, ts) <- I.getLastUpdated worker entityType offset
+    Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> runEmptyQueryM index $ do
+      (name, ts) <- I.getLastUpdated worker entity offset
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
         . CrawlerPB.CommitInfoResponseResultEntity
-        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entityType (toLazy name))
+        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
         $ Just (Timestamp.fromUTCTime ts)
+    Right _ -> error $ "Unknown entity request: " <> show entityM
     Left err ->
       pure $ toErrorResponse err
   where
-    fromEntityType :: CrawlerPB.CommitInfoRequest_EntityType -> LText -> CrawlerPB.Entity
+    fromEntityType :: CrawlerPB.EntityEntity -> LText -> CrawlerPB.Entity
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
-      CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> CrawlerPB.EntityEntityOrganizationName value
-      CrawlerPB.CommitInfoRequest_EntityTypeProject -> CrawlerPB.EntityEntityProjectName value
+      CrawlerPB.EntityEntityOrganizationName _ -> CrawlerPB.EntityEntityOrganizationName value
+      CrawlerPB.EntityEntityProjectName _ -> CrawlerPB.EntityEntityProjectName value
       otherEntity -> error $ "Not implemented: " <> show otherEntity
 
     toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse

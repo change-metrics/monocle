@@ -177,7 +177,7 @@ testProjectCrawlerMetadata = withTenant doTest
       lastUpdated''' <- I.getLastUpdated worker entityType 0
       assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated'''
       where
-        entityType = CrawlerPB.CommitInfoRequest_EntityTypeProject
+        entityType = CrawlerPB.EntityEntityProjectName ""
         entity = Project "centos/nova"
         entityAlt = Project "centos/neutron"
         crawlerName = "test-crawler"
@@ -218,14 +218,14 @@ testOrganizationCrawlerMetadata = withTenant doTest
       lastUpdated' <- I.getLastUpdated worker entityType 0
       assertEqual' "check got oldest updated entity" ("gitlab-org", fakeDateA) lastUpdated'
       where
-        entityType = CrawlerPB.CommitInfoRequest_EntityTypeOrganization
+        entityType = CrawlerPB.EntityEntityOrganizationName ""
         fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
         fakeDateA = [utctime|2021-06-01 20:00:00|]
         crawlerName = "test-crawler"
         getProjectCrawlerDocId =
           I.getCrawlerMetadataDocId
             crawlerName
-            ( I.getCrawlerTypeAsText CrawlerPB.CommitInfoRequest_EntityTypeProject
+            ( I.getCrawlerTypeAsText (CrawlerPB.EntityEntityProjectName "")
             )
         worker =
           let name = crawlerName

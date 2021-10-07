@@ -714,7 +714,7 @@ taskDataAdd crawlerName tds = do
         Nothing -> Nothing
         Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
 
-type EntityType = CrawlerPB.CommitInfoRequest_EntityType
+type EntityType = CrawlerPB.EntityEntity
 
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
@@ -754,10 +754,19 @@ getLastUpdated crawler entity offset = do
     getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
       (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
 
+-- | The following entityRequest are a bit bizarre, this is because we are re-using
+-- the entity response defined in protobuf. When requesting the last updated, we provide
+-- an empty entity.
+entityRequestProject = CrawlerPB.EntityEntityProjectName ""
+
+entityRequestOrganization = CrawlerPB.EntityEntityOrganizationName ""
+
+entityRequestTaskData = CrawlerPB.EntityEntityTdName ""
+
 getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
-  CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-  CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> "organization"
+  CrawlerPB.EntityEntityProjectName _ -> "project"
+  CrawlerPB.EntityEntityOrganizationName _ -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> QueryM ()
