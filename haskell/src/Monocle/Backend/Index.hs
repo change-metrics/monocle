@@ -21,7 +21,7 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.TaskData
+import Monocle.Search (TaskData (..))
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 import qualified Streaming as S (chunksOf)

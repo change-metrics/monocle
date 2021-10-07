@@ -9,7 +9,7 @@ import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
-import Macroscope.Worker (DocumentStream (..), runLegacyTDStream, runStream)
+import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
 import Monocle.Prelude
@@ -97,12 +97,11 @@ runMacroscope verbose confPath interval client = do
 
       -- Consume each stream
       let runner' = runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
-          legacyTDRunner' = runLegacyTDStream client Nothing (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
 
       let runner ds = case ds of
             Projects _ -> runner' ds
             Changes _ -> runner' ds
-            TaskDatas _ -> legacyTDRunner' ds
+            TaskDatas _ -> runner' ds
 
       -- TODO: handle exceptions
       traverse_ runner docStreams

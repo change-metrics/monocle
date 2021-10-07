@@ -13,7 +13,6 @@ import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Config
 import Monocle.Crawler
 import Monocle.Search
-import Monocle.TaskData
 import Monocle.UserGroup
 
 configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse

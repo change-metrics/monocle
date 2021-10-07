@@ -1,21 +1,16 @@
 module Monocle.Test.Spec (main) where
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
-import Google.Protobuf.Timestamp
 import Lentille.Bugzilla.Spec
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
-import Monocle.Client
-import Monocle.Client.Api
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
-import Monocle.TaskData
-import Monocle.Test.Mock
 import System.Environment (setEnv)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -42,7 +37,6 @@ main = do
   defaultMain
     ( testGroup "Tests" $
         [ monocleSearchLanguage,
-          monocleWebApiTests,
           monocleConfig,
           bzClientTests
         ]
@@ -388,35 +382,6 @@ monocleSearchLanguage =
           fr = Just "tests/.*"
           rr = Just "zuul/.*"
        in Config.Project br fr "zuul" rr
-
-monocleWebApiTests :: TestTree
-monocleWebApiTests =
-  testGroup
-    "Monocle.WebApi"
-    [ _taskDataGetLastUpdated
-    ]
-  where
-    _taskDataGetLastUpdated =
-      testCase
-        "taskDataGetLastUpdated"
-        ( test
-            taskDataTaskDataGetLastUpdated
-            taskDataGetLastUpdatedInput
-            taskDataGetLastUpdatedOutput
-        )
-    taskDataGetLastUpdatedInput = TaskDataGetLastUpdatedRequest "test" "test"
-    taskDataGetLastUpdatedOutput =
-      TaskDataGetLastUpdatedResponse
-        { taskDataGetLastUpdatedResponseResult =
-            Just
-              ( TaskDataGetLastUpdatedResponseResultTimestamp
-                  (Timestamp {timestampSeconds = 1609459200, timestampNanos = 0})
-              )
-        }
-
-    test api input output = withMockClient withClient $ \client -> do
-      resp <- api client input
-      assertEqual "Response differ: " output resp
 
 monocleConfig :: TestTree
 monocleConfig =

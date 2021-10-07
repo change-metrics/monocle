@@ -29,7 +29,7 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Prelude
-import Monocle.TaskData
+import Monocle.Search (TaskData (..))
 import qualified Streaming.Prelude as S
 import Web.Bugzilla.RedHat (BugzillaSession)
 import qualified Web.Bugzilla.RedHat as BZ

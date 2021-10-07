@@ -25,7 +25,7 @@ import Lentille.GitHub
     schemaLocation,
     streamFetch,
   )
-import Monocle.TaskData
+import Monocle.Search (TaskData (..))
 import Relude
 import Streaming (Of, Stream)
 

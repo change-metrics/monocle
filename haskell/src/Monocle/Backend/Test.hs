@@ -17,10 +17,10 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Search (TaskData (..))
 import qualified Monocle.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
-import Monocle.TaskData
 import Relude.Unsafe ((!!))
 import qualified Streaming.Prelude as Streaming
 

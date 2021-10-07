@@ -9,7 +9,6 @@
 -- The Monocle worker interface.
 module Macroscope.Worker
   ( runStream,
-    runLegacyTDStream,
     DocumentStream (..),
   )
 where
@@ -18,15 +17,14 @@ import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
+import Monocle.Backend.Index (entityRequestOrganization, entityRequestProject, entityRequestTaskData)
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Client (MonocleClient)
-import Monocle.Backend.Index (entityRequestProject, entityRequestOrganization, entityRequestTaskData)
 import Monocle.Client.Api
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
-import Monocle.TaskData
-import Proto3.Suite.Types (Enumerated (..))
+import Monocle.Search (TaskData)
 import qualified Streaming as S
 import qualified Streaming.Prelude as S
 
@@ -73,107 +71,6 @@ getOrganization oe = (getDate oe, toStrict organization)
       case commitInfoResponse_OldestEntityEntity oe of
         Just (Entity (Just (EntityEntityOrganizationName name))) -> name
         _ -> error $ "Not an organization: " <> show oe
-
--------------------------------------------------------------------------------
--- Legacy Worker for TaskData implementation
--------------------------------------------------------------------------------
-
-pattern CommitError err = TaskDataCommitResponse (Just (TaskDataCommitResponseResultError err))
-
-pattern CommitSuccess <- TaskDataCommitResponse (Just (TaskDataCommitResponseResultTimestamp _ts))
-
-pattern GetLastUpdatedSuccess ts =
-  TaskDataGetLastUpdatedResponse (Just (TaskDataGetLastUpdatedResponseResultTimestamp ts))
-
-data ProcessResult' = Amended' | AmendError' Text deriving stock (Show)
-
-pattern AddSuccess' :: TaskDataAddResponse
-pattern AddSuccess' = TaskDataAddResponse Nothing
-
-pattern AddError' :: Enumerated TaskDataCommitError -> TaskDataAddResponse
-pattern AddError' err = TaskDataAddResponse (Just (TaskDataAddResponseResultError err))
-
-processBatchTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m TaskDataAddResponse) -> [TaskData] -> m ProcessResult'
-processBatchTD postFunc tds = do
-  log $ LogPostData (length tds)
-  resp <- postFunc tds
-  pure $ case resp of
-    AddSuccess' -> Amended'
-    (AddError' err) -> AmendError' (show err)
-    anyOtherResponse -> AmendError' ("Unknown error: " <> show anyOtherResponse)
-
-processTD :: (MonadIO m, MonadLog m) => ([TaskData] -> m TaskDataAddResponse) -> Stream (Of TaskData) m () -> m [ProcessResult']
-processTD postFunc =
-  S.toList_
-    . S.mapM (processBatchTD postFunc)
-    . S.mapped S.toList --   Convert to list (type is Stream (Of [TaskData]) m ())
-    . S.chunksOf 500 --      Chop the stream (type is Stream (Stream (Of TaskData) m) m ())
-
--- | This function is using the original task_data_get_last_updated endpoint
--- TODO: migrate the task_data endpoint to the new general entity system and drop this function
-runLegacyTDStream ::
-  (MonadRetry m, MonadThrow m, MonadLog m, MonadIO m) =>
-  MonocleClient ->
-  Maybe UTCTime ->
-  ApiKey ->
-  IndexName ->
-  CrawlerName ->
-  DocumentStream ->
-  m ()
-runLegacyTDStream monocleClient sinceM apiKey indexName crawlerName tdf = do
-  startTime <- log' LogStarting
-  since <- maybe getTimestampFromApi pure sinceM
-  postResultE <-
-    runLentilleM $ processTD (retry . taskDataTaskDataAdd monocleClient . mkRequest) $ getStream since tdf
-  case postResultE of
-    Right _ -> pure ()
-    Left err ->
-      -- TODO: report decoding error
-      putTextLn $ "Lentille error: " <> show err
-  res <- retry $ commitTimestamp startTime
-  log (if res then LogEnded else LogFailed)
-  where
-    getStream since ds = case ds of
-      TaskDatas s -> s since
-      _ -> error "Not Implemented"
-
-    commitTimestamp startTime = do
-      commitResp <-
-        taskDataTaskDataCommit
-          monocleClient
-          ( TaskDataCommitRequest
-              indexName
-              crawlerName
-              apiKey
-              (Just $ Timestamp.fromUTCTime startTime)
-          )
-      case commitResp of
-        CommitSuccess -> pure True
-        CommitError err -> do
-          monocleLog ("Commit failed: " <> show err)
-          pure False
-        anyOtherResponse -> do
-          monocleLog ("Empty commit response: " <> show anyOtherResponse)
-          pure False
-    getTimestampFromApi = do
-      resp <-
-        taskDataTaskDataGetLastUpdated
-          monocleClient
-          ( TaskDataGetLastUpdatedRequest
-              indexName
-              crawlerName
-          )
-      case resp of
-        GetLastUpdatedSuccess ts -> pure $ Timestamp.toUTCTime ts
-        anyOtherResponse ->
-          error $ "Could not get initial timestamp: " <> show anyOtherResponse
-    mkRequest :: [TaskData] -> TaskDataAddRequest
-    mkRequest =
-      TaskDataAddRequest
-        indexName
-        crawlerName
-        apiKey
-        . V.fromList
 
 -------------------------------------------------------------------------------
 -- Worker implementation
@@ -275,7 +172,9 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       Projects s ->
         let (_, organization) = getOrganization oldestEntity
          in S.map DTProject (s organization)
-      _ -> error "Not Implemented"
+      TaskDatas s ->
+        let untilDate = getDate oldestEntity
+         in S.map DTTaskData (s untilDate)
 
     -- The type of the oldest entity for a given document stream
     entityType = case documentStream of
