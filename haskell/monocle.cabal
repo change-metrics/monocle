@@ -66,6 +66,7 @@ common common-options
                        PatternSynonyms,
                        RecordWildCards,
                        ScopedTypeVariables,
+                       StrictData,
                        TypeApplications,
                        TypeOperators
 
@@ -180,7 +181,6 @@ library
                      , Monocle.Test.Spec
 
                      -- megaparsec search language
-                     , Monocle.Search.CLI
                      , Monocle.Search.Lexer
                      , Monocle.Search.Parser
                      , Monocle.Search.Query
@@ -219,12 +219,6 @@ library
                      , Lentille.BugzillaMock
                      , Lentille.Bugzilla.Spec
 
-executable monocle-search
-  import:              common-options
-  hs-source-dirs:      app
-  main-is:             Search.hs
-  build-depends:       base, monocle
-
 executable monocle-api
   import:              common-options
   hs-source-dirs:      app
@@ -239,7 +233,7 @@ benchmark json-decode
   import:              common-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  build-depends:       base, aeson, bloodhound, byteslice, bytestring, criterion, json-syntax, monocle, text-short, text-time
+  build-depends:       base, aeson, bloodhound, byteslice, bytestring, criterion, json-syntax, monocle, text-short, text-time, fakedata, random
   main-is:             JsonDecode.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 

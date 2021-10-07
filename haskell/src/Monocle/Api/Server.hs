@@ -102,7 +102,7 @@ userGroupGet request = do
         expr <- P.parse (Q.loadAliases' index) (toStrict getRequestQuery)
 
         query <-
-          Q.queryWithMods now mempty (Just index) expr
+          Q.queryWithMods now mempty index expr
 
         -- Date histogram needs explicit bound to be set:
         let queryWithBound = Q.ensureMinBound query
@@ -333,7 +333,7 @@ validateTaskDataRequest ::
   -- | the commit timestamp
   Maybe T.Timestamp ->
   -- | an AppM with either an Error or extracted info
-  AppM (Either TDError (Config.Index, Config.Crawler, UTCTime))
+  AppM (Either TDError (Config.Index, Config.Crawler, Maybe UTCTime))
 validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
   tenants <- getConfig
   pure $ do
@@ -343,8 +343,7 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
       when (Config.crawlers_api_key index /= (toStrict <$> apiKey)) (Left TDUnknownApiKey)
     when checkCommitDate $
       void commitDate `orDie` TDDateInvalid
-    let ts = T.toUTCTime $ fromMaybe (error "Missing commit timestamp in request") commitDate
-    pure (index, crawler, ts)
+    pure (index, crawler, T.toUTCTime <$> commitDate)
 
 taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
 taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
@@ -390,7 +389,8 @@ taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
       taskDataCommitRequestTimestamp
   case requestE of
     Left err -> pure $ toErr err
-    Right (index, crawler, ts) ->
+    Right (_, _ , Nothing) -> error "Missing commit timestamp in request"
+    Right (index, crawler, Just ts) ->
       do
         currentTS <- runTenantM index $ do
           I.getTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) crawler
@@ -487,7 +487,7 @@ validateSearchRequest tenantName queryText username = do
           expr <- P.parse (Q.loadAliases' tenant) (toStrict queryText)
 
           query <-
-            Q.queryWithMods now (toStrict username) (Just tenant) expr
+            Q.queryWithMods now (toStrict username) tenant expr
 
           pure (tenant, query)
 

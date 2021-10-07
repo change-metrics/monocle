@@ -262,11 +262,13 @@ testAchievements = withTenant doTest
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
 
       -- Try query
-      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg query
+      now <- getCurrentTime
+      agg <- head . fromMaybe (error "noagg") . nonEmpty <$> Q.getProjectAgg (query now)
       assertEqual' "event found" (Q.epbType agg) "Change"
       assertEqual' "event count match" (Q.epbCount agg) 1
       where
-        query = case (Q.queryGet $ Q.load Nothing mempty Nothing "state:merged") id (Just defaultQueryFlavor) of
+        conf = mkConfig "test"
+        query now = case (Q.queryGet $ Q.load now mempty conf "state:merged") id (Just defaultQueryFlavor) of
           [x] -> x
           _ -> error "Could not compile query"
 

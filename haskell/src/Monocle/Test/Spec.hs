@@ -333,7 +333,7 @@ monocleSearchLanguage =
     prettyQuery = fmap encodePretty <$> getQueryBH
 
     -- Create a Query object
-    mkQuery' code = P.parse [] code >>= Q.queryWithMods now mempty (Just testTenant)
+    mkQuery' code = P.parse [] code >>= Q.queryWithMods now mempty testTenant
     mkCodeQuery code = case mkQuery' code of
       Left e -> error $ show e
       Right q -> q
@@ -356,7 +356,7 @@ monocleSearchLanguage =
       assertEqual
         "match"
         (Right query)
-        (P.parse aliases code >>= Q.queryWithMods now mempty (Just testTenant) >>= pure . field)
+        (P.parse aliases code >>= Q.queryWithMods now mempty testTenant >>= pure . field)
     encodePretty =
       Aeson.encodePretty'
         ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
