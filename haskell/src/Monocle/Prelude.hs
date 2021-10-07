@@ -21,6 +21,8 @@ module Monocle.Prelude
     -- * exceptions
     MonadThrow,
     MonadMask,
+    MonadCatch,
+    Handler (Handler),
 
     -- * tests
     Assertion,
@@ -93,7 +95,7 @@ where
 import Control.Concurrent (threadDelay)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
-import Control.Monad.Catch (MonadMask, MonadThrow)
+import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Morph (hoist)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)

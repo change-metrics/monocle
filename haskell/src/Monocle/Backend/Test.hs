@@ -80,24 +80,24 @@ fakeChange =
       echangeDraft = False
     }
 
-withTenant :: TenantM () -> IO ()
+withTenant :: QueryM () -> IO ()
 withTenant cb = bracket_ create delete run
   where
     -- todo: generate random name
     testName = "test-tenant"
     config = Config.defaultTenant testName
-    create = testTenantM config I.ensureIndex
-    delete = testTenantM config I.removeIndex
-    run = testTenantM config cb
+    create = testQueryM config I.ensureIndex
+    delete = testQueryM config I.removeIndex
+    run = testQueryM config cb
 
-checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> TenantM ()
+checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> QueryM ()
 checkEChangeField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
     Just change -> assertEqual' "change field match" (field change) value
     Nothing -> error "Change not found"
 
-checkChangesCount :: Int -> TenantM ()
+checkChangesCount :: Int -> QueryM ()
 checkChangesCount expectedCount = do
   index <- getIndexName
   resp <-
@@ -112,7 +112,7 @@ checkChangesCount expectedCount = do
 testIndexChanges :: Assertion
 testIndexChanges = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Index two Changes and check present in database
       I.indexChanges [fakeChange1, fakeChange2]
@@ -136,7 +136,7 @@ testIndexChanges = withTenant doTest
       -- Check total count of Change document in the database
       checkChangesCount 2
       -- Check scanSearch has the same count
-      runQueryM (mkQuery []) $ do
+      withQuery (mkQuery []) $ do
         count <- Streaming.length_ $ Q.scanSearchId
         assertEqual' "stream count match" 2 count
       where
@@ -154,7 +154,7 @@ assertEqual' n a b = liftIO $ assertEqual n a b
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Init default crawler metadata and Ensure we get the default updated date
       I.initCrawlerMetadata worker
@@ -199,7 +199,7 @@ testProjectCrawlerMetadata = withTenant doTest
 testOrganizationCrawlerMetadata :: Assertion
 testOrganizationCrawlerMetadata = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Init crawler entities metadata and check we get the default date
       I.initCrawlerMetadata worker
@@ -257,7 +257,7 @@ scenarioProject name =
 testAchievements :: Assertion
 testAchievements = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
 
@@ -285,14 +285,14 @@ defaultQuery =
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
       indexScenario (nominalMerge (scenarioProject "openstack/neutron") "44" fakeDate 3600)
       indexScenario (nominalOpen (scenarioProject "openstack/swift") "45" fakeDate 3600)
 
-      results <- runQueryM defaultQuery Q.getReposSummary
+      results <- withQuery defaultQuery Q.getReposSummary
       assertEqual'
         "Check buckets names"
         [ Q.RepoSummary
@@ -325,7 +325,7 @@ testReposSummary = withTenant doTest
 testTopAuthors :: Assertion
 testTopAuthors = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Prapare data
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -334,7 +334,7 @@ testTopAuthors = withTenant doTest
       traverse_ (indexScenarioNO neutron) ["142", "143"]
 
       -- Check for expected metrics
-      runQueryM defaultQuery $ do
+      withQuery defaultQuery $ do
         results <- Q.getMostActiveAuthorByChangeCreated 10
         assertEqual'
           "Check getMostActiveAuthorByChangeCreated count"
@@ -371,7 +371,7 @@ testTopAuthors = withTenant doTest
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Prapare data
       let nova = SProject "openstack/nova" [bob] [alice] [eve]
@@ -382,7 +382,7 @@ testGetAuthorsPeersStrength = withTenant doTest
       traverse_ (indexScenarioNM horizon) ["242"]
 
       -- Check for expected metrics
-      runQueryM defaultQuery $ do
+      withQuery defaultQuery $ do
         results <- Q.getAuthorsPeersStrength 10
         assertEqual'
           "Check getAuthorsPeersStrength results"
@@ -403,7 +403,7 @@ testGetNewContributors :: Assertion
 testGetNewContributors = withTenant doTest
   where
     indexScenario' project fakeDate' cid = indexScenario (nominalMerge project cid fakeDate' 3600)
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Prapare data
       let sn1 = SProject "openstack/nova" [bob] [alice] [eve]
@@ -422,7 +422,7 @@ testGetNewContributors = withTenant doTest
                 queryMinBoundsSet = True
              in Q.Query {..}
 
-      runQueryM query $ do
+      withQuery query $ do
         results <- Q.getNewContributors
         assertEqual'
           "Check getNewContributors results"
@@ -432,7 +432,7 @@ testGetNewContributors = withTenant doTest
 testGetActivityStats :: Assertion
 testGetActivityStats = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       -- Prapare data
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -449,7 +449,7 @@ testGetActivityStats = withTenant doTest
                 queryMinBoundsSet = True
              in Q.Query {..}
 
-      runQueryM query $ do
+      withQuery query $ do
         results <- Q.getActivityStats
         assertEqual'
           "Check getActivityStats result"
@@ -481,14 +481,14 @@ testGetActivityStats = withTenant doTest
 testGetChangesTops :: Assertion
 testGetChangesTops = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
       let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
       traverse_ (indexScenarioNM nova) ["42", "43"]
       traverse_ (indexScenarioNO neutron) ["142", "143"]
 
-      runQueryM defaultQuery $ do
+      withQuery defaultQuery $ do
         results <- Q.getChangesTops 10
         assertEqual'
           "Check getChangesTops result"
@@ -543,7 +543,7 @@ testGetChangesTops = withTenant doTest
 testGetSuggestions :: Assertion
 testGetSuggestions = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       tEnv <- ask
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -551,7 +551,7 @@ testGetSuggestions = withTenant doTest
       traverse_ (indexScenarioNM nova) ["42", "43"]
       traverse_ (indexScenarioNO neutron) ["142", "143"]
 
-      runQueryM defaultQuery $ do
+      withQuery defaultQuery $ do
         results <- Q.getSuggestions $ tenant tEnv
         assertEqual'
           "Check getChangesTops result"
@@ -583,7 +583,7 @@ mkTaskData changeId =
 testTaskDataAdd :: Assertion
 testTaskDataAdd = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       let nova = SProject "openstack/nova" [alice] [alice] [eve]
       traverse_ (indexScenarioNM nova) ["42", "43", "44"]
@@ -658,13 +658,13 @@ testTaskDataAdd = withTenant doTest
         )
         orphanTdM'
 
-    getOrphanTd :: Text -> TenantM (Maybe EChangeOrphanTD)
+    getOrphanTd :: Text -> QueryM (Maybe EChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
 
 testTaskDataCommit :: Assertion
 testTaskDataCommit = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest = do
       let crawlerName = "testCrawler"
           crawlerConfig =
@@ -696,7 +696,7 @@ testTaskDataCommit = withTenant doTest
 testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest
   where
-    doTest :: TenantM ()
+    doTest :: QueryM ()
     doTest =
       do
         -- Send Task data w/o a matching change (orphan task data)
@@ -804,7 +804,7 @@ data ScenarioEvent
   | SComment EChangeEvent
   | SMerge EChangeEvent
 
-indexScenario :: [ScenarioEvent] -> TenantM ()
+indexScenario :: [ScenarioEvent] -> QueryM ()
 indexScenario xs = sequence_ $ indexDoc <$> xs
   where
     indexDoc = \case
@@ -814,10 +814,10 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
       SComment d -> I.indexEvents [d]
       SMerge d -> I.indexEvents [d]
 
-indexScenarioNM :: ScenarioProject -> LText -> TenantM ()
+indexScenarioNM :: ScenarioProject -> LText -> QueryM ()
 indexScenarioNM project cid = indexScenario (nominalMerge project cid fakeDate 3600)
 
-indexScenarioNO :: ScenarioProject -> LText -> TenantM ()
+indexScenarioNO :: ScenarioProject -> LText -> QueryM ()
 indexScenarioNO project cid = indexScenario (nominalOpen project cid fakeDate 3600)
 
 mkDate :: Integer -> UTCTime -> UTCTime

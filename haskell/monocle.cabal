@@ -165,7 +165,6 @@ library
                      -- api client for lentille
                      , Monocle.Client
                      , Monocle.Client.Api
-                     , Monocle.Client.Worker
 
                      -- servant
                      , Monocle.Servant.HTTP

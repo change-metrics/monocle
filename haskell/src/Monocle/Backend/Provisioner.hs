@@ -12,7 +12,7 @@ import qualified Faker.TvShow.Futurama
 import Monocle.Api.Config (defaultTenant)
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Test as T
-import Monocle.Env (testTenantM)
+import Monocle.Env (testQueryM)
 import Monocle.Prelude
 
 -- | Provision fakedata for a tenant
@@ -20,7 +20,7 @@ runProvisioner :: Text -> IO ()
 runProvisioner tenantName = do
   events <- createFakeEvents
   putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."
-  testTenantM (defaultTenant tenantName) $ T.indexScenario events
+  testQueryM (defaultTenant tenantName) $ T.indexScenario events
   putTextLn $ "[provisioner] Done."
 
 -- | Ensure changes have a unique ID

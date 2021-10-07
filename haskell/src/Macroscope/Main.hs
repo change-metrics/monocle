@@ -2,6 +2,7 @@
 module Macroscope.Main (runMacroscope) where
 
 import Control.Exception.Safe (tryAny)
+import Lentille (MonadLog, MonadRetry)
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
 import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
 import Lentille.GitHub.Issues (streamLinkedIssue)
@@ -11,11 +12,10 @@ import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Macroscope.Worker (DocumentStream (..), runLegacyTDStream, runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
-import Monocle.Client.Worker (MonadLog)
 import Monocle.Prelude
 
 -- | 'MacroM' is an alias for a bunch of constrain.
-class (MonadIO m, MonadFail m, MonadMask m, MonadLog m) => MacroM m
+class (MonadIO m, MonadFail m, MonadMask m, MonadLog m, MonadRetry m) => MacroM m
 
 instance MacroM IO
 

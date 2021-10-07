@@ -17,11 +17,10 @@ where
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (LentilleStream, runLentilleM)
+import Lentille
 import Monocle.Change (Change, ChangeEvent)
-import Monocle.Client (MonocleClient, retry)
+import Monocle.Client (MonocleClient)
 import Monocle.Client.Api
-import Monocle.Client.Worker
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
@@ -112,7 +111,7 @@ processTD postFunc =
 -- | This function is using the original task_data_get_last_updated endpoint
 -- TODO: migrate the task_data endpoint to the new general entity system and drop this function
 runLegacyTDStream ::
-  (MonadMask m, MonadLog m, MonadIO m) =>
+  (MonadRetry m, MonadThrow m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   Maybe UTCTime ->
   ApiKey ->
@@ -209,7 +208,7 @@ process postFunc =
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadMask m, MonadLog m, MonadIO m) =>
+  (MonadMask m, MonadRetry m, MonadLog m, MonadIO m) =>
   MonocleClient ->
   UTCTime ->
   ApiKey ->
