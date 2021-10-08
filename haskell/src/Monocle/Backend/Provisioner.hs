@@ -1,19 +1,37 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | A test module to load some fake data
-module Monocle.Backend.Provisioner where
+module Monocle.Backend.Provisioner
+  ( -- * Provisioner
+    runProvisioner,
+
+    -- * Fake datas
+    fakeAuthor,
+    fakeChange,
+    fakeChangeEvent,
+    fakeETaskData,
+    fakeTaskData,
+
+    -- * re-exports
+    Faker.generateNonDeterministic,
+  )
+where
 
 import Data.Time.Clock.System
 import qualified Faker
 import qualified Faker.Combinators
+import qualified Faker.Creature.Dog
 import qualified Faker.DateTime
 import qualified Faker.Movie.BackToTheFuture
 import qualified Faker.TvShow.Futurama
+import qualified Faker.TvShow.TheExpanse
+import qualified Google.Protobuf.Timestamp (fromUTCTime)
 import Monocle.Api.Config (defaultTenant)
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Test as T
 import Monocle.Env (testQueryM)
 import Monocle.Prelude
+import Monocle.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
@@ -40,6 +58,9 @@ createFakeEvents = do
   baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes
+
+fakeUrl :: Text -> Faker.Fake Text
+fakeUrl uid = pure $ "http://example.org/" <> uid
 
 fakeFileCount :: Faker.Fake Word32
 fakeFileCount = Faker.Combinators.fromRange (0, 42)
@@ -114,3 +135,38 @@ fakeChangeEvent from to = do
   echangeeventApproval <- pure Nothing
   echangeeventTasksData <- pure Nothing
   pure $ EChangeEvent {..}
+
+fakeTaskId :: Faker.Fake Text
+fakeTaskId = show @Text @Int <$> Faker.Combinators.fromRange (1, 65535)
+
+fakeTaskPrefix :: Faker.Fake Text
+fakeTaskPrefix = Faker.Combinators.elements ["rhbz#", "gh#", "lada"]
+
+fakeETaskData :: Faker.Fake ETaskData
+fakeETaskData = do
+  tdTid <- fakeTaskId
+  tdCrawlerName <- Faker.Creature.Dog.name
+  tdTtype <- (: []) <$> Faker.Creature.Dog.sound
+  tdUpdatedAt <- UTCTimePlus <$> Faker.DateTime.utc
+  tdChangeUrl <- pure "no-change"
+  tdSeverity <- Faker.TvShow.TheExpanse.locations
+  tdPriority <- Faker.TvShow.TheExpanse.ships
+  tdScore <- Faker.Combinators.fromRange (0, 42)
+  tdUrl <- fakeUrl tdTid
+  tdTitle <- Faker.TvShow.TheExpanse.quotes
+  tdPrefix <- fakeTaskPrefix
+  pure $ ETaskData {..}
+
+fakeTaskData :: Faker.Fake TaskData
+fakeTaskData = do
+  taskDataUpdatedAt <- Just . Google.Protobuf.Timestamp.fromUTCTime <$> Faker.DateTime.utc
+  taskDataChangeUrl <- pure "no-change"
+  taskDataTtype <- fromList . (: []) . toLText <$> Faker.Creature.Dog.sound
+  taskDataTid <- toLText <$> fakeTaskId
+  taskDataUrl <- toLText <$> fakeUrl (toText taskDataTid)
+  taskDataTitle <- toLText <$> Faker.TvShow.TheExpanse.quotes
+  taskDataSeverity <- toLText <$> Faker.TvShow.TheExpanse.locations
+  taskDataPriority <- toLText <$> Faker.TvShow.TheExpanse.ships
+  taskDataScore <- Faker.Combinators.fromRange (0, 42)
+  taskDataPrefix <- toLText <$> fakeTaskPrefix
+  pure $ TaskData {..}
