@@ -293,18 +293,18 @@ toEChangeEvent ChangeEvent {..} =
         _anyOtherApprovals -> Nothing,
       echangeeventTasksData = Nothing
     }
-  where
-    getEventType :: Maybe ChangeEventType -> EDocType
-    getEventType eventTypeM = case eventTypeM of
-      Just eventType -> case eventType of
-        ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
-        ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
-        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
-        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
-        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
-        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
-        ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
-      Nothing -> error "changeEventType field is mandatory"
+
+getEventType :: Maybe ChangeEventType -> EDocType
+getEventType eventTypeM = case eventTypeM of
+  Just eventType -> case eventType of
+    ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
+    ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
+    ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
+    ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
+    ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
+    ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
+    ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
+  Nothing -> error "changeEventType field is mandatory"
 
 toEChange :: Change -> EChange
 toEChange Change {..} =

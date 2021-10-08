@@ -97,6 +97,7 @@ library
                      , aeson
                      , aeson-casing
                      , aeson-pretty
+                     , attoparsec                 < 0.15
                      , base64-bytestring          < 1.2.1.1
                      , binary                     ^>= 0.8
                      , bloodhound                 >= 0.16.0.0
