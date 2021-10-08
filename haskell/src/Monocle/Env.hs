@@ -28,7 +28,7 @@ data Env = Env
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IORef Config.ReloadableConfig,
+  { config :: IO [Config.Index],
     aEnv :: Env
   }
 
@@ -47,8 +47,10 @@ instance MonadFail AppM where
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM [Config.Index]
 getConfig = do
-  logger <- asks (glLogger . aEnv)
-  Config.reloadConfig (logEvent logger . ReloadConfig) =<< asks config
+  loadConfig <- asks config
+  --  logger <- asks (glLogger . aEnv)
+  --  let logReload = (logEvent logger . ReloadConfig)
+  liftIO loadConfig
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request

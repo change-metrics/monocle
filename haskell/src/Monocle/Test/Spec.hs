@@ -390,5 +390,5 @@ monocleConfig =
     [testConfigLoad]
   where
     testConfigLoad = testCase "Decode config" $ do
-      conf <- Config.configWorkspaces <$> Config.loadConfig "./test/data/config.yaml"
+      conf <- Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length conf)

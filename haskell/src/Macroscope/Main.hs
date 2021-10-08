@@ -35,13 +35,12 @@ crawlerName Config.Crawler {..} = name
 runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
-  reloadableConfig <- Config.loadConfig confPath
-  confRef <- newIORef reloadableConfig
-  loop confRef
+  config <- liftIO $ Config.reloadConfig confPath
+  loop config
   where
-    loop confRef = do
+    loop config = do
       -- Reload config
-      conf <- Config.reloadConfig (const $ pure ()) confRef
+      conf <- liftIO $ config
 
       -- Crawl each index
       traverse_ safeCrawl (getCrawlers conf)
@@ -51,7 +50,7 @@ runMacroscope verbose confPath interval client = do
       liftIO $ threadDelay interval_usec
 
       -- Loop again
-      loop confRef
+      loop config
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
