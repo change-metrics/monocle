@@ -1,5 +1,5 @@
 -- |
-module Monocle.Api (run) where
+module Monocle.Api (app, run) where
 
 import Lentille (retry)
 import qualified Monocle.Api.Config as Config

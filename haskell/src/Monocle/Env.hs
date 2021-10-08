@@ -130,6 +130,11 @@ mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
 
+mkEnv' :: MonadIO m => m BH.BHEnv
+mkEnv' = do
+  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+  mkEnv (toText url)
+
 -- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
 testQueryM :: Config.Index -> QueryM a -> IO a
 testQueryM config tenantM = do

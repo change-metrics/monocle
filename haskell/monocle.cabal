@@ -116,6 +116,7 @@ library
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
+                     , http-mock                  < 0.2
                      , http-types                 ^>=0.12
                      , json-syntax                ^>= 0.2
                      , lens
@@ -199,6 +200,7 @@ library
 
                      , Macroscope.Main
                      , Macroscope.Worker
+                     , Macroscope.Test
 
                      -- Fast json helpers
                      , Json.Extras

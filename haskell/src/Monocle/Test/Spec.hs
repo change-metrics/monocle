@@ -2,6 +2,7 @@ module Monocle.Test.Spec (main) where
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Lentille.Bugzilla.Spec
+import Macroscope.Test (monocleMacroscopeTests)
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
@@ -27,7 +28,7 @@ main = do
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
-        pure [monocleIntegrationTests]
+        pure [monocleIntegrationTests, monocleMacroscopeTests]
 
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of

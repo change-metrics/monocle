@@ -136,6 +136,8 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
                 (getStream oldestEntity)
 
           case postResultE of
+            -- The stream was empty, we can stop now.
+            Right [] -> log LogEnded
             Right postResult ->
               case foldr collectPostFailure [] postResult of
                 [] -> do

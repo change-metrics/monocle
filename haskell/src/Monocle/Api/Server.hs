@@ -310,7 +310,7 @@ crawlerCommitInfo request = do
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
       CrawlerPB.EntityEntityOrganizationName _ -> CrawlerPB.EntityEntityOrganizationName value
       CrawlerPB.EntityEntityProjectName _ -> CrawlerPB.EntityEntityProjectName value
-      otherEntity -> error $ "Not implemented: " <> show otherEntity
+      CrawlerPB.EntityEntityTdName _ -> CrawlerPB.EntityEntityTdName value
 
     toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
     toErrorResponse err =
