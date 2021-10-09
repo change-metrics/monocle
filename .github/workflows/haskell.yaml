@@ -7,20 +7,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Haskell GHC
-    container:
-      image: quay.io/change-metrics/builder
-      options: --user root
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - run: ln -s /root/.cabal /github/home/.cabal
-      - run: cd haskell; cabal build --enable-tests --flags=ci all
-      - run: cd haskell; cabal test --test-show-details=direct test:monocle-test test:monocle-doctest
-# This adds quite a bit of build time and this should be using the pre build container
-#      - run: cabal v2-install stan --install-method=copy --overwrite-policy=always
-#      - run: cd haskell; ~/.cabal/bin/stan report || true
-#      - uses: actions/upload-artifact@v2
-#        with:
-#          name: stan-report
-#          path: ./haskell/stan.html
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: haskell/actions/setup@v1
+      with:
+        ghc-version: "8.10"
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cabal
+          haskell/dist-newstyle
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.cabal','**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-8.10-
+          ${{ runner.os }}-
+    - run: cabal update
+    - run: cd haskell; cabal build --enable-tests --flags=ci all
+
+    - name: Configure sysctl limits
+      run: |
+        sudo swapoff -a
+        sudo sysctl -w vm.swappiness=1
+        sudo sysctl -w fs.file-max=262144
+        sudo sysctl -w vm.max_map_count=262144
+
+    - name: Runs Elasticsearch
+      uses: elastic/elastic-github-actions/elasticsearch@master
+      with:
+        stack-version: 7.8.0
+
+    - name: Display indexes
+      run: curl -s -I -X GET http://localhost:9200/_cat/indices
+
+    - run: cd haskell; env ELASTIC_URL=http://localhost:9200 cabal test --enable-tests --flags=ci --test-show-details=direct
+#    - run: cd haskell; cabal haddock
+#    - run: cd haskell; cabal sdist
+#    - run: cd haskell; cabal check
+#    - run: cd haskell; cabal install --installdir=/tmp --overwrite-policy=always'}}
