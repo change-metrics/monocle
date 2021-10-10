@@ -1,8 +1,20 @@
+{-# LANGUAGE FlexibleContexts #-}
+
+-- |
+-- Copyright: (c) 2021 Monocle authors
+-- SPDX-License-Identifier: AGPL-3.0-only
+-- Maintainer: Monocle authors
+--
+-- Monocle Gerrit crawler system
 module Lentille.Gerrit
   ( streamProject,
     streamChange,
-    GerritProjectQuery (..),
-    GerritQuery (..),
+    G.GerritProjectQuery (..),
+    G.GerritQuery (..),
+
+    -- * The context
+    MonadGerrit,
+    runGerritM,
   )
 where
 
@@ -12,16 +24,17 @@ import Data.Char
 import qualified Data.Map as M (elems, keys, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Gerrit hiding (changeUrl)
-import qualified Gerrit as G (changeUrl)
+-- import Gerrit hiding (changeUrl)
+import qualified Gerrit as G
 import Gerrit.Data.Change
-import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId))
+import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId), GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
-import Lentille (LentilleStream, retry')
+import Lentille
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
 import Monocle.Backend.Documents (docTypeToText)
 import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
+import Monocle.Prelude (MonadCatch, MonadMask, MonadThrow, hoist)
 import qualified Monocle.Project as P
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
@@ -29,11 +42,81 @@ import Relude hiding (all, id)
 import qualified Streaming.Prelude as S
 import Prelude (last)
 
--- TODO(fbo): grabbed from Lentille.Gitlab - migrate to a Lentille.Common
+-------------------------------------------------------------------------------
+-- Gerrit context
+-------------------------------------------------------------------------------
+
+-- | A newtype for the GerritClient Reader
+newtype GerritM a = GerritM (ReaderT G.GerritClient LentilleM a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadCatch, MonadThrow, MonadMask)
+  deriving newtype (MonadReader G.GerritClient)
+
+-- | Helper to run a GerritM in IO
+runGerritM :: G.GerritClient -> GerritM a -> IO a
+runGerritM client (GerritM im) = do
+  res <- runLentilleM $ runReaderT im client
+  case res of
+    Left e -> error (show e)
+    Right r -> pure r
+
+-- | A type class for the Gerrit API
+class (Monad m, MonadReader G.GerritClient m) => MonadGerrit m where
+  getProjects :: Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
+  queryChanges :: Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
+
+-- | The MonadGerrit instance using the concret reader
+instance MonadGerrit GerritM where
+  getProjects count query startM = do
+    client <- ask
+    liftIO $ G.getProjects count query startM client
+  queryChanges count queries startM = do
+    client <- ask
+    liftIO $ G.queryChanges count queries startM client
+
+-- | The MonadLog instance for logging
+instance MonadLog GerritM where
+  log' = liftIO . logEvent
+
+-- | The MonadRetry instance for retrying
+instance MonadRetry GerritM where
+  retry = retry'
+
+-------------------------------------------------------------------------------
+-- Monocle Gerrit crawler system
+-------------------------------------------------------------------------------
+
+-- >>> P.parseOnly approvalsParser "Patch Set 10: Code-Review+2 Workflow+1"
+-- Right ["Code-Review+2","Workflow+1"]
+-- >>> P.parseOnly approvalsParser "Patch Set 1:\n\nStarting check jobs."
+-- Left "string"
+-- >>> P.parseOnly approvalsParser "Patch Set 3: Verified-1\n\nBuild failed."
+-- Right ["Verified-1"]
+approvalsParser :: P.Parser [Text]
+approvalsParser = do
+  void $ P.string "Patch Set "
+  void (P.decimal :: P.Parser Integer)
+  void $ P.string ": "
+  word `P.sepBy1` P.char ' '
+  where
+    word = P.takeWhile1 (not . isSpace)
+
+-- >>> P.parseOnly commentParser "Patch Set 3: Verified-1\n\nBuild failed."
+-- Right "Build failed."
+-- >>> P.parseOnly commentParser "Patch Set 3: Verified-1"
+-- Left "'\\n': not enough input"
+commentParser :: P.Parser Text
+commentParser = do
+  void $ P.takeTill (== '\n')
+  void $ P.count 2 $ P.char '\n'
+  P.takeText
+
+newPSParser :: P.Parser Text
+newPSParser = P.string "Uploaded patch set"
+
 getHostFromURL :: Text -> Text
 getHostFromURL url =
   maybe
-    (error "Unable to parse provided gitlab_url")
+    (error "Unable to parse provided url")
     (toText . URI.uriRegName)
     (URI.uriAuthority =<< URI.parseURI (toString url))
 
@@ -59,25 +142,44 @@ toApprovals = concatMap genApprovals
       Just v -> if v >= 0 then "+" <> show v else show v
       Nothing -> "+0"
 
-streamProject :: GerritClient -> GerritProjectQuery -> LentilleStream P.Project
-streamProject client query = go 0
+streamProject ::
+  (MonadGerrit m, MonadRetry m) =>
+  G.GerritProjectQuery ->
+  S.Stream (S.Of P.Project) m ()
+streamProject query = go 0
   where
     size = 100
+    doGet offset = getProjects size query (Just offset)
     go offset = do
-      projects <- liftIO $ retry' $ getProjects size query (Just offset) client
+      projects <- lift $ do retry . doGet $ offset
       let pNames = gerritprojectinfoId <$> M.elems projects
       S.each $ P.Project . toLazy <$> pNames
       when (length pNames == size) $ go (offset + size)
 
-streamChange :: GerritClient -> [GerritQuery] -> Maybe Text -> LentilleStream (C.Change, [C.ChangeEvent])
-streamChange client query prefixM = go 0
+streamChange ::
+  (MonadGerrit m, MonadRetry m) =>
+  [GerritQuery] ->
+  Maybe Text ->
+  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+streamChange query prefixM = do
+  client <- ask
+  streamChange' client query prefixM
+
+streamChange' ::
+  (MonadGerrit m, MonadRetry m) =>
+  G.GerritClient ->
+  [GerritQuery] ->
+  Maybe Text ->
+  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+streamChange' client query prefixM = go 0
   where
     size = 100
     go offset = do
-      changes <- liftIO $ retry' $ queryChanges size query (Just offset) client
+      changes <- lift $ do retry . doGet $ offset
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
-    getHost = getHostFromURL $ serverUrl client
+    doGet offset = queryChanges size query (Just offset)
+    getHost = getHostFromURL $ G.serverUrl client
     prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
     getIdent gAuthor = toIdent getHost Nothing $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
@@ -253,30 +355,23 @@ streamChange client query prefixM = go 0
           NEW -> Enumerated $ Right C.Change_ChangeStateOpen
           DRAFT -> Enumerated $ Right C.Change_ChangeStateOpen
 
--- >>> P.parseOnly approvalsParser "Patch Set 10: Code-Review+2 Workflow+1"
--- Right ["Code-Review+2","Workflow+1"]
--- >>> P.parseOnly approvalsParser "Patch Set 1:\n\nStarting check jobs."
--- Left "string"
--- >>> P.parseOnly approvalsParser "Patch Set 3: Verified-1\n\nBuild failed."
--- Right ["Verified-1"]
-approvalsParser :: P.Parser [Text]
-approvalsParser = do
-  void $ P.string "Patch Set "
-  void (P.decimal :: P.Parser Integer)
-  void $ P.string ": "
-  word `P.sepBy1` P.char ' '
-  where
-    word = P.takeWhile1 (not . isSpace)
+-- Helper to convert a BugzillaM into a LentilleM
+toLentilleM :: G.GerritClient -> GerritM a -> LentilleM a
+toLentilleM client (GerritM im) = runReaderT im client
 
--- >>> P.parseOnly commentParser "Patch Set 3: Verified-1\n\nBuild failed."
--- Right "Build failed."
--- >>> P.parseOnly commentParser "Patch Set 3: Verified-1"
--- Left "'\\n': not enough input"
-commentParser :: P.Parser Text
-commentParser = do
-  void $ P.takeTill (== '\n')
-  void $ P.count 2 $ P.char '\n'
-  P.takeText
+-- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of P.Project) m ()`
+--   into a `Stream (Of P.Project) LentilleM ()` using mmorph hoist favility.
+_getProjectsStream ::
+  G.GerritClient ->
+  G.GerritProjectQuery ->
+  S.Stream (S.Of P.Project) LentilleM ()
+_getProjectsStream client query = hoist (toLentilleM client) $ streamProject query
 
-newPSParser :: P.Parser Text
-newPSParser = P.string "Uploaded patch set"
+-- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of (C.Change, [C.ChangeEvents])) m ()`
+--   into a `Stream (Of (C.Change, [C.ChangeEvent])) LentilleM ()` using mmorph hoist favility.
+_getChangesStream ::
+  G.GerritClient ->
+  [G.GerritQuery] ->
+  Maybe Text ->
+  S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
+_getChangesStream client queries prefixM = hoist (toLentilleM client) $ streamChange queries prefixM
