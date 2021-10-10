@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 -- | The library environment and logging functions
 module Monocle.Env where
 
@@ -238,6 +236,15 @@ withFilter extraQueries = local addFilter
 
 data Entity = Project Text | Organization Text | TaskDataEntity
   deriving (Eq, Show)
+
+instance From Entity Text where
+  from = \case
+    Project _ -> "project"
+    Organization _ -> "organization"
+    TaskDataEntity -> "task_datas"
+
+instance From Entity LText where
+  from = via @Text
 
 getEntityName :: Entity -> Text
 getEntityName = \case

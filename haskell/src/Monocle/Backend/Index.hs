@@ -240,7 +240,6 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do
   indexName <- getIndexName
@@ -324,69 +323,6 @@ getEventType eventTypeM = case eventTypeM of
     ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
     ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
   Nothing -> error "changeEventType field is mandatory"
-
-toEChange :: Change -> EChange
-toEChange Change {..} =
-  EChange
-    { echangeId = changeId,
-      echangeType = EChangeDoc,
-      echangeTitle = changeTitle,
-      echangeUrl = changeUrl,
-      echangeCommitCount = fromInteger . toInteger $ changeCommitCount,
-      echangeNumber = fromInteger . toInteger $ changeNumber,
-      echangeChangeId = changeChangeId,
-      echangeText = changeText,
-      echangeAdditions = fromInteger $ toInteger changeAdditions,
-      echangeDeletions = fromInteger $ toInteger changeDeletions,
-      echangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
-      echangeChangedFiles = map toFile $ toList changeChangedFiles,
-      echangeCommits = map toCommit $ toList changeCommits,
-      echangeRepositoryPrefix = changeRepositoryPrefix,
-      echangeRepositoryFullname = changeRepositoryFullname,
-      echangeRepositoryShortname = changeRepositoryShortname,
-      echangeAuthor = toAuthor changeAuthor,
-      echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
-      echangeBranch = changeBranch,
-      echangeTargetBranch = changeTargetBranch,
-      echangeCreatedAt = T.toUTCTime $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
-      echangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
-      echangeUpdatedAt = T.toUTCTime $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
-      echangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
-      echangeState = toState $ fromPBEnum changeState,
-      echangeDuration = toDuration <$> changeOptionalDuration,
-      echangeMergeable = changeMergeable,
-      echangeLabels = toList changeLabels,
-      echangeAssignees = map toAuthor $ toList $ fmap Just changeAssignees,
-      echangeApproval = Just $ toList changeApprovals,
-      echangeDraft = changeDraft,
-      echangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
-      echangeTasksData = Nothing
-    }
-  where
-    toFile :: ChangedFile -> File
-    toFile ChangedFile {..} =
-      File (fromIntegral changedFileAdditions) (fromIntegral changedFileDeletions) changedFilePath
-    toCommit :: Monocle.Change.Commit -> Monocle.Backend.Documents.Commit
-    toCommit Monocle.Change.Commit {..} =
-      Monocle.Backend.Documents.Commit
-        { commitSha = commitSha,
-          commitAuthor = toAuthor commitAuthor,
-          commitCommitter = toAuthor commitCommitter,
-          commitAuthoredAt = T.toUTCTime $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
-          commitCommittedAt = T.toUTCTime $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
-          commitDeletions = fromIntegral commitDeletions,
-          commitAdditions = fromIntegral commitAdditions,
-          commitTitle = commitTitle
-        }
-    toMergedByAuthor (ChangeOptionalMergedByMergedBy m) = toAuthor (Just m)
-    toMergedAt (ChangeOptionalMergedAtMergedAt t) = T.toUTCTime t
-    toClosedAt (ChangeOptionalClosedAtClosedAt t) = T.toUTCTime t
-    toDuration (ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
-    toSelfMerged (ChangeOptionalSelfMergedSelfMerged b) = b
-    toState cstate = case cstate of
-      Change_ChangeStateOpen -> EChangeOpen
-      Change_ChangeStateMerged -> EChangeMerged
-      Change_ChangeStateClosed -> EChangeClosed
 
 toETaskData :: Text -> TaskData -> ETaskData
 toETaskData tdCrawlerName TaskData {..} =
@@ -553,7 +489,7 @@ getChangesByURL urls = query
   where
     query =
       mkAnd
-        [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EChangeDoc) Nothing,
+        [ BH.TermQuery (BH.Term "type" $ from EChangeDoc) Nothing,
           BH.TermsQuery "url" $ fromList urls
         ]
 
@@ -592,7 +528,7 @@ getOrphanTaskDataByChangeURL urls = do
       mkAnd
         [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
           mkAnd
-            [ BH.TermQuery (BH.Term "type" $ toText $ docTypeToText EOrphanTaskData) Nothing,
+            [ BH.TermQuery (BH.Term "type" $ from EOrphanTaskData) Nothing,
               BH.TermsQuery "tasks_data.change_url" $ fromList urls
             ]
         ]
@@ -804,17 +740,11 @@ ensureCrawlerMetadata crawlerName getDate entity = do
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
               (toLazy crawlerName)
-              (toLazy $ entityToText entity)
+              (from entity)
               (toLazy $ getEntityName entity)
               lastUpdatedDate
         }
-    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
-
-entityToText :: Entity -> Text
-entityToText = \case
-  Project _ -> "project"
-  Organization _ -> "organization"
-  TaskDataEntity -> "task_datas"
+    getId entity' = getCrawlerMetadataDocId crawlerName (from entity') (getEntityName entity')
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
@@ -841,13 +771,13 @@ setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm (getId entity)
   where
-    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
+    getId entity' = getCrawlerMetadataDocId crawlerName (from entity') (getEntityName entity')
     cm =
       ECrawlerMetadata
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
               (toLazy crawlerName)
-              (toLazy $ entityToText entity)
+              (from entity)
               (toLazy $ getEntityName entity)
               lastUpdatedDate
         }

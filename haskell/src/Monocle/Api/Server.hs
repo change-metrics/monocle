@@ -8,14 +8,8 @@ import Google.Protobuf.Timestamp as Timestamp
 import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
-  ( Author (..),
-    Commit (..),
-    EChange (..),
+  ( EChange (..),
     EChangeEvent (..),
-    ETaskData (..),
-    File (..),
-    changeStateToText,
-    docTypeToText,
   )
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
@@ -156,10 +150,8 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
-
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 
@@ -212,7 +204,7 @@ crawlerAddDoc request = do
       pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
-      let changes' = map I.toEChange $ toList changes
+      let changes' = map from $ toList changes
           events' = map I.toEChangeEvent $ toList events
       I.indexChanges changes'
       I.indexEvents events'
@@ -425,7 +417,7 @@ searchQuery request = do
             . SearchPB.QueryResponseResultChanges
             . SearchPB.Changes
             . V.fromList
-            . map toChangeResult
+            . map from
             <$> Q.changes queryRequestOrder queryRequestLimit
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
           SearchPB.QueryResponse . Just
@@ -529,81 +521,9 @@ searchQuery request = do
 
     toChangeEventsResult :: (EChange, [EChangeEvent]) -> SearchPB.ChangeAndEvents
     toChangeEventsResult (change, events) =
-      let changeAndEventsChange = Just (toChangeResult change)
-          changeAndEventsEvents = V.fromList $ toEventResult <$> events
+      let changeAndEventsChange = Just (from change)
+          changeAndEventsEvents = V.fromList $ from <$> events
        in SearchPB.ChangeAndEvents {..}
-
-    toEventResult :: EChangeEvent -> SearchPB.ChangeEvent
-    toEventResult EChangeEvent {..} =
-      let changeEventId = echangeeventId
-          changeEventType = docTypeToText echangeeventType
-          changeEventChangeId = echangeeventChangeId
-          changeEventCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventCreatedAt
-          changeEventOnCreatedAt = Just . Timestamp.fromUTCTime $ echangeeventOnCreatedAt
-          changeEventAuthor = maybe "backend-ghost" authorMuid echangeeventAuthor
-          changeEventOnAuthor = authorMuid echangeeventOnAuthor
-          changeEventBranch = echangeeventBranch
-       in SearchPB.ChangeEvent {..}
-
-    toChangeResult :: EChange -> SearchPB.Change
-    toChangeResult change =
-      let changeTitle = echangeTitle change
-          changeUrl = echangeUrl change
-          changeCreatedAt = (Just . Timestamp.fromUTCTime $ echangeCreatedAt change)
-          changeUpdatedAt = (Just . Timestamp.fromUTCTime $ echangeUpdatedAt change)
-          changeRepositoryFullname = echangeRepositoryFullname change
-          changeState = toLazy . changeStateToText $ echangeState change
-          changeBranch = echangeBranch change
-          changeTargetBranch = echangeTargetBranch change
-          changeTaskData = V.fromList . maybe [] (map toTaskData) $ echangeTasksData change
-          changeChangeId = echangeChangeId change
-          changeAuthor = authorMuid . echangeAuthor $ change
-          changeText = echangeText change
-          changeAdditions = echangeAdditions change
-          changeDeletions = echangeDeletions change
-          changeChangedFilesCount = echangeChangedFilesCount change
-          changeApproval = V.fromList $ fromMaybe [] $ echangeApproval change
-          changeAssignees = V.fromList (fmap authorMuid (echangeAssignees change))
-          changeLabels = V.fromList $ echangeLabels change
-          changeDraft = echangeDraft change
-          changeMergeable = echangeMergeable change == "MERGEABLE"
-          changeCommits = V.fromList . map toCommit $ echangeCommits change
-          changeChangedFiles = V.fromList . map toFile $ echangeChangedFiles change
-          -- consistency rename from commit_count to commits_count
-          changeCommitsCount = echangeCommitCount change
-          changeMergedAt = toTS =<< echangeMergedAt change
-          changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< echangeMergedBy change
-       in SearchPB.Change {..}
-
-    toTS = Just . Timestamp.fromUTCTime
-    toFile File {..} = SearchPB.File {..}
-
-    toCommit :: Commit -> SearchPB.Commit
-    toCommit Commit {..} =
-      SearchPB.Commit
-        { commitSha = commitSha,
-          commitTitle = commitTitle,
-          commitAuthor = authorMuid commitAuthor,
-          commitAuthoredAt = toTS commitAuthoredAt,
-          commitCommitter = authorMuid commitCommitter,
-          commitCommittedAt = toTS commitCommittedAt,
-          commitAdditions = commitAdditions,
-          commitDeletions = commitDeletions
-        }
-
-    toTaskData :: ETaskData -> SearchPB.TaskData
-    toTaskData td =
-      let taskDataUpdatedAt = Nothing
-          taskDataChangeUrl = toLazy $ tdUrl td
-          taskDataTtype = fmap toLazy $ V.fromList $ tdTtype td
-          taskDataTid = toLazy $ tdTid td
-          taskDataUrl = toLazy $ tdUrl td
-          taskDataTitle = toLazy $ tdUrl td
-          taskDataSeverity = toLazy $ tdSeverity td
-          taskDataPriority = toLazy $ tdPriority td
-          taskDataScore = fromInteger $ toInteger $ tdScore td
-          taskDataPrefix = toLazy $ tdPrefix td
-       in SearchPB.TaskData {..}
 
 searchFields :: FieldsRequest -> AppM FieldsResponse
 searchFields = const $ pure response

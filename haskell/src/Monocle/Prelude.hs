@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+-- witch instance for Google.Protobuf.Timestamp
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude
@@ -12,6 +14,16 @@ module Monocle.Prelude
 
     -- * contexts
     MonadTime (..),
+
+    -- * witch
+    From (..),
+    into,
+    unsafeFrom,
+    unsafeInto,
+    via,
+    TryFrom (..),
+    tryInto,
+    tryVia,
 
     -- * streaming
     Stream,
@@ -111,6 +123,7 @@ import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
+import qualified Google.Protobuf.Timestamp
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Proto3.Suite (Enumerated (..))
 import QQLiterals (qqLiteral)
@@ -122,6 +135,7 @@ import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import Test.Tasty.HUnit
+import Witch hiding (over)
 
 eitherParseUTCTime :: String -> Either String UTCTime
 eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMaybe (x <> " Z"))
@@ -281,3 +295,10 @@ mkNot notQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] notQ []
 
 mkTerm :: Text -> Text -> BH.Query
 mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
+
+-- | Orphan instance
+instance From UTCTime Google.Protobuf.Timestamp.Timestamp where
+  from = Google.Protobuf.Timestamp.fromUTCTime
+
+instance From Google.Protobuf.Timestamp.Timestamp UTCTime where
+  from = Google.Protobuf.Timestamp.toUTCTime
