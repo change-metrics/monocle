@@ -149,7 +149,7 @@ fakeETaskData = do
   tdTid <- fakeTaskId
   tdCrawlerName <- Faker.Creature.Dog.name
   tdTtype <- (: []) <$> Faker.Creature.Dog.sound
-  tdUpdatedAt <- UTCTimePlus <$> Faker.DateTime.utc
+  tdUpdatedAt <- toMonocleTime <$> Faker.DateTime.utc
   tdChangeUrl <- pure "no-change"
   tdSeverity <- Faker.TvShow.TheExpanse.locations
   tdPriority <- Faker.TvShow.TheExpanse.ships

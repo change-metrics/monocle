@@ -108,7 +108,7 @@ process postFunc =
 runStream ::
   (MonadMask m, MonadRetry m, MonadLog m, MonadIO m) =>
   MonocleClient ->
-  UTCTime ->
+  MonocleTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -125,7 +125,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       oldestEntity <- retry $ getOldestEntity offset
       log $ LogOldestEntity oldestEntity
 
-      if oldestEntityDate oldestEntity >= dropMilliSec startDate
+      if toMonocleTime (oldestEntityDate oldestEntity) >= startDate
         then log LogEnded
         else do
           -- Run the document stream for that entity
@@ -140,7 +140,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
               case foldr collectPostFailure [] postResult of
                 [] -> do
                   -- Post the commit date
-                  res <- retry $ commitTimestamp oldestEntity (dropMilliSec startTime)
+                  res <- retry $ commitTimestamp oldestEntity startTime
 
                   if not res
                     then log LogFailed

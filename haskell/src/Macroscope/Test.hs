@@ -50,7 +50,7 @@ withTestApi config' testCb = bracket mkAppEnv runTest cleanIndex
 testTaskDataMacroscope :: Assertion
 testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
-  now <- getCurrentTime
+  now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
   let stream _ = Streaming.each [td]
   Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
