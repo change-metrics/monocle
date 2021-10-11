@@ -19,7 +19,7 @@
 #  podman push quay.io/change-metrics/builder
 
 # base image
-FROM registry.fedoraproject.org/fedora:33
+FROM registry.fedoraproject.org/fedora:35
 ENV LANG=C.UTF-8
 WORKDIR /build
 
