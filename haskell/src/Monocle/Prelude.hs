@@ -60,6 +60,7 @@ module Monocle.Prelude
     threadDelay,
     parseDateValue,
     dropTime,
+    dropMilliSec,
 
     -- * qq-literals
     utctime,
@@ -128,6 +129,10 @@ utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
 -- This actually discard hour differences
 dropTime :: UTCTime -> UTCTime
 dropTime (UTCTime day _sec) = UTCTime day 0
+
+-- | drop millisecond from UTCTime
+dropMilliSec :: UTCTime -> UTCTime
+dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ round sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs

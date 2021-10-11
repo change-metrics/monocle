@@ -125,7 +125,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       oldestEntity <- retry $ getOldestEntity offset
       log $ LogOldestEntity oldestEntity
 
-      if oldestEntityDate oldestEntity > startDate
+      if oldestEntityDate oldestEntity >= dropMilliSec startDate
         then log LogEnded
         else do
           -- Run the document stream for that entity
@@ -136,13 +136,11 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
                 (getStream oldestEntity)
 
           case postResultE of
-            -- The stream was empty, we can stop now.
-            Right [] -> log LogEnded
             Right postResult ->
               case foldr collectPostFailure [] postResult of
                 [] -> do
                   -- Post the commit date
-                  res <- retry $ commitTimestamp oldestEntity startTime
+                  res <- retry $ commitTimestamp oldestEntity (dropMilliSec startTime)
 
                   if not res
                     then log LogFailed

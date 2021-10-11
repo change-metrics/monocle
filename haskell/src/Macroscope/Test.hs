@@ -52,9 +52,7 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
   now <- getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
-  let stream from
-        | from >= [utctime|2000-01-01 01:01:01|] = pure ()
-        | otherwise = Streaming.each [td]
+  let stream _ = Streaming.each [td]
   Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
