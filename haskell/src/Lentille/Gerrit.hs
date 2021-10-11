@@ -79,6 +79,13 @@ runGerritM env (GerritM im) = do
     Left e -> error (show e)
     Right r -> pure r
 
+-- | Adapt a stream running into GerritM for LentilleM
+adaptStream :: GerritEnv -> S.Stream (S.Of a) GerritM () -> S.Stream (S.Of a) LentilleM ()
+adaptStream env = hoist toLentilleM
+  where
+    toLentilleM :: GerritM a -> LentilleM a
+    toLentilleM (GerritM im) = runReaderT im env
+
 -- | A type class for the Gerrit API
 class (Monad m, MonadReader GerritEnv m) => MonadGerrit m where
   getProjects :: Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
@@ -100,6 +107,23 @@ instance MonadLog GerritM where
 -- | The MonadRetry instance for retrying
 instance MonadRetry GerritM where
   retry = retry'
+
+-------------------------------------------------------------------------------
+-- Monocle Gerrit crawler entry points for Macroscope
+-------------------------------------------------------------------------------
+
+getProjectsStream ::
+  GerritEnv ->
+  Text ->
+  S.Stream (S.Of P.Project) LentilleM ()
+getProjectsStream env reProject = adaptStream env $ streamProject (G.Regexp reProject)
+
+getChangesStream ::
+  GerritEnv ->
+  UTCTime ->
+  Text ->
+  S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
+getChangesStream env untilDate project = adaptStream env $ streamChange [Project project, After untilDate]
 
 -------------------------------------------------------------------------------
 -- Monocle Gerrit crawler system
@@ -372,24 +396,3 @@ streamChange' serverUrl query prefixM identCB = go 0
           MERGED -> C.Change_ChangeStateMerged
           NEW -> C.Change_ChangeStateOpen
           DRAFT -> C.Change_ChangeStateOpen
-
--- Helper to convert a BugzillaM into a LentilleM
-toLentilleM :: GerritEnv -> GerritM a -> LentilleM a
-toLentilleM env (GerritM im) = runReaderT im env
-
--- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of P.Project) m ()`
---   into a `Stream (Of P.Project) LentilleM ()` using mmorph hoist favility.
-getProjectsStream ::
-  GerritEnv ->
-  Text ->
-  S.Stream (S.Of P.Project) LentilleM ()
-getProjectsStream env reProject = hoist (toLentilleM env) $ streamProject (G.Regexp reProject)
-
--- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of (C.Change, [C.ChangeEvents])) m ()`
---   into a `Stream (Of (C.Change, [C.ChangeEvent])) LentilleM ()` using mmorph hoist favility.
-getChangesStream ::
-  GerritEnv ->
-  UTCTime ->
-  Text ->
-  S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
-getChangesStream env untilDate project = hoist (toLentilleM env) $ streamChange [Project project, After untilDate]
