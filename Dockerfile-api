@@ -22,6 +22,6 @@ COPY haskell/ /build
 RUN cabal v2-install -v1 exe:monocle-api exe:macroscope
 
 ################################################################################
-FROM registry.fedoraproject.org/fedora:33
+FROM registry.fedoraproject.org/fedora:35
 
 COPY --from=0 /root/.cabal/bin/monocle-api /root/.cabal/bin/macroscope /bin/
