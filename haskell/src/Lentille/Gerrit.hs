@@ -15,6 +15,7 @@ module Lentille.Gerrit
     -- * The context
     MonadGerrit,
     runGerritM,
+    getGerritEnv,
   )
 where
 
@@ -46,32 +47,48 @@ import Prelude (last)
 -- Gerrit context
 -------------------------------------------------------------------------------
 
+data GerritEnv = GerritEnv
+  { client :: G.GerritClient,
+    prefix :: Maybe Text,
+    identAliasCB :: Maybe (Text -> Maybe Text)
+  }
+
+getGerritEnv ::
+  -- | The Gerrit connexion client
+  G.GerritClient ->
+  -- | A project fullname prefix as defined in the Monocle configuration
+  Maybe Text ->
+  -- | The identity alias callback
+  Maybe (Text -> Maybe Text) ->
+  GerritEnv
+getGerritEnv = GerritEnv
+
 -- | A newtype for the GerritClient Reader
-newtype GerritM a = GerritM (ReaderT G.GerritClient LentilleM a)
+newtype GerritM a = GerritM (ReaderT GerritEnv LentilleM a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadCatch, MonadThrow, MonadMask)
-  deriving newtype (MonadReader G.GerritClient)
+  deriving newtype (MonadReader GerritEnv)
 
 -- | Helper to run a GerritM in IO
-runGerritM :: G.GerritClient -> GerritM a -> IO a
-runGerritM client (GerritM im) = do
-  res <- runLentilleM $ runReaderT im client
+runGerritM :: GerritEnv -> GerritM a -> IO a
+runGerritM env (GerritM im) = do
+  res <- runLentilleM $ runReaderT im env
   case res of
     Left e -> error (show e)
     Right r -> pure r
 
 -- | A type class for the Gerrit API
-class (Monad m, MonadReader G.GerritClient m) => MonadGerrit m where
+class (Monad m, MonadReader GerritEnv m) => MonadGerrit m where
   getProjects :: Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
   queryChanges :: Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
 
 -- | The MonadGerrit instance using the concret reader
 instance MonadGerrit GerritM where
   getProjects count query startM = do
-    client <- ask
-    liftIO $ G.getProjects count query startM client
+    env <- ask
+    liftIO $ G.getProjects count query startM (client env)
   queryChanges count queries startM = do
-    client <- ask
-    liftIO $ G.queryChanges count queries startM client
+    env <- ask
+    liftIO $ G.queryChanges count queries startM (client env)
 
 -- | The MonadLog instance for logging
 instance MonadLog GerritM where
@@ -159,19 +176,19 @@ streamProject query = go 0
 streamChange ::
   (MonadGerrit m, MonadRetry m) =>
   [GerritQuery] ->
-  Maybe Text ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange query prefixM = do
-  client <- ask
-  streamChange' client query prefixM
+streamChange query = do
+  env <- ask
+  streamChange' (getHostFromURL . G.serverUrl $ client env) query (prefix env) (identAliasCB env)
 
 streamChange' ::
   (MonadGerrit m, MonadRetry m) =>
-  G.GerritClient ->
+  Text ->
   [GerritQuery] ->
   Maybe Text ->
+  Maybe (Text -> Maybe Text) ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange' client query prefixM = go 0
+streamChange' host query prefixM identCB = go 0
   where
     size = 100
     go offset = do
@@ -179,10 +196,9 @@ streamChange' client query prefixM = go 0
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges size query (Just offset)
-    getHost = getHostFromURL $ G.serverUrl client
     prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
-    getIdent gAuthor = toIdent getHost Nothing $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
+    getIdent gAuthor = toIdent host identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
       where
         toAuthorName name accountID = name <> "/" <> accountID
     toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]
@@ -269,7 +285,7 @@ streamChange' client query prefixM = go 0
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ G.changeUrl client GerritChange {..}
+          changeUrl = toLazy $ host <> show changeNumber
           changeCommitCount = 1
           changeAdditions = fromIntToInt32 insertions
           changeDeletions = fromIntToInt32 deletions
@@ -325,7 +341,7 @@ streamChange' client query prefixM = go 0
         merger = getIdent <$> submitter
         isSelfMerged s a = aAccountId s == aAccountId a
         toTimestamp = T.fromUTCTime . unGerritTime
-        ghostIdent' = ghostIdent getHost
+        ghostIdent' = ghostIdent host
         getCommitMessage = maybe "" (toLazy . cMessage . grCommit) revision
         getFilesCount = fromIntToInt32 $ maybe 0 (length . M.keys . grFiles) revision
         getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
@@ -338,7 +354,6 @@ streamChange' client query prefixM = go 0
         getCommits sha = maybe [] toCommit $ grCommit <$> revision
           where
             toCommit GerritCommit {..} =
-              -- TODO(fbo) ensure alias callback is passed
               let commitSha = toLazy sha
                   commitAuthor = Just author
                   commitCommitter = Just $ maybe ghostIdent' getIdent uploader
@@ -349,29 +364,28 @@ streamChange' client query prefixM = go 0
                   commitTitle = toLazy cSubject
                in [C.Commit {..}]
         toState :: GerritChangeStatus -> Enumerated C.Change_ChangeState
-        toState = \case
-          ABANDONED -> Enumerated (Right C.Change_ChangeStateClosed)
-          MERGED -> Enumerated $ Right C.Change_ChangeStateMerged
-          NEW -> Enumerated $ Right C.Change_ChangeStateOpen
-          DRAFT -> Enumerated $ Right C.Change_ChangeStateOpen
+        toState status' = Enumerated . Right $ case status' of
+          ABANDONED -> C.Change_ChangeStateClosed
+          MERGED -> C.Change_ChangeStateMerged
+          NEW -> C.Change_ChangeStateOpen
+          DRAFT -> C.Change_ChangeStateOpen
 
 -- Helper to convert a BugzillaM into a LentilleM
-toLentilleM :: G.GerritClient -> GerritM a -> LentilleM a
-toLentilleM client (GerritM im) = runReaderT im client
+toLentilleM :: GerritEnv -> GerritM a -> LentilleM a
+toLentilleM env (GerritM im) = runReaderT im env
 
 -- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of P.Project) m ()`
 --   into a `Stream (Of P.Project) LentilleM ()` using mmorph hoist favility.
 _getProjectsStream ::
-  G.GerritClient ->
+  GerritEnv ->
   G.GerritProjectQuery ->
   S.Stream (S.Of P.Project) LentilleM ()
-_getProjectsStream client query = hoist (toLentilleM client) $ streamProject query
+_getProjectsStream env query = hoist (toLentilleM env) $ streamProject query
 
 -- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of (C.Change, [C.ChangeEvents])) m ()`
 --   into a `Stream (Of (C.Change, [C.ChangeEvent])) LentilleM ()` using mmorph hoist favility.
 _getChangesStream ::
-  G.GerritClient ->
+  GerritEnv ->
   [G.GerritQuery] ->
-  Maybe Text ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
-_getChangesStream client queries prefixM = hoist (toLentilleM client) $ streamChange queries prefixM
+_getChangesStream env queries = hoist (toLentilleM env) $ streamChange queries
