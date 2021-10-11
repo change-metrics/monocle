@@ -27,6 +27,7 @@ module Monocle.Prelude
     -- * tests
     Assertion,
     assertEqual,
+    assertBool,
     assertFailure,
 
     -- * relude extra
