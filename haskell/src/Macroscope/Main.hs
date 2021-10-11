@@ -9,7 +9,7 @@ import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
-import Macroscope.Worker (DocumentStream (..), runLegacyTDStream, runStream)
+import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
 import Monocle.Prelude
@@ -35,13 +35,12 @@ crawlerName Config.Crawler {..} = name
 runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope verbose confPath interval client = do
   monocleLog "Macroscope begin..."
-  reloadableConfig <- Config.loadConfig confPath
-  confRef <- newIORef reloadableConfig
-  loop confRef
+  config <- liftIO $ Config.reloadConfig confPath
+  loop config
   where
-    loop confRef = do
+    loop config = do
       -- Reload config
-      conf <- Config.reloadConfig (const $ pure ()) confRef
+      conf <- liftIO $ config
 
       -- Crawl each index
       traverse_ safeCrawl (getCrawlers conf)
@@ -51,7 +50,7 @@ runMacroscope verbose confPath interval client = do
       liftIO $ threadDelay interval_usec
 
       -- Loop again
-      loop confRef
+      loop config
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
@@ -97,12 +96,11 @@ runMacroscope verbose confPath interval client = do
 
       -- Consume each stream
       let runner' = runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
-          legacyTDRunner' = runLegacyTDStream client Nothing (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
 
       let runner ds = case ds of
             Projects _ -> runner' ds
             Changes _ -> runner' ds
-            TaskDatas _ -> legacyTDRunner' ds
+            TaskDatas _ -> runner' ds
 
       -- TODO: handle exceptions
       traverse_ runner docStreams

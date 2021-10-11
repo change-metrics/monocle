@@ -12,7 +12,6 @@ import "google/api/annotations.proto";
 
 import "monocle/config.proto";
 import "monocle/search.proto";
-import "monocle/task_data.proto";
 import "monocle/crawler.proto";
 import "monocle/user_group.proto";
 
@@ -84,32 +83,6 @@ service UserGroup {
       returns (monocle_user_group.GetResponse) {
     option (google.api.http) = {
       post: "/api/2/user_group/get"
-      body: "*"
-    };
-  }
-}
-
-service TaskData {
-  // Commit the last updated timestamp
-  rpc TaskDataCommit(monocle_task_data.TaskDataCommitRequest) returns (monocle_task_data.TaskDataCommitResponse) {
-    option (google.api.http) = {
-      post: "/api/2/task_data/commit"
-      body: "*"
-    };
-  }
-  // Commit the last updated timestamp
-  rpc TaskDataGetLastUpdated(monocle_task_data.TaskDataGetLastUpdatedRequest)
-      returns (monocle_task_data.TaskDataGetLastUpdatedResponse) {
-    option (google.api.http) = {
-      post: "/api/2/task_data/get_last_updated"
-      body: "*"
-    };
-  }
-
-  // Add task data
-  rpc TaskDataAdd(monocle_task_data.TaskDataAddRequest) returns (monocle_task_data.TaskDataAddResponse) {
-    option (google.api.http) = {
-      post: "/api/2/task_data/add"
       body: "*"
     };
   }

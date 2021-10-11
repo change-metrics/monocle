@@ -7,8 +7,18 @@ option go_package = "monocle/search";
 
 import "google/protobuf/timestamp.proto";
 
-import "monocle/task_data.proto";
-import "monocle/change.proto";
+message TaskData {
+  google.protobuf.Timestamp updated_at = 1;
+  string change_url = 2;
+  repeated string ttype = 3;
+  string tid = 4;
+  string url = 5;
+  string title = 6;
+  string severity = 7;
+  string priority = 8;
+  int32 score = 9;
+  string prefix = 10;
+}
 
 message SuggestionsRequest {
   string index = 1;
@@ -161,7 +171,7 @@ message Change {
 //  string id = 63;
 //  uint32 number = 64;
 
-  repeated monocle_task_data.TaskData task_data = 70;
+  repeated TaskData task_data = 70;
 }
 
 message Changes {

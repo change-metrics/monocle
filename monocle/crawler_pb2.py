@@ -15,6 +15,7 @@ _sym_db = _symbol_database.Default()
 
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 from monocle import change_pb2 as monocle_dot_change__pb2
+from monocle import search_pb2 as monocle_dot_search__pb2
 from monocle import project_pb2 as monocle_dot_project__pb2
 
 
@@ -24,10 +25,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\017monocle/crawler",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x15monocle/crawler.proto\x12\x0fmonocle_crawler\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14monocle/change.proto\x1a\x15monocle/project.proto"\x82\x01\n\x06\x45ntity\x12\x1b\n\x11organization_name\x18\x01 \x01(\tH\x00\x12\x16\n\x0cproject_name\x18\x02 \x01(\tH\x00\x12\x1c\n\x12\x63hange_commit_name\x18\x03 \x01(\tH\x00\x12\x1b\n\x11\x63hange_event_name\x18\x04 \x01(\tH\x00\x42\x08\n\x06\x65ntity"\xea\x01\n\rAddDocRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12\'\n\x06\x65ntity\x18\x04 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12\'\n\x07\x63hanges\x18\x05 \x03(\x0b\x32\x16.monocle_change.Change\x12+\n\x06\x65vents\x18\x06 \x03(\x0b\x32\x1b.monocle_change.ChangeEvent\x12*\n\x08projects\x18\x07 \x03(\x0b\x32\x18.monocle_project.Project"I\n\x0e\x41\x64\x64\x44ocResponse\x12-\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x1c.monocle_crawler.AddDocErrorH\x00\x42\x08\n\x06result"\x97\x01\n\rCommitRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12\'\n\x06\x65ntity\x18\x04 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12-\n\ttimestamp\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"z\n\x0e\x43ommitResponse\x12-\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x1c.monocle_crawler.CommitErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"\xd9\x01\n\x11\x43ommitInfoRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x42\n\x0b\x65ntity_type\x18\x03 \x01(\x0e\x32-.monocle_crawler.CommitInfoRequest.EntityType\x12\x0e\n\x06offset\x18\x04 \x01(\r"P\n\nEntityType\x12\x10\n\x0cOrganization\x10\x00\x12\x0b\n\x07Project\x10\x01\x12\x10\n\x0c\x43hangeCommit\x10\x02\x12\x11\n\rChangeComment\x10\x03"\x82\x02\n\x12\x43ommitInfoResponse\x12\x31\n\x05\x65rror\x18\x01 \x01(\x0e\x32 .monocle_crawler.CommitInfoErrorH\x00\x12\x42\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x30.monocle_crawler.CommitInfoResponse.OldestEntityH\x00\x1ak\n\x0cOldestEntity\x12\'\n\x06\x65ntity\x18\x01 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12\x32\n\x0elast_commit_at\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\n\x06result*^\n\x0b\x41\x64\x64\x44ocError\x12\x13\n\x0f\x41\x64\x64UnknownIndex\x10\x00\x12\x15\n\x11\x41\x64\x64UnknownCrawler\x10\x01\x12\x14\n\x10\x41\x64\x64UnknownApiKey\x10\x02\x12\r\n\tAddFailed\x10\x03*\x93\x01\n\x0b\x43ommitError\x12\x16\n\x12\x43ommitUnknownIndex\x10\x00\x12\x18\n\x14\x43ommitUnknownCrawler\x10\x01\x12\x17\n\x13\x43ommitUnknownApiKey\x10\x02\x12"\n\x1e\x43ommitDateInferiorThanPrevious\x10\x03\x12\x15\n\x11\x43ommitDateMissing\x10\x04*I\n\x0f\x43ommitInfoError\x12\x19\n\x15\x43ommitGetUnknownIndex\x10\x00\x12\x1b\n\x17\x43ommitGetUnknownCrawler\x10\x01\x42\x11Z\x0fmonocle/crawlerb\x06proto3',
+    serialized_pb=b'\n\x15monocle/crawler.proto\x12\x0fmonocle_crawler\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x14monocle/change.proto\x1a\x14monocle/search.proto\x1a\x15monocle/project.proto"Z\n\x06\x45ntity\x12\x1b\n\x11organization_name\x18\x01 \x01(\tH\x00\x12\x16\n\x0cproject_name\x18\x02 \x01(\tH\x00\x12\x11\n\x07td_name\x18\x03 \x01(\tH\x00\x42\x08\n\x06\x65ntity"\x98\x02\n\rAddDocRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12\'\n\x06\x65ntity\x18\x04 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12\'\n\x07\x63hanges\x18\x05 \x03(\x0b\x32\x16.monocle_change.Change\x12+\n\x06\x65vents\x18\x06 \x03(\x0b\x32\x1b.monocle_change.ChangeEvent\x12*\n\x08projects\x18\x07 \x03(\x0b\x32\x18.monocle_project.Project\x12,\n\ntask_datas\x18\x08 \x03(\x0b\x32\x18.monocle_search.TaskData"I\n\x0e\x41\x64\x64\x44ocResponse\x12-\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x1c.monocle_crawler.AddDocErrorH\x00\x42\x08\n\x06result"\x97\x01\n\rCommitRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\x0e\n\x06\x61pikey\x18\x03 \x01(\t\x12\'\n\x06\x65ntity\x18\x04 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12-\n\ttimestamp\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"z\n\x0e\x43ommitResponse\x12-\n\x05\x65rror\x18\x01 \x01(\x0e\x32\x1c.monocle_crawler.CommitErrorH\x00\x12/\n\ttimestamp\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x42\x08\n\x06result"l\n\x11\x43ommitInfoRequest\x12\r\n\x05index\x18\x01 \x01(\t\x12\x0f\n\x07\x63rawler\x18\x02 \x01(\t\x12\'\n\x06\x65ntity\x18\x03 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12\x0e\n\x06offset\x18\x04 \x01(\r"\x82\x02\n\x12\x43ommitInfoResponse\x12\x31\n\x05\x65rror\x18\x01 \x01(\x0e\x32 .monocle_crawler.CommitInfoErrorH\x00\x12\x42\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x30.monocle_crawler.CommitInfoResponse.OldestEntityH\x00\x1ak\n\x0cOldestEntity\x12\'\n\x06\x65ntity\x18\x01 \x01(\x0b\x32\x17.monocle_crawler.Entity\x12\x32\n\x0elast_commit_at\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampB\x08\n\x06result*^\n\x0b\x41\x64\x64\x44ocError\x12\x13\n\x0f\x41\x64\x64UnknownIndex\x10\x00\x12\x15\n\x11\x41\x64\x64UnknownCrawler\x10\x01\x12\x14\n\x10\x41\x64\x64UnknownApiKey\x10\x02\x12\r\n\tAddFailed\x10\x03*\x93\x01\n\x0b\x43ommitError\x12\x16\n\x12\x43ommitUnknownIndex\x10\x00\x12\x18\n\x14\x43ommitUnknownCrawler\x10\x01\x12\x17\n\x13\x43ommitUnknownApiKey\x10\x02\x12"\n\x1e\x43ommitDateInferiorThanPrevious\x10\x03\x12\x15\n\x11\x43ommitDateMissing\x10\x04*I\n\x0f\x43ommitInfoError\x12\x19\n\x15\x43ommitGetUnknownIndex\x10\x00\x12\x1b\n\x17\x43ommitGetUnknownCrawler\x10\x01\x42\x11Z\x0fmonocle/crawlerb\x06proto3',
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
         monocle_dot_change__pb2.DESCRIPTOR,
+        monocle_dot_search__pb2.DESCRIPTOR,
         monocle_dot_project__pb2.DESCRIPTOR,
     ],
 )
@@ -74,8 +76,8 @@ _ADDDOCERROR = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1324,
-    serialized_end=1418,
+    serialized_start=1241,
+    serialized_end=1335,
 )
 _sym_db.RegisterEnumDescriptor(_ADDDOCERROR)
 
@@ -130,8 +132,8 @@ _COMMITERROR = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1421,
-    serialized_end=1568,
+    serialized_start=1338,
+    serialized_end=1485,
 )
 _sym_db.RegisterEnumDescriptor(_COMMITERROR)
 
@@ -162,8 +164,8 @@ _COMMITINFOERROR = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1570,
-    serialized_end=1643,
+    serialized_start=1487,
+    serialized_end=1560,
 )
 _sym_db.RegisterEnumDescriptor(_COMMITINFOERROR)
 
@@ -179,54 +181,6 @@ CommitDateInferiorThanPrevious = 3
 CommitDateMissing = 4
 CommitGetUnknownIndex = 0
 CommitGetUnknownCrawler = 1
-
-
-_COMMITINFOREQUEST_ENTITYTYPE = _descriptor.EnumDescriptor(
-    name="EntityType",
-    full_name="monocle_crawler.CommitInfoRequest.EntityType",
-    filename=None,
-    file=DESCRIPTOR,
-    create_key=_descriptor._internal_create_key,
-    values=[
-        _descriptor.EnumValueDescriptor(
-            name="Organization",
-            index=0,
-            number=0,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.EnumValueDescriptor(
-            name="Project",
-            index=1,
-            number=1,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.EnumValueDescriptor(
-            name="ChangeCommit",
-            index=2,
-            number=2,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.EnumValueDescriptor(
-            name="ChangeComment",
-            index=3,
-            number=3,
-            serialized_options=None,
-            type=None,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    containing_type=None,
-    serialized_options=None,
-    serialized_start=981,
-    serialized_end=1061,
-)
-_sym_db.RegisterEnumDescriptor(_COMMITINFOREQUEST_ENTITYTYPE)
 
 
 _ENTITY = _descriptor.Descriptor(
@@ -276,29 +230,10 @@ _ENTITY = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="change_commit_name",
-            full_name="monocle_crawler.Entity.change_commit_name",
+            name="td_name",
+            full_name="monocle_crawler.Entity.td_name",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="change_event_name",
-            full_name="monocle_crawler.Entity.change_event_name",
-            index=3,
-            number=4,
             type=9,
             cpp_type=9,
             label=1,
@@ -331,8 +266,8 @@ _ENTITY = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=121,
-    serialized_end=251,
+    serialized_start=142,
+    serialized_end=232,
 )
 
 
@@ -477,6 +412,25 @@ _ADDDOCREQUEST = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="task_datas",
+            full_name="monocle_crawler.AddDocRequest.task_datas",
+            index=7,
+            number=8,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -486,8 +440,8 @@ _ADDDOCREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=254,
-    serialized_end=488,
+    serialized_start=235,
+    serialized_end=515,
 )
 
 
@@ -536,8 +490,8 @@ _ADDDOCRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=490,
-    serialized_end=563,
+    serialized_start=517,
+    serialized_end=590,
 )
 
 
@@ -653,8 +607,8 @@ _COMMITREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=566,
-    serialized_end=717,
+    serialized_start=593,
+    serialized_end=744,
 )
 
 
@@ -722,8 +676,8 @@ _COMMITRESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=719,
-    serialized_end=841,
+    serialized_start=746,
+    serialized_end=868,
 )
 
 
@@ -774,15 +728,15 @@ _COMMITINFOREQUEST = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="entity_type",
-            full_name="monocle_crawler.CommitInfoRequest.entity_type",
+            name="entity",
+            full_name="monocle_crawler.CommitInfoRequest.entity",
             index=2,
             number=3,
-            type=14,
-            cpp_type=8,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=0,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -814,16 +768,14 @@ _COMMITINFOREQUEST = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _COMMITINFOREQUEST_ENTITYTYPE,
-    ],
+    enum_types=[],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=844,
-    serialized_end=1061,
+    serialized_start=870,
+    serialized_end=978,
 )
 
 
@@ -882,8 +834,8 @@ _COMMITINFORESPONSE_OLDESTENTITY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1205,
-    serialized_end=1312,
+    serialized_start=1122,
+    serialized_end=1229,
 )
 
 _COMMITINFORESPONSE = _descriptor.Descriptor(
@@ -952,8 +904,8 @@ _COMMITINFORESPONSE = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=1064,
-    serialized_end=1322,
+    serialized_start=981,
+    serialized_end=1239,
 )
 
 _ENTITY.oneofs_by_name["entity"].fields.append(
@@ -966,18 +918,8 @@ _ENTITY.oneofs_by_name["entity"].fields.append(_ENTITY.fields_by_name["project_n
 _ENTITY.fields_by_name["project_name"].containing_oneof = _ENTITY.oneofs_by_name[
     "entity"
 ]
-_ENTITY.oneofs_by_name["entity"].fields.append(
-    _ENTITY.fields_by_name["change_commit_name"]
-)
-_ENTITY.fields_by_name["change_commit_name"].containing_oneof = _ENTITY.oneofs_by_name[
-    "entity"
-]
-_ENTITY.oneofs_by_name["entity"].fields.append(
-    _ENTITY.fields_by_name["change_event_name"]
-)
-_ENTITY.fields_by_name["change_event_name"].containing_oneof = _ENTITY.oneofs_by_name[
-    "entity"
-]
+_ENTITY.oneofs_by_name["entity"].fields.append(_ENTITY.fields_by_name["td_name"])
+_ENTITY.fields_by_name["td_name"].containing_oneof = _ENTITY.oneofs_by_name["entity"]
 _ADDDOCREQUEST.fields_by_name["entity"].message_type = _ENTITY
 _ADDDOCREQUEST.fields_by_name["changes"].message_type = monocle_dot_change__pb2._CHANGE
 _ADDDOCREQUEST.fields_by_name[
@@ -986,6 +928,9 @@ _ADDDOCREQUEST.fields_by_name[
 _ADDDOCREQUEST.fields_by_name[
     "projects"
 ].message_type = monocle_dot_project__pb2._PROJECT
+_ADDDOCREQUEST.fields_by_name[
+    "task_datas"
+].message_type = monocle_dot_search__pb2._TASKDATA
 _ADDDOCRESPONSE.fields_by_name["error"].enum_type = _ADDDOCERROR
 _ADDDOCRESPONSE.oneofs_by_name["result"].fields.append(
     _ADDDOCRESPONSE.fields_by_name["error"]
@@ -1013,10 +958,7 @@ _COMMITRESPONSE.oneofs_by_name["result"].fields.append(
 _COMMITRESPONSE.fields_by_name[
     "timestamp"
 ].containing_oneof = _COMMITRESPONSE.oneofs_by_name["result"]
-_COMMITINFOREQUEST.fields_by_name[
-    "entity_type"
-].enum_type = _COMMITINFOREQUEST_ENTITYTYPE
-_COMMITINFOREQUEST_ENTITYTYPE.containing_type = _COMMITINFOREQUEST
+_COMMITINFOREQUEST.fields_by_name["entity"].message_type = _ENTITY
 _COMMITINFORESPONSE_OLDESTENTITY.fields_by_name["entity"].message_type = _ENTITY
 _COMMITINFORESPONSE_OLDESTENTITY.fields_by_name[
     "last_commit_at"

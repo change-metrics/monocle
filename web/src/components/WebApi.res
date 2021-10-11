@@ -105,42 +105,6 @@ module UserGroup = {
     )
 }
 
-module TaskData = {
-  @module("axios")
-  external taskDataCommitRaw: (string, 'a) => axios<'b> = "post"
-
-  let taskDataCommit = (request: TaskDataTypes.task_data_commit_request): axios<
-    TaskDataTypes.task_data_commit_response,
-  > =>
-    request->TaskDataBs.encode_task_data_commit_request
-    |> taskDataCommitRaw(serverUrl ++ "/api/2/task_data/commit")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->TaskDataBs.decode_task_data_commit_response}->Js.Promise.resolve
-    )
-  @module("axios")
-  external taskDataGetLastUpdatedRaw: (string, 'a) => axios<'b> = "post"
-
-  let taskDataGetLastUpdated = (request: TaskDataTypes.task_data_get_last_updated_request): axios<
-    TaskDataTypes.task_data_get_last_updated_response,
-  > =>
-    request->TaskDataBs.encode_task_data_get_last_updated_request
-    |> taskDataGetLastUpdatedRaw(serverUrl ++ "/api/2/task_data/get_last_updated")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->TaskDataBs.decode_task_data_get_last_updated_response}->Js.Promise.resolve
-    )
-  @module("axios")
-  external taskDataAddRaw: (string, 'a) => axios<'b> = "post"
-
-  let taskDataAdd = (request: TaskDataTypes.task_data_add_request): axios<
-    TaskDataTypes.task_data_add_response,
-  > =>
-    request->TaskDataBs.encode_task_data_add_request
-    |> taskDataAddRaw(serverUrl ++ "/api/2/task_data/add")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->TaskDataBs.decode_task_data_add_response}->Js.Promise.resolve
-    )
-}
-
 module Crawler = {
 
 }

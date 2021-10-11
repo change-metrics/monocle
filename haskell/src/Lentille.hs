@@ -63,7 +63,7 @@ stopLentille = throwError
 -------------------------------------------------------------------------------
 data LogEvent
   = LogStarting
-  | LogStartingEntity CrawlerPB.CommitInfoRequest_EntityType
+  | LogStartingEntity CrawlerPB.EntityEntity
   | LogEnded
   | LogFailed
   | LogNetworkFailure Text

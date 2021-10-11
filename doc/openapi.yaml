@@ -172,57 +172,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_search_SuggestionsResponse'
-    /api/2/task_data/add:
-        post:
-            summary: Add task data
-            operationId: TaskData_TaskDataAdd
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_task_data_TaskDataAddRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_task_data_TaskDataAddResponse'
-    /api/2/task_data/commit:
-        post:
-            summary: Commit the last updated timestamp
-            operationId: TaskData_TaskDataCommit
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_task_data_TaskDataCommitRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_task_data_TaskDataCommitResponse'
-    /api/2/task_data/get_last_updated:
-        post:
-            summary: Commit the last updated timestamp
-            operationId: TaskData_TaskDataGetLastUpdated
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_task_data_TaskDataGetLastUpdatedRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_task_data_TaskDataGetLastUpdatedResponse'
     /api/2/user_group/get:
         post:
             operationId: UserGroup_Get
@@ -507,14 +456,22 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_Change'
+                    description: changes are added when Entity is project_name
                 events:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_ChangeEvent'
+                    description: events are added when Entity is project_name
                 projects:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_project_Project'
+                    description: projects are added when Entity is organization_name
+                task_datas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_TaskData'
+                    description: task_datas are added when Entity is td_name
         monocle_crawler_AddDocResponse:
             properties:
                 error:
@@ -526,9 +483,8 @@ components:
                     type: string
                 crawler:
                     type: string
-                entity_type:
-                    type: integer
-                    format: enum
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_Entity'
                 offset:
                     type: integer
                     format: uint32
@@ -566,10 +522,9 @@ components:
                     type: string
                 project_name:
                     type: string
-                change_commit_name:
+                td_name:
                     type: string
-                change_event_name:
-                    type: string
+            description: A descriptive name of the entities being added
         monocle_project_Project:
             properties:
                 full_path:
@@ -683,7 +638,7 @@ components:
                 task_data:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_task_data_TaskData'
+                        $ref: '#/components/schemas/monocle_search_TaskData'
         monocle_search_ChangeAndEvents:
             properties:
                 change:
@@ -993,23 +948,7 @@ components:
                     type: array
                     items:
                         type: string
-        monocle_search_TermCount:
-            properties:
-                term:
-                    type: string
-                count:
-                    type: integer
-                    format: uint32
-        monocle_search_TermsCount:
-            properties:
-                termcount:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_search_TermCount'
-                total_hits:
-                    type: integer
-                    format: uint32
-        monocle_task_data_TaskData:
+        monocle_search_TaskData:
             properties:
                 updated_at:
                     type: string
@@ -1035,57 +974,22 @@ components:
                     format: int32
                 prefix:
                     type: string
-        monocle_task_data_TaskDataAddRequest:
+        monocle_search_TermCount:
             properties:
-                index:
+                term:
                     type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                items:
+                count:
+                    type: integer
+                    format: uint32
+        monocle_search_TermsCount:
+            properties:
+                termcount:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_task_data_TaskData'
-        monocle_task_data_TaskDataAddResponse:
-            properties:
-                error:
+                        $ref: '#/components/schemas/monocle_search_TermCount'
+                total_hits:
                     type: integer
-                    description: 'TODO: define a header message with generic error then do not re-use the commit error enum.'
-                    format: enum
-        monocle_task_data_TaskDataCommitRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-                apikey:
-                    type: string
-                timestamp:
-                    type: string
-                    format: RFC3339
-        monocle_task_data_TaskDataCommitResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-                timestamp:
-                    type: string
-                    format: RFC3339
-        monocle_task_data_TaskDataGetLastUpdatedRequest:
-            properties:
-                index:
-                    type: string
-                crawler:
-                    type: string
-        monocle_task_data_TaskDataGetLastUpdatedResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-                timestamp:
-                    type: string
-                    format: RFC3339
+                    format: uint32
         monocle_user_group_GetRequest:
             properties:
                 index:

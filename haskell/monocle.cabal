@@ -200,6 +200,7 @@ library
 
                      , Macroscope.Main
                      , Macroscope.Worker
+                     , Macroscope.Test
 
                      -- Fast json helpers
                      , Json.Extras
@@ -208,13 +209,11 @@ library
                      , Monocle.Change
                      , Monocle.Config
                      , Monocle.Search
-                     , Monocle.TaskData
                      , Monocle.Crawler
                      , Monocle.UserGroup
                      , Monocle.Project
 
   other-modules:       Database.Bloodhound.Raw
-                     , Monocle.Test.Mock
                      , Lentille.BugzillaMock
                      , Lentille.Bugzilla.Spec
 

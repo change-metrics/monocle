@@ -1,6 +1,19 @@
 [@@@ocaml.warning "-27-30-39"]
 
 
+type task_data = {
+  updated_at : TimestampTypes.timestamp option;
+  change_url : string;
+  ttype : string list;
+  tid : string;
+  url : string;
+  title : string;
+  severity : string;
+  priority : string;
+  score : int32;
+  prefix : string;
+}
+
 type suggestions_request = {
   index : string;
 }
@@ -132,7 +145,7 @@ and change = {
   changed_files_count : int32;
   commits : commit list;
   commits_count : int32;
-  task_data : TaskDataTypes.task_data list;
+  task_data : task_data list;
 }
 
 type changes = {
@@ -252,6 +265,30 @@ type query_response =
   | Activity_stats of activity_stats
   | Change_events of change_and_events
   | Changes_tops of changes_tops
+
+let rec default_task_data 
+  ?updated_at:((updated_at:TimestampTypes.timestamp option) = None)
+  ?change_url:((change_url:string) = "")
+  ?ttype:((ttype:string list) = [])
+  ?tid:((tid:string) = "")
+  ?url:((url:string) = "")
+  ?title:((title:string) = "")
+  ?severity:((severity:string) = "")
+  ?priority:((priority:string) = "")
+  ?score:((score:int32) = 0l)
+  ?prefix:((prefix:string) = "")
+  () : task_data  = {
+  updated_at;
+  change_url;
+  ttype;
+  tid;
+  url;
+  title;
+  severity;
+  priority;
+  score;
+  prefix;
+}
 
 let rec default_suggestions_request 
   ?index:((index:string) = "")
@@ -408,7 +445,7 @@ and default_change
   ?changed_files_count:((changed_files_count:int32) = 0l)
   ?commits:((commits:commit list) = [])
   ?commits_count:((commits_count:int32) = 0l)
-  ?task_data:((task_data:TaskDataTypes.task_data list) = [])
+  ?task_data:((task_data:task_data list) = [])
   () : change  = {
   change_id;
   author;

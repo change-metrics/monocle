@@ -28,7 +28,7 @@ data Env = Env
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IORef Config.ReloadableConfig,
+  { config :: IO [Config.Index],
     aEnv :: Env
   }
 
@@ -47,8 +47,10 @@ instance MonadFail AppM where
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM [Config.Index]
 getConfig = do
-  logger <- asks (glLogger . aEnv)
-  Config.reloadConfig (logEvent logger . ReloadConfig) =<< asks config
+  loadConfig <- asks config
+  --  logger <- asks (glLogger . aEnv)
+  --  let logReload = (logEvent logger . ReloadConfig)
+  liftIO loadConfig
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request
@@ -127,6 +129,11 @@ mkEnv :: MonadIO m => Text -> m BH.BHEnv
 mkEnv server = do
   manager <- liftIO $ HTTP.newManager HTTP.defaultManagerSettings
   pure $ BH.mkBHEnv (BH.Server server) manager
+
+mkEnv' :: MonadIO m => m BH.BHEnv
+mkEnv' = do
+  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+  mkEnv (toText url)
 
 -- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
 testQueryM :: Config.Index -> QueryM a -> IO a
@@ -229,8 +236,14 @@ withFilter extraQueries = local addFilter
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
-data Entity = Project {getName :: Text} | Organization {getName :: Text}
+data Entity = Project Text | Organization Text | TaskDataEntity
   deriving (Eq, Show)
+
+getEntityName :: Entity -> Text
+getEntityName = \case
+  Project n -> n
+  Organization n -> n
+  TaskDataEntity -> ""
 
 -------------------------------------------------------------------------------
 -- logging function

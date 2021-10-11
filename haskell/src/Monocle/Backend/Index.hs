@@ -18,7 +18,7 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.TaskData
+import Monocle.Search (TaskData (..))
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 import qualified Streaming as S (chunksOf)
@@ -711,7 +711,7 @@ taskDataAdd crawlerName tds = do
         Nothing -> Nothing
         Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
 
-type EntityType = CrawlerPB.CommitInfoRequest_EntityType
+type EntityType = CrawlerPB.EntityEntity
 
 getWorkerName :: Config.Crawler -> Text
 getWorkerName Config.Crawler {..} = name
@@ -723,6 +723,10 @@ getWorkerUpdatedSince Config.Crawler {..} =
     $ parseDateValue (toString update_since)
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Text, UTCTime)
+getLastUpdated crawler (CrawlerPB.EntityEntityTdName _) _ = do
+  -- crawler TD are stored separately
+  ts <- getTDCrawlerCommitDate (getWorkerName crawler) crawler
+  pure (mempty, ts)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -751,13 +755,25 @@ getLastUpdated crawler entity offset = do
     getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
       (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
 
+-- | The following entityRequest are a bit bizarre, this is because we are re-using
+-- the entity info response defined in protobuf. When requesting the last updated, we provide
+-- an empty entity.
+entityRequestProject, entityRequestOrganization, entityRequestTaskData :: CrawlerPB.EntityEntity
+entityRequestProject = CrawlerPB.EntityEntityProjectName ""
+entityRequestOrganization = CrawlerPB.EntityEntityOrganizationName ""
+entityRequestTaskData = CrawlerPB.EntityEntityTdName ""
+
 getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
-  CrawlerPB.CommitInfoRequest_EntityTypeProject -> "project"
-  CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> "organization"
+  CrawlerPB.EntityEntityProjectName _ -> "project"
+  CrawlerPB.EntityEntityOrganizationName _ -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
 setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> QueryM ()
+setOrUpdateLastUpdated _ crawlerName lastUpdatedDate TaskDataEntity = do
+  -- TD crawler are stored separately
+  -- TODO: honor the doNotUpdate flag
+  setTDCrawlerCommitDate crawlerName lastUpdatedDate
 setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index id'
@@ -776,13 +792,14 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
             ECrawlerMetadataObject
               (toLazy crawlerName)
               (toLazy $ crawlerType entity)
-              (toLazy $ getName entity)
+              (toLazy $ getEntityName entity)
               lastUpdatedDate
         }
-    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getName entity')
+    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getEntityName entity')
     crawlerType = \case
       Project _ -> "project"
       Organization _ -> "organization"
+      TaskDataEntity -> "task_datas"
 
 setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
 setLastUpdated = setOrUpdateLastUpdated False

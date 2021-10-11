@@ -17,7 +17,7 @@
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 from datetime import datetime
-import monocle.task_data_pb2 as PBTD
+import monocle.search_pb2 as PBTD
 
 
 @dataclass(frozen=True)

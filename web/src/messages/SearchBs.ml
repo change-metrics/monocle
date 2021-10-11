@@ -1,5 +1,31 @@
 [@@@ocaml.warning "-27-30-39"]
 
+type task_data_mutable = {
+  mutable updated_at : TimestampTypes.timestamp option;
+  mutable change_url : string;
+  mutable ttype : string list;
+  mutable tid : string;
+  mutable url : string;
+  mutable title : string;
+  mutable severity : string;
+  mutable priority : string;
+  mutable score : int32;
+  mutable prefix : string;
+}
+
+let default_task_data_mutable () : task_data_mutable = {
+  updated_at = None;
+  change_url = "";
+  ttype = [];
+  tid = "";
+  url = "";
+  title = "";
+  severity = "";
+  priority = "";
+  score = 0l;
+  prefix = "";
+}
+
 type suggestions_request_mutable = {
   mutable index : string;
 }
@@ -167,7 +193,7 @@ type change_mutable = {
   mutable changed_files_count : int32;
   mutable commits : SearchTypes.commit list;
   mutable commits_count : int32;
-  mutable task_data : TaskDataTypes.task_data list;
+  mutable task_data : SearchTypes.task_data list;
 }
 
 let default_change_mutable () : change_mutable = {
@@ -408,6 +434,64 @@ let default_changes_tops_mutable () : changes_tops_mutable = {
   approvals = None;
 }
 
+
+let rec decode_task_data json =
+  let v = default_task_data_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "updated_at" -> 
+      let json = Js.Dict.unsafeGet json "updated_at" in
+      v.updated_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "task_data" "updated_at")))
+    | "change_url" -> 
+      let json = Js.Dict.unsafeGet json "change_url" in
+      v.change_url <- Pbrt_bs.string json "task_data" "change_url"
+    | "ttype" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "ttype" in 
+        Pbrt_bs.array_ a "task_data" "ttype"
+      in
+      v.ttype <- Array.map (fun json -> 
+        Pbrt_bs.string json "task_data" "ttype"
+      ) a |> Array.to_list;
+    end
+    | "tid" -> 
+      let json = Js.Dict.unsafeGet json "tid" in
+      v.tid <- Pbrt_bs.string json "task_data" "tid"
+    | "url" -> 
+      let json = Js.Dict.unsafeGet json "url" in
+      v.url <- Pbrt_bs.string json "task_data" "url"
+    | "title" -> 
+      let json = Js.Dict.unsafeGet json "title" in
+      v.title <- Pbrt_bs.string json "task_data" "title"
+    | "severity" -> 
+      let json = Js.Dict.unsafeGet json "severity" in
+      v.severity <- Pbrt_bs.string json "task_data" "severity"
+    | "priority" -> 
+      let json = Js.Dict.unsafeGet json "priority" in
+      v.priority <- Pbrt_bs.string json "task_data" "priority"
+    | "score" -> 
+      let json = Js.Dict.unsafeGet json "score" in
+      v.score <- Pbrt_bs.int32 json "task_data" "score"
+    | "prefix" -> 
+      let json = Js.Dict.unsafeGet json "prefix" in
+      v.prefix <- Pbrt_bs.string json "task_data" "prefix"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.updated_at = v.updated_at;
+    SearchTypes.change_url = v.change_url;
+    SearchTypes.ttype = v.ttype;
+    SearchTypes.tid = v.tid;
+    SearchTypes.url = v.url;
+    SearchTypes.title = v.title;
+    SearchTypes.severity = v.severity;
+    SearchTypes.priority = v.priority;
+    SearchTypes.score = v.score;
+    SearchTypes.prefix = v.prefix;
+  } : SearchTypes.task_data)
 
 let rec decode_suggestions_request json =
   let v = default_suggestions_request_mutable () in
@@ -925,7 +1009,7 @@ and decode_change json =
         Pbrt_bs.array_ a "change" "task_data"
       in
       v.task_data <- Array.map (fun json -> 
-        (TaskDataBs.decode_task_data (Pbrt_bs.object_ json "change" "task_data"))
+        (decode_task_data (Pbrt_bs.object_ json "change" "task_data"))
       ) a |> Array.to_list;
     end
     
@@ -1508,6 +1592,28 @@ let rec decode_query_response json =
   in
   loop (Array.length keys - 1)
 
+let rec encode_task_data (v:SearchTypes.task_data) = 
+  let json = Js.Dict.empty () in
+  begin match v.SearchTypes.updated_at with
+  | None -> ()
+  | Some v ->
+    begin (* updated_at field *)
+      let json' = TimestampBs.encode_timestamp v in
+      Js.Dict.set json "updated_at" (Js.Json.string json');
+    end;
+  end;
+  Js.Dict.set json "change_url" (Js.Json.string v.SearchTypes.change_url);
+  let a = v.SearchTypes.ttype |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "ttype" (Js.Json.array a);
+  Js.Dict.set json "tid" (Js.Json.string v.SearchTypes.tid);
+  Js.Dict.set json "url" (Js.Json.string v.SearchTypes.url);
+  Js.Dict.set json "title" (Js.Json.string v.SearchTypes.title);
+  Js.Dict.set json "severity" (Js.Json.string v.SearchTypes.severity);
+  Js.Dict.set json "priority" (Js.Json.string v.SearchTypes.priority);
+  Js.Dict.set json "score" (Js.Json.number (Int32.to_float v.SearchTypes.score));
+  Js.Dict.set json "prefix" (Js.Json.string v.SearchTypes.prefix);
+  json
+
 let rec encode_suggestions_request (v:SearchTypes.suggestions_request) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
@@ -1758,7 +1864,7 @@ and encode_change (v:SearchTypes.change) =
       v.SearchTypes.task_data
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> TaskDataBs.encode_task_data |> Js.Json.object_
+        v |> encode_task_data |> Js.Json.object_
       )
       |> Js.Json.array
     in

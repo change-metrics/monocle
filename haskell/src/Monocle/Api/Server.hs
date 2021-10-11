@@ -30,7 +30,6 @@ import qualified Monocle.Search.Parser as P
 import Monocle.Search.Query (RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
-import qualified Monocle.TaskData as TaskDataPB
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
@@ -161,10 +160,14 @@ pattern ProjectEntity project =
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
+pattern TDEntity td =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
+
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
   OrganizationEntity organizationName -> Organization $ toStrict organizationName
+  TDEntity _td -> TaskDataEntity
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
@@ -179,6 +182,7 @@ crawlerAddDoc request = do
           changes
           events
           projects
+          taskDatas
         ) = request
 
   let requestE = do
@@ -200,8 +204,12 @@ crawlerAddDoc request = do
     Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
+      TaskDataEntity -> addTDs crawler taskDatas
     Left err -> pure $ toErrorResponse err
   where
+    addTDs (Config.Crawler {..}) taskDatas = do
+      I.taskDataAdd name $ toList taskDatas
+      pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
       let changes' = map I.toEChange $ toList changes
@@ -253,7 +261,7 @@ crawlerCommit request = do
     Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
       monocleLogEvent $ UpdatingEntity crawlerName entity date
-
+      -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (toStrict crawlerName) date entity
 
       pure . CrawlerPB.CommitResponse . Just $
@@ -272,8 +280,7 @@ crawlerCommit request = do
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
   tenants <- getConfig
-  let (CrawlerPB.CommitInfoRequest indexName crawlerName entity offset) = request
-      entityType = fromPBEnum entity
+  let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 
   let requestE = do
         index <-
@@ -284,25 +291,26 @@ crawlerCommitInfo request = do
           Config.lookupCrawler index (toStrict crawlerName)
             `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
 
-        pure (index, worker)
+        pure (index, worker, entityM)
 
   case requestE of
-    Right (index, worker) -> runEmptyQueryM index $ do
-      (name, ts) <- I.getLastUpdated worker entityType offset
+    Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> runEmptyQueryM index $ do
+      (name, ts) <- I.getLastUpdated worker entity offset
       pure
         . CrawlerPB.CommitInfoResponse
         . Just
         . CrawlerPB.CommitInfoResponseResultEntity
-        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entityType (toLazy name))
+        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
         $ Just (Timestamp.fromUTCTime ts)
+    Right _ -> error $ "Unknown entity request: " <> show entityM
     Left err ->
       pure $ toErrorResponse err
   where
-    fromEntityType :: CrawlerPB.CommitInfoRequest_EntityType -> LText -> CrawlerPB.Entity
+    fromEntityType :: CrawlerPB.EntityEntity -> LText -> CrawlerPB.Entity
     fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
-      CrawlerPB.CommitInfoRequest_EntityTypeOrganization -> CrawlerPB.EntityEntityOrganizationName value
-      CrawlerPB.CommitInfoRequest_EntityTypeProject -> CrawlerPB.EntityEntityProjectName value
-      otherEntity -> error $ "Not implemented: " <> show otherEntity
+      CrawlerPB.EntityEntityOrganizationName _ -> CrawlerPB.EntityEntityOrganizationName value
+      CrawlerPB.EntityEntityProjectName _ -> CrawlerPB.EntityEntityProjectName value
+      CrawlerPB.EntityEntityTdName _ -> CrawlerPB.EntityEntityTdName value
 
     toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
     toErrorResponse err =
@@ -344,115 +352,6 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
     when checkCommitDate $
       void commitDate `orDie` TDDateInvalid
     pure (index, crawler, T.toUTCTime <$> commitDate)
-
-taskDataTaskDataAdd :: TaskDataPB.TaskDataAddRequest -> AppM TaskDataPB.TaskDataAddResponse
-taskDataTaskDataAdd TaskDataPB.TaskDataAddRequest {..} = do
-  requestE <-
-    validateTaskDataRequest
-      taskDataAddRequestIndex
-      taskDataAddRequestCrawler
-      (Just taskDataAddRequestApikey)
-      False
-      Nothing
-
-  case requestE of
-    Left err -> pure $ toErr err
-    Right (index, Config.Crawler {..}, _) -> do
-      if length taskDataAddRequestItems > 500
-        then do pure $ toErr TDAddLenExcedeed
-        else do
-          void $ runEmptyQueryM index $ I.taskDataAdd name $ toList taskDataAddRequestItems
-          pure $ TaskDataPB.TaskDataAddResponse Nothing
-  where
-    toErr =
-      TaskDataPB.TaskDataAddResponse
-        . Just
-        . TaskDataPB.TaskDataAddResponseResultError
-        . Enumerated
-        . Right
-        . convertErr
-    convertErr = \case
-      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
-      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
-      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
-      TDAddLenExcedeed -> TaskDataPB.TaskDataCommitErrorAddFailed
-      otherErr -> error $ "Error is invalid for TaskDataAddResponse: " <> show otherErr
-
-taskDataTaskDataCommit :: TaskDataPB.TaskDataCommitRequest -> AppM TaskDataPB.TaskDataCommitResponse
-taskDataTaskDataCommit TaskDataPB.TaskDataCommitRequest {..} = do
-  requestE <-
-    validateTaskDataRequest
-      taskDataCommitRequestIndex
-      taskDataCommitRequestCrawler
-      (Just taskDataCommitRequestApikey)
-      True
-      taskDataCommitRequestTimestamp
-  case requestE of
-    Left err -> pure $ toErr err
-    Right (_, _ , Nothing) -> error "Missing commit timestamp in request"
-    Right (index, crawler, Just ts) ->
-      do
-        currentTS <- runEmptyQueryM index $ do
-          I.getTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) crawler
-        if ts < currentTS
-          then pure $ toErr TDDateInvalid
-          else do
-            void $
-              runEmptyQueryM index $
-                do I.setTDCrawlerCommitDate (toText taskDataCommitRequestCrawler) ts
-            pure $ toSuccess ts
-  where
-    toSuccess =
-      TaskDataPB.TaskDataCommitResponse
-        . Just
-        . TaskDataPB.TaskDataCommitResponseResultTimestamp
-        . T.fromUTCTime
-    toErr =
-      TaskDataPB.TaskDataCommitResponse
-        . Just
-        . TaskDataPB.TaskDataCommitResponseResultError
-        . Enumerated
-        . Right
-        . convertErr
-    convertErr = \case
-      TDUnknownApiKey -> TaskDataPB.TaskDataCommitErrorUnknownApiKey
-      TDUnknownCrawler -> TaskDataPB.TaskDataCommitErrorUnknownCrawler
-      TDUnknownIndex -> TaskDataPB.TaskDataCommitErrorUnknownIndex
-      TDDateInvalid -> TaskDataPB.TaskDataCommitErrorCommitDateInferiorThanPrevious
-      otherErr -> error $ "Error is invalid for TaskDataCommitResponse: " <> show otherErr
-
-taskDataTaskDataGetLastUpdated :: TaskDataPB.TaskDataGetLastUpdatedRequest -> AppM TaskDataPB.TaskDataGetLastUpdatedResponse
-taskDataTaskDataGetLastUpdated TaskDataPB.TaskDataGetLastUpdatedRequest {..} = do
-  requestE <-
-    validateTaskDataRequest
-      taskDataGetLastUpdatedRequestIndex
-      taskDataGetLastUpdatedRequestCrawler
-      Nothing
-      False
-      Nothing
-  case requestE of
-    Left err -> pure $ toErr err
-    Right (index, crawler, _) ->
-      do
-        currentTS <- runEmptyQueryM index $ do
-          I.getTDCrawlerCommitDate (toText taskDataGetLastUpdatedRequestCrawler) crawler
-        pure $
-          TaskDataPB.TaskDataGetLastUpdatedResponse
-            . Just
-            . TaskDataPB.TaskDataGetLastUpdatedResponseResultTimestamp
-            $ T.fromUTCTime currentTS
-  where
-    toErr =
-      TaskDataPB.TaskDataGetLastUpdatedResponse
-        . Just
-        . TaskDataPB.TaskDataGetLastUpdatedResponseResultError
-        . Enumerated
-        . Right
-        . convertErr
-    convertErr = \case
-      TDUnknownCrawler -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownCrawler
-      TDUnknownIndex -> TaskDataPB.TaskDataGetLastUpdatedErrorGetUnknownIndex
-      otherErr -> error $ "Error is invalid for TaskDataGetLastUpdated: " <> show otherErr
 
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
@@ -692,7 +591,7 @@ searchQuery request = do
           commitDeletions = commitDeletions
         }
 
-    toTaskData :: ETaskData -> TaskDataPB.TaskData
+    toTaskData :: ETaskData -> SearchPB.TaskData
     toTaskData td =
       let taskDataUpdatedAt = Nothing
           taskDataChangeUrl = toLazy $ tdUrl td
@@ -704,7 +603,7 @@ searchQuery request = do
           taskDataPriority = toLazy $ tdPriority td
           taskDataScore = fromInteger $ toInteger $ tdScore td
           taskDataPrefix = toLazy $ tdPrefix td
-       in TaskDataPB.TaskData {..}
+       in SearchPB.TaskData {..}
 
 searchFields :: FieldsRequest -> AppM FieldsResponse
 searchFields = const $ pure response

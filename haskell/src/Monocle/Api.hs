@@ -1,5 +1,5 @@
 -- |
-module Monocle.Api (run) where
+module Monocle.Api (app, run) where
 
 import Lentille (retry)
 import qualified Monocle.Api.Config as Config
@@ -32,9 +32,8 @@ run port url configFile = withLogger (run' port url configFile)
 
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
 run' port url configFile glLogger = do
-  reloadableConfig <- Config.loadConfig configFile
-  config <- newIORef reloadableConfig
-  let tenants' = Config.configWorkspaces reloadableConfig
+  config <- Config.reloadConfig configFile
+  tenants' <- config
 
   -- Check alias and abort if they are not usable
   case lefts $ map loadAliases tenants' of

@@ -18,7 +18,7 @@ import os
 import socket
 import time
 
-from typing import Optional, Tuple
+from typing import Optional
 
 from flask import Flask
 from flask import abort
@@ -38,7 +38,6 @@ from monocle import utils
 from monocle.db.db import CHANGE_PREFIX
 from monocle.db.db import ELmonocleDB
 from monocle.db.db import InvalidIndexError
-from monocle.task_data import TaskCrawler
 from monocle import env
 
 
@@ -178,53 +177,6 @@ def indices():
     for indice in _indices:
         indices.append(indice)
     return jsonify(indices)
-
-
-def task_data_endpoint_check_input_env(
-    req, check_auth: bool, check_content_type: bool
-) -> Tuple[str, TaskCrawler]:
-    if "index" not in req.args or not req.args.get("index"):
-        returnAPIError("No index provided", 404)
-    index = req.args["index"]
-    if index not in env.indexes_task_crawlers:
-        return returnAPIError("No index with this name", 404)
-    if "name" not in req.args or not req.args.get("name"):
-        return returnAPIError("No crawler name provided", 404)
-    name = req.args["name"]
-    match_crawler_config = [
-        c for c in env.indexes_task_crawlers[index] if c.name == name
-    ]
-    if not match_crawler_config:
-        return returnAPIError("No crawler with this name", 404)
-    crawler_config = match_crawler_config[0]
-    apikey = None
-    if check_auth:
-        if "apikey" not in req.args and not req.args.get("apikey"):
-            return returnAPIError("No crawler apikey provided", 404)
-        apikey = req.args["apikey"]
-        if apikey != crawler_config.api_key:
-            return returnAPIError("Not authorized", 403)
-    if check_content_type:
-        if not req.is_json:
-            return returnAPIError("Missing content-type application/json", 400)
-    return index, crawler_config
-
-
-@app.route("/api/0/task_data", methods=["GET"])
-def task_data():
-    if request.method == "GET":
-        index, crawler_config = task_data_endpoint_check_input_env(
-            request, check_auth=False, check_content_type=False
-        )
-        db = create_db_connection(index)
-        metadata = db.get_task_crawler_metadata(crawler_config.name)
-        if "details" in request.args and request.args.get("details") == "true":
-            return jsonify(metadata)
-        if not metadata.get("last_commit_at"):
-            commit_date = crawler_config.updated_since.strftime("%Y-%m-%dT%H:%M:%S")
-        else:
-            commit_date = metadata["last_commit_at"]
-        return jsonify(commit_date + "Z")
 
 
 def main():

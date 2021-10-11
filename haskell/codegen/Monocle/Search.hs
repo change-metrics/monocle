@@ -30,8 +30,6 @@ import qualified Data.Word as Hs (Word16, Word32, Word64)
 import qualified GHC.Enum as Hs
 import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
-import qualified Monocle.Change
-import qualified Monocle.TaskData
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
@@ -40,6 +38,333 @@ import qualified Proto3.Suite.Types as HsProtobuf
 import qualified Proto3.Wire as HsProtobuf
 import qualified Unsafe.Coerce as Hs
 import qualified Prelude as Hs
+
+data TaskData = TaskData
+  { taskDataUpdatedAt ::
+      Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
+    taskDataChangeUrl :: Hs.Text,
+    taskDataTtype :: Hs.Vector Hs.Text,
+    taskDataTid :: Hs.Text,
+    taskDataUrl :: Hs.Text,
+    taskDataTitle :: Hs.Text,
+    taskDataSeverity :: Hs.Text,
+    taskDataPriority :: Hs.Text,
+    taskDataScore :: Hs.Int32,
+    taskDataPrefix :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named TaskData where
+  nameOf _ = (Hs.fromString "TaskData")
+
+instance HsProtobuf.HasDefault TaskData
+
+instance HsProtobuf.Message TaskData where
+  encodeMessage
+    _
+    TaskData
+      { taskDataUpdatedAt = taskDataUpdatedAt,
+        taskDataChangeUrl = taskDataChangeUrl,
+        taskDataTtype = taskDataTtype,
+        taskDataTid = taskDataTid,
+        taskDataUrl = taskDataUrl,
+        taskDataTitle = taskDataTitle,
+        taskDataSeverity = taskDataSeverity,
+        taskDataPriority = taskDataPriority,
+        taskDataScore = taskDataScore,
+        taskDataPrefix = taskDataPrefix
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                    @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                    taskDataUpdatedAt
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                taskDataChangeUrl
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    taskDataTtype
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                taskDataTid
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 5)
+                taskDataUrl
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 6)
+                taskDataTitle
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 7)
+                taskDataSeverity
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 8)
+                taskDataPriority
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 9)
+                taskDataScore
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                taskDataPrefix
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure TaskData)
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
+              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 4)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 5)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 6)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 7)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 8)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 9)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 10)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Prim
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "updated_at")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "change_url")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "ttype")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "tid")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 5)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "url")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 6)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "title")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 7)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "severity")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 8)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "priority")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 9)
+          (HsProtobuf.Prim HsProtobuf.Int32)
+          (HsProtobuf.Single "score")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "prefix")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB TaskData where
+  toJSONPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9 f10) =
+    ( HsJSONPB.object
+        [ "updated_at" .= f1,
+          "change_url" .= f2,
+          "ttype" .= f3,
+          "tid" .= f4,
+          "url" .= f5,
+          "title" .= f6,
+          "severity" .= f7,
+          "priority" .= f8,
+          "score" .= f9,
+          "prefix" .= f10
+        ]
+    )
+  toEncodingPB (TaskData f1 f2 f3 f4 f5 f6 f7 f8 f9 f10) =
+    ( HsJSONPB.pairs
+        [ "updated_at" .= f1,
+          "change_url" .= f2,
+          "ttype" .= f3,
+          "tid" .= f4,
+          "url" .= f5,
+          "title" .= f6,
+          "severity" .= f7,
+          "priority" .= f8,
+          "score" .= f9,
+          "prefix" .= f10
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB TaskData where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "TaskData"
+        ( \obj ->
+            (Hs.pure TaskData) <*> obj .: "updated_at" <*> obj .: "change_url"
+              <*> obj .: "ttype"
+              <*> obj .: "tid"
+              <*> obj .: "url"
+              <*> obj .: "title"
+              <*> obj .: "severity"
+              <*> obj .: "priority"
+              <*> obj .: "score"
+              <*> obj .: "prefix"
+        )
+    )
+
+instance HsJSONPB.ToJSON TaskData where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON TaskData where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema TaskData where
+  declareNamedSchema _ =
+    do
+      let declare_updated_at = HsJSONPB.declareSchemaRef
+      taskDataUpdatedAt <- declare_updated_at Proxy.Proxy
+      let declare_change_url = HsJSONPB.declareSchemaRef
+      taskDataChangeUrl <- declare_change_url Proxy.Proxy
+      let declare_ttype = HsJSONPB.declareSchemaRef
+      taskDataTtype <- declare_ttype Proxy.Proxy
+      let declare_tid = HsJSONPB.declareSchemaRef
+      taskDataTid <- declare_tid Proxy.Proxy
+      let declare_url = HsJSONPB.declareSchemaRef
+      taskDataUrl <- declare_url Proxy.Proxy
+      let declare_title = HsJSONPB.declareSchemaRef
+      taskDataTitle <- declare_title Proxy.Proxy
+      let declare_severity = HsJSONPB.declareSchemaRef
+      taskDataSeverity <- declare_severity Proxy.Proxy
+      let declare_priority = HsJSONPB.declareSchemaRef
+      taskDataPriority <- declare_priority Proxy.Proxy
+      let declare_score = HsJSONPB.declareSchemaRef
+      taskDataScore <- declare_score Proxy.Proxy
+      let declare_prefix = HsJSONPB.declareSchemaRef
+      taskDataPrefix <- declare_prefix Proxy.Proxy
+      let _ =
+            Hs.pure TaskData <*> HsJSONPB.asProxy declare_updated_at
+              <*> HsJSONPB.asProxy declare_change_url
+              <*> HsJSONPB.asProxy declare_ttype
+              <*> HsJSONPB.asProxy declare_tid
+              <*> HsJSONPB.asProxy declare_url
+              <*> HsJSONPB.asProxy declare_title
+              <*> HsJSONPB.asProxy declare_severity
+              <*> HsJSONPB.asProxy declare_priority
+              <*> HsJSONPB.asProxy declare_score
+              <*> HsJSONPB.asProxy declare_prefix
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "TaskData",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("updated_at", taskDataUpdatedAt),
+                          ("change_url", taskDataChangeUrl),
+                          ("ttype", taskDataTtype),
+                          ("tid", taskDataTid),
+                          ("url", taskDataUrl),
+                          ("title", taskDataTitle),
+                          ("severity", taskDataSeverity),
+                          ("priority", taskDataPriority),
+                          ("score", taskDataScore),
+                          ("prefix", taskDataPrefix)
+                        ]
+                  }
+            }
+        )
 
 newtype SuggestionsRequest = SuggestionsRequest
   { suggestionsRequestIndex ::
@@ -2176,7 +2501,7 @@ data Change = Change
     changeChangedFilesCount :: Hs.Word32,
     changeCommits :: Hs.Vector Monocle.Search.Commit,
     changeCommitsCount :: Hs.Word32,
-    changeTaskData :: Hs.Vector Monocle.TaskData.TaskData
+    changeTaskData :: Hs.Vector Monocle.Search.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2340,8 +2665,8 @@ instance HsProtobuf.Message Change where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 70)
-                ( Hs.coerce @(Hs.Vector Monocle.TaskData.TaskData)
-                    @(HsProtobuf.NestedVec Monocle.TaskData.TaskData)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.TaskData)
+                    @(HsProtobuf.NestedVec Monocle.Search.TaskData)
                     changeTaskData
                 )
             )
@@ -2476,8 +2801,8 @@ instance HsProtobuf.Message Change where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 61)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.TaskData.TaskData))
-              @(_ (Hs.Vector Monocle.TaskData.TaskData))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.TaskData))
+              @(_ (Hs.Vector Monocle.Search.TaskData))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 70)
@@ -2668,11 +2993,7 @@ instance HsProtobuf.Message Change where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 70)
           ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_task_data" Hs.:| ["TaskData"]))
-                  )
-              )
+              (HsProtobuf.Named (HsProtobuf.Single "TaskData"))
           )
           (HsProtobuf.Single "task_data")
           []

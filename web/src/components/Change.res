@@ -16,7 +16,7 @@ let complexicity = (change: SearchTypes.change) =>
   Int32.to_int(change.deletions)
 
 module TaskData = {
-  type t = TaskDataTypes.task_data
+  type t = SearchTypes.task_data
 
   module TaskType = {
     @react.component
@@ -56,7 +56,7 @@ module TaskData = {
   }
 
   module TaskLink = {
-    let getName = (td: TaskDataTypes.task_data) =>
+    let getName = (td: SearchTypes.task_data) =>
       switch td.prefix {
       | "" => " " ++ td.url
       | prefix if Js.String.endsWith("#", prefix) => " " ++ prefix ++ td.tid
@@ -64,7 +64,7 @@ module TaskData = {
       }
 
     @react.component
-    let make = (~td: TaskDataTypes.task_data) =>
+    let make = (~td: SearchTypes.task_data) =>
       switch td.url {
       // legacy hard-coded prefix, to be removed using a janitor process to update existing task datas.
       | url if Js.String.indexOf("show_bug.cgi", url) >= 0 =>
