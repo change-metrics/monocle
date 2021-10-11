@@ -2,7 +2,7 @@
 -- The goal of this module is to transform 'Query' into list of items
 module Monocle.Backend.Queries where
 
-import Data.Aeson (Value (Object), (.:), (.=))
+import Data.Aeson (Value (Object), (.:))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.HashMap.Strict as HM

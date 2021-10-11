@@ -626,13 +626,14 @@ testTaskDataAdd = withTenant doTest
       let td = mkTaskData "45"
       void $ I.taskDataAdd crawlerName [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
-      orphanTdM <- getOrphanTd . toText $ td & taskDataUrl
+      let tdid = (td & taskDataUrl) <> (td & taskDataChangeUrl)
+      orphanTdM <- getOrphanTd . toText $ tdid
       let expectedTD = I.toETaskData crawlerName td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
-                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                { echangeorphantdId = I.getBase64Text (toText tdid),
                   echangeorphantdType = EOrphanTaskData,
                   echangeorphantdTasksData = expectedTD
                 }
@@ -644,13 +645,13 @@ testTaskDataAdd = withTenant doTest
       -- updated in the Database
       let td' = td {taskDataSeverity = "urgent"}
       void $ I.taskDataAdd crawlerName [td']
-      orphanTdM' <- getOrphanTd . toText $ td' & taskDataUrl
+      orphanTdM' <- getOrphanTd . toText $ tdid
       let expectedTD' = expectedTD {tdSeverity = "urgent"}
       assertEqual'
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
-                { echangeorphantdId = I.getBase64Text "https://tdprovider/42-45",
+                { echangeorphantdId = I.getBase64Text (toText tdid),
                   echangeorphantdType = EOrphanTaskData,
                   echangeorphantdTasksData = expectedTD'
                 }

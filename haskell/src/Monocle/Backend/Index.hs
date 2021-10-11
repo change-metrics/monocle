@@ -1,10 +1,7 @@
 -- | Index management functions such as document mapping and ingest
 module Monocle.Backend.Index where
 
-import Data.Aeson
-  ( KeyValue ((.=)),
-    object,
-  )
+import Data.Aeson (object)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
 import qualified Data.Map as Map
@@ -681,7 +678,7 @@ taskDataAdd crawlerName tds = do
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
-          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td, tddTd = [td]})
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td <> tdChangeUrl td, tddTd = [td]})
           -- Found a change matching this TD -> update existing TDs with new TD
           Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
           where
