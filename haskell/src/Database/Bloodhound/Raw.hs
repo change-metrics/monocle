@@ -1,7 +1,6 @@
 -- | A module for low-level function unavailable in bloodhound
 module Database.Bloodhound.Raw (ScrollRequest (..), advance, search, searchHit, settings, aggWithDocValues) where
 
-import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
