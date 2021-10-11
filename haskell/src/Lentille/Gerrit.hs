@@ -7,8 +7,8 @@
 --
 -- Monocle Gerrit crawler system
 module Lentille.Gerrit
-  ( streamProject,
-    streamChange,
+  ( getProjectsStream,
+    getChangesStream,
     G.GerritProjectQuery (..),
     G.GerritQuery (..),
 
@@ -16,6 +16,8 @@ module Lentille.Gerrit
     MonadGerrit,
     runGerritM,
     getGerritEnv,
+    GerritEnv,
+    G.getClient,
   )
 where
 
@@ -24,6 +26,7 @@ import qualified Data.Attoparsec.Text as P
 import Data.Char
 import qualified Data.Map as M (elems, keys, lookup, toList)
 import qualified Data.Text as T
+import Data.Time.Clock
 import qualified Data.Vector as V
 -- import Gerrit hiding (changeUrl)
 import qualified Gerrit as G
@@ -179,7 +182,7 @@ streamChange ::
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
 streamChange query = do
   env <- ask
-  streamChange' (getHostFromURL . G.serverUrl $ client env) query (prefix env) (identAliasCB env)
+  streamChange' (G.serverUrl $ client env) query (prefix env) (identAliasCB env)
 
 streamChange' ::
   (MonadGerrit m, MonadRetry m) =>
@@ -188,7 +191,7 @@ streamChange' ::
   Maybe Text ->
   Maybe (Text -> Maybe Text) ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange' host query prefixM identCB = go 0
+streamChange' serverUrl query prefixM identCB = go 0
   where
     size = 100
     go offset = do
@@ -198,7 +201,7 @@ streamChange' host query prefixM identCB = go 0
     doGet offset = queryChanges size query (Just offset)
     prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
-    getIdent gAuthor = toIdent host identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
+    getIdent gAuthor = toIdent (getHostFromURL serverUrl) identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
       where
         toAuthorName name accountID = name <> "/" <> accountID
     toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]
@@ -285,7 +288,7 @@ streamChange' host query prefixM identCB = go 0
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ host <> show changeNumber
+          changeUrl = toLazy $ (T.dropWhileEnd (== '/') serverUrl) <> "/" <> show changeNumber
           changeCommitCount = 1
           changeAdditions = fromIntToInt32 insertions
           changeDeletions = fromIntToInt32 deletions
@@ -341,7 +344,7 @@ streamChange' host query prefixM identCB = go 0
         merger = getIdent <$> submitter
         isSelfMerged s a = aAccountId s == aAccountId a
         toTimestamp = T.fromUTCTime . unGerritTime
-        ghostIdent' = ghostIdent host
+        ghostIdent' = ghostIdent $ getHostFromURL serverUrl
         getCommitMessage = maybe "" (toLazy . cMessage . grCommit) revision
         getFilesCount = fromIntToInt32 $ maybe 0 (length . M.keys . grFiles) revision
         getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
@@ -376,16 +379,17 @@ toLentilleM env (GerritM im) = runReaderT im env
 
 -- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of P.Project) m ()`
 --   into a `Stream (Of P.Project) LentilleM ()` using mmorph hoist favility.
-_getProjectsStream ::
+getProjectsStream ::
   GerritEnv ->
-  G.GerritProjectQuery ->
+  Text ->
   S.Stream (S.Of P.Project) LentilleM ()
-_getProjectsStream env query = hoist (toLentilleM env) $ streamProject query
+getProjectsStream env reProject = hoist (toLentilleM env) $ streamProject (G.Regexp reProject)
 
 -- | The LentilleM adapter, which takes care of converting the `MonadGerrit m => Stream (Of (C.Change, [C.ChangeEvents])) m ()`
 --   into a `Stream (Of (C.Change, [C.ChangeEvent])) LentilleM ()` using mmorph hoist favility.
-_getChangesStream ::
+getChangesStream ::
   GerritEnv ->
-  [G.GerritQuery] ->
+  UTCTime ->
+  Text ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
-_getChangesStream env queries = hoist (toLentilleM env) $ streamChange queries
+getChangesStream env untilDate project = hoist (toLentilleM env) $ streamChange [Project project, After untilDate]

@@ -30,7 +30,7 @@ import qualified Streaming.Prelude as S
 
 -- | A crawler is defined as a DocumentStream:
 data DocumentStream
-  = -- | Fetch project for a organization name
+  = -- | Fetch projects for a organization name
     Projects (Text -> LentilleStream Project)
   | -- | Fetch recent changes from a project
     Changes (UTCTime -> Text -> LentilleStream (Change, [ChangeEvent]))
