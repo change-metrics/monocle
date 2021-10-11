@@ -24,7 +24,7 @@ ENV LANG=C.UTF-8
 WORKDIR /build
 
 # Install haskell toolchain
-RUN dnf update -y && dnf install -y git ghc cabal-install
+RUN dnf update -y && dnf install -y git ghc cabal-install openssl-devel zlib-devel
 RUN cabal v2-update
 
 # Install the main dependencies first, as well as the one for lentille
