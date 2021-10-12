@@ -18,9 +18,10 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
+import Monocle.Search (Order (..), Order_Direction (..), TaskData (..))
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
+import qualified Proto3.Suite.Types as PT (Enumerated (..))
 import qualified Streaming as S (chunksOf)
 import qualified Streaming.Prelude as S
 
@@ -801,13 +802,41 @@ setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
       Organization _ -> "organization"
       TaskDataEntity -> "task_datas"
 
+getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
+getMostRecentUpdatedChange fullname = do
+  withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
+  where
+    order =
+      Order
+        { orderField = "updated_at",
+          orderDirection = PT.Enumerated $ Right Order_DirectionDESC
+        }
+
+-- | Maybe return the most recent updatedAt date for changes
+getLastUpdatedDate :: QueryMonad m => Text -> m (Maybe UTCTime)
+getLastUpdatedDate fullname = do
+  recents <- getMostRecentUpdatedChange fullname
+  pure $ case recents of
+    [] -> Nothing
+    (c : _) -> Just $ c & echangeUpdatedAt
+
 setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
 setLastUpdated = setOrUpdateLastUpdated False
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
 initCrawlerEntities entities worker = traverse_ run entities
   where
-    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
+    run :: Entity -> QueryM ()
+    run entity = do
+      updated_since <- case entity of
+        Project name -> do
+          getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
+        _ -> pure Nothing
+      setOrUpdateLastUpdated True (getWorkerName worker) (fromMaybe defaultUpdatedSince updated_since) entity
+    defaultUpdatedSince = getWorkerUpdatedSince worker
+    getPrefix Config.Crawler {..} = case provider of
+      Config.GerritProvider Config.Gerrit {..} -> gerrit_prefix
+      _ -> Nothing
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
