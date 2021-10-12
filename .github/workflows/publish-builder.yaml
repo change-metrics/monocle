@@ -4,6 +4,14 @@ jobs:
     if: github.repository_owner == 'change-metrics'
     runs-on: ubuntu-latest
     steps:
+      # See https://github.com/actions/virtual-environments/issues/3812 for more information
+      - name: Download Docker with patched seccomp
+        run: |
+          sudo systemctl stop docker containerd
+          sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc
+          sudo add-apt-repository -y ppa:pascallj/docker.io-clone3
+          sudo apt-get install -y docker.io
+
       - name: Checkout code
         uses: actions/checkout@v2
 
