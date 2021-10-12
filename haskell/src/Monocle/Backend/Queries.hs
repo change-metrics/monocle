@@ -2,7 +2,7 @@
 -- The goal of this module is to transform 'Query' into list of items
 module Monocle.Backend.Queries where
 
-import Data.Aeson (Value (Object), (.:))
+import Data.Aeson (Value (Object), (.:), (.:?))
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.HashMap.Strict as HM
@@ -319,7 +319,7 @@ data HistoBucket a = HistoBucket
   { hbKey :: Word64,
     hbDate :: LText,
     hbCount :: Word32,
-    hbSubBuckets :: a
+    hbSubBuckets :: Maybe a
   }
   deriving (Eq, Show)
 
@@ -343,8 +343,8 @@ instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
     where
       subKeyName = bucketName (Proxy @a)
       parseSubBucket
-        | subKeyName == "unused" = pure $ error "no subbucket"
-        | otherwise = v .: subKeyName
+        | subKeyName == "unused" = pure Nothing
+        | otherwise = v .:? subKeyName
   parseJSON _ = mzero
 
 newtype HistoAgg a = HistoAgg
@@ -1086,7 +1086,9 @@ getActivityStats = do
             fromInteger
               . toInteger
               . length
-              $ haBuckets hbSubBuckets
+              . haBuckets
+              . fromMaybe (error "subbucket not found")
+              $ hbSubBuckets
        in SearchPB.Histo {..}
 
 getSuggestions :: QueryMonad m => Config.Index -> m SearchPB.SuggestionsResponse

@@ -429,6 +429,25 @@ testGetNewContributors = withTenant doTest
           [Q.TermResult {trTerm = "bob", trCount = 1}]
           results
 
+testLifecycleStats :: Assertion
+testLifecycleStats = withTenant doTest
+  where
+    doTest :: QueryM ()
+    doTest = do
+      traverse_ (indexScenarioNM (SProject "openstack/nova" [alice] [bob] [eve])) ["42", "43"]
+      let query =
+            let queryGet _ = const []
+                queryBounds =
+                  ( addUTCTime (-3600) fakeDate,
+                    addUTCTime (3600) fakeDate
+                  )
+                queryMinBoundsSet = True
+             in Q.Query {..}
+
+      withQuery query $ do
+        res <- Q.getLifecycleStats
+        liftIO $ assertBool "stats exist" (not $ null $ SearchPB.lifecycleStatsCreatedHisto res)
+
 testGetActivityStats :: Assertion
 testGetActivityStats = withTenant doTest
   where

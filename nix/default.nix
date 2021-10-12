@@ -492,6 +492,7 @@ in rec {
       export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
       export PROTOBUF_SRC=${protobuf-src}/src
       export NIX_PATH=nixpkgs=${nixpkgsPath}
+      export ELASTIC_URL=http://localhost:19200
     '';
   };
   inherit pkgs;
