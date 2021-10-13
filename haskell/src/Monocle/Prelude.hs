@@ -60,6 +60,9 @@ module Monocle.Prelude
     threadDelay,
     parseDateValue,
     dropTime,
+    dropMilliSec,
+    MonocleTime,
+    toMonocleTime,
 
     -- * qq-literals
     utctime,
@@ -99,7 +102,7 @@ import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Morph (hoist)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
@@ -128,6 +131,28 @@ utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
 -- This actually discard hour differences
 dropTime :: UTCTime -> UTCTime
 dropTime (UTCTime day _sec) = UTCTime day 0
+
+-- | A newtype for UTCTime which doesn't have milli second and tolerates a missing trailing 'Z' when decoding from JSON
+newtype MonocleTime = MonocleTime UTCTime
+  deriving stock (Show, Eq, Ord)
+
+instance ToJSON MonocleTime where
+  toJSON (MonocleTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
+
+instance FromJSON MonocleTime where
+  parseJSON = withText "UTCTimePlus" (parse . toString)
+    where
+      oldFormat = "%FT%T"
+      utcFormat = "%FT%TZ"
+      tryParse f s = parseTimeM False defaultTimeLocale f s
+      parse s = MonocleTime <$> (tryParse oldFormat s <|> tryParse utcFormat s)
+
+toMonocleTime :: UTCTime -> MonocleTime
+toMonocleTime = MonocleTime . dropMilliSec
+
+-- | drop millisecond from UTCTime
+dropMilliSec :: UTCTime -> UTCTime
+dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ round sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs

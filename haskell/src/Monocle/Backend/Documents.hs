@@ -1,11 +1,9 @@
 -- | Data types for Elasticsearch documents
 module Monocle.Backend.Documents where
 
-import Data.Aeson (FromJSON, ToJSON, Value (String), defaultOptions, genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
+import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
-import Relude
+import Monocle.Prelude
 
 data Author = Author
   { authorMuid :: LText,
@@ -61,25 +59,11 @@ instance ToJSON Commit where
 instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
--- | A custom utctime that supports optional 'Z' trailing suffix
-newtype UTCTimePlus = UTCTimePlus UTCTime deriving stock (Show, Eq)
-
-instance ToJSON UTCTimePlus where
-  toJSON (UTCTimePlus utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
-
-instance FromJSON UTCTimePlus where
-  parseJSON = withText "UTCTimePlus" (parse . toString)
-    where
-      oldFormat = "%FT%T"
-      utcFormat = "%FT%TZ"
-      tryParse f s = parseTimeM False defaultTimeLocale f s
-      parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
-
 data ETaskData = ETaskData
   { tdTid :: Text,
     tdCrawlerName :: Text,
     tdTtype :: [Text],
-    tdUpdatedAt :: UTCTimePlus,
+    tdUpdatedAt :: MonocleTime,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,
