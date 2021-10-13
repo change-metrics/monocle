@@ -85,9 +85,12 @@ runMacroscope verbose confPath interval client = do
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
         Config.GerritProvider Config.Gerrit {..} -> do
-          -- TODO(fbo) gerrit-haskell getClient must handle a Maybe password attribute
-          -- password <- Config.getSecret "GERRIT_PASSWORD" gerrit_password
-          gClient <- liftIO $ GerritCrawler.getClient gerrit_url gerrit_login
+          auth <- case gerrit_login of
+            Just login -> do
+              passwd <- Config.getSecret "GERRIT_PASSWORD" gerrit_password
+              pure $ Just (login, passwd)
+            Nothing -> pure Nothing
+          gClient <- liftIO $ GerritCrawler.getClient gerrit_url auth
           let gerritEnv = GerritCrawler.getGerritEnv gClient gerrit_prefix $ Just getIdentByAliasCB
           pure $
             [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]

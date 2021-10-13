@@ -7,7 +7,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://softwarefactory-project.io/r/software-factory/gerrit-haskell
-  tag: 09abd6ca1c1d69a5d3f44b59763b7f87aac49095
+  tag: 279355cba81a1958ec1f5825838dd7a689f3a42f
 
 packages: .
 write-ghc-environment-files: always

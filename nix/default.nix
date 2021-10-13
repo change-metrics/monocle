@@ -66,7 +66,7 @@ let
             src = builtins.fetchGit {
               url = "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
               ref = "master";
-              rev = "09abd6ca1c1d69a5d3f44b59763b7f87aac49095";
+              rev = "279355cba81a1958ec1f5825838dd7a689f3a42f";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "gerrit" src { });
