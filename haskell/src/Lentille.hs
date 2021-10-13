@@ -1,10 +1,18 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 -- | A shared library between lentilles and macroscope
 module Lentille
   ( -- * The lentille context
     LentilleM (..),
     LentilleStream,
+    LentilleMonad,
     runLentilleM,
     stopLentille,
+
+    -- * The lentille worker context
+    MonadBZ (..),
+    MonadGraphQL (..),
 
     -- * Lentille Errors
     LentilleError (..),
@@ -14,6 +22,7 @@ module Lentille
     MonadLog (..),
     LogEvent (..),
     logEvent,
+    logRaw,
 
     -- * Retry context
     MonadRetry (..),
@@ -29,6 +38,8 @@ import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
+import Web.Bugzilla.RedHat (BugzillaSession)
+import qualified Web.Bugzilla.RedHat as BZ (Request, sendBzRequest)
 
 -------------------------------------------------------------------------------
 -- The Lentille context
@@ -46,17 +57,47 @@ instance MonadRetry LentilleM where
 instance MonadLog LentilleM where
   log' = logEvent
 
+instance MonadBZ LentilleM where
+  bzRequest req = liftIO . BZ.sendBzRequest req
+
+instance MonadGraphQL LentilleM where
+  httpRequest req = liftIO . HTTP.httpLbs req
+
 data LentilleError
   = DecodeError [Text]
   deriving (Show)
 
-type LentilleStream a = Stream (Of a) LentilleM ()
+type LentilleStream m a = Stream (Of a) m ()
 
 runLentilleM :: MonadIO m => LentilleM a -> m (Either LentilleError a)
 runLentilleM = liftIO . runExceptT . unLentille
 
-stopLentille :: LentilleError -> LentilleStream a
+stopLentille :: MonadError LentilleError m => LentilleError -> LentilleStream m a
 stopLentille = throwError
+
+-------------------------------------------------------------------------------
+-- The BugZilla context
+
+class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadBZ m where
+  bzRequest :: FromJSON bugs => BugzillaSession -> BZ.Request -> m bugs
+
+class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadGraphQL m where
+  httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
+
+-- The final Lentille constraint
+class
+  ( MonadCatch m, -- catch,throw,mask are needed for exception handling
+    MonadThrow m,
+    MonadMask m,
+    MonadLog m, -- log is the monocle log facility
+    MonadRetry m, -- retry is the monocle retry facility
+    MonadError LentilleError m, -- error enable stream to produce error
+    MonadBZ m, -- for bugzilla worker
+    MonadGraphQL m -- for http worker
+  ) =>
+  LentilleMonad m
+
+instance LentilleMonad LentilleM
 
 -------------------------------------------------------------------------------
 -- Log system
@@ -70,6 +111,7 @@ data LogEvent
   | LogOldestEntity CrawlerPB.CommitInfoResponse_OldestEntity
   | LogGetBugs UTCTime Int Int
   | LogPostData Int
+  | LogRaw Text
 
 class Monad m => MonadTime m where
   getTime :: m UTCTime
@@ -94,6 +136,7 @@ logEvent ev = do
         "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
       LogPostData count -> "Posting tracker data " <> show count
       LogOldestEntity oe -> "Got entity " <> show oe
+      LogRaw t -> t
 
 class Monad m => MonadLog m where
   log' :: LogEvent -> m UTCTime
@@ -102,6 +145,9 @@ class Monad m => MonadLog m where
 
 instance MonadLog IO where
   log' = logEvent
+
+logRaw :: MonadLog m => Text -> m ()
+logRaw = log . LogRaw
 
 -------------------------------------------------------------------------------
 -- Network Retry system

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- TMP
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
@@ -6,7 +7,7 @@ module Lentille.GitLab where
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
-import Lentille (LentilleError (DecodeError), LentilleStream, retry, stopLentille)
+import Lentille
 import Monocle.Client (mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
@@ -44,7 +45,7 @@ newGitLabGraphClient url' = do
       <$> liftIO (lookupEnv "GITLAB_GRAPH_TOKEN")
   newGitLabGraphClientWithKey url' token'
 
-runGitLabGraphRequest :: MonadIO m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString
+runGitLabGraphRequest :: MonadGraphQL m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString
 runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
   -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
   let initRequest = HTTP.parseRequest_ (toString url')
@@ -58,7 +59,7 @@ runGitLabGraphRequest (GitLabGraphClient manager' url' token' _) jsonBody = do
               ],
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
-  response <- liftIO $ HTTP.httpLbs request manager'
+  response <- httpRequest request manager'
   -- print response
   pure $ HTTP.responseBody response
 
@@ -66,7 +67,7 @@ data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCou
   deriving (Show)
 
 streamFetch ::
-  (Fetch a, FromJSON a) =>
+  (Fetch a, FromJSON a, MonadGraphQL m) =>
   GitLabGraphClient ->
   -- | MR updatedAt date until we need to fetch
   Maybe UTCTime ->
@@ -75,12 +76,13 @@ streamFetch ::
   -- | query result adapter
   (a -> (PageInfo, [Text], [b])) ->
   -- | check for limit ->
-  (LentilleStream b -> LentilleStream b) ->
-  LentilleStream b
+  (LentilleStream m b -> LentilleStream m b) ->
+  LentilleStream m b
 streamFetch client untilDate mkArgs transformResponse checkLimit = checkLimit $ go Nothing
   where
+    liftLog = lift . logRaw
     logStatus (PageInfo hasNextPage' _ totalCount') =
-      putTextLn $
+      liftLog $
         "[gitlab-graphql] got total count of documents: "
           <> show totalCount'
           <> " fetching until date: "

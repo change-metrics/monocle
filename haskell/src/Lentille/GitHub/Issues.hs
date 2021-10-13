@@ -17,6 +17,7 @@ import Data.Time.Clock
 import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
+import Lentille (MonadGraphQL)
 import Lentille.GitHub
   ( GitHubGraphClient,
     PageInfo (..),
@@ -83,7 +84,7 @@ defineByDocumentFile
     }
   |]
 
-streamLinkedIssue :: MonadIO m => GitHubGraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
+streamLinkedIssue :: MonadGraphQL m => GitHubGraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
 streamLinkedIssue client searchText utctime = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' =

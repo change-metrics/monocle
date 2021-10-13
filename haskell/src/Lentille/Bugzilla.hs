@@ -17,10 +17,6 @@ module Lentille.Bugzilla
     BugWithScore,
     BZ.BugzillaApikey (..),
     getApikey,
-
-    -- * The context
-    MonadBZ,
-    runBugzillaM,
   )
 where
 
@@ -35,41 +31,6 @@ import Web.Bugzilla.RedHat (BugzillaSession)
 import qualified Web.Bugzilla.RedHat as BZ
 import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
 import qualified Web.Bugzilla.RedHat.Search as BZS
-
--------------------------------------------------------------------------------
--- BugZilla context
--------------------------------------------------------------------------------
-
--- | A newtype for the BugzillaSession Reader
-newtype BugzillaM a = BugzillaM (ReaderT BugzillaSession LentilleM a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadCatch, MonadThrow, MonadMask)
-  deriving newtype (MonadReader BugzillaSession)
-
--- | Helper to run a BugzillaM in IO
-runBugzillaM :: BugzillaSession -> BugzillaM a -> IO a
-runBugzillaM bzSession (BugzillaM im) = do
-  res <- runLentilleM $ runReaderT im bzSession
-  case res of
-    Left e -> error (show e)
-    Right r -> pure r
-
--- | A type class for the bugzilla API
-class (Monad m, MonadReader BugzillaSession m) => MonadBZ m where
-  bzRequest :: FromJSON bugs => BZ.Request -> m bugs
-
--- | The MonadBZ instance using the concret reader
-instance MonadBZ BugzillaM where
-  bzRequest request = do
-    bzSession <- ask
-    liftIO $ BZ.sendBzRequest bzSession request
-
--- | The MonadLog instance for logging
-instance MonadLog BugzillaM where
-  log' = liftIO . logEvent
-
--- | The MonadRetry instance for retrying
-instance MonadRetry BugzillaM where
-  retry = retry'
 
 -------------------------------------------------------------------------------
 -- BugZilla system
@@ -141,22 +102,22 @@ getApikey :: Text -> BZ.BugzillaApikey
 getApikey = BZ.BugzillaApikey
 
 -- getBugs unwraps the 'BugsWithScore' newtype wrapper
-getBugs :: MonadBZ m => BZ.Request -> m [BugWithScore]
-getBugs request = do
-  BugsWithScore bugs <- bzRequest request
+getBugs :: MonadBZ m => BugzillaSession -> BZ.Request -> m [BugWithScore]
+getBugs bzSession request = do
+  BugsWithScore bugs <- bzRequest bzSession request
   pure bugs
 
-getBugWithScore :: MonadBZ m => BZ.BugId -> m BugWithScore
-getBugWithScore bugId' = do
-  bzSession <- ask
+getBugWithScore :: MonadBZ m => BugzillaSession -> BZ.BugId -> m BugWithScore
+getBugWithScore bzSession bugId' = do
   let request = BZ.newBzRequest bzSession ["bug", show bugId'] bugWithScoreIncludeFieldQuery
-  bugs <- getBugs request
+  bugs <- getBugs bzSession request
   case bugs of
     [x] -> pure x
     xs -> error $ "Got more or less than one bug " <> show xs
 
 getBugsWithScore ::
   (MonadBZ m) =>
+  BugzillaSession ->
   -- | The last changed date
   UTCTime ->
   -- | The product name
@@ -166,12 +127,11 @@ getBugsWithScore ::
   -- | The offset
   Int ->
   m [BugWithScore]
-getBugsWithScore sinceTS product'' limit offset = do
-  bzSession <- ask
+getBugsWithScore bzSession sinceTS product'' limit offset = do
   let request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
       page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
       searchQuery = BZS.evalSearchExpr $ (searchExpr sinceTS product'')
-  getBugs request
+  getBugs bzSession request
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
 toTaskData :: BugWithScore -> [TaskData]
@@ -197,14 +157,13 @@ toTaskData bz = map mkTaskData ebugs
         (toLazy $ "rhbz#")
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData' ::
-  (MonadLog m, MonadBZ m, MonadRetry m) => Text -> UTCTime -> Stream (Of TaskData) m ()
-getBZData' product''' sinceTS = go 0
+getBZData :: MonadBZ m => BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) m ()
+getBZData bzSession product''' sinceTS = go 0
   where
     limit = 100
     doGet :: MonadBZ m => Int -> m [BugWithScore]
     doGet offset =
-      getBugsWithScore sinceTS product''' limit offset
+      getBugsWithScore bzSession sinceTS product''' limit offset
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do
@@ -214,15 +173,6 @@ getBZData' product''' sinceTS = go 0
       S.each (concatMap toTaskData bugs)
       -- Keep on retrieving the rest
       unless (length bugs < limit) (go (offset + length bugs))
-
--- | The LentilleM adapter, which takes care of converting the `MonadBZ m => Stream (Of a) m ()`
---   into a `Stream (Of a) LentilleM ()` using mmorph hoist favility.
-getBZData :: BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) LentilleM ()
-getBZData bzSession productName sinceTS = hoist toLentilleM $ getBZData' productName sinceTS
-  where
-    -- Helper to convert a BugzillaM into a LEntilleM
-    toLentilleM :: BugzillaM a -> LentilleM a
-    toLentilleM (BugzillaM im) = runReaderT im bzSession
 
 getBugzillaSession :: MonadIO m => Text -> Maybe BZ.BugzillaApikey -> m BugzillaSession
 getBugzillaSession host Nothing = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext host)
