@@ -222,7 +222,6 @@ testProjectCrawlerMetadata = withTenant doTest
               update_since = show fakeDefaultDate
               provider =
                 let gerrit_url = "https://localhost"
-                    gerrit_url_insecure = Nothing
                     gerrit_login = Nothing
                     gerrit_password = Nothing
                     gerrit_prefix = Nothing
