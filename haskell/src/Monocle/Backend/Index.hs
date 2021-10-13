@@ -382,7 +382,7 @@ toETaskData tdCrawlerName TaskData {..} =
       tdTitle = toText taskDataTitle
       tdPrefix = toText taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
-      tdUpdatedAt = UTCTimePlus $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
+      tdUpdatedAt = toMonocleTime $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ETaskData {..}
   where
     defaultDate = [utctime|1960-01-01 00:00:00|]
