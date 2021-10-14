@@ -259,6 +259,14 @@ ensureIndexCrawlerMetadata = do
   config <- getIndexConfig
   traverse_ initCrawlerMetadata $ Config.crawlers config
 
+withRefresh :: HasCallStack => QueryM BH.Reply -> QueryM ()
+withRefresh action = do
+  index <- getIndexName
+  resp <- action
+  unless (BH.isSuccess resp) (error $ "Unable to add or update: " <> show resp)
+  refreshResp <- BH.refreshIndex index
+  unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
+
 ensureIndex :: QueryM ()
 ensureIndex = do
   ensureIndexSetup
@@ -522,11 +530,10 @@ setTDCrawlerCommitDate name commitDate = do
       doc = ECrawlerMetadata $ ECrawlerMetadataObject {..}
       docID = getTDCrawlerMetadataDocId name
   exists <- BH.documentExists index docID
-  void $
+  withRefresh $
     if exists
       then BH.updateDocument index BH.defaultIndexDocumentSettings doc docID
       else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
-  void $ BH.refreshIndex index
 
 getTDCrawlerCommitDate :: Text -> Config.Crawler -> QueryM UTCTime
 getTDCrawlerCommitDate name crawler = do
@@ -780,37 +787,34 @@ getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.EntityEntityOrganizationName _ -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> QueryM ()
-setOrUpdateLastUpdated _ crawlerName lastUpdatedDate TaskDataEntity = do
+ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
+ensureCrawlerMetadata crawlerName getDate TaskDataEntity =
   -- TD crawler are stored separately
-  -- TODO: honor the doNotUpdate flag
-  setTDCrawlerCommitDate crawlerName lastUpdatedDate
-setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
+  setTDCrawlerCommitDate crawlerName =<< getDate
+ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index id'
-  when ((exists && not doNotUpdate) || not exists) $ do
-    resp <-
-      if exists
-        then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-        else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-    _ <- BH.refreshIndex index
-    if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
+  when (not exists) $ do
+    lastUpdatedDate <- getDate
+    withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) id'
   where
     id' = getId entity
-    cm =
+    cm lastUpdatedDate =
       ECrawlerMetadata
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
               (toLazy crawlerName)
-              (toLazy $ crawlerType entity)
+              (toLazy $ entityToText entity)
               (toLazy $ getEntityName entity)
               lastUpdatedDate
         }
-    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getEntityName entity')
-    crawlerType = \case
-      Project _ -> "project"
-      Organization _ -> "organization"
-      TaskDataEntity -> "task_datas"
+    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
+
+entityToText :: Entity -> Text
+entityToText = \case
+  Project _ -> "project"
+  Organization _ -> "organization"
+  TaskDataEntity -> "task_datas"
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
@@ -831,18 +835,33 @@ getLastUpdatedDate fullname = do
     (c : _) -> Just $ c & echangeUpdatedAt
 
 setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
-setLastUpdated = setOrUpdateLastUpdated False
+setLastUpdated crawlerName lastUpdatedDate TaskDataEntity = do
+  setTDCrawlerCommitDate crawlerName lastUpdatedDate
+setLastUpdated crawlerName lastUpdatedDate entity = do
+  index <- getIndexName
+  withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm (getId entity)
+  where
+    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
+    cm =
+      ECrawlerMetadata
+        { ecmCrawlerMetadata =
+            ECrawlerMetadataObject
+              (toLazy crawlerName)
+              (toLazy $ entityToText entity)
+              (toLazy $ getEntityName entity)
+              lastUpdatedDate
+        }
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
 initCrawlerEntities entities worker = traverse_ run entities
   where
     run :: Entity -> QueryM ()
     run entity = do
-      updated_since <- fromMaybe defaultUpdatedSince <$> case entity of
-        Project name -> do
-          getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
-        _ -> pure Nothing
-      setOrUpdateLastUpdated True (getWorkerName worker) updated_since entity
+      let updated_since =
+            fromMaybe defaultUpdatedSince <$> case entity of
+              Project name -> getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
+              _ -> pure Nothing
+      ensureCrawlerMetadata (getWorkerName worker) updated_since entity
     defaultUpdatedSince = getWorkerUpdatedSince worker
     getPrefix Config.Crawler {..} = case provider of
       Config.GerritProvider Config.Gerrit {..} -> gerrit_prefix
