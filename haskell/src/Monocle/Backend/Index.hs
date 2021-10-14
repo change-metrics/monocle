@@ -240,19 +240,29 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-ensureIndex :: QueryM ()
-ensureIndex = do
+
+ensureIndexSetup :: QueryM ()
+ensureIndexSetup = do
   indexName <- getIndexName
-  config <- getIndexConfig
   _respCI <- BH.createIndex indexSettings indexName
   BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
   -- print respCI
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ initCrawlerMetadata $ Config.crawlers config
+  pure ()
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+ensureIndexCrawlerMetadata :: QueryM ()
+ensureIndexCrawlerMetadata = do
+  config <- getIndexConfig
+  traverse_ initCrawlerMetadata $ Config.crawlers config
+
+ensureIndex :: QueryM ()
+ensureIndex = do
+  ensureIndexSetup
+  ensureIndexCrawlerMetadata
 
 removeIndex :: QueryM ()
 removeIndex = do
@@ -812,7 +822,7 @@ getMostRecentUpdatedChange fullname = do
           orderDirection = PT.Enumerated $ Right Order_DirectionDESC
         }
 
--- | Maybe return the most recent updatedAt date for changes
+-- | Maybe return the most recent updatedAt date for a repository full name
 getLastUpdatedDate :: QueryMonad m => Text -> m (Maybe UTCTime)
 getLastUpdatedDate fullname = do
   recents <- getMostRecentUpdatedChange fullname
@@ -828,11 +838,11 @@ initCrawlerEntities entities worker = traverse_ run entities
   where
     run :: Entity -> QueryM ()
     run entity = do
-      updated_since <- case entity of
+      updated_since <- fromMaybe defaultUpdatedSince <$> case entity of
         Project name -> do
           getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
         _ -> pure Nothing
-      setOrUpdateLastUpdated True (getWorkerName worker) (fromMaybe defaultUpdatedSince updated_since) entity
+      setOrUpdateLastUpdated True (getWorkerName worker) updated_since entity
     defaultUpdatedSince = getWorkerUpdatedSince worker
     getPrefix Config.Crawler {..} = case provider of
       Config.GerritProvider Config.Gerrit {..} -> gerrit_prefix

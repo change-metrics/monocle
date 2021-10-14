@@ -152,7 +152,7 @@ toMonocleTime = MonocleTime . dropMilliSec
 
 -- | drop millisecond from UTCTime
 dropMilliSec :: UTCTime -> UTCTime
-dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ round sec)
+dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ truncate sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs

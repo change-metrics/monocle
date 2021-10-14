@@ -16,7 +16,7 @@ module Lentille.Gerrit
     MonadGerrit,
     runGerritM,
     getGerritEnv,
-    GerritEnv,
+    GerritEnv (..),
     G.getClient,
   )
 where
@@ -51,8 +51,11 @@ import Prelude (last)
 -------------------------------------------------------------------------------
 
 data GerritEnv = GerritEnv
-  { client :: G.GerritClient,
+  { -- | The Gerrit connexion client
+    client :: G.GerritClient,
+    -- | A project fullname prefix as defined in the Monocle configuration
     prefix :: Maybe Text,
+    -- | The identity alias callback
     identAliasCB :: Maybe (Text -> Maybe Text)
   }
 
