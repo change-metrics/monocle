@@ -142,8 +142,8 @@ runMacroscope' verbose confPath interval client = do
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
 
-    gerritREProjectsCrawler :: MonadIO m => GerritCrawler.GerritEnv -> DocumentStream m
+    gerritREProjectsCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
     gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
 
-    gerritChangesCrawler :: MonadIO m => GerritCrawler.GerritEnv -> DocumentStream m
+    gerritChangesCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
     gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv

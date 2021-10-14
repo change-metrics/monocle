@@ -69,7 +69,7 @@ testCrawlingPoint = do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =

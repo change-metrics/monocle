@@ -12,6 +12,8 @@ module Lentille
 
     -- * The lentille worker context
     MonadBZ (..),
+    MonadGerrit (..),
+    GerritEnv (..),
     MonadGraphQL (..),
 
     -- * Lentille Errors
@@ -34,6 +36,9 @@ import Control.Monad.Except (MonadError, throwError)
 import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Gerrit as G
+import Gerrit.Data.Change (GerritChange, GerritQuery)
+import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Network.HTTP.Client (HttpException (..))
@@ -84,6 +89,26 @@ class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadBZ m where
 class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
 
+-- | A type class for the Gerrit API
+data GerritEnv = GerritEnv
+  { -- | The Gerrit connexion client
+    client :: G.GerritClient,
+    -- | A project fullname prefix as defined in the Monocle configuration
+    prefix :: Maybe Text,
+    -- | The identity alias callback
+    identAliasCB :: Maybe (Text -> Maybe Text)
+  }
+
+class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadGerrit m where
+  getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
+  queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
+
+instance MonadGerrit LentilleM where
+  getProjects env count query startM =
+    liftIO $ G.getProjects count query startM (client env)
+  queryChanges env count queries startM =
+    liftIO $ G.queryChanges count queries startM (client env)
+
 -- The final Lentille constraint
 class
   ( MonadCatch m, -- catch,throw,mask are needed for exception handling
@@ -93,6 +118,7 @@ class
     MonadRetry m, -- retry is the monocle retry facility
     MonadError LentilleError m, -- error enable stream to produce error
     MonadBZ m, -- for bugzilla worker
+    MonadGerrit m,
     MonadGraphQL m -- for http worker
   ) =>
   LentilleMonad m
