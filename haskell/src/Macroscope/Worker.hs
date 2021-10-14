@@ -37,6 +37,11 @@ data DocumentStream m
   | -- | Fetch recent task data
     TaskDatas (UTCTime -> LentilleStream m TaskData)
 
+isTDStream :: DocumentStream m -> Bool
+isTDStream = \case
+  TaskDatas _ -> True
+  _anyOtherStream -> False
+
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
 -------------------------------------------------------------------------------
@@ -152,7 +157,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       -- TODO: report decoding error
       logRaw $ "Lentille error: " <> show err
       log LogFailed
-      drainEntities (offset + 1)
+      unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]
     collectPostFailure res acc = case res of
