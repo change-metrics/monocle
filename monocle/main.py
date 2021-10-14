@@ -31,7 +31,6 @@ from monocle.github import pullrequest
 from monocle.github import application
 from monocle.github import organization
 from monocle.github import graphql
-from monocle.gerrit import review
 from monocle.crawler import Crawler, Runner, GroupCrawler
 from monocle import config
 from monocle import migrate
@@ -301,32 +300,6 @@ def main() -> None:
                 for repository in repositories:
                     github_c_args.repository = repository
                     group[gid].add_crawler(Runner(github_c_args))
-            for crawler_item in tenant.get("crawler", {}).get(
-                "gerrit_repositories", []
-            ):
-                gerrit_c_args = review.GerritCrawlerArgs(
-                    command="gerrit_crawler",
-                    repository=crawler_item["name"],
-                    updated_since=crawler_item["updated_since"],
-                    loop_delay=tenant["crawler"]["loop_delay"],
-                    base_url=utils.strip_url(crawler_item["base_url"]),
-                    insecure=crawler_item.get("insecure", False),
-                    login=crawler_item.get("login"),
-                    password=crawler_item.get("password"),
-                    db=ELmonocleDB(
-                        elastic_conn=args.elastic_conn,
-                        index=tenant["index"],
-                        timeout=args.elastic_timeout,
-                        user=args.elastic_user,
-                        password=args.elastic_password,
-                        use_ssl=args.use_ssl,
-                        verify_certs=args.insecure,
-                        ssl_show_warn=args.ssl_show_warn,
-                    ),
-                    prefix=crawler_item.get("prefix"),
-                    idents_config=idents_config,
-                )
-                tpool.append(Crawler(gerrit_c_args))
         log.info("%d configured threads" % len(tpool))
         for cthread in tpool:
             cthread.start()

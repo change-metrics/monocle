@@ -18,9 +18,10 @@ import Monocle.Change
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
+import Monocle.Search (Order (..), Order_Direction (..), TaskData (..))
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
+import qualified Proto3.Suite.Types as PT (Enumerated (..))
 import qualified Streaming as S (chunksOf)
 import qualified Streaming.Prelude as S
 
@@ -239,19 +240,37 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-ensureIndex :: QueryM ()
-ensureIndex = do
+
+ensureIndexSetup :: QueryM ()
+ensureIndexSetup = do
   indexName <- getIndexName
-  config <- getIndexConfig
   _respCI <- BH.createIndex indexSettings indexName
   BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
   -- print respCI
   _respPM <- BH.putMapping indexName ChangesIndexMapping
   -- print respPM
   True <- BH.indexExists indexName
-  traverse_ initCrawlerMetadata $ Config.crawlers config
+  pure ()
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+ensureIndexCrawlerMetadata :: QueryM ()
+ensureIndexCrawlerMetadata = do
+  config <- getIndexConfig
+  traverse_ initCrawlerMetadata $ Config.crawlers config
+
+withRefresh :: HasCallStack => QueryM BH.Reply -> QueryM ()
+withRefresh action = do
+  index <- getIndexName
+  resp <- action
+  unless (BH.isSuccess resp) (error $ "Unable to add or update: " <> show resp)
+  refreshResp <- BH.refreshIndex index
+  unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
+
+ensureIndex :: QueryM ()
+ensureIndex = do
+  ensureIndexSetup
+  ensureIndexCrawlerMetadata
 
 removeIndex :: QueryM ()
 removeIndex = do
@@ -293,18 +312,18 @@ toEChangeEvent ChangeEvent {..} =
         _anyOtherApprovals -> Nothing,
       echangeeventTasksData = Nothing
     }
-  where
-    getEventType :: Maybe ChangeEventType -> EDocType
-    getEventType eventTypeM = case eventTypeM of
-      Just eventType -> case eventType of
-        ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
-        ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
-        ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
-        ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
-        ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
-        ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
-        ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
-      Nothing -> error "changeEventType field is mandatory"
+
+getEventType :: Maybe ChangeEventType -> EDocType
+getEventType eventTypeM = case eventTypeM of
+  Just eventType -> case eventType of
+    ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
+    ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
+    ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
+    ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
+    ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
+    ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
+    ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
+  Nothing -> error "changeEventType field is mandatory"
 
 toEChange :: Change -> EChange
 toEChange Change {..} =
@@ -511,11 +530,10 @@ setTDCrawlerCommitDate name commitDate = do
       doc = ECrawlerMetadata $ ECrawlerMetadataObject {..}
       docID = getTDCrawlerMetadataDocId name
   exists <- BH.documentExists index docID
-  void $
+  withRefresh $
     if exists
       then BH.updateDocument index BH.defaultIndexDocumentSettings doc docID
       else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
-  void $ BH.refreshIndex index
 
 getTDCrawlerCommitDate :: Text -> Config.Crawler -> QueryM UTCTime
 getTDCrawlerCommitDate name crawler = do
@@ -769,56 +787,94 @@ getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.EntityEntityOrganizationName _ -> "organization"
   otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
 
-setOrUpdateLastUpdated :: Bool -> Text -> UTCTime -> Entity -> QueryM ()
-setOrUpdateLastUpdated _ crawlerName lastUpdatedDate TaskDataEntity = do
+ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
+ensureCrawlerMetadata crawlerName getDate TaskDataEntity =
   -- TD crawler are stored separately
-  -- TODO: honor the doNotUpdate flag
-  setTDCrawlerCommitDate crawlerName lastUpdatedDate
-setOrUpdateLastUpdated doNotUpdate crawlerName lastUpdatedDate entity = do
+  setTDCrawlerCommitDate crawlerName =<< getDate
+ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index id'
-  when ((exists && not doNotUpdate) || not exists) $ do
-    resp <-
-      if exists
-        then BH.updateDocument index BH.defaultIndexDocumentSettings cm id'
-        else BH.indexDocument index BH.defaultIndexDocumentSettings cm id'
-    _ <- BH.refreshIndex index
-    if BH.isSuccess resp then pure () else error $ "Unable to set Crawler Metadata: " <> show resp
+  when (not exists) $ do
+    lastUpdatedDate <- getDate
+    withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) id'
   where
     id' = getId entity
+    cm lastUpdatedDate =
+      ECrawlerMetadata
+        { ecmCrawlerMetadata =
+            ECrawlerMetadataObject
+              (toLazy crawlerName)
+              (toLazy $ entityToText entity)
+              (toLazy $ getEntityName entity)
+              lastUpdatedDate
+        }
+    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
+
+entityToText :: Entity -> Text
+entityToText = \case
+  Project _ -> "project"
+  Organization _ -> "organization"
+  TaskDataEntity -> "task_datas"
+
+getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
+getMostRecentUpdatedChange fullname = do
+  withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
+  where
+    order =
+      Order
+        { orderField = "updated_at",
+          orderDirection = PT.Enumerated $ Right Order_DirectionDESC
+        }
+
+-- | Maybe return the most recent updatedAt date for a repository full name
+getLastUpdatedDate :: QueryMonad m => Text -> m (Maybe UTCTime)
+getLastUpdatedDate fullname = do
+  recents <- getMostRecentUpdatedChange fullname
+  pure $ case recents of
+    [] -> Nothing
+    (c : _) -> Just $ c & echangeUpdatedAt
+
+setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
+setLastUpdated crawlerName lastUpdatedDate TaskDataEntity = do
+  setTDCrawlerCommitDate crawlerName lastUpdatedDate
+setLastUpdated crawlerName lastUpdatedDate entity = do
+  index <- getIndexName
+  withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm (getId entity)
+  where
+    getId entity' = getCrawlerMetadataDocId crawlerName (entityToText entity') (getEntityName entity')
     cm =
       ECrawlerMetadata
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
               (toLazy crawlerName)
-              (toLazy $ crawlerType entity)
+              (toLazy $ entityToText entity)
               (toLazy $ getEntityName entity)
               lastUpdatedDate
         }
-    getId entity' = getCrawlerMetadataDocId crawlerName (crawlerType entity') (getEntityName entity')
-    crawlerType = \case
-      Project _ -> "project"
-      Organization _ -> "organization"
-      TaskDataEntity -> "task_datas"
-
-setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
-setLastUpdated = setOrUpdateLastUpdated False
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
 initCrawlerEntities entities worker = traverse_ run entities
   where
-    run = setOrUpdateLastUpdated True (getWorkerName worker) (getWorkerUpdatedSince worker)
+    run :: Entity -> QueryM ()
+    run entity = do
+      let updated_since =
+            fromMaybe defaultUpdatedSince <$> case entity of
+              Project name -> getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
+              _ -> pure Nothing
+      ensureCrawlerMetadata (getWorkerName worker) updated_since entity
+    defaultUpdatedSince = getWorkerUpdatedSince worker
+    getPrefix Config.Crawler {..} = case provider of
+      Config.GerritProvider Config.Gerrit {..} -> gerrit_prefix
+      _ -> Nothing
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
 
-getOrganizationEntityFromCrawler :: Config.Crawler -> Maybe Entity
+getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
 getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
 
 initCrawlerMetadata :: Config.Crawler -> QueryM ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
-    ( getProjectEntityFromCrawler crawler
-        <> maybe [] (: []) (getOrganizationEntityFromCrawler crawler)
-    )
+    (getProjectEntityFromCrawler crawler <> getOrganizationEntityFromCrawler crawler)
     crawler

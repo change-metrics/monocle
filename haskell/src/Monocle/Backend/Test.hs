@@ -33,15 +33,6 @@ fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 fakeAuthor :: Author
 fakeAuthor = Author "John" "John"
 
-mkFakeChange :: Int -> LText -> EChange
-mkFakeChange number title =
-  fakeChange
-    { echangeId = "aFakeId-" <> show number,
-      echangeNumber = number,
-      echangeTitle = title,
-      echangeUrl = "https://fakehost/change/" <> show number
-    }
-
 fakeChange :: EChange
 fakeChange =
   EChange
@@ -133,19 +124,35 @@ testIndexChanges = withTenant doTest
         (I.getChangeDocId fakeChange1Updated)
         echangeTitle
         (echangeTitle fakeChange1Updated)
+      -- Check we can get the most recently updated change
+      dateM <- I.getLastUpdatedDate $ toText . echangeRepositoryFullname $ fakeChange1
+      assertEqual' "Got most recent change" (Just fakeDateAlt) dateM
       -- Check total count of Change document in the database
       checkChangesCount 2
       -- Check scanSearch has the same count
       withQuery (mkQuery []) $ do
-        count <- Streaming.length_ $ Q.scanSearchId
+        count <- Streaming.length_ Q.scanSearchId
         assertEqual' "stream count match" 2 count
       where
         checkDocExists' dId = do
           exists <- I.checkDocExists dId
           assertEqual' "check doc exists" exists True
         fakeChange1 = mkFakeChange 1 "My change 1"
-        fakeChange1Updated = fakeChange1 {echangeTitle = "My change 1 updated"}
+        fakeChange1Updated =
+          fakeChange1
+            { echangeTitle = "My change 1 updated",
+              echangeUpdatedAt = fakeDateAlt
+            }
         fakeChange2 = mkFakeChange 2 "My change 2"
+        mkFakeChange :: Int -> LText -> EChange
+        mkFakeChange number title =
+          fakeChange
+            { echangeId = "aFakeId-" <> show number,
+              echangeNumber = number,
+              echangeTitle = title,
+              echangeRepositoryFullname = "fakerepo",
+              echangeUrl = "https://fakehost/change/" <> show number
+            }
 
 -- | A lifted version of assertEqual
 assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
@@ -156,33 +163,52 @@ testProjectCrawlerMetadata = withTenant doTest
   where
     doTest :: QueryM ()
     doTest = do
-      -- Init default crawler metadata and Ensure we get the default updated date
-      I.initCrawlerMetadata worker
-      lastUpdated <- I.getLastUpdated worker entityType 0
+      -- Init default crawler metadata and ensure we get the default updated date
+      I.initCrawlerMetadata workerGitlab
+      lastUpdated <- I.getLastUpdated workerGitlab entityType 0
       assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-      I.setLastUpdated crawlerName fakeDateB entity
-      I.setLastUpdated crawlerName fakeDateA entityAlt
-      lastUpdated' <- I.getLastUpdated worker entityType 0
+      I.setLastUpdated crawlerGitlab fakeDateB entity
+      I.setLastUpdated crawlerGitlab fakeDateA entityAlt
+      lastUpdated' <- I.getLastUpdated workerGitlab entityType 0
       assertEqual' "check got oldest updated entity" ("centos/nova", fakeDateB) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
-      I.setLastUpdated crawlerName fakeDateC entity
-      lastUpdated'' <- I.getLastUpdated worker entityType 0
+      I.setLastUpdated crawlerGitlab fakeDateC entity
+      lastUpdated'' <- I.getLastUpdated workerGitlab entityType 0
       assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated''
 
       -- Re run init and ensure it was noop
-      I.initCrawlerMetadata worker
-      lastUpdated''' <- I.getLastUpdated worker entityType 0
+      I.initCrawlerMetadata workerGitlab
+      lastUpdated''' <- I.getLastUpdated workerGitlab entityType 0
       assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated'''
+
+      -- Index a change then verify the just create crawlerMetadata is initialized with
+      -- the most recent change updateAt date
+      I.indexChanges
+        [ fakeChange
+            { echangeId = "aFakeId-42",
+              echangeRepositoryFullname = "opendev/nova",
+              echangeUpdatedAt = fakeDateD
+            },
+          fakeChange
+            { echangeId = "aFakeId-43",
+              echangeRepositoryFullname = "opendev/nova",
+              echangeUpdatedAt = fakeDateC
+            }
+        ]
+      I.initCrawlerMetadata workerGerrit
+      lastUpdated'''' <- I.getLastUpdated workerGerrit entityType 0
+      assertEqual' "check got oldest updated entity" ("opendev/nova", fakeDateD) lastUpdated''''
       where
         entityType = CrawlerPB.EntityEntityProjectName ""
         entity = Project "centos/nova"
         entityAlt = Project "centos/neutron"
-        crawlerName = "test-crawler"
-        worker =
-          let name = crawlerName
+        crawlerGitlab = "test-crawler-gitlab"
+        crawlerGerrit = "test-crawler-gerrit"
+        workerGitlab =
+          let name = crawlerGitlab
               update_since = show fakeDefaultDate
               provider =
                 let gitlab_url = Just "https://localhost"
@@ -191,10 +217,22 @@ testProjectCrawlerMetadata = withTenant doTest
                     gitlab_organization = "centos"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
+        workerGerrit =
+          let name = crawlerGerrit
+              update_since = show fakeDefaultDate
+              provider =
+                let gerrit_url = "https://localhost"
+                    gerrit_login = Nothing
+                    gerrit_password = Nothing
+                    gerrit_prefix = Nothing
+                    gerrit_repositories = Just ["opendev/nova"]
+                 in Config.GerritProvider Config.Gerrit {..}
+           in Config.Crawler {..}
         fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
         fakeDateB = [utctime|2021-05-31 10:00:00|]
         fakeDateA = [utctime|2021-06-01 20:00:00|]
         fakeDateC = [utctime|2021-06-02 23:00:00|]
+        fakeDateD = [utctime|2021-10-01 01:00:00|]
 
 testOrganizationCrawlerMetadata :: Assertion
 testOrganizationCrawlerMetadata = withTenant doTest

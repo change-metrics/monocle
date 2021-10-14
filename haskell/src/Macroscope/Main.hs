@@ -2,8 +2,10 @@
 module Macroscope.Main (runMacroscope) where
 
 import Control.Exception.Safe (tryAny)
+import qualified Data.Text as T
 import Lentille (MonadLog, MonadRetry)
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
+import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getClient, getGerritEnv, getProjectsStream)
 import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
@@ -82,6 +84,17 @@ runMacroscope verbose confPath interval client = do
             [glOrgCrawler glClient | isNothing gitlab_repositories]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
+        Config.GerritProvider Config.Gerrit {..} -> do
+          auth <- case gerrit_login of
+            Just login -> do
+              passwd <- Config.getSecret "GERRIT_PASSWORD" gerrit_password
+              pure $ Just (login, passwd)
+            Nothing -> pure Nothing
+          gClient <- liftIO $ GerritCrawler.getClient gerrit_url auth
+          let gerritEnv = GerritCrawler.getGerritEnv gClient gerrit_prefix $ Just getIdentByAliasCB
+          pure $
+            [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
+              <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
         Config.BugzillaProvider Config.Bugzilla {..} -> do
           bzTokenT <- Config.getSecret "BUGZILLA_TOKEN" bugzilla_token
           bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
@@ -121,3 +134,12 @@ runMacroscope verbose confPath interval client = do
     ghIssuesCrawler ghClient repository =
       TaskDatas $
         streamLinkedIssue ghClient $ toString $ "repo:" <> repository
+
+    gerritRegexProjects :: [Text] -> [Text]
+    gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
+
+    gerritREProjectsCrawler :: GerritCrawler.GerritEnv -> DocumentStream
+    gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
+
+    gerritChangesCrawler :: GerritCrawler.GerritEnv -> DocumentStream
+    gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv
