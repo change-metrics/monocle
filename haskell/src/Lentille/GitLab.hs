@@ -8,7 +8,6 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Lentille
-import Monocle.Client (mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.URI as URI
@@ -27,9 +26,9 @@ data GitLabGraphClient = GitLabGraphClient
     host :: Text
   }
 
-newGitLabGraphClientWithKey :: MonadIO m => Text -> Text -> m GitLabGraphClient
+newGitLabGraphClientWithKey :: MonadGraphQL m => Text -> Text -> m GitLabGraphClient
 newGitLabGraphClientWithKey url' token' = do
-  manager' <- mkManager
+  manager' <- newManager
   let host' =
         maybe
           (error "Unable to parse provided gitlab_url")
@@ -37,12 +36,12 @@ newGitLabGraphClientWithKey url' token' = do
           (URI.uriAuthority =<< URI.parseURI (toString url'))
   pure $ GitLabGraphClient manager' url' token' host'
 
-newGitLabGraphClient :: MonadIO m => Text -> m GitLabGraphClient
+newGitLabGraphClient :: MonadGraphQL m => Text -> m GitLabGraphClient
 newGitLabGraphClient url' = do
   token' <-
     toText
       . fromMaybe (error "GITLAB_GRAPH_TOKEN environment is missing")
-      <$> liftIO (lookupEnv "GITLAB_GRAPH_TOKEN")
+      <$> mLookupEnv "GITLAB_GRAPH_TOKEN"
   newGitLabGraphClientWithKey url' token'
 
 runGitLabGraphRequest :: MonadGraphQL m => GitLabGraphClient -> LBS.ByteString -> m LBS.ByteString

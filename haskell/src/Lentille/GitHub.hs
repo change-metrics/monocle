@@ -8,14 +8,11 @@
 --   to implement GitHub graphql API crawlers.
 module Lentille.GitHub where
 
-import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Lentille
-import Monocle.Client (mkManager)
+import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
-import Relude
-import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
 schemaLocation :: String
@@ -33,17 +30,17 @@ data GitHubGraphClient = GitHubGraphClient
     token :: Text
   }
 
-newGithubGraphClient :: MonadIO m => Text -> m GitHubGraphClient
+newGithubGraphClient :: MonadGraphQL m => Text -> m GitHubGraphClient
 newGithubGraphClient url' = do
   token' <-
     toText
       . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")
-      <$> liftIO (lookupEnv "GITHUB_GRAPH_TOKEN")
+      <$> mLookupEnv "GITHUB_GRAPH_TOKEN"
   newGithubGraphClientWithKey url' token'
 
-newGithubGraphClientWithKey :: MonadIO m => Text -> Text -> m GitHubGraphClient
+newGithubGraphClientWithKey :: MonadGraphQL m => Text -> Text -> m GitHubGraphClient
 newGithubGraphClientWithKey url' token' = do
-  manager' <- mkManager
+  manager' <- newManager
   pure $ GitHubGraphClient manager' url' token'
 
 -- | The morpheus-graphql-client fetch callback,

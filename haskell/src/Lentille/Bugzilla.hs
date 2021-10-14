@@ -174,6 +174,6 @@ getBZData bzSession product''' sinceTS = go 0
       -- Keep on retrieving the rest
       unless (length bugs < limit) (go (offset + length bugs))
 
-getBugzillaSession :: MonadIO m => Text -> Maybe BZ.BugzillaApikey -> m BugzillaSession
-getBugzillaSession host Nothing = BZ.AnonymousSession <$> liftIO (BZ.newBugzillaContext host)
-getBugzillaSession host (Just apiKey) = flip BZ.ApikeySession apiKey <$> liftIO (BZ.newBugzillaContext host)
+getBugzillaSession :: MonadBZ m => Text -> Maybe BZ.BugzillaApikey -> m BugzillaSession
+getBugzillaSession host Nothing = BZ.AnonymousSession <$> newContext host
+getBugzillaSession host (Just apiKey) = flip BZ.ApikeySession apiKey <$> newContext host
