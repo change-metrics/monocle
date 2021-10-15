@@ -222,8 +222,6 @@ password. Default is "GERRIT_PASSWORD"
 
 `gerrit_prefix` might be set to configure the crawler to prepend the repository name with a prefix.
 
-Note that this crawler is managed by the `crawler-legacy` container.
-
 ###### GitLab
 
 A GitLab provider settings
