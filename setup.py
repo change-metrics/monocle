@@ -24,7 +24,6 @@ setup(
     packages=[
         "monocle",
         "monocle.db",
-        "monocle.gerrit",
         "monocle.github",
         "monocle.migrate",
     ],
