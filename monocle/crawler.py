@@ -24,7 +24,6 @@ from typing import Union, Dict, List
 
 from monocle.github.graphql import GithubGraphQLQuery
 from monocle.github import pullrequest
-from monocle.gerrit import review
 from monocle.utils import utcnow
 from monocle.db import db
 
@@ -40,7 +39,7 @@ class Runner(object):
         self.dump_dir = DUMP_DIR if os.path.isdir(DUMP_DIR) else None
         self.loop_delay = int(args.loop_delay)
         self.db: db.ELmonocleDB = args.db
-        self.prf: Union[pullrequest.PRsFetcher, review.ReviewesFetcher]
+        self.prf: Union[pullrequest.PRsFetcher]
         if args.command == "github_crawler":
             if args.repository:
                 self.repository_el_re = "%s/%s" % (
@@ -55,19 +54,6 @@ class Runner(object):
                 args.org,
                 args.idents_config,
                 repository=args.repository,
-            )
-        elif args.command == "gerrit_crawler":
-            self.repository_el_re = (
-                args.prefix if args.prefix else ""
-            ) + args.repository.lstrip("^")
-            self.prf = review.ReviewesFetcher(
-                args.base_url,
-                args.repository,
-                args.insecure,
-                args.idents_config,
-                login=args.login,
-                password=args.password,
-                prefix=args.prefix,
             )
 
     def get_last_updated_date(self):
