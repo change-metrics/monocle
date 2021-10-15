@@ -2,8 +2,10 @@
 module Macroscope.Main (runMacroscope) where
 
 import Control.Exception.Safe (tryAny)
-import Lentille (MonadLog, MonadRetry)
+import qualified Data.Text as T
+import Lentille
 import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
+import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getGerritEnv, getProjectsStream)
 import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
@@ -13,11 +15,6 @@ import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
 import Monocle.Prelude
-
--- | 'MacroM' is an alias for a bunch of constrain.
-class (MonadIO m, MonadFail m, MonadMask m, MonadLog m, MonadRetry m) => MacroM m
-
-instance MacroM IO
 
 -- | Utility function to create a flat list of crawler from the whole configuration
 getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
@@ -32,48 +29,55 @@ crawlerName Config.Crawler {..} = name
 
 -- | 'run' is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
-runMacroscope :: MacroM m => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
+runMacroscope :: Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
 runMacroscope verbose confPath interval client = do
-  monocleLog "Macroscope begin..."
-  config <- liftIO $ Config.reloadConfig confPath
+  res <- runLentilleM $ runMacroscope' verbose confPath interval client
+  case res of
+    Left e -> error $ "Macroscope failed: " <> show e
+    Right x -> pure x
+
+runMacroscope' :: (MonadCatch m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
+runMacroscope' verbose confPath interval client = do
+  logRaw "Macroscope begin..."
+  config <- Config.mReloadConfig confPath
   loop config
   where
     loop config = do
       -- Reload config
-      conf <- liftIO $ config
+      conf <- config
 
       -- Crawl each index
       traverse_ safeCrawl (getCrawlers conf)
 
       -- Pause
-      monocleLog $ "Waiting " <> show (fromIntegral interval_usec / 1_000_000 :: Float) <> "s. brb"
-      liftIO $ threadDelay interval_usec
+      logRaw $ "Waiting " <> show (fromIntegral interval_usec / 1_000_000 :: Float) <> "s. brb"
+      mThreadDelay interval_usec
 
       -- Loop again
       loop config
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
 
-    safeCrawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    safeCrawl :: (MonadCatch m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     safeCrawl crawler = do
       catched <- tryAny $ crawl crawler
       case catched of
         Right comp -> pure comp
         Left exc ->
           let (_, _, Config.Crawler {..}, _) = crawler
-           in monocleLog $
+           in logRaw $
                 "Skipping crawler: " <> name <> ". Unexpected exception catched: " <> show exc
 
-    crawl :: MacroM m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    crawl :: LentilleMonad m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     crawl (index, key, crawler, idents) = do
-      now <- getCurrentTime
-      when verbose (monocleLog $ "Crawling " <> crawlerName crawler)
+      now <- toMonocleTime <$> mGetCurrentTime
+      when verbose (logRaw $ "Crawling " <> crawlerName crawler)
 
       -- Create document streams
       docStreams <- case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
           -- TODO: the client may be created once for each api key
-          token <- Config.getSecret "GITLAB_TOKEN" gitlab_token
+          token <- Config.mGetSecret "GITLAB_TOKEN" gitlab_token
           glClient <-
             newGitLabGraphClientWithKey
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
@@ -82,13 +86,24 @@ runMacroscope verbose confPath interval client = do
             [glOrgCrawler glClient | isNothing gitlab_repositories]
               -- Then we always index the projects
               <> [glMRCrawler glClient getIdentByAliasCB]
+        Config.GerritProvider Config.Gerrit {..} -> do
+          auth <- case gerrit_login of
+            Just login -> do
+              passwd <- Config.mGetSecret "GERRIT_PASSWORD" gerrit_password
+              pure $ Just (login, passwd)
+            Nothing -> pure Nothing
+          gClient <- getGerritClient gerrit_url auth
+          let gerritEnv = GerritCrawler.getGerritEnv gClient gerrit_prefix $ Just getIdentByAliasCB
+          pure $
+            [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
+              <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
         Config.BugzillaProvider Config.Bugzilla {..} -> do
-          bzTokenT <- Config.getSecret "BUGZILLA_TOKEN" bugzilla_token
+          bzTokenT <- Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
           bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
           pure $ bzCrawler bzClient <$> fromMaybe [] bugzilla_products
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
-          ghToken <- Config.getSecret "GITHUB_TOKEN" github_token
+          ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
           ghClient <- newGithubGraphClientWithKey (fromMaybe githubDefaultGQLUrl github_url) ghToken
           let repos = Config.getCrawlerProject crawler
           pure $ ghIssuesCrawler ghClient <$> repos
@@ -108,16 +123,25 @@ runMacroscope verbose confPath interval client = do
         getIdentByAliasCB :: Text -> Maybe Text
         getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-    glMRCrawler :: GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream
+    glMRCrawler :: MonadGraphQL m => GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream m
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-    glOrgCrawler :: GitLabGraphClient -> DocumentStream
+    glOrgCrawler :: MonadGraphQL m => GitLabGraphClient -> DocumentStream m
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
-    bzCrawler :: BugzillaSession -> Text -> DocumentStream
+    bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
     bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
 
-    ghIssuesCrawler :: GitHubGraphClient -> Text -> DocumentStream
+    ghIssuesCrawler :: MonadGraphQL m => GitHubGraphClient -> Text -> DocumentStream m
     ghIssuesCrawler ghClient repository =
       TaskDatas $
         streamLinkedIssue ghClient $ toString $ "repo:" <> repository
+
+    gerritRegexProjects :: [Text] -> [Text]
+    gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
+
+    gerritREProjectsCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+    gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
+
+    gerritChangesCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+    gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv

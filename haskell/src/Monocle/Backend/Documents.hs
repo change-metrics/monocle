@@ -1,11 +1,25 @@
 -- | Data types for Elasticsearch documents
+--
+-- Note there are three data types:
+-- - Monocle.Change is the schemas used by the crawler, thus the import is named CrawlerPB to disambiguate.
+-- - Monocle.Search is the schemas used by the web interface (SearchPB).
+-- - Monocle.Backend.Documents (this module) is the schemas used by elastic search.
+--
+-- The different data types are used for different purpose:
+-- - CrawlerPB are managed by Lentilles
+-- - SearchPB is the public interface
+-- - Documents needs to stay in sync with the elastic schemas.
+--
+-- This module provides From instance to help converting the data types.
 module Monocle.Backend.Documents where
 
-import Data.Aeson (FromJSON, ToJSON, Value (String), defaultOptions, genericParseJSON, genericToJSON, parseJSON, toJSON, withText)
+import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
-import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
-import Relude
+import qualified Data.Vector as V
+import qualified Monocle.Change as CrawlerPB
+import Monocle.Prelude
+import qualified Monocle.Search as SearchPB
 
 data Author = Author
   { authorMuid :: LText,
@@ -19,6 +33,13 @@ instance ToJSON Author where
 instance FromJSON Author where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+instance From CrawlerPB.Ident Author where
+  from CrawlerPB.Ident {..} =
+    Author
+      { authorMuid = identMuid,
+        authorUid = identUid
+      }
+
 data File = File
   { fileAdditions :: Word32,
     fileDeletions :: Word32,
@@ -31,6 +52,9 @@ instance ToJSON File where
 
 instance FromJSON File where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+instance From File SearchPB.File where
+  from File {..} = SearchPB.File {..}
 
 newtype SimpleFile = SimpleFile
   { simplefilePath :: LText
@@ -61,6 +85,38 @@ instance ToJSON Commit where
 instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+-- | A helper function to ensure author value in PB message is defined
+ensureAuthor :: Maybe CrawlerPB.Ident -> CrawlerPB.Ident
+ensureAuthor = \case
+  Just i -> i
+  Nothing -> CrawlerPB.Ident "backend-ghost" "backend-host"
+
+instance From CrawlerPB.Commit Commit where
+  from CrawlerPB.Commit {..} =
+    Commit
+      { commitSha = commitSha,
+        commitAuthor = from $ ensureAuthor commitAuthor,
+        commitCommitter = from $ ensureAuthor commitCommitter,
+        commitAuthoredAt = from $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
+        commitCommittedAt = from $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
+        commitDeletions = fromIntegral commitDeletions,
+        commitAdditions = fromIntegral commitAdditions,
+        commitTitle = commitTitle
+      }
+
+instance From Commit SearchPB.Commit where
+  from Commit {..} =
+    SearchPB.Commit
+      { commitSha = commitSha,
+        commitTitle = commitTitle,
+        commitAuthor = authorMuid commitAuthor,
+        commitAuthoredAt = Just $ from commitAuthoredAt,
+        commitCommitter = authorMuid commitCommitter,
+        commitCommittedAt = Just $ from commitCommittedAt,
+        commitAdditions = commitAdditions,
+        commitDeletions = commitDeletions
+      }
+
 -- | A custom utctime that supports optional 'Z' trailing suffix
 newtype UTCTimePlus = UTCTimePlus UTCTime deriving stock (Show, Eq)
 
@@ -79,11 +135,11 @@ data ETaskData = ETaskData
   { tdTid :: Text,
     tdCrawlerName :: Text,
     tdTtype :: [Text],
-    tdUpdatedAt :: UTCTimePlus,
+    tdUpdatedAt :: MonocleTime,
     tdChangeUrl :: Text,
     tdSeverity :: Text,
     tdPriority :: Text,
-    tdScore :: Int,
+    tdScore :: Int32,
     tdUrl :: Text,
     tdTitle :: Text,
     tdPrefix :: Text
@@ -96,20 +152,37 @@ instance ToJSON ETaskData where
 instance FromJSON ETaskData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+instance From ETaskData SearchPB.TaskData where
+  from td =
+    let taskDataUpdatedAt = Nothing
+        taskDataChangeUrl = from $ tdUrl td
+        taskDataTtype = fmap from $ V.fromList $ tdTtype td
+        taskDataTid = from $ tdTid td
+        taskDataUrl = from $ tdUrl td
+        taskDataTitle = from $ tdUrl td
+        taskDataSeverity = from $ tdSeverity td
+        taskDataPriority = from $ tdPriority td
+        taskDataScore = from $ tdScore td
+        taskDataPrefix = from $ tdPrefix td
+     in SearchPB.TaskData {..}
+
 data EChangeState
   = EChangeOpen
   | EChangeMerged
   | EChangeClosed
   deriving (Eq, Show)
 
-changeStateToText :: EChangeState -> Text
-changeStateToText = \case
-  EChangeOpen -> "OPEN"
-  EChangeMerged -> "MERGED"
-  EChangeClosed -> "CLOSED"
+instance From EChangeState Text where
+  from = \case
+    EChangeOpen -> "OPEN"
+    EChangeMerged -> "MERGED"
+    EChangeClosed -> "CLOSED"
+
+instance From EChangeState LText where
+  from = via @Text
 
 instance ToJSON EChangeState where
-  toJSON v = String $ toText $ changeStateToText v
+  toJSON v = String $ from v
 
 instance FromJSON EChangeState where
   parseJSON =
@@ -137,21 +210,24 @@ data EDocType
 allEventTypes :: [EDocType]
 allEventTypes = filter (/= EChangeDoc) [minBound .. maxBound]
 
-docTypeToText :: EDocType -> LText
-docTypeToText = \case
-  EChangeCreatedEvent -> "ChangeCreatedEvent"
-  EChangeMergedEvent -> "ChangeMergedEvent"
-  EChangeReviewedEvent -> "ChangeReviewedEvent"
-  EChangeCommentedEvent -> "ChangeCommentedEvent"
-  EChangeAbandonedEvent -> "ChangeAbandonedEvent"
-  EChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
-  EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
-  EChangeDoc -> "Change"
-  EOrphanTaskData -> "OrphanTaskData"
+instance From EDocType Text where
+  from = \case
+    EChangeCreatedEvent -> "ChangeCreatedEvent"
+    EChangeMergedEvent -> "ChangeMergedEvent"
+    EChangeReviewedEvent -> "ChangeReviewedEvent"
+    EChangeCommentedEvent -> "ChangeCommentedEvent"
+    EChangeAbandonedEvent -> "ChangeAbandonedEvent"
+    EChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
+    EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
+    EChangeDoc -> "Change"
+    EOrphanTaskData -> "OrphanTaskData"
+
+instance From EDocType LText where
+  from = via @Text
 
 eventTypesAsText :: [Text]
 eventTypesAsText =
-  toText . docTypeToText
+  from
     <$> [ EChangeCreatedEvent,
           EChangeMergedEvent,
           EChangeReviewedEvent,
@@ -162,7 +238,7 @@ eventTypesAsText =
         ]
 
 instance ToJSON EDocType where
-  toJSON v = String $ toText $ docTypeToText v
+  toJSON v = String $ from v
 
 instance FromJSON EDocType where
   parseJSON =
@@ -223,6 +299,88 @@ instance ToJSON EChange where
 
 instance FromJSON EChange where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+instance From EChange SearchPB.Change where
+  from change =
+    let changeTitle = echangeTitle change
+        changeUrl = echangeUrl change
+        changeCreatedAt = (Just . from $ echangeCreatedAt change)
+        changeUpdatedAt = (Just . from $ echangeUpdatedAt change)
+        changeRepositoryFullname = echangeRepositoryFullname change
+        changeState = from $ echangeState change
+        changeBranch = echangeBranch change
+        changeTargetBranch = echangeTargetBranch change
+        changeTaskData = V.fromList . maybe [] (map from) $ echangeTasksData change
+        changeChangeId = echangeChangeId change
+        changeAuthor = authorMuid . echangeAuthor $ change
+        changeText = echangeText change
+        changeAdditions = echangeAdditions change
+        changeDeletions = echangeDeletions change
+        changeChangedFilesCount = echangeChangedFilesCount change
+        changeApproval = V.fromList $ fromMaybe [] $ echangeApproval change
+        changeAssignees = V.fromList (fmap authorMuid (echangeAssignees change))
+        changeLabels = V.fromList $ echangeLabels change
+        changeDraft = echangeDraft change
+        changeMergeable = echangeMergeable change == "MERGEABLE"
+        changeCommits = V.fromList . map from $ echangeCommits change
+        changeChangedFiles = V.fromList . map from $ echangeChangedFiles change
+        -- consistency rename from commit_count to commits_count
+        changeCommitsCount = echangeCommitCount change
+        changeMergedAt = Just . from =<< echangeMergedAt change
+        changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< echangeMergedBy change
+     in SearchPB.Change {..}
+
+instance From CrawlerPB.Change EChange where
+  from CrawlerPB.Change {..} =
+    EChange
+      { echangeId = changeId,
+        echangeType = EChangeDoc,
+        echangeTitle = changeTitle,
+        echangeUrl = changeUrl,
+        echangeCommitCount = fromInteger . toInteger $ changeCommitCount,
+        echangeNumber = fromInteger . toInteger $ changeNumber,
+        echangeChangeId = changeChangeId,
+        echangeText = changeText,
+        echangeAdditions = fromInteger $ toInteger changeAdditions,
+        echangeDeletions = fromInteger $ toInteger changeDeletions,
+        echangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
+        echangeChangedFiles = map from $ toList changeChangedFiles,
+        echangeCommits = map from $ toList changeCommits,
+        echangeRepositoryPrefix = changeRepositoryPrefix,
+        echangeRepositoryFullname = changeRepositoryFullname,
+        echangeRepositoryShortname = changeRepositoryShortname,
+        echangeAuthor = from (ensureAuthor changeAuthor),
+        echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
+        echangeBranch = changeBranch,
+        echangeTargetBranch = changeTargetBranch,
+        echangeCreatedAt = from $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
+        echangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
+        echangeUpdatedAt = from $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
+        echangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
+        echangeState = toState $ fromPBEnum changeState,
+        echangeDuration = toDuration <$> changeOptionalDuration,
+        echangeMergeable = changeMergeable,
+        echangeLabels = toList changeLabels,
+        echangeAssignees = map (from . ensureAuthor) $ toList $ fmap Just changeAssignees,
+        echangeApproval = Just $ toList changeApprovals,
+        echangeDraft = changeDraft,
+        echangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
+        echangeTasksData = Nothing
+      }
+    where
+      toMergedByAuthor (CrawlerPB.ChangeOptionalMergedByMergedBy m) = from $ ensureAuthor (Just m)
+      toMergedAt (CrawlerPB.ChangeOptionalMergedAtMergedAt t) = from t
+      toClosedAt (CrawlerPB.ChangeOptionalClosedAtClosedAt t) = from t
+      toDuration (CrawlerPB.ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
+      toSelfMerged (CrawlerPB.ChangeOptionalSelfMergedSelfMerged b) = b
+      toState cstate = case cstate of
+        CrawlerPB.Change_ChangeStateOpen -> EChangeOpen
+        CrawlerPB.Change_ChangeStateMerged -> EChangeMerged
+        CrawlerPB.Change_ChangeStateClosed -> EChangeClosed
+
+instance From CrawlerPB.ChangedFile File where
+  from CrawlerPB.ChangedFile {..} =
+    File (fromIntegral changedFileAdditions) (fromIntegral changedFileDeletions) changedFilePath
 
 newtype EChangeTD = EChangeTD
   { echangetdTasksData :: Maybe [ETaskData]
@@ -292,6 +450,18 @@ instance ToJSON EChangeEvent where
 
 instance FromJSON EChangeEvent where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+instance From EChangeEvent SearchPB.ChangeEvent where
+  from EChangeEvent {..} =
+    let changeEventId = echangeeventId
+        changeEventType = from echangeeventType
+        changeEventChangeId = echangeeventChangeId
+        changeEventCreatedAt = Just . from $ echangeeventCreatedAt
+        changeEventOnCreatedAt = Just . from $ echangeeventOnCreatedAt
+        changeEventAuthor = maybe "backend-ghost" authorMuid echangeeventAuthor
+        changeEventOnAuthor = authorMuid echangeeventOnAuthor
+        changeEventBranch = echangeeventBranch
+     in SearchPB.ChangeEvent {..}
 
 data ECrawlerMetadataObject = ECrawlerMetadataObject
   { ecmCrawlerName :: LText,

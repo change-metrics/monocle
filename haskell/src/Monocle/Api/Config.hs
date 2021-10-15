@@ -17,7 +17,7 @@ module Monocle.Api.Config where
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import qualified Data.Map as Map
-import Data.Text (dropWhileEnd)
+import qualified Data.Text as T (dropWhileEnd, isPrefixOf)
 import qualified Dhall
 import qualified Dhall.Core
 import qualified Dhall.Src
@@ -116,6 +116,10 @@ defaultTenant name =
       idents = Nothing,
       search_aliases = Nothing
     }
+
+class MonadConfig m where
+  mGetSecret :: Text -> Maybe Text -> m Text
+  mReloadConfig :: FilePath -> m (m [Index])
 
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
@@ -219,15 +223,17 @@ getCrawlerProject Crawler {..} = case provider of
   GithubProvider Github {..} ->
     let addOrgPrefix repo = removeTrailingSlash github_organization <> "/" <> repo
      in addOrgPrefix <$> fromMaybe [] github_repositories
+  GerritProvider Gerrit {..} -> maybe [] (filter (not . T.isPrefixOf "^")) gerrit_repositories
   _anyOtherProvider -> []
 
 removeTrailingSlash :: Text -> Text
-removeTrailingSlash = dropWhileEnd (== '/')
+removeTrailingSlash = T.dropWhileEnd (== '/')
 
-getCrawlerOrganization :: Crawler -> Maybe Text
+getCrawlerOrganization :: Crawler -> [Text]
 getCrawlerOrganization Crawler {..} = case provider of
-  GitlabProvider Gitlab {..} -> Just gitlab_organization
-  _anyOtherProvider -> Nothing
+  GitlabProvider Gitlab {..} -> [gitlab_organization]
+  GerritProvider Gerrit {..} -> maybe [] (filter (T.isPrefixOf "^")) gerrit_repositories
+  _anyOtherProvider -> []
 
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =

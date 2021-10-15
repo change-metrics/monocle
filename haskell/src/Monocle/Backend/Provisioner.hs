@@ -56,8 +56,8 @@ setChangeID xs = do
 createFakeEvents :: IO [T.ScenarioEvent]
 createFakeEvents = do
   now <- getCurrentTime
-  from <- pure $ addUTCTime (-3600 * 24 * 7 * 3) now
-  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from now
+  from' <- pure $ addUTCTime (-3600 * 24 * 7 * 3) now
+  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from' now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes
 
@@ -82,7 +82,7 @@ fakeText :: Faker.Fake LText
 fakeText = toLazy <$> Faker.TvShow.Futurama.quotes
 
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
-fakeChange from to = do
+fakeChange from' to = do
   echangeId <- pure $ ""
   echangeType <- pure $ EChangeDoc
   echangeNumber <- pure $ 1
@@ -101,7 +101,7 @@ fakeChange from to = do
   echangeRepositoryShortname <- pure $ ""
   echangeAuthor <- fakeAuthor
   echangeBranch <- pure $ ""
-  echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from to
+  echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeUpdatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeCreatedAt to
   echangeMergedBy <- pure $ Nothing
   echangeTargetBranch <- pure $ "main"
@@ -119,7 +119,7 @@ fakeChange from to = do
   pure $ EChange {..}
 
 fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
-fakeChangeEvent from to = do
+fakeChangeEvent from' to = do
   echangeeventId <- pure ""
   echangeeventNumber <- pure 0
   echangeeventType <- Faker.Combinators.elements [minBound .. maxBound]
@@ -132,7 +132,7 @@ fakeChangeEvent from to = do
   echangeeventAuthor <- pure Nothing
   echangeeventOnAuthor <- fakeAuthor
   echangeeventBranch <- pure ""
-  echangeeventCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from to
+  echangeeventCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeeventOnCreatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeeventCreatedAt to
   echangeeventApproval <- pure Nothing
   echangeeventTasksData <- pure Nothing
@@ -149,7 +149,7 @@ fakeETaskData = do
   tdTid <- fakeTaskId
   tdCrawlerName <- Faker.Creature.Dog.name
   tdTtype <- (: []) <$> Faker.Creature.Dog.sound
-  tdUpdatedAt <- UTCTimePlus <$> Faker.DateTime.utc
+  tdUpdatedAt <- toMonocleTime <$> Faker.DateTime.utc
   tdChangeUrl <- pure "no-change"
   tdSeverity <- Faker.TvShow.TheExpanse.locations
   tdPriority <- Faker.TvShow.TheExpanse.ships

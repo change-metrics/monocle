@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+-- witch instance for Google.Protobuf.Timestamp
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude
@@ -9,6 +11,19 @@ module Monocle.Prelude
     getExn,
     getEnv',
     headMaybe,
+
+    -- * contexts
+    MonadTime (..),
+
+    -- * witch
+    From (..),
+    into,
+    unsafeFrom,
+    unsafeInto,
+    via,
+    TryFrom (..),
+    tryInto,
+    tryVia,
 
     -- * streaming
     Stream,
@@ -57,9 +72,11 @@ module Monocle.Prelude
     nominalDiffTimeToSeconds,
     diffUTCTime,
     formatTime',
-    threadDelay,
     parseDateValue,
     dropTime,
+    dropMilliSec,
+    MonocleTime,
+    toMonocleTime,
 
     -- * qq-literals
     utctime,
@@ -94,18 +111,19 @@ module Monocle.Prelude
   )
 where
 
-import Control.Concurrent (threadDelay)
+import qualified Control.Concurrent (threadDelay)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Morph (hoist)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, encode, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
+import qualified Google.Protobuf.Timestamp
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Proto3.Suite (Enumerated (..))
 import QQLiterals (qqLiteral)
@@ -117,6 +135,7 @@ import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import Test.Tasty.HUnit
+import Witch hiding (over)
 
 eitherParseUTCTime :: String -> Either String UTCTime
 eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMaybe (x <> " Z"))
@@ -128,6 +147,28 @@ utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
 -- This actually discard hour differences
 dropTime :: UTCTime -> UTCTime
 dropTime (UTCTime day _sec) = UTCTime day 0
+
+-- | A newtype for UTCTime which doesn't have milli second and tolerates a missing trailing 'Z' when decoding from JSON
+newtype MonocleTime = MonocleTime UTCTime
+  deriving stock (Show, Eq, Ord)
+
+instance ToJSON MonocleTime where
+  toJSON (MonocleTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
+
+instance FromJSON MonocleTime where
+  parseJSON = withText "UTCTimePlus" (parse . toString)
+    where
+      oldFormat = "%FT%T"
+      utcFormat = "%FT%TZ"
+      tryParse f s = parseTimeM False defaultTimeLocale f s
+      parse s = MonocleTime <$> (tryParse oldFormat s <|> tryParse utcFormat s)
+
+toMonocleTime :: UTCTime -> MonocleTime
+toMonocleTime = MonocleTime . dropMilliSec
+
+-- | drop millisecond from UTCTime
+dropMilliSec :: UTCTime -> UTCTime
+dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ truncate sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
@@ -142,6 +183,14 @@ getEnv' var = do
 -- | A lifted version of getCurrentTime
 getCurrentTime :: MonadIO m => m UTCTime
 getCurrentTime = liftIO Data.Time.Clock.getCurrentTime
+
+class MonadTime m where
+  mGetCurrentTime :: m UTCTime
+  mThreadDelay :: Int -> m ()
+
+instance MonadTime IO where
+  mGetCurrentTime = Data.Time.Clock.getCurrentTime
+  mThreadDelay = Control.Concurrent.threadDelay
 
 -- | Return the seconds elapsed between a and b
 -- >>> elapsedSeconds [utctime|2000-01-01 00:00:00|] [utctime|2000-01-01 01:00:00|]
@@ -246,3 +295,10 @@ mkNot notQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] notQ []
 
 mkTerm :: Text -> Text -> BH.Query
 mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
+
+-- | Orphan instance
+instance From UTCTime Google.Protobuf.Timestamp.Timestamp where
+  from = Google.Protobuf.Timestamp.fromUTCTime
+
+instance From Google.Protobuf.Timestamp.Timestamp UTCTime where
+  from = Google.Protobuf.Timestamp.toUTCTime

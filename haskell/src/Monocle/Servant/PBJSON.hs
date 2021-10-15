@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-
 -- | A custom mime render type for pbjson
 -- The goal is to make the oneOf encoding compatible with the
 -- common protobuf implementation.

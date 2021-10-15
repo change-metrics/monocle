@@ -22,9 +22,9 @@
 module Lentille.GitHub.Favorites where
 
 import Data.Morpheus.Client
+import Lentille
 import Lentille.GitHub (GitHubGraphClient, PageInfo (..), RateLimit (..), schemaLocation, streamFetch)
-import Relude
-import Streaming (Of, Stream)
+import Monocle.Prelude
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -62,7 +62,7 @@ defineByDocumentFile
 type UserFavorite = UserStarredRepositoriesEdgesNodeRepository
 
 getFavoritesStream ::
-  MonadIO m =>
+  MonadGraphQL m =>
   GitHubGraphClient ->
   Text ->
   Stream (Of UserFavorite) m ()

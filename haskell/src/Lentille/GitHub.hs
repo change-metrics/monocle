@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 -- TMP
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
@@ -8,13 +7,11 @@
 --   to implement GitHub graphql API crawlers.
 module Lentille.GitHub where
 
-import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
-import Monocle.Client (mkManager)
+import Lentille
+import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
-import Relude
-import Streaming (Of, Stream)
 import qualified Streaming.Prelude as S
 
 schemaLocation :: String
@@ -32,22 +29,22 @@ data GitHubGraphClient = GitHubGraphClient
     token :: Text
   }
 
-newGithubGraphClient :: MonadIO m => Text -> m GitHubGraphClient
+newGithubGraphClient :: MonadGraphQL m => Text -> m GitHubGraphClient
 newGithubGraphClient url' = do
   token' <-
     toText
       . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")
-      <$> liftIO (lookupEnv "GITHUB_GRAPH_TOKEN")
+      <$> mLookupEnv "GITHUB_GRAPH_TOKEN"
   newGithubGraphClientWithKey url' token'
 
-newGithubGraphClientWithKey :: MonadIO m => Text -> Text -> m GitHubGraphClient
+newGithubGraphClientWithKey :: MonadGraphQL m => Text -> Text -> m GitHubGraphClient
 newGithubGraphClientWithKey url' token' = do
-  manager' <- mkManager
+  manager' <- newManager
   pure $ GitHubGraphClient manager' url' token'
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-runGithubGraphRequest :: MonadIO m => GitHubGraphClient -> LBS.ByteString -> m LBS.ByteString
+runGithubGraphRequest :: MonadGraphQL m => GitHubGraphClient -> LBS.ByteString -> m LBS.ByteString
 runGithubGraphRequest (GitHubGraphClient manager' url' token') jsonBody = do
   -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
   let initRequest = HTTP.parseRequest_ (toString url')
@@ -60,7 +57,7 @@ runGithubGraphRequest (GitHubGraphClient manager' url' token') jsonBody = do
               ],
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
-  response <- liftIO $ HTTP.httpLbs request manager'
+  response <- httpRequest request manager'
   -- print response
   pure (HTTP.responseBody response)
 
@@ -74,7 +71,7 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: Text}
   deriving (Show)
 
 streamFetch ::
-  (MonadIO m, Fetch a, FromJSON a) =>
+  (MonadGraphQL m, Fetch a, FromJSON a) =>
   GitHubGraphClient ->
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
@@ -83,8 +80,9 @@ streamFetch ::
   Stream (Of b) m ()
 streamFetch client mkArgs transformResponse = go Nothing
   where
+    liftLog = lift . logRaw
     logStatus (PageInfo hasNextPage' _ totalCount') (RateLimit used' remaining' resetAt') =
-      putTextLn $
+      liftLog $
         "[github-graphql] got "
           <> show totalCount'
           <> (if hasNextPage' then " hasNextPage " else "")
@@ -96,9 +94,10 @@ streamFetch client mkArgs transformResponse = go Nothing
           <> resetAt'
     go pageInfoM = do
       respE <-
-        fetch
-          (runGithubGraphRequest client)
-          (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
+        lift $
+          fetch
+            (runGithubGraphRequest client)
+            (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
       let (pageInfo, rateLimit, decodingErrors, xs) = case respE of
             Left err -> error (toText err)
             Right resp -> transformResponse resp

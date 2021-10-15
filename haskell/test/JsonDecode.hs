@@ -4,7 +4,6 @@
 module Main where
 
 import Criterion.Main
-import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Bytes as B
