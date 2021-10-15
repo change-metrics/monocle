@@ -10,7 +10,7 @@ module Lentille.GitLab.Group where
 
 import Data.Morpheus.Client
 import Data.Time.Clock
-import Lentille (LentilleStream, MonadGraphQL)
+import Lentille
 import Lentille.GitLab
   ( GitLabGraphClient,
     PageInfo (..),
@@ -21,9 +21,8 @@ import Lentille.GitLab
     streamFetch,
   )
 import Lentille.GitLab.Adapter
+import Monocle.Prelude hiding (break)
 import Monocle.Project
-import Relude hiding (break)
-import Streaming (MonadIO, Of, Stream)
 import qualified Streaming.Prelude as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup
@@ -46,7 +45,11 @@ fetchGroupProjects :: MonadGraphQL m => GitLabGraphClient -> Text -> m (Either S
 fetchGroupProjects client fullPath =
   fetch (runGitLabGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
-streamGroupProjects :: MonadGraphQL m => GitLabGraphClient -> Text -> LentilleStream m Project
+streamGroupProjects ::
+  (MonadError LentilleError m, MonadGraphQL m) =>
+  GitLabGraphClient ->
+  Text ->
+  LentilleStream m Project
 streamGroupProjects client fullPath =
   streamFetch client Nothing mkArgs transformResponse id
   where

@@ -4,7 +4,8 @@ module Macroscope.Main (runMacroscope) where
 import Control.Exception.Safe (tryAny)
 import qualified Data.Text as T
 import Lentille
-import Lentille.Bugzilla (BugzillaSession, getApikey, getBZData, getBugzillaSession)
+import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
+import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getGerritEnv, getProjectsStream)
 import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
 import Lentille.GitHub.Issues (streamLinkedIssue)
@@ -36,9 +37,9 @@ runMacroscope verbose confPath interval client = do
     Left e -> error $ "Macroscope failed: " <> show e
     Right x -> pure x
 
-runMacroscope' :: (MonadCatch m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
+runMacroscope' :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope' verbose confPath interval client = do
-  log $ genLog Macroscope LogMacroStart
+  mLog $ Log Macroscope LogMacroStart
   config <- Config.mReloadConfig confPath
   loop config
   where
@@ -50,7 +51,7 @@ runMacroscope' verbose confPath interval client = do
       traverse_ safeCrawl (getCrawlers conf)
 
       -- Pause
-      log $ genLog Macroscope $ LogMacroPause interval_sec
+      mLog $ Log Macroscope $ LogMacroPause interval_sec
       mThreadDelay interval_usec
 
       -- Loop again
@@ -60,19 +61,19 @@ runMacroscope' verbose confPath interval client = do
     interval_sec :: Float
     interval_sec = fromIntegral interval_usec / 1_000_000
 
-    safeCrawl :: (MonadCatch m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    safeCrawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     safeCrawl crawler = do
       catched <- tryAny $ crawl crawler
       case catched of
         Right comp -> pure comp
         Left exc ->
           let (index, _, Config.Crawler {..}, _) = crawler
-           in log $ genLog Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
+           in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
 
-    crawl :: LentilleMonad m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+    crawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     crawl (index, key, crawler, idents) = do
       now <- toMonocleTime <$> mGetCurrentTime
-      when verbose (log $ genLog Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler))
+      when verbose (mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler))
 
       -- Create document streams
       docStreams <- case Config.provider crawler of
@@ -124,10 +125,10 @@ runMacroscope' verbose confPath interval client = do
         getIdentByAliasCB :: Text -> Maybe Text
         getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-    glMRCrawler :: MonadGraphQL m => GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream m
+    glMRCrawler :: (MonadError LentilleError m, MonadGraphQL m) => GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream m
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-    glOrgCrawler :: MonadGraphQL m => GitLabGraphClient -> DocumentStream m
+    glOrgCrawler :: (MonadError LentilleError m, MonadGraphQL m) => GitLabGraphClient -> DocumentStream m
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
     bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
