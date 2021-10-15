@@ -1,14 +1,13 @@
 # Copyright (C) 2021 Monocle authors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# An example client to query the api using the protobuf helpers.
-# Checkout the `client-requests.py` for a simpler version without dependencies.
+# An example client to query the Monocle api using requests
+# Checkout the available endpoints in
+#  https://github.com/change-metrics/monocle/blob/master/doc/openapi.yaml
 
 import argparse
+import requests
 import json
-import monocle.webapi as M
-import monocle.crawler_pb2 as Crawler
-import monocle.change_pb2 as Change
 
 
 def usage():
@@ -23,7 +22,8 @@ args = usage()
 
 # Query workspaces:
 if args.action == "workspaces":
-    print(M.config_get_workspaces(args.url, M.GetWorkspacesRequest()))
+    # Empty request requires an empty object body
+    print(requests.post(args.url + "/api/2/get_workspaces", json={}).json())
 
 # Query changes:
 elif args.action == "query":
@@ -32,15 +32,13 @@ elif args.action == "query":
     except:
         print("usage: query workspace query")
         exit(1)
-    query = M.QueryRequest(
-        index=workspace, query=query, query_type=M.QueryRequest.QUERY_CHANGE
-    )
-    resp = M.search_query(args.url, query)
-    if resp.error.message:
+    query = dict(index=workspace, query=query, query_type="QUERY_CHANGE")
+    resp = requests.post(args.url + "/api/2/search/query", json=query).json()
+    if resp.get("error"):
         print(resp)
     else:
-        for change in resp.changes.changes:
-            print(change.url, change.title)
+        for change in resp["changes"]["changes"]:
+            print(change["url"], change["title"])
 
 # Add task data to a change
 elif args.action == "add-td":
@@ -49,11 +47,12 @@ elif args.action == "add-td":
     except:
         print("usage: add-td workspace crawler apikey json")
         exit(1)
-    tdjson = json.loads(td)
-    td = Change.TaskData(**tdjson)
-    entity = Crawler.Entity(td_name=crawler)
-    query = M.AddDocRequest(
-        index=workspace, crawler=crawler, apikey=apikey, entity=entity, task_datas=[td]
+    request = dict(
+        index=workspace,
+        crawler=crawler,
+        apikey=apikey,
+        entity=dict(td_name=crawler),
+        task_datas=[json.loads(td)],
     )
-    resp = M.crawler_add_doc(args.url, query)
+    resp = requests.post(args.url + "/api/2/crawler/add", json=request).json()
     print(resp)
