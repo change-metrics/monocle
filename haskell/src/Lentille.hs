@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-
 -- | A shared library between lentilles and macroscope
 module Lentille
   ( -- * The lentille context

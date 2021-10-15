@@ -53,6 +53,9 @@ common common-options
   default-extensions:  BangPatterns,
                        DeriveGeneric,
                        DerivingStrategies,
+                       -- FlexibleInstances enables defining instances for types such as Pico (which is defined as `Fixed Data.Fixed.E12` in Data.Fixed. It is safe to use.
+                       FlexibleInstances,
+                       FlexibleContexts,
                        GeneralizedNewtypeDeriving,
                        LambdaCase,
                        MultiWayIf,
@@ -61,6 +64,8 @@ common common-options
                        NoImplicitPrelude,
                        NumDecimals,
                        NumericUnderscores,
+                       -- MultiParamTypeClasses enables declaring instances with multiple type params, e.g. this is required to define custom MonadReader or From instance.
+                       MultiParamTypeClasses,
                        OverloadedStrings,
                        QuasiQuotes,
                        PatternSynonyms,
@@ -155,6 +160,7 @@ library
                      , wai-logger                 ^>= 2.3
                      , wai-middleware-prometheus  ^>= 1.0
                      , warp                       ^>= 3.3.15
+                     , witch                      ^>= 0.3
   hs-source-dirs:      src
   exposed-modules:     Monocle.Prelude
                      , Monocle.Env

@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
@@ -31,7 +29,6 @@ import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId))
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
-import Monocle.Backend.Documents (docTypeToText)
 import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
 import Monocle.Prelude hiding (all, id)
@@ -207,7 +204,7 @@ streamChange' env serverUrl query prefixM identCB = go 0
               changeEventType = Just eType
            in C.ChangeEvent {..}
           where
-            eventTypeToText t = docTypeToText . getEventType $ Just t
+            eventTypeToText t = into @LText . getEventType $ Just t
         toChangeCreatedEvent = baseEvent $ C.ChangeEventTypeChangeCreated C.ChangeCreatedEvent
         toChangeMergedEvent = case changeState of
           Enumerated (Right C.Change_ChangeStateMerged) ->

@@ -12,7 +12,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
-import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes, changeStateToText, docTypeToText)
+import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
 import qualified Monocle.Search as SearchPB
@@ -218,7 +218,7 @@ changeReviewRatio = withFlavor qf $ do
 changeState :: EChangeState -> [BH.Query]
 changeState state' =
   [ BH.TermQuery (BH.Term "type" "Change") Nothing,
-    BH.TermQuery (BH.Term "state" $ changeStateToText state') Nothing
+    BH.TermQuery (BH.Term "state" $ from state') Nothing
   ]
 
 selfMerged :: [BH.Query]
@@ -234,7 +234,7 @@ testIncluded =
 
 -- | Add a document type filter to the query
 documentTypes :: NonEmpty EDocType -> BH.Query
-documentTypes doc = BH.TermsQuery "type" $ toText . docTypeToText <$> doc
+documentTypes doc = BH.TermsQuery "type" $ from <$> doc
 
 documentType :: EDocType -> BH.Query
 documentType x = documentTypes (x :| [])
@@ -717,33 +717,35 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
 data HistoInterval = Hour | Day | Week | Month | Year deriving (Eq, Show)
 
 -- | Convert a duration to an interval that spans over maximum 24 buckets (31 for days)
-durationToHistoInterval :: Pico -> HistoInterval
-durationToHistoInterval sec
-  | sec / day <= 1 = Hour
-  | sec / month <= 1 = Day
-  | sec / month <= 6 = Week
-  | sec / year <= 2 = Month
-  | otherwise = Year
-  where
-    year = month * 12
-    month = day * 31
-    day = 24 * 3600
+instance From Pico HistoInterval where
+  from sec
+    | sec / day <= 1 = Hour
+    | sec / month <= 1 = Day
+    | sec / month <= 6 = Week
+    | sec / year <= 2 = Month
+    | otherwise = Year
+    where
+      year = month * 12
+      month = day * 31
+      day = 24 * 3600
 
-histoIntervalToFormat :: HistoInterval -> Text
-histoIntervalToFormat = \case
-  Hour -> "yyyy-MM-dd HH:mm"
-  Day -> "yyyy-MM-dd"
-  Week -> "yyyy-MM-dd"
-  Month -> "yyyy-MM"
-  Year -> "yyyy"
+newtype TimeFormat = TimeFormat {getFormat :: Text}
 
-calendarInterval :: HistoInterval -> Text
-calendarInterval = \case
-  Hour -> "hour"
-  Day -> "day"
-  Week -> "week"
-  Month -> "month"
-  Year -> "year"
+instance From HistoInterval TimeFormat where
+  from hi = TimeFormat $ case hi of
+    Hour -> "yyyy-MM-dd HH:mm"
+    Day -> "yyyy-MM-dd"
+    Week -> "yyyy-MM-dd"
+    Month -> "yyyy-MM"
+    Year -> "yyyy"
+
+instance From HistoInterval Text where
+  from = \case
+    Hour -> "hour"
+    Day -> "day"
+    Week -> "week"
+    Month -> "month"
+    Year -> "year"
 
 dateInterval :: HistoInterval -> UTCTime -> Text
 dateInterval hi = formatTime' formatStr
@@ -834,7 +836,7 @@ getHisto rf = do
 
   let (minDate, maxDate) = Q.queryBounds query
       duration = elapsedSeconds minDate maxDate
-      interval = durationToHistoInterval duration
+      interval = from duration
 
       bound =
         Aeson.object
@@ -844,8 +846,8 @@ getHisto rf = do
       date_histo =
         Aeson.object
           [ "field" .= rangeField rf,
-            "calendar_interval" .= calendarInterval interval,
-            "format" .= histoIntervalToFormat interval,
+            "calendar_interval" .= into @Text interval,
+            "format" .= getFormat (from interval),
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound
           ]
@@ -910,7 +912,7 @@ withDocTypes :: QueryMonad m => [EDocType] -> QueryFlavor -> m a -> m a
 withDocTypes docTypes flavor qm =
   withFilter [mkOr $ toTermQuery <$> docTypes] $ withFlavor flavor qm
   where
-    toTermQuery docType = mkTerm "type" (toText $ docTypeToText docType)
+    toTermQuery docType = mkTerm "type" (from docType)
 
 withDocType :: QueryMonad m => EDocType -> QueryFlavor -> m a -> m a
 withDocType docType = withDocTypes [docType]
@@ -1013,7 +1015,7 @@ getAuthorHisto qf = withFlavor qf $ do
 
   let (minDate, maxDate) = Q.queryBounds query
       duration = elapsedSeconds minDate maxDate
-      interval = durationToHistoInterval duration
+      interval = from duration
 
       bound =
         Aeson.object
@@ -1023,8 +1025,8 @@ getAuthorHisto qf = withFlavor qf $ do
       date_histo =
         Aeson.object
           [ "field" .= rangeField (qfRange qf),
-            "calendar_interval" .= calendarInterval interval,
-            "format" .= histoIntervalToFormat interval,
+            "calendar_interval" .= into @Text interval,
+            "format" .= getFormat (from interval),
             "min_doc_count" .= (0 :: Word),
             "extended_bounds" .= bound
           ]
