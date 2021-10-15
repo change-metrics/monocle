@@ -14,7 +14,7 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Data.Vector as V
 import qualified Google.Protobuf.Timestamp as T
-import Lentille (LentilleStream, MonadGraphQL)
+import Lentille
 import Lentille.GitLab
   ( GitLabGraphClient,
     PageInfo (..),
@@ -26,8 +26,7 @@ import Lentille.GitLab
   )
 import Lentille.GitLab.Adapter
 import Monocle.Change
-import Relude hiding (id, state)
-import Streaming (Of, Stream)
+import Monocle.Prelude hiding (id, state)
 import qualified Streaming.Prelude as S
 
 newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
@@ -117,6 +116,7 @@ fetchMergeRequest client project mrID =
   fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
+  MonadError LentilleError m =>
   MonadGraphQL m =>
   GitLabGraphClient ->
   -- A callback to get Ident ID from an alias

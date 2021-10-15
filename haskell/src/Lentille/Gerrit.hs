@@ -11,6 +11,7 @@ module Lentille.Gerrit
     G.GerritQuery (..),
 
     -- * The context
+    MonadGerrit (..),
     getGerritEnv,
     GerritEnv (..),
     G.getClient,
@@ -25,9 +26,10 @@ import Data.Time.Clock
 import qualified Data.Vector as V
 import qualified Gerrit as G
 import Gerrit.Data.Change
-import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId))
+import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId), GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
+-- import Lentille.Env
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
 import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
@@ -41,6 +43,27 @@ import Prelude (last)
 -------------------------------------------------------------------------------
 -- Gerrit context
 -------------------------------------------------------------------------------
+
+class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadGerrit m where
+  getGerritClient :: Text -> Maybe (Text, Text) -> m G.GerritClient
+  getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
+  queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
+
+instance MonadGerrit LentilleM where
+  getGerritClient url = liftIO . G.getClient url
+  getProjects env count query startM =
+    liftIO $ G.getProjects count query startM (client env)
+  queryChanges env count queries startM =
+    liftIO $ G.queryChanges count queries startM (client env)
+
+data GerritEnv = GerritEnv
+  { -- | The Gerrit connexion client
+    client :: G.GerritClient,
+    -- | A project fullname prefix as defined in the Monocle configuration
+    prefix :: Maybe Text,
+    -- | The identity alias callback
+    identAliasCB :: Maybe (Text -> Maybe Text)
+  }
 
 getGerritEnv ::
   -- | The Gerrit connexion client

@@ -164,6 +164,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Monocle.Prelude
                      , Monocle.Env
+                     , Monocle.Class
 
                      -- monocle api
                      , Monocle.Api

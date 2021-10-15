@@ -13,6 +13,7 @@ module Lentille.Bugzilla
     getBugzillaSession,
     getBugWithScore,
     getBugsWithScore,
+    MonadBZ,
     BugzillaSession,
     BugWithScore,
     BZ.BugzillaApikey (..),
@@ -31,6 +32,14 @@ import Web.Bugzilla.RedHat (BugzillaSession)
 import qualified Web.Bugzilla.RedHat as BZ
 import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
 import qualified Web.Bugzilla.RedHat.Search as BZS
+
+class (MonadLog m, MonadRetry m, MonadError LentilleError m) => MonadBZ m where
+  bzRequest :: FromJSON bugs => BugzillaSession -> BZ.Request -> m bugs
+  newContext :: BZ.BugzillaServer -> m BZ.BugzillaContext
+
+instance MonadBZ LentilleM where
+  bzRequest req = liftIO . BZ.sendBzRequest req
+  newContext = liftIO . BZ.newBugzillaContext
 
 -------------------------------------------------------------------------------
 -- BugZilla system
@@ -116,7 +125,7 @@ getBugWithScore bzSession bugId' = do
     xs -> error $ "Got more or less than one bug " <> show xs
 
 getBugsWithScore ::
-  (MonadBZ m) =>
+  MonadBZ m =>
   BugzillaSession ->
   -- | The last changed date
   UTCTime ->
@@ -167,7 +176,7 @@ getBZData bzSession product''' sinceTS = go 0
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do
-        log $ LogGetBugs sinceTS offset limit
+        mLog $ Log Unspecified (LogGetBugs sinceTS offset limit)
         retry . doGet $ offset
       -- Create a flat stream of tracker data
       S.each (concatMap toTaskData bugs)
