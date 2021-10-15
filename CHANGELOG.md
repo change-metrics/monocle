@@ -6,7 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- [contrib] Example of Python clients for the Monocle OpenAPI.
+
 ### Changed
+
+- [crawler] Gerrit crawler is managed by Macroscope and removed from crawler-legacy.
 
 ### Removed
 
