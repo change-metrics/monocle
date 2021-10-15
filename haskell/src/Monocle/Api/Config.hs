@@ -117,6 +117,10 @@ defaultTenant name =
       search_aliases = Nothing
     }
 
+class MonadConfig m where
+  mGetSecret :: Text -> Maybe Text -> m Text
+  mReloadConfig :: FilePath -> m (m [Index])
+
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name

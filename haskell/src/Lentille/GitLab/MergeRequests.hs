@@ -14,7 +14,7 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Data.Vector as V
 import qualified Google.Protobuf.Timestamp as T
-import Lentille (LentilleStream)
+import Lentille (LentilleStream, MonadGraphQL)
 import Lentille.GitLab
   ( GitLabGraphClient,
     PageInfo (..),
@@ -112,17 +112,18 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: MonadIO m => GitLabGraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
+fetchMergeRequest :: MonadGraphQL m => GitLabGraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
 fetchMergeRequest client project mrID =
   fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
+  MonadGraphQL m =>
   GitLabGraphClient ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
-  LentilleStream Changes
+  LentilleStream m Changes
 streamMergeRequests client getIdentIdCb untilDate project =
   streamFetch client (Just untilDate) mkArgs transformResponse' breakOnDate
   where

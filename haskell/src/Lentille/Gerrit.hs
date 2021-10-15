@@ -13,51 +13,37 @@ module Lentille.Gerrit
     G.GerritQuery (..),
 
     -- * The context
-    MonadGerrit,
-    runGerritM,
     getGerritEnv,
     GerritEnv (..),
     G.getClient,
   )
 where
 
-import Control.Monad.IO.Unlift
 import qualified Data.Attoparsec.Text as P
 import Data.Char
 import qualified Data.Map as M (elems, keys, lookup, toList)
 import qualified Data.Text as T
 import Data.Time.Clock
 import qualified Data.Vector as V
--- import Gerrit hiding (changeUrl)
 import qualified Gerrit as G
 import Gerrit.Data.Change
-import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId), GerritProjectsMessage)
+import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId))
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
 import Monocle.Backend.Documents (docTypeToText)
 import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
-import Monocle.Prelude (MonadCatch, MonadMask, MonadThrow, hoist)
+import Monocle.Prelude hiding (all, id)
 import qualified Monocle.Project as P
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
-import Relude hiding (all, id)
 import qualified Streaming.Prelude as S
 import Prelude (last)
 
 -------------------------------------------------------------------------------
 -- Gerrit context
 -------------------------------------------------------------------------------
-
-data GerritEnv = GerritEnv
-  { -- | The Gerrit connexion client
-    client :: G.GerritClient,
-    -- | A project fullname prefix as defined in the Monocle configuration
-    prefix :: Maybe Text,
-    -- | The identity alias callback
-    identAliasCB :: Maybe (Text -> Maybe Text)
-  }
 
 getGerritEnv ::
   -- | The Gerrit connexion client
@@ -69,64 +55,24 @@ getGerritEnv ::
   GerritEnv
 getGerritEnv = GerritEnv
 
--- | A newtype for the GerritClient Reader
-newtype GerritM a = GerritM (ReaderT GerritEnv LentilleM a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadCatch, MonadThrow, MonadMask)
-  deriving newtype (MonadReader GerritEnv)
-
--- | Helper to run a GerritM in IO
-runGerritM :: GerritEnv -> GerritM a -> IO a
-runGerritM env (GerritM im) = do
-  res <- runLentilleM $ runReaderT im env
-  case res of
-    Left e -> error (show e)
-    Right r -> pure r
-
--- | Adapt a stream running into GerritM for LentilleM
-adaptStream :: GerritEnv -> S.Stream (S.Of a) GerritM () -> S.Stream (S.Of a) LentilleM ()
-adaptStream env = hoist toLentilleM
-  where
-    toLentilleM :: GerritM a -> LentilleM a
-    toLentilleM (GerritM im) = runReaderT im env
-
--- | A type class for the Gerrit API
-class (Monad m, MonadReader GerritEnv m) => MonadGerrit m where
-  getProjects :: Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
-  queryChanges :: Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
-
--- | The MonadGerrit instance using the concret reader
-instance MonadGerrit GerritM where
-  getProjects count query startM = do
-    env <- ask
-    liftIO $ G.getProjects count query startM (client env)
-  queryChanges count queries startM = do
-    env <- ask
-    liftIO $ G.queryChanges count queries startM (client env)
-
--- | The MonadLog instance for logging
-instance MonadLog GerritM where
-  log' = liftIO . logEvent
-
--- | The MonadRetry instance for retrying
-instance MonadRetry GerritM where
-  retry = retry'
-
 -------------------------------------------------------------------------------
 -- Monocle Gerrit crawler entry points for Macroscope
 -------------------------------------------------------------------------------
 
 getProjectsStream ::
+  MonadGerrit m =>
   GerritEnv ->
   Text ->
-  S.Stream (S.Of P.Project) LentilleM ()
-getProjectsStream env reProject = adaptStream env $ streamProject (G.Regexp reProject)
+  S.Stream (S.Of P.Project) m ()
+getProjectsStream env reProject = streamProject env (G.Regexp reProject)
 
 getChangesStream ::
+  MonadGerrit m =>
   GerritEnv ->
   UTCTime ->
   Text ->
-  S.Stream (S.Of (C.Change, [C.ChangeEvent])) LentilleM ()
-getChangesStream env untilDate project = adaptStream env $ streamChange [Project project, After untilDate]
+  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+getChangesStream env untilDate project = streamChange env [Project project, After untilDate]
 
 -------------------------------------------------------------------------------
 -- Monocle Gerrit crawler system
@@ -190,13 +136,14 @@ toApprovals = concatMap genApprovals
       Nothing -> "+0"
 
 streamProject ::
-  (MonadGerrit m, MonadRetry m) =>
+  MonadGerrit m =>
+  GerritEnv ->
   G.GerritProjectQuery ->
   S.Stream (S.Of P.Project) m ()
-streamProject query = go 0
+streamProject env query = go 0
   where
     size = 100
-    doGet offset = getProjects size query (Just offset)
+    doGet offset = getProjects env size query (Just offset)
     go offset = do
       projects <- lift $ do retry . doGet $ offset
       let pNames = gerritprojectinfoId <$> M.elems projects
@@ -204,28 +151,29 @@ streamProject query = go 0
       when (length pNames == size) $ go (offset + size)
 
 streamChange ::
-  (MonadGerrit m, MonadRetry m) =>
+  MonadGerrit m =>
+  GerritEnv ->
   [GerritQuery] ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange query = do
-  env <- ask
-  streamChange' (G.serverUrl $ client env) query (prefix env) (identAliasCB env)
+streamChange env query =
+  streamChange' env (G.serverUrl $ client env) query (prefix env) (identAliasCB env)
 
 streamChange' ::
-  (MonadGerrit m, MonadRetry m) =>
+  MonadGerrit m =>
+  GerritEnv ->
   Text ->
   [GerritQuery] ->
   Maybe Text ->
   Maybe (Text -> Maybe Text) ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange' serverUrl query prefixM identCB = go 0
+streamChange' env serverUrl query prefixM identCB = go 0
   where
     size = 100
     go offset = do
       changes <- lift $ do retry . doGet $ offset
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
-    doGet offset = queryChanges size query (Just offset)
+    doGet offset = queryChanges env size query (Just offset)
     prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
     getIdent gAuthor = toIdent (getHostFromURL serverUrl) identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)

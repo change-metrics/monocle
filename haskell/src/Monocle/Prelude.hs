@@ -10,6 +10,9 @@ module Monocle.Prelude
     getEnv',
     headMaybe,
 
+    -- * contexts
+    MonadTime (..),
+
     -- * streaming
     Stream,
     Of (..),
@@ -57,7 +60,6 @@ module Monocle.Prelude
     nominalDiffTimeToSeconds,
     diffUTCTime,
     formatTime',
-    threadDelay,
     parseDateValue,
     dropTime,
     dropMilliSec,
@@ -97,7 +99,7 @@ module Monocle.Prelude
   )
 where
 
-import Control.Concurrent (threadDelay)
+import qualified Control.Concurrent (threadDelay)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
@@ -167,6 +169,14 @@ getEnv' var = do
 -- | A lifted version of getCurrentTime
 getCurrentTime :: MonadIO m => m UTCTime
 getCurrentTime = liftIO Data.Time.Clock.getCurrentTime
+
+class MonadTime m where
+  mGetCurrentTime :: m UTCTime
+  mThreadDelay :: Int -> m ()
+
+instance MonadTime IO where
+  mGetCurrentTime = Data.Time.Clock.getCurrentTime
+  mThreadDelay = Control.Concurrent.threadDelay
 
 -- | Return the seconds elapsed between a and b
 -- >>> elapsedSeconds [utctime|2000-01-01 00:00:00|] [utctime|2000-01-01 01:00:00|]

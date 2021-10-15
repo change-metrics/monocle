@@ -3,6 +3,7 @@ module Macroscope.Test where
 
 import Control.Exception (bracket)
 import qualified Data.ByteString as B
+import Lentille (runLentilleM)
 import qualified Macroscope.Worker as Macroscope
 import Monocle.Api
 import qualified Monocle.Api.Config as Config
@@ -68,7 +69,7 @@ testCrawlingPoint = do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
@@ -100,7 +101,7 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
   let stream _ = Streaming.each [td]
-  Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1

@@ -13,6 +13,7 @@ module Macroscope.Worker
   )
 where
 
+import Control.Monad.Except (catchError)
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
@@ -20,7 +21,6 @@ import Lentille
 import Monocle.Backend.Index (entityRequestOrganization, entityRequestProject, entityRequestTaskData)
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Client (MonocleClient)
-import Monocle.Client.Api
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
@@ -29,13 +29,18 @@ import qualified Streaming as S
 import qualified Streaming.Prelude as S
 
 -- | A crawler is defined as a DocumentStream:
-data DocumentStream
+data DocumentStream m
   = -- | Fetch projects for a organization name
-    Projects (Text -> LentilleStream Project)
+    Projects (Text -> LentilleStream m Project)
   | -- | Fetch recent changes from a project
-    Changes (UTCTime -> Text -> LentilleStream (Change, [ChangeEvent]))
+    Changes (UTCTime -> Text -> LentilleStream m (Change, [ChangeEvent]))
   | -- | Fetch recent task data
-    TaskDatas (UTCTime -> LentilleStream TaskData)
+    TaskDatas (UTCTime -> LentilleStream m TaskData)
+
+isTDStream :: DocumentStream m -> Bool
+isTDStream = \case
+  TaskDatas _ -> True
+  _anyOtherStream -> False
 
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
@@ -88,7 +93,7 @@ data ProcessResult = AddOk | AddError Text deriving stock (Show)
 type OldestEntity = CommitInfoResponse_OldestEntity
 
 -- | 'processBatch' handles the monocle api crawlerAddDoc call
-processBatch :: (MonadIO m, MonadLog m) => ([DocumentType] -> m AddDocResponse) -> [DocumentType] -> m ProcessResult
+processBatch :: MonadLog m => ([DocumentType] -> m AddDocResponse) -> [DocumentType] -> m ProcessResult
 processBatch postFunc docs = do
   log $ LogPostData (length docs)
   resp <- postFunc docs
@@ -97,7 +102,7 @@ processBatch postFunc docs = do
     AddDocResponse (Just err) -> AddError (show err)
 
 -- | 'process' post to the monocle api a stream of document
-process :: (MonadIO m, MonadLog m) => ([DocumentType] -> m AddDocResponse) -> Stream (Of DocumentType) m () -> m [ProcessResult]
+process :: MonadLog m => ([DocumentType] -> m AddDocResponse) -> Stream (Of DocumentType) m () -> m [ProcessResult]
 process postFunc =
   S.toList_
     . S.mapM (processBatch postFunc)
@@ -106,17 +111,19 @@ process postFunc =
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadMask m, MonadRetry m, MonadLog m, MonadIO m) =>
+  MonadCrawler m =>
   MonocleClient ->
   MonocleTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream ->
+  DocumentStream m ->
   m ()
 runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
-    drainEntities offset = do
+    drainEntities offset =
+      safeDrainEntities offset `catchError` handleStreamError offset
+    safeDrainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss
       -- document updated when we start
       startTime <- log' $ LogStartingEntity entityType
@@ -129,31 +136,28 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
         then log LogEnded
         else do
           -- Run the document stream for that entity
-          postResultE <-
-            runLentilleM $
-              process
-                (retry . crawlerAddDoc monocleClient . mkRequest oldestEntity)
-                (getStream oldestEntity)
+          postResult <-
+            process
+              (retry . mCrawlerAddDoc monocleClient . mkRequest oldestEntity)
+              (getStream oldestEntity)
+          case foldr collectPostFailure [] postResult of
+            [] -> do
+              -- Post the commit date
+              res <- retry $ commitTimestamp oldestEntity startTime
 
-          case postResultE of
-            Right postResult ->
-              case foldr collectPostFailure [] postResult of
-                [] -> do
-                  -- Post the commit date
-                  res <- retry $ commitTimestamp oldestEntity startTime
+              if not res
+                then log LogFailed
+                else do
+                  logRaw "Continuing..."
+                  drainEntities offset
+            xs -> do
+              log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
 
-                  if not res
-                    then log LogFailed
-                    else do
-                      putTextLn "Continuing..."
-                      drainEntities offset
-                xs -> do
-                  log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
-            Left err -> do
-              -- TODO: report decoding error
-              putTextLn $ "Lentille error: " <> show err
-              log LogFailed
-              drainEntities (offset + 1)
+    handleStreamError offset err = do
+      -- TODO: report decoding error
+      logRaw $ "Lentille error: " <> show err
+      log LogFailed
+      unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]
     collectPostFailure res acc = case res of
@@ -184,7 +188,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
 
     getOldestEntity offset = do
       resp <-
-        crawlerCommitInfo
+        mCrawlerCommitInfo
           monocleClient
           ( CommitInfoRequest
               indexName
@@ -226,7 +230,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
     -- 'commitTimestamp' post the commit date.
     commitTimestamp oe startTime = do
       commitResp <-
-        crawlerCommit
+        mCrawlerCommit
           monocleClient
           ( CommitRequest
               indexName
@@ -238,8 +242,8 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       case commitResp of
         (CommitResponse (Just (CommitResponseResultTimestamp _))) -> pure True
         (CommitResponse (Just (CommitResponseResultError err))) -> do
-          putTextLn ("Commit failed: " <> show err)
+          logRaw ("Commit failed: " <> show err)
           pure False
         _ -> do
-          putTextLn "Empty commit response"
+          logRaw "Empty commit response"
           pure False
