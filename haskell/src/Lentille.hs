@@ -21,8 +21,12 @@ module Lentille
     MonadTime (..),
     MonadLog (..),
     LogEvent (..),
+    LogAuthor (..),
+    Log (..),
+    LogCrawlerContext (..),
     logEvent,
     logRaw,
+    genLog,
 
     -- * Retry context
     MonadRetry (..),
@@ -34,6 +38,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
+import qualified Data.Text as T
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Gerrit as G
 import Gerrit.Data.Change (GerritChange, GerritQuery)
@@ -43,10 +48,10 @@ import qualified Monocle.Api.Config
 import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
-import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude
 import Network.HTTP.Client (HttpException (..))
 import qualified Network.HTTP.Client as HTTP
+import Say (say)
 import Web.Bugzilla.RedHat (BugzillaSession)
 import qualified Web.Bugzilla.RedHat as BZ (BugzillaContext, BugzillaServer, Request, newBugzillaContext, sendBzRequest)
 
@@ -156,46 +161,74 @@ instance LentilleMonad LentilleM
 -------------------------------------------------------------------------------
 -- Log system
 -------------------------------------------------------------------------------
+
+data LogAuthor = Macroscope | Unspecified
+
+data Log = Log {author :: LogAuthor, event :: LogEvent}
+
+data LogCrawlerContext = LogCrawlerContext {index :: Text, crawler :: Text}
+
 data LogEvent
-  = LogStarting
-  | LogStartingEntity CrawlerPB.EntityEntity
-  | LogEnded
-  | LogFailed
+  = LogMacroStart
+  | LogMacroPause Float
+  | LogMacroContinue LogCrawlerContext
+  | LogMacroSkipCrawler LogCrawlerContext Text
+  | LogMacroStartCrawler LogCrawlerContext
+  | LogMacroPostData LogCrawlerContext Text Int
+  | LogMacroRequestOldestEntity LogCrawlerContext Text
+  | LogMacroGotOldestEntity LogCrawlerContext (Text, Text) UTCTime
+  | LogMacroEnded LogCrawlerContext
+  | LogMacroCommitFailed LogCrawlerContext
+  | LogMacroPostDataFailed LogCrawlerContext [Text]
+  | LogMacroStreamError LogCrawlerContext Text
   | LogNetworkFailure Text
-  | LogOldestEntity CrawlerPB.CommitInfoResponse_OldestEntity
   | LogGetBugs UTCTime Int Int
-  | LogPostData Int
   | LogRaw Text
 
-logEvent :: (MonadTime m, MonadIO m) => LogEvent -> m UTCTime
-logEvent ev = do
+logAuthorToText :: LogAuthor -> Text
+logAuthorToText Macroscope = "Macroscope"
+logAuthorToText Unspecified = ""
+
+logEvent :: (MonadTime m, MonadIO m) => Log -> m UTCTime
+logEvent Log {..} = do
   now <- mGetCurrentTime
-  putTextLn $ "[" <> showTime now <> "]: " <> evStr
+  say $ "[" <> showTime now <> " - " <> logAuthorToText author <> "]: " <> evStr
   pure now
   where
     showTime now = toText . take 23 $ formatTime defaultTimeLocale "%F %T.%q" now
-    evStr = case ev of
-      LogStarting -> "Starting updates"
-      LogStartingEntity e -> "Starting updates for " <> show e
-      LogEnded -> "Update completed"
-      LogFailed -> "Commit failed"
+    prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
+    evStr = case event of
+      LogMacroStart -> "Starting to fetch streams"
+      LogMacroPause usec -> "Waiting " <> show usec <> "s. brb"
+      LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
+      LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
+      LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"
+      LogMacroPostData lc eName count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> eName
+      LogMacroRequestOldestEntity lc entity -> prefix lc <> " - Looking for oldest refreshed " <> entity <> " entity"
+      LogMacroGotOldestEntity lc (etype, name) date ->
+        prefix lc <> " - Got entity of type: " <> etype <> " named: " <> name <> " last updated at " <> show date
+      LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
+      LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"
+      LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
+      LogMacroStreamError lc error' -> prefix lc <> " - Error occured when consuming the document stream: " <> error'
       LogNetworkFailure msg -> "Network error: " <> msg
       LogGetBugs ts offset limit ->
         "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
-      LogPostData count -> "Posting tracker data " <> show count
-      LogOldestEntity oe -> "Got entity " <> show oe
       LogRaw t -> t
 
+genLog :: LogAuthor -> LogEvent -> Log
+genLog = Log
+
 class Monad m => MonadLog m where
-  log' :: LogEvent -> m UTCTime
-  log :: LogEvent -> m ()
+  log' :: Log -> m UTCTime
+  log :: Log -> m ()
   log = void . log'
 
 instance MonadLog IO where
   log' = logEvent
 
 logRaw :: MonadLog m => Text -> m ()
-logRaw = log . LogRaw
+logRaw text = log $ genLog Unspecified (LogRaw text)
 
 -------------------------------------------------------------------------------
 -- Network Retry system
@@ -222,6 +255,6 @@ retry' action =
         let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
             arg = decodeUtf8 $ HTTP.queryString req
             loc = if num == 0 then url <> arg else url
-        log . LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx
+        log $ genLog Unspecified (LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx)
         pure True
       InvalidUrlException _ _ -> pure False

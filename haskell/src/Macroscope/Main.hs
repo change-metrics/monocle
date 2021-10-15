@@ -38,7 +38,7 @@ runMacroscope verbose confPath interval client = do
 
 runMacroscope' :: (MonadCatch m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope' verbose confPath interval client = do
-  logRaw "Macroscope begin..."
+  log $ genLog Macroscope LogMacroStart
   config <- Config.mReloadConfig confPath
   loop config
   where
@@ -50,13 +50,15 @@ runMacroscope' verbose confPath interval client = do
       traverse_ safeCrawl (getCrawlers conf)
 
       -- Pause
-      logRaw $ "Waiting " <> show (fromIntegral interval_usec / 1_000_000 :: Float) <> "s. brb"
+      log $ genLog Macroscope $ LogMacroPause interval_sec
       mThreadDelay interval_usec
 
       -- Loop again
       loop config
 
     interval_usec = fromInteger . toInteger $ interval * 1_000_000
+    interval_sec :: Float
+    interval_sec = fromIntegral interval_usec / 1_000_000
 
     safeCrawl :: (MonadCatch m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     safeCrawl crawler = do
@@ -64,14 +66,13 @@ runMacroscope' verbose confPath interval client = do
       case catched of
         Right comp -> pure comp
         Left exc ->
-          let (_, _, Config.Crawler {..}, _) = crawler
-           in logRaw $
-                "Skipping crawler: " <> name <> ". Unexpected exception catched: " <> show exc
+          let (index, _, Config.Crawler {..}, _) = crawler
+           in log $ genLog Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
 
     crawl :: LentilleMonad m => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
     crawl (index, key, crawler, idents) = do
       now <- toMonocleTime <$> mGetCurrentTime
-      when verbose (logRaw $ "Crawling " <> crawlerName crawler)
+      when verbose (log $ genLog Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler))
 
       -- Create document streams
       docStreams <- case Config.provider crawler of

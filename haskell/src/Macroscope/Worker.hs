@@ -14,7 +14,6 @@ module Macroscope.Worker
 where
 
 import Control.Monad.Except (catchError)
-import qualified Data.Text as Text
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
@@ -92,26 +91,35 @@ data ProcessResult = AddOk | AddError Text deriving stock (Show)
 
 type OldestEntity = CommitInfoResponse_OldestEntity
 
--- | 'processBatch' handles the monocle api crawlerAddDoc call
-processBatch :: MonadLog m => ([DocumentType] -> m AddDocResponse) -> [DocumentType] -> m ProcessResult
-processBatch postFunc docs = do
-  log $ LogPostData (length docs)
-  resp <- postFunc docs
-  pure $ case resp of
-    AddDocResponse Nothing -> AddOk
-    AddDocResponse (Just err) -> AddError (show err)
-
--- | 'process' post to the monocle api a stream of document
-process :: MonadLog m => ([DocumentType] -> m AddDocResponse) -> Stream (Of DocumentType) m () -> m [ProcessResult]
-process postFunc =
+-- | 'process' read the stream of document and post to the monocle API
+process ::
+  forall m.
+  MonadLog m =>
+  -- | Funtion to log about the processing
+  (Int -> Log) ->
+  -- | Function to post on the Monocle API
+  ([DocumentType] -> m AddDocResponse) ->
+  -- | The stream of documents to read
+  Stream (Of DocumentType) m () ->
+  -- | The processing results
+  m [ProcessResult]
+process logFunc postFunc =
   S.toList_
-    . S.mapM (processBatch postFunc)
+    . S.mapM processBatch
     . S.mapped S.toList
     . S.chunksOf 500
+  where
+    processBatch :: [DocumentType] -> m ProcessResult
+    processBatch docs = do
+      log $ logFunc (length docs)
+      resp <- postFunc docs
+      pure $ case resp of
+        AddDocResponse Nothing -> AddOk
+        AddDocResponse (Just err) -> AddError (show err)
 
 -- | Run is the main function used by macroscope
 runStream ::
-  MonadCrawler m =>
+  (MonadTime m, MonadCrawler m) =>
   MonocleClient ->
   MonocleTime ->
   ApiKey ->
@@ -121,42 +129,46 @@ runStream ::
   m ()
 runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
+    lc = LogCrawlerContext (toText indexName) (toText crawlerName)
+    wLog event = log $ genLog Macroscope event
     drainEntities offset =
       safeDrainEntities offset `catchError` handleStreamError offset
     safeDrainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss
       -- document updated when we start
-      startTime <- log' $ LogStartingEntity entityType
+      startTime <- mGetCurrentTime
+      wLog $ LogMacroRequestOldestEntity lc (streamType documentStream)
 
       -- Query the monocle api for the oldest entity to be updated.
-      oldestEntity <- retry $ getOldestEntity offset
-      log $ LogOldestEntity oldestEntity
+      entity <- retry $ getOldestEntity offset
 
-      if toMonocleTime (oldestEntityDate oldestEntity) >= startDate
-        then log LogEnded
+      let (eType, eName) = oldestEntityEntityToText entity
+          processLogFunc c = genLog Macroscope $ LogMacroPostData lc eName c
+      wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
+
+      if toMonocleTime (oldestEntityDate entity) >= startDate
+        then wLog $ LogMacroEnded lc
         else do
           -- Run the document stream for that entity
           postResult <-
             process
-              (retry . mCrawlerAddDoc monocleClient . mkRequest oldestEntity)
-              (getStream oldestEntity)
+              processLogFunc
+              (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
+              (getStream entity)
           case foldr collectPostFailure [] postResult of
             [] -> do
               -- Post the commit date
-              res <- retry $ commitTimestamp oldestEntity startTime
-
+              res <- retry $ commitTimestamp entity startTime
               if not res
-                then log LogFailed
+                then wLog $ LogMacroCommitFailed lc
                 else do
-                  logRaw "Continuing..."
+                  wLog $ LogMacroContinue lc
                   drainEntities offset
-            xs -> do
-              log $ LogNetworkFailure $ "Could not post document: " <> Text.intercalate " | " xs
+            xs -> wLog $ LogMacroPostDataFailed lc xs
 
     handleStreamError offset err = do
       -- TODO: report decoding error
-      logRaw $ "Lentille error: " <> show err
-      log LogFailed
+      wLog $ LogMacroStreamError lc (show err)
       unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]
@@ -167,6 +179,17 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
     oldestEntityDate oe = case oe of
       CommitInfoResponse_OldestEntity _ (Just tc) -> Timestamp.toUTCTime tc
       _ -> error "Timestamp missing"
+
+    oldestEntityEntityToText :: CommitInfoResponse_OldestEntity -> (Text, Text)
+    oldestEntityEntityToText oe = case oe of
+      CommitInfoResponse_OldestEntity (Just entity) _ -> eToText entity
+      _ -> error "Entity missing"
+      where
+        eToText (Entity e) = case e of
+          Just (EntityEntityOrganizationName v) -> ("Organization", toText v)
+          Just (EntityEntityProjectName v) -> ("Project", toText v)
+          Just (EntityEntityTdName v) -> ("TaskData", toText v)
+          _ -> error "EntityEntity missing"
 
     -- Adapt the document stream to intermediate representation
     getStream oldestEntity = case documentStream of
@@ -180,11 +203,11 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
         let untilDate = getDate oldestEntity
          in S.map DTTaskData (s untilDate)
 
-    -- The type of the oldest entity for a given document stream
-    entityType = case documentStream of
-      Projects _ -> entityRequestOrganization
-      Changes _ -> entityRequestProject
-      TaskDatas _ -> entityRequestTaskData
+    -- Get a stream representation of a stream type
+    streamType = \case
+      Projects _ -> "Projects"
+      Changes _ -> "Changes"
+      TaskDatas _ -> "TaskDatas"
 
     getOldestEntity offset = do
       resp <-
@@ -199,6 +222,12 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       case resp of
         CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
         _ -> error $ "Could not get initial timestamp: " <> show resp
+      where
+        -- The type of the oldest entity for a given document stream
+        entityType = case documentStream of
+          Projects _ -> entityRequestOrganization
+          Changes _ -> entityRequestProject
+          TaskDatas _ -> entityRequestTaskData
 
     -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
     -- this is used by the processBatch function.
