@@ -167,7 +167,7 @@ getBZData bzSession product''' sinceTS = go 0
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do
-        log $ LogGetBugs sinceTS offset limit
+        log $ genLog Unspecified (LogGetBugs sinceTS offset limit)
         retry . doGet $ offset
       -- Create a flat stream of tracker data
       S.each (concatMap toTaskData bugs)
