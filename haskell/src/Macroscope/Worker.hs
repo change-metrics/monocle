@@ -13,7 +13,6 @@ module Macroscope.Worker
   )
 where
 
-import Control.Monad.Except (catchError)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
@@ -111,7 +110,7 @@ process logFunc postFunc =
   where
     processBatch :: [DocumentType] -> m ProcessResult
     processBatch docs = do
-      log $ logFunc (length docs)
+      mLog $ logFunc (length docs)
       resp <- postFunc docs
       pure $ case resp of
         AddDocResponse Nothing -> AddOk
@@ -119,7 +118,7 @@ process logFunc postFunc =
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadTime m, MonadCrawler m) =>
+  (MonadError LentilleError m, MonadLog m, MonadRetry m, MonadCrawler m) =>
   MonocleClient ->
   MonocleTime ->
   ApiKey ->
@@ -130,7 +129,7 @@ runStream ::
 runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
-    wLog event = log $ genLog Macroscope event
+    wLog event = mLog $ Log Macroscope event
     drainEntities offset =
       safeDrainEntities offset `catchError` handleStreamError offset
     safeDrainEntities offset = do
@@ -143,7 +142,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       entity <- retry $ getOldestEntity offset
 
       let (eType, eName) = oldestEntityEntityToText entity
-          processLogFunc c = genLog Macroscope $ LogMacroPostData lc eName c
+          processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
       wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
 
       if toMonocleTime (oldestEntityDate entity) >= startDate
@@ -168,7 +167,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
 
     handleStreamError offset err = do
       -- TODO: report decoding error
-      wLog $ LogMacroStreamError lc (show err)
+      wLog $ LogMacroStreamError lc (show (err :: LentilleError))
       unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]

@@ -65,6 +65,7 @@ data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCou
   deriving (Show)
 
 streamFetch ::
+  MonadError LentilleError m =>
   (Fetch a, FromJSON a, MonadGraphQL m) =>
   GitLabGraphClient ->
   -- | MR updatedAt date until we need to fetch
