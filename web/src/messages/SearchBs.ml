@@ -42,6 +42,7 @@ type suggestions_response_mutable = {
   mutable severities : string list;
   mutable projects : string list;
   mutable groups : string list;
+  mutable labels : string list;
 }
 
 let default_suggestions_response_mutable () : suggestions_response_mutable = {
@@ -52,6 +53,7 @@ let default_suggestions_response_mutable () : suggestions_response_mutable = {
   severities = [];
   projects = [];
   groups = [];
+  labels = [];
 }
 
 type fields_request_mutable = {
@@ -578,6 +580,15 @@ let rec decode_suggestions_response json =
         Pbrt_bs.string json "suggestions_response" "groups"
       ) a |> Array.to_list;
     end
+    | "labels" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "labels" in 
+        Pbrt_bs.array_ a "suggestions_response" "labels"
+      in
+      v.labels <- Array.map (fun json -> 
+        Pbrt_bs.string json "suggestions_response" "labels"
+      ) a |> Array.to_list;
+    end
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -589,6 +600,7 @@ let rec decode_suggestions_response json =
     SearchTypes.severities = v.severities;
     SearchTypes.projects = v.projects;
     SearchTypes.groups = v.groups;
+    SearchTypes.labels = v.labels;
   } : SearchTypes.suggestions_response)
 
 let rec decode_fields_request json =
@@ -1635,6 +1647,8 @@ let rec encode_suggestions_response (v:SearchTypes.suggestions_response) =
   Js.Dict.set json "projects" (Js.Json.array a);
   let a = v.SearchTypes.groups |> Array.of_list |> Array.map Js.Json.string in
   Js.Dict.set json "groups" (Js.Json.array a);
+  let a = v.SearchTypes.labels |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "labels" (Js.Json.array a);
   json
 
 let rec encode_fields_request (v:SearchTypes.fields_request) = 

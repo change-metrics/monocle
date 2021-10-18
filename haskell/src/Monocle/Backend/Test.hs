@@ -620,6 +620,7 @@ testGetSuggestions = withTenant doTest
               mempty
               mempty
               mempty
+              mempty
           )
           results
 

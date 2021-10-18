@@ -1100,8 +1100,10 @@ getSuggestions index = do
   suggestionsResponseApprovals <- getTop "approval"
   suggestionsResponsePriorities <- getTop "tasks_data.priority"
   suggestionsResponseSeverities <- getTop "tasks_data.severity"
+  suggestionsResponseLabels <- getTop "labels"
   let suggestionsResponseProjects = V.fromList $ toLazy <$> Config.getTenantProjectsNames index
-  let suggestionsResponseGroups = V.fromList $ toLazy . fst <$> Config.getTenantGroups index
+      suggestionsResponseGroups = V.fromList $ toLazy . fst <$> Config.getTenantGroups index
+
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do

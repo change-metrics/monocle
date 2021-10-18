@@ -26,6 +26,7 @@ type suggestions_response = {
   severities : string list;
   projects : string list;
   groups : string list;
+  labels : string list;
 }
 
 type fields_request = {
@@ -304,6 +305,7 @@ let rec default_suggestions_response
   ?severities:((severities:string list) = [])
   ?projects:((projects:string list) = [])
   ?groups:((groups:string list) = [])
+  ?labels:((labels:string list) = [])
   () : suggestions_response  = {
   task_types;
   authors;
@@ -312,6 +314,7 @@ let rec default_suggestions_response
   severities;
   projects;
   groups;
+  labels;
 }
 
 let rec default_fields_request 

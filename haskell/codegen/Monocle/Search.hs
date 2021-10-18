@@ -461,7 +461,8 @@ data SuggestionsResponse = SuggestionsResponse
     suggestionsResponsePriorities :: Hs.Vector Hs.Text,
     suggestionsResponseSeverities :: Hs.Vector Hs.Text,
     suggestionsResponseProjects :: Hs.Vector Hs.Text,
-    suggestionsResponseGroups :: Hs.Vector Hs.Text
+    suggestionsResponseGroups :: Hs.Vector Hs.Text,
+    suggestionsResponseLabels :: Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -481,7 +482,8 @@ instance HsProtobuf.Message SuggestionsResponse where
         suggestionsResponsePriorities = suggestionsResponsePriorities,
         suggestionsResponseSeverities = suggestionsResponseSeverities,
         suggestionsResponseProjects = suggestionsResponseProjects,
-        suggestionsResponseGroups = suggestionsResponseGroups
+        suggestionsResponseGroups = suggestionsResponseGroups,
+        suggestionsResponseLabels = suggestionsResponseLabels
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -524,6 +526,12 @@ instance HsProtobuf.Message SuggestionsResponse where
                 (HsProtobuf.FieldNumber 7)
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
                     suggestionsResponseGroups
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 8)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    suggestionsResponseLabels
                 )
             )
           ]
@@ -579,6 +587,13 @@ instance HsProtobuf.Message SuggestionsResponse where
                   (HsProtobuf.FieldNumber 7)
               )
           )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 8)
+              )
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -628,11 +643,18 @@ instance HsProtobuf.Message SuggestionsResponse where
           (HsProtobuf.Single "groups")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 8)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "labels")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB SuggestionsResponse where
-  toJSONPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7) =
+  toJSONPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7 f8) =
     ( HsJSONPB.object
         [ "task_types" .= f1,
           "authors" .= f2,
@@ -640,10 +662,11 @@ instance HsJSONPB.ToJSONPB SuggestionsResponse where
           "priorities" .= f4,
           "severities" .= f5,
           "projects" .= f6,
-          "groups" .= f7
+          "groups" .= f7,
+          "labels" .= f8
         ]
     )
-  toEncodingPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7) =
+  toEncodingPB (SuggestionsResponse f1 f2 f3 f4 f5 f6 f7 f8) =
     ( HsJSONPB.pairs
         [ "task_types" .= f1,
           "authors" .= f2,
@@ -651,7 +674,8 @@ instance HsJSONPB.ToJSONPB SuggestionsResponse where
           "priorities" .= f4,
           "severities" .= f5,
           "projects" .= f6,
-          "groups" .= f7
+          "groups" .= f7,
+          "labels" .= f8
         ]
     )
 
@@ -667,6 +691,7 @@ instance HsJSONPB.FromJSONPB SuggestionsResponse where
               <*> obj .: "severities"
               <*> obj .: "projects"
               <*> obj .: "groups"
+              <*> obj .: "labels"
         )
     )
 
@@ -694,6 +719,8 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
       suggestionsResponseProjects <- declare_projects Proxy.Proxy
       let declare_groups = HsJSONPB.declareSchemaRef
       suggestionsResponseGroups <- declare_groups Proxy.Proxy
+      let declare_labels = HsJSONPB.declareSchemaRef
+      suggestionsResponseLabels <- declare_labels Proxy.Proxy
       let _ =
             Hs.pure SuggestionsResponse
               <*> HsJSONPB.asProxy declare_task_types
@@ -703,6 +730,7 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
               <*> HsJSONPB.asProxy declare_severities
               <*> HsJSONPB.asProxy declare_projects
               <*> HsJSONPB.asProxy declare_groups
+              <*> HsJSONPB.asProxy declare_labels
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -728,7 +756,8 @@ instance HsJSONPB.ToSchema SuggestionsResponse where
                             suggestionsResponseSeverities
                           ),
                           ("projects", suggestionsResponseProjects),
-                          ("groups", suggestionsResponseGroups)
+                          ("groups", suggestionsResponseGroups),
+                          ("labels", suggestionsResponseLabels)
                         ]
                   }
             }

@@ -360,7 +360,7 @@ searchSuggestions request = do
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
-        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty
+        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
   where
     emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 

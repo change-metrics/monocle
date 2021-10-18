@@ -948,6 +948,10 @@ components:
                     type: array
                     items:
                         type: string
+                labels:
+                    type: array
+                    items:
+                        type: string
         monocle_search_TaskData:
             properties:
                 updated_at:
