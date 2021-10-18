@@ -438,6 +438,7 @@ data EChangeEvent = EChangeEvent
     echangeeventAuthor :: Maybe Author,
     echangeeventOnAuthor :: Author,
     echangeeventBranch :: LText,
+    echangeeventLabels :: [LText],
     echangeeventOnCreatedAt :: UTCTime,
     echangeeventCreatedAt :: UTCTime,
     echangeeventApproval :: Maybe [LText],

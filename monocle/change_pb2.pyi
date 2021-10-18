@@ -513,6 +513,7 @@ class ChangeEvent(google.protobuf.message.Message):
     CHANGECOMMITFORCEPUSHED_FIELD_NUMBER: builtins.int
     CHANGECOMMITPUSHED_FIELD_NUMBER: builtins.int
     CHANGEMERGED_FIELD_NUMBER: builtins.int
+    LABELS_FIELD_NUMBER: builtins.int
     id: typing.Text = ...
     repository_prefix: typing.Text = ...
     repository_fullname: typing.Text = ...
@@ -522,6 +523,9 @@ class ChangeEvent(google.protobuf.message.Message):
     number: builtins.int = ...
     change_id: typing.Text = ...
     url: typing.Text = ...
+    labels: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     @property
     def created_at(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     @property
@@ -576,6 +580,7 @@ class ChangeEvent(google.protobuf.message.Message):
         ] = ...,
         ChangeCommitPushed: typing.Optional[global___ChangeCommitPushedEvent] = ...,
         ChangeMerged: typing.Optional[global___ChangeMergedEvent] = ...,
+        labels: typing.Optional[typing.Iterable[typing.Text]] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -635,6 +640,8 @@ class ChangeEvent(google.protobuf.message.Message):
             b"created_at",
             "id",
             b"id",
+            "labels",
+            b"labels",
             "number",
             b"number",
             "on_author",

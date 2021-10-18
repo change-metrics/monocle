@@ -2494,7 +2494,8 @@ data ChangeEvent = ChangeEvent
       Hs.Maybe Google.Protobuf.Timestamp.Timestamp,
     changeEventChangedFiles ::
       Hs.Vector Monocle.Change.ChangedFilePath,
-    changeEventType :: Hs.Maybe ChangeEventType
+    changeEventType :: Hs.Maybe ChangeEventType,
+    changeEventLabels :: Hs.Vector Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2521,7 +2522,8 @@ instance HsProtobuf.Message ChangeEvent where
         changeEventOnAuthor = changeEventOnAuthor,
         changeEventOnCreatedAt = changeEventOnCreatedAt,
         changeEventChangedFiles = changeEventChangedFiles,
-        changeEventType = changeEventType
+        changeEventType = changeEventType,
+        changeEventLabels = changeEventLabels
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -2655,7 +2657,13 @@ instance HsProtobuf.Message ChangeEvent where
                             @(HsProtobuf.Nested Monocle.Change.ChangeMergedEvent)
                             (Hs.Just y)
                         )
-                    )
+                    ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 22)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    changeEventLabels
+                )
+            )
           ]
       )
   decodeMessage _ =
@@ -2794,6 +2802,13 @@ instance HsProtobuf.Message ChangeEvent where
                 )
               ]
           )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 22)
+              )
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -2906,6 +2921,13 @@ instance HsProtobuf.Message ChangeEvent where
           (HsProtobuf.Single "changed_files")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 22)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "labels")
+          []
+          ""
       )
     ]
 
@@ -2927,6 +2949,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f13
         f14
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
+        f22
       ) =
       ( HsJSONPB.object
           [ "id" .= f1,
@@ -2965,7 +2988,8 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                     if HsJSONPB.optEmitNamedOneof options
                       then ("type" .= (HsJSONPB.objectOrNull [encodeType] options)) options
                       else encodeType options
-            )
+            ),
+            "labels" .= f22
           ]
       )
   toEncodingPB
@@ -2985,6 +3009,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f13
         f14
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
+        f22
       ) =
       ( HsJSONPB.pairs
           [ "id" .= f1,
@@ -3023,7 +3048,8 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                     if HsJSONPB.optEmitNamedOneof options
                       then ("type" .= (HsJSONPB.pairsOrNull [encodeType] options)) options
                       else encodeType options
-            )
+            ),
+            "labels" .= f22
           ]
       )
 
@@ -3066,6 +3092,7 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
                      in ((obj .: "type") Hs.>>= (HsJSONPB.withObject "type" parseType))
                           <|> (parseType obj)
                   )
+              <*> obj .: "labels"
         )
     )
 
@@ -3115,6 +3142,8 @@ instance HsJSONPB.ToSchema ChangeEvent where
       changeEventChangedFiles <- declare_changed_files Proxy.Proxy
       let declare_type = HsJSONPB.declareSchemaRef
       changeEventType <- declare_type Proxy.Proxy
+      let declare_labels = HsJSONPB.declareSchemaRef
+      changeEventLabels <- declare_labels Proxy.Proxy
       let _ =
             Hs.pure ChangeEvent <*> HsJSONPB.asProxy declare_id
               <*> HsJSONPB.asProxy declare_created_at
@@ -3131,6 +3160,7 @@ instance HsJSONPB.ToSchema ChangeEvent where
               <*> HsJSONPB.asProxy declare_on_created_at
               <*> HsJSONPB.asProxy declare_changed_files
               <*> HsJSONPB.asProxy declare_type
+              <*> HsJSONPB.asProxy declare_labels
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -3164,7 +3194,8 @@ instance HsJSONPB.ToSchema ChangeEvent where
                           ("on_author", changeEventOnAuthor),
                           ("on_created_at", changeEventOnCreatedAt),
                           ("changed_files", changeEventChangedFiles),
-                          ("type", changeEventType)
+                          ("type", changeEventType),
+                          ("labels", changeEventLabels)
                         ]
                   }
             }

@@ -136,6 +136,7 @@ fakeChangeEvent from' to = do
   echangeeventOnCreatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeeventCreatedAt to
   echangeeventApproval <- pure Nothing
   echangeeventTasksData <- pure Nothing
+  echangeeventLabels <- pure []
   pure $ EChangeEvent {..}
 
 fakeTaskId :: Faker.Fake Text

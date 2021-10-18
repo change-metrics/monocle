@@ -307,6 +307,7 @@ transformResponse host getIdentIdCB result =
               changeEventCreatedAt = Nothing
               changeEventAuthor = Nothing
               changeEventType = Nothing
+              changeEventLabels = changeLabels
               changeEventId = ""
            in ChangeEvent {..}
           where

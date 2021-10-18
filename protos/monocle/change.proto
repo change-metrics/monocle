@@ -122,4 +122,5 @@ message ChangeEvent {
     ChangeCommitPushedEvent ChangeCommitPushed = 20;
     ChangeMergedEvent ChangeMerged = 21;
   }
+  repeated string labels = 22;
 }
