@@ -47,7 +47,7 @@ module Content = {
   @react.component
   let make = (~fields: list<SearchTypes.field>) =>
     <div style={ReactDOM.Style.make(~textAlign="left", ())}>
-      <h2> {"Moncle search language"->str} </h2>
+      <h2> {"Monocle search language"->str} </h2>
       <p>
         {"Use the query syntax to filter the metrics. Learn more in the "->str}
         <a
