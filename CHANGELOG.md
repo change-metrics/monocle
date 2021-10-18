@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [contrib] Example of Python clients for the Monocle OpenAPI.
+- [web] filter by labels.
 
 ### Changed
 
