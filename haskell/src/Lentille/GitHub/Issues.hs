@@ -58,6 +58,7 @@ defineByDocumentFile
             title
             updatedAt
             url
+            number
             labels(first: 100) {
               nodes {
                 name
@@ -98,7 +99,7 @@ streamLinkedIssue client searchText utctime = streamFetch client mkArgs transfor
     toSimpleDate :: UTCTime -> String
     toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
 
-pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
+pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
 transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [TaskData])
 transformResponse searchResult =
@@ -135,7 +136,7 @@ transformResponse searchResult =
         <$> (Just <$> getUpdatedAt issue)
         <*> pure (toLazy curl)
         <*> (V.fromList <$> getLabelsE)
-        <*> pure (toLazy $ getIssueID issue)
+        <*> pure (toLazy $ getNumber issue)
         <*> pure (toLazy $ getIssueURL issue)
         <*> pure (toLazy $ title issue)
         <*> pure "low"
@@ -148,11 +149,11 @@ transformResponse searchResult =
           ([], labels') -> Right (fmap toLazy labels')
           (errors, _) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
-        getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _) = changeURL
-        getIssueID :: SearchNodesSearchResultItem -> Text
-        getIssueID (SearchNodesIssue issueID _ _ _ _ _) = unpackID issueID
+        getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _ _) = changeURL
+        getNumber :: SearchNodesSearchResultItem -> Text
+        getNumber (SearchNodesIssue _ _ _ _ number _ _) = show number
     getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
-    getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt') _ _ _) =
+    getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt') _ _ _ _) =
       case Timestamp.fromRFC3339 $ toLazy updatedAt' of
         Just ts -> Right ts
         Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
@@ -170,6 +171,7 @@ transformResponse searchResult =
     getTDChangeUrls issue =
       case issue of
         SearchNodesIssue
+          _
           _
           _
           _

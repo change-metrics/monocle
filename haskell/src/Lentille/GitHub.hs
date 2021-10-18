@@ -33,8 +33,8 @@ newGithubGraphClient :: MonadGraphQL m => Text -> m GitHubGraphClient
 newGithubGraphClient url' = do
   token' <-
     toText
-      . fromMaybe (error "GITHUB_GRAPH_TOKEN environment is missing")
-      <$> mLookupEnv "GITHUB_GRAPH_TOKEN"
+      . fromMaybe (error "GITHUB_TOKEN environment is missing")
+      <$> mLookupEnv "GITHUB_TOKEN"
   newGithubGraphClientWithKey url' token'
 
 newGithubGraphClientWithKey :: MonadGraphQL m => Text -> Text -> m GitHubGraphClient
