@@ -422,6 +422,7 @@ class PRsFetcher(BaseCrawler):
                     "target_branch": change["target_branch"],
                     "number": change["number"],
                     "change_id": change["change_id"],
+                    "labels": change["labels"],
                     "url": change["url"],
                     "on_author": change["author"],
                     "on_created_at": change["created_at"],

@@ -107,6 +107,7 @@ class SuggestionsResponse(google.protobuf.message.Message):
     SEVERITIES_FIELD_NUMBER: builtins.int
     PROJECTS_FIELD_NUMBER: builtins.int
     GROUPS_FIELD_NUMBER: builtins.int
+    LABELS_FIELD_NUMBER: builtins.int
     task_types: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
@@ -128,6 +129,9 @@ class SuggestionsResponse(google.protobuf.message.Message):
     groups: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ] = ...
+    labels: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        typing.Text
+    ] = ...
     def __init__(
         self,
         *,
@@ -138,6 +142,7 @@ class SuggestionsResponse(google.protobuf.message.Message):
         severities: typing.Optional[typing.Iterable[typing.Text]] = ...,
         projects: typing.Optional[typing.Iterable[typing.Text]] = ...,
         groups: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        labels: typing.Optional[typing.Iterable[typing.Text]] = ...,
     ) -> None: ...
     def ClearField(
         self,
@@ -148,6 +153,8 @@ class SuggestionsResponse(google.protobuf.message.Message):
             b"authors",
             "groups",
             b"groups",
+            "labels",
+            b"labels",
             "priorities",
             b"priorities",
             "projects",

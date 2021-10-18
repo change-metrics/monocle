@@ -39,6 +39,7 @@ module FieldSelectorModal = {
             | "tag" => suggestions.task_types
             | "project" => suggestions.projects
             | "group" => suggestions.groups
+            | "label" => suggestions.labels
             | _ => list{}
             }
 

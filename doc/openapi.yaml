@@ -350,6 +350,10 @@ components:
                     $ref: '#/components/schemas/monocle_change_ChangeCommitPushedEvent'
                 ChangeMerged:
                     $ref: '#/components/schemas/monocle_change_ChangeMergedEvent'
+                labels:
+                    type: array
+                    items:
+                        type: string
         monocle_change_ChangeMergedEvent:
             properties: {}
         monocle_change_ChangeReviewedEvent:
@@ -945,6 +949,10 @@ components:
                     items:
                         type: string
                 groups:
+                    type: array
+                    items:
+                        type: string
+                labels:
                     type: array
                     items:
                         type: string

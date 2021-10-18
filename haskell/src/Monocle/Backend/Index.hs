@@ -304,6 +304,7 @@ toEChangeEvent ChangeEvent {..} =
       echangeeventAuthor = Just $ toAuthor changeEventAuthor,
       echangeeventOnAuthor = toAuthor changeEventOnAuthor,
       echangeeventBranch = changeEventBranch,
+      echangeeventLabels = Just . toList $ changeEventLabels,
       echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
       echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       echangeeventApproval = case changeEventType of

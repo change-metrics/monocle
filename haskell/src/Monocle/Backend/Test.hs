@@ -620,6 +620,7 @@ testGetSuggestions = withTenant doTest
               mempty
               mempty
               mempty
+              mempty
           )
           results
 
@@ -828,6 +829,7 @@ emptyEvent = EChangeEvent {..}
     echangeeventOnCreatedAt = fakeDate
     echangeeventApproval = Nothing
     echangeeventTasksData = Nothing
+    echangeeventLabels = mempty
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)

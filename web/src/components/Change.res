@@ -119,6 +119,28 @@ module Approvals = {
   }
 }
 
+module Labels = {
+  module Label = {
+    @react.component
+    let make = (~label: string) => {
+      <Patternfly.Label color=#Grey> {label} </Patternfly.Label>
+    }
+  }
+  @react.component
+  let make = (~labels: list<string>, ~withGroup: bool) => {
+    let labels' =
+      labels
+      ->Belt.List.mapWithIndex((idx, label) => <Label key={string_of_int(idx)} label />)
+      ->Belt.List.toArray
+      ->React.array
+    withGroup
+      ? <Patternfly.LabelGroup categoryName={"Labels"} numLabels={5}>
+          {labels'}
+        </Patternfly.LabelGroup>
+      : {labels'}
+  }
+}
+
 module Mergeable = {
   @react.component
   let make = (~state: string, ~mergeable: bool) =>
@@ -257,6 +279,7 @@ module DataItem = {
               <RelativeDate title=", updated " date={change.updated_at->getDate} />
             </div>
             <Approvals withGroup={true} approvals={change.approval} />
+            <Labels withGroup={true} labels={change.labels} />
             <TaskDatas change />
           </CardBody>
         </Card>
@@ -278,7 +301,7 @@ module RowItem = {
           <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
-          <th role="columnheader"> {"Approvals / Tasks MD"->str} </th>
+          <th role="columnheader"> {"Approvals / Labels / Tasks"->str} </th>
         </tr>
       </thead>
   }
@@ -305,7 +328,9 @@ module RowItem = {
         <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
       </td>
       <td role="cell">
-        <Approvals withGroup={false} approvals={change.approval} /> <TaskDatas change />
+        <div> <Approvals withGroup={true} approvals={change.approval} /> </div>
+        <div> <Labels withGroup={true} labels={change.labels} /> </div>
+        <div> <TaskDatas change /> </div>
       </td>
     </tr>
 }

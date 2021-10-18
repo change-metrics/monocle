@@ -224,6 +224,7 @@ streamChange' env serverUrl query prefixM identCB = go 0
               changeEventOnAuthor = changeAuthor
               changeEventOnCreatedAt = changeCreatedAt
               changeEventChangedFiles = C.ChangedFilePath . C.changedFilePath <$> changeChangedFiles
+              changeEventLabels = changeLabels
               changeEventType = Just eType
            in C.ChangeEvent {..}
           where

@@ -438,6 +438,9 @@ data EChangeEvent = EChangeEvent
     echangeeventAuthor :: Maybe Author,
     echangeeventOnAuthor :: Author,
     echangeeventBranch :: LText,
+    -- Set labels as a Maybe type because existing indexes do not have the event docs with labels
+    -- TODO: implement a migration procedure in the Janitor and remove the 'Maybe' from this value
+    echangeeventLabels :: Maybe [LText],
     echangeeventOnCreatedAt :: UTCTime,
     echangeeventCreatedAt :: UTCTime,
     echangeeventApproval :: Maybe [LText],

@@ -32,6 +32,7 @@ message SuggestionsResponse {
   repeated string severities = 5;
   repeated string projects = 6;
   repeated string groups = 7;
+  repeated string labels = 8;
 }
 
 message FieldsRequest {
