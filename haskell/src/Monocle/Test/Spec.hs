@@ -226,6 +226,12 @@ monocleSearchLanguage =
             "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"range\":{\"created_at\":{\"boost\":1,\"lt\":\"2021-05-31T00:00:00Z\"}}}]}}"
         ),
       testCase
+        "Query label field"
+        ( queryMatch
+            "label:bug"
+            "{\"term\":{\"labels\":{\"value\":\"bug\"}}}"
+        ),
+      testCase
         "Query project"
         ( queryMatch
             "project:zuul"

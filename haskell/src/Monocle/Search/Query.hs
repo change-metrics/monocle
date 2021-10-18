@@ -144,6 +144,7 @@ fields =
     ("group", (fieldText, flavoredField, "Group definition name")),
     ("branch", (fieldRegex, "target_branch", "Branch name")),
     ("approval", (fieldText, "approval", "Approval name")),
+    ("label", (fieldText, "labels", "Label name")),
     ("priority", (fieldText, "tasks_data.priority", "Task priority")),
     ("severity", (fieldText, "tasks_data.severity", "Task severity")),
     ("tag", (fieldRegex, "tasks_data.ttype", "Task type")),
