@@ -119,7 +119,7 @@ library
                      , fakedata                   >= 1.0
                      , fast-logger
                      , foldl
-                     , gerrit                     >= 0.1.1
+                     , gerrit                     >= 0.1.2
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
