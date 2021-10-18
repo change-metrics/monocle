@@ -151,6 +151,7 @@ class DummyChangeFetcher(BaseCrawler):
             repository_fullname="org/dummyrepo",
             repository_shortname="dummyrepo",
             url="https://dummy.com/change/id",
+            labels=[],
             branch="dummy-feature",
             target_branch="main",
             number=1,

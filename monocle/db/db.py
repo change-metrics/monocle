@@ -143,6 +143,7 @@ class Event:
     number: int
     change_id: str
     url: str
+    labels: Optional[List[str]]
     on_author: Optional[Ident]
     on_created_at: Optional[str]  # eg. 2020-04-11T07:01:15Z
     changed_files: List[SimpleFile]
