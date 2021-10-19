@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
@@ -321,8 +323,7 @@ streamChange' env serverUrl query prefixM identCB = go 0
           changeMergeable = case mergeable of
             Just True -> "MERGEABLE"
             _ -> "CONFLICT"
-          -- Gerrit labels must be handled as Review
-          changeLabels = V.fromList []
+          changeLabels = V.fromList $ toLazy <$> hashtags <> maybe mempty (: []) topic
           -- TODO(fbo) add assignees support to gerrit-haskell
           changeAssignees = V.fromList []
           changeApprovals = V.fromList $ toLazy <$> toApprovals (M.toList labels)
