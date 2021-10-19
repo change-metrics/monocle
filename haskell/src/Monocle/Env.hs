@@ -95,12 +95,14 @@ class ElasticMonad m where
   elasticCountByIndex :: BH.IndexName -> BH.CountQuery -> m (Either BH.EsError BH.CountResponse)
   elasticSearchHit :: ToJSON body => BH.IndexName -> body -> m [Json.Value]
   elasticAdvance :: FromJSON resp => BH.ScrollId -> m (BH.SearchResult resp)
+  elasticDeleteByQuery :: BH.IndexName -> BH.Query -> m BH.Reply
 
 instance ElasticMonad QueryM where
   elasticSearch = BHR.search
   elasticSearchHit = BHR.searchHit
   elasticAdvance = BHR.advance
   elasticCountByIndex = BH.countByIndex
+  elasticDeleteByQuery = BH.deleteByQuery
 
 -- | Run a QueryM computation without a Query, e.g. when adding task data.
 runEmptyQueryM :: Config.Index -> QueryM a -> AppM a

@@ -1,8 +1,9 @@
 -- | Utility function to clean up and maintain the backend
-module Monocle.Backend.Janitor (removeCrawlerData) where
+module Monocle.Backend.Janitor (removeTDCrawlerData, wipeCrawlerData) where
 
 import qualified Data.Aeson as Aeson
 import qualified Database.Bloodhound as BH
+import qualified Monocle.Api.Config as C
 import Monocle.Backend.Documents as D
 import qualified Monocle.Backend.Index as I
 import Monocle.Backend.Queries as Q
@@ -10,11 +11,61 @@ import Monocle.Env
 import Monocle.Prelude
 import qualified Streaming.Prelude as Streaming
 
--- | Remove all the data associated with a crawler name
+-- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
--- λ> testQueryM (mkConfig "zuul") $ removeCrawlerData "custom"
-removeCrawlerData :: Text -> QueryM ()
-removeCrawlerData crawlerName = do
+-- λ> testQueryM (mkConfig "zuul") $ wipeCrawlerData "custom"
+wipeCrawlerData :: Text -> QueryM ()
+wipeCrawlerData crawlerName = do
+  -- Get index from QueryM
+  config <- getIndexConfig
+  -- Get crawler defintion from configuration (we need it to discover if a prefix is set)
+  let crawlerM = C.lookupCrawler config crawlerName
+      crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
+      prefixM = C.getPrefix crawler
+      prefix = fromMaybe mempty prefixM
+  monocleLog $ "Discovered crawler prefix: " <> (show prefixM :: Text)
+  -- Get projects for this crawler from the crawler metadata objects
+  projects <- getProjectsCrawler
+  monocleLog $ "Discovered " <> (show $ length projects :: Text) <> " projects"
+  -- For each projects delete related changes and events
+  traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
+  -- Finally remove crawler metadata objects
+  deleteCrawlerMDs
+  where
+    getProjectsCrawler :: QueryM [Text]
+    getProjectsCrawler = do
+      projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
+      pure $ toText . getValue <$> projectCrawlerMDs
+      where
+        sQuery =
+          mkQuery
+            [ mkTerm "crawler_metadata.crawler_name" crawlerName,
+              mkTerm "crawler_metadata.crawler_type" "project"
+            ]
+        getValue :: ECrawlerMetadata -> LText
+        getValue (ECrawlerMetadata ECrawlerMetadataObject {..}) = ecmCrawlerTypeValue
+    deleteDocsByRepoName :: Text -> QueryM ()
+    deleteDocsByRepoName fullname = do
+      monocleLog $ "Deleting " <> fullname <> " ..."
+      withQuery sQuery Q.deleteDocs
+      where
+        sQuery =
+          mkQuery
+            [ mkTerm "repository_fullname" fullname,
+              documentTypes . fromList $ D.allEventTypes <> [D.EChangeDoc]
+            ]
+    deleteCrawlerMDs :: QueryM ()
+    deleteCrawlerMDs = do
+      monocleLog $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
+      withQuery sQuery Q.deleteDocs
+      where
+        sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
+
+-- | Remove all the taskdata associated with a crawler name
+-- Try this on the REPL with:
+-- λ> testQueryM (mkConfig "zuul") $ removeTDCrawlerData "custom"
+removeTDCrawlerData :: Text -> QueryM ()
+removeTDCrawlerData crawlerName = do
   index <- getIndexName
   tdDeletedCount <- (removeOrphanTaskDatas index)
   tdChangesCount <- (removeChangeTaskDatas index)

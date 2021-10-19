@@ -208,7 +208,8 @@ data EDocType
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [EDocType]
-allEventTypes = filter (/= EChangeDoc) [minBound .. maxBound]
+allEventTypes =
+  filter (`notElem` [EChangeDoc, EOrphanTaskData]) [minBound .. maxBound]
 
 instance From EDocType Text where
   from = \case

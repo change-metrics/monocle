@@ -790,13 +790,10 @@ initCrawlerEntities entities worker = traverse_ run entities
     run entity = do
       let updated_since =
             fromMaybe defaultUpdatedSince <$> case entity of
-              Project name -> getLastUpdatedDate $ fromMaybe "" (getPrefix worker) <> name
+              Project name -> getLastUpdatedDate $ fromMaybe "" (Config.getPrefix worker) <> name
               _ -> pure Nothing
       ensureCrawlerMetadata (getWorkerName worker) updated_since entity
     defaultUpdatedSince = getWorkerUpdatedSince worker
-    getPrefix Config.Crawler {..} = case provider of
-      Config.GerritProvider Config.Gerrit {..} -> gerrit_prefix
-      _ -> Nothing
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
