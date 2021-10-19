@@ -22,13 +22,13 @@ where
 
 import qualified Data.Attoparsec.Text as P
 import Data.Char
-import qualified Data.Map as M (elems, keys, lookup, toList)
+import qualified Data.Map as M (keys, lookup, toList)
 import qualified Data.Text as T
 import Data.Time.Clock
 import qualified Data.Vector as V
 import qualified Gerrit as G
 import Gerrit.Data.Change
-import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId), GerritProjectsMessage)
+import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 -- import Lentille.Env
@@ -168,7 +168,7 @@ streamProject env query = go 0
     doGet offset = getProjects env size query (Just offset)
     go offset = do
       projects <- lift $ do retry . doGet $ offset
-      let pNames = gerritprojectinfoId <$> M.elems projects
+      let pNames = M.keys projects
       S.each $ P.Project . toLazy <$> pNames
       when (length pNames == size) $ go (offset + size)
 
