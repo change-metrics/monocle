@@ -40,7 +40,7 @@ import qualified Monocle.Project as P
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
 import qualified Streaming.Prelude as S
-import Prelude (last)
+import Prelude (init, last)
 
 -------------------------------------------------------------------------------
 -- Gerrit context
@@ -157,6 +157,21 @@ toApprovals = concatMap genApprovals
       Just v -> if v >= 0 then "+" <> show v else show v
       Nothing -> "+0"
 
+-- >>> getPrefix Nothing "config"
+-- ""
+-- >>> getPrefix (Just "org/") "config"
+-- "org"
+-- >>> getPrefix Nothing "rpms/nova-distgit"
+-- "rpms"
+-- >>> getPrefix (Just "org/") "rpms/nova-distgit"
+-- "org/rpms"
+getPrefix :: Maybe Text -> Text -> LText
+getPrefix prefixM project =
+  let parts = T.split (== '/') project
+      parts' = Prelude.init parts
+      prefix = fromMaybe mempty prefixM
+   in toLazy $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
+
 streamProject ::
   MonadGerrit m =>
   GerritEnv ->
@@ -196,7 +211,6 @@ streamChange' env serverUrl query prefixM identCB = go 0
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)
-    prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
     getIdent gAuthor = toIdent (getHostFromURL serverUrl) identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
       where
@@ -286,14 +300,14 @@ streamChange' env serverUrl query prefixM identCB = go 0
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ (T.dropWhileEnd (== '/') serverUrl) <> "/" <> show changeNumber
+          changeUrl = toLazy $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
           changeCommitCount = 1
           changeAdditions = fromIntToInt32 insertions
           changeDeletions = fromIntToInt32 deletions
           changeChangedFilesCount = getFilesCount
           changeChangedFiles = V.fromList getFiles
           changeCommits = V.fromList $ maybe [] getCommits current_revision
-          changeRepositoryPrefix = toLazy $ prefix <> T.intercalate "/" (reverse (drop 1 $ reverse $ T.split (== '/') project))
+          changeRepositoryPrefix = getPrefix prefixM project
           changeRepositoryFullname =
             if T.null $ toText changeRepositoryPrefix
               then changeRepositoryShortname
