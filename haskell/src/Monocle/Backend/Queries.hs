@@ -66,6 +66,15 @@ doCountBH body = do
       Left e -> error $ show e
       Right x -> pure $ naturalToCount (BH.crCount x)
 
+-- | Call _delete_by_query endpoint
+doDeleteByQueryBH :: (QueryMonad m, BH.MonadBH m) => BH.Query -> m ()
+doDeleteByQueryBH body = do
+  measureQueryM body $ do
+    index <- getIndexName
+    -- TODO: BH does not return parsed response - keep as is or if not enough move it to BHR.
+    void $ elasticDeleteByQuery index body
+    void $ BH.refreshIndex index
+
 -------------------------------------------------------------------------------
 -- Mid level queries
 
@@ -150,6 +159,13 @@ countDocs = do
   query <-
     fromMaybe (error "Need a query to count") <$> getQueryBH
   doCountBH query
+
+-- | Delete documents matching the query
+deleteDocs :: (QueryMonad m, BH.MonadBH m) => m ()
+deleteDocs = do
+  query <-
+    fromMaybe (error "Need a query to delete") <$> getQueryBH
+  void $ doDeleteByQueryBH query
 
 -- | Get aggregation results
 doAggregation :: QueryMonad m => (ToJSON body) => body -> m BH.AggregationResults

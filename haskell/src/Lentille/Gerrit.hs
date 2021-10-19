@@ -22,13 +22,13 @@ where
 
 import qualified Data.Attoparsec.Text as P
 import Data.Char
-import qualified Data.Map as M (elems, keys, lookup, toList)
+import qualified Data.Map as M (keys, lookup, toList)
 import qualified Data.Text as T
 import Data.Time.Clock
 import qualified Data.Vector as V
 import qualified Gerrit as G
 import Gerrit.Data.Change
-import Gerrit.Data.Project (GerritProjectInfo (gerritprojectinfoId), GerritProjectsMessage)
+import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 -- import Lentille.Env
@@ -40,7 +40,7 @@ import qualified Monocle.Project as P
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
 import qualified Streaming.Prelude as S
-import Prelude (last)
+import Prelude (init, last)
 
 -------------------------------------------------------------------------------
 -- Gerrit context
@@ -157,6 +157,21 @@ toApprovals = concatMap genApprovals
       Just v -> if v >= 0 then "+" <> show v else show v
       Nothing -> "+0"
 
+-- >>> getPrefix Nothing "config"
+-- ""
+-- >>> getPrefix (Just "org/") "config"
+-- "org"
+-- >>> getPrefix Nothing "rpms/nova-distgit"
+-- "rpms"
+-- >>> getPrefix (Just "org/") "rpms/nova-distgit"
+-- "org/rpms"
+getPrefix :: Maybe Text -> Text -> LText
+getPrefix prefixM project =
+  let parts = T.split (== '/') project
+      parts' = Prelude.init parts
+      prefix = fromMaybe mempty prefixM
+   in toLazy $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
+
 streamProject ::
   MonadGerrit m =>
   GerritEnv ->
@@ -168,7 +183,7 @@ streamProject env query = go 0
     doGet offset = getProjects env size query (Just offset)
     go offset = do
       projects <- lift $ do retry . doGet $ offset
-      let pNames = gerritprojectinfoId <$> M.elems projects
+      let pNames = M.keys projects
       S.each $ P.Project . toLazy <$> pNames
       when (length pNames == size) $ go (offset + size)
 
@@ -196,7 +211,6 @@ streamChange' env serverUrl query prefixM identCB = go 0
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)
-    prefix = fromMaybe "" prefixM
     getIdent :: GerritAuthor -> C.Ident
     getIdent gAuthor = toIdent (getHostFromURL serverUrl) identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
       where
@@ -286,14 +300,14 @@ streamChange' env serverUrl query prefixM identCB = go 0
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ (T.dropWhileEnd (== '/') serverUrl) <> "/" <> show changeNumber
+          changeUrl = toLazy $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
           changeCommitCount = 1
           changeAdditions = fromIntToInt32 insertions
           changeDeletions = fromIntToInt32 deletions
           changeChangedFilesCount = getFilesCount
           changeChangedFiles = V.fromList getFiles
           changeCommits = V.fromList $ maybe [] getCommits current_revision
-          changeRepositoryPrefix = toLazy $ prefix <> T.intercalate "/" (reverse (drop 1 $ reverse $ T.split (== '/') project))
+          changeRepositoryPrefix = getPrefix prefixM project
           changeRepositoryFullname =
             if T.null $ toText changeRepositoryPrefix
               then changeRepositoryShortname
