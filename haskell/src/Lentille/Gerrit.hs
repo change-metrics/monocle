@@ -283,14 +283,14 @@ streamChange' env serverUrl query prefixM identCB = go 0
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ (T.dropWhileEnd (== '/') serverUrl) <> "/" <> show changeNumber
+          changeUrl = toLazy $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
           changeCommitCount = 1
           changeAdditions = fromIntToInt32 insertions
           changeDeletions = fromIntToInt32 deletions
           changeChangedFilesCount = getFilesCount
           changeChangedFiles = V.fromList getFiles
           changeCommits = V.fromList $ maybe [] getCommits current_revision
-          changeRepositoryPrefix = toLazy $ prefix <> T.intercalate "/" (reverse (drop 1 $ reverse $ T.split (== '/') project))
+          changeRepositoryPrefix = toLazy $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" (reverse (drop 1 $ reverse $ T.split (== '/') project))
           changeRepositoryFullname =
             if T.null $ toText changeRepositoryPrefix
               then changeRepositoryShortname
