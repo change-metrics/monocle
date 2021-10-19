@@ -215,6 +215,11 @@ getAliases index = maybe [] (fmap toTuple) (search_aliases index)
   where
     toTuple SearchAlias {..} = (name, alias)
 
+getPrefix :: Crawler -> Maybe Text
+getPrefix Crawler {..} = case provider of
+  GerritProvider Gerrit {..} -> gerrit_prefix
+  _ -> Nothing
+
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} ->

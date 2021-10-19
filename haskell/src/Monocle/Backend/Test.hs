@@ -13,6 +13,7 @@ import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
+import qualified Monocle.Backend.Janitor as J
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
@@ -275,6 +276,65 @@ testOrganizationCrawlerMetadata = withTenant doTest
                     gitlab_organization = "gitlab-org"
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
+
+testJanitorWipeCrawler :: Assertion
+testJanitorWipeCrawler = withTenant $ local updateEnv doTest
+  where
+    crawlerGerrit = "test-crawler-gerrit"
+    fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
+    workerGerrit =
+      let name = crawlerGerrit
+          update_since = show fakeDefaultDate
+          provider =
+            let gerrit_url = "https://localhost"
+                gerrit_login = Nothing
+                gerrit_password = Nothing
+                gerrit_prefix = Nothing
+                gerrit_repositories =
+                  Just
+                    [ "opendev/nova",
+                      "^opendev/neutron.*"
+                    ]
+             in Config.GerritProvider Config.Gerrit {..}
+       in Config.Crawler {..}
+    updateEnv :: QueryEnv -> QueryEnv
+    updateEnv orig = orig {tenant = tenant}
+      where
+        tenant =
+          Config.Index
+            { name = "test-tenant",
+              crawlers = [workerGerrit],
+              crawlers_api_key = Nothing,
+              projects = Nothing,
+              idents = Nothing,
+              search_aliases = Nothing
+            }
+    doTest :: QueryM ()
+    doTest = do
+      I.initCrawlerMetadata workerGerrit
+      I.indexChanges
+        [ emptyChange
+            { echangeId = "aFakeId-42",
+              echangeRepositoryFullname = "opendev/nova"
+            },
+          emptyChange
+            { echangeId = "aFakeId-43",
+              echangeRepositoryFullname = "opendev/neutron"
+            }
+        ]
+      I.indexEvents
+        [ emptyEvent
+            { echangeeventId = "aFakeEventId-43",
+              echangeeventRepositoryFullname = "opendev/nova"
+            }
+        ]
+      count <- withQuery sQuery Q.countDocs
+      assertEqual' "Ensure expected amount of docs" 5 count
+      void $ J.wipeCrawlerData crawlerGerrit
+      count' <- withQuery sQuery Q.countDocs
+      assertEqual' "Ensure expected amount of docs after wipe" 1 count'
+      where
+        sQuery = mkQuery [BH.MatchAllQuery Nothing]
 
 alice :: Author
 alice = Author "alice" "a"
