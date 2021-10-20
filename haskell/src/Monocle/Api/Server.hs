@@ -150,8 +150,10 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
+
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 
@@ -287,13 +289,16 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> runEmptyQueryM index $ do
-      (name, ts) <- I.getLastUpdated worker entity offset
-      pure
-        . CrawlerPB.CommitInfoResponse
-        . Just
-        . CrawlerPB.CommitInfoResponseResultEntity
-        . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
-        $ Just (Timestamp.fromUTCTime ts)
+      toUpdateEntityM <- I.getLastUpdated worker entity offset
+      case toUpdateEntityM of
+        Just (name, ts) ->
+          pure
+            . CrawlerPB.CommitInfoResponse
+            . Just
+            . CrawlerPB.CommitInfoResponseResultEntity
+            . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
+            $ Just (Timestamp.fromUTCTime ts)
+        Nothing -> pure . toErrorResponse $ CrawlerPB.CommitInfoErrorCommitGetNoEntity
     Right _ -> error $ "Unknown entity request: " <> show entityM
     Left err ->
       pure $ toErrorResponse err

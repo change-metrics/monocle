@@ -79,6 +79,7 @@ message CommitInfoRequest {
 enum CommitInfoError {
   CommitGetUnknownIndex = 0;
   CommitGetUnknownCrawler = 1;
+  CommitGetNoEntity = 2;
 }
 
 message CommitInfoResponse {

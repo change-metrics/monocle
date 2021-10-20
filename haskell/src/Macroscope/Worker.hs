@@ -23,6 +23,7 @@ import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
 import Monocle.Search (TaskData)
+import Proto3.Suite (Enumerated (Enumerated))
 import qualified Streaming as S
 import qualified Streaming.Prelude as S
 
@@ -139,31 +140,33 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       wLog $ LogMacroRequestOldestEntity lc (streamType documentStream)
 
       -- Query the monocle api for the oldest entity to be updated.
-      entity <- retry $ getOldestEntity offset
+      entityM <- retry $ getOldestEntity offset
+      case entityM of
+        Nothing -> wLog $ LogMacroNoOldestEnity lc
+        Just entity -> do
+          let (eType, eName) = oldestEntityEntityToText entity
+              processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
+          wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
 
-      let (eType, eName) = oldestEntityEntityToText entity
-          processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
-      wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
-
-      if toMonocleTime (oldestEntityDate entity) >= startDate
-        then wLog $ LogMacroEnded lc
-        else do
-          -- Run the document stream for that entity
-          postResult <-
-            process
-              processLogFunc
-              (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
-              (getStream entity)
-          case foldr collectPostFailure [] postResult of
-            [] -> do
-              -- Post the commit date
-              res <- retry $ commitTimestamp entity startTime
-              if not res
-                then wLog $ LogMacroCommitFailed lc
-                else do
-                  wLog $ LogMacroContinue lc
-                  drainEntities offset
-            xs -> wLog $ LogMacroPostDataFailed lc xs
+          if toMonocleTime (oldestEntityDate entity) >= startDate
+            then wLog $ LogMacroEnded lc
+            else do
+              -- Run the document stream for that entity
+              postResult <-
+                process
+                  processLogFunc
+                  (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
+                  (getStream entity)
+              case foldr collectPostFailure [] postResult of
+                [] -> do
+                  -- Post the commit date
+                  res <- retry $ commitTimestamp entity startTime
+                  if not res
+                    then wLog $ LogMacroCommitFailed lc
+                    else do
+                      wLog $ LogMacroContinue lc
+                      drainEntities offset
+                xs -> wLog $ LogMacroPostDataFailed lc xs
 
     handleStreamError offset err = do
       -- TODO: report decoding error
@@ -208,6 +211,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       Changes _ -> "Changes"
       TaskDatas _ -> "TaskDatas"
 
+    getOldestEntity :: MonadCrawler m => Word32 -> m (Maybe CommitInfoResponse_OldestEntity)
     getOldestEntity offset = do
       resp <-
         mCrawlerCommitInfo
@@ -219,7 +223,8 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
               offset
           )
       case resp of
-        CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure entity
+        CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure $ Just entity
+        CommitInfoResponse (Just (CommitInfoResponseResultError (Enumerated (Right CommitInfoErrorCommitGetNoEntity)))) -> pure Nothing
         _ -> error $ "Could not get initial timestamp: " <> show resp
       where
         -- The type of the oldest entity for a given document stream

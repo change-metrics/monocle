@@ -1408,6 +1408,7 @@ instance HsJSONPB.ToSchema CommitInfoRequest where
 data CommitInfoError
   = CommitInfoErrorCommitGetUnknownIndex
   | CommitInfoErrorCommitGetUnknownCrawler
+  | CommitInfoErrorCommitGetNoEntity
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named CommitInfoError where
@@ -1417,7 +1418,7 @@ instance HsProtobuf.HasDefault CommitInfoError
 
 instance Hs.Bounded CommitInfoError where
   minBound = CommitInfoErrorCommitGetUnknownIndex
-  maxBound = CommitInfoErrorCommitGetUnknownCrawler
+  maxBound = CommitInfoErrorCommitGetNoEntity
 
 instance Hs.Ord CommitInfoError where
   compare x y =
@@ -1428,9 +1429,11 @@ instance Hs.Ord CommitInfoError where
 instance HsProtobuf.ProtoEnum CommitInfoError where
   toProtoEnumMay 0 = Hs.Just CommitInfoErrorCommitGetUnknownIndex
   toProtoEnumMay 1 = Hs.Just CommitInfoErrorCommitGetUnknownCrawler
+  toProtoEnumMay 2 = Hs.Just CommitInfoErrorCommitGetNoEntity
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (CommitInfoErrorCommitGetUnknownIndex) = 0
   fromProtoEnum (CommitInfoErrorCommitGetUnknownCrawler) = 1
+  fromProtoEnum (CommitInfoErrorCommitGetNoEntity) = 2
 
 instance HsJSONPB.ToJSONPB CommitInfoError where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -1441,6 +1444,8 @@ instance HsJSONPB.FromJSONPB CommitInfoError where
     Hs.pure CommitInfoErrorCommitGetUnknownIndex
   parseJSONPB (HsJSONPB.String "CommitGetUnknownCrawler") =
     Hs.pure CommitInfoErrorCommitGetUnknownCrawler
+  parseJSONPB (HsJSONPB.String "CommitGetNoEntity") =
+    Hs.pure CommitInfoErrorCommitGetNoEntity
   parseJSONPB v = (HsJSONPB.typeMismatch "CommitInfoError" v)
 
 instance HsJSONPB.ToJSON CommitInfoError where

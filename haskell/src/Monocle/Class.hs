@@ -49,6 +49,7 @@ data LogEvent
   | LogMacroPostData LogCrawlerContext Text Int
   | LogMacroRequestOldestEntity LogCrawlerContext Text
   | LogMacroGotOldestEntity LogCrawlerContext (Text, Text) UTCTime
+  | LogMacroNoOldestEnity LogCrawlerContext
   | LogMacroEnded LogCrawlerContext
   | LogMacroCommitFailed LogCrawlerContext
   | LogMacroPostDataFailed LogCrawlerContext [Text]
@@ -68,6 +69,7 @@ instance From LogEvent Text where
     LogMacroRequestOldestEntity lc entity -> prefix lc <> " - Looking for oldest refreshed " <> entity <> " entity"
     LogMacroGotOldestEntity lc (etype, name) date ->
       prefix lc <> " - Got entity of type: " <> etype <> " named: " <> name <> " last updated at " <> show date
+    LogMacroNoOldestEnity lc -> prefix lc <> " - Unable to find entity to update"
     LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
     LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"
     LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
