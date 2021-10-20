@@ -167,23 +167,23 @@ testProjectCrawlerMetadata = withTenant doTest
       -- Init default crawler metadata and ensure we get the default updated date
       I.initCrawlerMetadata workerGitlab
       lastUpdated <- I.getLastUpdated workerGitlab entityType 0
-      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+      assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ snd <$> lastUpdated
 
       -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
       I.setLastUpdated crawlerGitlab fakeDateB entity
       I.setLastUpdated crawlerGitlab fakeDateA entityAlt
       lastUpdated' <- I.getLastUpdated workerGitlab entityType 0
-      assertEqual' "check got oldest updated entity" ("centos/nova", fakeDateB) lastUpdated'
+      assertEqual' "check got oldest updated entity" (Just ("centos/nova", fakeDateB)) lastUpdated'
 
       -- Update one crawler and ensure we get the right oldest
       I.setLastUpdated crawlerGitlab fakeDateC entity
       lastUpdated'' <- I.getLastUpdated workerGitlab entityType 0
-      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated''
+      assertEqual' "check got oldest updated entity" (Just ("centos/neutron", fakeDateA)) lastUpdated''
 
       -- Re run init and ensure it was noop
       I.initCrawlerMetadata workerGitlab
       lastUpdated''' <- I.getLastUpdated workerGitlab entityType 0
-      assertEqual' "check got oldest updated entity" ("centos/neutron", fakeDateA) lastUpdated'''
+      assertEqual' "check got oldest updated entity" (Just ("centos/neutron", fakeDateA)) lastUpdated'''
 
       -- Index a change then verify the just create crawlerMetadata is initialized with
       -- the most recent change updateAt date
@@ -201,7 +201,7 @@ testProjectCrawlerMetadata = withTenant doTest
         ]
       I.initCrawlerMetadata workerGerrit
       lastUpdated'''' <- I.getLastUpdated workerGerrit entityType 0
-      assertEqual' "check got oldest updated entity" ("opendev/nova", fakeDateD) lastUpdated''''
+      assertEqual' "check got oldest updated entity" (Just ("opendev/nova", fakeDateD)) lastUpdated''''
       where
         entityType = CrawlerPB.EntityEntityProjectName ""
         entity = Project "centos/nova"
@@ -243,7 +243,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
       -- Init crawler entities metadata and check we get the default date
       I.initCrawlerMetadata worker
       lastUpdated <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" fakeDefaultDate $ snd lastUpdated
+      assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ snd <$> lastUpdated
 
       -- TODO(fbo) extract Server.AddProjects and use it directly
       I.initCrawlerEntities (Project <$> ["nova", "neutron"]) worker
@@ -255,7 +255,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
       -- Update the crawler metadata
       I.setLastUpdated crawlerName fakeDateA $ Organization "gitlab-org"
       lastUpdated' <- I.getLastUpdated worker entityType 0
-      assertEqual' "check got oldest updated entity" ("gitlab-org", fakeDateA) lastUpdated'
+      assertEqual' "check got oldest updated entity" (Just ("gitlab-org", fakeDateA)) lastUpdated'
       where
         entityType = CrawlerPB.EntityEntityOrganizationName ""
         fakeDefaultDate = [utctime|2020-01-01 00:00:00|]

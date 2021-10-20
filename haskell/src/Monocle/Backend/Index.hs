@@ -677,23 +677,17 @@ getWorkerUpdatedSince Config.Crawler {..} =
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (toString update_since)
 
-getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Text, UTCTime)
+getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
 getLastUpdated crawler (CrawlerPB.EntityEntityTdName _) _ = do
   -- crawler TD are stored separately
   ts <- getTDCrawlerCommitDate (getWorkerName crawler) crawler
-  pure (mempty, ts)
+  pure $ Just (mempty, ts)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
   case nonEmpty (catMaybes resp) of
-    Nothing ->
-      error
-        ( "Unable to find crawler metadata of type:"
-            <> getCrawlerTypeAsText entity
-            <> " for crawler:"
-            <> getWorkerName crawler
-        )
-    Just xs -> pure $ getRespFromMetadata (last xs)
+    Nothing -> pure Nothing
+    Just xs -> pure . Just $ getRespFromMetadata (last xs)
   where
     search =
       (BH.mkSearch (Just query) Nothing)

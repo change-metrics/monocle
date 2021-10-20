@@ -67,12 +67,14 @@ class _CommitInfoError(
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
     CommitGetUnknownIndex = CommitInfoError.V(0)
     CommitGetUnknownCrawler = CommitInfoError.V(1)
+    CommitGetNoEntity = CommitInfoError.V(2)
 
 class CommitInfoError(metaclass=_CommitInfoError):
     V = typing.NewType("V", builtins.int)
 
 CommitGetUnknownIndex = CommitInfoError.V(0)
 CommitGetUnknownCrawler = CommitInfoError.V(1)
+CommitGetNoEntity = CommitInfoError.V(2)
 
 class Entity(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
