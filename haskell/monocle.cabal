@@ -229,7 +229,7 @@ library
                      , Lentille.Bugzilla.Spec
 
 executable monocle-api
-  import:              common-options
+  import:              common-options, cli-options
   hs-source-dirs:      app
   main-is:             Api.hs
   build-depends:       base, monocle, relude
