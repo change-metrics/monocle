@@ -105,7 +105,7 @@ removeTDCrawlerData crawlerName = do
               x -> Just x
             isNotCrawler :: D.ETaskData -> Bool
             isNotCrawler etd
-              | tdCrawlerName etd == crawlerName = False
+              | tdCrawlerName etd == Just crawlerName = False
               | otherwise = True
 
     removeOrphanTaskDatas :: BH.IndexName -> QueryM Int

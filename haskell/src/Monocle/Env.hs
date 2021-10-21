@@ -298,7 +298,7 @@ eventToText ev = case ev of
   AddingChange crawler changes events ->
     toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
   AddingProject crawler organizationName projects ->
-    crawler <> " adding " <> show projects <> " changes for organization" <> organizationName
+    crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->
