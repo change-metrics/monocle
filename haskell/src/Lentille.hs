@@ -49,6 +49,7 @@ stopLentille = throwError
 
 data LentilleError
   = DecodeError [Text]
+  | NoEntity
   deriving (Show)
 
 -- | Here we create the different class instance by using the LentilleM inner IO

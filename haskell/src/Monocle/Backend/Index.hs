@@ -685,9 +685,7 @@ getLastUpdated crawler (CrawlerPB.EntityEntityTdName _) _ = do
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
-  case nonEmpty (catMaybes resp) of
-    Nothing -> pure Nothing
-    Just xs -> pure . Just $ getRespFromMetadata (last xs)
+  pure $ fmap (getRespFromMetadata . last) $ nonEmpty (catMaybes resp)
   where
     search =
       (BH.mkSearch (Just query) Nothing)

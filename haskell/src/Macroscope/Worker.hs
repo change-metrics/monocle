@@ -141,36 +141,38 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
 
       -- Query the monocle api for the oldest entity to be updated.
       entityM <- retry $ getOldestEntity offset
-      case entityM of
-        Nothing -> wLog $ LogMacroNoOldestEnity lc
-        Just entity -> do
-          let (eType, eName) = oldestEntityEntityToText entity
-              processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
-          wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
+      -- In case that no entity found we throw an error
+      entity <- maybe (throwError NoEntity) pure entityM
 
-          if toMonocleTime (oldestEntityDate entity) >= startDate
-            then wLog $ LogMacroEnded lc
-            else do
-              -- Run the document stream for that entity
-              postResult <-
-                process
-                  processLogFunc
-                  (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
-                  (getStream entity)
-              case foldr collectPostFailure [] postResult of
-                [] -> do
-                  -- Post the commit date
-                  res <- retry $ commitTimestamp entity startTime
-                  if not res
-                    then wLog $ LogMacroCommitFailed lc
-                    else do
-                      wLog $ LogMacroContinue lc
-                      drainEntities offset
-                xs -> wLog $ LogMacroPostDataFailed lc xs
+      let (eType, eName) = oldestEntityEntityToText entity
+          processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
+      wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
+
+      if toMonocleTime (oldestEntityDate entity) >= startDate
+        then wLog $ LogMacroEnded lc
+        else do
+          -- Run the document stream for that entity
+          postResult <-
+            process
+              processLogFunc
+              (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
+              (getStream entity)
+          case foldr collectPostFailure [] postResult of
+            [] -> do
+              -- Post the commit date
+              res <- retry $ commitTimestamp entity startTime
+              if not res
+                then wLog $ LogMacroCommitFailed lc
+                else do
+                  wLog $ LogMacroContinue lc
+                  drainEntities offset
+            xs -> wLog $ LogMacroPostDataFailed lc xs
 
     handleStreamError offset err = do
       -- TODO: report decoding error
-      wLog $ LogMacroStreamError lc (show (err :: LentilleError))
+      case err of
+        DecodeError decodingErrors -> wLog $ LogMacroStreamError lc decodingErrors
+        NoEntity -> wLog $ LogMacroNoOldestEnity lc
       unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]

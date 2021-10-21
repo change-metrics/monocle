@@ -53,7 +53,7 @@ data LogEvent
   | LogMacroEnded LogCrawlerContext
   | LogMacroCommitFailed LogCrawlerContext
   | LogMacroPostDataFailed LogCrawlerContext [Text]
-  | LogMacroStreamError LogCrawlerContext Text
+  | LogMacroStreamError LogCrawlerContext [Text]
   | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
   | LogRaw Text
@@ -73,7 +73,7 @@ instance From LogEvent Text where
     LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
     LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"
     LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
-    LogMacroStreamError lc error' -> prefix lc <> " - Error occured when consuming the document stream: " <> error'
+    LogMacroStreamError lc errors -> prefix lc <> " - Error occured when consuming the document stream: " <> T.intercalate " | " errors
     LogNetworkFailure msg -> "Network error: " <> msg
     LogGetBugs ts offset limit ->
       "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
