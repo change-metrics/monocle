@@ -8,7 +8,6 @@ import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBug
 import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getGerritEnv, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
-import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
@@ -81,7 +80,7 @@ runMacroscope' verbose confPath interval client = do
           -- TODO: the client may be created once for each api key
           token <- Config.mGetSecret "GITLAB_TOKEN" gitlab_token
           glClient <-
-            newGitLabGraphClientWithKey
+            newGraphClient
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
               token
           pure $
@@ -125,16 +124,16 @@ runMacroscope' verbose confPath interval client = do
         getIdentByAliasCB :: Text -> Maybe Text
         getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-    glMRCrawler :: (MonadError LentilleError m, MonadGraphQL m) => GitLabGraphClient -> (Text -> Maybe Text) -> DocumentStream m
+    glMRCrawler :: MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-    glOrgCrawler :: (MonadError LentilleError m, MonadGraphQL m) => GitLabGraphClient -> DocumentStream m
+    glOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
     bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
     bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
 
-    ghIssuesCrawler :: MonadGraphQL m => GraphClient -> Text -> DocumentStream m
+    ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> Text -> DocumentStream m
     ghIssuesCrawler ghClient repository =
       TaskDatas $
         streamLinkedIssue ghClient $ toString $ "repo:" <> repository

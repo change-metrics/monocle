@@ -15,16 +15,8 @@ import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Data.Vector as V
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
-import Lentille.GitLab
-  ( GitLabGraphClient,
-    PageInfo (..),
-    host,
-    newGitLabGraphClient,
-    runGitLabGraphRequest,
-    schemaLocation,
-    streamFetch,
-  )
 import Lentille.GitLab.Adapter
+import Lentille.GraphQL
 import Monocle.Change
 import Monocle.Prelude hiding (id, state)
 import qualified Streaming.Prelude as S
@@ -33,7 +25,7 @@ newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/index.html#projectmergerequests
 defineByDocumentFile
-  schemaLocation
+  glSchemaLocation
   [gql|
     query GetProjectMergeRequests ($project: ID!, $iids: [String!], $cursor: String) {
       project(fullPath: $project) {
@@ -111,21 +103,20 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: MonadGraphQL m => GitLabGraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
+fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
 fetchMergeRequest client project mrID =
-  fetch (runGitLabGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
+  fetch (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
-  MonadError LentilleError m =>
-  MonadGraphQL m =>
-  GitLabGraphClient ->
+  MonadGraphQLE m =>
+  GraphClient ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
   LentilleStream m Changes
 streamMergeRequests client getIdentIdCb untilDate project =
-  streamFetch client (Just untilDate) mkArgs transformResponse' breakOnDate
+  breakOnDate $ streamFetch client mkArgs transformResponse'
   where
     mkArgs cursor = GetProjectMergeRequestsArgs (ID project) Nothing $ toCursorM cursor
     toCursorM :: Text -> Maybe String
@@ -153,7 +144,7 @@ transformResponse ::
   -- A callback to get Ident ID from an alias
   Maybe (Text -> Maybe Text) ->
   GetProjectMergeRequests ->
-  (PageInfo, [Text], [(Change, [ChangeEvent])])
+  (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
 transformResponse host getIdentIdCB result =
   case result of
     GetProjectMergeRequests
@@ -171,11 +162,13 @@ transformResponse host getIdentIdCB result =
             )
         ) ->
         ( PageInfo hasNextPage endCursor (Just count),
+          Nothing,
           [],
           extract shortName fullName <$> catMaybes nodes
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing,
+        Nothing,
         ["Unknown GetProjectMergeRequests response: " <> show result],
         []
       )

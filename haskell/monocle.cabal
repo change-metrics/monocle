@@ -51,6 +51,8 @@ common common-options
 
   default-language:    Haskell2010
   default-extensions:  BangPatterns,
+                       -- ConstraintKinds enables defining aliases for constraints, e.g. `type MyE m = (MonadLog m, MonadTime m)`
+                       ConstraintKinds,
                        DeriveGeneric,
                        DerivingStrategies,
                        -- FlexibleInstances enables defining instances for types such as Pico (which is defined as `Fixed Data.Fixed.E12` in Data.Fixed. It is safe to use.
@@ -202,7 +204,6 @@ library
                      , Lentille.GitHub.Favorites
                      , Lentille.GitHub.Issues
 
-                     , Lentille.GitLab
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Group
                      , Lentille.GitLab.Adapter

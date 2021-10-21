@@ -6,6 +6,7 @@ import Data.Morpheus.Client
 import Lentille
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
+import qualified Network.URI as URI
 import qualified Streaming.Prelude as S
 
 -------------------------------------------------------------------------------
@@ -13,6 +14,9 @@ import qualified Streaming.Prelude as S
 -------------------------------------------------------------------------------
 ghSchemaLocation :: FilePath
 ghSchemaLocation = "./github-schema/schema.docs.graphql"
+
+glSchemaLocation :: FilePath
+glSchemaLocation = "./gitlab-schema/schema.graphql"
 
 ghDefaultURL :: Text
 ghDefaultURL = "https://api.github.com/graphql"
@@ -23,12 +27,18 @@ ghDefaultURL = "https://api.github.com/graphql"
 data GraphClient = GraphClient
   { manager :: HTTP.Manager,
     url :: Text,
+    host :: Text,
     token :: Text
   }
 
 newGraphClient :: MonadGraphQL m => Text -> Text -> m GraphClient
 newGraphClient url token = do
   manager <- newManager
+  let host =
+        maybe
+          (error "Unable to parse provided url")
+          (toText . URI.uriRegName)
+          (URI.uriAuthority =<< URI.parseURI (toString url))
   pure $ GraphClient {..}
 
 -- | The morpheus-graphql-client fetch callback,
@@ -54,34 +64,31 @@ doGraphRequest GraphClient {..} jsonBody = do
 -------------------------------------------------------------------------------
 -- Streaming layer
 -------------------------------------------------------------------------------
-data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Int}
+data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
   deriving (Show)
+
+instance From PageInfo Text where
+  from PageInfo {..} = show totalCount <> (if hasNextPage then " hasNextPage" else "")
 
 data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: Text}
   deriving (Show)
 
+instance From RateLimit Text where
+  from RateLimit {..} = show used <> "/" <> show remaining <> " reset at: " <> resetAt
+
 streamFetch ::
-  (MonadGraphQL m, Fetch a, FromJSON a) =>
+  (MonadGraphQLE m, Fetch a, FromJSON a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
   -- | query result adapter
-  (a -> (PageInfo, RateLimit, [Text], [b])) ->
+  (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
 streamFetch client mkArgs transformResponse = go Nothing
   where
     liftLog = lift . logRaw
-    logStatus (PageInfo hasNextPage' _ totalCount') (RateLimit used' remaining' resetAt') =
-      liftLog $
-        "[graphql] got "
-          <> show totalCount'
-          <> (if hasNextPage' then " hasNextPage " else "")
-          <> " ratelimit "
-          <> show used'
-          <> "/"
-          <> show remaining'
-          <> " reset at: "
-          <> resetAt'
+    logStatus pageInfo rateLimitM =
+      liftLog $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
     go pageInfoM = do
       respE <-
         lift $
@@ -91,9 +98,14 @@ streamFetch client mkArgs transformResponse = go Nothing
       let (pageInfo, rateLimit, decodingErrors, xs) = case respE of
             Left err -> error (toText err)
             Right resp -> transformResponse resp
-      -- TODO: report decoding error
-      unless (null decodingErrors) (error ("Decoding failed: " <> show decodingErrors))
+
       logStatus pageInfo rateLimit
+
+      -- Yield the results
       S.each xs
+
+      -- Abort the stream when there are errors
+      unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
+
       -- TODO: implement throttle
       when (hasNextPage pageInfo) (go (Just pageInfo))

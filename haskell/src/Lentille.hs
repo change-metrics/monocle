@@ -9,6 +9,7 @@ module Lentille
     stopLentille,
 
     -- * Lentille Errors
+    MonadGraphQLE,
     LentilleError (..),
 
     -- * Log context
@@ -70,7 +71,8 @@ instance MonadCrawler LentilleM where
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
   newManager = liftIO mkManager
-  mLookupEnv = liftIO . lookupEnv
+
+type MonadGraphQLE m = (MonadGraphQL m, MonadError LentilleError m)
 
 instance MonadConfig LentilleM where
   mReloadConfig fp = do

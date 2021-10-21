@@ -93,7 +93,6 @@ instance MonadLog IO where
 class (MonadRetry m, MonadLog m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m (HTTP.Manager)
-  mLookupEnv :: String -> m (Maybe String)
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system

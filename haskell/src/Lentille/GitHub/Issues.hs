@@ -17,7 +17,7 @@ import Data.Time.Clock
 import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (MonadGraphQL)
+import Lentille (MonadGraphQLE)
 import Lentille.GraphQL
 import Monocle.Search (TaskData (..))
 import Relude
@@ -78,7 +78,7 @@ defineByDocumentFile
     }
   |]
 
-streamLinkedIssue :: MonadGraphQL m => GraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
+streamLinkedIssue :: MonadGraphQLE m => GraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
 streamLinkedIssue client searchText utctime = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' =
@@ -94,7 +94,7 @@ streamLinkedIssue client searchText utctime = streamFetch client mkArgs transfor
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
-transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [TaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
@@ -105,8 +105,8 @@ transformResponse searchResult =
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
-         in ( PageInfo hasNextPage' endCursor' issueCount',
-              RateLimit used' remaining' resetAt',
+         in ( PageInfo hasNextPage' endCursor' (Just issueCount'),
+              Just $ RateLimit used' remaining' resetAt',
               lefts newTaskDataE,
               rights newTaskDataE
             )
