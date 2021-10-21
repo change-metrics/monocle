@@ -148,7 +148,7 @@ fakeTaskPrefix = Faker.Combinators.elements ["rhbz#", "gh#", "lada"]
 fakeETaskData :: Faker.Fake ETaskData
 fakeETaskData = do
   tdTid <- fakeTaskId
-  tdCrawlerName <- Faker.Creature.Dog.name
+  tdCrawlerName <- Just <$> Faker.Creature.Dog.name
   tdTtype <- (: []) <$> Faker.Creature.Dog.sound
   tdUpdatedAt <- toMonocleTime <$> Faker.DateTime.utc
   tdChangeUrl <- pure "no-change"
@@ -157,7 +157,7 @@ fakeETaskData = do
   tdScore <- Faker.Combinators.fromRange (0, 42)
   tdUrl <- fakeUrl tdTid
   tdTitle <- Faker.TvShow.TheExpanse.quotes
-  tdPrefix <- fakeTaskPrefix
+  tdPrefix <- Just <$> fakeTaskPrefix
   pure $ ETaskData {..}
 
 fakeTaskData :: Faker.Fake TaskData

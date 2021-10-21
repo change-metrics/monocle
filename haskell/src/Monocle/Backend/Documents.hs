@@ -133,7 +133,7 @@ instance FromJSON UTCTimePlus where
 
 data ETaskData = ETaskData
   { tdTid :: Text,
-    tdCrawlerName :: Text,
+    tdCrawlerName :: Maybe Text,
     tdTtype :: [Text],
     tdUpdatedAt :: MonocleTime,
     tdChangeUrl :: Text,
@@ -142,7 +142,7 @@ data ETaskData = ETaskData
     tdScore :: Int32,
     tdUrl :: Text,
     tdTitle :: Text,
-    tdPrefix :: Text
+    tdPrefix :: Maybe Text
   }
   deriving (Show, Eq, Generic)
 
@@ -163,7 +163,7 @@ instance From ETaskData SearchPB.TaskData where
         taskDataSeverity = from $ tdSeverity td
         taskDataPriority = from $ tdPriority td
         taskDataScore = from $ tdScore td
-        taskDataPrefix = from $ tdPrefix td
+        taskDataPrefix = from $ fromMaybe "" $ tdPrefix td
      in SearchPB.TaskData {..}
 
 data EChangeState

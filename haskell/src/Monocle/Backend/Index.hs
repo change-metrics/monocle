@@ -326,8 +326,9 @@ getEventType eventTypeM = case eventTypeM of
   Nothing -> error "changeEventType field is mandatory"
 
 toETaskData :: Text -> TaskData -> ETaskData
-toETaskData tdCrawlerName TaskData {..} =
+toETaskData crawlerName TaskData {..} =
   let tdTid = toText taskDataTid
+      tdCrawlerName = Just crawlerName
       tdTtype = toList $ toText <$> taskDataTtype
       tdChangeUrl = toText taskDataChangeUrl
       tdSeverity = toText taskDataSeverity
@@ -335,7 +336,7 @@ toETaskData tdCrawlerName TaskData {..} =
       tdScore = fromInteger $ toInteger taskDataScore
       tdUrl = toText taskDataUrl
       tdTitle = toText taskDataTitle
-      tdPrefix = toText taskDataPrefix
+      tdPrefix = Just $ toText taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = toMonocleTime $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ETaskData {..}
