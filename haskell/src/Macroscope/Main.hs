@@ -7,11 +7,11 @@ import Lentille
 import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
 import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getGerritEnv, getProjectsStream)
-import Lentille.GitHub (GitHubGraphClient, githubDefaultGQLUrl, newGithubGraphClientWithKey)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab (GitLabGraphClient, newGitLabGraphClientWithKey)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
+import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
@@ -106,7 +106,7 @@ runMacroscope' verbose confPath interval client = do
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
           ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
-          ghClient <- newGithubGraphClientWithKey (fromMaybe githubDefaultGQLUrl github_url) ghToken
+          ghClient <- newGraphClient (fromMaybe "https://api.github.com/graphql" github_url) ghToken
           let repos = Config.getCrawlerProject crawler
           pure $ ghIssuesCrawler ghClient <$> repos
         _ -> pure []
@@ -134,7 +134,7 @@ runMacroscope' verbose confPath interval client = do
     bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
     bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
 
-    ghIssuesCrawler :: MonadGraphQL m => GitHubGraphClient -> Text -> DocumentStream m
+    ghIssuesCrawler :: MonadGraphQL m => GraphClient -> Text -> DocumentStream m
     ghIssuesCrawler ghClient repository =
       TaskDatas $
         streamLinkedIssue ghClient $ toString $ "repo:" <> repository

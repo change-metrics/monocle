@@ -18,14 +18,7 @@ import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (MonadGraphQL)
-import Lentille.GitHub
-  ( GitHubGraphClient,
-    PageInfo (..),
-    RateLimit (..),
-    runGithubGraphRequest,
-    schemaLocation,
-    streamFetch,
-  )
+import Lentille.GraphQL
 import Monocle.Search (TaskData (..))
 import Relude
 import Streaming (Of, Stream)
@@ -41,7 +34,7 @@ newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 --  the PR description or in a commit messages.
 -- See GH documentation https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue
 defineByDocumentFile
-  schemaLocation
+  ghSchemaLocation
   [gql|
     query GetLinkedIssues ($search: String!, $cursor: String) {
       rateLimit {
@@ -85,7 +78,7 @@ defineByDocumentFile
     }
   |]
 
-streamLinkedIssue :: MonadGraphQL m => GitHubGraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
+streamLinkedIssue :: MonadGraphQL m => GraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
 streamLinkedIssue client searchText utctime = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' =

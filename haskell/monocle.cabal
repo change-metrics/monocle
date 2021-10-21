@@ -196,9 +196,9 @@ library
 
                      -- Lentille
                      , Lentille
+                     , Lentille.GraphQL
                      , Lentille.Bugzilla
 
-                     , Lentille.GitHub
                      , Lentille.GitHub.Favorites
                      , Lentille.GitHub.Issues
 

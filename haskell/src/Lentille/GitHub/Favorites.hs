@@ -23,13 +23,13 @@ module Lentille.GitHub.Favorites where
 
 import Data.Morpheus.Client
 import Lentille
-import Lentille.GitHub (GitHubGraphClient, PageInfo (..), RateLimit (..), schemaLocation, streamFetch)
+import Lentille.GraphQL
 import Monocle.Prelude
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 defineByDocumentFile
-  schemaLocation
+  ghSchemaLocation
   [gql|
     query GetFavorites ($userName: String!, $cursor: String!)
     {
@@ -63,7 +63,7 @@ type UserFavorite = UserStarredRepositoriesEdgesNodeRepository
 
 getFavoritesStream ::
   MonadGraphQL m =>
-  GitHubGraphClient ->
+  GraphClient ->
   Text ->
   Stream (Of UserFavorite) m ()
 getFavoritesStream client username = streamFetch client mkArgs transformResponse
