@@ -232,7 +232,10 @@ executable monocle-api
   import:              common-options, cli-options
   hs-source-dirs:      app
   main-is:             Api.hs
-  build-depends:       base, monocle, relude
+  build-depends:       base
+                     , monocle
+                     , relude
+                     , envparse                   < 0.4.2
 
 executable macroscope
   import:              common-options, cli-options
