@@ -41,11 +41,16 @@ newGraphClient url token = do
           (URI.uriAuthority =<< URI.parseURI (toString url))
   pure $ GraphClient {..}
 
+-- | A log of http request and response
+type ReqLog = (HTTP.Request, HTTP.Response LByteString)
+
+type DoFetch m = LBS.ByteString -> WriterT [ReqLog] m LBS.ByteString
+
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: MonadGraphQL m => GraphClient -> LBS.ByteString -> m LBS.ByteString
+doGraphRequest :: MonadGraphQL m => GraphClient -> DoFetch m
 doGraphRequest GraphClient {..} jsonBody = do
-  -- putTextLn $ "Sending this query: " <> decodeUtf8 jsonBody
+  -- Prepare the request
   let initRequest = HTTP.parseRequest_ (toString url)
       request =
         initRequest
@@ -57,9 +62,19 @@ doGraphRequest GraphClient {..} jsonBody = do
               ],
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
-  response <- httpRequest request manager
-  -- print response
+
+  -- Do the request
+  response <- lift $ httpRequest request manager
+
+  -- Record the event
+  tell [(request, response)]
+
+  -- Return the body so that morpheus run the json decoder
   pure (HTTP.responseBody response)
+
+-- | Helper function to adapt the morpheus client fetch with a WriterT context
+fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either String a, [ReqLog])
+fetchWithLog cb = runWriterT . fetch cb
 
 -------------------------------------------------------------------------------
 -- Streaming layer
@@ -90,14 +105,19 @@ streamFetch client mkArgs transformResponse = go Nothing
     logStatus pageInfo rateLimitM =
       liftLog $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
     go pageInfoM = do
-      respE <-
+      (respE, reqLog) <-
         lift $
-          fetch
+          fetchWithLog
             (doGraphRequest client)
             (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
-      let (pageInfo, rateLimit, decodingErrors, xs) = case respE of
-            Left err -> error (toText err)
-            Right resp -> transformResponse resp
+
+      (pageInfo, rateLimit, decodingErrors, xs) <-
+        case respE of
+          Left err -> case reqLog of
+            [(req, resp)] -> throwError $ HttpError (from err, req, resp)
+            [] -> error $ "No request log found, error is: " <> from err
+            xs -> error $ "Multiple log found for error: " <> from err <> ", " <> show xs
+          Right resp -> pure $ transformResponse resp
 
       logStatus pageInfo rateLimit
 

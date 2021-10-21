@@ -50,6 +50,7 @@ stopLentille = throwError
 
 data LentilleError
   = DecodeError [Text]
+  | HttpError (Text, HTTP.Request, HTTP.Response LByteString)
   deriving (Show)
 
 -- | Here we create the different class instance by using the LentilleM inner IO

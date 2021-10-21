@@ -10,6 +10,7 @@ main = doctest (opts <> ["-isrc", "src/"])
       map
         (mappend "-X")
         [ "BangPatterns",
+          "ConstraintKinds",
           "DeriveGeneric",
           "DerivingStrategies",
           "FlexibleInstances",

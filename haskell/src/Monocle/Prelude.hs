@@ -32,6 +32,9 @@ module Monocle.Prelude
 
     -- * mtl
     MonadError (..),
+    MonadWriter (..),
+    WriterT,
+    runWriterT,
 
     -- * exceptions
     MonadThrow,
@@ -116,6 +119,7 @@ import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Morph (hoist)
+import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Time

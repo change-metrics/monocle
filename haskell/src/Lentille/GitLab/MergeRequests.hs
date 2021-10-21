@@ -103,9 +103,9 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> String -> m (Either String GetProjectMergeRequests)
+fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> String -> m (Either String GetProjectMergeRequests, [ReqLog])
 fetchMergeRequest client project mrID =
-  fetch (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
+  fetchWithLog (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
   MonadGraphQLE m =>
