@@ -106,8 +106,7 @@ runMacroscope' verbose confPath interval client = do
           let Config.Github _ _ github_token github_url = ghCrawler
           ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
           ghClient <- newGraphClient (fromMaybe "https://api.github.com/graphql" github_url) ghToken
-          let repos = Config.getCrawlerProject crawler
-          pure $ ghIssuesCrawler ghClient <$> repos
+          pure $ ghIssuesCrawler ghClient
         _ -> pure []
 
       -- Consume each stream
@@ -131,12 +130,11 @@ runMacroscope' verbose confPath interval client = do
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
     bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
-    bzCrawler bzSession bzProduct = TaskDatas $ getBZData bzSession bzProduct
+    bzCrawler bzSession bzProduct = TaskDatas $ \time _project -> getBZData bzSession bzProduct time
 
-    ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> Text -> DocumentStream m
+    ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
     ghIssuesCrawler ghClient repository =
-      TaskDatas $
-        streamLinkedIssue ghClient $ toString $ "repo:" <> repository
+      TaskDatas $ \time project -> streamLinkedIssue ghClient (toString $ "repo:" <> project) time
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects

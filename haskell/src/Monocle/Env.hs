@@ -236,7 +236,7 @@ withFilter extraQueries = local addFilter
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
-data Entity = Project Text | Organization Text | TaskDataEntity
+data Entity = Project Text | Organization Text | TaskDataEntity Text
   deriving (Eq, Show)
 
 instance From Entity Text where

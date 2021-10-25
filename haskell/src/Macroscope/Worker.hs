@@ -34,7 +34,7 @@ data DocumentStream m
   | -- | Fetch recent changes from a project
     Changes (UTCTime -> Text -> LentilleStream m (Change, [ChangeEvent]))
   | -- | Fetch recent task data
-    TaskDatas (UTCTime -> LentilleStream m TaskData)
+    TaskDatas (UTCTime -> Text -> LentilleStream m TaskData)
 
 isTDStream :: DocumentStream m -> Bool
 isTDStream = \case

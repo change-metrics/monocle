@@ -679,10 +679,6 @@ getWorkerUpdatedSince Config.Crawler {..} =
     $ parseDateValue (toString update_since)
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
-getLastUpdated crawler (CrawlerPB.EntityEntityTdName _) _ = do
-  -- crawler TD are stored separately
-  ts <- getTDCrawlerCommitDate (getWorkerName crawler) crawler
-  pure $ Just (mempty, ts)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -717,12 +713,9 @@ getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.EntityEntityProjectName _ -> "project"
   CrawlerPB.EntityEntityOrganizationName _ -> "organization"
-  otherEntity -> error $ "Unsupported Entity: " <> show otherEntity
+  CrawlerPB.EntityEntityTdName _ -> "task"
 
 ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
-ensureCrawlerMetadata crawlerName getDate TaskDataEntity =
-  -- TD crawler are stored separately
-  setTDCrawlerCommitDate crawlerName =<< getDate
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index id'
@@ -799,5 +792,5 @@ getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrga
 initCrawlerMetadata :: Config.Crawler -> QueryM ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
-    (getProjectEntityFromCrawler crawler <> getOrganizationEntityFromCrawler crawler)
+    (getProjectEntityFromCrawler crawler <> getOrganizationEntityFromCrawler crawler <> getTaskFromCrawler crawler)
     crawler
