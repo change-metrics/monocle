@@ -243,7 +243,7 @@ instance From Entity Text where
   from = \case
     Project _ -> "project"
     Organization _ -> "organization"
-    TaskDataEntity -> "task_datas"
+    TaskDataEntity _ -> "taskdata"
 
 instance From Entity LText where
   from = via @Text
@@ -252,7 +252,7 @@ getEntityName :: Entity -> Text
 getEntityName = \case
   Project n -> n
   Organization n -> n
-  TaskDataEntity -> ""
+  TaskDataEntity n -> n
 
 -------------------------------------------------------------------------------
 -- logging function
@@ -290,6 +290,7 @@ logEvent logger ev = doLog logger (sysEventToText ev)
 data MonocleEvent
   = AddingChange LText Int Int
   | AddingProject Text Text Int
+  | AddingTaskData LText Int
   | UpdatingEntity LText Entity UTCTime
   | Searching QueryRequest_QueryType LText Q.Query
 
@@ -299,6 +300,8 @@ eventToText ev = case ev of
     toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
   AddingProject crawler organizationName projects ->
     crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
+  AddingTaskData crawler tds ->
+    toStrict crawler <> " adding " <> show tds
   UpdatingEntity crawler entity ts ->
     toStrict crawler <> " updating " <> show entity <> " to " <> show ts
   Searching queryType queryText query ->

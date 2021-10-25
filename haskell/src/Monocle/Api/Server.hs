@@ -150,10 +150,8 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
-
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
-
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 
@@ -161,7 +159,7 @@ toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ toStrict projectName
   OrganizationEntity organizationName -> Organization $ toStrict organizationName
-  TDEntity _td -> TaskDataEntity
+  TDEntity tdName -> TaskDataEntity $ toStrict tdName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
@@ -198,11 +196,12 @@ crawlerAddDoc request = do
     Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
-      TaskDataEntity -> addTDs crawler taskDatas
+      TaskDataEntity _ -> addTDs crawlerName taskDatas
     Left err -> pure $ toErrorResponse err
   where
-    addTDs (Config.Crawler {..}) taskDatas = do
-      I.taskDataAdd name $ toList taskDatas
+    addTDs crawlerName taskDatas = do
+      monocleLogEvent $ AddingTaskData crawlerName (length taskDatas)
+      I.taskDataAdd (toText crawlerName) $ toList taskDatas
       pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
       monocleLogEvent $ AddingChange crawlerName (length changes) (length events)

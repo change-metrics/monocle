@@ -452,37 +452,6 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
         crawlerTypeValue
       ]
 
-getTDCrawlerMetadataDocId :: Text -> BH.DocId
-getTDCrawlerMetadataDocId name = getCrawlerMetadataDocId name "task-data" "issue"
-
-getTDCrawlerMetadata :: Text -> QueryM (Maybe ECrawlerMetadata)
-getTDCrawlerMetadata name = getDocumentById $ getTDCrawlerMetadataDocId name
-
-setTDCrawlerCommitDate :: Text -> UTCTime -> QueryM ()
-setTDCrawlerCommitDate name commitDate = do
-  index <- getIndexName
-  let ecmLastCommitAt = commitDate
-      ecmCrawlerType = ""
-      ecmCrawlerTypeValue = ""
-      ecmCrawlerName = ""
-      doc = ECrawlerMetadata $ ECrawlerMetadataObject {..}
-      docID = getTDCrawlerMetadataDocId name
-  exists <- BH.documentExists index docID
-  withRefresh $
-    if exists
-      then BH.updateDocument index BH.defaultIndexDocumentSettings doc docID
-      else BH.indexDocument index BH.defaultIndexDocumentSettings doc docID
-
-getTDCrawlerCommitDate :: Text -> Config.Crawler -> QueryM UTCTime
-getTDCrawlerCommitDate name crawler = do
-  metadata <- getTDCrawlerMetadata name
-  let commitDate = ecmLastCommitAt . ecmCrawlerMetadata <$> metadata
-      currentTS =
-        fromMaybe
-          (error "Unable to get a valid crawler metadata TS")
-          (commitDate <|> parseDateValue (toString (Config.update_since crawler)))
-  pure currentTS
-
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
@@ -713,17 +682,16 @@ getCrawlerTypeAsText :: EntityType -> Text
 getCrawlerTypeAsText entity' = case entity' of
   CrawlerPB.EntityEntityProjectName _ -> "project"
   CrawlerPB.EntityEntityOrganizationName _ -> "organization"
-  CrawlerPB.EntityEntityTdName _ -> "task"
+  CrawlerPB.EntityEntityTdName _ -> "taskdata"
 
 ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
-  exists <- BH.documentExists index id'
+  exists <- BH.documentExists index getId
   when (not exists) $ do
     lastUpdatedDate <- getDate
-    withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) id'
+    withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
   where
-    id' = getId entity
     cm lastUpdatedDate =
       ECrawlerMetadata
         { ecmCrawlerMetadata =
@@ -733,7 +701,7 @@ ensureCrawlerMetadata crawlerName getDate entity = do
               (toLazy $ getEntityName entity)
               lastUpdatedDate
         }
-    getId entity' = getCrawlerMetadataDocId crawlerName (from entity') (getEntityName entity')
+    getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
@@ -754,13 +722,11 @@ getLastUpdatedDate fullname = do
     (c : _) -> Just $ c & echangeUpdatedAt
 
 setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
-setLastUpdated crawlerName lastUpdatedDate TaskDataEntity = do
-  setTDCrawlerCommitDate crawlerName lastUpdatedDate
 setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
-  withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm (getId entity)
+  withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm getId
   where
-    getId entity' = getCrawlerMetadataDocId crawlerName (from entity') (getEntityName entity')
+    getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
     cm =
       ECrawlerMetadata
         { ecmCrawlerMetadata =
@@ -789,8 +755,14 @@ getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
 getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
 getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
 
+getTaskDataEntityFromCrawler :: Config.Crawler -> [Entity]
+getTaskDataEntityFromCrawler worker = TaskDataEntity <$> Config.getCrawlerTaskData worker
+
 initCrawlerMetadata :: Config.Crawler -> QueryM ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
-    (getProjectEntityFromCrawler crawler <> getOrganizationEntityFromCrawler crawler <> getTaskFromCrawler crawler)
+    ( getProjectEntityFromCrawler crawler
+        <> getOrganizationEntityFromCrawler crawler
+        <> getTaskDataEntityFromCrawler crawler
+    )
     crawler

@@ -240,6 +240,14 @@ getCrawlerOrganization Crawler {..} = case provider of
   GerritProvider Gerrit {..} -> maybe [] (filter (T.isPrefixOf "^")) gerrit_repositories
   _anyOtherProvider -> []
 
+getCrawlerTaskData :: Crawler -> [Text]
+getCrawlerTaskData Crawler {..} = case provider of
+  GithubProvider Github {..} ->
+    let addOrgPrefix repo = removeTrailingSlash github_organization <> "/" <> repo
+     in addOrgPrefix <$> fromMaybe [] github_repositories
+  BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
+  _anyOtherProvider -> []
+
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =
   let crawlers_api_key = Nothing
