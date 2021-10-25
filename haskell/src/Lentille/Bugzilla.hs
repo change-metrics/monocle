@@ -166,13 +166,13 @@ toTaskData bz = map mkTaskData ebugs
         (toLazy $ "rhbz#")
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: MonadBZ m => BugzillaSession -> Text -> UTCTime -> Stream (Of TaskData) m ()
-getBZData bzSession product''' sinceTS = go 0
+getBZData :: MonadBZ m => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()
+getBZData bzSession sinceTS productName = go 0
   where
     limit = 100
     doGet :: MonadBZ m => Int -> m [BugWithScore]
     doGet offset =
-      getBugsWithScore bzSession sinceTS product''' limit offset
+      getBugsWithScore bzSession sinceTS productName limit offset
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do

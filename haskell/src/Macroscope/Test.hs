@@ -100,7 +100,9 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
   now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
-  let stream _untilDate _project = Streaming.each [td]
+  let stream _untilDate project
+        | project == "fake_product" = Streaming.each [td]
+        | otherwise = error $ "Unexpected product entity: " <> show project
   void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId

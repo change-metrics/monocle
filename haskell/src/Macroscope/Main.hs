@@ -101,7 +101,7 @@ runMacroscope' verbose confPath interval client = do
         Config.BugzillaProvider Config.Bugzilla {..} -> do
           bzTokenT <- Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
           bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
-          pure $ bzCrawler bzClient <$> fromMaybe [] bugzilla_products
+          pure [bzCrawler bzClient]
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
           ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
@@ -129,12 +129,11 @@ runMacroscope' verbose confPath interval client = do
     glOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
     glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
-    bzCrawler :: MonadBZ m => BugzillaSession -> Text -> DocumentStream m
-    bzCrawler bzSession bzProduct = TaskDatas $ \time _project -> getBZData bzSession bzProduct time
+    bzCrawler :: MonadBZ m => BugzillaSession -> DocumentStream m
+    bzCrawler bzSession = TaskDatas $ getBZData bzSession
 
     ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-    ghIssuesCrawler ghClient =
-      TaskDatas $ \time project -> streamLinkedIssue ghClient (toString $ "repo:" <> project) time
+    ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects

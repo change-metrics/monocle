@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- [crawler] GitHub issues are now collected for all projects, (it was only fetching the first one).
+
 ## [1.1.0] - 2021-09-21
 
 ### Added
