@@ -11,23 +11,15 @@ module Lentille.GitLab.Group where
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Lentille
-import Lentille.GitLab
-  ( GitLabGraphClient,
-    PageInfo (..),
-    host,
-    newGitLabGraphClient,
-    runGitLabGraphRequest,
-    schemaLocation,
-    streamFetch,
-  )
 import Lentille.GitLab.Adapter
+import Lentille.GraphQL
 import Monocle.Prelude hiding (break)
 import Monocle.Project
 import qualified Streaming.Prelude as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup
 defineByDocumentFile
-  schemaLocation
+  glSchemaLocation
   [gql|
     query GetGroupProjects ($fullPath: ID!, $cursor: String) {
       group(fullPath: $fullPath) {
@@ -41,24 +33,23 @@ defineByDocumentFile
     }
   |]
 
-fetchGroupProjects :: MonadGraphQL m => GitLabGraphClient -> Text -> m (Either String GetGroupProjects)
+fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either String GetGroupProjects, [ReqLog])
 fetchGroupProjects client fullPath =
-  fetch (runGitLabGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
+  fetchWithLog (doGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
 streamGroupProjects ::
-  (MonadError LentilleError m, MonadGraphQL m) =>
-  GitLabGraphClient ->
+  (MonadGraphQLE m) =>
+  GraphClient ->
   Text ->
   LentilleStream m Project
-streamGroupProjects client fullPath =
-  streamFetch client Nothing mkArgs transformResponse id
+streamGroupProjects client fullPath = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor = GetGroupProjectsArgs (ID fullPath) $ toCursorM cursor
     toCursorM :: Text -> Maybe String
     toCursorM "" = Nothing
     toCursorM cursor'' = Just . toString $ cursor''
 
-transformResponse :: GetGroupProjects -> (PageInfo, [Text], [Project])
+transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
 transformResponse result =
   case result of
     GetGroupProjects
@@ -71,11 +62,13 @@ transformResponse result =
             )
         ) ->
         ( PageInfo hasNextPage endCursor Nothing,
+          Nothing,
           [],
           getFullPath <$> cleanMaybeMNodes nodes
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing,
+        Nothing,
         ["Unknown GetGroupProjects response: " <> show result],
         []
       )

@@ -17,15 +17,8 @@ import Data.Time.Clock
 import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (MonadGraphQL)
-import Lentille.GitHub
-  ( GitHubGraphClient,
-    PageInfo (..),
-    RateLimit (..),
-    runGithubGraphRequest,
-    schemaLocation,
-    streamFetch,
-  )
+import Lentille (MonadGraphQLE)
+import Lentille.GraphQL
 import Monocle.Search (TaskData (..))
 import Relude
 import Streaming (Of, Stream)
@@ -41,7 +34,7 @@ newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 --  the PR description or in a commit messages.
 -- See GH documentation https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue
 defineByDocumentFile
-  schemaLocation
+  ghSchemaLocation
   [gql|
     query GetLinkedIssues ($search: String!, $cursor: String) {
       rateLimit {
@@ -85,7 +78,7 @@ defineByDocumentFile
     }
   |]
 
-streamLinkedIssue :: MonadGraphQL m => GitHubGraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
+streamLinkedIssue :: MonadGraphQLE m => GraphClient -> String -> UTCTime -> Stream (Of TaskData) m ()
 streamLinkedIssue client searchText utctime = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' =
@@ -101,7 +94,7 @@ streamLinkedIssue client searchText utctime = streamFetch client mkArgs transfor
 
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
-transformResponse :: GetLinkedIssues -> (PageInfo, RateLimit, [Text], [TaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
@@ -112,8 +105,8 @@ transformResponse searchResult =
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
-         in ( PageInfo hasNextPage' endCursor' issueCount',
-              RateLimit used' remaining' resetAt',
+         in ( PageInfo hasNextPage' endCursor' (Just issueCount'),
+              Just $ RateLimit used' remaining' resetAt',
               lefts newTaskDataE,
               rights newTaskDataE
             )

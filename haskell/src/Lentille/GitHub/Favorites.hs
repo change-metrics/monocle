@@ -22,14 +22,14 @@
 module Lentille.GitHub.Favorites where
 
 import Data.Morpheus.Client
-import Lentille
-import Lentille.GitHub (GitHubGraphClient, PageInfo (..), RateLimit (..), schemaLocation, streamFetch)
+import Lentille (MonadGraphQLE)
+import Lentille.GraphQL
 import Monocle.Prelude
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 defineByDocumentFile
-  schemaLocation
+  ghSchemaLocation
   [gql|
     query GetFavorites ($userName: String!, $cursor: String!)
     {
@@ -62,14 +62,14 @@ defineByDocumentFile
 type UserFavorite = UserStarredRepositoriesEdgesNodeRepository
 
 getFavoritesStream ::
-  MonadGraphQL m =>
-  GitHubGraphClient ->
+  MonadGraphQLE m =>
+  GraphClient ->
   Text ->
   Stream (Of UserFavorite) m ()
 getFavoritesStream client username = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' = GetFavoritesArgs (toString username) (toString cursor')
-    transformResponse :: GetFavorites -> (PageInfo, RateLimit, [Text], [UserFavorite])
+    transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites
         (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
@@ -82,8 +82,8 @@ getFavoritesStream client username = streamFetch client mkArgs transformResponse
                   )
               )
           ) ->
-          ( PageInfo hasNextPage' endCursor' totalCount',
-            RateLimit used' remaining' resetAt',
+          ( PageInfo hasNextPage' endCursor' (Just totalCount'),
+            Just $ RateLimit used' remaining' resetAt',
             [],
             map getNode $ catMaybes xs
           )

@@ -9,6 +9,7 @@ module Lentille
     stopLentille,
 
     -- * Lentille Errors
+    MonadGraphQLE,
     LentilleError (..),
 
     -- * Log context
@@ -49,6 +50,7 @@ stopLentille = throwError
 
 data LentilleError
   = DecodeError [Text]
+  | HttpError (Text, HTTP.Request, HTTP.Response LByteString)
   deriving (Show)
 
 -- | Here we create the different class instance by using the LentilleM inner IO
@@ -70,7 +72,8 @@ instance MonadCrawler LentilleM where
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
   newManager = liftIO mkManager
-  mLookupEnv = liftIO . lookupEnv
+
+type MonadGraphQLE m = (MonadGraphQL m, MonadError LentilleError m)
 
 instance MonadConfig LentilleM where
   mReloadConfig fp = do
