@@ -277,6 +277,42 @@ testOrganizationCrawlerMetadata = withTenant doTest
                  in Config.GitlabProvider Config.Gitlab {..}
            in Config.Crawler {..}
 
+testTaskDataCrawlerMetadata :: Assertion
+testTaskDataCrawlerMetadata = withTenant doTest
+  where
+    doTest :: QueryM ()
+    doTest = do
+      -- Init default crawler metadata and ensure we get the default updated date
+      I.initCrawlerMetadata workerGithub
+      lastUpdated <- I.getLastUpdated workerGithub entityType 0
+      assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ snd <$> lastUpdated
+
+      -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
+      I.setLastUpdated crawlerGithub fakeDateB entity
+      lastUpdated' <- I.getLastUpdated workerGithub entityType 0
+      assertEqual' "check got oldest updated entity" (Just ("opendev/nova", fakeDateB)) lastUpdated'
+
+      -- Run again the init
+      I.initCrawlerMetadata workerGithub
+      lastUpdated'' <- I.getLastUpdated workerGithub entityType 0
+      assertEqual' "check got oldest updated entity" (Just ("opendev/nova", fakeDateB)) lastUpdated''
+      where
+        entityType = CrawlerPB.EntityEntityTdName ""
+        entity = TaskDataEntity "opendev/nova"
+        crawlerGithub = "test-crawler-github"
+        workerGithub =
+          let name = crawlerGithub
+              update_since = show fakeDefaultDate
+              provider =
+                let github_url = Nothing
+                    github_token = Nothing
+                    github_repositories = Just ["nova"]
+                    github_organization = "opendev"
+                 in Config.GithubProvider Config.Github {..}
+           in Config.Crawler {..}
+        fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
+        fakeDateB = [utctime|2021-05-31 10:00:00|]
+
 testJanitorWipeCrawler :: Assertion
 testJanitorWipeCrawler = withTenant $ local updateEnv doTest
   where
@@ -779,38 +815,6 @@ testTaskDataAdd = withTenant doTest
 
     getOrphanTd :: Text -> QueryM (Maybe EChangeOrphanTD)
     getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
-
-testTaskDataCommit :: Assertion
-testTaskDataCommit = withTenant doTest
-  where
-    doTest :: QueryM ()
-    doTest = do
-      let crawlerName = "testCrawler"
-          crawlerConfig =
-            let name = crawlerName
-                provider = Config.TaskDataProvider
-                update_since = "2020-01-01"
-             in Config.Crawler {..}
-      -- Test get default commit date from config (as no previous crawler metadata)
-      commitDate <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
-      assertEqual'
-        "Task data crawler metadata - check default date"
-        [utctime|2020-01-01 00:00:00|]
-        commitDate
-      -- Test that we can commit a date and make sure we get it back
-      void $ I.setTDCrawlerCommitDate crawlerName fakeDate
-      commitDate' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
-      assertEqual'
-        "Task data crawler metadata - check commited date "
-        fakeDate
-        commitDate'
-      -- Test that we can update the commit and that we get it back
-      void $ I.setTDCrawlerCommitDate crawlerName fakeDateAlt
-      commitDate'' <- I.getTDCrawlerCommitDate crawlerName crawlerConfig
-      assertEqual'
-        "Task data crawler metadata - check updated commited date "
-        fakeDateAlt
-        commitDate''
 
 testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest

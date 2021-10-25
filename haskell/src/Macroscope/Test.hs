@@ -36,7 +36,7 @@ withTestApi config' testCb = bracket (mkAppEnv config') cleanIndex runTest
     -- Using a mockedManager, run the Api behind a MonocleClient for the tests
     runTest :: AppEnv -> Assertion
     runTest appEnv = do
-      runQueryM' (bhEnv $ aEnv appEnv) config' $ I.ensureIndex
+      runQueryM' (bhEnv $ aEnv appEnv) config' I.ensureIndex
       withMockedManager
         (dropVersionPath $ app appEnv)
         (\manager -> withClient "http://localhost" (Just manager) testCb)
@@ -50,12 +50,12 @@ withTestApi config' testCb = bracket (mkAppEnv config') cleanIndex runTest
     -- Remove the index
     cleanIndex :: AppEnv -> IO ()
     cleanIndex appEnv = do
-      runQueryM' (bhEnv $ aEnv appEnv) config' $ I.removeIndex
+      runQueryM' (bhEnv $ aEnv appEnv) config' I.removeIndex
 
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
-  void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.ensureIndexSetup
+  void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig I.ensureIndexSetup
   let fakeChange1 =
         BT.fakeChange
           { D.echangeId = "efake1",
@@ -100,7 +100,9 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
   now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
-  let stream _ = Streaming.each [td]
+  let stream _untilDate project
+        | project == "fake_product" = Streaming.each [td]
+        | otherwise = error $ "Unexpected product entity: " <> show project
   void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
@@ -113,7 +115,13 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
           Config.crawlers =
             [ let name = toText crawlerName
                   update_since = "2000-01-01"
-                  provider = Config.TaskDataProvider
+                  provider =
+                    Config.BugzillaProvider $
+                      Config.Bugzilla
+                        { bugzilla_products = Just ["fake_product"],
+                          bugzilla_token = Nothing,
+                          bugzilla_url = ""
+                        }
                in Config.Crawler {..}
             ]
         }

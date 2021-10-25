@@ -34,7 +34,7 @@ data DocumentStream m
   | -- | Fetch recent changes from a project
     Changes (UTCTime -> Text -> LentilleStream m (Change, [ChangeEvent]))
   | -- | Fetch recent task data
-    TaskDatas (UTCTime -> LentilleStream m TaskData)
+    TaskDatas (UTCTime -> Text -> LentilleStream m TaskData)
 
 isTDStream :: DocumentStream m -> Bool
 isTDStream = \case
@@ -57,6 +57,15 @@ getDate oe =
   toUTCTime
     . fromMaybe (error "missing TS")
     $ commitInfoResponse_OldestEntityLastCommitAt oe
+
+-- | 'getTaskdata' gets the updated time and project name from an 'OldestEntity'
+getTaskdata :: OldestEntity -> (UTCTime, Text)
+getTaskdata oe = (getDate oe, toStrict taskdata)
+  where
+    taskdata =
+      case commitInfoResponse_OldestEntityEntity oe of
+        Just (Entity (Just (EntityEntityTdName name))) -> name
+        _ -> error $ "Not a task data: " <> show oe
 
 -- | 'getProject' gets the updated time and project name from an 'OldestEntity'
 getProject :: OldestEntity -> (UTCTime, Text)
@@ -202,8 +211,8 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
         let (_, organization) = getOrganization oldestEntity
          in S.map DTProject (s organization)
       TaskDatas s ->
-        let untilDate = getDate oldestEntity
-         in S.map DTTaskData (s untilDate)
+        let (untilDate, td) = getTaskdata oldestEntity
+         in S.map DTTaskData (s untilDate td)
 
     -- Get a stream representation of a stream type
     streamType = \case

@@ -64,9 +64,11 @@ monocleIntegrationTests =
       testCase
         "Index OrganizationCrawlerMetadata"
         testOrganizationCrawlerMetadata,
+      testCase
+        "Index TaskDataCrawlerMetadata"
+        testTaskDataCrawlerMetadata,
       testCase "Test suggestions" testGetSuggestions,
       testCase "Test taskData add" testTaskDataAdd,
-      testCase "Test taskData commit" testTaskDataCommit,
       testCase "Test taskData adoption" testTaskDataAdoption,
       testCase "Test Janitor wipe crawler" testJanitorWipeCrawler
     ]
