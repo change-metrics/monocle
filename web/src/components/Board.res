@@ -11,6 +11,8 @@ let startWithEditorOpen = false
 module Column = {
   type t = {name: string, query: string, order: option<SearchTypes.order>}
 
+  let noChangeFound = <tr role="row"> <td role="cell"> <p> {"No change found"->str} </p> </td> </tr>
+
   module Row = {
     // TODO: merge common code with Column
     @react.component
@@ -43,7 +45,7 @@ module Column = {
       | Some(SearchTypes.Changes(items)) => {
           let changes = items.changes->Belt.List.toArray
           switch changes->Belt.Array.length {
-          | 0 => <p> {"No changes matched"->str} </p>
+          | 0 => noChangeFound
           | _ =>
             changes
             ->Belt.Array.map(change => <Change.RowItem store key={change.url} change={change} />)
@@ -90,7 +92,7 @@ module Column = {
         | Some(SearchTypes.Changes(items)) => {
             let changes = items.changes->Belt.List.toArray
             switch changes->Belt.Array.length {
-            | 0 => <p> {"No changes matched"->str} </p>
+            | 0 => noChangeFound
             | _ =>
               <Patternfly.DataList isCompact={true}>
                 {changes
