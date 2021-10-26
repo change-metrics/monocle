@@ -59,6 +59,10 @@ common common-options
                        FlexibleInstances,
                        FlexibleContexts,
                        GeneralizedNewtypeDeriving,
+                       -- KindSignatures, DataKinds and PolyKinds enables using `:::` to annotate a type a type with a name.
+                       KindSignatures,
+                       DataKinds,
+                       PolyKinds,
                        LambdaCase,
                        MultiWayIf,
                        NamedFieldPuns,
