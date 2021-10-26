@@ -124,7 +124,7 @@ runMacroscope' verbose confPath interval client = do
               <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
         Config.BugzillaProvider Config.Bugzilla {..} -> do
           bzTokenT <- Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
-          bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
+          bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey (unSecret bzTokenT)
           pure [bzCrawler bzClient]
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler

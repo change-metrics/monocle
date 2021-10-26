@@ -118,7 +118,7 @@ defaultTenant name =
     }
 
 class MonadConfig m where
-  mGetSecret :: Text -> Maybe Text -> m Text
+  mGetSecret :: Text -> Maybe Text -> m Secret
   mReloadConfig :: FilePath -> m (m [Index])
 
 -- | Disambiguate the project name accessor
@@ -167,9 +167,9 @@ reloadConfig fp = do
           pure config
         else pure prevConfig
 
-getSecret :: MonadIO m => Text -> Maybe Text -> m Text
+getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
 getSecret def keyM =
-  toText . fromMaybe (error $ "Missing environment: " <> env)
+  Secret . toText . fromMaybe (error $ "Missing environment: " <> env)
     <$> lookupEnv (toString env)
   where
     env = fromMaybe def keyM

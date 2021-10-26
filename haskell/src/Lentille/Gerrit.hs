@@ -55,12 +55,13 @@ import Prelude (init, last)
 -------------------------------------------------------------------------------
 
 class (MonadRetry m, MonadLog m) => MonadGerrit m where
-  getGerritClient :: Text -> Maybe (Text, Text) -> m G.GerritClient
+  getGerritClient :: Text -> Maybe (Text, Secret) -> m G.GerritClient
   getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
   queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
 
 instance MonadGerrit LentilleM where
-  getGerritClient url = liftIO . G.getClient url
+  getGerritClient url Nothing = liftIO $ G.getClient url Nothing
+  getGerritClient url (Just (user, Secret password)) = liftIO $ G.getClient url $ Just (user, password)
   getProjects env count query startM =
     liftIO $ G.getProjects count query startM (client env)
   queryChanges env count queries startM =

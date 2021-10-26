@@ -28,10 +28,10 @@ data GraphClient = GraphClient
   { manager :: HTTP.Manager,
     url :: Text,
     host :: Text,
-    token :: Text
+    token :: Secret
   }
 
-newGraphClient :: MonadGraphQL m => Text -> Text -> m GraphClient
+newGraphClient :: MonadGraphQL m => Text -> Secret -> m GraphClient
 newGraphClient url token = do
   manager <- newManager
   let host =
@@ -56,7 +56,7 @@ doGraphRequest GraphClient {..} jsonBody = do
         initRequest
           { HTTP.method = "POST",
             HTTP.requestHeaders =
-              [ ("Authorization", "token " <> encodeUtf8 token),
+              [ ("Authorization", "token " <> encodeUtf8 (unSecret token)),
                 ("User-Agent", "change-metrics/monocle"),
                 ("Content-Type", "application/json")
               ],

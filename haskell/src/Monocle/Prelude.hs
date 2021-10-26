@@ -11,6 +11,7 @@ module Monocle.Prelude
     getExn,
     getEnv',
     headMaybe,
+    Secret (..),
 
     -- * witch
     From (..),
@@ -147,6 +148,10 @@ import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import Test.Tasty.HUnit
 import Witch hiding (over)
+
+-- | A newtype for secret like token pulled from the environment
+newtype Secret = Secret {unSecret :: Text}
+  deriving newtype (Eq, Ord, Hashable)
 
 -- | Pretty json encoding with a fixed key order
 encodePretty :: ToJSON a => a -> LByteString
