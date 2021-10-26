@@ -240,7 +240,9 @@ module TaskDatas = {
     | xs =>
       <MStack>
         {xs
-        ->Belt.List.map(td => <MStackItem> <TaskData td /> </MStackItem>)
+        ->Belt.List.mapWithIndex((i, td) =>
+          <MStackItem key={string_of_int(i)}> <TaskData td /> </MStackItem>
+        )
         ->Belt.List.toArray
         ->React.array}
       </MStack>
