@@ -50,7 +50,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 1.1.0 in the .env file. Please refer
+by setting the MONOCLE_VERSION to 1.2.0 in the .env file. Please refer
 to [System configuration section](#system).
 
 ### Create the config.yaml file
