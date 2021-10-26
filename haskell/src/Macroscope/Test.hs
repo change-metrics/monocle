@@ -4,6 +4,7 @@ module Macroscope.Test where
 import Control.Exception (bracket)
 import qualified Data.ByteString as B
 import Lentille (runLentilleM)
+import qualified Macroscope.Main as Macroscope
 import qualified Macroscope.Worker as Macroscope
 import Monocle.Api
 import qualified Monocle.Api.Config as Config
@@ -130,10 +131,35 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
     indexName = "test-macroscope"
     crawlerName = "testy"
 
+testGetStream :: Assertion
+testGetStream = do
+  setEnv "CRAWLERS_API_KEY" "secret"
+  setEnv "GITLAB_TOKEN" "42"
+  (streams, clients) <- runStateT (traverse Macroscope.getStream (Macroscope.getCrawlers conf)) (from ())
+  liftIO $ do
+    assertEqual "Two streams created" 2 (length $ streams)
+    assertEqual "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+  where
+    conf =
+      [ (Config.defaultTenant "test-stream")
+          { Config.crawlers = [gl "org1", gl "org2"],
+            Config.crawlers_api_key = Just "CRAWLERS_API_KEY"
+          }
+      ]
+    gl gitlab_organization =
+      let gitlab_url = Just "http://localhost"
+          gitlab_repositories = Nothing
+          gitlab_token = Nothing
+          provider = Config.GitlabProvider Config.Gitlab {..}
+          name = "crawler-for" <> gitlab_organization
+          update_since = "2021-01-01"
+       in Config.Crawler {..}
+
 monocleMacroscopeTests :: TestTree
 monocleMacroscopeTests =
   testGroup
     "Macroscope"
-    [ testCase "TaskData stream" testTaskDataMacroscope,
+    [ testCase "GetStream reuse client" testGetStream,
+      testCase "TaskData stream" testTaskDataMacroscope,
       testCase "Change stream (crawling point)" testCrawlingPoint
     ]

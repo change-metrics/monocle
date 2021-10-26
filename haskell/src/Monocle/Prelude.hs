@@ -10,8 +10,12 @@ module Monocle.Prelude
     orDie,
     getExn,
     getEnv',
+    setEnv,
     headMaybe,
     Secret (..),
+
+    -- * containers
+    mapMutate,
 
     -- * witch
     From (..),
@@ -130,6 +134,7 @@ import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
+import qualified Data.Map as Map
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
@@ -146,6 +151,7 @@ import Say (sayErr)
 import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
+import System.Environment (setEnv)
 import Test.Tasty.HUnit
 import Witch hiding (over)
 
@@ -162,6 +168,18 @@ encodePrettyWithSpace space =
   Aeson.encodePretty'
     ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces space, Aeson.confCompare = compare @Text}
     )
+
+-- | An helper to mutate a map using a monadic value
+mapMutate :: (Ord k, Monad m) => Map k v -> k -> m v -> m (v, Map k v)
+mapMutate m key mkValue =
+  case Map.lookup key m of
+    Just value ->
+      -- The value was found, just return it
+      pure (value, m)
+    Nothing -> do
+      -- Create a new value, store and return it
+      value <- mkValue
+      pure (value, Map.insert key value m)
 
 eitherParseUTCTime :: String -> Either String UTCTime
 eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMaybe (x <> " Z"))

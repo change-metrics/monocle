@@ -11,7 +11,6 @@ import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
-import System.Environment (setEnv)
 import Test.Tasty
 import Test.Tasty.HUnit
 
