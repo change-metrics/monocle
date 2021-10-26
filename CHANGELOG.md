@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.2.0] - 2021-10-26
+
+Notice that the crawler and api containers are based on a recent version of Fedora 35 that
+requires a recent Docker (>= 20.10.3).
 
 ### Added
 
