@@ -133,22 +133,22 @@ flavoredField = error "Field name should be set at runtime"
 -- | 'fields' specifies how to handle field value
 fields :: [(Field, (FieldType, Field, Text))]
 fields =
-  [ ("updated_at", (fieldDate, "updated_at", "Last update")),
-    ("created_at", (fieldDate, "created_at", "Change creation")),
+  [ ("updated_at", (fieldDate, "updated_at", "Change last update date")),
+    ("created_at", (fieldDate, "created_at", "Change creation date")),
     ("from", (fieldDate, flavoredField, "Range starting date")),
     ("to", (fieldDate, flavoredField, "Range ending date")),
     ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
     ("repo", (fieldRegex, "repository_fullname", "Repository name")),
-    ("project", (fieldText, "project_def", "Project definition name")),
-    ("author", (fieldRegex, flavoredField, "Author name")),
-    ("group", (fieldText, flavoredField, "Group definition name")),
-    ("branch", (fieldRegex, "target_branch", "Branch name")),
-    ("approval", (fieldText, "approval", "Approval name")),
-    ("label", (fieldText, "labels", "Label name")),
-    ("priority", (fieldText, "tasks_data.priority", "Task priority")),
-    ("severity", (fieldText, "tasks_data.severity", "Task severity")),
-    ("tag", (fieldRegex, "tasks_data.ttype", "Task type")),
-    ("score", (fieldNumber, "tasks_data.score", "PM score"))
+    ("project", (fieldText, "project_def", "Project name")),
+    ("author", (fieldRegex, flavoredField, "Change author name")),
+    ("group", (fieldText, flavoredField, "Group name")),
+    ("branch", (fieldRegex, "target_branch", "Change branch name")),
+    ("approval", (fieldText, "approval", "Change approval name")),
+    ("tag", (fieldText, "labels", "Change tag name")),
+    ("task.priority", (fieldText, "tasks_data.priority", "Task priority")),
+    ("task.severity", (fieldText, "tasks_data.severity", "Task severity")),
+    ("task.tag", (fieldRegex, "tasks_data.ttype", "Task tag name")),
+    ("task.score", (fieldNumber, "tasks_data.score", "Task score value"))
   ]
 
 queryFieldToDocument :: Field -> Maybe Field

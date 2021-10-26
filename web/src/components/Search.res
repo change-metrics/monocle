@@ -34,12 +34,12 @@ module FieldSelectorModal = {
             | "state" => list{"open", "merged", "self_merged", "abandoned"}
             | "author" => suggestions.authors
             | "approval" => suggestions.approvals
-            | "priority" => suggestions.priorities
-            | "severity" => suggestions.severities
-            | "tag" => suggestions.task_types
+            | "task.priority" => suggestions.priorities
+            | "task.severity" => suggestions.severities
+            | "task.tag" => suggestions.task_types
             | "project" => suggestions.projects
             | "group" => suggestions.groups
-            | "label" => suggestions.labels
+            | "tag" => suggestions.labels
             | _ => list{}
             }
 

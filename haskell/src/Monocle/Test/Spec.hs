@@ -176,7 +176,7 @@ monocleSearchLanguage =
       testCase
         "Query number"
         ( queryMatch
-            "score>200"
+            "task.score>200"
             "{\"range\":{\"tasks_data.score\":{\"boost\":1,\"gt\":200}}}"
         ),
       testCase
@@ -229,9 +229,9 @@ monocleSearchLanguage =
             "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"range\":{\"created_at\":{\"boost\":1,\"lt\":\"2021-05-31T00:00:00Z\"}}}]}}"
         ),
       testCase
-        "Query label field"
+        "Query tag field"
         ( queryMatch
-            "label:bug"
+            "tag:bug"
             "{\"term\":{\"labels\":{\"value\":\"bug\"}}}"
         ),
       testCase
@@ -257,7 +257,7 @@ monocleSearchLanguage =
       testCase
         "Query multi-or"
         ( queryMatch
-            "score:1 (score:2 or score:3 or score:4) score:5 score:6"
+            "task.score:1 (task.score:2 or task.score:3 or task.score:4) task.score:5 task.score:6"
             "{\"bool\":{\"must\":[{\"term\":{\"tasks_data.score\":{\"value\":\"1\"}}},{\"bool\":{\"should\":[{\"term\":{\"tasks_data.score\":{\"value\":\"2\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"3\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"4\"}}}]}},{\"term\":{\"tasks_data.score\":{\"value\":\"5\"}}},{\"term\":{\"tasks_data.score\":{\"value\":\"6\"}}}]}}"
         ),
       testCase

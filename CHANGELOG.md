@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [crawler] Gerrit crawler is managed by Macroscope and removed from crawler-legacy.
+- [api/web] Some keys name in the Monocle Query Language (eg. all task related keys are prefixed with "task.")
 
 ### Removed
 
