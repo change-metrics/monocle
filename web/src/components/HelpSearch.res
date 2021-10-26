@@ -59,7 +59,7 @@ module Content = {
       <p> {"Use the `Add Field` button to get suggestions."->str} </p>
       <h4> {"Example"->str} </h4>
       <ul>
-        <FakeInput value="state:open approved score>42" />
+        <FakeInput value="state:open approved task.score>42" />
         <FakeInput
           value="(repo:openstack/nova or repo:openstack/neutron) and group:qa and updated_at>2020"
         />

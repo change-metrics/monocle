@@ -18,7 +18,7 @@ let complexicity = (change: SearchTypes.change) =>
 module TaskData = {
   type t = SearchTypes.task_data
 
-  module TaskType = {
+  module TaskTag = {
     @react.component
     let make = (~ttype: string) => <Patternfly.Label> {ttype->str} </Patternfly.Label>
   }
@@ -81,8 +81,8 @@ module TaskData = {
       <TaskPS ps=td.priority name="Priority" />
       <TaskPS ps=td.severity name="Severity" />
       <TaskScore score=td.score />
-      <Patternfly.LabelGroup categoryName="Type">
-        {td.ttype->Belt.List.map(x => <TaskType ttype={x} />)->Belt.List.toArray->React.array}
+      <Patternfly.LabelGroup categoryName="Tags">
+        {td.ttype->Belt.List.map(x => <TaskTag ttype={x} />)->Belt.List.toArray->React.array}
       </Patternfly.LabelGroup>
     </>
   }
@@ -119,25 +119,23 @@ module Approvals = {
   }
 }
 
-module Labels = {
-  module Label = {
+module Tags = {
+  module Tag = {
     @react.component
-    let make = (~label: string) => {
-      <Patternfly.Label color=#Grey> {label} </Patternfly.Label>
+    let make = (~tag: string) => {
+      <Patternfly.Label color=#Grey> {tag} </Patternfly.Label>
     }
   }
   @react.component
-  let make = (~labels: list<string>, ~withGroup: bool) => {
-    let labels' =
-      labels
-      ->Belt.List.mapWithIndex((idx, label) => <Label key={string_of_int(idx)} label />)
+  let make = (~tags: list<string>, ~withGroup: bool) => {
+    let tags' =
+      tags
+      ->Belt.List.mapWithIndex((idx, tag) => <Tag key={string_of_int(idx)} tag />)
       ->Belt.List.toArray
       ->React.array
     withGroup
-      ? <Patternfly.LabelGroup categoryName={"Labels"} numLabels={5}>
-          {labels'}
-        </Patternfly.LabelGroup>
-      : {labels'}
+      ? <Patternfly.LabelGroup categoryName={"Tags"} numLabels={5}> {tags'} </Patternfly.LabelGroup>
+      : {tags'}
   }
 }
 
@@ -281,7 +279,7 @@ module DataItem = {
               <RelativeDate title=", updated " date={change.updated_at->getDate} />
             </div>
             <Approvals withGroup={true} approvals={change.approval} />
-            <Labels withGroup={true} labels={change.labels} />
+            <Tags withGroup={true} tags={change.labels} />
             <TaskDatas change />
           </CardBody>
         </Card>
@@ -303,7 +301,7 @@ module RowItem = {
           <th role="columnheader"> {"Created"->str} </th>
           <th role="columnheader"> {"Updated"->str} </th>
           <th role="columnheader"> {"Size"->str} </th>
-          <th role="columnheader"> {"Approvals / Labels / Tasks"->str} </th>
+          <th role="columnheader"> {"Approvals / Tags / Tasks"->str} </th>
         </tr>
       </thead>
   }
@@ -331,7 +329,7 @@ module RowItem = {
       </td>
       <td role="cell">
         <div> <Approvals withGroup={true} approvals={change.approval} /> </div>
-        <div> <Labels withGroup={true} labels={change.labels} /> </div>
+        <div> <Tags withGroup={true} tags={change.labels} /> </div>
         <div> <TaskDatas change /> </div>
       </td>
     </tr>
