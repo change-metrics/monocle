@@ -2,6 +2,7 @@
 module Lentille
   ( -- * The lentille context
     LentilleM (..),
+    CrawlerEnv (..),
     LentilleStream,
     LentilleMonad,
     MonadLog (..),
@@ -29,7 +30,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
 import Monocle.Class
-import Monocle.Client (mkManager)
+import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import Say (say)
@@ -37,12 +38,19 @@ import Say (say)
 -------------------------------------------------------------------------------
 -- The Lentille context
 
-newtype LentilleM a = LentilleM {unLentille :: IdentityT IO a}
+newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
+  deriving newtype (MonadReader CrawlerEnv)
   deriving newtype (MonadUnliftIO)
 
-runLentilleM :: MonadIO m => LentilleM a -> m a
-runLentilleM = liftIO . runIdentityT . unLentille
+data CrawlerEnv = CrawlerEnv
+  { crawlerClient :: MonocleClient
+  }
+
+runLentilleM :: MonadIO m => MonocleClient -> LentilleM a -> m a
+runLentilleM client = liftIO . flip runReaderT env . unLentille
+  where
+    env = CrawlerEnv client
 
 stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
 stopLentille = lift . throwM

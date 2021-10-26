@@ -23,13 +23,22 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Prometheus (exportMetricsAsText, register)
 import Prometheus.Metric.GHC (ghcMetrics)
 
+data CrawlerInfo = CrawlerInfo
+  { cName :: Text,
+    cKey :: Text,
+    cCrawler :: Config.Crawler,
+    cIdents :: [Config.Ident]
+  }
+
 -- | Utility function to create a flat list of crawler from the whole configuration
-getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
+getCrawlers :: [Config.Index] -> [CrawlerInfo]
 getCrawlers xs = do
   Config.Index {..} <- xs
-  crawler <- crawlers
-  let key = fromMaybe (error "unknown crawler key") crawlers_api_key
-  pure (name, key, crawler, fromMaybe [] idents)
+  cCrawler <- crawlers
+  let cKey = fromMaybe (error "unknown crawler key") crawlers_api_key
+      cIdents = fromMaybe [] idents
+      cName = name
+  pure $ CrawlerInfo {..}
 
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
@@ -55,13 +64,13 @@ runMonitoringServer port = do
 
 -- | 'run' is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
-runMacroscope :: Int -> Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
-runMacroscope port verbose confPath interval client = do
+runMacroscope :: Int -> FilePath -> Word32 -> MonocleClient -> IO ()
+runMacroscope port confPath interval client = do
   runMonitoringServer port
-  runLentilleM $ runMacroscope' verbose confPath interval client
+  runMacroscope' confPath interval client
 
-runMacroscope' :: (MonadUnliftIO m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
-runMacroscope' verbose confPath interval client = do
+runMacroscope' :: FilePath -> Word32 -> MonocleClient -> IO ()
+runMacroscope' confPath interval client = runLentilleM client $ do
   mLog $ Log Macroscope LogMacroStart
   config <- Config.mReloadConfig confPath
   loop config
@@ -70,36 +79,51 @@ runMacroscope' verbose confPath interval client = do
       -- Reload config
       conf <- config
 
-      -- Crawl each index
-      Scheduler.traverseConcurrently_ Scheduler.Seq safeCrawl (getCrawlers conf)
+      -- Create all the streams
+      let crawlerInfos = getCrawlers conf
+      streams <- traverse getStream crawlerInfos
+
+      -- Crawl each stream
+      let traverseParallel = Scheduler.traverseConcurrently_ Scheduler.Seq
+      traverseParallel runCrawler $ zip crawlerInfos streams
 
       -- Pause
-      mLog $ Log Macroscope $ LogMacroPause interval_sec
-      mThreadDelay interval_usec
+      mLog $ Log Macroscope $ LogMacroPause interval
+      mThreadDelay $ fromIntegral $ interval * 1_000_000
 
       -- Loop again
       loop config
 
-    interval_usec = fromInteger . toInteger $ interval * 1_000_000
-    interval_sec :: Float
-    interval_sec = fromIntegral interval_usec / 1_000_000
+type MonadMacro m = (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
 
-    safeCrawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+runCrawler :: MonadMacro m => (CrawlerInfo, [DocumentStream m]) -> m ()
+runCrawler = safeCrawl
+  where
+    safeCrawl :: MonadMacro m => (CrawlerInfo, [DocumentStream m]) -> m ()
     safeCrawl crawler = do
       catched <- tryAny $ crawl crawler
       case catched of
         Right comp -> pure comp
         Left exc ->
-          let (index, _, Config.Crawler {..}, _) = crawler
+          let (CrawlerInfo index _ Config.Crawler {..} _, _) = crawler
            in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
 
-    crawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
-    crawl (index, key, crawler, idents) = do
+    crawl :: MonadMacro m => (CrawlerInfo, [DocumentStream m]) -> m ()
+    crawl (CrawlerInfo index key crawler _, docStreams) = do
       now <- toMonocleTime <$> mGetCurrentTime
-      when verbose (mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler))
+      mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler)
 
+      let runner = runStream now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+
+      -- TODO: handle exceptions
+      traverse_ runner docStreams
+
+getStream :: MonadMacro m => CrawlerInfo -> m [DocumentStream m]
+getStream (CrawlerInfo _ _ crawler idents) = getStream'
+  where
+    getStream' =
       -- Create document streams
-      docStreams <- case Config.provider crawler of
+      case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
           -- TODO: the client may be created once for each api key
           token <- Config.mGetSecret "GITLAB_TOKEN" gitlab_token
@@ -131,21 +155,10 @@ runMacroscope' verbose confPath interval client = do
           ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
           ghClient <- newGraphClient (fromMaybe "https://api.github.com/graphql" github_url) ghToken
           pure [ghIssuesCrawler ghClient]
-        _ -> pure []
-
-      -- Consume each stream
-      let runner' = runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
-
-      let runner ds = case ds of
-            Projects _ -> runner' ds
-            Changes _ -> runner' ds
-            TaskDatas _ -> runner' ds
-
-      -- TODO: handle exceptions
-      traverse_ runner docStreams
-      where
-        getIdentByAliasCB :: Text -> Maybe Text
-        getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
+        Config.GithubApplicationProvider _ -> error "Not (yet) implemented"
+        Config.TaskDataProvider -> pure [] -- This is a generic crawler, not managed by the macroscope
+    getIdentByAliasCB :: Text -> Maybe Text
+    getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
     glMRCrawler :: MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb

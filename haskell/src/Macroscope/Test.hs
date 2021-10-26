@@ -69,7 +69,7 @@ testCrawlingPoint = do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
@@ -103,7 +103,7 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   let stream _untilDate project
         | project == "fake_product" = Streaming.each [td]
         | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1
