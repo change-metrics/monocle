@@ -144,7 +144,7 @@ module ColumnEditor = {
           value={queryRef.contents}
           showTooltips={false}
           setValue={v => setQuery(v, ())}
-          onSave={_ => ()}
+          onSave={v => setQuery(v, ())}
           error={None} /* TODO: handle per column query errors */
         />
       </MGridItemXl6>
