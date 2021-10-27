@@ -38,20 +38,21 @@ import Say (say)
 -------------------------------------------------------------------------------
 -- The Lentille context
 
-newtype LentilleM a = LentilleM {unLentille :: ExceptT LentilleError IO a}
+newtype LentilleM a = LentilleM {unLentille :: IdentityT IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
-  deriving newtype (MonadError LentilleError)
 
-runLentilleM :: MonadIO m => LentilleM a -> m (Either LentilleError a)
-runLentilleM = liftIO . runExceptT . unLentille
+runLentilleM :: MonadIO m => LentilleM a -> m a
+runLentilleM = liftIO . runIdentityT . unLentille
 
-stopLentille :: MonadError LentilleError m => LentilleError -> LentilleStream m a
-stopLentille = throwError
+stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
+stopLentille = lift . throwM
 
 data LentilleError
   = DecodeError [Text]
   | HttpError (Text, HTTP.Request, HTTP.Response LByteString)
   deriving (Show)
+
+instance Exception LentilleError
 
 -- | Here we create the different class instance by using the LentilleM inner IO
 instance MonadTime LentilleM where
@@ -73,7 +74,7 @@ instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
   newManager = liftIO mkManager
 
-type MonadGraphQLE m = (MonadGraphQL m, MonadError LentilleError m)
+type MonadGraphQLE m = (MonadGraphQL m, MonadThrow m)
 
 instance MonadConfig LentilleM where
   mReloadConfig fp = do
@@ -90,7 +91,6 @@ type LentilleStream m a = Stream (Of a) m ()
 class
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility
-    MonadError LentilleError m, -- error enable stream to produce error
     MonadGraphQL m, -- for http worker
     MonadCrawler m, -- for monocle crawler http api
     MonadConfig m

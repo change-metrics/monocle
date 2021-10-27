@@ -128,7 +128,7 @@ process logFunc postFunc =
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadError LentilleError m, MonadLog m, MonadRetry m, MonadCrawler m) =>
+  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawler m) =>
   MonocleClient ->
   MonocleTime ->
   ApiKey ->
@@ -141,7 +141,8 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
     wLog event = mLog $ Log Macroscope event
     drainEntities offset =
-      safeDrainEntities offset `catchError` handleStreamError offset
+      safeDrainEntities offset `catch` handleStreamError offset
+
     safeDrainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss
       -- document updated when we start

@@ -46,7 +46,7 @@ import Prelude (init, last)
 -- Gerrit context
 -------------------------------------------------------------------------------
 
-class (MonadRetry m, MonadLog m, MonadError LentilleError m) => MonadGerrit m where
+class (MonadRetry m, MonadLog m) => MonadGerrit m where
   getGerritClient :: Text -> Maybe (Text, Text) -> m G.GerritClient
   getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
   queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]

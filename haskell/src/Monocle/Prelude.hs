@@ -37,9 +37,9 @@ module Monocle.Prelude
     runWriterT,
 
     -- * exceptions
-    MonadThrow,
+    MonadThrow (..),
     MonadMask,
-    MonadCatch,
+    MonadCatch (..),
     Handler (Handler),
 
     -- * tests
@@ -116,7 +116,7 @@ where
 
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
-import Control.Monad.Catch (Handler (Handler), MonadCatch, MonadMask, MonadThrow)
+import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
