@@ -27,6 +27,9 @@ module Monocle.Prelude
     Of (..),
     toVector,
 
+    -- * unliftio
+    MonadUnliftIO,
+
     -- * mmoprh
     hoist,
 
@@ -118,6 +121,7 @@ import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))

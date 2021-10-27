@@ -40,6 +40,7 @@ import Say (say)
 
 newtype LentilleM a = LentilleM {unLentille :: IdentityT IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
+  deriving newtype (MonadUnliftIO)
 
 runLentilleM :: MonadIO m => LentilleM a -> m a
 runLentilleM = liftIO . runIdentityT . unLentille
