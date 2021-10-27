@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+## [1.2.1]
+
+### Fixed
+
+- [crawler] Identities aliases are now properly assigned for GitLab and Gerrit author.
+
 ## [1.2.0] - 2021-10-26
 
 Notice that the crawler and api containers are based on a recent version of Fedora 35 that

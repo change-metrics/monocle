@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import Lentille
 import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
 import Lentille.Gerrit (MonadGerrit (..))
-import qualified Lentille.Gerrit as GerritCrawler (GerritEnv, getChangesStream, getGerritEnv, getProjectsStream)
+import qualified Lentille.Gerrit as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
@@ -92,7 +92,7 @@ runMacroscope' verbose confPath interval client = do
               pure $ Just (login, passwd)
             Nothing -> pure Nothing
           gClient <- getGerritClient gerrit_url auth
-          let gerritEnv = GerritCrawler.getGerritEnv gClient gerrit_prefix $ Just getIdentByAliasCB
+          let gerritEnv = GerritCrawler.GerritEnv gClient gerrit_prefix getIdentByAliasCB
           pure $
             [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
               <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]

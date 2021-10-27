@@ -14,7 +14,6 @@ module Lentille.Gerrit
 
     -- * The context
     MonadGerrit (..),
-    getGerritEnv,
     GerritEnv (..),
     G.getClient,
   )
@@ -31,7 +30,6 @@ import Gerrit.Data.Change
 import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
--- import Lentille.Env
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
 import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
@@ -64,18 +62,8 @@ data GerritEnv = GerritEnv
     -- | A project fullname prefix as defined in the Monocle configuration
     prefix :: Maybe Text,
     -- | The identity alias callback
-    identAliasCB :: Maybe (Text -> Maybe Text)
+    identAliasCB :: (Text -> Maybe Text)
   }
-
-getGerritEnv ::
-  -- | The Gerrit connexion client
-  G.GerritClient ->
-  -- | A project fullname prefix as defined in the Monocle configuration
-  Maybe Text ->
-  -- | The identity alias callback
-  Maybe (Text -> Maybe Text) ->
-  GerritEnv
-getGerritEnv = GerritEnv
 
 -------------------------------------------------------------------------------
 -- Monocle Gerrit crawler entry points for Macroscope
@@ -128,6 +116,8 @@ commentParser = do
 newPSParser :: P.Parser Text
 newPSParser = P.string "Uploaded patch set"
 
+-- >>> getHostFromURL "https://softwarefactory-project.io/r/22969"
+-- "softwarefactory-project.io"
 getHostFromURL :: Text -> Text
 getHostFromURL url =
   maybe
@@ -193,17 +183,18 @@ streamChange ::
   [GerritQuery] ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
 streamChange env query =
-  streamChange' env (G.serverUrl $ client env) query (prefix env) (identAliasCB env)
+  streamChange' env (identAliasCB env) (G.serverUrl $ client env) query (prefix env)
 
 streamChange' ::
   MonadGerrit m =>
   GerritEnv ->
+  -- A callback to get Ident ID from an alias
+  (Text -> Maybe Text) ->
   Text ->
   [GerritQuery] ->
   Maybe Text ->
-  Maybe (Text -> Maybe Text) ->
   S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
-streamChange' env serverUrl query prefixM identCB = go 0
+streamChange' env identCB serverUrl query prefixM = go 0
   where
     size = 100
     go offset = do
@@ -212,9 +203,11 @@ streamChange' env serverUrl query prefixM identCB = go 0
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)
     getIdent :: GerritAuthor -> C.Ident
-    getIdent gAuthor = toIdent (getHostFromURL serverUrl) identCB $ toAuthorName (aName gAuthor) (show . aAccountId $ gAuthor)
-      where
-        toAuthorName name accountID = name <> "/" <> accountID
+    getIdent gAuthor =
+      toIdent
+        (getHostFromURL serverUrl)
+        identCB
+        $ aName gAuthor <> "/" <> (show . aAccountId $ gAuthor)
     toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]
     toMEvents C.Change {..} messages =
       [toChangeCreatedEvent]

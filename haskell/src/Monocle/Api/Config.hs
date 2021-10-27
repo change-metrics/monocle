@@ -294,20 +294,20 @@ getTenantProjectsNames index = map getName $ fromMaybe [] $ projects index
 
 -- >>> :{
 --  let
---    index = emptyTenant "test" [createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
---  in getIdentByAlias index "github.com/ghost"
+--    index = emptyTenant "test" [createIdent "bob" [], createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
+--  in [getIdentByAlias index "github.com/ghost", getIdentByAlias index "github.com/alice89"]
 -- :}
--- Nothing
+-- [Nothing,Just "alice"]
 getIdentByAlias :: Index -> Text -> Maybe Text
 getIdentByAlias Index {..} alias = getIdentByAliasFromIdents alias =<< idents
 
 getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe Text
-getIdentByAliasFromIdents alias idents' = case isMatched <$> idents' of
-  [] -> Nothing
-  x : _ -> x
+getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
+  Nothing -> Nothing
+  Just Ident {..} -> Just ident
   where
-    isMatched :: Ident -> Maybe Text
-    isMatched Ident {..} = if alias `elem` aliases then Just ident else Nothing
+    isMatched :: Ident -> Bool
+    isMatched Ident {..} = alias `elem` aliases
 
 resolveEnv :: MonadIO m => Index -> m Index
 resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'

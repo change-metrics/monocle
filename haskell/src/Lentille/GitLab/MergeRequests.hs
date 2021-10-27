@@ -137,12 +137,12 @@ streamMergeRequests client getIdentIdCb untilDate project =
     isDateOlderThan :: UTCTime -> UTCTime -> Bool
     isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
 
-    transformResponse' = transformResponse (host client) (Just getIdentIdCb)
+    transformResponse' = transformResponse (host client) getIdentIdCb
 
 transformResponse ::
   Text ->
   -- A callback to get Ident ID from an alias
-  Maybe (Text -> Maybe Text) ->
+  (Text -> Maybe Text) ->
   GetProjectMergeRequests ->
   (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
 transformResponse host getIdentIdCB result =
