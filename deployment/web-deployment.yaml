@@ -32,11 +32,12 @@ spec:
             - containerPort: 8080
               name: web
           resources: {}
-          volumeMounts:
-            - mountPath: /etc/nginx/conf.d
-              name: nginx-config-volume
+# commented as the non-mounted uses the ../web/conf/nginx.conf
+#         volumeMounts:
+#           - mountPath: /etc/nginx/conf.d
+#             name: nginx-config-volume
       restartPolicy: Always
-      volumes:
-        - name: nginx-config-volume
-          emptyDir: {}
+#     volumes:
+#       - name: nginx-config-volume
+#         emptyDir: {}
 status: {}
