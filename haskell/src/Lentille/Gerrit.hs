@@ -16,6 +16,10 @@ module Lentille.Gerrit
     MonadGerrit (..),
     GerritEnv (..),
     G.getClient,
+
+    -- * Helpers
+    streamChange,
+    streamProject,
   )
 where
 
