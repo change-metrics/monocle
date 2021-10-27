@@ -31,7 +31,6 @@ import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
-import Monocle.Backend.Index (getEventType)
 import qualified Monocle.Change as C
 import Monocle.Prelude hiding (all, id)
 import qualified Monocle.Project as P
@@ -217,9 +216,9 @@ streamChange' env identCB serverUrl query prefixM = go 0
         <> toChangeCommentedEvents
         <> toChangePushedEvents
       where
-        baseEvent :: C.ChangeEventType -> C.ChangeEvent
-        baseEvent eType =
-          let changeEventId = eventTypeToText eType <> changeId
+        baseEvent :: C.ChangeEventType -> LText -> C.ChangeEvent
+        baseEvent eType eId =
+          let changeEventId = eId
               changeEventCreatedAt = changeCreatedAt
               changeEventAuthor = changeAuthor
               changeEventRepositoryFullname = changeRepositoryFullname
@@ -236,12 +235,12 @@ streamChange' env identCB serverUrl query prefixM = go 0
               changeEventLabels = changeLabels
               changeEventType = Just eType
            in C.ChangeEvent {..}
-          where
-            eventTypeToText t = into @LText . getEventType $ Just t
-        toChangeCreatedEvent = baseEvent $ C.ChangeEventTypeChangeCreated C.ChangeCreatedEvent
+        toChangeCreatedEvent =
+          baseEvent (C.ChangeEventTypeChangeCreated C.ChangeCreatedEvent) $ "CCE" <> changeId
+
         toChangeMergedEvent = case changeState of
           Enumerated (Right C.Change_ChangeStateMerged) ->
-            [ (baseEvent $ C.ChangeEventTypeChangeMerged C.ChangeMergedEvent)
+            [ (baseEvent (C.ChangeEventTypeChangeMerged C.ChangeMergedEvent) $ "CCLE" <> changeId)
                 { C.changeEventAuthor = case changeOptionalMergedBy of
                     Just (C.ChangeOptionalMergedByMergedBy ident) -> Just ident
                     Nothing -> Nothing,
@@ -253,7 +252,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
           _ -> mempty
         toChangeAbandonedEvent = case changeState of
           Enumerated (Right C.Change_ChangeStateClosed) ->
-            [ (baseEvent $ C.ChangeEventTypeChangeAbandoned C.ChangeAbandonedEvent)
+            [ (baseEvent (C.ChangeEventTypeChangeAbandoned C.ChangeAbandonedEvent) $ "CCLE" <> changeId)
                 { C.changeEventCreatedAt = case changeOptionalClosedAt of
                     Just (C.ChangeOptionalClosedAtClosedAt ts) -> Just ts
                     Nothing -> Nothing
@@ -267,21 +266,22 @@ streamChange' env identCB serverUrl query prefixM = go 0
                 Just $
                   commentBasedEvent
                     (C.ChangeEventTypeChangeReviewed . C.ChangeReviewedEvent $ V.fromList $ toLazy <$> approvals)
+                    ("approval_" <> toLazy mId)
                     mAuthor
                     mDate
               Left _ -> Nothing
         toChangeCommentedEvents =
-          toCommentBasedEvent commentParser (C.ChangeEventTypeChangeCommented C.ChangeCommentedEvent)
+          toCommentBasedEvent commentParser (C.ChangeEventTypeChangeCommented C.ChangeCommentedEvent) ""
         toChangePushedEvents =
-          toCommentBasedEvent newPSParser (C.ChangeEventTypeChangeCommitPushed C.ChangeCommitPushedEvent)
-        toCommentBasedEvent parser eType = mapMaybe toEvent messages
+          toCommentBasedEvent newPSParser (C.ChangeEventTypeChangeCommitPushed C.ChangeCommitPushedEvent) "push_"
+        toCommentBasedEvent parser eType prefix = mapMaybe toEvent messages
           where
             toEvent GerritChangeMessage {..} = case P.parseOnly parser mMessage of
               Right _ ->
-                Just $ commentBasedEvent eType mAuthor mDate
+                Just $ commentBasedEvent eType (prefix <> toLazy mId) mAuthor mDate
               Left _ -> Nothing
-        commentBasedEvent t author date =
-          (baseEvent t)
+        commentBasedEvent t eId author date =
+          (baseEvent t eId)
             { C.changeEventAuthor = getIdent <$> author,
               C.changeEventCreatedAt = Just . T.fromUTCTime . unGerritTime $ date
             }
@@ -328,8 +328,8 @@ streamChange' env identCB serverUrl query prefixM = go 0
             C.ChangeOptionalDurationDuration . fromIntToInt32 . diffTime (unGerritTime created)
               <$> (unGerritTime <$> submitted)
           changeMergeable = case mergeable of
-            Just True -> "MERGEABLE"
-            _ -> "CONFLICT"
+            Just False -> "CONFLICT"
+            _ -> "MERGEABLE"
           changeLabels = V.fromList $ toLazy <$> hashtags <> maybe mempty (: []) topic
           -- TODO(fbo) add assignees support to gerrit-haskell
           changeAssignees = V.fromList []
