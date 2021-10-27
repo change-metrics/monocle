@@ -111,7 +111,7 @@ getChangeNumber iid =
 getChangeId :: Text -> Text -> LText
 getChangeId fullName iid = toLazy . removeSpace $ TE.replace "/" "@" fullName <> "@" <> toText iid
 
-toCommit :: Text -> Maybe (Text -> Maybe Text) -> MRCommit -> Commit
+toCommit :: Text -> (Text -> Maybe Text) -> MRCommit -> Commit
 toCommit host cb MRCommit {..} =
   Commit
     (toLazy sha)
@@ -128,17 +128,15 @@ toCommit host cb MRCommit {..} =
     getAuthor Nothing = nobody
     toIdent' = toIdent host cb
 
-toIdent :: Text -> Maybe (Text -> Maybe Text) -> Text -> Ident
-toIdent host cb username = case cb of
-  Just getIdentFromAlias ->
-    createIdent alias $ toLazy (fromMaybe username (getIdentFromAlias $ toText alias))
-  Nothing -> createIdent alias $ toLazy username
+toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
+toIdent host cb username = Ident {..}
   where
-    alias = toLazy $ host <> "/" <> username
-    createIdent identUid identMuid = Ident {..}
+    uid = host <> "/" <> username
+    identUid = toLazy uid
+    identMuid = toLazy $ fromMaybe username (cb uid)
 
 ghostIdent :: Text -> Ident
-ghostIdent host = toIdent host Nothing nobody
+ghostIdent host = toIdent host (const Nothing) nobody
 
 diffTime :: UTCTime -> UTCTime -> Int
 diffTime l e =
