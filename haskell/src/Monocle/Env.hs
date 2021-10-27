@@ -1,7 +1,6 @@
 -- | The library environment and logging functions
 module Monocle.Env where
 
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)

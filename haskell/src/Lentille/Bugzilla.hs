@@ -33,7 +33,7 @@ import qualified Web.Bugzilla.RedHat as BZ
 import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
 import qualified Web.Bugzilla.RedHat.Search as BZS
 
-class (MonadLog m, MonadRetry m, MonadError LentilleError m) => MonadBZ m where
+class (MonadLog m, MonadRetry m) => MonadBZ m where
   bzRequest :: FromJSON bugs => BugzillaSession -> BZ.Request -> m bugs
   newContext :: BZ.BugzillaServer -> m BZ.BugzillaContext
 

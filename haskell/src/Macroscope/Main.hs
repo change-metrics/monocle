@@ -2,6 +2,7 @@
 module Macroscope.Main (runMacroscope) where
 
 import Control.Exception.Safe (tryAny)
+import qualified Control.Scheduler as Scheduler (Comp (..), traverseConcurrently_)
 import qualified Data.Text as T
 import Lentille
 import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
@@ -31,12 +32,9 @@ crawlerName Config.Crawler {..} = name
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
 runMacroscope :: Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
 runMacroscope verbose confPath interval client = do
-  res <- runLentilleM $ runMacroscope' verbose confPath interval client
-  case res of
-    Left e -> error $ "Macroscope failed: " <> show e
-    Right x -> pure x
+  runLentilleM $ runMacroscope' verbose confPath interval client
 
-runMacroscope' :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
+runMacroscope' :: (MonadUnliftIO m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
 runMacroscope' verbose confPath interval client = do
   mLog $ Log Macroscope LogMacroStart
   config <- Config.mReloadConfig confPath
@@ -47,7 +45,7 @@ runMacroscope' verbose confPath interval client = do
       conf <- config
 
       -- Crawl each index
-      traverse_ safeCrawl (getCrawlers conf)
+      Scheduler.traverseConcurrently_ Scheduler.Seq safeCrawl (getCrawlers conf)
 
       -- Pause
       mLog $ Log Macroscope $ LogMacroPause interval_sec

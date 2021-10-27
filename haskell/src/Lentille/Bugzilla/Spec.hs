@@ -30,7 +30,7 @@ testBugToTaskData = testCase "bugToTaskData" go
   where
     go = do
       bzSession <- bugzillaMockClient
-      Right bz <- runLentilleM $ getBugWithScore bzSession 1791815
+      bz <- runLentilleM $ getBugWithScore bzSession 1791815
       case toTaskData bz of
         (td : _tds) ->
           sequence_

@@ -114,7 +114,7 @@ streamFetch client mkArgs transformResponse = go Nothing
       (pageInfo, rateLimit, decodingErrors, xs) <-
         case respE of
           Left err -> case reqLog of
-            [(req, resp)] -> throwError $ HttpError (from err, req, resp)
+            [(req, resp)] -> lift $ throwM $ HttpError (from err, req, resp)
             [] -> error $ "No request log found, error is: " <> from err
             xs -> error $ "Multiple log found for error: " <> from err <> ", " <> show xs
           Right resp -> pure $ transformResponse resp
