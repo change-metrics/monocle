@@ -1,7 +1,6 @@
 module Lentille.Bugzilla.Spec (bzClientTests) where
 
 import qualified Data.Vector as V
-import Lentille (runLentilleM)
 import Lentille.Bugzilla
 import Lentille.BugzillaMock
 import Monocle.Search (TaskData (..))
@@ -30,7 +29,7 @@ testBugToTaskData = testCase "bugToTaskData" go
   where
     go = do
       bzSession <- bugzillaMockClient
-      bz <- runLentilleM $ getBugWithScore bzSession 1791815
+      bz <- getBugWithScore bzSession 1791815
       case toTaskData bz of
         (td : _tds) ->
           sequence_

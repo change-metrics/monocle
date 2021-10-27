@@ -30,7 +30,6 @@ import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
 import Monocle.Class
 import Monocle.Client (mkManager)
-import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import Say (say)
@@ -67,9 +66,9 @@ instance MonadRetry LentilleM where
   retry = retry'
 
 instance MonadCrawler LentilleM where
-  mCrawlerAddDoc client = liftIO . crawlerAddDoc client
-  mCrawlerCommit client = liftIO . crawlerCommit client
-  mCrawlerCommitInfo client = liftIO . crawlerCommitInfo client
+  mCrawlerAddDoc client = liftIO . mCrawlerAddDoc client
+  mCrawlerCommit client = liftIO . mCrawlerCommit client
+  mCrawlerCommitInfo client = liftIO . mCrawlerCommitInfo client
 
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
@@ -99,6 +98,8 @@ class
   LentilleMonad m
 
 instance LentilleMonad LentilleM
+
+instance LentilleMonad IO
 
 -------------------------------------------------------------------------------
 -- Log system

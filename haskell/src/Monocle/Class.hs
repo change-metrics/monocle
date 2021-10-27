@@ -7,6 +7,7 @@ import qualified Control.Retry as Retry
 import qualified Data.Text as T
 import qualified Data.Time.Clock (getCurrentTime)
 import Monocle.Client (MonocleClient)
+import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Prelude
 import Network.HTTP.Client (HttpException (..))
@@ -96,6 +97,10 @@ class (MonadRetry m, MonadLog m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m (HTTP.Manager)
 
+instance MonadGraphQL IO where
+  httpRequest = HTTP.httpLbs
+  newManager = HTTP.newManager HTTP.defaultManagerSettings
+
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
 
@@ -103,6 +108,11 @@ class Monad m => MonadCrawler m where
   mCrawlerAddDoc :: MonocleClient -> AddDocRequest -> m AddDocResponse
   mCrawlerCommit :: MonocleClient -> CommitRequest -> m CommitResponse
   mCrawlerCommitInfo :: MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
+
+instance MonadCrawler IO where
+  mCrawlerAddDoc = crawlerAddDoc
+  mCrawlerCommit = crawlerCommit
+  mCrawlerCommitInfo = crawlerCommitInfo
 
 -------------------------------------------------------------------------------
 -- A network retry system

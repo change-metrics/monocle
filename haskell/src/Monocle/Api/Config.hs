@@ -121,6 +121,10 @@ class MonadConfig m where
   mGetSecret :: Text -> Maybe Text -> m Secret
   mReloadConfig :: FilePath -> m (m [Index])
 
+instance MonadConfig IO where
+  mGetSecret = getSecret
+  mReloadConfig = reloadConfig
+
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
 pname = name

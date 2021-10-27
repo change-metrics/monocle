@@ -4,7 +4,6 @@
 
 module Main (main) where
 
-import Lentille (runLentilleM)
 import qualified Lentille.Gerrit as G
 import Monocle.Prelude
 import Monocle.Search.Query (parseDateValue)
@@ -32,7 +31,7 @@ dump limitM stream = do
 main :: IO ()
 main = do
   args <- getRecord "Lentille runner"
-  runLentilleM $ case args of
+  case args of
     GerritChange url change -> do
       env <- getGerritEnv url
       dump Nothing $ G.streamChange env [G.ChangeId $ show change]

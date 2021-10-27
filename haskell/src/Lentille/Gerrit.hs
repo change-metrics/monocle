@@ -60,12 +60,15 @@ class (MonadRetry m, MonadLog m) => MonadGerrit m where
   queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
 
 instance MonadGerrit LentilleM where
-  getGerritClient url Nothing = liftIO $ G.getClient url Nothing
-  getGerritClient url (Just (user, Secret password)) = liftIO $ G.getClient url $ Just (user, password)
-  getProjects env count query startM =
-    liftIO $ G.getProjects count query startM (client env)
-  queryChanges env count queries startM =
-    liftIO $ G.queryChanges count queries startM (client env)
+  getGerritClient url = liftIO . getGerritClient url
+  getProjects env count query = liftIO . getProjects env count query
+  queryChanges env count queries = liftIO . queryChanges env count queries
+
+instance MonadGerrit IO where
+  getGerritClient url Nothing = G.getClient url Nothing
+  getGerritClient url (Just (user, Secret password)) = G.getClient url $ Just (user, password)
+  getProjects env count query startM = G.getProjects count query startM (client env)
+  queryChanges env count queries startM = G.queryChanges count queries startM (client env)
 
 data GerritEnv = GerritEnv
   { -- | The Gerrit connexion client
