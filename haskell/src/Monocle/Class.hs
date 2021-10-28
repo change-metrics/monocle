@@ -42,6 +42,7 @@ data LogCrawlerContext = LogCrawlerContext {index :: Text, crawler :: Text}
 
 data LogEvent
   = LogMacroStart
+  | LogStartingMonitoring Int
   | LogMacroPause Float
   | LogMacroContinue LogCrawlerContext
   | LogMacroSkipCrawler LogCrawlerContext Text
@@ -61,6 +62,7 @@ data LogEvent
 instance From LogEvent Text where
   from = \case
     LogMacroStart -> "Starting to fetch streams"
+    LogStartingMonitoring port -> "Starting monitoring service on port " <> show port
     LogMacroPause usec -> "Waiting " <> show usec <> "s. brb"
     LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
     LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err

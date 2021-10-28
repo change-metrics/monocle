@@ -1,6 +1,7 @@
 -- |
 module Macroscope.Main (runMacroscope) where
 
+import Control.Concurrent (forkIO)
 import Control.Exception.Safe (tryAny)
 import qualified Control.Scheduler as Scheduler (Comp (..), traverseConcurrently_)
 import qualified Data.Text as T
@@ -16,6 +17,11 @@ import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
 import Monocle.Prelude
+import qualified Network.HTTP.Types.Status as HTTP
+import qualified Network.Wai as Wai
+import qualified Network.Wai.Handler.Warp as Warp
+import Prometheus (exportMetricsAsText, register)
+import Prometheus.Metric.GHC (ghcMetrics)
 
 -- | Utility function to create a flat list of crawler from the whole configuration
 getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
@@ -28,10 +34,30 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
+runMonitoringServer :: Int -> IO ()
+runMonitoringServer port = do
+  -- Setup GHC metrics for prometheus
+  void $ register ghcMetrics
+
+  -- Start the Wai application in the background with Warp
+  v <- newEmptyMVar
+  let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) $ Warp.defaultSettings
+  void $ forkIO $ Warp.runSettings settings $ app
+  mLog $ Log Macroscope $ LogStartingMonitoring port
+
+  -- Wait for the application to be ready
+  takeMVar v
+  where
+    app req resp = case Wai.rawPathInfo req of
+      "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "api is running\n"
+      "/metrics" -> resp . Wai.responseLBS HTTP.ok200 [] =<< exportMetricsAsText
+      _anyOtherPath -> resp $ Wai.responseLBS HTTP.notFound404 [] mempty
+
 -- | 'run' is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
-runMacroscope :: Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
-runMacroscope verbose confPath interval client = do
+runMacroscope :: Int -> Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
+runMacroscope port verbose confPath interval client = do
+  runMonitoringServer port
   runLentilleM $ runMacroscope' verbose confPath interval client
 
 runMacroscope' :: (MonadUnliftIO m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
