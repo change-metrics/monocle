@@ -121,7 +121,7 @@ library
                      , fakedata                   >= 1.0
                      , fast-logger
                      , foldl
-                     , gerrit                     >= 0.1.3
+                     , gerrit                     >= 0.1.4
                      , hashtables                 < 1.2.4.2
                      , http-client                < 0.8
                      , http-client-tls            < 0.4
@@ -242,6 +242,11 @@ executable monocle-api
 executable macroscope
   import:              common-options, cli-options
   main-is:             Macroscope.hs
+
+executable lentille
+  import:              common-options, cli-options
+  main-is:             LentilleStandalone.hs
+  build-depends:       streaming
 
 benchmark json-decode
   import:              common-options
