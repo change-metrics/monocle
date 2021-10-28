@@ -27,12 +27,6 @@ import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
--- | /health endpoint
-configHealth :: ConfigPB.HealthRequest -> AppM ConfigPB.HealthResponse
-configHealth = const $ pure response
-  where
-    response = ConfigPB.HealthResponse "api running"
-
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
 configGetWorkspaces = const response

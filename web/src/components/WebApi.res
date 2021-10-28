@@ -32,15 +32,6 @@ module Config = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->ConfigBs.decode_get_projects_response}->Js.Promise.resolve
     )
-  @module("axios")
-  external healthRaw: (string, 'a) => axios<'b> = "post"
-
-  let health = (request: ConfigTypes.health_request): axios<ConfigTypes.health_response> =>
-    request->ConfigBs.encode_health_request
-    |> healthRaw(serverUrl ++ "/api/2/health")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->ConfigBs.decode_health_response}->Js.Promise.resolve
-    )
 }
 
 module Search = {

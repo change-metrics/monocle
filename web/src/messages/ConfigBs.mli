@@ -12,12 +12,6 @@ val encode_get_projects_request : ConfigTypes.get_projects_request -> Js.Json.t 
 val encode_get_projects_response : ConfigTypes.get_projects_response -> Js.Json.t Js.Dict.t
 (** [encode_get_projects_response v dict] encodes [v] int the given JSON [dict] *)
 
-val encode_health_request : ConfigTypes.health_request -> Js.Json.t Js.Dict.t
-(** [encode_health_request v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_health_response : ConfigTypes.health_response -> Js.Json.t Js.Dict.t
-(** [encode_health_response v dict] encodes [v] int the given JSON [dict] *)
-
 val encode_workspace : ConfigTypes.workspace -> Js.Json.t Js.Dict.t
 (** [encode_workspace v dict] encodes [v] int the given JSON [dict] *)
 
@@ -38,12 +32,6 @@ val decode_get_projects_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_project
 
 val decode_get_projects_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_projects_response
 (** [decode_get_projects_response decoder] decodes a [get_projects_response] value from [decoder] *)
-
-val decode_health_request : Js.Json.t Js.Dict.t -> ConfigTypes.health_request
-(** [decode_health_request decoder] decodes a [health_request] value from [decoder] *)
-
-val decode_health_response : Js.Json.t Js.Dict.t -> ConfigTypes.health_response
-(** [decode_health_response decoder] decodes a [health_response] value from [decoder] *)
 
 val decode_workspace : Js.Json.t Js.Dict.t -> ConfigTypes.workspace
 (** [decode_workspace decoder] decodes a [workspace] value from [decoder] *)
