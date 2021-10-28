@@ -30,22 +30,6 @@ let default_get_projects_response_mutable () : get_projects_response_mutable = {
   projects = [];
 }
 
-type health_request_mutable = {
-  mutable index : string;
-}
-
-let default_health_request_mutable () : health_request_mutable = {
-  index = "";
-}
-
-type health_response_mutable = {
-  mutable status : string;
-}
-
-let default_health_response_mutable () : health_response_mutable = {
-  status = "";
-}
-
 type workspace_mutable = {
   mutable name : string;
 }
@@ -137,38 +121,6 @@ let rec decode_get_projects_response json =
     ConfigTypes.projects = v.projects;
   } : ConfigTypes.get_projects_response)
 
-let rec decode_health_request json =
-  let v = default_health_request_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "index" -> 
-      let json = Js.Dict.unsafeGet json "index" in
-      v.index <- Pbrt_bs.string json "health_request" "index"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    ConfigTypes.index = v.index;
-  } : ConfigTypes.health_request)
-
-let rec decode_health_response json =
-  let v = default_health_response_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "status" -> 
-      let json = Js.Dict.unsafeGet json "status" in
-      v.status <- Pbrt_bs.string json "health_response" "status"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    ConfigTypes.status = v.status;
-  } : ConfigTypes.health_response)
-
 let rec decode_workspace json =
   let v = default_workspace_mutable () in
   let keys = Js.Dict.keys json in
@@ -249,16 +201,6 @@ let rec encode_get_projects_response (v:ConfigTypes.get_projects_response) =
     in
     Js.Dict.set json "projects" projects';
   end;
-  json
-
-let rec encode_health_request (v:ConfigTypes.health_request) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "index" (Js.Json.string v.ConfigTypes.index);
-  json
-
-let rec encode_health_response (v:ConfigTypes.health_response) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "status" (Js.Json.string v.ConfigTypes.status);
   json
 
 let rec encode_workspace (v:ConfigTypes.workspace) = 

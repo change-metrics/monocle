@@ -92,22 +92,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetWorkspacesResponse'
-    /api/2/health:
-        post:
-            operationId: Config_Health
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_config_HealthRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_config_HealthResponse'
     /api/2/search/check:
         post:
             operationId: Search_Check
@@ -424,14 +408,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_config_Workspace'
-        monocle_config_HealthRequest:
-            properties:
-                index:
-                    type: string
-        monocle_config_HealthResponse:
-            properties:
-                status:
-                    type: string
         monocle_config_ProjectDefinition:
             properties:
                 name:

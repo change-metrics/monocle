@@ -20,14 +20,6 @@ message GetProjectsResponse {
   repeated ProjectDefinition projects = 1;
 }
 
-message HealthRequest {
-  string index = 1;
-}
-
-message HealthResponse {
-  string status = 1;
-}
-
 message Workspace {
   string name = 1;
 }

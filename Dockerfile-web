@@ -51,6 +51,6 @@ COPY conf/start.sh /bin/
 COPY conf/nginx.conf /etc/nginx/conf.d/monocle.conf
 
 # Ensure anyuid can run the nginx process
-RUN chmod -R 0777 /var /run
+RUN chmod -R 0777 /var /run /app/index.html /etc/nginx/nginx.conf
 
 CMD /bin/start.sh
