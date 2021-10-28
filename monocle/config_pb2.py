@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=b"Z\016monocle/config",
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x14monocle/config.proto\x12\x0emonocle_config"e\n\x11ProjectDefinition\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x18\n\x10repository_regex\x18\x02 \x01(\t\x12\x14\n\x0c\x62ranch_regex\x18\x03 \x01(\t\x12\x12\n\nfile_regex\x18\x04 \x01(\t"#\n\x12GetProjectsRequest\x12\r\n\x05index\x18\x01 \x01(\t"J\n\x13GetProjectsResponse\x12\x33\n\x08projects\x18\x01 \x03(\x0b\x32!.monocle_config.ProjectDefinition"\x1e\n\rHealthRequest\x12\r\n\x05index\x18\x01 \x01(\t" \n\x0eHealthResponse\x12\x0e\n\x06status\x18\x01 \x01(\t"\x19\n\tWorkspace\x12\x0c\n\x04name\x18\x01 \x01(\t"$\n\x14GetWorkspacesRequest\x12\x0c\n\x04void\x18\x01 \x01(\t"F\n\x15GetWorkspacesResponse\x12-\n\nworkspaces\x18\x01 \x03(\x0b\x32\x19.monocle_config.WorkspaceB\x10Z\x0emonocle/configb\x06proto3',
+    serialized_pb=b'\n\x14monocle/config.proto\x12\x0emonocle_config"e\n\x11ProjectDefinition\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x18\n\x10repository_regex\x18\x02 \x01(\t\x12\x14\n\x0c\x62ranch_regex\x18\x03 \x01(\t\x12\x12\n\nfile_regex\x18\x04 \x01(\t"#\n\x12GetProjectsRequest\x12\r\n\x05index\x18\x01 \x01(\t"J\n\x13GetProjectsResponse\x12\x33\n\x08projects\x18\x01 \x03(\x0b\x32!.monocle_config.ProjectDefinition"\x19\n\tWorkspace\x12\x0c\n\x04name\x18\x01 \x01(\t"$\n\x14GetWorkspacesRequest\x12\x0c\n\x04void\x18\x01 \x01(\t"F\n\x15GetWorkspacesResponse\x12-\n\nworkspaces\x18\x01 \x03(\x0b\x32\x19.monocle_config.WorkspaceB\x10Z\x0emonocle/configb\x06proto3',
 )
 
 
@@ -202,88 +202,6 @@ _GETPROJECTSRESPONSE = _descriptor.Descriptor(
 )
 
 
-_HEALTHREQUEST = _descriptor.Descriptor(
-    name="HealthRequest",
-    full_name="monocle_config.HealthRequest",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="index",
-            full_name="monocle_config.HealthRequest.index",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=256,
-    serialized_end=286,
-)
-
-
-_HEALTHRESPONSE = _descriptor.Descriptor(
-    name="HealthResponse",
-    full_name="monocle_config.HealthResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="status",
-            full_name="monocle_config.HealthResponse.status",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=288,
-    serialized_end=320,
-)
-
-
 _WORKSPACE = _descriptor.Descriptor(
     name="Workspace",
     full_name="monocle_config.Workspace",
@@ -320,8 +238,8 @@ _WORKSPACE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=322,
-    serialized_end=347,
+    serialized_start=256,
+    serialized_end=281,
 )
 
 
@@ -361,8 +279,8 @@ _GETWORKSPACESREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=349,
-    serialized_end=385,
+    serialized_start=283,
+    serialized_end=319,
 )
 
 
@@ -402,8 +320,8 @@ _GETWORKSPACESRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=387,
-    serialized_end=457,
+    serialized_start=321,
+    serialized_end=391,
 )
 
 _GETPROJECTSRESPONSE.fields_by_name["projects"].message_type = _PROJECTDEFINITION
@@ -411,8 +329,6 @@ _GETWORKSPACESRESPONSE.fields_by_name["workspaces"].message_type = _WORKSPACE
 DESCRIPTOR.message_types_by_name["ProjectDefinition"] = _PROJECTDEFINITION
 DESCRIPTOR.message_types_by_name["GetProjectsRequest"] = _GETPROJECTSREQUEST
 DESCRIPTOR.message_types_by_name["GetProjectsResponse"] = _GETPROJECTSRESPONSE
-DESCRIPTOR.message_types_by_name["HealthRequest"] = _HEALTHREQUEST
-DESCRIPTOR.message_types_by_name["HealthResponse"] = _HEALTHRESPONSE
 DESCRIPTOR.message_types_by_name["Workspace"] = _WORKSPACE
 DESCRIPTOR.message_types_by_name["GetWorkspacesRequest"] = _GETWORKSPACESREQUEST
 DESCRIPTOR.message_types_by_name["GetWorkspacesResponse"] = _GETWORKSPACESRESPONSE
@@ -450,28 +366,6 @@ GetProjectsResponse = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(GetProjectsResponse)
-
-HealthRequest = _reflection.GeneratedProtocolMessageType(
-    "HealthRequest",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _HEALTHREQUEST,
-        "__module__": "monocle.config_pb2"
-        # @@protoc_insertion_point(class_scope:monocle_config.HealthRequest)
-    },
-)
-_sym_db.RegisterMessage(HealthRequest)
-
-HealthResponse = _reflection.GeneratedProtocolMessageType(
-    "HealthResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _HEALTHRESPONSE,
-        "__module__": "monocle.config_pb2"
-        # @@protoc_insertion_point(class_scope:monocle_config.HealthResponse)
-    },
-)
-_sym_db.RegisterMessage(HealthResponse)
 
 Workspace = _reflection.GeneratedProtocolMessageType(
     "Workspace",
