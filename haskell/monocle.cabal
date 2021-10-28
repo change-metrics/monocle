@@ -243,6 +243,11 @@ executable macroscope
   import:              common-options, cli-options
   main-is:             Macroscope.hs
 
+executable lentille
+  import:              common-options, cli-options
+  main-is:             LentilleStandalone.hs
+  build-depends:       streaming
+
 benchmark json-decode
   import:              common-options
   type:                exitcode-stdio-1.0
