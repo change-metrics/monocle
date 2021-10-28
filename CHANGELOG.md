@@ -8,13 +8,14 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
-## [1.2.1]
+## [1.2.1] - 2021-10-28
 
 ### Fixed
 
 - [crawler] Identities aliases are now properly assigned for GitLab and Gerrit author.
 - [crawler] Gerrit - mergeable status not correctly computed.
 - [crawler] Gerrit - ChangeCommentedEvent and ChangeReviewedEvent overlap.
+- [crawler] Gerrit - Fix decoding issue where a Gerrit author name might be undefined.
 
 ## [1.2.0] - 2021-10-26
 

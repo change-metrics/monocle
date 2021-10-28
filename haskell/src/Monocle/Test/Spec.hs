@@ -1,6 +1,5 @@
 module Monocle.Test.Spec (main) where
 
-import qualified Data.Aeson.Encode.Pretty as Aeson
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import qualified Monocle.Api.Config as Config
@@ -361,10 +360,6 @@ monocleSearchLanguage =
         "match"
         (Right query)
         (P.parse aliases code >>= Q.queryWithMods now mempty testTenant >>= pure . field)
-    encodePretty =
-      Aeson.encodePretty'
-        ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces 0, Aeson.confCompare = compare @Text}
-        )
     headS = \case
       [x] -> x
       _ -> error "Not a list"

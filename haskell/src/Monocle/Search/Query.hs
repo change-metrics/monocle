@@ -21,6 +21,9 @@ module Monocle.Search.Query
     dropField,
     blankQuery,
     yearAgo,
+
+    -- * helper
+    parseDateValue,
   )
 where
 
