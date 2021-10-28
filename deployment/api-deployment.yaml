@@ -36,7 +36,7 @@ spec:
           image: quay.io/change-metrics/monocle_api:latest
           livenessProbe:
             httpGet:
-              path: /api/2/health
+              path: /health
               port: 9898
             failureThreshold: 6
             timeoutSeconds: 60
