@@ -8,6 +8,7 @@ import Monocle.Env
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
+import qualified Network.HTTP.Types.Status as HTTP
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Logger (withStdoutLogger)
@@ -26,6 +27,11 @@ app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
   where
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
+
+healthMiddleware :: Wai.Application -> Wai.Application
+healthMiddleware app' req resp
+  | Wai.rawPathInfo req == "/health" = resp $ Wai.responseLBS HTTP.status200 mempty "api is running\n"
+  | otherwise = app' req resp
 
 run :: Int -> Text -> FilePath -> IO ()
 run port url configFile = withLogger (run' port url configFile)
@@ -60,6 +66,7 @@ run' port url configFile glLogger = do
         . cors (const $ Just policy)
         . provideOptions monocleAPI
         . monitoringMiddleware
+        . healthMiddleware
         $ app (AppEnv {..})
   where
     policy =
