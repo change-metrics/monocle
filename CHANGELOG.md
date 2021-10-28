@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
-## [1.2.1]
+## [1.2.1] - 2021-10-28
 
 ### Fixed
 
