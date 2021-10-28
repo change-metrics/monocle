@@ -99,6 +99,8 @@ module Monocle.Prelude
     ToJSON (..),
     Value,
     encode,
+    encodePretty,
+    encodePrettyWithSpace,
     (.=),
 
     -- * bloodhound
@@ -125,6 +127,7 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
+import qualified Data.Aeson.Encode.Pretty as Aeson
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
@@ -144,6 +147,16 @@ import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import Test.Tasty.HUnit
 import Witch hiding (over)
+
+-- | Pretty json encoding with a fixed key order
+encodePretty :: ToJSON a => a -> LByteString
+encodePretty = encodePrettyWithSpace 0
+
+encodePrettyWithSpace :: ToJSON a => Int -> a -> LByteString
+encodePrettyWithSpace space =
+  Aeson.encodePretty'
+    ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces space, Aeson.confCompare = compare @Text}
+    )
 
 eitherParseUTCTime :: String -> Either String UTCTime
 eitherParseUTCTime x = maybe (Left ("Failed to parse time " <> x)) Right (readMaybe (x <> " Z"))
