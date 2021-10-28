@@ -131,11 +131,45 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
     indexName = "test-macroscope"
     crawlerName = "testy"
 
+testRunCrawlers :: Assertion
+testRunCrawlers = do
+  -- Return False then True
+  reloadRef <- newIORef False
+  let isReload = do
+        reload <- readIORef reloadRef
+        writeIORef reloadRef True
+        pure reload
+
+  logs <- newTVarIO []
+
+  let tell' :: MonadIO m => Text -> m ()
+      tell' x = atomically $ modifyTVar' logs (x :)
+
+  let streams =
+        [ ("gitlab", fromList [tell' "gl1", tell' "gl2"]),
+          ("gerrit", fromList [tell' "gr"])
+        ]
+
+      -- We expect both streams to run twice:
+      --   0ms: gitlab & gerrit starts
+      --   0ms: watcher read the reloadRef (False)
+      --  50ms: gitlab & gerrit loops
+      --  70ms: watcher read the reloadRef (True) and wait for crawlers
+      -- 100ms: streams exit the loops
+      expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
+
+  withClient "http://localhost" Nothing $ \client ->
+    runLentilleM client $
+      Macroscope.runCrawlers' 0 50_000 70_000 isReload streams
+
+  got <- reverse <$> (atomically $ readTVar logs)
+  assertEqual "Stream ran" expected got
+
 testGetStream :: Assertion
 testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
-  (streams, clients) <- runStateT (traverse Macroscope.getStream (Macroscope.getCrawlers conf)) (from ())
+  (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
   liftIO $ do
     assertEqual "Two streams created" 2 (length $ streams)
     assertEqual "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)

@@ -141,7 +141,8 @@ runStream startDate apiKey indexName crawlerName documentStream = drainEntities 
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
     wLog event = mLog $ Log Macroscope event
     drainEntities offset =
-      safeDrainEntities offset `catch` handleStreamError offset
+      unlessStopped $
+        safeDrainEntities offset `catch` handleStreamError offset
 
     safeDrainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss

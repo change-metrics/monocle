@@ -56,6 +56,9 @@ data LogEvent
   | LogMacroCommitFailed LogCrawlerContext
   | LogMacroPostDataFailed LogCrawlerContext [Text]
   | LogMacroStreamError LogCrawlerContext Text
+  | LogMacroGroupStart Text
+  | LogMacroGroupEnd Text
+  | LogMacroReloadingStart
   | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
   | LogRaw Text
@@ -80,6 +83,9 @@ instance From LogEvent Text where
     LogNetworkFailure msg -> "Network error: " <> msg
     LogGetBugs ts offset limit ->
       "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
+    LogMacroGroupStart name -> "Group start: " <> name
+    LogMacroGroupEnd name -> "Group end: " <> name
+    LogMacroReloadingStart -> "Macroscope reloading beging"
     LogRaw t -> t
     where
       prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
@@ -105,11 +111,13 @@ instance MonadGraphQL IO where
 -- The Monocle Crawler system
 
 class Monad m => MonadCrawler m where
+  mReadIORef :: IORef a -> m a
   mCrawlerAddDoc :: MonocleClient -> AddDocRequest -> m AddDocResponse
   mCrawlerCommit :: MonocleClient -> CommitRequest -> m CommitResponse
   mCrawlerCommitInfo :: MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
 
 instance MonadCrawler IO where
+  mReadIORef = readIORef
   mCrawlerAddDoc = crawlerAddDoc
   mCrawlerCommit = crawlerCommit
   mCrawlerCommitInfo = crawlerCommitInfo

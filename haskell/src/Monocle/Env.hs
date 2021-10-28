@@ -11,7 +11,6 @@ import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
-import Say
 import qualified Servant (Handler)
 import qualified System.Log.FastLogger as FastLogger
 

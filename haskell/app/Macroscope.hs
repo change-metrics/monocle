@@ -10,10 +10,8 @@ import Relude
 
 data Macroscope w = Macroscope
   { monocleUrl :: w ::: Maybe Text <?> "The monocle API",
-    config :: w ::: Maybe FilePath <?> "The monocle configuration",
-    interval :: w ::: Maybe Word32 <?> "Interval in seconds, default to 600",
     port :: w ::: Int <!> "9001" <?> "Health check port"
-    interval :: w ::: Maybe Word32 <?> "Interval in seconds, default to 600"
+    config :: w ::: Maybe FilePath <?> "The monocle configuration"
   }
   deriving stock (Generic)
 
@@ -28,5 +26,4 @@ main = do
     runMacroscope
       (port args)
       (fromMaybe config' $ config args)
-      (fromMaybe 600 (interval args))
       client

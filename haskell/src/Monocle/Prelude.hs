@@ -72,6 +72,7 @@ module Monocle.Prelude
     naturalToCount,
 
     -- * say
+    say,
     sayErr,
     monocleLog,
 
@@ -147,7 +148,7 @@ import QQLiterals (qqLiteral)
 import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
-import Say (sayErr)
+import Say (say, sayErr)
 import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S

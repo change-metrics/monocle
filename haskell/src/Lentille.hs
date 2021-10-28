@@ -8,6 +8,7 @@ module Lentille
     MonadLog (..),
     runLentilleM,
     stopLentille,
+    unlessStopped,
 
     -- * Lentille Errors
     MonadGraphQLE,
@@ -33,7 +34,6 @@ import Monocle.Class
 import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
-import Say (say)
 
 -------------------------------------------------------------------------------
 -- The Lentille context
@@ -44,11 +44,21 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (MonadUnliftIO)
 
 data CrawlerEnv = CrawlerEnv
-  { crawlerClient :: MonocleClient
+  { crawlerClient :: MonocleClient,
+    crawlerStop :: IORef Bool
   }
 
+-- | unlessStopped skips the action when the config is changed
+unlessStopped :: MonadCrawler m => MonadReader CrawlerEnv m => m () -> m ()
+unlessStopped action = do
+  stopRef <- asks crawlerStop
+  stopped <- mReadIORef stopRef
+  unless stopped $ action
+
 runLentilleM :: MonadIO m => MonocleClient -> LentilleM a -> m a
-runLentilleM client = liftIO . flip runReaderT env . unLentille
+runLentilleM client lm = do
+  r <- liftIO $ newIORef False
+  liftIO . flip runReaderT (env r) . unLentille $ lm
   where
     env = CrawlerEnv client
 
@@ -74,6 +84,7 @@ instance MonadRetry LentilleM where
   retry = retry'
 
 instance MonadCrawler LentilleM where
+  mReadIORef = liftIO . mReadIORef
   mCrawlerAddDoc client = liftIO . mCrawlerAddDoc client
   mCrawlerCommit client = liftIO . mCrawlerCommit client
   mCrawlerCommitInfo client = liftIO . mCrawlerCommitInfo client
@@ -95,19 +106,14 @@ type LentilleStream m a = Stream (Of a) m ()
 -------------------------------------------------------------------------------
 -- The BugZilla context
 
--- | A type class for the Gerrit API
-class
+-- | LentilleMonad is an alias for a bunch of constaints
+type LentilleMonad m =
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility
     MonadGraphQL m, -- for http worker
     MonadCrawler m, -- for monocle crawler http api
     MonadConfig m
-  ) =>
-  LentilleMonad m
-
-instance LentilleMonad LentilleM
-
-instance LentilleMonad IO
+  )
 
 -------------------------------------------------------------------------------
 -- Log system
