@@ -66,7 +66,7 @@ let
               url =
                 "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
               ref = "master";
-              rev = "e16c6eec5e97b302c97af3fa06e7f387fb4bb1d1";
+              rev = "76b8257f60803d2731cbc9a657285526b1bc6165";
             };
           in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
 

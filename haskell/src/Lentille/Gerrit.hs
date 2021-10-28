@@ -16,6 +16,10 @@ module Lentille.Gerrit
     MonadGerrit (..),
     GerritEnv (..),
     G.getClient,
+
+    -- * Helpers
+    streamChange,
+    streamProject,
   )
 where
 
@@ -30,7 +34,14 @@ import Gerrit.Data.Change
 import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
-import Lentille.GitLab.Adapter (diffTime, fromIntToInt32, getChangeId, ghostIdent, toIdent)
+import Lentille.GitLab.Adapter
+  ( diffTime,
+    fromIntToInt32,
+    getChangeId,
+    ghostIdent,
+    nobody,
+    toIdent,
+  )
 import qualified Monocle.Change as C
 import Monocle.Prelude hiding (all, id)
 import qualified Monocle.Project as P
@@ -202,11 +213,13 @@ streamChange' env identCB serverUrl query prefixM = go 0
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)
     getIdent :: GerritAuthor -> C.Ident
-    getIdent gAuthor =
+    getIdent GerritAuthor {..} =
       toIdent
         (getHostFromURL serverUrl)
         identCB
-        $ aName gAuthor <> "/" <> (show . aAccountId $ gAuthor)
+        $ name <> "/" <> (show aAccountId)
+      where
+        name = fromMaybe nobody aName
     toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]
     toMEvents C.Change {..} messages =
       [toChangeCreatedEvent]
