@@ -27,6 +27,8 @@ spec:
           env:
             - name: CONFIG
               value: /etc/monocle/config.yaml
+            - name: CHANGE_ME
+              value: change-me
           image: quay.io/change-metrics/monocle_api:latest
           name: crawler
           resources: {}
