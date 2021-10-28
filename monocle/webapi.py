@@ -15,8 +15,6 @@ from monocle.config_pb2 import GetWorkspacesRequest
 from monocle.config_pb2 import GetWorkspacesResponse
 from monocle.config_pb2 import GetProjectsRequest
 from monocle.config_pb2 import GetProjectsResponse
-from monocle.config_pb2 import HealthRequest
-from monocle.config_pb2 import HealthResponse
 
 
 def config_get_workspaces(
@@ -33,13 +31,6 @@ def config_get_projects(url: str, request: GetProjectsRequest) -> GetProjectsRes
     resp = requests.post(url + "/api/2/get_projects", data=body, headers=headers)
     resp.raise_for_status()
     return pbjson.Parse(resp.content, GetProjectsResponse())
-
-
-def config_health(url: str, request: HealthRequest) -> HealthResponse:
-    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
-    resp = requests.post(url + "/api/2/health", data=body, headers=headers)
-    resp.raise_for_status()
-    return pbjson.Parse(resp.content, HealthResponse())
 
 
 # Search methods:

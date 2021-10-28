@@ -31,13 +31,6 @@ service Config {
       body: "*"
     };
   }
-
-  rpc Health(monocle_config.HealthRequest) returns (monocle_config.HealthResponse) {
-    option (google.api.http) = {
-      post: "/api/2/health"
-      body: "*"
-    };
-  }
 }
 
 service Search {

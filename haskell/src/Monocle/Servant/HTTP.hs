@@ -7,8 +7,8 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetProjects, configGetWorkspaces, configHealth, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
-import Monocle.Config (GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse, HealthRequest, HealthResponse)
+import Monocle.Api.Server (configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
+import Monocle.Config (GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
 import Monocle.Search (CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
@@ -19,7 +19,6 @@ import Servant
 type MonocleAPI =
   "get_workspaces" :> ReqBody '[JSON] GetWorkspacesRequest :> Post '[PBJSON, JSON] GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] GetProjectsRequest :> Post '[PBJSON, JSON] GetProjectsResponse
-    :<|> "health" :> ReqBody '[JSON] HealthRequest :> Post '[PBJSON, JSON] HealthResponse
     :<|> "suggestions" :> ReqBody '[JSON] SuggestionsRequest :> Post '[PBJSON, JSON] SuggestionsResponse
     :<|> "search" :> "fields" :> ReqBody '[JSON] FieldsRequest :> Post '[PBJSON, JSON] FieldsResponse
     :<|> "search" :> "check" :> ReqBody '[JSON] CheckRequest :> Post '[PBJSON, JSON] CheckResponse
@@ -34,7 +33,6 @@ server :: ServerT MonocleAPI AppM
 server =
   configGetWorkspaces
     :<|> configGetProjects
-    :<|> configHealth
     :<|> searchSuggestions
     :<|> searchFields
     :<|> searchCheck
