@@ -39,7 +39,7 @@ run port url configFile = withLogger (run' port url configFile)
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
 run' port url configFile glLogger = do
   config <- Config.reloadConfig configFile
-  tenants' <- config
+  tenants' <- (snd <$> config)
 
   -- Check alias and abort if they are not usable
   case lefts $ map loadAliases tenants' of

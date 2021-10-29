@@ -25,7 +25,7 @@ data Env = Env
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IO [Config.Index],
+  { config :: IO (Bool, [Config.Index]),
     aEnv :: Env
   }
 
@@ -47,7 +47,7 @@ getConfig = do
   loadConfig <- asks config
   --  logger <- asks (glLogger . aEnv)
   --  let logReload = (logEvent logger . ReloadConfig)
-  liftIO loadConfig
+  liftIO (snd <$> loadConfig)
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request

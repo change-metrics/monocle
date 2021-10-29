@@ -27,7 +27,7 @@ mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv conf = do
   bhEnv <- mkEnv'
   let glLogger _ = pure ()
-      config = pure [conf]
+      config = pure (False, [conf])
       aEnv = Env {..}
   pure $ AppEnv {..}
 

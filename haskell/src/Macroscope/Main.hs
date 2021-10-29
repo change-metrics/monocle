@@ -80,7 +80,7 @@ runMacroscope' confPath interval client = runLentilleM client $ do
   where
     loop config clients = do
       -- Reload config
-      conf <- config
+      conf <- snd <$> config
 
       -- Flatten each crawler from all workspaces
       let crawlerInfos = getCrawlers conf
