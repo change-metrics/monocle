@@ -17,7 +17,5 @@ Api --> Datastore
 Api <--> Worker
 Proxy -> Api
 User --> Proxy
-Proxy -> LegacyApi
-LegacyApi --> Datastore
 LegacyWorker --> Datastore
 @enduml
