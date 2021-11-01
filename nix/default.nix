@@ -55,8 +55,8 @@ let
             src = pkgs.fetchFromGitHub {
               owner = "bitemyapp";
               repo = "bloodhound";
-              rev = "4775ebb759fe1b7cb5f880e4a41044b2363d98af";
-              sha256 = "00wzaj4slvdxanm0krbc6mfn96mi5c6hhd3sywd3gq5m2ff59ggn";
+              rev = "358bf61c1a9504d42d7614fd8385fbf5e03d73d6";
+              sha256 = "04sm06c834aym5glc7wqbknz2gif52wxzfc1cd6x19j6qnxv8f4s";
             };
             broken = false;
           };
