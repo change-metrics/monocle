@@ -10,7 +10,7 @@ import Relude
 
 data Macroscope w = Macroscope
   { monocleUrl :: w ::: Maybe Text <?> "The monocle API",
-    port :: w ::: Int <!> "9001" <?> "Health check port"
+    port :: w ::: Int <!> "9001" <?> "Health check port",
     config :: w ::: Maybe FilePath <?> "The monocle configuration"
   }
   deriving stock (Generic)
