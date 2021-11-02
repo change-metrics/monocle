@@ -160,7 +160,7 @@ testRunCrawlers = do
 
   withClient "http://localhost" Nothing $ \client ->
     runLentilleM client $
-      Macroscope.runCrawlers' 0 50_000 70_000 isReload streams
+      Macroscope.runCrawlers' 10_000 70_000 50_000 isReload streams
 
   got <- reverse <$> (atomically $ readTVar logs)
   assertEqual "Stream ran" expected got
@@ -194,6 +194,7 @@ monocleMacroscopeTests =
   testGroup
     "Macroscope"
     [ testCase "GetStream reuse client" testGetStream,
+      testCase "RunCrawlers" testRunCrawlers,
       testCase "TaskData stream" testTaskDataMacroscope,
       testCase "Change stream (crawling point)" testCrawlingPoint
     ]
