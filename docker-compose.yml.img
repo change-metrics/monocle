@@ -24,6 +24,10 @@ services:
     env_file: ".secrets"
     environment:
       CONFIG: /etc/monocle/config.yaml
+    healthcheck:
+      retries: 6
+      test: "curl --silent --fail localhost:9001/health || exit 1"
+      timeout: "60s"
     image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
     restart: unless-stopped
     volumes:

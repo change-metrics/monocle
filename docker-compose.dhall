@@ -53,19 +53,23 @@ let mkPort =
             ++  ":${Natural/show container-port}"
           )
 
+let mkHealthCheck =
+      \(command : Text) ->
+        Compose.Healthcheck::{
+        , test = Some (Compose.StringOrList.String command)
+        , retries = Some 6
+        , timeout = Some "60s"
+        }
+
 let createElasticService =
       \(dev : Bool) ->
         let service =
               { image = Some
                   "docker.elastic.co/elasticsearch/elasticsearch:7.10.1"
-              , healthcheck = Some Compose.Healthcheck::{
-                , test = Some
-                    ( Compose.StringOrList.String
-                        "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-                    )
-                , retries = Some 6
-                , timeout = Some "60s"
-                }
+              , healthcheck = Some
+                  ( mkHealthCheck
+                      "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+                  )
               , ulimits = Some
                   ( toMap
                       { nofile =
@@ -101,14 +105,10 @@ let createApiService =
       \(dev : Bool) ->
         let service =
               { ports = Some [ mkPort "API" 9898 9898 ]
-              , healthcheck = Some Compose.Healthcheck::{
-                , test = Some
-                    ( Compose.StringOrList.String
-                        "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
-                    )
-                , retries = Some 6
-                , timeout = Some "60s"
-                }
+              , healthcheck = Some
+                  ( mkHealthCheck
+                      "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+                  )
               , depends_on = Some [ "elastic" ]
               , command = Some
                   (Compose.StringOrList.String "monocle-api --port 9898")
@@ -143,6 +143,10 @@ let createCrawlerService =
         let service =
               { depends_on = Some [ "api" ]
               , command = Some (Compose.StringOrList.String "macroscope")
+              , healthcheck = Some
+                  ( mkHealthCheck
+                      "curl --silent --fail localhost:9001/health || exit 1"
+                  )
               , volumes = Some [ "./etc:/etc/monocle:z" ]
               , env_file = envFile
               , environment = Some
