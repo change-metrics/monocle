@@ -1,19 +1,9 @@
 workspaces:
-  - index: tenant1
-    crawlers_api_key: CHANGE_ME
+  - name: demo
     crawlers:
-      - name: github-tektoncd
-        provider:
-          github_organization: tektoncd
-          github_token: <github_token>
-        update_since: '2020-03-15'
-
-  - index: tenant2
-    crawlers_api_key: CHANGE_ME
-    crawlers:
-      - name: gerrit-opendev
+      - name: zuul-opendev
         provider:
           gerrit_url: https://review.opendev.org
           gerrit_repositories:
             - ^zuul/.*
-        update_since: '2020-03-15'
+        update_since: '2021-10-01'
