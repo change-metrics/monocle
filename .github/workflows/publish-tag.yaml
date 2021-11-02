@@ -77,11 +77,11 @@ jobs:
       - name: Check services are running
         run: test -z "$(sudo docker-compose ps -a | grep Exit)"
 
-      - name: Check api service
-        run: curl -s http://localhost:8080/api/2/get_workspaces
+      - name: Check api service through nginx
+        run: "curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'"
 
-      - name: Check web service
-        run: curl -s http://localhost:8080/
+      - name: Check web service to fetch web app
+        run: "curl -s http://localhost:8080/index.html | grep 'window.TITLE'"
 
       - name: Publish images to docker-hub
         env:
