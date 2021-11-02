@@ -7,13 +7,13 @@ services:
     environment:
       CONFIG: /etc/monocle/config.yaml
       ELASTIC_CONN: elastic:9200
+    expose:
+      - 9898
     healthcheck:
       retries: 6
       test: "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
       timeout: "60s"
     image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
-    ports:
-      - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9898}:9898"
     restart: unless-stopped
     volumes:
       - "./etc:/etc/monocle:z"

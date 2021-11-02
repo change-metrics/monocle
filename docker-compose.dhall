@@ -104,8 +104,7 @@ let createElasticService =
 let createApiService =
       \(dev : Bool) ->
         let service =
-              { ports = Some [ mkPort "API" 9898 9898 ]
-              , healthcheck = Some
+              { healthcheck = Some
                   ( mkHealthCheck
                       "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
                   )
@@ -130,10 +129,15 @@ let createApiService =
                                              ( Compose.Build.Object
                                                  (buildContext "api")
                                              )
+                                         , ports = Some
+                                           [ mkPort "API" 9898 9898 ]
                                          }
                                    )
             else  Compose.Service::(     service
                                      //  { image = Some (monocleImage "api")
+                                         , expose = Some
+                                           [ Compose.StringOrNumber.Number 9898
+                                           ]
                                          , restart = Some "unless-stopped"
                                          }
                                    )
