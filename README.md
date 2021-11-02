@@ -118,15 +118,13 @@ For a local deployment, default settings are fine.
 
 The following settings are available in the `.env` file:
 
-- `MONOCLE_PUBLIC_URL=<url>` to configure the
-  public URL to access the UI and API. This is required for the github
-  oauth redirection.
-- `MONOCLE_VERSION=<version>` to use a specific version. By default it
-  uses `latest`.
-- `MONOCLE_TITLE=<title>` to change the title of the web application. By
-  default it is `Monocle`.
-- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default
-  512m.
+- `MONOCLE_PUBLIC_URL=<url>` to configure the public URL to access the UI and API.
+  This is required for the github oauth redirection.
+- `MONOCLE_VERSION=<version>` to use a specific version. By default it uses `latest`.
+- `MONOCLE_TITLE=<title>` to change the title of the web application. By default it is `Monocle`.
+- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
+- `MONOCLE_WEB_ADDR` to change the IP address the web service will bind on. By default 0.0.0.0.
+- `MONOCLE_WEB_PORT` to change the TCP port the web service will bind on. By default 8080.
 
 ### Workspaces
 
