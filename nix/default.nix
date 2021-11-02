@@ -55,8 +55,8 @@ let
             src = pkgs.fetchFromGitHub {
               owner = "bitemyapp";
               repo = "bloodhound";
-              rev = "4775ebb759fe1b7cb5f880e4a41044b2363d98af";
-              sha256 = "00wzaj4slvdxanm0krbc6mfn96mi5c6hhd3sywd3gq5m2ff59ggn";
+              rev = "358bf61c1a9504d42d7614fd8385fbf5e03d73d6";
+              sha256 = "04sm06c834aym5glc7wqbknz2gif52wxzfc1cd6x19j6qnxv8f4s";
             };
             broken = false;
           };
@@ -66,7 +66,7 @@ let
               url =
                 "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
               ref = "master";
-              rev = "76b8257f60803d2731cbc9a657285526b1bc6165";
+              rev = "e0efd6e2b645d46eca02f91ef4397307e51c1de8";
             };
           in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
 

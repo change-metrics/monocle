@@ -95,7 +95,7 @@ common cli-options
   build-depends:       optparse-generic           < 1.5
                      , monocle
                      , relude                     > 1.0 && < 1.1
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
 
 library
   import:              common-options, codegen
@@ -107,7 +107,7 @@ library
                      , attoparsec                 < 0.15
                      , base64-bytestring          < 1.2.1.1
                      , binary                     ^>= 0.8
-                     , bloodhound                 >= 0.16.0.0
+                     , bloodhound                 >= 0.18.0.0
                      , bugzilla-redhat            >= 0.3.2
                      , byteslice                  ^>= 0.2
                      , bytestring                 >= 0.10
