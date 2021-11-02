@@ -95,7 +95,7 @@ common cli-options
   build-depends:       optparse-generic           < 1.5
                      , monocle
                      , relude                     > 1.0 && < 1.1
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
 
 library
   import:              common-options, codegen
