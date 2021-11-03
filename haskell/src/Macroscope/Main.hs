@@ -80,13 +80,10 @@ runMonitoringServer port = do
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
 runMacroscope port confPath client = do
   runMonitoringServer port
-  runMacroscope' confPath client
-
-runMacroscope' :: FilePath -> MonocleClient -> IO ()
-runMacroscope' confPath client = runLentilleM client $ do
-  mLog $ Log Macroscope LogMacroStart
-  config <- Config.mReloadConfig confPath
-  loop config (from ())
+  runLentilleM client $ do
+    mLog $ Log Macroscope LogMacroStart
+    config <- Config.mReloadConfig confPath
+    loop config (from ())
   where
     loop config clients = do
       -- Load the config
@@ -110,10 +107,10 @@ type StreamGroup m = (Text, NonEmpty (m ()))
 
 -- | Creates the action `m ()` for each `DocumentStream m` using 'runCrawler'
 mkStreamsActions :: MonadMacro m => [(ClientKey, Crawler m)] -> [StreamGroup m]
-mkStreamsActions = map (bimap mkGroupName (fmap runCrawler)) . groupByClient
+mkStreamsActions = map mkStreamGroup . groupByClient
   where
-    mkGroupName :: ClientKey -> Text
-    mkGroupName (n, _) = n
+    mkStreamGroup :: MonadMacro m => (ClientKey, NonEmpty (Crawler m)) -> StreamGroup m
+    mkStreamGroup (k, v) = (k, fmap runCrawler v)
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
 runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
@@ -196,7 +193,7 @@ data Clients = Clients
 instance From () Clients where
   from _ = Clients mempty mempty mempty
 
-type ClientKey = (Text, Int)
+type ClientKey = Text
 
 -- | GetClient m a is a convenient alias that means:
 --   this is a computation that:
@@ -211,7 +208,7 @@ getClientGerrit url auth = do
   clients <- gets clientsGerrit
   (client, newClients) <- mapMutate clients (url, auth) $ lift $ getGerritClient url auth
   modify $ \s -> s {clientsGerrit = newClients}
-  pure ((url, hashWithSalt 0 (url, auth)), client)
+  pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
 getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
@@ -219,7 +216,7 @@ getClientBZ url token = do
   clients <- gets clientsBugzilla
   (client, newClients) <- mapMutate clients (url, token) $ lift $ getBugzillaSession url $ Just $ getApikey (unSecret token)
   modify $ \s -> s {clientsBugzilla = newClients}
-  pure ((url, hashWithSalt 0 (url, token)), client)
+  pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
 getClientGraphQL :: MonadGraphQL m => Text -> Secret -> GetClient m GraphClient
@@ -227,7 +224,7 @@ getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
   modify $ \s -> s {clientsGraph = newClients}
-  pure ((url, hashWithSalt 0 (url, token)), client)
+  pure (url, client)
 
 -- | Groups the streams by client
 --
@@ -315,7 +312,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = do
           (k, ghClient) <- getClientGraphQL (fromMaybe "https://api.github.com/graphql" github_url) ghToken
           pure (k, [ghIssuesCrawler ghClient])
         Config.GithubApplicationProvider _ -> error "Not (yet) implemented"
-        Config.TaskDataProvider -> pure (("td", 0), []) -- This is a generic crawler, not managed by the macroscope
+        Config.TaskDataProvider -> pure ("td", []) -- This is a generic crawler, not managed by the macroscope
     getIdentByAliasCB :: Text -> Maybe Text
     getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
