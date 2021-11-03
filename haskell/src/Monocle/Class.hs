@@ -45,6 +45,7 @@ data LogEvent
   = LogMacroStart
   | LogStartingMonitoring Int
   | LogMacroPause Word32
+  | LogMacroStartCrawlers [Text]
   | LogMacroContinue LogCrawlerContext
   | LogMacroSkipCrawler LogCrawlerContext Text
   | LogMacroStartCrawler LogCrawlerContext
@@ -68,6 +69,7 @@ instance From LogEvent Text where
     LogMacroStart -> "Starting to fetch streams"
     LogStartingMonitoring port -> "Starting monitoring service on port " <> show port
     LogMacroPause usec -> "Waiting " <> show usec <> " sec. brb"
+    LogMacroStartCrawlers xs -> "Starting " <> show (length xs) <> " threads for " <> show xs
     LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
     LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
     LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"

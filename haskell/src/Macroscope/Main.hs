@@ -4,7 +4,7 @@
 --
 -- Note that one crawler can have multiple lentilles, for example a gerrit crawler has a
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
-module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers') where
+module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
 import Control.Concurrent (forkIO)
 import Control.Exception.Safe (tryAny)
@@ -80,13 +80,10 @@ runMonitoringServer port = do
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
 runMacroscope port confPath client = do
   runMonitoringServer port
-  runMacroscope' confPath client
-
-runMacroscope' :: FilePath -> MonocleClient -> IO ()
-runMacroscope' confPath client = runLentilleM client $ do
-  mLog $ Log Macroscope LogMacroStart
-  config <- Config.mReloadConfig confPath
-  loop config (from ())
+  runLentilleM client $ do
+    mLog $ Log Macroscope LogMacroStart
+    config <- Config.mReloadConfig confPath
+    loop config (from ())
   where
     loop config clients = do
       -- Load the config
@@ -110,10 +107,13 @@ type StreamGroup m = (Text, NonEmpty (m ()))
 
 -- | Creates the action `m ()` for each `DocumentStream m` using 'runCrawler'
 mkStreamsActions :: MonadMacro m => [(ClientKey, Crawler m)] -> [StreamGroup m]
-mkStreamsActions = map (bimap mkGroupName (fmap runCrawler)) . groupByClient
+mkStreamsActions = map mkStreamGroup . groupByClient
   where
-    mkGroupName :: ClientKey -> Text
-    mkGroupName (n, _) = n
+    mkStreamGroup :: MonadMacro m => (ClientKey, NonEmpty (Crawler m)) -> StreamGroup m
+    mkStreamGroup (k, xs) = (k <> " for " <> crawlersName xs, fmap runCrawler xs)
+
+    crawlersName :: NonEmpty (Crawler m) -> Text
+    crawlersName = T.intercalate ", " . map (crawlerName . infoCrawler . fst) . toList
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
 runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
@@ -134,11 +134,12 @@ runCrawlers' ::
   [StreamGroup m] ->
   m ()
 runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
+  mLog $ Log Macroscope $ LogMacroStartCrawlers $ map fst groups
   -- Create a 'runGroup' thread for each stream group
-  asyncs <- traverse (Async.async . runGroup) $ zip [0 ..] groups
+  let groupAsyncs = Async.mapConcurrently runGroup (zip [0 ..] groups)
 
   -- Then watch for config change
-  watch asyncs
+  Async.withAsync groupAsyncs watch
   where
     runGroup (delay, grp) = do
       -- Delay group start to avoid initial burst
@@ -152,13 +153,21 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
       sequence_ streams
       mLog $ Log Macroscope $ LogMacroGroupEnd groupName
 
+      -- Pause the group
+      unlessStopped $ pauseGroup 0
       -- Keep on running the group until the configuration changed
-      unlessStopped $ do
-        -- pause before starting again
-        mThreadDelay loopDelay
-        runGroup' (groupName, streams)
+      unlessStopped $ runGroup' (groupName, streams)
 
-    watch asyncs = do
+    pauseGroup x
+      | x > loopDelay = pure () -- The pause completed
+      | otherwise = do
+        let step = min loopDelay 1_000_000
+        -- Pause for one second
+        mThreadDelay step
+        -- Then continue
+        unlessStopped $ pauseGroup (x + step)
+
+    watch groupAsyncs = do
       -- Check if the config changed
       reloaded <- isReloaded
       if reloaded
@@ -169,13 +178,13 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
           liftIO $ writeIORef ref True
 
           -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
-          _res <- traverse Async.wait asyncs
+          _res <- Async.wait groupAsyncs
           -- TODO: log exceptions in _res
           pure ()
         else do
           -- otherwise pause before starting again
           mThreadDelay watchDelay
-          watch asyncs
+          watch groupAsyncs
 
 -- | 'Clients' is a store for all the remote clients, indexed using their url/token
 data Clients = Clients
@@ -188,7 +197,7 @@ data Clients = Clients
 instance From () Clients where
   from _ = Clients mempty mempty mempty
 
-type ClientKey = (Text, Int)
+type ClientKey = Text
 
 -- | GetClient m a is a convenient alias that means:
 --   this is a computation that:
@@ -203,7 +212,7 @@ getClientGerrit url auth = do
   clients <- gets clientsGerrit
   (client, newClients) <- mapMutate clients (url, auth) $ lift $ getGerritClient url auth
   modify $ \s -> s {clientsGerrit = newClients}
-  pure ((url, hashWithSalt 0 (url, auth)), client)
+  pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
 getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
@@ -211,7 +220,7 @@ getClientBZ url token = do
   clients <- gets clientsBugzilla
   (client, newClients) <- mapMutate clients (url, token) $ lift $ getBugzillaSession url $ Just $ getApikey (unSecret token)
   modify $ \s -> s {clientsBugzilla = newClients}
-  pure ((url, hashWithSalt 0 (url, token)), client)
+  pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
 getClientGraphQL :: MonadGraphQL m => Text -> Secret -> GetClient m GraphClient
@@ -219,7 +228,7 @@ getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
   modify $ \s -> s {clientsGraph = newClients}
-  pure ((url, hashWithSalt 0 (url, token)), client)
+  pure (url, client)
 
 -- | Groups the streams by client
 --
@@ -257,10 +266,9 @@ runCrawler = safeCrawl
 
     crawl :: MonadMacro m => Crawler m -> m ()
     crawl (InfoCrawler index key crawler _, docStreams) = do
-      now <- toMonocleTime <$> mGetCurrentTime
       mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler)
 
-      let runner = runStream now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+      let runner = runStream (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
       traverse_ runner docStreams
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)
@@ -307,7 +315,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = do
           (k, ghClient) <- getClientGraphQL (fromMaybe "https://api.github.com/graphql" github_url) ghToken
           pure (k, [ghIssuesCrawler ghClient])
         Config.GithubApplicationProvider _ -> error "Not (yet) implemented"
-        Config.TaskDataProvider -> pure (("td", 0), []) -- This is a generic crawler, not managed by the macroscope
+        Config.TaskDataProvider -> pure ("td", []) -- This is a generic crawler, not managed by the macroscope
     getIdentByAliasCB :: Text -> Maybe Text
     getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 

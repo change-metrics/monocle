@@ -53,6 +53,7 @@ module Monocle.Prelude
     -- * tests
     Assertion,
     assertEqual,
+    assertEqual',
     assertBool,
     assertFailure,
 
@@ -163,6 +164,10 @@ newtype Secret = Secret {unSecret :: Text}
 -- | Pretty json encoding with a fixed key order
 encodePretty :: ToJSON a => a -> LByteString
 encodePretty = encodePrettyWithSpace 0
+
+-- | A lifted version of assertEqual
+assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
+assertEqual' n a b = liftIO $ assertEqual n a b
 
 encodePrettyWithSpace :: ToJSON a => Int -> a -> LByteString
 encodePrettyWithSpace space =

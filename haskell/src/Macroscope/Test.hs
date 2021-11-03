@@ -66,11 +66,10 @@ testCrawlingPoint = do
       fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
   void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.indexChanges [fakeChange1, fakeChange2]
   withTestApi fakeConfig $ \client -> do
-    now <- toMonocleTime <$> getCurrentTime
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
@@ -99,12 +98,11 @@ testCrawlingPoint = do
 testTaskDataMacroscope :: Assertion
 testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
-  now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
   let stream _untilDate project
         | project == "fake_product" = Streaming.each [td]
         | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1
@@ -151,16 +149,17 @@ testRunCrawlers = do
         ]
 
       -- We expect both streams to run twice:
-      --   0ms: gitlab & gerrit starts
       --   0ms: watcher read the reloadRef (False)
-      --  50ms: gitlab & gerrit loops
+      --   0ms: gitlab starts
+      --  10ms: gerrit starts
+      --  25ms: gitlab loop
+      --  35ms: gerrit loop
       --  70ms: watcher read the reloadRef (True) and wait for crawlers
-      -- 100ms: streams exit the loops
       expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
 
   withClient "http://localhost" Nothing $ \client ->
     runLentilleM client $
-      Macroscope.runCrawlers' 10_000 70_000 50_000 isReload streams
+      Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
 
   got <- reverse <$> (atomically $ readTVar logs)
   assertEqual "Stream ran" expected got
@@ -169,10 +168,12 @@ testGetStream :: Assertion
 testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
-  (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
-  liftIO $ do
-    assertEqual "Two streams created" 2 (length $ streams)
-    assertEqual "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+  runLentilleM (error "nop") $ do
+    (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
+    assertEqual' "Two streams created" 2 (length $ streams)
+    assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+    let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
+    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions streams)
   where
     conf =
       [ (Config.defaultTenant "test-stream")
@@ -185,7 +186,7 @@ testGetStream = do
           gitlab_repositories = Nothing
           gitlab_token = Nothing
           provider = Config.GitlabProvider Config.Gitlab {..}
-          name = "crawler-for" <> gitlab_organization
+          name = "crawler-for-" <> gitlab_organization
           update_since = "2021-01-01"
        in Config.Crawler {..}
 
