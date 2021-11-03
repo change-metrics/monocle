@@ -4,7 +4,7 @@
 --
 -- Note that one crawler can have multiple lentilles, for example a gerrit crawler has a
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
-module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers') where
+module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
 import Control.Concurrent (forkIO)
 import Control.Exception.Safe (tryAny)
@@ -110,7 +110,10 @@ mkStreamsActions :: MonadMacro m => [(ClientKey, Crawler m)] -> [StreamGroup m]
 mkStreamsActions = map mkStreamGroup . groupByClient
   where
     mkStreamGroup :: MonadMacro m => (ClientKey, NonEmpty (Crawler m)) -> StreamGroup m
-    mkStreamGroup (k, v) = (k, fmap runCrawler v)
+    mkStreamGroup (k, xs) = (k <> " for " <> crawlersName xs, fmap runCrawler xs)
+
+    crawlersName :: NonEmpty (Crawler m) -> Text
+    crawlersName = T.intercalate ", " . map (crawlerName . infoCrawler . fst) . toList
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
 runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
@@ -132,6 +135,7 @@ runCrawlers' ::
   m ()
 runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
   -- Create a 'runGroup' thread for each stream group
+  mLog $ Log Macroscope $ LogMacroStartCrawlers $ map fst groups
   asyncs <- traverse (Async.async . runGroup) $ zip [0 ..] groups
 
   -- Then watch for config change

@@ -155,10 +155,6 @@ testIndexChanges = withTenant doTest
               echangeUrl = "https://fakehost/change/" <> show number
             }
 
--- | A lifted version of assertEqual
-assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
-assertEqual' n a b = liftIO $ assertEqual n a b
-
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
   where

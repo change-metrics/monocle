@@ -170,10 +170,12 @@ testGetStream :: Assertion
 testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
-  (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
-  liftIO $ do
-    assertEqual "Two streams created" 2 (length $ streams)
-    assertEqual "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+  runLentilleM (error "nop") $ do
+    (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
+    assertEqual' "Two streams created" 2 (length $ streams)
+    assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+    let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
+    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions streams)
   where
     conf =
       [ (Config.defaultTenant "test-stream")
@@ -186,7 +188,7 @@ testGetStream = do
           gitlab_repositories = Nothing
           gitlab_token = Nothing
           provider = Config.GitlabProvider Config.Gitlab {..}
-          name = "crawler-for" <> gitlab_organization
+          name = "crawler-for-" <> gitlab_organization
           update_since = "2021-01-01"
        in Config.Crawler {..}
 
