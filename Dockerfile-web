@@ -42,13 +42,11 @@ COPY src /app/src/
 RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+27+101+109|' -i bsconfig.json && npm run build
 
 ################################################################################
-FROM registry.fedoraproject.org/fedora:33
-
-RUN dnf update -y && dnf install -y nginx && dnf clean all
+FROM docker.io/library/nginx:1.21.3
 
 COPY --from=0 /app/build /app
 COPY conf/start.sh /bin/
-COPY conf/nginx.conf /etc/nginx/conf.d/monocle.conf
+COPY conf/nginx.conf /etc/nginx/nginx.conf
 
 # Ensure anyuid can run the nginx process
 RUN chmod -R 0777 /var /run /app/index.html /etc/nginx/nginx.conf
