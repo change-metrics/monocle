@@ -118,8 +118,12 @@ defaultTenant name =
     }
 
 class MonadConfig m where
-  mGetSecret :: Text -> Maybe Text -> m Text
-  mReloadConfig :: FilePath -> m (m [Index])
+  mGetSecret :: Text -> Maybe Text -> m Secret
+  mReloadConfig :: FilePath -> m (m (Bool, [Index]))
+
+instance MonadConfig IO where
+  mGetSecret = getSecret
+  mReloadConfig = reloadConfig
 
 -- | Disambiguate the project name accessor
 pname :: Project -> Text
@@ -145,7 +149,7 @@ loadConfig configPath = do
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
 
-reloadConfig :: FilePath -> IO (IO [Index])
+reloadConfig :: FilePath -> IO (IO (Bool, [Index]))
 reloadConfig fp = do
   -- Get the current config
   configTS <- getModificationTime fp
@@ -164,12 +168,12 @@ reloadConfig fp = do
           putTextLn $ toText fp <> ": reloading config"
           config <- loadConfig fp
           writeIORef tsRef (configTS, config)
-          pure config
-        else pure prevConfig
+          pure (True, config)
+        else pure (False, prevConfig)
 
-getSecret :: MonadIO m => Text -> Maybe Text -> m Text
+getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
 getSecret def keyM =
-  toText . fromMaybe (error $ "Missing environment: " <> env)
+  Secret . toText . fromMaybe (error $ "Missing environment: " <> env)
     <$> lookupEnv (toString env)
   where
     env = fromMaybe def keyM

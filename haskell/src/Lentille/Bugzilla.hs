@@ -38,8 +38,12 @@ class (MonadLog m, MonadRetry m) => MonadBZ m where
   newContext :: BZ.BugzillaServer -> m BZ.BugzillaContext
 
 instance MonadBZ LentilleM where
-  bzRequest req = liftIO . BZ.sendBzRequest req
-  newContext = liftIO . BZ.newBugzillaContext
+  bzRequest req = liftIO . bzRequest req
+  newContext = liftIO . newContext
+
+instance MonadBZ IO where
+  bzRequest = BZ.sendBzRequest
+  newContext = BZ.newBugzillaContext
 
 -------------------------------------------------------------------------------
 -- BugZilla system

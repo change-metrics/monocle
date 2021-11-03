@@ -7,6 +7,7 @@ import qualified Control.Retry as Retry
 import qualified Data.Text as T
 import qualified Data.Time.Clock (getCurrentTime)
 import Monocle.Client (MonocleClient)
+import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Prelude
 import Network.HTTP.Client (HttpException (..))
@@ -43,7 +44,7 @@ data LogCrawlerContext = LogCrawlerContext {index :: Text, crawler :: Text}
 data LogEvent
   = LogMacroStart
   | LogStartingMonitoring Int
-  | LogMacroPause Float
+  | LogMacroPause Word32
   | LogMacroContinue LogCrawlerContext
   | LogMacroSkipCrawler LogCrawlerContext Text
   | LogMacroStartCrawler LogCrawlerContext
@@ -55,6 +56,9 @@ data LogEvent
   | LogMacroCommitFailed LogCrawlerContext
   | LogMacroPostDataFailed LogCrawlerContext [Text]
   | LogMacroStreamError LogCrawlerContext Text
+  | LogMacroGroupStart Text
+  | LogMacroGroupEnd Text
+  | LogMacroReloadingStart
   | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
   | LogRaw Text
@@ -63,7 +67,7 @@ instance From LogEvent Text where
   from = \case
     LogMacroStart -> "Starting to fetch streams"
     LogStartingMonitoring port -> "Starting monitoring service on port " <> show port
-    LogMacroPause usec -> "Waiting " <> show usec <> "s. brb"
+    LogMacroPause usec -> "Waiting " <> show usec <> " sec. brb"
     LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
     LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
     LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"
@@ -79,6 +83,9 @@ instance From LogEvent Text where
     LogNetworkFailure msg -> "Network error: " <> msg
     LogGetBugs ts offset limit ->
       "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
+    LogMacroGroupStart name -> "Group start: " <> name
+    LogMacroGroupEnd name -> "Group end: " <> name
+    LogMacroReloadingStart -> "Macroscope reloading beging"
     LogRaw t -> t
     where
       prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
@@ -96,13 +103,24 @@ class (MonadRetry m, MonadLog m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m (HTTP.Manager)
 
+instance MonadGraphQL IO where
+  httpRequest = HTTP.httpLbs
+  newManager = HTTP.newManager HTTP.defaultManagerSettings
+
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
 
 class Monad m => MonadCrawler m where
+  mReadIORef :: IORef a -> m a
   mCrawlerAddDoc :: MonocleClient -> AddDocRequest -> m AddDocResponse
   mCrawlerCommit :: MonocleClient -> CommitRequest -> m CommitResponse
   mCrawlerCommitInfo :: MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
+
+instance MonadCrawler IO where
+  mReadIORef = readIORef
+  mCrawlerAddDoc = crawlerAddDoc
+  mCrawlerCommit = crawlerCommit
+  mCrawlerCommitInfo = crawlerCommitInfo
 
 -------------------------------------------------------------------------------
 -- A network retry system

@@ -18,7 +18,6 @@ import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Backend.Index (entityRequestOrganization, entityRequestProject, entityRequestTaskData)
 import Monocle.Change (Change, ChangeEvent)
-import Monocle.Client (MonocleClient)
 import Monocle.Crawler
 import Monocle.Prelude
 import Monocle.Project (Project)
@@ -126,22 +125,24 @@ process logFunc postFunc =
         AddDocResponse Nothing -> AddOk
         AddDocResponse (Just err) -> AddError (show err)
 
+type MonadCrawlerE m = (MonadCrawler m, MonadReader CrawlerEnv m)
+
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawler m) =>
-  MonocleClient ->
+  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawlerE m) =>
   MonocleTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
   DocumentStream m ->
   m ()
-runStream monocleClient startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
+runStream startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
     wLog event = mLog $ Log Macroscope event
     drainEntities offset =
-      safeDrainEntities offset `catch` handleStreamError offset
+      unlessStopped $
+        safeDrainEntities offset `catch` handleStreamError offset
 
     safeDrainEntities offset = do
       -- It is important to get the commit date before starting the process to not miss
@@ -165,7 +166,7 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
               postResult <-
                 process
                   processLogFunc
-                  (retry . mCrawlerAddDoc monocleClient . mkRequest entity)
+                  (retry . addDoc entity)
                   (getStream entity)
               case foldr collectPostFailure [] postResult of
                 [] -> do
@@ -221,11 +222,12 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
       Changes _ -> "Changes"
       TaskDatas _ -> "TaskDatas"
 
-    getOldestEntity :: MonadCrawler m => Word32 -> m (Maybe CommitInfoResponse_OldestEntity)
+    getOldestEntity :: MonadCrawlerE m => Word32 -> m (Maybe CommitInfoResponse_OldestEntity)
     getOldestEntity offset = do
+      client <- asks crawlerClient
       resp <-
         mCrawlerCommitInfo
-          monocleClient
+          client
           ( CommitInfoRequest
               indexName
               crawlerName
@@ -243,6 +245,10 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
           Changes _ -> entityRequestProject
           TaskDatas _ -> entityRequestTaskData
 
+    addDoc :: MonadCrawlerE m => OldestEntity -> [DocumentType] -> m AddDocResponse
+    addDoc entity xs = do
+      client <- asks crawlerClient
+      mCrawlerAddDoc client $ mkRequest entity xs
     -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
     -- this is used by the processBatch function.
     mkRequest :: OldestEntity -> [DocumentType] -> AddDocRequest
@@ -272,9 +278,10 @@ runStream monocleClient startDate apiKey indexName crawlerName documentStream = 
 
     -- 'commitTimestamp' post the commit date.
     commitTimestamp oe startTime = do
+      client <- asks crawlerClient
       commitResp <-
         mCrawlerCommit
-          monocleClient
+          client
           ( CommitRequest
               indexName
               crawlerName

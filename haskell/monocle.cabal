@@ -144,7 +144,6 @@ library
                      , retry                      < 0.9
                      , safe-exceptions            < 0.1.7.3
                      , say                        ^>= 0.1
-                     , scheduler                  ^>= 2.0
                      , servant                    ^>= 0.18.2
                      , servant-options            ^>= 0.1
                      , servant-server             ^>= 0.18.2
@@ -157,6 +156,7 @@ library
                      , time
                      , transformers
                      , unliftio-core
+                     , unliftio
                      , vector                     < 0.13
                      , wai                        ^>= 3.2.3
                      , wai-cors                   ^>= 0.2

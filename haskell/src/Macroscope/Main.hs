@@ -1,10 +1,17 @@
--- |
-module Macroscope.Main (runMacroscope) where
+-- | This module implements the main macroscope process to manage the lentilles.
+-- The goal is to run the lentilles in parallel using one thread per endpoint,
+-- so that a single rate limit doesn't block every lentille.
+--
+-- Note that one crawler can have multiple lentilles, for example a gerrit crawler has a
+-- project lentille to collect the repository list, and a change lentille to collect the pull requests.
+module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers') where
 
 import Control.Concurrent (forkIO)
 import Control.Exception.Safe (tryAny)
-import qualified Control.Scheduler as Scheduler (Comp (..), traverseConcurrently_)
+import qualified Data.List.NonEmpty as NonEmpty
+import qualified Data.Map as Map
 import qualified Data.Text as T
+import Gerrit (GerritClient)
 import Lentille
 import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
 import Lentille.Gerrit (MonadGerrit (..))
@@ -22,14 +29,29 @@ import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Prometheus (exportMetricsAsText, register)
 import Prometheus.Metric.GHC (ghcMetrics)
+import qualified UnliftIO.Async as Async
+
+-- | A structure to carry a single crawler information.
+data InfoCrawler = InfoCrawler
+  { infoWorkspaceName :: Text,
+    infoCrawlerKey :: Text,
+    infoCrawler :: Config.Crawler,
+    infoIdents :: [Config.Ident]
+  }
+  deriving (Eq, Show)
+
+-- | A crawler is defined from the config, using a tuple: (crawler, list of lentille)
+type Crawler m = (InfoCrawler, [DocumentStream m])
 
 -- | Utility function to create a flat list of crawler from the whole configuration
-getCrawlers :: [Config.Index] -> [(Text, Text, Config.Crawler, [Config.Ident])]
+getCrawlers :: [Config.Index] -> [InfoCrawler]
 getCrawlers xs = do
   Config.Index {..} <- xs
-  crawler <- crawlers
-  let key = fromMaybe (error "unknown crawler key") crawlers_api_key
-  pure (name, key, crawler, fromMaybe [] idents)
+  infoCrawler <- crawlers
+  let infoCrawlerKey = fromMaybe (error "unknown crawler key") crawlers_api_key
+      infoIdents = fromMaybe [] idents
+      infoWorkspaceName = name
+  pure $ InfoCrawler {..}
 
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
@@ -53,99 +75,241 @@ runMonitoringServer port = do
       "/metrics" -> resp . Wai.responseLBS HTTP.ok200 [] =<< exportMetricsAsText
       _anyOtherPath -> resp $ Wai.responseLBS HTTP.notFound404 [] mempty
 
--- | 'run' is the entrypoint of the macroscope process
--- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope True "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" 30 client
-runMacroscope :: Int -> Bool -> FilePath -> Word32 -> MonocleClient -> IO ()
-runMacroscope port verbose confPath interval client = do
+-- | 'runMacroscope is the entrypoint of the macroscope process
+-- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 9001 "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" client
+runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
+runMacroscope port confPath client = do
   runMonitoringServer port
-  runLentilleM $ runMacroscope' verbose confPath interval client
+  runMacroscope' confPath client
 
-runMacroscope' :: (MonadUnliftIO m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => Bool -> FilePath -> Word32 -> MonocleClient -> m ()
-runMacroscope' verbose confPath interval client = do
+runMacroscope' :: FilePath -> MonocleClient -> IO ()
+runMacroscope' confPath client = runLentilleM client $ do
   mLog $ Log Macroscope LogMacroStart
   config <- Config.mReloadConfig confPath
-  loop config
+  loop config (from ())
   where
-    loop config = do
-      -- Reload config
-      conf <- config
+    loop config clients = do
+      -- Load the config
+      mLog $ Log Macroscope LogMacroStart
+      conf <- snd <$> config
 
-      -- Crawl each index
-      Scheduler.traverseConcurrently_ Scheduler.Seq safeCrawl (getCrawlers conf)
+      -- Flatten each crawler from all workspaces
+      let crawlerInfos = getCrawlers conf
 
-      -- Pause
-      mLog $ Log Macroscope $ LogMacroPause interval_sec
-      mThreadDelay interval_usec
+      -- Create the streams and update the client store
+      (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients
+
+      -- Run the steams group
+      runCrawlers (fst <$> config) (mkStreamsActions streams)
 
       -- Loop again
-      loop config
+      loop config newClients
 
-    interval_usec = fromInteger . toInteger $ interval * 1_000_000
-    interval_sec :: Float
-    interval_sec = fromIntegral interval_usec / 1_000_000
+-- | A stream group is defined by a tuple: (group name, list of action)
+type StreamGroup m = (Text, NonEmpty (m ()))
 
-    safeCrawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
+-- | Creates the action `m ()` for each `DocumentStream m` using 'runCrawler'
+mkStreamsActions :: MonadMacro m => [(ClientKey, Crawler m)] -> [StreamGroup m]
+mkStreamsActions = map (bimap mkGroupName (fmap runCrawler)) . groupByClient
+  where
+    mkGroupName :: ClientKey -> Text
+    mkGroupName (n, _) = n
+
+-- | Continuously runs the stream groups in parallel until the config is reloaded
+runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
+runCrawlers = runCrawlers' 500_000 600_000_000 30_000_000
+
+-- | The runCrawler implementation with custom delay for testing purpose
+runCrawlers' ::
+  (MonadUnliftIO m, MonadMacro m) =>
+  -- | How long to wait before starting further crawler
+  Int ->
+  -- | How long to wait before restarting a crawler
+  Int ->
+  -- | How long to wait before checking if the config changed
+  Int ->
+  -- | The action to check if the config changed
+  m Bool ->
+  -- | The list of stream group
+  [StreamGroup m] ->
+  m ()
+runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
+  -- Create a 'runGroup' thread for each stream group
+  asyncs <- traverse (Async.async . runGroup) $ zip [0 ..] groups
+
+  -- Then watch for config change
+  watch asyncs
+  where
+    runGroup (delay, grp) = do
+      -- Delay group start to avoid initial burst
+      mThreadDelay $ startDelay * delay
+      runGroup' grp
+
+    runGroup' (groupName, streams) = do
+      -- Evaluate the group streams in sequence
+      mLog $ Log Macroscope $ LogMacroGroupStart groupName
+      -- TODO: catch any exception and continue
+      sequence_ streams
+      mLog $ Log Macroscope $ LogMacroGroupEnd groupName
+
+      -- Keep on running the group until the configuration changed
+      unlessStopped $ do
+        -- pause before starting again
+        mThreadDelay loopDelay
+        runGroup' (groupName, streams)
+
+    watch asyncs = do
+      -- Check if the config changed
+      reloaded <- isReloaded
+      if reloaded
+        then do
+          -- Update the crawlerStop ref to True so that stream gracefully stops
+          mLog $ Log Macroscope $ LogMacroReloadingStart
+          ref <- asks crawlerStop
+          liftIO $ writeIORef ref True
+
+          -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
+          _res <- traverse Async.wait asyncs
+          -- TODO: log exceptions in _res
+          pure ()
+        else do
+          -- otherwise pause before starting again
+          mThreadDelay watchDelay
+          watch asyncs
+
+-- | 'Clients' is a store for all the remote clients, indexed using their url/token
+data Clients = Clients
+  { clientsGerrit :: Map (Text, Maybe (Text, Secret)) GerritClient,
+    clientsBugzilla :: Map (Text, Secret) BugzillaSession,
+    clientsGraph :: Map (Text, Secret) GraphClient
+  }
+
+-- | Create a default Clients store from the unit
+instance From () Clients where
+  from _ = Clients mempty mempty mempty
+
+type ClientKey = (Text, Int)
+
+-- | GetClient m a is a convenient alias that means:
+--   this is a computation that:
+--     * needs a 'Clients' state,
+--     * produces a tuple (ClientKey, @a@)
+--     * using an inner context @m@
+type GetClient m a = StateT Clients m (ClientKey, a)
+
+-- | Boilerplate function to retrieve a client from the store
+getClientGerrit :: MonadGerrit m => Text -> Maybe (Text, Secret) -> GetClient m GerritClient
+getClientGerrit url auth = do
+  clients <- gets clientsGerrit
+  (client, newClients) <- mapMutate clients (url, auth) $ lift $ getGerritClient url auth
+  modify $ \s -> s {clientsGerrit = newClients}
+  pure ((url, hashWithSalt 0 (url, auth)), client)
+
+-- | Boilerplate function to retrieve a client from the store
+getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
+getClientBZ url token = do
+  clients <- gets clientsBugzilla
+  (client, newClients) <- mapMutate clients (url, token) $ lift $ getBugzillaSession url $ Just $ getApikey (unSecret token)
+  modify $ \s -> s {clientsBugzilla = newClients}
+  pure ((url, hashWithSalt 0 (url, token)), client)
+
+-- | Boilerplate function to retrieve a client from the store
+getClientGraphQL :: MonadGraphQL m => Text -> Secret -> GetClient m GraphClient
+getClientGraphQL url token = do
+  clients <- gets clientsGraph
+  (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
+  modify $ \s -> s {clientsGraph = newClients}
+  pure ((url, hashWithSalt 0 (url, token)), client)
+
+-- | Groups the streams by client
+--
+-- >>> map (fmap toList) $ groupByClient [(0, "gitlab"), (1, "gerrit"), (0, "gitlab 2")]
+-- [(0,["gitlab","gitlab 2"]),(1,["gerrit"])]
+groupByClient :: Ord clientKey => [(clientKey, a)] -> [(clientKey, NonEmpty a)]
+groupByClient = grp >>> adapt
+  where
+    -- group by the client key using
+    -- https://hackage.haskell.org/package/relude-1.0.0.1/docs/Relude-Extra-Group.html#v:groupBy
+    grp :: Ord clientKey => [(clientKey, a)] -> [(clientKey, NonEmpty (clientKey, a))]
+    grp = Map.toList . groupBy fst
+
+    adapt :: [(clientKey, NonEmpty (clientKey, a))] -> [(clientKey, NonEmpty a)]
+    adapt = map (fmap keepOrder)
+
+    -- groupBy produced a list that needs to be reversed to keep the order
+    keepOrder :: NonEmpty (clientKey, a) -> NonEmpty a
+    keepOrder = fmap snd . NonEmpty.reverse
+
+-- | MonadMacro is an alias for a bunch of constraints
+type MonadMacro m = (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
+
+-- | 'runCrawler' evaluate a single crawler
+runCrawler :: MonadMacro m => Crawler m -> m ()
+runCrawler = safeCrawl
+  where
     safeCrawl crawler = do
       catched <- tryAny $ crawl crawler
       case catched of
-        Right comp -> pure comp
+        Right () -> pure ()
         Left exc ->
-          let (index, _, Config.Crawler {..}, _) = crawler
+          let (InfoCrawler index _ Config.Crawler {..} _, _) = crawler
            in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
 
-    crawl :: (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m) => (Text, Text, Config.Crawler, [Config.Ident]) -> m ()
-    crawl (index, key, crawler, idents) = do
+    crawl :: MonadMacro m => Crawler m -> m ()
+    crawl (InfoCrawler index key crawler _, docStreams) = do
       now <- toMonocleTime <$> mGetCurrentTime
-      when verbose (mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler))
+      mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler)
 
-      -- Create document streams
-      docStreams <- case Config.provider crawler of
+      let runner = runStream now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+      traverse_ runner docStreams
+
+-- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)
+getCrawler ::
+  (Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
+  InfoCrawler ->
+  StateT Clients m (ClientKey, Crawler m)
+getCrawler inf@(InfoCrawler _ _ crawler idents) = do
+  (key, streams) <- getStreams
+  pure $ (key, (inf, streams))
+  where
+    getStreams =
+      case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
-          -- TODO: the client may be created once for each api key
-          token <- Config.mGetSecret "GITLAB_TOKEN" gitlab_token
-          glClient <-
-            newGraphClient
+          token <- lift $ Config.mGetSecret "GITLAB_TOKEN" gitlab_token
+          (k, glClient) <-
+            getClientGraphQL
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
               token
-          pure $
-            [glOrgCrawler glClient | isNothing gitlab_repositories]
-              -- Then we always index the projects
-              <> [glMRCrawler glClient getIdentByAliasCB]
+          let streams =
+                [glOrgCrawler glClient | isNothing gitlab_repositories]
+                  -- Then we always index the projects
+                  <> [glMRCrawler glClient getIdentByAliasCB]
+          pure $ (k, streams)
         Config.GerritProvider Config.Gerrit {..} -> do
-          auth <- case gerrit_login of
+          auth <- lift $ case gerrit_login of
             Just login -> do
               passwd <- Config.mGetSecret "GERRIT_PASSWORD" gerrit_password
               pure $ Just (login, passwd)
             Nothing -> pure Nothing
-          gClient <- getGerritClient gerrit_url auth
+          (k, gClient) <- getClientGerrit gerrit_url auth
           let gerritEnv = GerritCrawler.GerritEnv gClient gerrit_prefix getIdentByAliasCB
-          pure $
-            [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
-              <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
+              streams =
+                [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
+                  <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
+          pure $ (k, streams)
         Config.BugzillaProvider Config.Bugzilla {..} -> do
-          bzTokenT <- Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
-          bzClient <- getBugzillaSession bugzilla_url $ Just $ getApikey bzTokenT
-          pure [bzCrawler bzClient]
+          bzToken <- lift $ Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
+          (k, bzClient) <- getClientBZ bugzilla_url bzToken
+          pure $ (k, [bzCrawler bzClient])
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
-          ghToken <- Config.mGetSecret "GITHUB_TOKEN" github_token
-          ghClient <- newGraphClient (fromMaybe "https://api.github.com/graphql" github_url) ghToken
-          pure [ghIssuesCrawler ghClient]
-        _ -> pure []
-
-      -- Consume each stream
-      let runner' = runStream client now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
-
-      let runner ds = case ds of
-            Projects _ -> runner' ds
-            Changes _ -> runner' ds
-            TaskDatas _ -> runner' ds
-
-      -- TODO: handle exceptions
-      traverse_ runner docStreams
-      where
-        getIdentByAliasCB :: Text -> Maybe Text
-        getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
+          ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
+          (k, ghClient) <- getClientGraphQL (fromMaybe "https://api.github.com/graphql" github_url) ghToken
+          pure (k, [ghIssuesCrawler ghClient])
+        Config.GithubApplicationProvider _ -> error "Not (yet) implemented"
+        Config.TaskDataProvider -> pure (("td", 0), []) -- This is a generic crawler, not managed by the macroscope
+    getIdentByAliasCB :: Text -> Maybe Text
+    getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
     glMRCrawler :: MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
     glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb

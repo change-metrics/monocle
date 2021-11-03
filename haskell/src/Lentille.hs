@@ -2,11 +2,13 @@
 module Lentille
   ( -- * The lentille context
     LentilleM (..),
+    CrawlerEnv (..),
     LentilleStream,
     LentilleMonad,
     MonadLog (..),
     runLentilleM,
     stopLentille,
+    unlessStopped,
 
     -- * Lentille Errors
     MonadGraphQLE,
@@ -29,21 +31,36 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
 import Monocle.Class
-import Monocle.Client (mkManager)
-import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
+import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
-import Say (say)
 
 -------------------------------------------------------------------------------
 -- The Lentille context
 
-newtype LentilleM a = LentilleM {unLentille :: IdentityT IO a}
+newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
+  deriving newtype (MonadReader CrawlerEnv)
   deriving newtype (MonadUnliftIO)
 
-runLentilleM :: MonadIO m => LentilleM a -> m a
-runLentilleM = liftIO . runIdentityT . unLentille
+data CrawlerEnv = CrawlerEnv
+  { crawlerClient :: MonocleClient,
+    crawlerStop :: IORef Bool
+  }
+
+-- | unlessStopped skips the action when the config is changed
+unlessStopped :: MonadCrawler m => MonadReader CrawlerEnv m => m () -> m ()
+unlessStopped action = do
+  stopRef <- asks crawlerStop
+  stopped <- mReadIORef stopRef
+  unless stopped $ action
+
+runLentilleM :: MonadIO m => MonocleClient -> LentilleM a -> m a
+runLentilleM client lm = do
+  r <- liftIO $ newIORef False
+  liftIO . flip runReaderT (env r) . unLentille $ lm
+  where
+    env = CrawlerEnv client
 
 stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
 stopLentille = lift . throwM
@@ -67,9 +84,10 @@ instance MonadRetry LentilleM where
   retry = retry'
 
 instance MonadCrawler LentilleM where
-  mCrawlerAddDoc client = liftIO . crawlerAddDoc client
-  mCrawlerCommit client = liftIO . crawlerCommit client
-  mCrawlerCommitInfo client = liftIO . crawlerCommitInfo client
+  mReadIORef = liftIO . mReadIORef
+  mCrawlerAddDoc client = liftIO . mCrawlerAddDoc client
+  mCrawlerCommit client = liftIO . mCrawlerCommit client
+  mCrawlerCommitInfo client = liftIO . mCrawlerCommitInfo client
 
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
@@ -88,17 +106,14 @@ type LentilleStream m a = Stream (Of a) m ()
 -------------------------------------------------------------------------------
 -- The BugZilla context
 
--- | A type class for the Gerrit API
-class
+-- | LentilleMonad is an alias for a bunch of constaints
+type LentilleMonad m =
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility
     MonadGraphQL m, -- for http worker
     MonadCrawler m, -- for monocle crawler http api
     MonadConfig m
-  ) =>
-  LentilleMonad m
-
-instance LentilleMonad LentilleM
+  )
 
 -------------------------------------------------------------------------------
 -- Log system

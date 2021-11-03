@@ -4,6 +4,7 @@ module Macroscope.Test where
 import Control.Exception (bracket)
 import qualified Data.ByteString as B
 import Lentille (runLentilleM)
+import qualified Macroscope.Main as Macroscope
 import qualified Macroscope.Worker as Macroscope
 import Monocle.Api
 import qualified Monocle.Api.Config as Config
@@ -26,7 +27,7 @@ mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv conf = do
   bhEnv <- mkEnv'
   let glLogger _ = pure ()
-      config = pure [conf]
+      config = pure (False, [conf])
       aEnv = Env {..}
   pure $ AppEnv {..}
 
@@ -69,7 +70,7 @@ testCrawlingPoint = do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
@@ -103,7 +104,7 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   let stream _untilDate project
         | project == "fake_product" = Streaming.each [td]
         | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM $ Macroscope.runStream client now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1
@@ -130,10 +131,70 @@ testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
     indexName = "test-macroscope"
     crawlerName = "testy"
 
+testRunCrawlers :: Assertion
+testRunCrawlers = do
+  -- Return False then True
+  reloadRef <- newIORef False
+  let isReload = do
+        reload <- readIORef reloadRef
+        writeIORef reloadRef True
+        pure reload
+
+  logs <- newTVarIO []
+
+  let tell' :: MonadIO m => Text -> m ()
+      tell' x = atomically $ modifyTVar' logs (x :)
+
+  let streams =
+        [ ("gitlab", fromList [tell' "gl1", tell' "gl2"]),
+          ("gerrit", fromList [tell' "gr"])
+        ]
+
+      -- We expect both streams to run twice:
+      --   0ms: gitlab & gerrit starts
+      --   0ms: watcher read the reloadRef (False)
+      --  50ms: gitlab & gerrit loops
+      --  70ms: watcher read the reloadRef (True) and wait for crawlers
+      -- 100ms: streams exit the loops
+      expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
+
+  withClient "http://localhost" Nothing $ \client ->
+    runLentilleM client $
+      Macroscope.runCrawlers' 10_000 70_000 50_000 isReload streams
+
+  got <- reverse <$> (atomically $ readTVar logs)
+  assertEqual "Stream ran" expected got
+
+testGetStream :: Assertion
+testGetStream = do
+  setEnv "CRAWLERS_API_KEY" "secret"
+  setEnv "GITLAB_TOKEN" "42"
+  (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
+  liftIO $ do
+    assertEqual "Two streams created" 2 (length $ streams)
+    assertEqual "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
+  where
+    conf =
+      [ (Config.defaultTenant "test-stream")
+          { Config.crawlers = [gl "org1", gl "org2"],
+            Config.crawlers_api_key = Just "CRAWLERS_API_KEY"
+          }
+      ]
+    gl gitlab_organization =
+      let gitlab_url = Just "http://localhost"
+          gitlab_repositories = Nothing
+          gitlab_token = Nothing
+          provider = Config.GitlabProvider Config.Gitlab {..}
+          name = "crawler-for" <> gitlab_organization
+          update_since = "2021-01-01"
+       in Config.Crawler {..}
+
 monocleMacroscopeTests :: TestTree
 monocleMacroscopeTests =
   testGroup
     "Macroscope"
-    [ testCase "TaskData stream" testTaskDataMacroscope,
+    [ testCase "GetStream reuse client" testGetStream,
+      testCase "RunCrawlers" testRunCrawlers,
+      testCase "TaskData stream" testTaskDataMacroscope,
       testCase "Change stream (crawling point)" testCrawlingPoint
     ]
