@@ -180,6 +180,9 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
           -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
           _res <- Async.wait groupAsyncs
           -- TODO: log exceptions in _res
+
+          -- Reset the stop ref
+          liftIO $ writeIORef ref False
           pure ()
         else do
           -- otherwise pause before starting again
