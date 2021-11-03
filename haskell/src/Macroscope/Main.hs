@@ -134,12 +134,12 @@ runCrawlers' ::
   [StreamGroup m] ->
   m ()
 runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
-  -- Create a 'runGroup' thread for each stream group
   mLog $ Log Macroscope $ LogMacroStartCrawlers $ map fst groups
-  asyncs <- traverse (Async.async . runGroup) $ zip [0 ..] groups
+  -- Create a 'runGroup' thread for each stream group
+  let groupAsyncs = Async.mapConcurrently runGroup (zip [0 ..] groups)
 
   -- Then watch for config change
-  watch asyncs
+  Async.withAsync groupAsyncs watch
   where
     runGroup (delay, grp) = do
       -- Delay group start to avoid initial burst
@@ -167,7 +167,7 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
         -- Then continue
         unlessStopped $ pauseGroup (x + step)
 
-    watch asyncs = do
+    watch groupAsyncs = do
       -- Check if the config changed
       reloaded <- isReloaded
       if reloaded
@@ -178,13 +178,13 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
           liftIO $ writeIORef ref True
 
           -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
-          _res <- traverse Async.wait asyncs
+          _res <- Async.wait groupAsyncs
           -- TODO: log exceptions in _res
           pure ()
         else do
           -- otherwise pause before starting again
           mThreadDelay watchDelay
-          watch asyncs
+          watch groupAsyncs
 
 -- | 'Clients' is a store for all the remote clients, indexed using their url/token
 data Clients = Clients
