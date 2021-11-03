@@ -151,16 +151,17 @@ testRunCrawlers = do
         ]
 
       -- We expect both streams to run twice:
-      --   0ms: gitlab & gerrit starts
       --   0ms: watcher read the reloadRef (False)
-      --  50ms: gitlab & gerrit loops
+      --   0ms: gitlab starts
+      --  10ms: gerrit starts
+      --  25ms: gitlab loop
+      --  35ms: gerrit loop
       --  70ms: watcher read the reloadRef (True) and wait for crawlers
-      -- 100ms: streams exit the loops
       expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
 
   withClient "http://localhost" Nothing $ \client ->
     runLentilleM client $
-      Macroscope.runCrawlers' 10_000 70_000 50_000 isReload streams
+      Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
 
   got <- reverse <$> (atomically $ readTVar logs)
   assertEqual "Stream ran" expected got

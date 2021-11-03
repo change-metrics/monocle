@@ -152,11 +152,19 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
       sequence_ streams
       mLog $ Log Macroscope $ LogMacroGroupEnd groupName
 
+      -- Pause the group
+      unlessStopped $ pauseGroup 0
       -- Keep on running the group until the configuration changed
-      unlessStopped $ do
-        -- pause before starting again
-        mThreadDelay loopDelay
-        runGroup' (groupName, streams)
+      unlessStopped $ runGroup' (groupName, streams)
+
+    pauseGroup x
+      | x > loopDelay = pure () -- The pause completed
+      | otherwise = do
+        let step = min loopDelay 1_000_000
+        -- Pause for one second
+        mThreadDelay step
+        -- Then continue
+        unlessStopped $ pauseGroup (x + step)
 
     watch asyncs = do
       -- Check if the config changed
