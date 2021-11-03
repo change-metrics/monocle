@@ -173,7 +173,7 @@ testGetStream = do
     assertEqual' "Two streams created" 2 (length $ streams)
     assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
     let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
-    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions streams)
+    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
   where
     conf =
       [ (Config.defaultTenant "test-stream")
