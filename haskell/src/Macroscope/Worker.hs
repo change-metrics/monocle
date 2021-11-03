@@ -130,13 +130,12 @@ type MonadCrawlerE m = (MonadCrawler m, MonadReader CrawlerEnv m)
 -- | Run is the main function used by macroscope
 runStream ::
   (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawlerE m) =>
-  MonocleTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
   DocumentStream m ->
   m ()
-runStream startDate apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
+runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
     wLog event = mLog $ Log Macroscope event
@@ -159,7 +158,7 @@ runStream startDate apiKey indexName crawlerName documentStream = drainEntities 
               processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
           wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
 
-          if toMonocleTime (oldestEntityDate entity) >= startDate
+          if addUTCTime 600 (oldestEntityDate entity) >= startTime
             then wLog $ LogMacroEnded lc
             else do
               -- Run the document stream for that entity

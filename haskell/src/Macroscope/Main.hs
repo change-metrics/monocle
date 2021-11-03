@@ -266,10 +266,9 @@ runCrawler = safeCrawl
 
     crawl :: MonadMacro m => Crawler m -> m ()
     crawl (InfoCrawler index key crawler _, docStreams) = do
-      now <- toMonocleTime <$> mGetCurrentTime
       mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler)
 
-      let runner = runStream now (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+      let runner = runStream (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
       traverse_ runner docStreams
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)

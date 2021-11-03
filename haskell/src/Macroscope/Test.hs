@@ -66,11 +66,10 @@ testCrawlingPoint = do
       fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
   void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.indexChanges [fakeChange1, fakeChange2]
   withTestApi fakeConfig $ \client -> do
-    now <- toMonocleTime <$> getCurrentTime
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
@@ -99,12 +98,11 @@ testCrawlingPoint = do
 testTaskDataMacroscope :: Assertion
 testTaskDataMacroscope = withTestApi fakeConfig $ \client -> do
   -- Start the macroscope with a fake stream
-  now <- toMonocleTime <$> getCurrentTime
   td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
   let stream _untilDate project
         | project == "fake_product" = Streaming.each [td]
         | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM client $ Macroscope.runStream now apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1
