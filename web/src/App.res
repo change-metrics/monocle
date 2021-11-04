@@ -121,13 +121,8 @@ let make = () => {
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
   let headerTools =
     <PageHeaderTools>
+      <About isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
       <PageHeaderToolsGroup>
-        <PageHeaderToolsItem>
-          <About isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
-        </PageHeaderToolsItem>
-        <PageHeaderToolsItem>
-          {state.index == "" ? React.null : <Search.Top store />}
-        </PageHeaderToolsItem>
         <PageHeaderToolsItem>
           <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>
         </PageHeaderToolsItem>
@@ -141,6 +136,9 @@ let make = () => {
   let sep = {<> <br /> <br /> <br /> </>}
 
   <Page header sidebar isManagedSidebar={true}>
+    {state.index == ""
+      ? React.null
+      : <PageSection variant=#Dark> <Search.Top store /> </PageSection>}
     <PageSection isFilled={true}>
       {switch url.path {
       | list{} => <Indices.Indices store />
