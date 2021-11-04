@@ -33,7 +33,6 @@ module MonocleNav = {
         | list{} => ""
         | _ => "?" ++ query->concatSep("&")
         }
-
       <NavItem
         key={name}
         onClick={_ => navUrl->RescriptReactRouter.push}
@@ -70,6 +69,8 @@ module MonocleNav = {
   }
 }
 
+let logoPath = "/logo.png"
+
 module Footer = {
   @react.component
   let make = () =>
@@ -84,6 +85,17 @@ module Footer = {
         </a>
       </NavList>
     </Nav>
+}
+
+module About = {
+  @react.component
+  let make = (~isOpen: bool, ~onClose: unit => unit) =>
+    <AboutModal isOpen onClose brandImageAlt="Monocle" brandImageSrc=logoPath>
+      <TextList component=#Dl>
+        <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
+        <TextListItem component=#Dd> {"1.2.1"->React.string} </TextListItem>
+      </TextList>
+    </AboutModal>
 }
 
 @react.component
@@ -104,13 +116,26 @@ let make = () => {
 
   let store = Store.use(initIndex)
   let (state, _) = store
+  let (showAbout, setShowAbout) = React.useState(_ => false)
 
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
-  let topSearch = <PageHeaderTools> <Search.Top store /> </PageHeaderTools>
-  let headerTools = state.index == "" ? React.null : topSearch
+  let headerTools =
+    <PageHeaderTools>
+      <PageHeaderToolsGroup>
+        <PageHeaderToolsItem>
+          <About isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
+        </PageHeaderToolsItem>
+        <PageHeaderToolsItem>
+          {state.index == "" ? React.null : <Search.Top store />}
+        </PageHeaderToolsItem>
+        <PageHeaderToolsItem>
+          <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>
+        </PageHeaderToolsItem>
+      </PageHeaderToolsGroup>
+    </PageHeaderTools>
   let nav = <MonocleNav active store />
   let sidebar = state.index == "" ? React.null : <PageSidebar nav />
-  let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src="/logo.png" /> </span>
+  let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
   let header = <PageHeader logo headerTools />
   // This sep prevent footer from hidding page content, not pretty but this works!
   let sep = {<> <br /> <br /> <br /> </>}
