@@ -136,7 +136,7 @@ let make = () => {
   let nav = <MonocleNav active store />
   let sidebar = state.index == "" ? React.null : <PageSidebar nav />
   let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
-  let header = <PageHeader logo headerTools />
+  let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
   // This sep prevent footer from hidding page content, not pretty but this works!
   let sep = {<> <br /> <br /> <br /> </>}
 
