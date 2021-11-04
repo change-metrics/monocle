@@ -71,28 +71,18 @@ module MonocleNav = {
 
 let logoPath = "/logo.png"
 
-module Footer = {
-  @react.component
-  let make = () =>
-    <Nav variant=#Horizontal>
-      <NavList>
-        <a
-          className="nav-link"
-          href="https://changemetrics.io"
-          target="_blank"
-          rel="noopener noreferrer">
-          {"Powered by Monocle"->str}
-        </a>
-      </NavList>
-    </Nav>
-}
-
 module About = {
+  let link =
+    <a href="https://changemetrics.io" target="_blank" rel="noopener noreferrer">
+      {"Read more about Monocle"->str}
+    </a>
   @react.component
   let make = (~isOpen: bool, ~onClose: unit => unit) =>
-    <AboutModal isOpen onClose brandImageAlt="Monocle" brandImageSrc=logoPath>
+    <AboutModal isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
       <TextList component=#Dl>
+        <TextListItem component=#Dt> {link} </TextListItem>
         <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
+        // Todo(fbo) version to be fetched via the API
         <TextListItem component=#Dd> {"1.2.1"->React.string} </TextListItem>
       </TextList>
     </AboutModal>
@@ -158,7 +148,6 @@ let make = () => {
       }}
       {sep}
     </PageSection>
-    <PageSection variant=#Light className="footer"> <Footer /> </PageSection>
   </Page>
 }
 
