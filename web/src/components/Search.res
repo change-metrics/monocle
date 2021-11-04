@@ -342,16 +342,29 @@ let formatError = (query, message, position) => {
   message ++ (from == 0 ? "" : " (" ++ Js.String.sliceToEnd(~from, query) ++ ")")
 }
 
+module QSErrorModal = {
+  @react.component
+  let make = (~error: option<string>, ~showErrorModal, ~setShowErrorModal) => {
+    let onClose = _ => setShowErrorModal(_ => false)
+    <Patternfly.Modal title="Query error" variant=#Large isOpen={showErrorModal} onClose>
+      {switch error {
+      | Some(title) => <Alert tooltipPosition=#Top variant=#Danger title />
+      | None => React.null
+      }}
+    </Patternfly.Modal>
+  }
+}
+
 module Top = {
   @react.component
-  let make = (~store: Store.t, ~withLimit: bool=false) => {
+  let make = (~store: Store.t) => {
     let (state, dispatch) = store
     // The local state
     let (value, setValue') = React.useState(() => state.query)
-    let (limit, setLimit') = React.useState(() => state.limit)
     let (savedValue, setSavedValue) = React.useState(() => state.query)
     let (error, setError) = React.useState(() => None)
     let setValue = v => setValue'(_ => v)
+    let (showErrorModal, setShowErrorModal) = React.useState(_ => false)
 
     // Update changed value
     React.useEffect1(() => {
@@ -372,7 +385,10 @@ module Top = {
           setSavedValue(_ => newValue)
           newValue->Store.Store.SetQuery->dispatch
         }
-      | Error({message, position}) => setError(_ => formatError(newValue, message, position)->Some)
+      | Error({message, position}) => {
+          setError(_ => formatError(newValue, message, position)->Some)
+          setShowErrorModal(_ => true)
+        }
       }->Js.Promise.resolve
     }
     let onSave = newValue => {
@@ -382,40 +398,20 @@ module Top = {
         query: value,
       }) |> Js.Promise.then_(handleCheck(newValue)))->ignore
     }
+
     let onClick = _ => onSave(value)
 
-    let setLimit = str => {
-      let v = str == "" ? 0 : str->int_of_string
-      setLimit'(_ => v)
-      v->Store.Store.SetLimit->dispatch
-    }
-
-    <Patternfly.Layout.Bullseye>
-      <div style={ReactDOM.Style.make(~width="1024px", ~display="flex", ())}>
-        <Bar value setValue onSave store error />
-        {value != savedValue
-          ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
-          : React.null}
-        {withLimit
-          ? <div style={ReactDOM.Style.make(~width="170px", ())}>
-              <MSelect
-                placeholder={"Set limit"}
-                options={list{5, 10, 50, 100}->Belt.List.map(string_of_int)}
-                multi={false}
-                value={limit > 0 ? limit->string_of_int : ""}
-                valueChanged={setLimit}
-              />
-            </div>
-          : React.null}
-      </div>
-      {
-        // Not the prettiest thing, but this gets the job done
-        switch error {
-        | Some(title) => <> <br /> <Alert variant=#Danger title /> </>
-        | None => React.null
-        }
-      }
-    </Patternfly.Layout.Bullseye>
+    <React.Fragment>
+      <QSErrorModal error showErrorModal setShowErrorModal />
+      <MGrid>
+        <MGridItemXl10> <Bar value setValue onSave store error /> </MGridItemXl10>
+        <MGridItemXl2>
+          {value != savedValue
+            ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+            : React.null}
+        </MGridItemXl2>
+      </MGrid>
+    </React.Fragment>
   }
 }
 
