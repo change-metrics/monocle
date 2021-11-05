@@ -37,6 +37,9 @@ Dhall.TH.makeHaskellTypes
           main "Ident",
           main "SearchAlias",
           main "Crawler",
+          main "Config",
+          main "About",
+          main "Link",
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
@@ -46,8 +49,7 @@ Dhall.TH.makeHaskellTypes
             "Provider"
             "./dhall-monocle/Monocle/Crawler/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
-          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace",
-          Dhall.TH.SingleConstructor "Config" "Config" "./dhall-monocle/Monocle/Config.dhall"
+          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
   )
 
@@ -60,7 +62,7 @@ crawlersApiKeyLens =
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
-configurationSchema = $(Dhall.TH.staticDhallExpression "./dhall-monocle/Monocle/Config.dhall")
+configurationSchema = $(Dhall.TH.staticDhallExpression "./dhall-monocle/Monocle/Config/Type.dhall")
 
 deriving instance Eq Gerrit
 
