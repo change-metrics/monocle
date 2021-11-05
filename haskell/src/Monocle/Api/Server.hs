@@ -32,7 +32,9 @@ configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspa
 configGetWorkspaces = const response
   where
     response = do
-      tenants <- getConfig
+      -- config <- getConfig
+      -- tenants <- Config.getWorkspaces config
+      tenants <- getWorkspaces
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
       let workspaceName = toLazy name
@@ -41,7 +43,8 @@ configGetWorkspaces = const response
 -- | /api/2/user_group/list endpoint
 userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
 userGroupList request = do
-  tenants <- getConfig
+  -- tenants <- getConfig
+  tenants <- getWorkspaces
   let UserGroupPB.ListRequest {..} = request
 
   pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of

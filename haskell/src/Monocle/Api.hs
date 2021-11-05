@@ -39,14 +39,14 @@ run port url configFile = withLogger (run' port url configFile)
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
 run' port url configFile glLogger = do
   config <- Config.reloadConfig configFile
-  tenants' <- (snd <$> config)
+  workspaces <- Config.getWorkspaces . snd =<< config
 
   -- Check alias and abort if they are not usable
-  case lefts $ map loadAliases tenants' of
+  case lefts $ map loadAliases workspaces of
     [] -> pure ()
     xs -> do
       liftIO $ traverse_ print (concat xs)
-      error $ "Invalid aliases"
+      error "Invalid aliases"
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
@@ -56,11 +56,11 @@ run' port url configFile glLogger = do
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
-  retry $ liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) tenants'
+  retry $ liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      logEvent glLogger $ Ready (length tenants') port url
+      logEvent glLogger $ Ready (length workspaces) port url
       Warp.runSettings
         settings
         . cors (const $ Just policy)
