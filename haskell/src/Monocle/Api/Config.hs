@@ -121,7 +121,7 @@ defaultTenant name =
 
 class MonadConfig m where
   mGetSecret :: Text -> Maybe Text -> m Secret
-  mReloadConfig :: FilePath -> m (m (Bool, [Index]))
+  mReloadConfig :: FilePath -> m (m (Bool, Config))
 
 instance MonadConfig IO where
   mGetSecret = getSecret
@@ -132,7 +132,7 @@ pname :: Project -> Text
 pname = name
 
 -- | Load the YAML config file
-loadConfig :: MonadIO m => FilePath -> m [Index]
+loadConfig :: MonadIO m => FilePath -> m Config
 loadConfig configPath = do
   -- Here we use the yaml-to-dhall logic to correctly decode Union value.
   -- Otherwise the decoder may fail with:
@@ -142,16 +142,16 @@ loadConfig configPath = do
   -- dhallFromYaml is able to infer the sum type by its value and it picks
   -- the first constructor that fit.
   expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile configPath
-  case Dhall.extract Dhall.auto expr of
-    Success config -> do
-      configWorkspaces <- traverse resolveEnv (workspaces config)
-      pure $ configWorkspaces
-    Failure err -> error $ "Invalid configuration: " <> show err
+  let config = case Dhall.extract Dhall.auto expr of
+        Success config' -> config'
+        Failure err -> error $ "Invalid configuration: " <> show err
+  configWorkspaces <- traverse resolveEnv (workspaces config)
+  pure $ config {workspaces = configWorkspaces}
   where
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
 
-reloadConfig :: FilePath -> IO (IO (Bool, [Index]))
+reloadConfig :: FilePath -> IO (IO (Bool, Config))
 reloadConfig fp = do
   -- Get the current config
   configTS <- getModificationTime fp
@@ -172,6 +172,12 @@ reloadConfig fp = do
           writeIORef tsRef (configTS, config)
           pure (True, config)
         else pure (False, prevConfig)
+
+resolveEnv :: MonadIO m => Index -> m Index
+resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
+
+getWorkspaces :: Config -> [Index]
+getWorkspaces Config {..} = workspaces
 
 getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
 getSecret def keyM =
@@ -314,6 +320,3 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   where
     isMatched :: Ident -> Bool
     isMatched Ident {..} = alias `elem` aliases
-
-resolveEnv :: MonadIO m => Index -> m Index
-resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'

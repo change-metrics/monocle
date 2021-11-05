@@ -24,10 +24,11 @@ import Test.Tasty.HUnit
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
-mkAppEnv conf = do
+mkAppEnv workspace = do
   bhEnv <- mkEnv'
   let glLogger _ = pure ()
-      config = pure (False, [conf])
+      config' = Config.Config Nothing [workspace]
+      config = pure (False, config')
       aEnv = Env {..}
   pure $ AppEnv {..}
 
