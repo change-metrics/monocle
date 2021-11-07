@@ -29,9 +29,9 @@ spec:
               value: single-node
           image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
           livenessProbe:
-            exec:
-              command:
-                - curl --silent --fail localhost:9200/_cluster/health || exit 1
+            httpGet:
+              path: /_cluster/health
+              port: 9200
             failureThreshold: 6
             timeoutSeconds: 60
           name: elastic
