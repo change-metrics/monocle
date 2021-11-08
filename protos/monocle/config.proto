@@ -31,3 +31,21 @@ message GetWorkspacesRequest {
 message GetWorkspacesResponse {
   repeated Workspace workspaces = 1;
 }
+
+message About {
+  message AboutLink {
+    string name = 1;
+    string url = 2;
+    string category = 3;
+  }
+  string version = 1;
+  repeated AboutLink links = 2; 
+}
+
+message GetAboutRequest {
+  string void = 1;
+}
+
+message GetAboutResponse {
+  About about = 1;
+}

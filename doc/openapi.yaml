@@ -7,6 +7,23 @@ info:
     description: The monocle HTTP API
     version: 0.0.1
 paths:
+    /api/2/about:
+        post:
+            summary: Return instance about
+            operationId: Config_GetAbout
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_config_GetAboutRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_config_GetAboutResponse'
     /api/2/crawler/add:
         post:
             summary: Push crawler data
@@ -388,6 +405,22 @@ components:
                     type: string
                 muid:
                     type: string
+        monocle_config_About:
+            properties:
+                version:
+                    type: string
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_config_AboutLink'
+        monocle_config_GetAboutRequest:
+            properties:
+                void:
+                    type: string
+        monocle_config_GetAboutResponse:
+            properties:
+                about:
+                    $ref: '#/components/schemas/monocle_config_About'
         monocle_config_GetProjectsRequest:
             properties:
                 index:
