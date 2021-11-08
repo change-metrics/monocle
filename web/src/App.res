@@ -74,7 +74,7 @@ let logoPath = "/logo.png"
 module About = {
   let link =
     <a href="https://changemetrics.io" target="_blank" rel="noopener noreferrer">
-      {"Read more about Monocle"->str}
+      {"Learn more about Monocle"->str}
     </a>
   @react.component
   let make = (~isOpen: bool, ~onClose: unit => unit) =>
