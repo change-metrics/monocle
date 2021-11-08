@@ -31,6 +31,14 @@ service Config {
       body: "*"
     };
   }
+
+  // Return instance about
+  rpc GetAbout(monocle_config.GetAboutRequest) returns (monocle_config.GetAboutResponse) {
+    option (google.api.http) = {
+      post: "/api/2/about"
+      body: "*"
+    };
+  }
 }
 
 service Search {

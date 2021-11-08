@@ -27,6 +27,24 @@ import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
+-- | /api/2/about endpoint
+configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
+configGetAbout = const response
+  where
+    response = do
+      config <- getConfig
+      -- TODO(fbo) - fetch Monocle version from cabal file
+      let aboutVersion = "1.2.1"
+          links = maybe [] Config.links (Config.about config)
+          aboutLinks = fromList $ toLink <$> links
+      pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
+    toLink :: Config.Link -> ConfigPB.About_AboutLink
+    toLink Config.Link {..} =
+      let about_AboutLinkName = toLazy name
+          about_AboutLinkUrl = toLazy url
+          about_AboutLinkCategory = toLazy $ fromMaybe "About" category
+       in ConfigPB.About_AboutLink {..}
+
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
 configGetWorkspaces = const response

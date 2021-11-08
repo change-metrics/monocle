@@ -129,3 +129,82 @@ class GetWorkspacesResponse(google.protobuf.message.Message):
     ) -> None: ...
 
 global___GetWorkspacesResponse = GetWorkspacesResponse
+
+class About(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    class AboutLink(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+        NAME_FIELD_NUMBER: builtins.int
+        URL_FIELD_NUMBER: builtins.int
+        CATEGORY_FIELD_NUMBER: builtins.int
+        name: typing.Text = ...
+        url: typing.Text = ...
+        category: typing.Text = ...
+        def __init__(
+            self,
+            *,
+            name: typing.Text = ...,
+            url: typing.Text = ...,
+            category: typing.Text = ...,
+        ) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "category", b"category", "name", b"name", "url", b"url"
+            ],
+        ) -> None: ...
+    VERSION_FIELD_NUMBER: builtins.int
+    LINKS_FIELD_NUMBER: builtins.int
+    version: typing.Text = ...
+    @property
+    def links(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
+        global___About.AboutLink
+    ]: ...
+    def __init__(
+        self,
+        *,
+        version: typing.Text = ...,
+        links: typing.Optional[typing.Iterable[global___About.AboutLink]] = ...,
+    ) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal["links", b"links", "version", b"version"],
+    ) -> None: ...
+
+global___About = About
+
+class GetAboutRequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    VOID_FIELD_NUMBER: builtins.int
+    void: typing.Text = ...
+    def __init__(
+        self,
+        *,
+        void: typing.Text = ...,
+    ) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["void", b"void"]
+    ) -> None: ...
+
+global___GetAboutRequest = GetAboutRequest
+
+class GetAboutResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    ABOUT_FIELD_NUMBER: builtins.int
+    @property
+    def about(self) -> global___About: ...
+    def __init__(
+        self,
+        *,
+        about: typing.Optional[global___About] = ...,
+    ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["about", b"about"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["about", b"about"]
+    ) -> None: ...
+
+global___GetAboutResponse = GetAboutResponse
