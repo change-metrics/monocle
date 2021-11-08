@@ -37,6 +37,7 @@ module Store = {
   type fieldsRespR = RemoteData.t<SearchTypes.fields_response>
   type userGroupsR = RemoteData.t<UserGroupTypes.list_response>
   type projectsR = RemoteData.t<ConfigTypes.get_projects_response>
+  type aboutR = RemoteData.t<ConfigTypes.get_about_response>
 
   type t = {
     index: string,
@@ -49,6 +50,7 @@ module Store = {
     user_groups: userGroupsR,
     projects: projectsR,
     changes_pies_panel: bool,
+    about: aboutR,
   }
   type action =
     | ChangeIndex(string)
@@ -60,6 +62,7 @@ module Store = {
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
     | FetchProjects(projectsR)
+    | FetchAbout(aboutR)
     | ReverseChangesPiePanelState
   type dispatch = action => unit
 
@@ -73,6 +76,7 @@ module Store = {
     fields: None,
     user_groups: None,
     projects: None,
+    about: None,
     changes_pies_panel: false,
   }
 
@@ -102,6 +106,7 @@ module Store = {
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchUserGroups(res) => {...state, user_groups: res}
     | FetchProjects(res) => {...state, projects: res}
+    | FetchAbout(res) => {...state, about: res}
     | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
     }
 }
@@ -164,6 +169,15 @@ module Fetch = {
       state.projects,
       () => WebApi.Config.getProjects({ConfigTypes.index: state.index}),
       res => Store.FetchProjects(res),
+      dispatch,
+    )
+  }
+
+  let about = ((state: Store.t, dispatch)) => {
+    fetch(
+      state.about,
+      () => WebApi.Config.getAbout({void: ""}),
+      res => Store.FetchAbout(res),
       dispatch,
     )
   }
