@@ -33,7 +33,6 @@ module MonocleNav = {
         | list{} => ""
         | _ => "?" ++ query->concatSep("&")
         }
-
       <NavItem
         key={name}
         onClick={_ => navUrl->RescriptReactRouter.push}
@@ -70,20 +69,23 @@ module MonocleNav = {
   }
 }
 
-module Footer = {
+let logoPath = "/logo.png"
+
+module About = {
+  let link =
+    <a href="https://changemetrics.io" target="_blank" rel="noopener noreferrer">
+      {"Learn more about Monocle"->str}
+    </a>
   @react.component
-  let make = () =>
-    <Nav variant=#Horizontal>
-      <NavList>
-        <a
-          className="nav-link"
-          href="https://changemetrics.io"
-          target="_blank"
-          rel="noopener noreferrer">
-          {"Powered by Monocle"->str}
-        </a>
-      </NavList>
-    </Nav>
+  let make = (~isOpen: bool, ~onClose: unit => unit) =>
+    <AboutModal isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
+      <TextList component=#Dl>
+        <TextListItem component=#Dt> {link} </TextListItem>
+        <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
+        // Todo(fbo) version to be fetched via the API
+        <TextListItem component=#Dd> {"1.2.1"->React.string} </TextListItem>
+      </TextList>
+    </AboutModal>
 }
 
 @react.component
@@ -104,18 +106,29 @@ let make = () => {
 
   let store = Store.use(initIndex)
   let (state, _) = store
+  let (showAbout, setShowAbout) = React.useState(_ => false)
 
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
-  let topSearch = <PageHeaderTools> <Search.Top store /> </PageHeaderTools>
-  let headerTools = state.index == "" ? React.null : topSearch
+  let headerTools =
+    <PageHeaderTools>
+      <About isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
+      <PageHeaderToolsGroup>
+        <PageHeaderToolsItem>
+          <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>
+        </PageHeaderToolsItem>
+      </PageHeaderToolsGroup>
+    </PageHeaderTools>
   let nav = <MonocleNav active store />
   let sidebar = state.index == "" ? React.null : <PageSidebar nav />
-  let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src="/logo.png" /> </span>
-  let header = <PageHeader logo headerTools />
+  let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
+  let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
   // This sep prevent footer from hidding page content, not pretty but this works!
   let sep = {<> <br /> <br /> <br /> </>}
 
   <Page header sidebar isManagedSidebar={true}>
+    {state.index == ""
+      ? React.null
+      : <PageSection variant=#Dark> <Search.Top store /> </PageSection>}
     <PageSection isFilled={true}>
       {switch url.path {
       | list{} => <Indices.Indices store />
@@ -135,7 +148,6 @@ let make = () => {
       }}
       {sep}
     </PageSection>
-    <PageSection variant=#Light className="footer"> <Footer /> </PageSection>
   </Page>
 }
 
