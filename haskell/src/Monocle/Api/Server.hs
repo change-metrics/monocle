@@ -25,6 +25,7 @@ import Monocle.Search.Query (RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.UserGroup as UserGroupPB
+import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
 
 -- | /api/2/about endpoint
@@ -34,7 +35,7 @@ configGetAbout = const response
     response = do
       config <- getConfig
       -- TODO(fbo) - fetch Monocle version from cabal file
-      let aboutVersion = "1.2.1"
+      let aboutVersion = toLText version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
