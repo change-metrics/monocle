@@ -72,20 +72,56 @@ module MonocleNav = {
 let logoPath = "/logo.png"
 
 module About = {
-  let link =
-    <a href="https://changemetrics.io" target="_blank" rel="noopener noreferrer">
-      {"Learn more about Monocle"->str}
-    </a>
+  let buildLink = (url, name) =>
+    <a href={url} target="_blank" rel="noopener noreferrer"> {name->str} </a>
+  let defaultLink = buildLink("https://changemetrics.io", "Learn more about Monocle")
+  let buildLinkItems = (links: list<Web.ConfigTypes.about_about_link>) =>
+    links
+    ->Belt.List.map(l =>
+      <TextListItem key={l.url} component=#Dt> {buildLink(l.url, l.name)} </TextListItem>
+    )
+    ->Belt.List.toArray
+    ->React.array
+  let buildCategoryLinks = (links: list<Web.ConfigTypes.about_about_link>) =>
+    links
+    ->Belt.List.map(l => l.category)
+    ->Belt.List.reduce(list{}, (acc, item) =>
+      acc->Belt.List.has(item, (a, b) => a == b) ? acc : acc->Belt.List.add(item)
+    )
+    ->Belt.List.map(cat =>
+      <TextContent key={cat}>
+        <h4> {cat->str} </h4>
+        <TextList component=#Dl>
+          {links->Belt.List.keep(i => i.category == cat)->buildLinkItems}
+        </TextList>
+      </TextContent>
+    )
+    ->Belt.List.toArray
+    ->React.array
+
   @react.component
-  let make = (~isOpen: bool, ~onClose: unit => unit) =>
-    <AboutModal isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
-      <TextList component=#Dl>
-        <TextListItem component=#Dt> {link} </TextListItem>
-        <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
-        // Todo(fbo) version to be fetched via the API
-        <TextListItem component=#Dd> {"1.2.1"->React.string} </TextListItem>
-      </TextList>
-    </AboutModal>
+  let make = (~store, ~isOpen: bool, ~onClose: unit => unit) =>
+    switch Store.Fetch.about(store) {
+    | None => <Spinner />
+    | Some(Error(title)) => <Alert variant=#Danger title />
+    | Some(Ok({about})) =>
+      switch about {
+      | Some(about) =>
+        <AboutModal
+          isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
+          <TextContent>
+            <h4> {"About Monocle"->str} </h4>
+            <TextList component=#Dl>
+              <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
+              <TextListItem component=#Dd> {about.version} </TextListItem>
+              <TextListItem component=#Dt> {defaultLink} </TextListItem>
+            </TextList>
+          </TextContent>
+          {about.links->buildCategoryLinks}
+        </AboutModal>
+      | None => React.null
+      }
+    }
 }
 
 @react.component
@@ -111,7 +147,7 @@ let make = () => {
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
   let headerTools =
     <PageHeaderTools>
-      <About isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
+      <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
       <PageHeaderToolsGroup>
         <PageHeaderToolsItem>
           <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>

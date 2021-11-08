@@ -32,6 +32,15 @@ module Config = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->ConfigBs.decode_get_projects_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external getAboutRaw: (string, 'a) => axios<'b> = "post"
+
+  let getAbout = (request: ConfigTypes.get_about_request): axios<ConfigTypes.get_about_response> =>
+    request->ConfigBs.encode_get_about_request
+    |> getAboutRaw(serverUrl ++ "/api/2/about")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->ConfigBs.decode_get_about_response}->Js.Promise.resolve
+    )
 }
 
 module Search = {
