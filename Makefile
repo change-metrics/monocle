@@ -7,9 +7,9 @@ CRAWLER = monocle/change.proto monocle/crawler.proto
 BACKEND_ONLY = monocle/project.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
-codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell codegen-doc
+codegen: codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell doc/architecture.plantuml
 
-codegen-doc:
+doc/architecture.png: doc/architecture.plantuml
 	plantuml ./doc/architecture.plantuml
 
 codegen-stubs:
