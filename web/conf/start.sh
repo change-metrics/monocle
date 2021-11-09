@@ -9,8 +9,8 @@ temp_file=$(mktemp)
 # with `sed -i` the output is:
 # "sed: couldn't open temporary file XXX: Permission denied"
 sed_temporal() {
-  local expression=$1
-  local target_file=$2
+  local expression="$1"
+  local target_file="$2"
   sed -e "${expression}" "${target_file}" > "${temp_file}"
   cp "${temp_file}" "${target_file}"
   rm "${temp_file}"
