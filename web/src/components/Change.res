@@ -7,9 +7,6 @@
 open Prelude
 open MLink
 
-let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
-  ts->Belt.Option.getExn->Belt.Option.getExn
-
 let complexicity = (change: SearchTypes.change) =>
   Int32.to_int(change.changed_files_count) +
   Int32.to_int(change.additions) +
