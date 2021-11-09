@@ -11,7 +11,7 @@ services:
       - 9898
     healthcheck:
       retries: 6
-      test: "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+      test: "curl --silent --fail localhost:9898/health || exit 1"
       timeout: "60s"
     image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
     restart: unless-stopped
