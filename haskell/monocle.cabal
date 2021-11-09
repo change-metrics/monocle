@@ -154,7 +154,7 @@ library
                      , template-haskell
                      , text-short                 ^>= 0.1
                      , text-time                  ^>= 0.3
-                     , th-env                     ^>= 0.1.0.3
+                     , th-env                     < 0.1.1
                      , time
                      , transformers
                      , unliftio-core

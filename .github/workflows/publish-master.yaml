@@ -35,6 +35,7 @@ jobs:
           CRAWLERS_API_KEY=secret
           GITHUB_TOKEN=123
           EOF
+          export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
           docker-compose build
 
       - name: Set write permission for others for data directory
