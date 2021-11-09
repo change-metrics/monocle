@@ -24,10 +24,11 @@ import Test.Tasty.HUnit
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
-mkAppEnv conf = do
+mkAppEnv workspace = do
   bhEnv <- mkEnv'
   let glLogger _ = pure ()
-      config = pure (False, [conf])
+      config' = Config.Config Nothing [workspace]
+      config = pure (False, config')
       aEnv = Env {..}
   pure $ AppEnv {..}
 
@@ -173,7 +174,7 @@ testGetStream = do
     assertEqual' "Two streams created" 2 (length $ streams)
     assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
     let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
-    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions streams)
+    assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
   where
     conf =
       [ (Config.defaultTenant "test-stream")

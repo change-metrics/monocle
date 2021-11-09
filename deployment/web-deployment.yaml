@@ -28,6 +28,12 @@ spec:
             - name: REACT_APP_TITLE
           image: quay.io/change-metrics/monocle_web:latest
           name: web
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            failureThreshold: 6
+            timeoutSeconds: 60
           ports:
             - containerPort: 8080
               name: web

@@ -3,8 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+
 ### Added
+
+- [config] Ability to define custom links to be displayed in the web UI.
+- [web] An about modal that displays configured links and Monocle version.
+
 ### Changed
+
+- [web] Left side menu can be collapsed/expanded.
+- [web] Search field moved out of the top menu into a Patternfly PageSection.
+
 ### Removed
 ### Fixed
 

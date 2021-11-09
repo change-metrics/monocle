@@ -24,7 +24,7 @@ data Env = Env
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IO (Bool, [Config.Index]),
+  { config :: IO (Bool, Config.Config),
     aEnv :: Env
   }
 
@@ -41,12 +41,16 @@ instance MonadFail AppM where
   fail = error . toText
 
 -- | 'getConfig' reload the config automatically from the env
-getConfig :: AppM [Config.Index]
+getConfig :: AppM Config.Config
 getConfig = do
   loadConfig <- asks config
   --  logger <- asks (glLogger . aEnv)
   --  let logReload = (logEvent logger . ReloadConfig)
   liftIO (snd <$> loadConfig)
+
+-- | 'getWorkspaces' reload the workspaces automatically from the env
+askWorkspaces :: AppM [Config.Index]
+askWorkspaces = Config.getWorkspaces <$> getConfig
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request

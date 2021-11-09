@@ -101,6 +101,18 @@ let createElasticService =
                                          }
                                    )
 
+let apiBuildContext =
+      Compose.Build.Object
+        { context = "."
+        , dockerfile = "Dockerfile-api"
+        , args =
+            Compose.ListOrDict.Dict
+              [ { mapKey = "MONOCLE_COMMIT"
+                , mapValue = mkEnvDefault "MONOCLE_COMMIT" "HEAD"
+                }
+              ]
+        }
+
 let createApiService =
       \(dev : Bool) ->
         let service =
@@ -125,10 +137,7 @@ let createApiService =
 
         in  if    dev
             then  Compose.Service::(     service
-                                     //  { build = Some
-                                             ( Compose.Build.Object
-                                                 (buildContext "api")
-                                             )
+                                     //  { build = Some apiBuildContext
                                          , ports = Some
                                            [ mkPort "API" 9898 9898 ]
                                          }
@@ -163,13 +172,7 @@ let createCrawlerService =
               }
 
         in  if    dev
-            then  Compose.Service::(     service
-                                     //  { build = Some
-                                             ( Compose.Build.Object
-                                                 (buildContext "api")
-                                             )
-                                         }
-                                   )
+            then  Compose.Service::(service // { build = Some apiBuildContext })
             else  Compose.Service::(     service
                                      //  { image = Some (monocleImage "api")
                                          , restart = Some "unless-stopped"

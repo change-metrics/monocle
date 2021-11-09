@@ -32,6 +32,12 @@ spec:
           image: quay.io/change-metrics/monocle_api:latest
           name: crawler
           resources: {}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9001
+            failureThreshold: 6
+            timeoutSeconds: 60
           volumeMounts:
             - mountPath: /etc/monocle
               name: monocle-config-volume

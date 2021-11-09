@@ -91,13 +91,13 @@ runMacroscope port confPath client = do
       conf <- snd <$> config
 
       -- Flatten each crawler from all workspaces
-      let crawlerInfos = getCrawlers conf
+      let crawlerInfos = getCrawlers $ Config.getWorkspaces conf
 
       -- Create the streams and update the client store
       (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients
 
       -- Run the steams group
-      runCrawlers (fst <$> config) (mkStreamsActions streams)
+      runCrawlers (fst <$> config) (mkStreamsActions $ catMaybes streams)
 
       -- Loop again
       loop config newClients
@@ -180,6 +180,9 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
           -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
           _res <- Async.wait groupAsyncs
           -- TODO: log exceptions in _res
+
+          -- Reset the stop ref
+          liftIO $ writeIORef ref False
           pure ()
         else do
           -- otherwise pause before starting again
@@ -275,11 +278,10 @@ runCrawler = safeCrawl
 getCrawler ::
   (Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
   InfoCrawler ->
-  StateT Clients m (ClientKey, Crawler m)
-getCrawler inf@(InfoCrawler _ _ crawler idents) = do
-  (key, streams) <- getStreams
-  pure $ (key, (inf, streams))
+  StateT Clients m (Maybe (ClientKey, Crawler m))
+getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
   where
+    addInfos (key, streams) = (key, (inf, streams))
     getStreams =
       case Config.provider crawler of
         Config.GitlabProvider Config.Gitlab {..} -> do
@@ -292,7 +294,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = do
                 [glOrgCrawler glClient | isNothing gitlab_repositories]
                   -- Then we always index the projects
                   <> [glMRCrawler glClient getIdentByAliasCB]
-          pure $ (k, streams)
+          pure $ Just (k, streams)
         Config.GerritProvider Config.Gerrit {..} -> do
           auth <- lift $ case gerrit_login of
             Just login -> do
@@ -304,18 +306,18 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = do
               streams =
                 [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
                   <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
-          pure $ (k, streams)
+          pure $ Just (k, streams)
         Config.BugzillaProvider Config.Bugzilla {..} -> do
           bzToken <- lift $ Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
           (k, bzClient) <- getClientBZ bugzilla_url bzToken
-          pure $ (k, [bzCrawler bzClient])
+          pure $ Just (k, [bzCrawler bzClient])
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
           ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
           (k, ghClient) <- getClientGraphQL (fromMaybe "https://api.github.com/graphql" github_url) ghToken
-          pure (k, [ghIssuesCrawler ghClient])
-        Config.GithubApplicationProvider _ -> error "Not (yet) implemented"
-        Config.TaskDataProvider -> pure ("td", []) -- This is a generic crawler, not managed by the macroscope
+          pure $ Just (k, [ghIssuesCrawler ghClient])
+        Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
+        Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
     getIdentByAliasCB :: Text -> Maybe Text
     getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
