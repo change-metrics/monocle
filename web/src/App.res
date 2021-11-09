@@ -144,13 +144,25 @@ let make = () => {
   let (state, dispatch) = store
   let (showAbout, setShowAbout) = React.useState(_ => false)
 
+  let showSettings = _ => "settings"->RescriptReactRouter.push
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
   let headerTools =
     <PageHeaderTools>
       <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
       <PageHeaderToolsGroup>
         <PageHeaderToolsItem>
-          <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>
+          <div
+            onClick={_ => setShowAbout(_ => true)}
+            style={ReactDOM.Style.make(~cursor="pointer", ())}>
+            <Patternfly.Icons.InfoAlt />
+          </div>
+        </PageHeaderToolsItem>
+        <PageHeaderToolsItem>
+          <div
+            onClick={showSettings}
+            style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
+            <Patternfly.Icons.Cog />
+          </div>
         </PageHeaderToolsItem>
       </PageHeaderToolsGroup>
     </PageHeaderTools>
@@ -170,6 +182,7 @@ let make = () => {
         {switch url.path {
         | list{} => <Indices.Indices store />
         | list{"help", "search"} => <HelpSearch.View store />
+        | list{_, "settings"} => <LocalSettings.View store />
         | list{_} => <Activity store />
         | list{_, "active_authors"} => <ActivePeopleView store />
         | list{_, "peers_strength"} => <PeersStrengthView store />

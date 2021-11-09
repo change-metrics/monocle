@@ -1,14 +1,20 @@
 module HiddenChangeSchema = {
   type id = string
-  type t = {id: string, hidden_at: Js.Date.t}
+  type t = {id: string, hidden_at: Js.Date.t, ctype: [#Change]}
   let tableName = "hidden"
 }
 
 module HiddenChange = Dexie.Table.MakeTable(HiddenChangeSchema)
 
+let getAll: Dexie.Database.t => Promise.t<array<HiddenChangeSchema.t>> = dexie => {
+  dexie->HiddenChange.findByCriteria({"ctype": #Change})->Dexie.Collection.toArray
+}
+
+let remove = (dexie: Dexie.Database.t, key: string) => dexie->HiddenChange.delete(key)->ignore
+
 let mkDexie: unit => Dexie.Database.t = () => {
   let dexie = Dexie.Database.make("Monocle")
-  let schema = [("hidden", "&id")]
+  let schema = [("hidden", "&id,ctype")]
   dexie->Dexie.Database.version(1)->Dexie.Version.stores(schema)->ignore
   dexie
 }
@@ -56,7 +62,7 @@ let useHidden = (dexie, xs) => {
 
   let hideChange = (change: SearchTypes.change) => {
     dexie
-    ->HiddenChange.put({id: change.change_id, hidden_at: Prelude.getCurrentTime()})
+    ->HiddenChange.put({id: change.change_id, hidden_at: Prelude.getCurrentTime(), ctype: #Change})
     ->Promise.then(_ => {
       setHidden(xs => xs->Belt.Array.keep(x => x.change_id != change.change_id))->Promise.resolve
     })
