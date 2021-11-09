@@ -12,7 +12,14 @@
     }
   ],
   "suffix": ".bs.js",
-  "bs-dependencies": ["@rescript/react", "@softwarefactory-project/re-patternfly", "bs-ocaml-protoc-json", "bs-parse"],
+  "bs-dependencies": [
+    "@rescript/react",
+    "@softwarefactory-project/re-patternfly",
+    "bs-ocaml-protoc-json",
+    "bs-parse",
+    "@dusty-phillips/rescript-dexie",
+    "@ryyppy/rescript-promise"
+  ],
   "bs-dev-dependencies": [],
   "namespace": true,
   "refmt": 3

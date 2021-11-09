@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@dusty-phillips/rescript-dexie": "https://github.com/TristanCacqueray/rescript-dexie",
     "@patternfly/react-core": "^4.115.2",
     "@patternfly/react-table": "^4.29.12",
     "@rescript/react": "^0.10.2",

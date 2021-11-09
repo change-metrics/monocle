@@ -51,6 +51,7 @@ module Store = {
     projects: projectsR,
     changes_pies_panel: bool,
     about: aboutR,
+    dexie: Dexie.Database.t
   }
   type action =
     | ChangeIndex(string)
@@ -78,6 +79,7 @@ module Store = {
     projects: None,
     about: None,
     changes_pies_panel: false,
+    dexie: LocalStore.mkDexie()
   }
 
   let reducer = (state: t, action: action) =>
