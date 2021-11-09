@@ -33,13 +33,19 @@ module CPie = {
 
 module ChangeList = {
   @react.component
-  let make = (~store: Store.t, ~changes: array<Web.SearchTypes.change>) => {
+  let make = (
+    ~store: Store.t,
+    ~changes: array<Web.SearchTypes.change>,
+    ~hideChange: SearchTypes.change => unit,
+  ) => {
     let (changesArray, paginate) = usePagination(changes)
     <>
       {paginate}
       <Patternfly.DataList isCompact={true}>
         {changesArray
-        ->Belt.Array.map(change => <Change.DataItem store key={change.url} change={change} />)
+        ->Belt.Array.map(change =>
+          <Change.DataItem store key={change.url} change={change} hideChange />
+        )
         ->React.array}
       </Patternfly.DataList>
     </>
@@ -135,6 +141,25 @@ module ChangesTopPies = {
   }
 }
 
+module View = {
+  @react.component
+  let make = (~store: Store.t, ~changesAll) => {
+    let (state, _) = store
+    let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+    switch changes->Belt.Array.length {
+    | 0 => <p> {"No changes matched"->str} </p>
+    | _ =>
+      <MStack>
+        <MStackItem> <MCenteredContent> <ChangesTopPies store /> </MCenteredContent> </MStackItem>
+        <MStackItem> <MCenteredContent> <Search.Filter store /> </MCenteredContent> </MStackItem>
+        <MStackItem>
+          <MCenteredContent> <ChangeList store changes hideChange /> </MCenteredContent>
+        </MStackItem>
+      </MStack>
+    }
+  }
+}
+
 @react.component
 let make = (~store: Store.t) => {
   let (state, _) = store
@@ -151,24 +176,8 @@ let make = (~store: Store.t) => {
       trigger={query ++ state.order->orderToQS}
       render={resp =>
         switch resp {
-        | SearchTypes.Changes(items) => {
-            let changes = items.changes->Belt.List.toArray
-            switch changes->Belt.Array.length {
-            | 0 => <p> {"No changes matched"->str} </p>
-            | _ =>
-              <MStack>
-                <MStackItem>
-                  <MCenteredContent> <ChangesTopPies store /> </MCenteredContent>
-                </MStackItem>
-                <MStackItem>
-                  <MCenteredContent> <Search.Filter store /> </MCenteredContent>
-                </MStackItem>
-                <MStackItem>
-                  <MCenteredContent> <ChangeList store changes /> </MCenteredContent>
-                </MStackItem>
-              </MStack>
-            }
-          }
+        | SearchTypes.Changes(items) => <View store changesAll={items.changes->Belt.List.toArray} />
+
         | _ => <Alert title={"Invalid response"} />
         }}
     />

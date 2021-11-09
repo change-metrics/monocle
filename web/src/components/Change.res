@@ -247,9 +247,25 @@ module TaskDatas = {
   }
 }
 
+module HideChangeButton = {
+  @react.component
+  let make = (~change: SearchTypes.change, ~hideChange: SearchTypes.change => unit) =>
+    <Patternfly.Tooltip content={"Hide this change until it is updated"}>
+      <a
+        onClick={_ => change->hideChange}
+        style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
+        {`🛸`->str}
+      </a>
+    </Patternfly.Tooltip>
+}
+
 module DataItem = {
   @react.component
-  let make = (~store: Store.t, ~change: SearchTypes.change) =>
+  let make = (
+    ~store: Store.t,
+    ~change: SearchTypes.change,
+    ~hideChange: SearchTypes.change => unit,
+  ) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
         <Card isCompact={true}>
@@ -263,6 +279,7 @@ module DataItem = {
                 : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
               <ExternalLink href={change.url} title={change.title} />
               <ChangeLink store id={change.change_id} />
+              <HideChangeButton change hideChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexicity: "->str}
                 <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
@@ -303,9 +320,14 @@ module RowItem = {
       </thead>
   }
   @react.component
-  let make = (~store: Store.t, ~change: SearchTypes.change) =>
+  let make = (
+    ~store: Store.t,
+    ~change: SearchTypes.change,
+    ~hideChange: SearchTypes.change => unit,
+  ) =>
     <tr role="row">
       <td role="cell">
+        <HideChangeButton store change hideChange />
         <ExternalLink href={change.url} title={change.title} />
         // show details button, currently commented as it looks a bit noisy...
         // <ChangeLink store id={change.change_id} title={change.title} />
@@ -336,14 +358,16 @@ module Table = {
   @react.component
   let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
     let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
+    let (state, _) = store
+    let (changesFiltered, hideChange) = LocalStore.useHidden(state.dexie, changesArray)
     <>
       {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
         <RowItem.Head />
         <tbody role="rowgroup">
-          {changesArray
+          {changesFiltered
           ->Belt.Array.mapWithIndex((idx, change) =>
-            <RowItem key={string_of_int(idx)} store change />
+            <RowItem key={string_of_int(idx)} store change hideChange />
           )
           ->React.array}
         </tbody>

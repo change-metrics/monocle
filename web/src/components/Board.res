@@ -14,6 +14,23 @@ module Column = {
   let noChangeFound = <tr role="row"> <td role="cell"> <p> {"No change found"->str} </p> </td> </tr>
 
   module Row = {
+    module RView = {
+      @react.component
+      let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
+        let (state, _) = store
+        let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+        switch changes->Belt.Array.length {
+        | 0 => noChangeFound
+        | _ =>
+          changes
+          ->Belt.Array.map(change =>
+            <Change.RowItem store key={change.url} change={change} hideChange />
+          )
+          ->React.array
+        }
+      }
+    }
+
     // TODO: merge common code with Column
     @react.component
     let make = (~store: Store.t, ~column) => {
@@ -42,17 +59,28 @@ module Column = {
         <Alert
           title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
         />
-      | Some(SearchTypes.Changes(items)) => {
-          let changes = items.changes->Belt.List.toArray
-          switch changes->Belt.Array.length {
-          | 0 => noChangeFound
-          | _ =>
-            changes
-            ->Belt.Array.map(change => <Change.RowItem store key={change.url} change={change} />)
-            ->React.array
-          }
-        }
+      | Some(SearchTypes.Changes(items)) =>
+        <RView store changesAll={items.changes->Belt.List.toArray} />
       | Some(_) => React.null
+      }
+    }
+  }
+
+  module CView = {
+    @react.component
+    let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
+      let (state, _) = store
+      let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+      switch changes->Belt.Array.length {
+      | 0 => noChangeFound
+      | _ =>
+        <Patternfly.DataList isCompact={true}>
+          {changes
+          ->Belt.Array.map(change =>
+            <Change.DataItem store key={change.url} change={change} hideChange />
+          )
+          ->React.array}
+        </Patternfly.DataList>
       }
     }
   }
@@ -89,20 +117,8 @@ module Column = {
             title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))}
             variant=#Danger
           />
-        | Some(SearchTypes.Changes(items)) => {
-            let changes = items.changes->Belt.List.toArray
-            switch changes->Belt.Array.length {
-            | 0 => noChangeFound
-            | _ =>
-              <Patternfly.DataList isCompact={true}>
-                {changes
-                ->Belt.Array.map(change =>
-                  <Change.DataItem store key={change.url} change={change} />
-                )
-                ->React.array}
-              </Patternfly.DataList>
-            }
-          }
+        | Some(SearchTypes.Changes(items)) =>
+          <CView store changesAll={items.changes->Belt.List.toArray} />
         | Some(_) => React.null
         }}
       </Patternfly.CardBody>

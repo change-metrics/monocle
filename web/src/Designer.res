@@ -25,6 +25,8 @@ module Fixture = {
   let fields: SearchTypes.fields_response = SearchBs.decode_fields_response(searchFieldsJson)
 }
 
+let hideChange = c => Js.log2("Hidding", c)
+
 module App = {
   @react.component
   let make = () => {
@@ -35,7 +37,7 @@ module App = {
         ("group", <GroupView.GroupTable group={Fixture.group_get} />),
         (
           "change",
-          <div className="container"> <Change.DataItem store change={Fixture.change} /> </div>,
+          <div className="container"> <Change.DataItem store change={Fixture.change} hideChange /> </div>,
         ),
         (
           "table",
@@ -50,7 +52,9 @@ module App = {
         (
           "changeList",
           <NChangeView.ChangeList
-            store changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray}
+            store
+            changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray}
+            hideChange
           />,
         ),
         (
