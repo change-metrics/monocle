@@ -249,14 +249,22 @@ module TaskDatas = {
 
 module HideChangeButton = {
   @react.component
-  let make = (~change: SearchTypes.change, ~hideChange: SearchTypes.change => unit) =>
+  let make = (
+    ~store: Store.t,
+    ~change: SearchTypes.change,
+    ~hideChange: SearchTypes.change => unit,
+  ) => {
+    let (_, dispatch) = store
+    let onClick = _ => {
+      "Change hidden, check the settings to undo"->AddToast->dispatch
+      change->hideChange
+    }
     <Patternfly.Tooltip content={"Hide this change until it is updated"}>
-      <a
-        onClick={_ => change->hideChange}
-        style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
+      <a onClick style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
         {`🛸`->str}
       </a>
     </Patternfly.Tooltip>
+  }
 }
 
 module DataItem = {
@@ -279,7 +287,7 @@ module DataItem = {
                 : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
               <ExternalLink href={change.url} title={change.title} />
               <ChangeLink store id={change.change_id} />
-              <HideChangeButton change hideChange />
+              <HideChangeButton store change hideChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexicity: "->str}
                 <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
