@@ -54,6 +54,44 @@ let default_get_workspaces_response_mutable () : get_workspaces_response_mutable
   workspaces = [];
 }
 
+type about_about_link_mutable = {
+  mutable name : string;
+  mutable url : string;
+  mutable category : string;
+}
+
+let default_about_about_link_mutable () : about_about_link_mutable = {
+  name = "";
+  url = "";
+  category = "";
+}
+
+type about_mutable = {
+  mutable version : string;
+  mutable links : ConfigTypes.about_about_link list;
+}
+
+let default_about_mutable () : about_mutable = {
+  version = "";
+  links = [];
+}
+
+type get_about_request_mutable = {
+  mutable void : string;
+}
+
+let default_get_about_request_mutable () : get_about_request_mutable = {
+  void = "";
+}
+
+type get_about_response_mutable = {
+  mutable about : ConfigTypes.about option;
+}
+
+let default_get_about_response_mutable () : get_about_response_mutable = {
+  about = None;
+}
+
 
 let rec decode_project_definition json =
   let v = default_project_definition_mutable () in
@@ -175,6 +213,88 @@ let rec decode_get_workspaces_response json =
     ConfigTypes.workspaces = v.workspaces;
   } : ConfigTypes.get_workspaces_response)
 
+let rec decode_about_about_link json =
+  let v = default_about_about_link_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "name" -> 
+      let json = Js.Dict.unsafeGet json "name" in
+      v.name <- Pbrt_bs.string json "about_about_link" "name"
+    | "url" -> 
+      let json = Js.Dict.unsafeGet json "url" in
+      v.url <- Pbrt_bs.string json "about_about_link" "url"
+    | "category" -> 
+      let json = Js.Dict.unsafeGet json "category" in
+      v.category <- Pbrt_bs.string json "about_about_link" "category"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.name = v.name;
+    ConfigTypes.url = v.url;
+    ConfigTypes.category = v.category;
+  } : ConfigTypes.about_about_link)
+
+let rec decode_about json =
+  let v = default_about_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "version" -> 
+      let json = Js.Dict.unsafeGet json "version" in
+      v.version <- Pbrt_bs.string json "about" "version"
+    | "links" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "links" in 
+        Pbrt_bs.array_ a "about" "links"
+      in
+      v.links <- Array.map (fun json -> 
+        (decode_about_about_link (Pbrt_bs.object_ json "about" "links"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.version = v.version;
+    ConfigTypes.links = v.links;
+  } : ConfigTypes.about)
+
+let rec decode_get_about_request json =
+  let v = default_get_about_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "void" -> 
+      let json = Js.Dict.unsafeGet json "void" in
+      v.void <- Pbrt_bs.string json "get_about_request" "void"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.void = v.void;
+  } : ConfigTypes.get_about_request)
+
+let rec decode_get_about_response json =
+  let v = default_get_about_response_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "about" -> 
+      let json = Js.Dict.unsafeGet json "about" in
+      v.about <- Some ((decode_about (Pbrt_bs.object_ json "get_about_response" "about")))
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.about = v.about;
+  } : ConfigTypes.get_about_response)
+
 let rec encode_project_definition (v:ConfigTypes.project_definition) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "name" (Js.Json.string v.ConfigTypes.name);
@@ -225,5 +345,45 @@ let rec encode_get_workspaces_response (v:ConfigTypes.get_workspaces_response) =
       |> Js.Json.array
     in
     Js.Dict.set json "workspaces" workspaces';
+  end;
+  json
+
+let rec encode_about_about_link (v:ConfigTypes.about_about_link) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "name" (Js.Json.string v.ConfigTypes.name);
+  Js.Dict.set json "url" (Js.Json.string v.ConfigTypes.url);
+  Js.Dict.set json "category" (Js.Json.string v.ConfigTypes.category);
+  json
+
+let rec encode_about (v:ConfigTypes.about) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "version" (Js.Json.string v.ConfigTypes.version);
+  begin (* links field *)
+    let (links':Js.Json.t) =
+      v.ConfigTypes.links
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_about_about_link |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "links" links';
+  end;
+  json
+
+let rec encode_get_about_request (v:ConfigTypes.get_about_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "void" (Js.Json.string v.ConfigTypes.void);
+  json
+
+let rec encode_get_about_response (v:ConfigTypes.get_about_response) = 
+  let json = Js.Dict.empty () in
+  begin match v.ConfigTypes.about with
+  | None -> ()
+  | Some v ->
+    begin (* about field *)
+      let json' = encode_about v in
+      Js.Dict.set json "about" (Js.Json.object_ json');
+    end;
   end;
   json

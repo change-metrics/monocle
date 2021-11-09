@@ -27,12 +27,30 @@ import Monocle.Search.Syntax (ParseError (..))
 import qualified Monocle.UserGroup as UserGroupPB
 import Proto3.Suite (Enumerated (..))
 
+-- | /api/2/about endpoint
+configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
+configGetAbout = const response
+  where
+    response = do
+      config <- getConfig
+      -- TODO(fbo) - fetch Monocle version from cabal file
+      let aboutVersion = "1.2.1"
+          links = maybe [] Config.links (Config.about config)
+          aboutLinks = fromList $ toLink <$> links
+      pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
+    toLink :: Config.Link -> ConfigPB.About_AboutLink
+    toLink Config.Link {..} =
+      let about_AboutLinkName = toLazy name
+          about_AboutLinkUrl = toLazy url
+          about_AboutLinkCategory = toLazy $ fromMaybe "About" category
+       in ConfigPB.About_AboutLink {..}
+
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
 configGetWorkspaces = const response
   where
     response = do
-      tenants <- getConfig
+      tenants <- askWorkspaces
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
       let workspaceName = toLazy name
@@ -41,7 +59,7 @@ configGetWorkspaces = const response
 -- | /api/2/user_group/list endpoint
 userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
 userGroupList request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let UserGroupPB.ListRequest {..} = request
 
   pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
@@ -57,9 +75,9 @@ userGroupList request = do
 -- | /api/2/get_projects
 configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
 configGetProjects ConfigPB.GetProjectsRequest {..} = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getProjectsRequestIndex) of
-    Just index -> fromMaybe [] $ fmap toResp <$> Config.projects index
+    Just index -> maybe [] (fmap toResp) (Config.projects index)
     Nothing -> []
   where
     toResp :: Config.Project -> ConfigPB.ProjectDefinition
@@ -73,7 +91,7 @@ configGetProjects ConfigPB.GetProjectsRequest {..} = do
 -- | /api/2/user_group/get endpoint
 userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
 userGroupGet request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let UserGroupPB.GetRequest {..} = request
   now <- getCurrentTime
 
@@ -159,7 +177,7 @@ toEntity entityPB = case entityPB of
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let ( CrawlerPB.AddDocRequest
           indexName
           crawlerName
@@ -222,7 +240,7 @@ crawlerAddDoc request = do
 -- | /crawler/commit endpoint
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
   let requestE = do
@@ -266,7 +284,7 @@ crawlerCommit request = do
 -- | /crawler/get_commit_info endpoint
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 
   let requestE = do
@@ -333,7 +351,7 @@ validateTaskDataRequest ::
   -- | an AppM with either an Error or extracted info
   AppM (Either TDError (Config.Index, Config.Crawler, Maybe UTCTime))
 validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   pure $ do
     index <- Config.lookupTenant tenants (toStrict indexName) `orDie` TDUnknownIndex
     crawler <- Config.lookupCrawler index (toStrict crawlerName) `orDie` TDUnknownCrawler
@@ -346,7 +364,7 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
 searchSuggestions request = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   let SearchPB.SuggestionsRequest {..} = request
 
   let tenantM = Config.lookupTenant tenants (toStrict suggestionsRequestIndex)
@@ -365,7 +383,7 @@ searchSuggestions request = do
 -- | A helper function to decode search query
 validateSearchRequest :: LText -> LText -> LText -> AppM (Either ParseError (Config.Index, Q.Query))
 validateSearchRequest tenantName queryText username = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   now <- getCurrentTime
   let requestE =
         do
@@ -536,5 +554,5 @@ searchFields = const $ pure response
 
 lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
-  tenants <- getConfig
+  tenants <- askWorkspaces
   pure $ Config.lookupTenant tenants name

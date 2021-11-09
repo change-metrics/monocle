@@ -91,7 +91,7 @@ runMacroscope port confPath client = do
       conf <- snd <$> config
 
       -- Flatten each crawler from all workspaces
-      let crawlerInfos = getCrawlers conf
+      let crawlerInfos = getCrawlers $ Config.getWorkspaces conf
 
       -- Create the streams and update the client store
       (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients

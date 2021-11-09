@@ -658,3 +658,412 @@ instance HsJSONPB.ToSchema GetWorkspacesResponse where
                   }
             }
         )
+
+data About = About
+  { aboutVersion :: Hs.Text,
+    aboutLinks :: Hs.Vector Monocle.Config.About_AboutLink
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named About where
+  nameOf _ = (Hs.fromString "About")
+
+instance HsProtobuf.HasDefault About
+
+instance HsProtobuf.Message About where
+  encodeMessage
+    _
+    About {aboutVersion = aboutVersion, aboutLinks = aboutLinks} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                aboutVersion
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Vector Monocle.Config.About_AboutLink)
+                    @(HsProtobuf.NestedVec Monocle.Config.About_AboutLink)
+                    aboutLinks
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure About)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Config.About_AboutLink))
+              @(_ (Hs.Vector Monocle.Config.About_AboutLink))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "version")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "AboutLink"))
+          )
+          (HsProtobuf.Single "links")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB About where
+  toJSONPB (About f1 f2) =
+    (HsJSONPB.object ["version" .= f1, "links" .= f2])
+  toEncodingPB (About f1 f2) =
+    (HsJSONPB.pairs ["version" .= f1, "links" .= f2])
+
+instance HsJSONPB.FromJSONPB About where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "About"
+        (\obj -> (Hs.pure About) <*> obj .: "version" <*> obj .: "links")
+    )
+
+instance HsJSONPB.ToJSON About where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON About where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema About where
+  declareNamedSchema _ =
+    do
+      let declare_version = HsJSONPB.declareSchemaRef
+      aboutVersion <- declare_version Proxy.Proxy
+      let declare_links = HsJSONPB.declareSchemaRef
+      aboutLinks <- declare_links Proxy.Proxy
+      let _ =
+            Hs.pure About <*> HsJSONPB.asProxy declare_version
+              <*> HsJSONPB.asProxy declare_links
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "About",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("version", aboutVersion),
+                          ("links", aboutLinks)
+                        ]
+                  }
+            }
+        )
+
+data About_AboutLink = About_AboutLink
+  { about_AboutLinkName ::
+      Hs.Text,
+    about_AboutLinkUrl :: Hs.Text,
+    about_AboutLinkCategory :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named About_AboutLink where
+  nameOf _ = (Hs.fromString "About_AboutLink")
+
+instance HsProtobuf.HasDefault About_AboutLink
+
+instance HsProtobuf.Message About_AboutLink where
+  encodeMessage
+    _
+    About_AboutLink
+      { about_AboutLinkName = about_AboutLinkName,
+        about_AboutLinkUrl = about_AboutLinkUrl,
+        about_AboutLinkCategory = about_AboutLinkCategory
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                about_AboutLinkName
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                about_AboutLinkUrl
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                about_AboutLinkCategory
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure About_AboutLink)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "url")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "category")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB About_AboutLink where
+  toJSONPB (About_AboutLink f1 f2 f3) =
+    (HsJSONPB.object ["name" .= f1, "url" .= f2, "category" .= f3])
+  toEncodingPB (About_AboutLink f1 f2 f3) =
+    (HsJSONPB.pairs ["name" .= f1, "url" .= f2, "category" .= f3])
+
+instance HsJSONPB.FromJSONPB About_AboutLink where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "About_AboutLink"
+        ( \obj ->
+            (Hs.pure About_AboutLink) <*> obj .: "name" <*> obj .: "url"
+              <*> obj .: "category"
+        )
+    )
+
+instance HsJSONPB.ToJSON About_AboutLink where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON About_AboutLink where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema About_AboutLink where
+  declareNamedSchema _ =
+    do
+      let declare_name = HsJSONPB.declareSchemaRef
+      about_AboutLinkName <- declare_name Proxy.Proxy
+      let declare_url = HsJSONPB.declareSchemaRef
+      about_AboutLinkUrl <- declare_url Proxy.Proxy
+      let declare_category = HsJSONPB.declareSchemaRef
+      about_AboutLinkCategory <- declare_category Proxy.Proxy
+      let _ =
+            Hs.pure About_AboutLink <*> HsJSONPB.asProxy declare_name
+              <*> HsJSONPB.asProxy declare_url
+              <*> HsJSONPB.asProxy declare_category
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "About_AboutLink",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("name", about_AboutLinkName),
+                          ("url", about_AboutLinkUrl),
+                          ("category", about_AboutLinkCategory)
+                        ]
+                  }
+            }
+        )
+
+newtype GetAboutRequest = GetAboutRequest
+  { getAboutRequestVoid ::
+      Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetAboutRequest where
+  nameOf _ = (Hs.fromString "GetAboutRequest")
+
+instance HsProtobuf.HasDefault GetAboutRequest
+
+instance HsProtobuf.Message GetAboutRequest where
+  encodeMessage
+    _
+    GetAboutRequest {getAboutRequestVoid = getAboutRequestVoid} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                getAboutRequestVoid
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetAboutRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "void")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetAboutRequest where
+  toJSONPB (GetAboutRequest f1) = (HsJSONPB.object ["void" .= f1])
+  toEncodingPB (GetAboutRequest f1) = (HsJSONPB.pairs ["void" .= f1])
+
+instance HsJSONPB.FromJSONPB GetAboutRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetAboutRequest"
+        (\obj -> (Hs.pure GetAboutRequest) <*> obj .: "void")
+    )
+
+instance HsJSONPB.ToJSON GetAboutRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetAboutRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetAboutRequest where
+  declareNamedSchema _ =
+    do
+      let declare_void = HsJSONPB.declareSchemaRef
+      getAboutRequestVoid <- declare_void Proxy.Proxy
+      let _ = Hs.pure GetAboutRequest <*> HsJSONPB.asProxy declare_void
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetAboutRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("void", getAboutRequestVoid)]
+                  }
+            }
+        )
+
+newtype GetAboutResponse = GetAboutResponse
+  { getAboutResponseAbout ::
+      Hs.Maybe Monocle.Config.About
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetAboutResponse where
+  nameOf _ = (Hs.fromString "GetAboutResponse")
+
+instance HsProtobuf.HasDefault GetAboutResponse
+
+instance HsProtobuf.Message GetAboutResponse where
+  encodeMessage
+    _
+    GetAboutResponse {getAboutResponseAbout = getAboutResponseAbout} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Maybe Monocle.Config.About)
+                    @(HsProtobuf.Nested Monocle.Config.About)
+                    getAboutResponseAbout
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetAboutResponse)
+      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Config.About))
+              @(_ (Hs.Maybe Monocle.Config.About))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "About")))
+          (HsProtobuf.Single "about")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetAboutResponse where
+  toJSONPB (GetAboutResponse f1) = (HsJSONPB.object ["about" .= f1])
+  toEncodingPB (GetAboutResponse f1) =
+    (HsJSONPB.pairs ["about" .= f1])
+
+instance HsJSONPB.FromJSONPB GetAboutResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetAboutResponse"
+        (\obj -> (Hs.pure GetAboutResponse) <*> obj .: "about")
+    )
+
+instance HsJSONPB.ToJSON GetAboutResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetAboutResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetAboutResponse where
+  declareNamedSchema _ =
+    do
+      let declare_about = HsJSONPB.declareSchemaRef
+      getAboutResponseAbout <- declare_about Proxy.Proxy
+      let _ = Hs.pure GetAboutResponse <*> HsJSONPB.asProxy declare_about
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetAboutResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("about", getAboutResponseAbout)]
+                  }
+            }
+        )
