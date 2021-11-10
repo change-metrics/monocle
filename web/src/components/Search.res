@@ -348,14 +348,15 @@ module Order = {
       setShowOrderSelector(_ => false)
     }
     let onClick = _ => setShowOrderSelector(_ => true)
+    let orderToString = (order: SearchTypes.order) =>
+      ("order by " ++ order.field ++ order.direction->orderDirToString)->str
     <>
       <OrderSelectorModal value isOpen={showOrderSelector} onClose={setOrder} />
       {switch value {
       | None => <Patternfly.Button onClick> {"Set order"->str} </Patternfly.Button>
       | Some(order) =>
         <span>
-          <Patternfly.Button variant=#Tertiary onClick> {"Change Order"} </Patternfly.Button>
-          {("order by " ++ order.field ++ order.direction->orderDirToString)->str}
+          <Patternfly.Button variant=#Tertiary onClick> {order->orderToString} </Patternfly.Button>
         </span>
       }}
     </>
