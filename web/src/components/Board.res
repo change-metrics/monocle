@@ -18,13 +18,13 @@ module Column = {
       @react.component
       let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
         let (state, _) = store
-        let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
+        let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
         switch changes->Belt.Array.length {
         | 0 => noChangeFound
         | _ =>
           changes
-          ->Belt.Array.map(change =>
-            <Change.RowItem store key={change.url} change={change} hideChange />
+          ->Belt.Array.map(((status, change)) =>
+            <Change.RowItem store key={change.url} change status dispatchChange />
           )
           ->React.array
         }
@@ -70,14 +70,14 @@ module Column = {
     @react.component
     let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
       let (state, _) = store
-      let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
+      let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
       switch changes->Belt.Array.length {
       | 0 => noChangeFound
       | _ =>
         <Patternfly.DataList isCompact={true}>
           {changes
-          ->Belt.Array.map(change =>
-            <Change.DataItem store key={change.url} change={change} hideChange />
+          ->Belt.Array.map(((status, change)) =>
+            <Change.DataItem store key={change.url} change status dispatchChange />
           )
           ->React.array}
         </Patternfly.DataList>

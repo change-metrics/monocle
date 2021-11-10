@@ -35,16 +35,16 @@ module ChangeList = {
   @react.component
   let make = (
     ~store: Store.t,
-    ~changes: array<Web.SearchTypes.change>,
-    ~hideChange: SearchTypes.change => unit,
+    ~changes: HiddenChanges.changeArray,
+    ~dispatchChange: HiddenChanges.dispatch,
   ) => {
     let (changesArray, paginate) = usePagination(changes)
     <>
       {paginate}
       <Patternfly.DataList isCompact={true}>
         {changesArray
-        ->Belt.Array.map(change =>
-          <Change.DataItem store key={change.url} change={change} hideChange />
+        ->Belt.Array.map(((status, change)) =>
+          <Change.DataItem store key={change.change_id} change status dispatchChange />
         )
         ->React.array}
       </Patternfly.DataList>
@@ -145,7 +145,7 @@ module View = {
   @react.component
   let make = (~store: Store.t, ~changesAll) => {
     let (state, _) = store
-    let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
+    let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
     | 0 => <p> {"No changes matched"->str} </p>
     | _ =>
@@ -153,7 +153,7 @@ module View = {
         <MStackItem> <MCenteredContent> <ChangesTopPies store /> </MCenteredContent> </MStackItem>
         <MStackItem> <MCenteredContent> <Search.Filter store /> </MCenteredContent> </MStackItem>
         <MStackItem>
-          <MCenteredContent> <ChangeList store changes hideChange /> </MCenteredContent>
+          <MCenteredContent> <ChangeList store changes dispatchChange /> </MCenteredContent>
         </MStackItem>
       </MStack>
     }

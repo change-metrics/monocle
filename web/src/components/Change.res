@@ -247,21 +247,38 @@ module TaskDatas = {
   }
 }
 
-module HideChangeButton = {
+module StatusButton = {
   @react.component
   let make = (
     ~store: Store.t,
     ~change: SearchTypes.change,
-    ~hideChange: SearchTypes.change => unit,
+    ~status: HiddenChanges.changeStatus,
+    ~dispatchChange: HiddenChanges.dispatch,
   ) => {
+    let (hide, reveal) = dispatchChange
+    let (tooltip, toast, button, action) = switch status {
+    | Visible => (
+        "Hide this change until it is updated",
+        "Change hidden, check the settings to undo",
+        `🛸`,
+        hide,
+      )
+    | Updated => (
+        "Hidden change got updated, click to hide again",
+        "Change hidden again",
+        `⚓`,
+        hide,
+      )
+    | Hidden => ("Keep this change visible", "Hidden status removed", `🧐`, reveal)
+    }
     let (_, dispatch) = store
     let onClick = _ => {
-      "Change hidden, check the settings to undo"->AddToast->dispatch
-      change->hideChange
+      toast->AddToast->dispatch
+      change->action
     }
-    <Patternfly.Tooltip content={"Hide this change until it is updated"}>
+    <Patternfly.Tooltip content={tooltip}>
       <a onClick style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
-        {`🛸`->str}
+        {button->str}
       </a>
     </Patternfly.Tooltip>
   }
@@ -272,7 +289,8 @@ module DataItem = {
   let make = (
     ~store: Store.t,
     ~change: SearchTypes.change,
-    ~hideChange: SearchTypes.change => unit,
+    ~status: HiddenChanges.changeStatus,
+    ~dispatchChange: HiddenChanges.dispatch,
   ) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
@@ -287,7 +305,7 @@ module DataItem = {
                 : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
               <ExternalLink href={change.url} title={change.title} />
               <ChangeLink store id={change.change_id} />
-              <HideChangeButton store change hideChange />
+              <StatusButton store change status dispatchChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexicity: "->str}
                 <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
@@ -331,11 +349,12 @@ module RowItem = {
   let make = (
     ~store: Store.t,
     ~change: SearchTypes.change,
-    ~hideChange: SearchTypes.change => unit,
+    ~status: HiddenChanges.changeStatus,
+    ~dispatchChange: HiddenChanges.dispatch,
   ) =>
     <tr role="row">
       <td role="cell">
-        <HideChangeButton store change hideChange />
+        <StatusButton store change status dispatchChange />
         <ExternalLink href={change.url} title={change.title} />
         // show details button, currently commented as it looks a bit noisy...
         // <ChangeLink store id={change.change_id} title={change.title} />
@@ -367,15 +386,17 @@ module Table = {
   let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
     let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
     let (state, _) = store
-    let (changesFiltered, hideChange) = HiddenChanges.use(state.dexie, changesArray)
+    let (changesFiltered, dispatchChange) = HiddenChanges.use(state.dexie, changesArray)
     <>
       {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
         <RowItem.Head />
         <tbody role="rowgroup">
           {changesFiltered
-          ->Belt.Array.mapWithIndex((idx, change) =>
-            <RowItem key={string_of_int(idx)} store change hideChange />
+          ->Belt.Array.mapWithIndex((idx, (status, change)) =>
+            status != HiddenChanges.Hidden
+              ? <RowItem key={string_of_int(idx)} store change status dispatchChange />
+              : React.null
           )
           ->React.array}
         </tbody>

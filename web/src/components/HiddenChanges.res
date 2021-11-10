@@ -9,35 +9,53 @@ let getAll: Dexie.Database.t => Promise.t<array<t>> = dexie => {
 
 let remove = (dexie: Dexie.Database.t, key: string) => dexie->Table.delete(key)->ignore
 
+type changeStatus = Hidden | Visible | Updated
+type status<'a> = (changeStatus, 'a)
+type changeArray = array<status<SearchTypes.change>>
+type change = status<SearchTypes.change>
+type dispatch = (SearchTypes.change => unit, SearchTypes.change => unit)
+
 // Take a dexie db and a change,
-// and return a promise with an option set to None when the change is hidden
-let keepVisible: (Dexie.Database.t, SearchTypes.change) => Promise.t<option<SearchTypes.change>> = (
+// and return a promise with the hidden status.
+let getStatus: (Dexie.Database.t, SearchTypes.change) => Promise.t<status<SearchTypes.change>> = (
   dexie,
-  x,
+  change,
 ) =>
   dexie
-  ->Table.getById(x.change_id)
+  ->Table.getById(change.change_id)
   ->Promise.then(hiddenM =>
-    switch hiddenM {
-    | Some(hidden) if x.updated_at->Prelude.getDate <= hidden.hidden_at => None
-    | _ => Some(x)
-    }->Promise.resolve
+    (
+      switch hiddenM {
+      | Some(hidden) if change.updated_at->Prelude.getDate <= hidden.hidden_at => Hidden
+      | Some(_) => Updated
+      | _ => Visible
+      },
+      change,
+    )->Promise.resolve
   )
 
 // Take a list of change, a dexie db,
-// Then lookup each change,
-// and return a promise with the one that are not hidden.
+// Then annotate each change,
 let removeHiddenFromArray: (
   array<SearchTypes.change>,
   Dexie.Database.t,
-) => Promise.t<array<SearchTypes.change>> = (xs, dexie) => {
-  xs
-  ->Belt.Array.map(keepVisible(dexie))
-  ->Promise.all
-  ->Promise.then(xs => xs->Belt.Array.keepMap(x => x)->Promise.resolve)
+) => Promise.t<changeArray> = (xs, dexie) => {
+  xs->Belt.Array.map(getStatus(dexie))->Promise.all
 }
 
-// A hook that returns a list of visible changes
+let setStatus: (changeStatus, SearchTypes.change, changeArray) => changeArray = (
+  newStatus,
+  change,
+  xs,
+) =>
+  xs->Belt.Array.map(((prevStatus, x)) =>
+    switch x.change_id == change.change_id {
+    | true => (newStatus, x)
+    | false => (prevStatus, x)
+    }
+  )
+
+// A hook that returns a list of annotate changes changes
 let use = (dexie, xs) => {
   let (hidden, setHidden) = React.useState(_ => [])
 
@@ -53,11 +71,16 @@ let use = (dexie, xs) => {
   let hideChange = (change: SearchTypes.change) => {
     dexie
     ->Table.put({id: change.change_id, hidden_at: Prelude.getCurrentTime(), ctype: #Change})
-    ->Promise.then(_ => {
-      setHidden(xs => xs->Belt.Array.keep(x => x.change_id != change.change_id))->Promise.resolve
-    })
+    ->Promise.then(_ => setHidden(setStatus(Hidden, change))->Promise.resolve)
     ->ignore
   }
 
-  (hidden, hideChange)
+  let revealChange = (change: SearchTypes.change) => {
+    dexie
+    ->Table.delete(change.change_id)
+    ->Promise.then(_ => setHidden(setStatus(Visible, change))->Promise.resolve)
+    ->ignore
+  }
+
+  (hidden, (hideChange, revealChange))
 }
