@@ -6,7 +6,7 @@ module View = {
     let (hiddens, setHiddens) = React.useState(() => [])
     let (state, _) = store
     let reload = () =>
-      LocalStore.getAll(state.dexie)
+      HiddenChanges.getAll(state.dexie)
       ->Promise.then(xs => setHiddens(_ => xs)->Promise.resolve)
       ->ignore
 
@@ -28,7 +28,7 @@ module View = {
                 ~paddingLeft="5px",
                 (),
               )}
-              onClick={_ => LocalStore.remove(state.dexie, hidden.id)->reload}>
+              onClick={_ => HiddenChanges.remove(state.dexie, hidden.id)->reload}>
               {"Remove"->str}
             </a>
           </li>

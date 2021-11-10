@@ -82,7 +82,7 @@ module Store = {
     projects: None,
     about: None,
     changes_pies_panel: false,
-    dexie: LocalStore.mkDexie(),
+    dexie: MonoIndexedDB.mkDexie(),
     toasts: list{},
   }
 

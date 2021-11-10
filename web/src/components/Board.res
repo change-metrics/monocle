@@ -18,7 +18,7 @@ module Column = {
       @react.component
       let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
         let (state, _) = store
-        let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+        let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
         switch changes->Belt.Array.length {
         | 0 => noChangeFound
         | _ =>
@@ -70,7 +70,7 @@ module Column = {
     @react.component
     let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
       let (state, _) = store
-      let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+      let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
       switch changes->Belt.Array.length {
       | 0 => noChangeFound
       | _ =>

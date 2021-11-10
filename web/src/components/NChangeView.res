@@ -145,7 +145,7 @@ module View = {
   @react.component
   let make = (~store: Store.t, ~changesAll) => {
     let (state, _) = store
-    let (changes, hideChange) = LocalStore.useHidden(state.dexie, changesAll)
+    let (changes, hideChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
     | 0 => <p> {"No changes matched"->str} </p>
     | _ =>

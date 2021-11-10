@@ -367,7 +367,7 @@ module Table = {
   let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
     let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
     let (state, _) = store
-    let (changesFiltered, hideChange) = LocalStore.useHidden(state.dexie, changesArray)
+    let (changesFiltered, hideChange) = HiddenChanges.use(state.dexie, changesArray)
     <>
       {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
