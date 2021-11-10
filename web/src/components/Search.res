@@ -233,29 +233,23 @@ module Bar = {
         {" "->str}
       </>
     <MGrid>
-      <MGridItemXl1> {""} </MGridItemXl1>
-      <MGridItemXl10>
-        <MGrid>
-          <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
-          {switch displayApply {
-          | false => <>
-              <MGridItemXl11> {inputText} </MGridItemXl11> <MGridItemXl1> {icons} </MGridItemXl1>
-            </>
-          | true => <>
-              <MGridItemXl10> {inputText} </MGridItemXl10>
-              <MGridItemXl2>
-                {icons}
-                {switch isApplyEnabled {
-                | None => React.null
-                | Some(onClick) =>
-                  <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
-                }}
-              </MGridItemXl2>
-            </>
-          }}
-        </MGrid>
-      </MGridItemXl10>
-      <MGridItemXl1> {""} </MGridItemXl1>
+      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
+      {switch displayApply {
+      | false => <>
+          <MGridItemXl11> {inputText} </MGridItemXl11> <MGridItemXl1> {icons} </MGridItemXl1>
+        </>
+      | true => <>
+          <MGridItemXl10> {inputText} </MGridItemXl10>
+          <MGridItemXl2>
+            {icons}
+            {switch isApplyEnabled {
+            | None => React.null
+            | Some(onClick) =>
+              <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+            }}
+          </MGridItemXl2>
+        </>
+      }}
     </MGrid>
   }
 }
@@ -349,7 +343,7 @@ module Order = {
     }
     let onClick = _ => setShowOrderSelector(_ => true)
     let orderToString = (order: SearchTypes.order) =>
-      ("order by " ++ order.field ++ order.direction->orderDirToString)->str
+      ("by " ++ order.field ++ order.direction->orderDirToString)->str
     <>
       <OrderSelectorModal value isOpen={showOrderSelector} onClose={setOrder} />
       {switch value {
@@ -433,7 +427,11 @@ module Top = {
 
     <React.Fragment>
       <QSErrorModal error showErrorModal setShowErrorModal />
-      <Bar value setValue onSave store error displayApply isApplyEnabled />
+      <MGrid>
+        <MCenteredContent>
+          <Bar value setValue onSave store error displayApply isApplyEnabled />
+        </MCenteredContent>
+      </MGrid>
     </React.Fragment>
   }
 }

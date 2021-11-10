@@ -155,11 +155,31 @@ module ColumnEditor = {
 
     <MGrid>
       <MGridItemXl1>
+        {maybeRender(
+          count > 1,
+          <>
+            <Tooltip content={"Remove"}>
+              <Patternfly.Button isSmall={true} variant=#Danger onClick={_ => onRemove(pos)}>
+                <Patternfly.Icons.Trash />
+              </Patternfly.Button>
+            </Tooltip>
+            {maybeRender(
+              pos + 1 < count,
+              <Tooltip content={"Swap"->str}>
+                <Patternfly.Button isSmall={true} variant=#Control onClick={_ => onSwap(pos)}>
+                  <Patternfly.Icons.ArrowsAltV />
+                </Patternfly.Button>
+              </Tooltip>,
+            )}
+          </>,
+        )}
+      </MGridItemXl1>
+      <MGridItemXl2>
         <Patternfly.TextInput
           id="col-name" value={nameRef.contents} onChange={setName} _type=#Text
         />
-      </MGridItemXl1>
-      <MGridItemXl6>
+      </MGridItemXl2>
+      <MGridItemXl7>
         <Search.Bar
           store
           value={queryRef.contents}
@@ -170,30 +190,10 @@ module ColumnEditor = {
           displayApply=false
           isApplyEnabled={None}
         />
-      </MGridItemXl6>
-      <MGridItemXl3>
+      </MGridItemXl7>
+      <MGridItemXl2>
         <Search.Order value={orderRef.contents} setValue={v => setOrder(v, ())} />
-      </MGridItemXl3>
-      <MGridItemXl1>
-        {maybeRender(
-          count > 1,
-          <>
-            {maybeRender(
-              pos + 1 < count,
-              <Tooltip content={"Swap"->str}>
-                <Patternfly.Button isSmall={true} variant=#Control onClick={_ => onSwap(pos)}>
-                  <Patternfly.Icons.ArrowsAltV />
-                </Patternfly.Button>
-              </Tooltip>,
-            )}
-            <Tooltip content={"Remove"}>
-              <Patternfly.Button isSmall={true} variant=#Danger onClick={_ => onRemove(pos)}>
-                <Patternfly.Icons.Trash />
-              </Patternfly.Button>
-            </Tooltip>
-          </>,
-        )}
-      </MGridItemXl1>
+      </MGridItemXl2>
     </MGrid>
   }
 }
