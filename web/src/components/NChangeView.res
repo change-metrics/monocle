@@ -43,6 +43,7 @@ module ChangeList = {
     <>
       {toggle}
       {paginate}
+      <br />
       <Patternfly.DataList isCompact={true}>
         {changesArray
         ->Belt.Array.map(((status, change)) =>

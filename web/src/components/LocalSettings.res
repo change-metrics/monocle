@@ -20,7 +20,6 @@ module View = {
         {hiddens
         ->Belt.Array.mapWithIndex((idx, hidden) =>
           <li key={string_of_int(idx)}>
-            {hidden.id->str}
             <a
               style={ReactDOM.Style.make(
                 ~cursor="pointer",
@@ -29,8 +28,9 @@ module View = {
                 (),
               )}
               onClick={_ => HiddenChanges.remove(state.dexie, hidden.id)->reload}>
-              {"Remove"->str}
+              {`🗑`->str}
             </a>
+            {hidden.id->str}
           </li>
         )
         ->React.array}

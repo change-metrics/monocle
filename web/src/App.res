@@ -157,6 +157,7 @@ let make = () => {
             <Patternfly.Icons.InfoAlt />
           </div>
         </PageHeaderToolsItem>
+        /*
         <PageHeaderToolsItem>
           <div
             onClick={showSettings}
@@ -164,6 +165,7 @@ let make = () => {
             <Patternfly.Icons.Cog />
           </div>
         </PageHeaderToolsItem>
+ */
       </PageHeaderToolsGroup>
     </PageHeaderTools>
   let nav = <MonocleNav active store />
