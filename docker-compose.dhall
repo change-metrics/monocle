@@ -118,7 +118,7 @@ let createApiService =
         let service =
               { healthcheck = Some
                   ( mkHealthCheck
-                      "python -c \"import requests,sys; r=requests.post('http://localhost:9898/api/2/health', json={}); print(r.text); sys.exit(1) if r.status_code!=200 else sys.exit(0)\""
+                      "curl --silent --fail localhost:9898/health || exit 1"
                   )
               , depends_on = Some [ "elastic" ]
               , command = Some
