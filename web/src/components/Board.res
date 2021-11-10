@@ -142,6 +142,7 @@ module ColumnEditor = {
     ~queryRef: ref<string>,
     ~orderRef: ref<option<SearchTypes.order>>,
     ~onRemove: int => unit,
+    ~onSwap: int => unit,
   ) => {
     let (_, doRender) = React.useState(_ => 0)
     let setAndRender = (r, v) => {
@@ -176,9 +177,17 @@ module ColumnEditor = {
       <MGridItemXl1>
         {maybeRender(
           count > 1,
-          <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-            {"Remove"->str}
-          </Patternfly.Button>,
+          <>
+            <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
+              {"Remove"->str}
+            </Patternfly.Button>
+            {maybeRender(
+              pos + 1 < count,
+              <Patternfly.Button variant=#Danger onClick={_ => onSwap(pos)}>
+                {"Swap"->str}
+              </Patternfly.Button>,
+            )}
+          </>,
         )}
       </MGridItemXl1>
     </MGrid>
@@ -292,6 +301,7 @@ module Board = {
   type action =
     | AddColumn
     | RemoveColumn(int)
+    | SwapColumn(int)
     | SetStyle(style)
     | Save(string, string, array<(ref<string>, ref<string>, ref<option<SearchTypes.order>>)>)
 
@@ -304,6 +314,25 @@ module Board = {
     | RemoveColumn(pos) => {
         ...board,
         columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos),
+      }
+    | SwapColumn(pos) => {
+        let rec swap = (l: list<Column.t>, pos: int, index: int, ret: option<Column.t>) => {
+          switch l {
+          | list{} => l
+          | list{x, ...xs} =>
+            pos == index
+              ? swap(xs, pos, index + 1, Some(x))
+              : switch ret {
+                | None => swap(xs, pos, index + 1, None)->Belt.List.add(x)
+                | Some(ret) => swap(xs, pos, index + 1, None)->Belt.List.add(ret)->Belt.List.add(x)
+                }
+          }
+        }
+        let columns =
+          pos + 1 < board.columns->Belt.List.length
+            ? swap(board.columns, pos, 0, None)
+            : board.columns
+        {...board, columns: columns}
       }
     | SetStyle(style) => {
         ...board,
@@ -355,6 +384,11 @@ module Board = {
       let onRemove = pos => {
         doSave()
         RemoveColumn(pos)->dispatch
+      }
+
+      let onSwap = pos => {
+        doSave()
+        SwapColumn(pos)->dispatch
       }
 
       let topRow =
@@ -421,6 +455,7 @@ module Board = {
                   queryRef
                   orderRef
                   onRemove
+                  onSwap
                   count={columnsCount}
                 />
               )
