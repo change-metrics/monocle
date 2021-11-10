@@ -166,6 +166,8 @@ module ColumnEditor = {
           setValue={v => setQuery(v, ())}
           onSave={v => setQuery(v, ())}
           error={None} /* TODO: handle per column query errors */
+          displayApply=false
+          isApplyEnabled={None}
         />
       </MGridItemXl6>
       <MGridItemXl3>

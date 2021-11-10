@@ -161,7 +161,6 @@ module Tooltip = {
         style={ReactDOM.Style.make(~color="#007bff", ())}>
         <Patternfly.Icons.OutlinedQuestionCircle />
       </a>
-      {" "->str}
     </>
   }
 }
