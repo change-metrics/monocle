@@ -2,10 +2,11 @@ name: Static Analysis
 
 on:
   pull_request:
-    branches: [master]
+    branches: 
+      - master
 
 jobs:
-  build:
+  check-python:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,3 +21,13 @@ jobs:
           pip install tox
       - name: Static Analysis
         run: tox -e linters
+  check-k8s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: test
+        uses: instrumenta/kubeval-action@master
+        with:
+          strict: true
+          files: ./deployment
+          ignore_missing_schemas: false
