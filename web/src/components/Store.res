@@ -89,7 +89,10 @@ module Store = {
   let reducer = (state: t, action: action) =>
     switch action {
     | RemoveToast(toast) => {...state, toasts: state.toasts->Belt.List.keep(x => x != toast)}
-    | AddToast(toast) => {...state, toasts: state.toasts->Belt.List.keep(x => x != toast)->Belt.List.add(toast)}
+    | AddToast(toast) => {
+        ...state,
+        toasts: state.toasts->Belt.List.keep(x => x != toast)->Belt.List.add(toast),
+      }
     | ChangeIndex(index) => {
         RescriptReactRouter.push("/" ++ index)
         create(index)

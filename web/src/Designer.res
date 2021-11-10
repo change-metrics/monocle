@@ -37,7 +37,9 @@ module App = {
         ("group", <GroupView.GroupTable group={Fixture.group_get} />),
         (
           "change",
-          <div className="container"> <Change.DataItem store change={Fixture.change} hideChange /> </div>,
+          <div className="container">
+            <Change.DataItem store change={Fixture.change} hideChange />
+          </div>,
         ),
         (
           "table",
@@ -52,9 +54,7 @@ module App = {
         (
           "changeList",
           <NChangeView.ChangeList
-            store
-            changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray}
-            hideChange
+            store changes={Belt.List.make(100, Fixture.change)->Belt.List.toArray} hideChange
           />,
         ),
         (
