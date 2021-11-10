@@ -178,15 +178,19 @@ module ColumnEditor = {
         {maybeRender(
           count > 1,
           <>
-            <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-              {"Remove"->str}
-            </Patternfly.Button>
             {maybeRender(
               pos + 1 < count,
-              <Patternfly.Button variant=#Danger onClick={_ => onSwap(pos)}>
-                {"Swap"->str}
-              </Patternfly.Button>,
+              <Tooltip content={"Swap"->str}>
+                <Patternfly.Button isSmall={true} variant=#Control onClick={_ => onSwap(pos)}>
+                  <Patternfly.Icons.ArrowsAltV />
+                </Patternfly.Button>
+              </Tooltip>,
             )}
+            <Tooltip content={"Remove"}>
+              <Patternfly.Button isSmall={true} variant=#Danger onClick={_ => onRemove(pos)}>
+                <Patternfly.Icons.Trash />
+              </Patternfly.Button>
+            </Tooltip>
           </>,
         )}
       </MGridItemXl1>
