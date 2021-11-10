@@ -226,7 +226,9 @@ module Bar = {
         <a
           onClick={_ => setShowFieldSelector(_ => true)}
           style={ReactDOM.Style.make(~color="#007bff", ())}>
-          <Patternfly.Icons.PlusCircle />
+          <Tooltip content={"Show query editor modal"->str}>
+            <Patternfly.Icons.PlusCircle />
+          </Tooltip>
         </a>
         {" "->str}
       </>
