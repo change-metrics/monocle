@@ -16,7 +16,7 @@ module Column = {
   module Row = {
     module RView = {
       @react.component
-      let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
+      let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
         let (state, _) = store
         let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
         switch changes->Belt.Array.length {
@@ -24,7 +24,9 @@ module Column = {
         | _ =>
           changes
           ->Belt.Array.map(((status, change)) =>
-            <Change.RowItem store key={change.url} change status dispatchChange />
+            isChangeVisible(status)
+              ? <Change.RowItem store key={change.url} change status dispatchChange />
+              : React.null
           )
           ->React.array
         }
@@ -33,7 +35,7 @@ module Column = {
 
     // TODO: merge common code with Column
     @react.component
-    let make = (~store: Store.t, ~column) => {
+    let make = (~store: Store.t, ~column, ~isChangeVisible) => {
       let (state, _dispatch) = store
       let (result, setResult) = React.useState(_ => None)
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
@@ -60,7 +62,7 @@ module Column = {
           title={err.message ++ " at " ++ string_of_int(Int32.to_int(err.position))} variant=#Danger
         />
       | Some(SearchTypes.Changes(items)) =>
-        <RView store changesAll={items.changes->Belt.List.toArray} />
+        <RView store isChangeVisible changesAll={items.changes->Belt.List.toArray} />
       | Some(_) => React.null
       }
     }
@@ -68,7 +70,7 @@ module Column = {
 
   module CView = {
     @react.component
-    let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>) => {
+    let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
       let (state, _) = store
       let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
       switch changes->Belt.Array.length {
@@ -77,7 +79,9 @@ module Column = {
         <Patternfly.DataList isCompact={true}>
           {changes
           ->Belt.Array.map(((status, change)) =>
-            <Change.DataItem store key={change.url} change status dispatchChange />
+            isChangeVisible(status)
+              ? <Change.DataItem store key={change.url} change status dispatchChange />
+              : React.null
           )
           ->React.array}
         </Patternfly.DataList>
@@ -86,7 +90,7 @@ module Column = {
   }
 
   @react.component
-  let make = (~store: Store.t, ~column) => {
+  let make = (~store: Store.t, ~column, ~isChangeVisible) => {
     let (state, _) = store
     let (result, setResult) = React.useState(_ => None)
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
@@ -118,7 +122,7 @@ module Column = {
             variant=#Danger
           />
         | Some(SearchTypes.Changes(items)) =>
-          <CView store changesAll={items.changes->Belt.List.toArray} />
+          <CView store isChangeVisible changesAll={items.changes->Belt.List.toArray} />
         | Some(_) => React.null
         }}
       </Patternfly.CardBody>
@@ -445,13 +449,15 @@ let make = (~store: Store.t) => {
 
   let editor = <Board.Editor store columns board dispatch />
 
+  let (toggle, isChangeVisible) = HiddenChanges.useToggle()
+
   let board = switch board.style {
   | Board.Kanban =>
     <Patternfly.Layout.Split hasGutter={true}>
       {columns
       ->Belt.Array.mapWithIndex((pos, column) =>
         <Patternfly.Layout.SplitItem key={column.name ++ string_of_int(pos)}>
-          <Column store column />
+          <Column store column isChangeVisible />
         </Patternfly.Layout.SplitItem>
       )
       ->React.array}
@@ -470,7 +476,7 @@ let make = (~store: Store.t) => {
                 <i> {(" : " ++ column.query)->str} </i>
               </td>
             </tr>
-            <Column.Row store column />
+            <Column.Row store column isChangeVisible />
           </tbody>
         </React.Fragment>
       )
@@ -481,7 +487,7 @@ let make = (~store: Store.t) => {
   <MStack>
     <MStackItem> {editor} </MStackItem>
     <MStackItem>
-      <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
+      {toggle} <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
     </MStackItem>
   </MStack>
 }

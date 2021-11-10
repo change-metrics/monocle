@@ -38,13 +38,17 @@ module ChangeList = {
     ~changes: HiddenChanges.changeArray,
     ~dispatchChange: HiddenChanges.dispatch,
   ) => {
+    let (toggle, isChangeVisible) = HiddenChanges.useToggle()
     let (changesArray, paginate) = usePagination(changes)
     <>
+      {toggle}
       {paginate}
       <Patternfly.DataList isCompact={true}>
         {changesArray
         ->Belt.Array.map(((status, change)) =>
-          <Change.DataItem store key={change.change_id} change status dispatchChange />
+          isChangeVisible(status)
+            ? <Change.DataItem store key={change.change_id} change status dispatchChange />
+            : React.null
         )
         ->React.array}
       </Patternfly.DataList>

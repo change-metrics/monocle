@@ -55,6 +55,22 @@ let setStatus: (changeStatus, SearchTypes.change, changeArray) => changeArray = 
     }
   )
 
+// A hook to return a toggle widget
+let useToggle = () => {
+  let (isChecked, setToggle) = React.useState(_ => false)
+  let label = switch isChecked {
+  | true => "Hide changes"
+  | false => "Show hidden changes"
+  }
+  let onChange = (_, _) => setToggle(x => !x)
+  let isChangeVisible = status => isChecked ? true : status != Hidden
+  let style = ReactDOM.Style.make(~float="right", ())
+  (
+    <span style> <Patternfly.Checkbox id="hidden-toggle" isChecked onChange label /> </span>,
+    isChangeVisible,
+  )
+}
+
 // A hook that returns a list of annotate changes changes
 let use = (dexie, xs) => {
   let (hidden, setHidden) = React.useState(_ => [])
