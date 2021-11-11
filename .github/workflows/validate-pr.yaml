@@ -129,3 +129,16 @@ jobs:
       - name: Run npm format
         run: |
           cd web && npm run format
+  run-k8s-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
+      - name: run k8s deployment on the cluster
+        run: |
+          namespace=monocle
+          kubectl create namespace "${namespace}" 
+          kubectl create --namespace "${namespace}" --filename ./deployment/ 
+          kubectl wait --for=condition=Ready --namespace "${namespace}" pods --all
