@@ -135,7 +135,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Start minikube
-        uses: medyagh/setup-minikube@master
+        uses: meroxa/setup-minikube@master
+        with:
+          minikube-version: 1.24.0
       - name: run k8s deployment on the cluster
         run: |
           namespace=monocle
