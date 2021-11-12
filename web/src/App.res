@@ -141,17 +141,31 @@ let make = () => {
   }
 
   let store = Store.use(initIndex)
-  let (state, _) = store
+  let (state, dispatch) = store
   let (showAbout, setShowAbout) = React.useState(_ => false)
 
+  // let showSettings = _ => "settings"->RescriptReactRouter.push
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
   let headerTools =
     <PageHeaderTools>
       <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
       <PageHeaderToolsGroup>
         <PageHeaderToolsItem>
-          <div onClick={_ => setShowAbout(_ => true)}> <Patternfly.Icons.InfoAlt /> </div>
+          <div
+            onClick={_ => setShowAbout(_ => true)}
+            style={ReactDOM.Style.make(~cursor="pointer", ())}>
+            <Patternfly.Icons.InfoAlt />
+          </div>
         </PageHeaderToolsItem>
+        /*
+        <PageHeaderToolsItem>
+          <div
+            onClick={showSettings}
+            style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
+            <Patternfly.Icons.Cog />
+          </div>
+        </PageHeaderToolsItem>
+ */
       </PageHeaderToolsGroup>
     </PageHeaderTools>
   let nav = <MonocleNav active store />
@@ -161,30 +175,48 @@ let make = () => {
   // This sep prevent footer from hidding page content, not pretty but this works!
   let sep = {<> <br /> <br /> <br /> </>}
 
-  <Page header sidebar isManagedSidebar={true}>
-    {state.index == ""
-      ? React.null
-      : <PageSection variant=#Dark> <Search.Top store /> </PageSection>}
-    <PageSection isFilled={true}>
-      {switch url.path {
-      | list{} => <Indices.Indices store />
-      | list{"help", "search"} => <HelpSearch.View store />
-      | list{_} => <Activity store />
-      | list{_, "active_authors"} => <ActivePeopleView store />
-      | list{_, "peers_strength"} => <PeersStrengthView store />
-      | list{_, "new_authors"} => <NewContributorsView store />
-      | list{_, "projects"} => <ProjectsView store />
-      | list{_, "user_groups"} => <GroupsView store />
-      | list{_, "user_groups", group} => <GroupView group store />
-      | list{_, "repos"} => <ReposView store />
-      | list{_, "changes"} => <NChangeView store />
-      | list{_, "change", change} => <ChangeView change store />
-      | list{_, "board"} => <Board store />
-      | _ => <p> {"Not found"->str} </p>
-      }}
-      {sep}
-    </PageSection>
-  </Page>
+  <>
+    <Page header sidebar isManagedSidebar={true}>
+      {state.index == ""
+        ? React.null
+        : <PageSection variant=#Dark> <Search.Top store /> </PageSection>}
+      <PageSection isFilled={true}>
+        {switch url.path {
+        | list{} => <Indices.Indices store />
+        | list{"help", "search"} => <HelpSearch.View store />
+        | list{_, "settings"} => <LocalSettings.View store />
+        | list{_} => <Activity store />
+        | list{_, "active_authors"} => <ActivePeopleView store />
+        | list{_, "peers_strength"} => <PeersStrengthView store />
+        | list{_, "new_authors"} => <NewContributorsView store />
+        | list{_, "projects"} => <ProjectsView store />
+        | list{_, "user_groups"} => <GroupsView store />
+        | list{_, "user_groups", group} => <GroupView group store />
+        | list{_, "repos"} => <ReposView store />
+        | list{_, "changes"} => <NChangeView store />
+        | list{_, "change", change} => <ChangeView change store />
+        | list{_, "board"} => <Board store />
+        | _ => <p> {"Not found"->str} </p>
+        }}
+        {sep}
+      </PageSection>
+    </Page>
+    <ul className="pf-c-alert-group pf-m-toast">
+      {state.toasts
+      ->Belt.List.mapWithIndex((idx, toast) =>
+        <li className="pf-c-alert-group__item">
+          <Patternfly.Alert
+            key={idx->string_of_int}
+            title={toast}
+            timeout={4000}
+            onTimeout={_ => toast->RemoveToast->dispatch}
+          />
+        </li>
+      )
+      ->Belt.List.toArray
+      ->React.array}
+    </ul>
+  </>
 }
 
 let default = make

@@ -51,6 +51,8 @@ module Store = {
     projects: projectsR,
     changes_pies_panel: bool,
     about: aboutR,
+    dexie: Dexie.Database.t,
+    toasts: list<string>,
   }
   type action =
     | ChangeIndex(string)
@@ -64,6 +66,8 @@ module Store = {
     | FetchProjects(projectsR)
     | FetchAbout(aboutR)
     | ReverseChangesPiePanelState
+    | RemoveToast(string)
+    | AddToast(string)
   type dispatch = action => unit
 
   let create = index => {
@@ -78,10 +82,17 @@ module Store = {
     projects: None,
     about: None,
     changes_pies_panel: false,
+    dexie: MonoIndexedDB.mkDexie(),
+    toasts: list{},
   }
 
   let reducer = (state: t, action: action) =>
     switch action {
+    | RemoveToast(toast) => {...state, toasts: state.toasts->Belt.List.keep(x => x != toast)}
+    | AddToast(toast) => {
+        ...state,
+        toasts: state.toasts->Belt.List.keep(x => x != toast)->Belt.List.add(toast),
+      }
     | ChangeIndex(index) => {
         RescriptReactRouter.push("/" ++ index)
         create(index)

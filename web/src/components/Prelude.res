@@ -180,6 +180,11 @@ module NetworkRender = {
 
 // Convenient functions
 
+let getDate = (ts: option<TimestampTypes.timestamp>): Js.Date.t =>
+  ts->Belt.Option.getExn->Belt.Option.getExn
+
+let getCurrentTime = () => Js.Date.now()->Js.Date.fromFloat
+
 let str = React.string
 // Render component if the predicate is true
 let maybeRender = (pred: bool, component: React.element): React.element =>

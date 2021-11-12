@@ -50,7 +50,15 @@ setChangeID xs = do
   MkSystemTime sec _ <- getSystemTime
   let mkid x = show sec <> show x
   let newChanges = zipWith (\c x -> c {echangeId = mkid x}) xs ([0 ..] :: [Int])
-  pure $ map (\c -> c {echangeUrl = "http://review.example.org/" <> echangeId c}) newChanges
+  pure $
+    map
+      ( \c ->
+          c
+            { echangeChangeId = "change-" <> echangeId c,
+              echangeUrl = "http://review.example.org/" <> echangeId c
+            }
+      )
+      newChanges
 
 -- | Creates a bunch of event in the last 3 weeks
 createFakeEvents :: IO [T.ScenarioEvent]

@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@dusty-phillips/rescript-dexie": "https://github.com/TristanCacqueray/rescript-dexie",
     "@patternfly/react-core": "^4.115.2",
     "@patternfly/react-table": "^4.29.12",
     "@rescript/react": "^0.10.2",
-    "@softwarefactory-project/re-patternfly": "^3.0.2",
+    "@softwarefactory-project/re-patternfly": "^3.0.3",
     "axios": "^0.21.4",
     "bootstrap": "^4.6.0",
     "bootstrap-icons": "^1.4.1",
