@@ -15,16 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
-import Card from 'react-bootstrap/Card'
-import ListGroup from 'react-bootstrap/ListGroup'
 import PropTypes from 'prop-types'
-
 import { Line } from 'react-chartjs-2'
 
-import {hasSmallWidth} from './common'
+import { hasSmallWidth } from './common'
 
 class AuthorsHisto extends React.Component {
   prepareDataSet(data) {
@@ -77,44 +71,19 @@ class AuthorsHisto extends React.Component {
   render() {
     const data = this.prepareDataSet(this.props.data)
     return (
-      <Row>
-        <Col md={3}>
-          <ListGroup>
-            <ListGroup.Item>
-              Change authors:{' '}
-              {this.props.data.change_authors}
-            </ListGroup.Item>
-            <ListGroup.Item>
-              Review authors:{' '}
-              {this.props.data.review_authors}
-            </ListGroup.Item>
-            <ListGroup.Item>
-              Comment authors:{' '}
-              {this.props.data.comment_authors}
-            </ListGroup.Item>
-          </ListGroup>
-        </Col>
-        <Col md={9}>
-          <Card>
-            <Card.Body>
-                <Line
-                  data={data}
-                  width={50}
-                  // On small screen the legend takes the whole height so detect and adjust
-                  height={hasSmallWidth() ? 90 : 30}
-                  options={{
-                    legend: {
-                      labels: {
-                        boxWidth: 30
-                      }
-                    }
-                  }}
-                />
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    )
+      <Line
+        data={data}
+        width={50}
+        // On small screen the legend takes the whole height so detect and adjust
+        height={hasSmallWidth() ? 90 : 30}
+        options={{
+          legend: {
+            labels: {
+              boxWidth: 30
+            }
+          }
+        }}
+      />)
   }
 }
 
@@ -123,9 +92,6 @@ AuthorsHisto.propTypes = {
     change_histo: PropTypes.any,
     comment_histo: PropTypes.any,
     review_histo: PropTypes.any,
-    change_authors: PropTypes.any,
-    comment_authors: PropTypes.any,
-    review_authors: PropTypes.any,
   })
 }
 

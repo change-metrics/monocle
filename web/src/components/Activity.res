@@ -120,19 +120,15 @@ module ChangesMergedDuration = {
   }
 }
 
-module CAuthorsHistoStats = {
-  @react.component @module("./authors_histo.jsx")
-  external make: (
-    ~change_authors: int32,
-    ~comment_authors: int32,
-    ~review_authors: int32,
-    ~change_histo: array<SearchTypes.histo>,
-    ~comment_histo: array<SearchTypes.histo>,
-    ~review_histo: array<SearchTypes.histo>,
-  ) => React.element = "CAuthorsHistoStats"
-}
-
 module AuthorHistoStats = {
+  module CAuthorsHistoChart = {
+    @react.component @module("./authors_histo.jsx")
+    external make: (
+      ~change_histo: array<SearchTypes.histo>,
+      ~comment_histo: array<SearchTypes.histo>,
+      ~review_histo: array<SearchTypes.histo>,
+    ) => React.element = "CAuthorsHistoStats"
+  }
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
@@ -148,14 +144,26 @@ module AuthorHistoStats = {
       | _ => None
       }
     let childrenBuilder = (data: Web.SearchTypes.activity_stats) =>
-      <CAuthorsHistoStats
-        change_authors={data.change_authors}
-        comment_authors={data.comment_authors}
-        review_authors={data.review_authors}
-        change_histo={data.changes_histo->Belt.List.toArray}
-        comment_histo={data.comments_histo->Belt.List.toArray}
-        review_histo={data.reviews_histo->Belt.List.toArray}
-      />
+      <MGrid>
+        <MGridItemXl3>
+          <Card isCompact={true}>
+            <CardBody> {"Change authors: " ++ data.change_authors->int32_str} </CardBody>
+          </Card>
+          <Card isCompact={true}>
+            <CardBody> {"Review authors: " ++ data.review_authors->int32_str} </CardBody>
+          </Card>
+          <Card isCompact={true}>
+            <CardBody> {"Comment authors: " ++ data.comment_authors->int32_str} </CardBody>
+          </Card>
+        </MGridItemXl3>
+        <MGridItemXl9>
+          <CAuthorsHistoChart
+            change_histo={data.changes_histo->Belt.List.toArray}
+            comment_histo={data.comments_histo->Belt.List.toArray}
+            review_histo={data.reviews_histo->Belt.List.toArray}
+          />
+        </MGridItemXl9>
+      </MGrid>
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
