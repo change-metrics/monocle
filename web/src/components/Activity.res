@@ -144,26 +144,38 @@ module AuthorHistoStats = {
       | _ => None
       }
     let childrenBuilder = (data: Web.SearchTypes.activity_stats) =>
-      <MGrid>
-        <MGridItemXl3>
-          <Card isCompact={true}>
-            <CardBody> {"Change authors: " ++ data.change_authors->int32_str} </CardBody>
+      <Patternfly.Layout.Stack hasGutter={true}>
+        <Patternfly.Layout.StackItem>
+          <Card>
+            <CardBody>
+              <CAuthorsHistoChart
+                change_histo={data.changes_histo->Belt.List.toArray}
+                comment_histo={data.comments_histo->Belt.List.toArray}
+                review_histo={data.reviews_histo->Belt.List.toArray}
+              />
+            </CardBody>
           </Card>
-          <Card isCompact={true}>
-            <CardBody> {"Review authors: " ++ data.review_authors->int32_str} </CardBody>
-          </Card>
-          <Card isCompact={true}>
-            <CardBody> {"Comment authors: " ++ data.comment_authors->int32_str} </CardBody>
-          </Card>
-        </MGridItemXl3>
-        <MGridItemXl9>
-          <CAuthorsHistoChart
-            change_histo={data.changes_histo->Belt.List.toArray}
-            comment_histo={data.comments_histo->Belt.List.toArray}
-            review_histo={data.reviews_histo->Belt.List.toArray}
-          />
-        </MGridItemXl9>
-      </MGrid>
+        </Patternfly.Layout.StackItem>
+        <Patternfly.Layout.StackItem>
+          <Patternfly.Layout.Grid hasGutter={false}>
+            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+              <Card isCompact={true}>
+                <CardBody> {"Change authors: " ++ data.change_authors->int32_str} </CardBody>
+              </Card>
+            </Patternfly.Layout.GridItem>
+            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+              <Card isCompact={true}>
+                <CardBody> {"Review authors: " ++ data.review_authors->int32_str} </CardBody>
+              </Card>
+            </Patternfly.Layout.GridItem>
+            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+              <Card isCompact={true}>
+                <CardBody> {"Comment authors: " ++ data.comment_authors->int32_str} </CardBody>
+              </Card>
+            </Patternfly.Layout.GridItem>
+          </Patternfly.Layout.Grid>
+        </Patternfly.Layout.StackItem>
+      </Patternfly.Layout.Stack>
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
