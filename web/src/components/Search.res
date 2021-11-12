@@ -191,6 +191,8 @@ module Bar = {
     ~onSave: string => unit,
     ~showTooltips: bool=true,
     ~error: option<string>,
+    ~displayApply: bool=true,
+    ~isApplyEnabled: option<_ => unit>,
   ) => {
     let (showFieldSelector, setShowFieldSelector) = React.useState(_ => startWithFieldModalOpen)
     let appendExpr = expr => {
@@ -211,24 +213,43 @@ module Bar = {
     let id = "col-search"
     let onChange = (v, _) => setValue(v)
     let _type = #Text
-    <MGrid>
-      <MGridItemXl2>
-        <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
+    let inputText = switch error {
+    // Patternfly TextInput doesn't render properly when both validated and iconVariant are set.
+    // Instead of doing complicated dynamic props, this switch duplicate the common props
+    | Some(_) => <TextInputUp id value onChange onKeyUp _type validated=#Error />
+    | None => <TextInputUp id value onChange onKeyUp _type iconVariant=#Search />
+    }
+    let icons =
+      <>
         {showTooltips ? <HelpSearch.Tooltip store /> : React.null}
-        <Patternfly.Button onClick={_ => setShowFieldSelector(_ => true)}>
-          {"Add filter"->str}
-        </Patternfly.Button>
-      </MGridItemXl2>
-      <MGridItemXl10>
-        {
-          // Patternfly TextInput doesn't render properly when both validated and iconVariant are set.
-          // Instead of doing complicated dynamic props, this switch duplicate the common props
-          switch error {
-          | Some(_) => <TextInputUp id value onChange onKeyUp _type validated=#Error />
-          | None => <TextInputUp id value onChange onKeyUp _type iconVariant=#Search />
-          }
-        }
-      </MGridItemXl10>
+        {" "->str}
+        <a
+          onClick={_ => setShowFieldSelector(_ => true)}
+          style={ReactDOM.Style.make(~color="#007bff", ())}>
+          <Tooltip content={"Show query editor modal"->str}>
+            <Patternfly.Icons.PlusCircle />
+          </Tooltip>
+        </a>
+        {" "->str}
+      </>
+    <MGrid>
+      <FieldSelectorModal store isOpen={showFieldSelector} onClose={appendExpr} />
+      {switch displayApply {
+      | false => <>
+          <MGridItemXl11> {inputText} </MGridItemXl11> <MGridItemXl1> {icons} </MGridItemXl1>
+        </>
+      | true => <>
+          <MGridItemXl10> {inputText} </MGridItemXl10>
+          <MGridItemXl2>
+            {icons}
+            {switch isApplyEnabled {
+            | None => React.null
+            | Some(onClick) =>
+              <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
+            }}
+          </MGridItemXl2>
+        </>
+      }}
     </MGrid>
   }
 }
@@ -321,14 +342,15 @@ module Order = {
       setShowOrderSelector(_ => false)
     }
     let onClick = _ => setShowOrderSelector(_ => true)
+    let orderToString = (order: SearchTypes.order) =>
+      ("by " ++ order.field ++ order.direction->orderDirToString)->str
     <>
       <OrderSelectorModal value isOpen={showOrderSelector} onClose={setOrder} />
       {switch value {
       | None => <Patternfly.Button onClick> {"Set order"->str} </Patternfly.Button>
       | Some(order) =>
         <span>
-          <Patternfly.Button variant=#Tertiary onClick> {"Change Order"} </Patternfly.Button>
-          {("order by " ++ order.field ++ order.direction->orderDirToString)->str}
+          <Patternfly.Button variant=#Tertiary onClick> {order->orderToString} </Patternfly.Button>
         </span>
       }}
     </>
@@ -400,16 +422,15 @@ module Top = {
     }
 
     let onClick = _ => onSave(value)
+    let isApplyEnabled = savedValue == value ? None : Some(onClick)
+    let displayApply = true
 
     <React.Fragment>
       <QSErrorModal error showErrorModal setShowErrorModal />
       <MGrid>
-        <MGridItemXl10> <Bar value setValue onSave store error /> </MGridItemXl10>
-        <MGridItemXl2>
-          {value != savedValue
-            ? <Patternfly.Button _type=#Submit onClick> {"Apply"->str} </Patternfly.Button>
-            : React.null}
-        </MGridItemXl2>
+        <MCenteredContent>
+          <Bar value setValue onSave store error displayApply isApplyEnabled />
+        </MCenteredContent>
       </MGrid>
     </React.Fragment>
   }

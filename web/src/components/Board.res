@@ -142,6 +142,7 @@ module ColumnEditor = {
     ~queryRef: ref<string>,
     ~orderRef: ref<option<SearchTypes.order>>,
     ~onRemove: int => unit,
+    ~onSwap: int => unit,
   ) => {
     let (_, doRender) = React.useState(_ => 0)
     let setAndRender = (r, v) => {
@@ -154,11 +155,31 @@ module ColumnEditor = {
 
     <MGrid>
       <MGridItemXl1>
+        {maybeRender(
+          count > 1,
+          <>
+            <Tooltip content={"Remove"}>
+              <Patternfly.Button isSmall={true} variant=#Danger onClick={_ => onRemove(pos)}>
+                <Patternfly.Icons.Trash />
+              </Patternfly.Button>
+            </Tooltip>
+            {maybeRender(
+              pos + 1 < count,
+              <Tooltip content={"Swap"->str}>
+                <Patternfly.Button isSmall={true} variant=#Control onClick={_ => onSwap(pos)}>
+                  <Patternfly.Icons.ArrowsAltV />
+                </Patternfly.Button>
+              </Tooltip>,
+            )}
+          </>,
+        )}
+      </MGridItemXl1>
+      <MGridItemXl2>
         <Patternfly.TextInput
           id="col-name" value={nameRef.contents} onChange={setName} _type=#Text
         />
-      </MGridItemXl1>
-      <MGridItemXl6>
+      </MGridItemXl2>
+      <MGridItemXl7>
         <Search.Bar
           store
           value={queryRef.contents}
@@ -166,19 +187,13 @@ module ColumnEditor = {
           setValue={v => setQuery(v, ())}
           onSave={v => setQuery(v, ())}
           error={None} /* TODO: handle per column query errors */
+          displayApply=false
+          isApplyEnabled={None}
         />
-      </MGridItemXl6>
-      <MGridItemXl3>
+      </MGridItemXl7>
+      <MGridItemXl2>
         <Search.Order value={orderRef.contents} setValue={v => setOrder(v, ())} />
-      </MGridItemXl3>
-      <MGridItemXl1>
-        {maybeRender(
-          count > 1,
-          <Patternfly.Button variant=#Danger onClick={_ => onRemove(pos)}>
-            {"Remove"->str}
-          </Patternfly.Button>,
-        )}
-      </MGridItemXl1>
+      </MGridItemXl2>
     </MGrid>
   }
 }
@@ -290,6 +305,7 @@ module Board = {
   type action =
     | AddColumn
     | RemoveColumn(int)
+    | SwapColumn(int)
     | SetStyle(style)
     | Save(string, string, array<(ref<string>, ref<string>, ref<option<SearchTypes.order>>)>)
 
@@ -302,6 +318,25 @@ module Board = {
     | RemoveColumn(pos) => {
         ...board,
         columns: board.columns->Belt.List.keepWithIndex((_, index) => index != pos),
+      }
+    | SwapColumn(pos) => {
+        let rec swap = (l: list<Column.t>, pos: int, index: int, ret: option<Column.t>) => {
+          switch l {
+          | list{} => l
+          | list{x, ...xs} =>
+            pos == index
+              ? swap(xs, pos, index + 1, Some(x))
+              : switch ret {
+                | None => swap(xs, pos, index + 1, None)->Belt.List.add(x)
+                | Some(ret) => swap(xs, pos, index + 1, None)->Belt.List.add(ret)->Belt.List.add(x)
+                }
+          }
+        }
+        let columns =
+          pos + 1 < board.columns->Belt.List.length
+            ? swap(board.columns, pos, 0, None)
+            : board.columns
+        {...board, columns: columns}
       }
     | SetStyle(style) => {
         ...board,
@@ -353,6 +388,11 @@ module Board = {
       let onRemove = pos => {
         doSave()
         RemoveColumn(pos)->dispatch
+      }
+
+      let onSwap = pos => {
+        doSave()
+        SwapColumn(pos)->dispatch
       }
 
       let topRow =
@@ -419,6 +459,7 @@ module Board = {
                   queryRef
                   orderRef
                   onRemove
+                  onSwap
                   count={columnsCount}
                 />
               )

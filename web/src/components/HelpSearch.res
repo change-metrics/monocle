@@ -154,14 +154,14 @@ module Tooltip = {
   @react.component
   let make = (~store: Store.t) => {
     let (showHelpModal, setShowHelpModal) = React.useState(_ => false)
+    let content = "Show query language syntax"
     <>
       <SearchHelpModal store isOpen={showHelpModal} onClose={_ => setShowHelpModal(_ => false)} />
       <a
         onClick={_ => setShowHelpModal(_ => true)}
         style={ReactDOM.Style.make(~color="#007bff", ())}>
-        <Patternfly.Icons.OutlinedQuestionCircle />
+        <Tooltip content> <Patternfly.Icons.OutlinedQuestionCircle /> </Tooltip>
       </a>
-      {" "->str}
     </>
   }
 }

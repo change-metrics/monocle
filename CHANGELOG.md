@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - [config] Ability to define custom links to be displayed in the web UI.
 - [web] An about modal that displays configured links and Monocle version.
 - [web] A new toggle can be used to show or hide change until they are updated.
+- [web] Board - swap button for board columns editor.
 
 ### Changed
 
