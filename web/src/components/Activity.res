@@ -13,14 +13,16 @@ module GraphWithStats = {
       <Patternfly.Layout.StackItem>
         <Card> <CardBody> {graph} </CardBody> </Card>
       </Patternfly.Layout.StackItem>
-      {stats
-      ->Belt.List.map(statE =>
-        <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-          <Card isCompact={true}> <CardBody> {statE} </CardBody> </Card>
-        </Patternfly.Layout.GridItem>
-      )
-      ->Belt.List.toArray
-      ->React.array}
+      <Patternfly.Layout.Grid hasGutter={false}>
+        {stats
+        ->Belt.List.map(statE =>
+          <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+            <Card isCompact={true}> <CardBody> {statE} </CardBody> </Card>
+          </Patternfly.Layout.GridItem>
+        )
+        ->Belt.List.toArray
+        ->React.array}
+      </Patternfly.Layout.Grid>
     </Patternfly.Layout.Stack>
   }
 }
@@ -49,114 +51,51 @@ module ChangesLifeCycleStats = {
       | SearchTypes.Lifecycle_stats(data) => Some(data)
       | _ => None
       }
-    let childrenBuilder = (data: Web.SearchTypes.lifecycle_stats) =>
-      <Patternfly.Layout.Stack hasGutter={true}>
-        <Patternfly.Layout.StackItem>
-          <Card>
-            <CardBody>
-              <ChangesLifeCycleHisto
-                created={data.created_histo->Belt.List.toArray}
-                updated={data.updated_histo->Belt.List.toArray}
-                merged={data.merged_histo->Belt.List.toArray}
-                abandoned={data.abandoned_histo->Belt.List.toArray}
-              />
-            </CardBody>
-          </Card>
-        </Patternfly.Layout.StackItem>
-        <Patternfly.Layout.StackItem>
-          <Patternfly.Layout.Grid hasGutter={false}>
-            {switch data.created {
-            | Some(created) =>
-              <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-                <Card isCompact={true}>
-                  <CardBody>
-                    {created.events_count->int32_str ++
-                    " changes created by " ++
-                    created.authors_count->int32_str ++ " authors"}
-                  </CardBody>
-                </Card>
-              </Patternfly.Layout.GridItem>
-            | None => React.null
-            }}
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  <MonoLink
-                    store
-                    filter="state:abandoned"
-                    path="changes"
-                    name={data.abandoned->int32_str ++ " changes abandoned"}
-                  />
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  <MonoLink
-                    store
-                    filter="state:merged"
-                    path="changes"
-                    name={data.merged->int32_str ++ " changes merged"}
-                  />
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  <MonoLink
-                    store
-                    filter="state:self_merged"
-                    path="changes"
-                    name={data.self_merged->int32_str ++ " changes self merged"}
-                  />
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  {"Mean Time To Merge: " ++ data.ttm_mean->momentHumanizeDuration}
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  {"TTM Median Deviation: " ++ data.ttm_variability->momentHumanizeDuration}
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody> {data.updates_of_changes->int32_str ++ " updates of changes"} </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  {"Changes with tests: " ++ data.changes_with_tests->Belt.Float.toString ++ "%"}
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  {data.iterations_per_change->Belt.Float.toString ++ " iterations per change"}
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody>
-                  {data.commits_per_change->Belt.Float.toString ++ " commits per change"}
-                </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-          </Patternfly.Layout.Grid>
-        </Patternfly.Layout.StackItem>
-      </Patternfly.Layout.Stack>
+    let childrenBuilder = (data: Web.SearchTypes.lifecycle_stats) => {
+      let graph =
+        <ChangesLifeCycleHisto
+          created={data.created_histo->Belt.List.toArray}
+          updated={data.updated_histo->Belt.List.toArray}
+          merged={data.merged_histo->Belt.List.toArray}
+          abandoned={data.abandoned_histo->Belt.List.toArray}
+        />
+      let stats = list{
+        {
+          switch data.created {
+          | Some(created) =>
+            (created.events_count->int32_str ++
+            " changes created by " ++
+            created.authors_count->int32_str ++ " authors")->str
+          | None => React.null
+          }
+        },
+        <MonoLink
+          store
+          filter="state:abandoned"
+          path="changes"
+          name={data.abandoned->int32_str ++ " changes abandoned"}
+        />,
+        <MonoLink
+          store
+          filter="state:merged"
+          path="changes"
+          name={data.merged->int32_str ++ " changes merged"}
+        />,
+        <MonoLink
+          store
+          filter="state:self_merged"
+          path="changes"
+          name={data.self_merged->int32_str ++ " changes self merged"}
+        />,
+        ("Mean Time To Merge: " ++ data.ttm_mean->momentHumanizeDuration)->str,
+        ("TTM Median Deviation: " ++ data.ttm_variability->momentHumanizeDuration)->str,
+        (data.updates_of_changes->int32_str ++ " updates of changes")->str,
+        ("Changes with tests: " ++ data.changes_with_tests->Belt.Float.toString ++ "%")->str,
+        (data.iterations_per_change->Belt.Float.toString ++ " iterations per change")->str,
+        (data.commits_per_change->Belt.Float.toString ++ " commits per change")->str,
+      }
+      <GraphWithStats graph stats />
+    }
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
