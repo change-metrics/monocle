@@ -6,6 +6,25 @@
 open Prelude
 open MLink
 
+module GraphWithStats = {
+  @react.component
+  let make = (~graph: React.element, ~stats: list<React.element>) => {
+    <Patternfly.Layout.Stack hasGutter={true}>
+      <Patternfly.Layout.StackItem>
+        <Card> <CardBody> {graph} </CardBody> </Card>
+      </Patternfly.Layout.StackItem>
+      {stats
+      ->Belt.List.map(statE =>
+        <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+          <Card isCompact={true}> <CardBody> {statE} </CardBody> </Card>
+        </Patternfly.Layout.GridItem>
+      )
+      ->Belt.List.toArray
+      ->React.array}
+    </Patternfly.Layout.Stack>
+  }
+}
+
 module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
     @react.component @module("./changes_lifecycle.jsx")
@@ -240,39 +259,20 @@ module AuthorHistoStats = {
       | SearchTypes.Activity_stats(data) => Some(data)
       | _ => None
       }
-    let childrenBuilder = (data: Web.SearchTypes.activity_stats) =>
-      <Patternfly.Layout.Stack hasGutter={true}>
-        <Patternfly.Layout.StackItem>
-          <Card>
-            <CardBody>
-              <CAuthorsHistoChart
-                change_histo={data.changes_histo->Belt.List.toArray}
-                comment_histo={data.comments_histo->Belt.List.toArray}
-                review_histo={data.reviews_histo->Belt.List.toArray}
-              />
-            </CardBody>
-          </Card>
-        </Patternfly.Layout.StackItem>
-        <Patternfly.Layout.StackItem>
-          <Patternfly.Layout.Grid hasGutter={false}>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody> {"Change authors: " ++ data.change_authors->int32_str} </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody> {"Review authors: " ++ data.review_authors->int32_str} </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-            <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
-              <Card isCompact={true}>
-                <CardBody> {"Comment authors: " ++ data.comment_authors->int32_str} </CardBody>
-              </Card>
-            </Patternfly.Layout.GridItem>
-          </Patternfly.Layout.Grid>
-        </Patternfly.Layout.StackItem>
-      </Patternfly.Layout.Stack>
+    let childrenBuilder = (data: Web.SearchTypes.activity_stats) => {
+      let graph =
+        <CAuthorsHistoChart
+          change_histo={data.changes_histo->Belt.List.toArray}
+          comment_histo={data.comments_histo->Belt.List.toArray}
+          review_histo={data.reviews_histo->Belt.List.toArray}
+        />
+      let stats = list{
+        {("Change authors: " ++ data.change_authors->int32_str)->str},
+        {("Review authors: " ++ data.review_authors->int32_str)->str},
+        {("Comment authors: " ++ data.comment_authors->int32_str)->str},
+      }
+      <GraphWithStats graph stats />
+    }
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
