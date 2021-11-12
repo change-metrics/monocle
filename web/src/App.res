@@ -144,7 +144,7 @@ let make = () => {
   let (state, dispatch) = store
   let (showAbout, setShowAbout) = React.useState(_ => false)
 
-  let showSettings = _ => "settings"->RescriptReactRouter.push
+  // let showSettings = _ => "settings"->RescriptReactRouter.push
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
   let headerTools =
     <PageHeaderTools>
