@@ -26,6 +26,12 @@ let momentFromNow = %raw(`
   }
 `)
 
+let momentHumanizeDuration = %raw(`
+  function(d) {
+    return moment.duration(d, 'seconds').humanize()
+  }
+`)
+
 let resetLocationSearch = %raw(`
   function() {
     window.history.replaceState(null, null, window.location.origin + window.location.pathname);
