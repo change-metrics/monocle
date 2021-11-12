@@ -13,6 +13,7 @@ module Monocle.Prelude
     setEnv,
     headMaybe,
     Secret (..),
+    (:::),
 
     -- * containers
     mapMutate,
@@ -156,6 +157,9 @@ import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
 import Test.Tasty.HUnit
 import Witch hiding (over)
+
+-- | Annotate a type with a name (from https://hackage.haskell.org/package/vulkan-3.4/docs/Vulkan-NamedType.html)
+type (name :: k) ::: a = a
 
 -- | A newtype for secret like token pulled from the environment
 newtype Secret = Secret {unSecret :: Text}

@@ -10,7 +10,7 @@ import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
 import Monocle.Client (withClient)
-import Monocle.Prelude
+import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Options.Generic
 import qualified Streaming.Prelude as S
@@ -27,10 +27,10 @@ data CliEnv = CliEnv
 cliEnv :: IO CliEnv
 cliEnv =
   Env.parse (header "monocle-api available environement variables") $
-    CliEnv <$> var (str) "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
-      <*> var (str) "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
+    CliEnv <$> var str "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
+      <*> var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
 
-data CLIOptions w = CLIOption
+newtype CLIOptions w = CLIOption
   { port :: w ::: Maybe Int <?> "The API port to listen to, default to 9898"
   }
   deriving stock (Generic)
@@ -92,12 +92,10 @@ instance ParseRecord Lentille where
 
 dump :: (MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
 dump limitM stream = do
-  xs <- S.toList_ $ brk $ stream
+  xs <- S.toList_ $ brk stream
   liftIO . putBSLn . from . encodePrettyWithSpace 2 $ xs
   where
-    brk = case limitM of
-      Nothing -> id
-      Just limit -> S.take limit
+    brk = maybe id S.take limitM
 
 mainLentille :: IO ()
 mainLentille = do

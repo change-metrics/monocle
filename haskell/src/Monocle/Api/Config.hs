@@ -120,7 +120,7 @@ defaultTenant name =
     }
 
 class MonadConfig m where
-  mGetSecret :: Text -> Maybe Text -> m Secret
+  mGetSecret :: "default env name" ::: Text -> "config env name" ::: Maybe Text -> m Secret
   mReloadConfig :: FilePath -> m (m (Bool, Config))
 
 instance MonadConfig IO where
