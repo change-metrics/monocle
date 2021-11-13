@@ -15,13 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
-import Card from 'react-bootstrap/Card'
-
 import moment from 'moment'
-
 import ComplexityGraph from './complexity_graph'
 
 class DurationComplexityGraph extends ComplexityGraph {
@@ -49,10 +43,7 @@ class DurationComplexityGraph extends ComplexityGraph {
 }
 
 const ChangesReviewStats = (prop) => (
-  <Card.Body>
-    <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
-  </Card.Body>
+  <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
 )
-
 
 export default ChangesReviewStats

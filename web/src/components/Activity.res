@@ -158,13 +158,12 @@ module ChangesReviewStats = {
   }
 }
 
-module DurationComplexicityGraph = {
-  @react.component @module("./duration_complexity_graph.jsx")
-  external make: (~data: array<SearchTypes.change>, ~onClick: string => unit) => React.element =
-    "default"
-}
-
 module ChangesMergedDuration = {
+  module DurationComplexicityGraph = {
+    @react.component @module("./duration_complexity_graph.jsx")
+    external make: (~data: array<SearchTypes.change>, ~onClick: string => unit) => React.element =
+      "default"
+  }
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
@@ -186,8 +185,10 @@ module ChangesMergedDuration = {
       | SearchTypes.Changes(data) => Some(data)
       | _ => None
       }
-    let childrenBuilder = (data: Web.SearchTypes.changes) =>
-      <DurationComplexicityGraph data={data.changes->Belt.List.toArray} onClick />
+    let childrenBuilder = (data: Web.SearchTypes.changes) => {
+      let graph = <DurationComplexicityGraph data={data.changes->Belt.List.toArray} onClick />
+      <GraphWithStats graph stats={list{}} />
+    }
 
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
