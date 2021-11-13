@@ -15,8 +15,8 @@ module GraphWithStats = {
       </Patternfly.Layout.StackItem>
       <Patternfly.Layout.Grid hasGutter={false}>
         {stats
-        ->Belt.List.map(statE =>
-          <Patternfly.Layout.GridItem md=Column._6 xl=Column._4>
+        ->Belt.List.mapWithIndex((i, statE) =>
+          <Patternfly.Layout.GridItem key={i->string_of_int} md=Column._6 xl=Column._4>
             <Card isCompact={true}> <CardBody> {statE} </CardBody> </Card>
           </Patternfly.Layout.GridItem>
         )
@@ -102,16 +102,14 @@ module ChangesLifeCycleStats = {
   }
 }
 
-module CChangesReviewStats = {
-  @react.component @module("./changes_review.jsx")
-  external make: (
-    ~data: SearchTypes.review_stats,
-    ~comment_histo: array<SearchTypes.histo>,
-    ~review_histo: array<SearchTypes.histo>,
-  ) => React.element = "ChangesReviewStats"
-}
-
 module ChangesReviewStats = {
+  module CChangesReviewHisto = {
+    @react.component @module("./changes_review.jsx")
+    external make: (
+      ~comment_histo: array<SearchTypes.histo>,
+      ~review_histo: array<SearchTypes.histo>,
+    ) => React.element = "CChangeReviewEventsHisto"
+  }
   @react.component
   let make = (~store: Store.t) => {
     let (state, _) = store
@@ -126,12 +124,34 @@ module ChangesReviewStats = {
       | SearchTypes.Review_stats(data) => Some(data)
       | _ => None
       }
-    let childrenBuilder = (data: Web.SearchTypes.review_stats) =>
-      <CChangesReviewStats
-        data
-        comment_histo={data.comment_histo->Belt.List.toArray}
-        review_histo={data.review_histo->Belt.List.toArray}
-      />
+    let childrenBuilder = (data: Web.SearchTypes.review_stats) => {
+      let graph =
+        <CChangesReviewHisto
+          comment_histo={data.comment_histo->Belt.List.toArray}
+          review_histo={data.review_histo->Belt.List.toArray}
+        />
+      let stats = list{
+        switch data.comment_count {
+        | Some(comment) =>
+          (comment.events_count->int32_str ++
+          " changes commented by " ++
+          comment.authors_count->int32_str ++ " authors")->str
+
+        | None => React.null
+        },
+        switch data.review_count {
+        | Some(review) =>
+          (review.events_count->int32_str ++
+          " changes reviewed by " ++
+          review.authors_count->int32_str ++ " authors")->str
+
+        | None => React.null
+        },
+        ("First comment mean time: " ++ data.comment_delay->momentHumanizeDuration)->str,
+        ("First review mean time: " ++ data.review_delay->momentHumanizeDuration)->str,
+      }
+      <GraphWithStats graph stats />
+    }
     <QueryRenderCard
       request trigger title tooltip_content icon match childrenBuilder isCentered=false
     />
