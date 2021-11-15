@@ -29,7 +29,7 @@ module GraphWithStats = {
 
 module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
-    @react.component @module("./changes_lifecycle.jsx")
+    @react.component @module("./chartjs.jsx")
     external make: (
       ~created: array<SearchTypes.histo>,
       ~updated: array<SearchTypes.histo>,
@@ -104,7 +104,7 @@ module ChangesLifeCycleStats = {
 
 module ChangesReviewStats = {
   module CChangesReviewHisto = {
-    @react.component @module("./changes_review.jsx")
+    @react.component @module("./chartjs.jsx")
     external make: (
       ~comment_histo: array<SearchTypes.histo>,
       ~review_histo: array<SearchTypes.histo>,
@@ -160,9 +160,9 @@ module ChangesReviewStats = {
 
 module ChangesMergedDuration = {
   module DurationComplexicityGraph = {
-    @react.component @module("./duration_complexity_graph.jsx")
+    @react.component @module("./chartjs.jsx")
     external make: (~data: array<SearchTypes.change>, ~onClick: string => unit) => React.element =
-      "default"
+      "ChangesReviewStats"
   }
   @react.component
   let make = (~store: Store.t) => {
@@ -198,7 +198,7 @@ module ChangesMergedDuration = {
 
 module AuthorHistoStats = {
   module CAuthorsHistoChart = {
-    @react.component @module("./authors_histo.jsx")
+    @react.component @module("./chartjs.jsx")
     external make: (
       ~change_histo: array<SearchTypes.histo>,
       ~comment_histo: array<SearchTypes.histo>,
