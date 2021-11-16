@@ -20,6 +20,7 @@ nix-shell --command "hoogle server -p 8080 --local --haskell"
 Build the monitoring containers:
 
 ```ShellSession
+podman load < $(nix-build --attr containerBackend)
 podman load < $(nix-build --attr containerPrometheus)
 podman load < $(nix-build --attr containerGrafana)
 ```
@@ -29,4 +30,11 @@ Test the containers:
 ```ShellSession
 podman run --network host -v /srv/prometheus:/data:Z -e API_TARGET=localhost:19875 --rm quay.io/change-metrics/monocle-prometheus:latest
 podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
+```
+
+Build the project:
+
+```
+export PODENV_COMMIT=$(git show HEAD --format="format:%H" -q)
+$(nix-build --attr monocle)/bin/monocle-api --help
 ```
