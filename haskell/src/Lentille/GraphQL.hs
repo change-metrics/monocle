@@ -28,11 +28,12 @@ data GraphClient = GraphClient
   { manager :: HTTP.Manager,
     url :: Text,
     host :: Text,
-    token :: Secret
+    token :: Secret,
+    crawler :: Text
   }
 
-newGraphClient :: MonadGraphQL m => Text -> Secret -> m GraphClient
-newGraphClient url token = do
+newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
+newGraphClient crawler url token = do
   manager <- newManager
   let host =
         maybe
@@ -64,7 +65,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request
-  response <- lift $ httpRequest request manager
+  response <- lift $ retry crawler $ httpRequest request manager
 
   -- Record the event
   tell [(request, response)]
