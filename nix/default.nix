@@ -107,7 +107,7 @@ let
   pkgsNonFree = nixpkgsSrc { config.allowUnfree = true; };
 
   # local devel env
-  elk-port = 19200;
+  elasticsearch-port = 19200;
   nginx-port = 18080;
   monocle-port = 19876;
   monocle2-port = 19875;
@@ -115,11 +115,28 @@ let
   prom-port = 19090;
   grafana-port = 19030;
 
+  # script helpers to setup service starting environment
+  headers = ''
+    #!${pkgs.dash}/bin/dash -e
+    if ! test -z "$DEBUG"; then set -x; fi
+    export PATH=${pkgs.coreutils}/bin:${pkgs.gnused}:$PATH
+  '';
+
+  # script helpers to create application home on the hosts
+  mkHome = name: ''
+    mkdir -p ${name} 2> /dev/null || {
+      echo "${name}: creating"
+      /bin/sudo mkdir -m 0700 ${name}
+      /bin/sudo chown $(id -u) ${name}
+    }
+    cd ${name}
+  '';
+
   # DB
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
-  elk = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
+  elasticsearch = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
     version = "7.10.1";
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
@@ -128,40 +145,32 @@ let
       sha256 = "1r62afmpmwyxifr4kjlannj44zbh67gdcch5czh4fllv459ajf7f";
     };
   });
-  elk-home = "/tmp/es-home";
-  elkConf = pkgs.writeTextFile {
+  elasticsearch-home = "/var/lib/elasticsearch";
+  elasticsearchConf = pkgs.writeTextFile {
     name = "elasticsearch.yml";
     text = ''
       cluster.name: monocle
-      http.port: ${toString elk-port}
+      http.port: ${toString elasticsearch-port}
       discovery.type: single-node
       network.host: 0.0.0.0
       cluster.routing.allocation.disk.threshold_enabled: false
     '';
   };
-  elkStart = pkgs.writeScriptBin "elk-start" ''
-    #!/bin/sh
+  elasticsearchStart = pkgs.writeScriptBin "elasticsearch-start" ''
+    ${headers}
+
     # todo: only set max_map_count when necessary
-    ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144
-    set -ex
-    export ES_HOME=${elk-home}
+    ${pkgs.sudo}/bin/sudo sysctl -w vm.max_map_count=262144 || true
+
+    ${mkHome elasticsearch-home}
+    export ES_HOME=${elasticsearch-home}
     mkdir -p $ES_HOME/logs $ES_HOME/data
-    ${pkgs.rsync}/bin/rsync -a ${elk}/config/ $ES_HOME/config/
-    ln -sf ${elk}/modules/ $ES_HOME/
+    ${pkgs.rsync}/bin/rsync -a ${elasticsearch}/config/ $ES_HOME/config/
+    ln -sf ${elasticsearch}/modules/ $ES_HOME/
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
-    cat ${elkConf} > $ES_HOME/config/elasticsearch.yml
-    exec ${elk}/bin/elasticsearch -p $ES_HOME/pid
-  '';
-  elkStop = pkgs.writeScriptBin "elk-stop" ''
-    #!/bin/sh
-    kill $(cat /tmp/es-home/pid)
-  '';
-  elkDestroy = pkgs.writeScriptBin "elk-destroy" ''
-    #!/bin/sh
-    set -x
-    [ -f ${elk-home}/pid ] && (${elkStop}/bin/elkstop; sleep 5)
-    rm -Rf ${elk-home}/
+    cat ${elasticsearchConf} > $ES_HOME/config/elasticsearch.yml
+    exec ${elasticsearch}/bin/elasticsearch
   '';
 
   # Prometheus
@@ -183,22 +192,23 @@ let
                 - CRAWLER_TARGET
     '';
   };
+  prom-home = "/var/lib/prometheus";
   promStart = pkgs.writeScriptBin "prometheus-start" ''
-    #!${pkgs.dash}/bin/dash -e
+    ${headers}
 
     # config from env
     API_TARGET=''${API_TARGET:-localhost:${toString monocle2-port}}
     CRAWLER_TARGET=''${CRAWLER_TARGET:-localhost:9001}
+    LISTEN=''${PROMETHEUS_TARGET:-0.0.0.0:${toString prom-port}}
 
-    echo "Prometheus for $API_TARGET and $CRAWLER_TARGET"
+    echo "Starting $LISTEN: prometheus for $API_TARGET api and $CRAWLER_TARGET crawler"
 
     # boot
-    ${pkgs.coreutils}/bin/mkdir -p /tmp/prom-home
-    ${pkgs.coreutils}/bin/cat ${promConf} | \
-      ${pkgs.gnused}/bin/sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > /tmp/prom-home/config.yml
-    exec ${pkgsHead.prometheus}/bin/prometheus \
-      --config.file=/tmp/prom-home/config.yml    \
-      --web.listen-address="0.0.0.0:${toString prom-port}"
+    ${mkHome prom-home}
+    cat ${promConf} | \
+      sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > config.yml
+    cd ${prom-home}
+    exec ${pkgsHead.prometheus}/bin/prometheus --config.file=config.yml --web.listen-address="$LISTEN"
   '';
 
   promContainer = pkgs.dockerTools.buildLayeredImage {
@@ -207,11 +217,11 @@ let
     # created = "now";
     config = {
       Entrypoint = [ "${promStart}/bin/prometheus-start" ];
-      Volumes = { "/data" = { }; };
+      Volumes = { "${prom-home}" = { }; };
     };
   };
 
-  grafana-home = "/tmp/grafana-home";
+  grafana-home = "/var/lib/grafana";
   grafanaPromDS = pkgs.writeTextFile {
     name = "prometheus.yml";
     text = ''
@@ -245,6 +255,9 @@ let
       [server]
       http_port = ${toString grafana-port}
 
+      [dashboards]
+      default_home_dashboard_path = ${grafana-home}/dashboards/monocle.json
+
       [auth.anonymous]
       enabled = true
       org_role = Viewer
@@ -277,19 +290,23 @@ let
   '';
 
   grafanaStart = pkgs.writeScriptBin "grafana-start" ''
-    #!${pkgs.dash}/bin/dash -e
+    ${headers}
 
     # config from env
     ADMIN_PASSWORD=''${GRAFANA_PASS:-monocle}
     PROMETHEUS_URL=''${PROMETHEUS_URL:-http://localhost:${toString prom-port}}
-    echo "Grafana for $PROMETHEUS_URL"
+    echo "Starting 0.0.0.0:${
+      toString grafana-port
+    }: grafana for $PROMETHEUS_URL prometheus"
 
     # boot
+    ${mkHome grafana-home}
     GRAFANA_BASE=${pkgsHead.grafana}
-    mkdir -p ${grafana-home}/dashboards
-    ${pkgs.rsync}/bin/rsync -a $GRAFANA_BASE/share/grafana/ ${grafana-home}/
+    ${pkgs.rsync}/bin/rsync --exclude /public/ -r $GRAFANA_BASE/share/grafana/ ${grafana-home}/
+    ln -sf  $GRAFANA_BASE/share/grafana/public/ ${grafana-home}/
     find ${grafana-home} -type f | xargs chmod 0600
     find ${grafana-home} -type d | xargs chmod 0700
+    mkdir -p ${grafana-home}/dashboards
     cat ${grafanaConfig}/monocle.json > ${grafana-home}/dashboards/monocle.json
     cd ${grafana-home}
     cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
@@ -305,7 +322,7 @@ let
     contents = [ pkgs.coreutils pkgs.gnused pkgs.findutils ];
     config = {
       Entrypoint = [ "${grafanaStart}/bin/grafana-start" ];
-      Volumes = { "/data" = { }; };
+      Volumes = { "${grafana-home}" = { }; };
     };
   };
 
@@ -389,7 +406,7 @@ let
         ${monocle-home}/bin/python3 setup.py install
     fi
 
-    export ELASTIC_CONN="localhost:${toString elk-port}"
+    export ELASTIC_CONN="localhost:${toString elasticsearch-port}"
     exec ${monocle-home}/bin/uwsgi --http ":${
       toString monocle-port
     }" --manage-script-name --mount /app=monocle.webapp:app
@@ -438,7 +455,7 @@ let
     fi
 
     exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${
-      toString elk-port
+      toString elasticsearch-port
     }" crawler --config etc/config.yaml
   '';
 
@@ -470,7 +487,7 @@ let
         (start-worker-process (concat "monocle-" name) (concat command "/bin/" name "-start")))
 
       (defun monocle-start ()
-        (monocle-startp "elk" "${elkStart}" )
+        (monocle-startp "elasticsearch" "${elasticsearchStart}" )
         (monocle-startp "nginx" "${nginxStart}" )
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
@@ -489,7 +506,7 @@ let
   '';
 
   services-req = [
-    elkStart
+    elasticsearchStart
     nginxStart
     promStart
     grafanaStart
