@@ -1,5 +1,6 @@
 let Grafana =
-      https://raw.githubusercontent.com/weeezes/dhall-grafana/f78d2887939dcb555a47a4b85a91a3d6b38ec2ea/package.dhall sha256:a0e1b5432090944fa671efce0085c6049019ae0d00ca289c268b4528d1cd39af
+        env:DHALL_GRAFANA
+      ? https://raw.githubusercontent.com/weeezes/dhall-grafana/f78d2887939dcb555a47a4b85a91a3d6b38ec2ea/package.dhall sha256:a0e1b5432090944fa671efce0085c6049019ae0d00ca289c268b4528d1cd39af
 
 let datasource = Some (env:GRAFANA_DATASOURCE as Text ? "Prometheus")
 

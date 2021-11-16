@@ -6,6 +6,13 @@ let
     sha256 = "058l6ry119mkg7pwmm7z4rl1721w0zigklskq48xb5lmgig4l332";
   };
   nixpkgsSrc = (import nixpkgsPath);
+
+  pkgsHead = (import (fetchTarball {
+    url =
+      "https://github.com/NixOS/nixpkgs/archive/b964655a7d2ab1dcff46aa73d5510239bd193c88.tar.gz";
+    sha256 = "sha256:0h721rbi33kvw9nkvws6qjjrjmlzmkjqllbhrybp608l6zgrvnf1";
+  }) { });
+
   gitignoreSrc = pkgs.fetchFromGitHub {
     owner = "hercules-ci";
     repo = "gitignore.nix";
@@ -169,15 +176,40 @@ let
         - job_name: api
           static_configs:
             - targets:
-                - localhost:${toString monocle2-port}
+                - API_TARGET
+        - job_name: crawler
+          static_configs:
+            - targets:
+                - CRAWLER_TARGET
     '';
   };
   promStart = pkgs.writeScriptBin "prometheus-start" ''
-    #!/bin/sh
-    exec ${pkgs.prometheus}/bin/prometheus \
-      --config.file=${promConf}            \
+    #!${pkgs.dash}/bin/dash -e
+
+    # config from env
+    API_TARGET=''${API_TARGET:-localhost:${toString monocle2-port}}
+    CRAWLER_TARGET=''${CRAWLER_TARGET:-localhost:9001}
+
+    echo "Prometheus for $API_TARGET and $CRAWLER_TARGET"
+
+    # boot
+    ${pkgs.coreutils}/bin/mkdir -p /tmp/prom-home
+    ${pkgs.coreutils}/bin/cat ${promConf} | \
+      ${pkgs.gnused}/bin/sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > /tmp/prom-home/config.yml
+    exec ${pkgsHead.prometheus}/bin/prometheus \
+      --config.file=/tmp/prom-home/config.yml    \
       --web.listen-address="0.0.0.0:${toString prom-port}"
   '';
+
+  promContainer = pkgs.dockerTools.buildLayeredImage {
+    name = "quay.io/change-metrics/monocle-prometheus";
+    tag = "latest";
+    # created = "now";
+    config = {
+      Entrypoint = [ "${promStart}/bin/prometheus-start" ];
+      Volumes = { "/data" = { }; };
+    };
+  };
 
   grafana-home = "/tmp/grafana-home";
   grafanaPromDS = pkgs.writeTextFile {
@@ -187,8 +219,7 @@ let
       datasources:
       - name: Prometheus
         type: prometheus
-        access: direct
-        url: http://localhost:${toString prom-port}
+        url: PROMETHEUS_URL
     '';
   };
   grafanaDashboards = pkgs.writeTextFile {
@@ -214,24 +245,69 @@ let
       [server]
       http_port = ${toString grafana-port}
 
+      [auth.anonymous]
+      enabled = true
+      org_role = Viewer
+      hide_version = true
+
       [plugin.grafana-image-renderer]
       rendering_ignore_https_errors = true
     '';
   };
+
+  dhall-grafana = pkgsHead.dhallPackages.dhall-grafana;
+
+  grafanaConfig = pkgs.runCommand "build-grafana-config" { } ''
+    echo Building grafana config
+    export XDG_CACHE_HOME=/tmp/dhall-home
+    mkdir -p $XDG_CACHE_HOME/dhall
+
+    export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
+    export DHALL_GRAFANA=${dhall-grafana}/binary.dhall
+    for pkg in ${pkgs.dhallPackages.Prelude} ${dhall-grafana}; do
+        for cache in $pkg/.cache/dhall/*; do
+            ln -sf $cache $XDG_CACHE_HOME/dhall/
+        done
+    done
+
+    mkdir $out
+    ${pkgs.dhall-json}/bin/dhall-to-json  \
+      --file ${../conf/grafana-dashboard.dhall} \
+      --output $out/monocle.json
+  '';
+
   grafanaStart = pkgs.writeScriptBin "grafana-start" ''
-    #!/bin/sh -ex
+    #!${pkgs.dash}/bin/dash -e
+
+    # config from env
+    ADMIN_PASSWORD=''${GRAFANA_PASS:-monocle}
+    PROMETHEUS_URL=''${PROMETHEUS_URL:-http://localhost:${toString prom-port}}
+    echo "Grafana for $PROMETHEUS_URL"
+
+    # boot
+    GRAFANA_BASE=${pkgsHead.grafana}
     mkdir -p ${grafana-home}/dashboards
-    ${pkgs.rsync}/bin/rsync -a ${pkgs.grafana}/share/grafana/ ${grafana-home}/
+    ${pkgs.rsync}/bin/rsync -a $GRAFANA_BASE/share/grafana/ ${grafana-home}/
     find ${grafana-home} -type f | xargs chmod 0600
     find ${grafana-home} -type d | xargs chmod 0700
-    ${pkgs.dhall-json}/bin/dhall-to-json  \
-      --file conf/grafana-dashboard.dhall \
-      --output ${grafana-home}/dashboards/monocle.json
+    cat ${grafanaConfig}/monocle.json > ${grafana-home}/dashboards/monocle.json
     cd ${grafana-home}
     cat ${grafanaDashboards} > conf/provisioning/dashboards/dashboard.yaml
-    cat ${grafanaPromDS} > conf/provisioning/datasources/prometheus.yaml
-    exec ${pkgs.grafana}/bin/grafana-server -config ${grafanaConf}
+    cat ${grafanaPromDS} | sed -e "s|PROMETHEUS_URL|$PROMETHEUS_URL|" > conf/provisioning/datasources/prometheus.yaml
+    cat ${grafanaConf} | sed -e "s/admin_password = monocle/admin_password = $ADMIN_PASSWORD/" > grafana.ini
+    exec $GRAFANA_BASE/bin/grafana-server -config ./grafana.ini
   '';
+
+  grafanaContainer = pkgs.dockerTools.buildLayeredImage {
+    name = "quay.io/change-metrics/monocle-grafana";
+    tag = "latest";
+    # created = "now";
+    contents = [ pkgs.coreutils pkgs.gnused pkgs.findutils ];
+    config = {
+      Entrypoint = [ "${grafanaStart}/bin/grafana-start" ];
+      Volumes = { "/data" = { }; };
+    };
+  };
 
   # WEB
   nginx-home = "/tmp/nginx-home";
@@ -485,6 +561,11 @@ let
     ++ doc-req;
 
 in rec {
+  # containers
+  containerPrometheus = promContainer;
+  containerGrafana = grafanaContainer;
+  test = grafanaConfig;
+
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;

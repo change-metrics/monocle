@@ -508,6 +508,35 @@ Some legacy component are still required until they are migrated to the new Open
 
 5. a crawler service to index github and gerrit changes.
 
+
+## Monistoring
+
+To setup the monitoring:
+
+1. Create the prometheus service by providing the API and CRAWLER location
+
+```ShellSession
+export API_TARGET=localhost:9879
+export CRAWLER_TARGET=localhost:9001
+mkdir -p /srv/prometheus
+podman create --network host -v /srv/prometheus:/data:Z -e API_TARGET=${API_TARGET} -e CRAWLER_TARGET=${CRAWLER_TARGET} --name monocle-prometheus quay.io/change-metrics/monocle-prometheus:latest
+```
+
+2. Create the grafana service
+
+```ShellSession
+podman create --network host --name monocle-grafana quay.io/change-metrics/monocle-grafana:latest
+```
+
+3. Starts the services with systemd
+
+```ShellSession
+mkdir -p ~/.config/systemd/user/
+for service in prometheus grafana; do podman generate systemd -n monocle-$service > ~/.config/systemd/user/monocle-$service.service; done
+systemctl --user daemon-reload
+for service in prometheus grafana; do systemctl --user start monocle-$service; done
+```
+
 ## Contributing
 
 Follow [our contributing guide](CONTRIBUTING.md).
