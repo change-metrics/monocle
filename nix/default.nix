@@ -564,7 +564,6 @@ in rec {
   # containers
   containerPrometheus = promContainer;
   containerGrafana = grafanaContainer;
-  test = grafanaConfig;
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";

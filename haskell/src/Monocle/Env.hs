@@ -33,6 +33,9 @@ newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
   deriving newtype (MonadReader AppEnv)
 
+instance MonadMonitor AppM where
+  doIO = liftIO
+
 -- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
 instance BH.MonadBH AppM where
   getBHEnv = asks (bhEnv . aEnv)
@@ -73,7 +76,7 @@ data QueryEnv = QueryEnv
 newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail, MonadThrow)
   deriving newtype (MonadReader QueryEnv)
-  deriving newtype (MonadUnliftIO)
+  deriving newtype (MonadUnliftIO, MonadMonitor)
 
 -- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv
 instance BH.MonadBH QueryM where

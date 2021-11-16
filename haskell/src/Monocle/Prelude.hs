@@ -127,7 +127,7 @@ module Monocle.Prelude
     fromPBEnum,
 
     -- * prometheus re-exports
-    Prometheus.MonadMonitor,
+    Prometheus.MonadMonitor (..),
     Prometheus.withLabel,
     Prometheus.incCounter,
     Prometheus.counter,
@@ -143,6 +143,8 @@ module Monocle.Prelude
     incrementCounter,
     httpRequestCounter,
     httpFailureCounter,
+    monocleQueryCheckCounter,
+    monocleQueryCounter,
   )
 where
 
@@ -195,6 +197,16 @@ incrementCounter x l = withLabel x l incCounter
 
 -------------------------------------------------------------------------------
 -- Global metrics
+{-# NOINLINE monocleQueryCheckCounter #-}
+monocleQueryCheckCounter :: Prometheus.Counter
+monocleQueryCheckCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "query_check" "")
+
+{-# NOINLINE monocleQueryCounter #-}
+monocleQueryCounter :: Prometheus.Counter
+monocleQueryCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "query" "")
+
 {-# NOINLINE httpRequestCounter #-}
 httpRequestCounter :: CounterLabel
 httpRequestCounter =
