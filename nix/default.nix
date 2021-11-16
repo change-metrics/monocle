@@ -59,12 +59,9 @@ let
 
           # bloodhound needs a new release, use current master for now
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
-            src = pkgs.fetchFromGitHub {
-              owner = "bitemyapp";
-              repo = "bloodhound";
-              rev = "358bf61c1a9504d42d7614fd8385fbf5e03d73d6";
-              sha256 = "04sm06c834aym5glc7wqbknz2gif52wxzfc1cd6x19j6qnxv8f4s";
-            };
+            version = "0.18.0.0";
+            sha256 =
+              "sha256:1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
             broken = false;
           };
 
@@ -87,8 +84,11 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          monocle =
-            hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell) { };
+          # dontCheck because doctests are not working...
+          monocle = (pkgs.haskell.lib.dontCheck
+            (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
+              { })).overrideAttrs
+            (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
             hpPrev.callCabal2nix "monocle-codegen" (gitignoreSource ../codegen)
@@ -564,6 +564,15 @@ in rec {
   # containers
   containerPrometheus = promContainer;
   containerGrafana = grafanaContainer;
+  containerBackend = pkgs.dockerTools.buildLayeredImage {
+    name = "quay.io/change-metrics/monocle-backend";
+    tag = "latest";
+    # created = "now";
+    contents = [ (pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle) ];
+
+  };
+
+  monocle = hsPkgs.monocle;
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
