@@ -406,6 +406,7 @@ searchCheck :: SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
 searchCheck request = do
   let SearchPB.CheckRequest {..} = request
 
+  incCounter monocleQueryCheckCounter
   requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
 
   pure $
@@ -421,6 +422,7 @@ searchQuery :: QueryRequest -> AppM QueryResponse
 searchQuery request = do
   let SearchPB.QueryRequest {..} = request
 
+  incCounter monocleQueryCounter
   requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
 
   case requestE of
