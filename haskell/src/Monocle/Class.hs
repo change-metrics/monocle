@@ -128,20 +128,24 @@ instance MonadCrawler IO where
 -- A network retry system
 
 class Monad m => MonadRetry m where
-  retry :: m a -> m a
+  retry :: Text -> m a -> m a
 
 instance MonadRetry IO where
   retry = retry'
 
 -- | Retry 5 times network action, doubling backoff each time
 -- Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadLog m, MonadIO m) => m a -> m a
-retry' action =
+retry' :: (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) => Text -> m a -> m a
+retry' label baseAction =
   Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries 6)
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries 7)
     [handler]
     (const action)
   where
+    action = do
+      res <- baseAction
+      incrementCounter httpRequestCounter label
+      pure res
     backoff = 500000 -- 500ms
     -- Log network error
     handler (RetryStatus num _ _) = Handler $ \case
@@ -150,5 +154,6 @@ retry' action =
             arg = decodeUtf8 $ HTTP.queryString req
             loc = if num == 0 then url <> arg else url
         mLog . Log Unspecified . LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx
+        incrementCounter httpFailureCounter label
         pure True
       InvalidUrlException _ _ -> pure False

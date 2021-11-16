@@ -7,7 +7,6 @@
 module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
 import Control.Concurrent (forkIO)
-import Control.Exception.Safe (tryAny)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -27,7 +26,6 @@ import Monocle.Prelude
 import qualified Network.HTTP.Types.Status as HTTP
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
-import Prometheus (exportMetricsAsText, register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import qualified UnliftIO.Async as Async
 
@@ -59,7 +57,7 @@ crawlerName Config.Crawler {..} = name
 runMonitoringServer :: Int -> IO ()
 runMonitoringServer port = do
   -- Setup GHC metrics for prometheus
-  void $ register ghcMetrics
+  void $ promRegister ghcMetrics
 
   -- Start the Wai application in the background with Warp
   v <- newEmptyMVar
@@ -302,7 +300,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
               pure $ Just (login, passwd)
             Nothing -> pure Nothing
           (k, gClient) <- getClientGerrit gerrit_url auth
-          let gerritEnv = GerritCrawler.GerritEnv gClient gerrit_prefix getIdentByAliasCB
+          let gerritEnv = GerritCrawler.GerritEnv gClient gerrit_prefix getIdentByAliasCB (Config.getCrawlerName crawler)
               streams =
                 [gerritREProjectsCrawler gerritEnv | maybe False (not . null . gerritRegexProjects) gerrit_repositories]
                   <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]

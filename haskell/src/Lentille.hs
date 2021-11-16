@@ -41,7 +41,7 @@ import qualified Network.HTTP.Client as HTTP
 newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
   deriving newtype (MonadReader CrawlerEnv)
-  deriving newtype (MonadUnliftIO)
+  deriving newtype (MonadUnliftIO, MonadMonitor)
 
 data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient,

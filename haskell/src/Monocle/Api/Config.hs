@@ -260,6 +260,9 @@ getCrawlerTaskData Crawler {..} = case provider of
   BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
   _anyOtherProvider -> []
 
+getCrawlerName :: Crawler -> Text
+getCrawlerName Crawler {..} = name
+
 emptyTenant :: Text -> [Ident] -> Index
 emptyTenant name idents' =
   let crawlers_api_key = Nothing

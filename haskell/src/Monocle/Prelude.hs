@@ -50,6 +50,7 @@ module Monocle.Prelude
     MonadMask,
     MonadCatch (..),
     Handler (Handler),
+    tryAny,
 
     -- * tests
     Assertion,
@@ -124,9 +125,28 @@ module Monocle.Prelude
 
     -- * proto3
     fromPBEnum,
+
+    -- * prometheus re-exports
+    Prometheus.MonadMonitor,
+    Prometheus.withLabel,
+    Prometheus.incCounter,
+    Prometheus.counter,
+    Prometheus.exportMetricsAsText,
+    Prometheus.Info (..),
+
+    -- * promehteus re-exports using alias to avoid conflicts
+    CounterLabel,
+    promRegister,
+    promVector,
+
+    -- * global metrics
+    incrementCounter,
+    httpRequestCounter,
+    httpFailureCounter,
   )
 where
 
+import Control.Exception.Safe (tryAny)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
@@ -145,6 +165,8 @@ import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
 import qualified Google.Protobuf.Timestamp
 import Language.Haskell.TH.Quote (QuasiQuoter)
+import Prometheus (Info (..), counter, incCounter, withLabel)
+import qualified Prometheus
 import Proto3.Suite (Enumerated (..))
 import QQLiterals (qqLiteral)
 import Relude
@@ -155,8 +177,35 @@ import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
+import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
 import Witch hiding (over)
+
+-- | Prometheus
+type CounterLabel = Prometheus.Vector Text Prometheus.Counter
+
+promRegister :: MonadIO m => Prometheus.Metric s -> m s
+promRegister = Prometheus.register
+
+promVector :: Prometheus.Label l => l -> Prometheus.Metric m -> Prometheus.Metric (Prometheus.Vector l m)
+promVector = Prometheus.vector
+
+incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> "label" ::: Text -> m ()
+incrementCounter x l = withLabel x l incCounter
+
+-------------------------------------------------------------------------------
+-- Global metrics
+{-# NOINLINE httpRequestCounter #-}
+httpRequestCounter :: CounterLabel
+httpRequestCounter =
+  unsafePerformIO $ promRegister $ promVector ("crawler") $ Prometheus.counter (Info "http_request" "")
+
+{-# NOINLINE httpFailureCounter #-}
+httpFailureCounter :: CounterLabel
+httpFailureCounter =
+  unsafePerformIO $ promRegister $ promVector ("crawler") $ counter (Info "http_failure" "")
+
+-------------------------------------------------------------------------------
 
 -- | Annotate a type with a name (from https://hackage.haskell.org/package/vulkan-3.4/docs/Vulkan-NamedType.html)
 type (name :: k) ::: a = a

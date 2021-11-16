@@ -150,7 +150,7 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
       wLog $ LogMacroRequestOldestEntity lc (streamType documentStream)
 
       -- Query the monocle api for the oldest entity to be updated.
-      entityM <- retry $ getOldestEntity offset
+      entityM <- retry "monocle" $ getOldestEntity offset
       case entityM of
         Nothing -> wLog $ LogMacroNoOldestEnity lc
         Just entity -> do
@@ -165,12 +165,12 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
               postResult <-
                 process
                   processLogFunc
-                  (retry . addDoc entity)
+                  (retry "monocle" . addDoc entity)
                   (getStream entity)
               case foldr collectPostFailure [] postResult of
                 [] -> do
                   -- Post the commit date
-                  res <- retry $ commitTimestamp entity startTime
+                  res <- retry "monocle" $ commitTimestamp entity startTime
                   if not res
                     then wLog $ LogMacroCommitFailed lc
                     else do

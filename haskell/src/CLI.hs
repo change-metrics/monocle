@@ -90,10 +90,13 @@ data Lentille
 instance ParseRecord Lentille where
   parseRecord = parseRecordWithModifiers lispCaseModifiers
 
-dump :: (MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
+dump :: (MonadCatch m, MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
 dump limitM stream = do
-  xs <- S.toList_ $ brk stream
-  liftIO . putBSLn . from . encodePrettyWithSpace 2 $ xs
+  xsE <- tryAny $ S.toList_ $ brk stream
+  case xsE of
+    Right xs -> liftIO . putBSLn . from . encodePrettyWithSpace 2 $ xs
+    Left _ -> liftIO . putBSLn $ "Couldn't evalue the stream"
+  liftIO . putLBSLn =<< exportMetricsAsText
   where
     brk = maybe id S.take limitM
 
@@ -116,4 +119,4 @@ mainLentille = do
       Nothing -> error $ "Invalid date: " <> show txt
     getGerritEnv url = do
       client <- G.getGerritClient url Nothing
-      pure $ G.GerritEnv client Nothing (const Nothing)
+      pure $ G.GerritEnv client Nothing (const Nothing) "cli"
