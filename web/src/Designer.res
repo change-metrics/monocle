@@ -8,7 +8,6 @@
 import '@patternfly/react-core/dist/styles/base.css'
 import '@patternfly/react-styles/css/components/Table/table.css'
 import './index.css'
-import 'bootstrap/dist/css/bootstrap.min.css'
 `)
 
 open Prelude
