@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import React from 'react'
+import Interweave from "interweave";
+import { UrlMatcher } from "interweave-autolink";
+
 function getWindowDimensions() {
   const { innerWidth: width, innerHeight: height } = window;
   return {
@@ -36,4 +40,15 @@ function addS(count, s = "s") {
   }
 }
 
-export { addS, getWindowDimensions, hasSmallWidth };
+
+class InterweaveContent extends React.Component {
+  render() {
+    return (<Interweave
+      content={this.props.content}
+      disableLineBreaks={false}
+      matchers={[new UrlMatcher("url")]}
+    />)
+  }
+}
+
+export { addS, getWindowDimensions, hasSmallWidth, InterweaveContent };

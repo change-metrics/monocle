@@ -17,6 +17,7 @@
 import React from 'react'
 import { hasSmallWidth } from './common'
 import { Line, Bubble, Pie } from 'react-chartjs-2'
+import { Timeline, TimelineEvent } from 'react-event-timeline'
 import ChordDiagram from 'react-chord-diagram'
 import moment from 'moment'
 
@@ -475,6 +476,75 @@ class PieChart extends React.Component {
   }
 }
 
+class TimelineGraph extends React.Component {
+  TYPE_TO_NAME = {
+    ChangeCreatedEvent: 'Change created',
+    ChangeMergedEvent: 'Change merged',
+    ChangeAbandonedEvent: 'Change abandoned',
+    ChangeCommitPushedEvent: 'Commits pushed',
+    ChangeCommitForcePushedEvent: 'Commits force pushed',
+    ChangeReviewedEvent: 'Change reviewed',
+    ChangeCommentedEvent: 'Change commented'
+  }
+
+  TYPE_TO_COLOR = {
+    ChangeCreatedEvent: 'green',
+    ChangeMergedEvent: 'blue',
+    ChangeAbandonedEvent: 'red',
+    ChangeCommitPushedEvent: 'orange',
+    ChangeCommitForcePushedEvent: 'DarkOrange',
+    ChangeReviewedEvent: 'purple',
+    ChangeCommentedEvent: 'purple'
+  }
+  getTitle(event) {
+    return this.TYPE_TO_NAME[event.type_] + ' by ' + event.author
+  }
+
+  getDate(event) {
+    return moment(event.created_at).fromNow()
+  }
+
+  render() {
+    return (
+      <Timeline>
+        {this.props.data.map((event, idx) => (
+          <TimelineEvent
+            title={this.getTitle(event)}
+            createdAt={this.getDate(event)}
+            key={idx}
+            iconColor={this.TYPE_TO_COLOR[event.type_]}
+          />
+        ))}
+      </Timeline>
+    )
+  }
+}
+
+class CommitsTimelineGraph extends React.Component {
+  getTitle(commit) {
+    return commit.title
+  }
+
+  getDate(commit) {
+    return moment(commit.authored_at).fromNow() + ' by ' + commit.author
+  }
+
+  render() {
+    return (
+      <Timeline>
+        {this.props.data.map((commit, idx) => (
+          <TimelineEvent
+            title={this.getTitle(commit)}
+            createdAt={this.getDate(commit)}
+            key={idx}
+            iconColor="green"
+          />
+        ))}
+      </Timeline>
+    )
+  }
+}
+
 const CAuthorsHistoStats = (prop) => <AuthorsHisto data={prop} />
 const CChangeReviewEventsHisto = (prop) => <ChangeReviewEventsHisto data={prop} />
 const CChangesLifeCycleHisto = (prop) => <ChangesLifeCycleHisto histos={prop} />
@@ -488,5 +558,7 @@ export {
   CChangesLifeCycleHisto,
   ChangesReviewStats,
   ConnectionDiagram,
-  PieChart
+  PieChart,
+  TimelineGraph,
+  CommitsTimelineGraph
 }
