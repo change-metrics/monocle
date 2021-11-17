@@ -4,7 +4,8 @@ pull_request_rules:
       - "#approved-reviews-by>=1"
       - label=merge me
       - check-success=Haskell GHC
-      - check-success=build
+      - check-success=check-python
+      - check-success=check-k8s
       - check-success=docker
     actions:
       merge:
