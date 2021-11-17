@@ -102,7 +102,7 @@ module About = {
   @react.component
   let make = (~store, ~isOpen: bool, ~onClose: unit => unit) =>
     switch Store.Fetch.about(store) {
-    | None => <Spinner />
+    | None => React.null
     | Some(Error(title)) => <Alert variant=#Danger title />
     | Some(Ok({about})) =>
       switch about {
