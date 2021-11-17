@@ -404,3 +404,116 @@ module Table = {
     </>
   }
 }
+
+module ChangeDetailView = {
+  module InterweaveContent = {
+    @react.component @module("./chartjs.jsx")
+    external make: (~content: string) => React.element = "InterweaveContent"
+  }
+  module TimelineGraph = {
+    @react.component @module("./chartjs.jsx")
+    external make: (~data: array<Web.SearchTypes.change_event>) => React.element = "TimelineGraph"
+  }
+  module CommitsTimelineGraph = {
+    @react.component @module("./chartjs.jsx")
+    external make: (~data: array<Web.SearchTypes.commit>) => React.element = "CommitsTimelineGraph"
+  }
+  @react.component
+  let make = (
+    ~store: Web.Store.t,
+    ~change: Web.SearchTypes.change,
+    ~events: array<Web.SearchTypes.change_event>,
+  ) => {
+    let icon = <Patternfly.Icons.InfoCircle />
+    let tooltip_content = "Display change details"
+    let changeTitle = <InterweaveContent content={change.title} />
+    <MonoCard title={"Change details"} tooltip_content icon>
+      <MStack>
+        <MStackItem>
+          <Patternfly.Title headingLevel=#H1> {changeTitle} </Patternfly.Title>
+        </MStackItem>
+        <MStackItem>
+          <ProjectLink store project={change.repository_fullname} />
+          {list{"master", "main", "devel"}->elemText(change.target_branch)
+            ? React.null
+            : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
+          <ExternalLink href={change.url} title={change.title} />
+        </MStackItem>
+        <MStackItem>
+          <Patternfly.Layout.Grid>
+            <Patternfly.Layout.GridItem xl=Column._1>
+              <Mergeable state={change.state} mergeable={change.mergeable} />
+              <State state={change.state} draft={change.draft} />
+            </Patternfly.Layout.GridItem>
+            <Patternfly.Layout.GridItem xl=Column._9>
+              <RelativeDate title="Created " date={change.created_at->getDate} />
+              <AuthorLink store title=" by " author={change.author} />
+              <RelativeDate title=", updated " date={change.updated_at->getDate} />
+            </Patternfly.Layout.GridItem>
+          </Patternfly.Layout.Grid>
+        </MStackItem>
+        <MStackItem> <Approvals withGroup={false} approvals={change.approval} /> </MStackItem>
+        <MStackItem> <Tags withGroup={false} tags={change.labels} /> </MStackItem>
+        <TaskDatas change />
+        <MStackItem>
+          <Patternfly.Card>
+            <Patternfly.CardTitle>
+              <Patternfly.Title headingLevel=#H3> {"Change message"} </Patternfly.Title>
+            </Patternfly.CardTitle>
+            <Patternfly.CardBody> <InterweaveContent content={change.text} /> </Patternfly.CardBody>
+          </Patternfly.Card>
+        </MStackItem>
+        <MStackItem>
+          {"Complexity of " ++
+          change->complexicity->string_of_int ++
+          " in " ++
+          change.commits_count->int32_str ++
+          " commit(s) changing " ++
+          change.changed_files_count->int32_str ++
+          " files(s). (" ++
+          change.additions->int32_str ++
+          " line(s) added, " ++
+          change.deletions->int32_str ++ " line(s) removed)"}
+        </MStackItem>
+        <MStackItem>
+          <Patternfly.Card>
+            <Patternfly.CardTitle>
+              <Patternfly.Title headingLevel=#H3> {"Changed file(s)"} </Patternfly.Title>
+            </Patternfly.CardTitle>
+            <Patternfly.CardBody>
+              {change.changed_files
+              ->Belt.List.map(e =>
+                <div key={e.path}>
+                  {(e.path ++
+                  "(+" ++
+                  e.additions->int32_str ++
+                  ",-" ++
+                  e.deletions->int32_str ++ ")")->str}
+                </div>
+              )
+              ->Belt.List.toArray
+              ->React.array}
+            </Patternfly.CardBody>
+          </Patternfly.Card>
+        </MStackItem>
+        <MStackItem>
+          <Patternfly.Card>
+            <Patternfly.CardTitle>
+              <Patternfly.Title headingLevel=#H3> {"Change timeline"} </Patternfly.Title>
+            </Patternfly.CardTitle>
+            <Patternfly.CardBody>
+              <Patternfly.Layout.Grid>
+                <Patternfly.Layout.GridItem xl=Column._6>
+                  <TimelineGraph data={events} />
+                </Patternfly.Layout.GridItem>
+                <Patternfly.Layout.GridItem xl=Column._6>
+                  <CommitsTimelineGraph data={change.commits->Belt.List.toArray} />
+                </Patternfly.Layout.GridItem>
+              </Patternfly.Layout.Grid>
+            </Patternfly.CardBody>
+          </Patternfly.Card>
+        </MStackItem>
+      </MStack>
+    </MonoCard>
+  }
+}

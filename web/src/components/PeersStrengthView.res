@@ -8,8 +8,8 @@ open Prelude
 
 module ConnectionDiagram = {
   type t = {a1: string, a2: string, s: int}
-  @react.component @module("./connection_diagram")
-  external make: (~data: array<t>) => React.element = "default"
+  @react.component @module("./chartjs.jsx")
+  external make: (~data: array<t>) => React.element = "ConnectionDiagram"
 
   let adapt = (peers: list<SearchTypes.author_peer>) => {
     let rec go = (xs: list<SearchTypes.author_peer>, acc: list<t>) =>
