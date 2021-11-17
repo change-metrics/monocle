@@ -407,7 +407,7 @@ module Table = {
 
 module ChangeDetailView = {
   module InterweaveContent = {
-    @react.component @module("./common.jsx")
+    @react.component @module("./chartjs.jsx")
     external make: (~content: string) => React.element = "InterweaveContent"
   }
   module TimelineGraph = {

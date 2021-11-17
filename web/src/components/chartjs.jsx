@@ -15,12 +15,36 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import React from 'react'
-import { hasSmallWidth } from './common'
 import { Line, Bubble, Pie } from 'react-chartjs-2'
 import { Timeline, TimelineEvent } from 'react-event-timeline'
 import ChordDiagram from 'react-chord-diagram'
 import moment from 'moment'
+import Interweave from "interweave";
+import { UrlMatcher } from "interweave-autolink";
 
+function getWindowDimensions() {
+  const { innerWidth: width, innerHeight: height } = window;
+  return {
+    width,
+    height,
+  };
+}
+
+function hasSmallWidth() {
+  const { width } = getWindowDimensions();
+
+  return width <= 500;
+}
+
+class InterweaveContent extends React.Component {
+  render() {
+    return (<Interweave
+      content={this.props.content}
+      disableLineBreaks={false}
+      matchers={[new UrlMatcher("url")]}
+    />)
+  }
+}
 
 class ChangeReviewEventsHisto extends React.Component {
   prepareDataSet(histos) {
@@ -560,5 +584,6 @@ export {
   ConnectionDiagram,
   PieChart,
   TimelineGraph,
-  CommitsTimelineGraph
+  CommitsTimelineGraph,
+  InterweaveContent
 }
