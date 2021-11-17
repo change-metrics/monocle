@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { hasSmallWidth } from './common'
-import { Line, Bubble } from 'react-chartjs-2'
+import { Line, Bubble, Pie } from 'react-chartjs-2'
 import ChordDiagram from 'react-chord-diagram'
 import moment from 'moment'
 
@@ -413,6 +413,67 @@ class ConnectionDiagram extends React.Component {
   }
 }
 
+class PieChart extends React.Component {
+  constructor(props) {
+    super(props)
+    this.maxSize = props.maxSize || 7
+    this.other_label = props.other_label || 'Others'
+  }
+
+  prepareDataSet(obj) {
+    const labels = obj.items.map((x) => x.key).slice(0, this.maxSize)
+    const data = obj.items.map((x) => x.doc_count).slice(0, this.maxSize)
+    const sum = data.reduce((a, b) => a + b, 0)
+    if (sum < obj.total_hits) {
+      labels.push(this.other_label)
+      data.push(obj.total_hits - sum)
+    }
+    let palette
+    if (this.props.namedPalette) {
+      palette = labels.map((l, i) => this.props.namedPalette[l] || this.props.palette[i])
+    } else {
+      palette = this.props.palette
+    }
+    const pieData = {
+      labels: labels,
+      datasets: [
+        {
+          data: data,
+          backgroundColor: palette
+        }
+      ]
+    }
+    return pieData
+  }
+
+  handleClick(obj, elems) {
+    if (
+      elems &&
+      elems.length > 0 &&
+      elems[0]._index < obj.props.data.items.length
+    ) {
+      const key = obj.props.data.items[elems[0]._index].key
+      obj.props.handleClick(key)
+    }
+  }
+
+  render() {
+    const data = this.prepareDataSet(this.props.data)
+    return (
+      <Pie
+        getElementsAtEvent={(elems) => this.handleClick(this, elems)}
+        // on small screen the legend takes the whole height so detect and adjust
+        height={hasSmallWidth() ? 300 : 200}
+        options={{
+          legend: {
+            display: false
+          }
+        }}
+        data={data}
+      />
+    )
+  }
+}
 
 const CAuthorsHistoStats = (prop) => <AuthorsHisto data={prop} />
 const CChangeReviewEventsHisto = (prop) => <ChangeReviewEventsHisto data={prop} />
@@ -426,5 +487,6 @@ export {
   CChangeReviewEventsHisto,
   CChangesLifeCycleHisto,
   ChangesReviewStats,
-  ConnectionDiagram
+  ConnectionDiagram,
+  PieChart
 }

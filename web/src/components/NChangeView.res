@@ -1,6 +1,6 @@
 open Prelude
 
-module CPie = {
+module PieWithLegend = {
   type entry = {
     key: string,
     doc_count: int,
@@ -9,7 +9,7 @@ module CPie = {
     items: array<entry>,
     total_hits: int,
   }
-  type palette_t = {
+  type named_palette_t = {
     "APPROVED": string,
     "CHANGES_REQUESTED": string,
     "COMMENTED": string,
@@ -21,14 +21,117 @@ module CPie = {
     "Workflow+1": string,
     "Workflow-1": string,
   }
-  @react.component @module("./pie_view.jsx")
-  external make: (
+
+  let getColorFromNamedPalette = (label: string, namedPalette: named_palette_t): option<string> => {
+    switch label {
+    | "APPROVED" => namedPalette["APPROVED"]->Some
+    | "CHANGES_REQUESTED" => namedPalette["CHANGES_REQUESTED"]->Some
+    | "COMMENTED" => namedPalette["COMMENTED"]->Some
+    | "Code-Review+1" => namedPalette["Code-Review+1"]->Some
+    | "Code-Review+2" => namedPalette["Code-Review+2"]->Some
+    | "Code-Review-1" => namedPalette["Code-Review-1"]->Some
+    | "Code-Review-2" => namedPalette["Code-Review-2"]->Some
+    | "DISMISSED" => namedPalette["DISMISSED"]->Some
+    | "Workflow+1" => namedPalette["Workflow+1"]->Some
+    | "Workflow-1" => namedPalette["Workflow-1"]->Some
+    | _ => None
+    }
+  }
+
+  let defaultPalette = [
+    "#247ba0",
+    "#70c1b3",
+    "#b2dbbf",
+    "#f3ffbd",
+    "#ff1654",
+    "#247ba0",
+    "#70c1b3",
+    "#b2dbbf",
+    "#f3ffbd",
+    "#ff1654",
+    "#b2dbbf",
+  ]
+
+  let getColorFromPalette = (index: int, label: string, namedPaletteM: option<named_palette_t>) => {
+    let getFromDefaultPalette = (i: int) =>
+      switch defaultPalette->Belt.Array.get(i) {
+      | Some(color) => color
+      | None => "black"
+      }
+    switch namedPaletteM {
+    | Some(namedPalette) =>
+      switch getColorFromNamedPalette(label, namedPalette) {
+      | Some(color) => color
+      | None => getFromDefaultPalette(index)
+      }
+    | None => getFromDefaultPalette(index)
+    }
+  }
+
+  module PieChart = {
+    @react.component @module("./chartjs.jsx")
+    external make: (
+      ~data: t,
+      ~palette: array<string>,
+      ~namedPalette: named_palette_t=?,
+      ~handleClick: (~value: string) => unit,
+      ~other_label: string=?,
+    ) => React.element = "PieChart"
+  }
+
+  module PieChartLegend = {
+    @react.component
+    let make = (
+      ~data: t,
+      ~namedPalette: option<named_palette_t>,
+      ~handleClick: (~value: string) => unit,
+    ) => {
+      data.items
+      ->Belt.Array.mapWithIndex((i, e) =>
+        <div key={e.key}>
+          <span
+            style={ReactDOM.Style.make(
+              ~backgroundColor={getColorFromPalette(i, e.key, namedPalette)},
+              ~width="10px",
+              ~height="10px",
+              ~display="inline-block",
+              ~cursor="pointer",
+              (),
+            )}
+          />
+          <span> {" "->str} </span>
+          <span
+            key={e.key}
+            onClick={_ => handleClick(~value=e.key)}
+            style={ReactDOM.Style.make(~cursor="pointer", ())}>
+            {e.key->str}
+          </span>
+        </div>
+      )
+      ->React.array
+    }
+  }
+
+  @react.component
+  let make = (
     ~data: t,
     ~title: string,
     ~handleClick: (~value: string) => unit,
-    ~palette: palette_t=?,
-    ~other_label: string=?,
-  ) => React.element = "default"
+    ~namedPalette: option<named_palette_t>=?,
+    ~other_label: option<string>=?,
+  ) => {
+    <React.Fragment>
+      <Patternfly.Card isCompact={true}>
+        <Patternfly.CardTitle>
+          <Patternfly.Title headingLevel=#H3> {title->str} </Patternfly.Title>
+        </Patternfly.CardTitle>
+        <Patternfly.CardBody>
+          <PieChart data palette={defaultPalette} handleClick ?namedPalette ?other_label />
+          <PieChartLegend data namedPalette handleClick />
+        </Patternfly.CardBody>
+      </Patternfly.Card>
+    </React.Fragment>
+  }
 }
 
 module ChangeList = {
@@ -68,11 +171,14 @@ module ChangesTopPies = {
       query: addQuery(state.query, state.filter),
     }
     let query = request.query
-    let getEntry = (e: SearchTypes.term_count): CPie.entry => {
+    let getEntry = (e: SearchTypes.term_count): PieWithLegend.entry => {
       doc_count: e.count->Int32.to_int,
       key: e.term,
     }
-    let adapt = (elms: SearchTypes.terms_count, kf: CPie.entry => bool): CPie.t => {
+    let adapt = (
+      elms: SearchTypes.terms_count,
+      kf: PieWithLegend.entry => bool,
+    ): PieWithLegend.t => {
       items: elms.termcount->Belt.List.map(getEntry)->Belt.List.keep(kf)->Belt.List.toArray,
       total_hits: elms.total_hits->Int32.to_int,
     }
@@ -114,28 +220,27 @@ module ChangesTopPies = {
             title={"Show changes pie charts"} stateControler={(state.changes_pies_panel, tee)}>
             <MGrid>
               <MGridItemXl4>
-                <CPie
+                <PieWithLegend
                   data={items.authors->Belt.Option.getExn->adapt(_ => true)}
                   title={"Changes per author"}
                   handleClick={handlePieClick(state, dispatch, ~field="author")}
                 />
               </MGridItemXl4>
               <MGridItemXl4>
-                <CPie
+                <PieWithLegend
                   data={items.repos->Belt.Option.getExn->adapt(_ => true)}
                   title={"Changes per repository"}
                   handleClick={handlePieClick(state, dispatch, ~field="repo")}
                 />
               </MGridItemXl4>
               <MGridItemXl4>
-                <CPie
-                  palette=approvals_palette
+                <PieWithLegend
                   data={items.approvals
                   ->Belt.Option.getExn
                   ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
                   title={"Changes per approval"}
-                  other_label={"No approval"}
                   handleClick={handlePieClick(state, dispatch, ~field="approval")}
+                  namedPalette={approvals_palette}
                 />
               </MGridItemXl4>
             </MGrid>
