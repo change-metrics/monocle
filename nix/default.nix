@@ -81,10 +81,8 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          # dontCheck because doctests are not working...
-          monocle = (pkgs.haskell.lib.dontCheck
-            (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
-              { })).overrideAttrs
+          monocle = (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
+            { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
@@ -590,7 +588,8 @@ in rec {
 
   };
 
-  monocle = hsPkgs.monocle;
+  # dontCheck because doctests are not working...
+  monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
