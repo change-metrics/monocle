@@ -1,21 +1,11 @@
 let Grafana =
         env:DHALL_GRAFANA
-      ? https://raw.githubusercontent.com/weeezes/dhall-grafana/f78d2887939dcb555a47a4b85a91a3d6b38ec2ea/package.dhall sha256:a0e1b5432090944fa671efce0085c6049019ae0d00ca289c268b4528d1cd39af
+      ? https://raw.githubusercontent.com/weeezes/dhall-grafana/f78d2887939dcb555a47a4b85a91a3d6b38ec2ea/package.dhall
+          sha256:a0e1b5432090944fa671efce0085c6049019ae0d00ca289c268b4528d1cd39af
 
 let datasource = Some (env:GRAFANA_DATASOURCE as Text ? "Prometheus")
 
-let counter =
-      \(refId : Text) ->
-      \(name : Text) ->
-      \(title : Text) ->
-        Grafana.MetricsTargets.PrometheusTarget
-          Grafana.PrometheusTarget::{
-          , refId
-          , expr = "rate(${name}[5m])"
-          , legendFormat = Some "${title} {{ job }}"
-          }
-
-let gauge =
+let target =
       \(refId : Text) ->
       \(expr : Text) ->
       \(title : Text) ->
@@ -23,7 +13,7 @@ let gauge =
           Grafana.PrometheusTarget::{
           , refId
           , expr
-          , legendFormat = Some "${title} {{ job }}"
+          , legendFormat = Some "{{ job }} : ${title}"
           }
 
 let panel =
@@ -44,21 +34,55 @@ let panels =
       [ panel
           0
           "Activity"
-          [ counter "A" "http_request_duration_seconds_sum" "Request latencies"
+          [ target
+              "A"
+              "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])"
+              "Request latencies {{ method }} in seconds"
           ]
       , panel
           8
           "Memory"
-          [ gauge
+          [ target
               "A"
-              "ghc_gcdetails_live_bytes"
+              "increase(ghc_gcdetails_live_bytes[5m])"
               "Total amount of live data in the heap."
           ]
-      , panel 16 "CPU" [ counter "B" "ghc_cpu_seconds_total" "CPU time" ]
+      , panel
+          16
+          "CPU"
+          [ target
+              "B"
+              "increase(ghc_cpu_seconds_total[5m])"
+              "CPU time in seconds"
+          ]
+      , panel
+          24
+          "API incoming requests count"
+          [ target
+              "C"
+              "increase(query_check{job=\"api\"}[5m])"
+              "API calls count on query_check endpoint"
+          , target
+              "D"
+              "increase(query{job=\"api\"}[5m])"
+              "API calls count on query endpoint"
+          ]
+      , panel
+          32
+          "Crawlers requests count"
+          [ target
+              "E"
+              "increase(http_request{job=\"crawler\"}[5m])"
+              "{{ crawler }} requests"
+          , target
+              "F"
+              "increase(http_failure{job=\"crawler\"}[5m])"
+              "{{ crawler }} failures"
+          ]
       ]
 
 in  Grafana.Dashboard::{
-    , title = "Monocle"
+    , title = "Monocle-test"
     , editable = True
     , panels = Grafana.Utils.generateIds panels
     , links =
