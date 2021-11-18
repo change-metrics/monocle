@@ -9,6 +9,7 @@ module Monocle.Client
     withClient,
     mkManager,
     monocleReq,
+    baseUrl,
   )
 where
 

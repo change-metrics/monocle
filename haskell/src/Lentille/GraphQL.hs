@@ -65,7 +65,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request
-  response <- lift $ retry crawler $ httpRequest request manager
+  response <- lift $ retry (crawler, url, "crawler") $ httpRequest request manager
 
   -- Record the event
   tell [(request, response)]

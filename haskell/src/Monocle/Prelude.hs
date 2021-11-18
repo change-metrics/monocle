@@ -184,7 +184,7 @@ import Test.Tasty.HUnit
 import Witch hiding (over)
 
 -- | Prometheus
-type CounterLabel = Prometheus.Vector Text Prometheus.Counter
+type CounterLabel = Prometheus.Vector (Text, Text, Text) Prometheus.Counter
 
 promRegister :: MonadIO m => Prometheus.Metric s -> m s
 promRegister = Prometheus.register
@@ -192,7 +192,7 @@ promRegister = Prometheus.register
 promVector :: Prometheus.Label l => l -> Prometheus.Metric m -> Prometheus.Metric (Prometheus.Vector l m)
 promVector = Prometheus.vector
 
-incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> "label" ::: Text -> m ()
+incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> "labels" ::: (Text, Text, Text) -> m ()
 incrementCounter x l = withLabel x l incCounter
 
 -------------------------------------------------------------------------------
@@ -210,12 +210,12 @@ monocleQueryCounter =
 {-# NOINLINE httpRequestCounter #-}
 httpRequestCounter :: CounterLabel
 httpRequestCounter =
-  unsafePerformIO $ promRegister $ promVector ("crawler") $ Prometheus.counter (Info "http_request" "")
+  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ Prometheus.counter (Info "http_request" "")
 
 {-# NOINLINE httpFailureCounter #-}
 httpFailureCounter :: CounterLabel
 httpFailureCounter =
-  unsafePerformIO $ promRegister $ promVector ("crawler") $ counter (Info "http_failure" "")
+  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ counter (Info "http_failure" "")
 
 -------------------------------------------------------------------------------
 

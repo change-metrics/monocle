@@ -181,7 +181,7 @@ getBZData bzSession sinceTS productName = go 0
       -- Retrieve rhbz
       bugs <- lift $ do
         mLog $ Log Unspecified (LogGetBugs sinceTS offset limit)
-        retry "bz" . doGet $ offset
+        retry ("bz", "https://bugzilla.redhat.com/show_bug.cgi", "crawler") . doGet $ offset
       -- Create a flat stream of tracker data
       S.each (concatMap toTaskData bugs)
       -- Keep on retrieving the rest
