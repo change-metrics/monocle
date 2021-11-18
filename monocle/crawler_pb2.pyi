@@ -16,10 +16,14 @@ import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
-global___AddDocError = AddDocError
+class AddDocError(_AddDocError, metaclass=_AddDocErrorEnumTypeWrapper):
+    pass
 
-class _AddDocError(
-    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[AddDocError.V],
+class _AddDocError:
+    V = typing.NewType("V", builtins.int)
+
+class _AddDocErrorEnumTypeWrapper(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_AddDocError.V],
     builtins.type,
 ):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
@@ -28,18 +32,20 @@ class _AddDocError(
     AddUnknownApiKey = AddDocError.V(2)
     AddFailed = AddDocError.V(3)
 
-class AddDocError(metaclass=_AddDocError):
-    V = typing.NewType("V", builtins.int)
-
 AddUnknownIndex = AddDocError.V(0)
 AddUnknownCrawler = AddDocError.V(1)
 AddUnknownApiKey = AddDocError.V(2)
 AddFailed = AddDocError.V(3)
+global___AddDocError = AddDocError
 
-global___CommitError = CommitError
+class CommitError(_CommitError, metaclass=_CommitErrorEnumTypeWrapper):
+    pass
 
-class _CommitError(
-    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[CommitError.V],
+class _CommitError:
+    V = typing.NewType("V", builtins.int)
+
+class _CommitErrorEnumTypeWrapper(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CommitError.V],
     builtins.type,
 ):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
@@ -49,19 +55,21 @@ class _CommitError(
     CommitDateInferiorThanPrevious = CommitError.V(3)
     CommitDateMissing = CommitError.V(4)
 
-class CommitError(metaclass=_CommitError):
-    V = typing.NewType("V", builtins.int)
-
 CommitUnknownIndex = CommitError.V(0)
 CommitUnknownCrawler = CommitError.V(1)
 CommitUnknownApiKey = CommitError.V(2)
 CommitDateInferiorThanPrevious = CommitError.V(3)
 CommitDateMissing = CommitError.V(4)
+global___CommitError = CommitError
 
-global___CommitInfoError = CommitInfoError
+class CommitInfoError(_CommitInfoError, metaclass=_CommitInfoErrorEnumTypeWrapper):
+    pass
 
-class _CommitInfoError(
-    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[CommitInfoError.V],
+class _CommitInfoError:
+    V = typing.NewType("V", builtins.int)
+
+class _CommitInfoErrorEnumTypeWrapper(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CommitInfoError.V],
     builtins.type,
 ):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor = ...
@@ -69,14 +77,14 @@ class _CommitInfoError(
     CommitGetUnknownCrawler = CommitInfoError.V(1)
     CommitGetNoEntity = CommitInfoError.V(2)
 
-class CommitInfoError(metaclass=_CommitInfoError):
-    V = typing.NewType("V", builtins.int)
-
 CommitGetUnknownIndex = CommitInfoError.V(0)
 CommitGetUnknownCrawler = CommitInfoError.V(1)
 CommitGetNoEntity = CommitInfoError.V(2)
+global___CommitInfoError = CommitInfoError
 
 class Entity(google.protobuf.message.Message):
+    """A descriptive name of the entities being added"""
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     ORGANIZATION_NAME_FIELD_NUMBER: builtins.int
     PROJECT_NAME_FIELD_NUMBER: builtins.int
@@ -119,7 +127,9 @@ class Entity(google.protobuf.message.Message):
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["entity", b"entity"]
-    ) -> typing_extensions.Literal["organization_name", "project_name", "td_name"]: ...
+    ) -> typing.Optional[
+        typing_extensions.Literal["organization_name", "project_name", "td_name"]
+    ]: ...
 
 global___Entity = Entity
 
@@ -143,25 +153,33 @@ class AddDocRequest(google.protobuf.message.Message):
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         monocle.change_pb2.Change
-    ]: ...
+    ]:
+        """changes are added when Entity is project_name"""
+        pass
     @property
     def events(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         monocle.change_pb2.ChangeEvent
-    ]: ...
+    ]:
+        """events are added when Entity is project_name"""
+        pass
     @property
     def projects(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         monocle.project_pb2.Project
-    ]: ...
+    ]:
+        """projects are added when Entity is organization_name"""
+        pass
     @property
     def task_datas(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         monocle.search_pb2.TaskData
-    ]: ...
+    ]:
+        """task_datas are added when Entity is td_name"""
+        pass
     def __init__(
         self,
         *,
@@ -220,7 +238,7 @@ class AddDocResponse(google.protobuf.message.Message):
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error"]: ...
+    ) -> typing.Optional[typing_extensions.Literal["error"]]: ...
 
 global___AddDocResponse = AddDocResponse
 
@@ -298,7 +316,7 @@ class CommitResponse(google.protobuf.message.Message):
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error", "timestamp"]: ...
+    ) -> typing.Optional[typing_extensions.Literal["error", "timestamp"]]: ...
 
 global___CommitResponse = CommitResponse
 
@@ -310,9 +328,11 @@ class CommitInfoRequest(google.protobuf.message.Message):
     OFFSET_FIELD_NUMBER: builtins.int
     index: typing.Text = ...
     crawler: typing.Text = ...
-    offset: builtins.int = ...
     @property
-    def entity(self) -> global___Entity: ...
+    def entity(self) -> global___Entity:
+        """the entity value is ignored"""
+        pass
+    offset: builtins.int = ...
     def __init__(
         self,
         *,
@@ -395,6 +415,6 @@ class CommitInfoResponse(google.protobuf.message.Message):
     ) -> None: ...
     def WhichOneof(
         self, oneof_group: typing_extensions.Literal["result", b"result"]
-    ) -> typing_extensions.Literal["error", "entity"]: ...
+    ) -> typing.Optional[typing_extensions.Literal["error", "entity"]]: ...
 
 global___CommitInfoResponse = CommitInfoResponse
