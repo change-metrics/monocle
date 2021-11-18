@@ -69,7 +69,7 @@ runMonitoringServer port = do
   takeMVar v
   where
     app req resp = case Wai.rawPathInfo req of
-      "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "api is running\n"
+      "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "macroscope is running\n"
       "/metrics" -> resp . Wai.responseLBS HTTP.ok200 [] =<< exportMetricsAsText
       _anyOtherPath -> resp $ Wai.responseLBS HTTP.notFound404 [] mempty
 
