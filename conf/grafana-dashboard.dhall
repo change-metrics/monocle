@@ -69,15 +69,35 @@ let panels =
           ]
       , panel
           32
-          "Crawlers requests count"
+          "Crawler requests count (by crawler name)"
           [ target
               "E"
-              "increase(http_request{job=\"crawler\"}[5m])"
-              "{{ crawler }} requests"
+              "increase(http_request{job=\"crawler\", type=\"crawler\"}[5m])"
+              "{{ ident }} requests"
           , target
               "F"
-              "increase(http_failure{job=\"crawler\"}[5m])"
-              "{{ crawler }} failures"
+              "increase(http_failure{job=\"crawler\", type=\"crawler\"}[5m])"
+              "{{ ident }} failures"
+          ]
+      , panel
+          40
+          "Crawler requests count (by url)"
+          [ target
+              "G"
+              "sum by (url) (increase(http_request{job=\"crawler\", type=\"crawler\"}[5m]))"
+              "{{ url }} requests"
+          , target
+              "H"
+              "sum by (url) (increase(http_failure{job=\"crawler\", type=\"crawler\"}[5m]))"
+              "{{ url }} failures"
+          ]
+      , panel
+          48
+          "Crawler requests to Monocle API"
+          [ target
+              "I"
+              "increase(http_request{ident=\"api-client\", type=\"internal\"}[5m])"
+              "requests"
           ]
       ]
 
