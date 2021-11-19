@@ -188,7 +188,7 @@ nix-shell --command monocle-api2-start
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
+λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 ## Contributing a new driver
