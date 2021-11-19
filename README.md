@@ -526,7 +526,7 @@ podman create --network host -v /srv/prometheus:/var/lib/prometheus:Z -e API_TAR
 
 ```ShellSession
 mkdir -p /srv/grafana
-podman create --network host -v /srv/grafana:/var/lib/grafana:Z -e ADMIN_PASSWORD=secret --name monocle-grafana quay.io/change-metrics/monocle-grafana:latest
+podman create --network host -v /srv/grafana:/var/lib/grafana:Z -e GRAFANA_PASS=secret --name monocle-grafana quay.io/change-metrics/monocle-grafana:latest
 ```
 
 3. Starts the services with systemd
@@ -538,7 +538,7 @@ systemctl --user daemon-reload
 for service in prometheus grafana; do systemctl --user start monocle-$service; done
 ```
 
-4. Check metrics with grafana dashboard at http://localhost:19030/
+4. Check metrics with grafana dashboard at http://localhost:19030/ (login with 'admin:secret')
 
 ## Contributing
 
