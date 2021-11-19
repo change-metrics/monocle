@@ -22,6 +22,9 @@ module Lentille
     logEvent,
     logRaw,
 
+    -- * Facilities
+    getClientBaseUrl,
+
     -- * Re-export
     module Monocle.Class,
   )
@@ -31,7 +34,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
 import Monocle.Class
-import Monocle.Client (MonocleClient, mkManager)
+import Monocle.Client (MonocleClient, baseUrl, mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 
@@ -47,6 +50,11 @@ data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient,
     crawlerStop :: IORef Bool
   }
+
+getClientBaseUrl :: MonadReader CrawlerEnv m => m Text
+getClientBaseUrl = do
+  env <- asks crawlerClient
+  pure $ baseUrl env
 
 -- | unlessStopped skips the action when the config is changed
 unlessStopped :: MonadCrawler m => MonadReader CrawlerEnv m => m () -> m ()

@@ -128,14 +128,14 @@ instance MonadCrawler IO where
 -- A network retry system
 
 class Monad m => MonadRetry m where
-  retry :: Text -> m a -> m a
+  retry :: (Text, Text, Text) -> m a -> m a
 
 instance MonadRetry IO where
   retry = retry'
 
 -- | Retry 5 times network action, doubling backoff each time
 -- Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) => Text -> m a -> m a
+retry' :: (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) => (Text, Text, Text) -> m a -> m a
 retry' label baseAction =
   Retry.recovering
     (Retry.exponentialBackoff backoff <> Retry.limitRetries 7)
