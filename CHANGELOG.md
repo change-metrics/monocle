@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - [web] An about modal that displays configured links and Monocle version.
 - [web] A new toggle can be used to show or hide change until they are updated.
 - [web] Board - swap button for board columns editor.
+- [monitoring] prometheus metrics and instructions to start with prometheus and grafana containers.
 
 ### Changed
 
