@@ -26,6 +26,7 @@ import Test.Tasty.HUnit
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
+  cRStatus <- newIORef []
   let glLogger _ = pure ()
       config' = Config.Config Nothing [workspace]
       config = pure (False, config')

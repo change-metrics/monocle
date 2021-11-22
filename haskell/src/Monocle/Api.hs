@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 -- |
 module Monocle.Api (app, run) where
 
@@ -53,6 +55,10 @@ run' port url configFile glLogger = do
   -- Monitoring
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
+
+  -- Initialize IORef for crawler metadata status by workspaces
+  config' <- snd <$> config
+  cRStatus <- newIORef ((,False) <$> Config.getWorkspaces config')
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

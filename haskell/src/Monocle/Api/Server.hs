@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 -- | The servant endpoint implementation.
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
@@ -33,13 +35,41 @@ getConfig :: AppM Config.Config
 getConfig = do
   loadConfig <- asks config
   (reloaded, config) <- liftIO loadConfig
-  when reloaded $ ensureWorkspacesCrawlersMD (Config.getWorkspaces config)
+  crawlerReloadStatus <- asks cRStatus
+  when reloaded $ do
+    liftIO $ writeIORef crawlerReloadStatus ((,True) <$> Config.getWorkspaces config)
   pure config
+
+-- | 'updateCrawlerMD' refresh crawler Metadata if needed
+updateCrawlerMD :: Config.Index -> AppM ()
+updateCrawlerMD index = do
+  shouldReload <- getCrawlerMDReloaded
+  when shouldReload $ do
+    refreshCrawlerMD
+    setCrawlerMDReloaded
   where
-    ensureWorkspacesCrawlersMD workspaces = traverse_ ensureWorkspaceCrawlerMD workspaces
-    ensureWorkspaceCrawlerMD workspace = do
-      traverse_ (initCrawlerMD workspace) $ Config.crawlers workspace
-    initCrawlerMD workspace crawler = runEmptyQueryM workspace $ I.initCrawlerMetadata crawler
+    refreshCrawlerMD :: AppM ()
+    refreshCrawlerMD = do
+      traverse_ initCrawlerMD $ Config.crawlers index
+      where
+        initCrawlerMD crawler = runEmptyQueryM index $ I.initCrawlerMetadata crawler
+
+    setCrawlerMDReloaded :: AppM ()
+    setCrawlerMDReloaded = do
+      crawlerReloadStatusRef <- asks cRStatus
+      crawlerReloadStatus <- readIORef crawlerReloadStatusRef
+      let status = foldr update [] crawlerReloadStatus
+      void $ writeIORef crawlerReloadStatusRef status
+      where
+        update v acc = if fst v == index then (index, True) : acc else v : acc
+
+    getCrawlerMDReloaded :: AppM Bool
+    getCrawlerMDReloaded = do
+      crawlerReloadStatusRef <- asks cRStatus
+      crawlerReloadStatus <- liftIO $ readIORef crawlerReloadStatusRef
+      pure $ case filter (\v -> fst v == index) crawlerReloadStatus of
+        [(_, True)] -> True
+        _ -> False
 
 -- | 'askWorkspaces' reload the workspaces automatically from the env
 askWorkspaces :: AppM [Config.Index]
@@ -316,17 +346,19 @@ crawlerCommitInfo request = do
         pure (index, worker, entityM)
 
   case requestE of
-    Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> runEmptyQueryM index $ do
-      toUpdateEntityM <- I.getLastUpdated worker entity offset
-      case toUpdateEntityM of
-        Just (name, ts) ->
-          pure
-            . CrawlerPB.CommitInfoResponse
-            . Just
-            . CrawlerPB.CommitInfoResponseResultEntity
-            . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
-            $ Just (Timestamp.fromUTCTime ts)
-        Nothing -> pure . toErrorResponse $ CrawlerPB.CommitInfoErrorCommitGetNoEntity
+    Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
+      void $ updateCrawlerMD index
+      runEmptyQueryM index $ do
+        toUpdateEntityM <- I.getLastUpdated worker entity offset
+        case toUpdateEntityM of
+          Just (name, ts) ->
+            pure
+              . CrawlerPB.CommitInfoResponse
+              . Just
+              . CrawlerPB.CommitInfoResponseResultEntity
+              . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
+              $ Just (Timestamp.fromUTCTime ts)
+          Nothing -> pure . toErrorResponse $ CrawlerPB.CommitInfoErrorCommitGetNoEntity
     Right _ -> error $ "Unknown entity request: " <> show entityM
     Left err ->
       pure $ toErrorResponse err

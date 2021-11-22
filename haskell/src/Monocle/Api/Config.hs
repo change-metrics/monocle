@@ -179,6 +179,9 @@ resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
 getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
 
+getWorkspaceName :: Index -> Text
+getWorkspaceName Index {..} = name
+
 getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
 getSecret def keyM =
   Secret . toText . fromMaybe (error $ "Missing environment: " <> env)
