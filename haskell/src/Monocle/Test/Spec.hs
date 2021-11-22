@@ -57,6 +57,9 @@ monocleIntegrationTests =
       testCase "Test newContributors" testGetNewContributors,
       testCase "Test getActivityStats" testGetActivityStats,
       testCase
+        "Test missing crawler entities"
+        testMissingCrawlerMetadata,
+      testCase
         "Index ProjectCrawlerMetadata"
         testProjectCrawlerMetadata,
       testCase

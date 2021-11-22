@@ -652,7 +652,12 @@ getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
   case nonEmpty (catMaybes resp) of
-    Nothing -> pure Nothing
+    Nothing -> do
+      -- If no entity found then it means the entities for that crawler have not been
+      -- initialised or refreshed. Thus here we run initCrawlerMetadata to make sure
+      -- next call will find entities initiliased for this crawler.
+      initCrawlerMetadata crawler
+      pure Nothing
     Just xs -> pure . Just $ getRespFromMetadata (last xs)
   where
     search =

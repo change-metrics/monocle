@@ -155,6 +155,30 @@ testIndexChanges = withTenant doTest
               echangeUrl = "https://fakehost/change/" <> show number
             }
 
+testMissingCrawlerMetadata :: Assertion
+testMissingCrawlerMetadata = withTenant doTest
+  where
+    doTest :: QueryM ()
+    doTest = do
+      lastUpdated <- I.getLastUpdated workerGitlab entityType 0
+      assertEqual' "check we received nothing" Nothing lastUpdated
+      lastUpdated' <- I.getLastUpdated workerGitlab entityType 0
+      assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ snd <$> lastUpdated'
+      where
+        crawlerGitlab = "test-crawler-gitlab"
+        fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
+        entityType = CrawlerPB.EntityEntityProjectName ""
+        workerGitlab =
+          let name = crawlerGitlab
+              update_since = show fakeDefaultDate
+              provider =
+                let gitlab_url = Just "https://localhost"
+                    gitlab_token = Nothing
+                    gitlab_repositories = Just ["nova", "neutron"]
+                    gitlab_organization = "centos"
+                 in Config.GitlabProvider Config.Gitlab {..}
+           in Config.Crawler {..}
+
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
   where
