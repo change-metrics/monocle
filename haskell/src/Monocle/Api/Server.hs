@@ -28,13 +28,29 @@ import qualified Monocle.UserGroup as UserGroupPB
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
 
+-- | 'getConfig' reload the config automatically from the env
+getConfig :: AppM Config.Config
+getConfig = do
+  loadConfig <- asks config
+  (reloaded, config) <- liftIO loadConfig
+  when reloaded $ ensureWorkspacesCrawlersMD (Config.getWorkspaces config)
+  pure config
+  where
+    ensureWorkspacesCrawlersMD workspaces = traverse_ ensureWorkspaceCrawlerMD workspaces
+    ensureWorkspaceCrawlerMD workspace = do
+      traverse_ (initCrawlerMD workspace) $ Config.crawlers workspace
+    initCrawlerMD workspace crawler = runEmptyQueryM workspace $ I.initCrawlerMetadata crawler
+
+-- | 'askWorkspaces' reload the workspaces automatically from the env
+askWorkspaces :: AppM [Config.Index]
+askWorkspaces = Config.getWorkspaces <$> getConfig
+
 -- | /api/2/about endpoint
 configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
 configGetAbout = const response
   where
     response = do
       config <- getConfig
-      -- TODO(fbo) - fetch Monocle version from cabal file
       let aboutVersion = toLText version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
