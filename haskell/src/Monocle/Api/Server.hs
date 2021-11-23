@@ -46,7 +46,7 @@ getConfig = do
 -- | 'updateCrawlerMD' refresh crawler Metadata if needed
 updateCrawlerMD :: Config.Index -> AppM ()
 updateCrawlerMD index = do
-  shouldReload <- getCrawlerMDReloaded
+  shouldReload <- getCrawlerMDNeedReload
   when shouldReload $ do
     -- print $ show index <> " must reload: " <> show shouldReload
     refreshCrawlerMD
@@ -67,8 +67,8 @@ updateCrawlerMD index = do
       where
         update v acc = if fst v == index then (index, False) : acc else v : acc
 
-    getCrawlerMDReloaded :: AppM Bool
-    getCrawlerMDReloaded = do
+    getCrawlerMDNeedReload :: AppM Bool
+    getCrawlerMDNeedReload = do
       crawlerReloadStatusRef <- asks cRStatus
       crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
       pure $ case filter (\v -> fst v == index) crawlerReloadStatus of
@@ -351,7 +351,19 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
+      -- debug
+      crawlerReloadStatusRef <- asks cRStatus
+      crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
+      print crawlerReloadStatus
+      -- debug ^
+
       void $ updateCrawlerMD index
+
+      -- debug
+      crawlerReloadStatus' <- liftIO $ readTVarIO crawlerReloadStatusRef
+      print crawlerReloadStatus'
+      -- debug ^
+
       runEmptyQueryM index $ do
         toUpdateEntityM <- I.getLastUpdated worker entity offset
         case toUpdateEntityM of
