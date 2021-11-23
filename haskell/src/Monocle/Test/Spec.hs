@@ -1,10 +1,15 @@
 module Monocle.Test.Spec (main) where
 
+-- import qualified Monocle.Api.Server as Server
+
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import qualified Monocle.Api.Config as Config
+import Monocle.Api.Test (withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
+import Monocle.Client.Api (crawlerCommitInfo)
+import Monocle.Crawler
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
@@ -26,7 +31,7 @@ main = do
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
-        pure [monocleIntegrationTests, monocleMacroscopeTests]
+        pure [monocleIntegrationTests, monocleMacroscopeTests, monocleApiTests]
 
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
@@ -42,10 +47,87 @@ main = do
           <> integrationTests
     )
 
+mkAppEnvWithSideEffect :: [Config.Index] -> IORef Bool -> IO AppEnv
+mkAppEnvWithSideEffect workspaces reloadedRef = do
+  bhEnv <- mkEnv'
+  cRStatus <- newIORef $ (\workspace -> (workspace, False)) <$> workspaces
+  let glLogger _ = pure ()
+      config' = Config.Config Nothing workspaces
+      config = configSE config'
+      aEnv = Env {..}
+  pure $ AppEnv {..}
+  where
+    configSE :: Config.Config -> IO (Bool, Config.Config)
+    configSE conf = do
+      reloaded <- readIORef reloadedRef
+      pure (reloaded, conf)
+
+monocleApiTests :: TestTree
+monocleApiTests =
+  testGroup
+    "Monocle.Api.Server"
+    [testCase "Reloaded config actions" testReloadedConfig]
+  where
+    testReloadedConfig :: Assertion
+    testReloadedConfig = do
+      reloadedRef <- newIORef False
+      let appEnv = mkAppEnvWithSideEffect [fakeWS, fakeWS2] reloadedRef
+      withTestApi appEnv $ \client ->
+        do
+          let req =
+                let commitInfoRequestIndex = toLazy workspaceName
+                    commitInfoRequestCrawler = toLazy crawlerName
+                    commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
+                    commitInfoRequestOffset = 0
+                 in CommitInfoRequest {..}
+          -- Run a first commitInfo request
+          void $ crawlerCommitInfo client req
+          -- Ensure both index do not need a refresh
+          crawlerReloadStatusRef <- cRStatus <$> appEnv
+          status <- readIORef crawlerReloadStatusRef
+          let s = snd <$> status
+          if s == [False, False]
+            then do
+              -- Now set the config has been reloaded
+              writeIORef reloadedRef True
+              -- Run the commitInfo request
+              void $ crawlerCommitInfo client req
+              -- Read reloaded status and ensure fakeWS2 needs a reload
+              status' <- readIORef crawlerReloadStatusRef
+              let s' = snd <$> status'
+              if s' == [False, True]
+                then pure ()
+                else error $ "Unexpected reload states: " <> show s'
+            else error $ "Unexpected inital reload states: " <> show s
+      assertEqual "Crawler MD reload when config change" True True
+      where
+        fakeWS =
+          (mkConfig workspaceName)
+            { Config.crawlers_api_key = Just "secret",
+              Config.crawlers =
+                [ let name = crawlerName
+                      update_since = "2000-01-01"
+                      provider =
+                        Config.GerritProvider
+                          ( Config.Gerrit
+                              { gerrit_login = Nothing,
+                                gerrit_password = Nothing,
+                                gerrit_prefix = Nothing,
+                                gerrit_repositories = Just ["opendev/neutron"],
+                                gerrit_url = "https://fake.url"
+                              }
+                          )
+                   in Config.Crawler {..}
+                ]
+            }
+        fakeWS2 = mkConfig "w2"
+        workspaceName = "ws1"
+        crawlerName = "testy"
+
 monocleIntegrationTests :: TestTree
 monocleIntegrationTests =
   testGroup
-    "Monocle.Backend.Changes"
+    "Monocle.Backend.Queries"
     [ testCase
         "Index changes"
         testIndexChanges,

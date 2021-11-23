@@ -181,6 +181,7 @@ library
                      , Monocle.Api
                      , Monocle.Api.Config
                      , Monocle.Api.Server
+                     , Monocle.Api.Test
 
                      -- api client for lentille
                      , Monocle.Client
