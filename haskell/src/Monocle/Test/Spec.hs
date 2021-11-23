@@ -47,7 +47,7 @@ main = do
           <> integrationTests
     )
 
-mkAppEnvWithSideEffect :: [Config.Index] -> IORef Bool -> IO AppEnv
+mkAppEnvWithSideEffect :: [Config.Index] -> TVar Bool -> IO AppEnv
 mkAppEnvWithSideEffect workspaces reloadedRef = do
   bhEnv <- mkEnv'
   cRStatus <- newTVarIO $ (\workspace -> (workspace, False)) <$> workspaces
@@ -59,7 +59,7 @@ mkAppEnvWithSideEffect workspaces reloadedRef = do
   where
     configSE :: Config.Config -> IO (Bool, Config.Config)
     configSE conf = do
-      reloaded <- readIORef reloadedRef
+      reloaded <- readTVarIO reloadedRef
       pure (reloaded, conf)
 
 monocleApiTests :: TestTree
@@ -70,7 +70,7 @@ monocleApiTests =
   where
     testReloadedConfig :: Assertion
     testReloadedConfig = do
-      reloadedRef <- newIORef False
+      reloadedRef <- newTVarIO False
       let appEnv = mkAppEnvWithSideEffect [fakeWS, fakeWS2] reloadedRef
       withTestApi appEnv $ \client ->
         do
@@ -89,7 +89,7 @@ monocleApiTests =
           if s == [False, False]
             then do
               -- Now set the config has been reloaded
-              writeIORef reloadedRef True
+              atomically $ writeTVar reloadedRef True
               -- Run the commitInfo request
               void $ crawlerCommitInfo client req
               -- Read reloaded status and ensure fakeWS2 needs a reload
