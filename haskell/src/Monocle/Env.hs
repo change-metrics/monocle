@@ -26,7 +26,7 @@ data Env = Env
 data AppEnv = AppEnv
   { config :: IO (Bool, Config.Config),
     aEnv :: Env,
-    cRStatus :: IORef [(Config.Index, Bool)]
+    cRStatus :: TVar [(Config.Index, Bool)]
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader

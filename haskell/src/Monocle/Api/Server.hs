@@ -39,7 +39,7 @@ getConfig = do
   when reloaded $ do
     liftIO $
       -- All indexed must be reloaded
-      writeIORef crawlerReloadStatus ((,True) <$> Config.getWorkspaces config)
+      atomically $ writeTVar crawlerReloadStatus ((,True) <$> Config.getWorkspaces config)
   pure config
 
 -- | 'updateCrawlerMD' refresh crawler Metadata if needed
@@ -60,16 +60,16 @@ updateCrawlerMD index = do
     setCrawlerMDReloaded :: AppM ()
     setCrawlerMDReloaded = do
       crawlerReloadStatusRef <- asks cRStatus
-      crawlerReloadStatus <- readIORef crawlerReloadStatusRef
+      crawlerReloadStatus <- readTVarIO crawlerReloadStatusRef
       let status = foldr update [] crawlerReloadStatus
-      void $ writeIORef crawlerReloadStatusRef status
+      void $ atomically $ writeTVar crawlerReloadStatusRef status
       where
         update v acc = if fst v == index then (index, False) : acc else v : acc
 
     getCrawlerMDReloaded :: AppM Bool
     getCrawlerMDReloaded = do
       crawlerReloadStatusRef <- asks cRStatus
-      crawlerReloadStatus <- liftIO $ readIORef crawlerReloadStatusRef
+      crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
       pure $ case filter (\v -> fst v == index) crawlerReloadStatus of
         [(_, True)] -> True
         _ -> False

@@ -58,7 +58,7 @@ run' port url configFile glLogger = do
 
   -- Initialize IORef for crawler metadata status by workspaces
   config' <- snd <$> config
-  cRStatus <- newIORef ((,False) <$> Config.getWorkspaces config')
+  cRStatus <- newTVarIO ((,False) <$> Config.getWorkspaces config')
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

@@ -50,7 +50,7 @@ main = do
 mkAppEnvWithSideEffect :: [Config.Index] -> IORef Bool -> IO AppEnv
 mkAppEnvWithSideEffect workspaces reloadedRef = do
   bhEnv <- mkEnv'
-  cRStatus <- newIORef $ (\workspace -> (workspace, False)) <$> workspaces
+  cRStatus <- newTVarIO $ (\workspace -> (workspace, False)) <$> workspaces
   let glLogger _ = pure ()
       config' = Config.Config Nothing workspaces
       config = configSE config'
@@ -84,7 +84,7 @@ monocleApiTests =
           void $ crawlerCommitInfo client req
           -- Ensure both index do not need a refresh
           crawlerReloadStatusRef <- cRStatus <$> appEnv
-          status <- readIORef crawlerReloadStatusRef
+          status <- readTVarIO crawlerReloadStatusRef
           let s = snd <$> status
           if s == [False, False]
             then do
@@ -93,7 +93,7 @@ monocleApiTests =
               -- Run the commitInfo request
               void $ crawlerCommitInfo client req
               -- Read reloaded status and ensure fakeWS2 needs a reload
-              status' <- readIORef crawlerReloadStatusRef
+              status' <- readTVarIO crawlerReloadStatusRef
               let s' = snd <$> status'
               if s' == [False, True]
                 then pure ()
