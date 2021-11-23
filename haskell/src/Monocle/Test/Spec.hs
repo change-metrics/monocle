@@ -1,7 +1,5 @@
 module Monocle.Test.Spec (main) where
 
--- import qualified Monocle.Api.Server as Server
-
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import qualified Monocle.Api.Config as Config
@@ -51,7 +49,9 @@ main = do
 mkAppEnvWithSideEffect :: [Config.Index] -> [Config.Index] -> TVar Bool -> IO AppEnv
 mkAppEnvWithSideEffect workspaces workspaces' reloadedRef = do
   bhEnv <- mkEnv'
-  cRStatus <- newTVarIO $ (\workspace -> (workspace, False)) <$> workspaces
+  cRStatus <-
+    newTVarIO $
+      (\workspace -> (Config.getWorkspaceName workspace, False)) <$> workspaces
   let glLogger _ = pure ()
       config' = Config.Config Nothing workspaces
       configNew = Config.Config Nothing workspaces'

@@ -54,9 +54,9 @@ run' port url configFile glLogger = do
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
 
-  -- Initialize IORef for crawler metadata status by workspaces
+  -- Initialize TVar for crawler metadata status by workspaces
   config' <- snd <$> config
-  cRStatus <- newTVarIO $ (\ws -> (ws, False)) <$> Config.getWorkspaces config'
+  cRStatus <- newTVarIO $ (\ws -> (Config.getWorkspaceName ws, False)) <$> Config.getWorkspaces config'
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

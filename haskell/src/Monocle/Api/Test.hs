@@ -15,7 +15,7 @@ import Network.Wai
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
-  cRStatus <- newTVarIO [(workspace, False)]
+  cRStatus <- newTVarIO [(Config.getWorkspaceName workspace, False)]
   let glLogger _ = pure ()
       config' = Config.Config Nothing [workspace]
       config = pure (False, config')
