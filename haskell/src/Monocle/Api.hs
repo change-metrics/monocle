@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 -- |
 module Monocle.Api (app, run) where
 
@@ -58,7 +56,7 @@ run' port url configFile glLogger = do
 
   -- Initialize IORef for crawler metadata status by workspaces
   config' <- snd <$> config
-  cRStatus <- newTVarIO ((,False) <$> Config.getWorkspaces config')
+  cRStatus <- newTVarIO $ (\ws -> (ws, False)) <$> Config.getWorkspaces config'
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

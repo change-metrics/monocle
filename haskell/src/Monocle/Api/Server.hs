@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 -- | The servant endpoint implementation.
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
@@ -39,7 +37,10 @@ getConfig = do
   when reloaded $ do
     liftIO $
       -- All indexed must be reloaded
-      atomically $ writeTVar crawlerReloadStatus ((,True) <$> Config.getWorkspaces config)
+      atomically
+        . writeTVar
+          crawlerReloadStatus
+        $ (\ws -> (ws, True)) <$> Config.getWorkspaces config
   pure config
 
 -- | 'updateCrawlerMD' refresh crawler Metadata if needed
