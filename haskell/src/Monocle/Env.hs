@@ -270,11 +270,14 @@ doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <>
 data SystemEvent
   = Ready Int Int Text
   | ReloadConfig FilePath
+  | RefreshCrawlerMD Config.Index
 
 sysEventToText :: SystemEvent -> ByteString
 sysEventToText = \case
   Ready tenantCount port url ->
     "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
+  RefreshCrawlerMD index ->
+    encodeUtf8 $ "Refresh crawlers metadata for workspace: " <> Config.getWorkspaceName index
   ReloadConfig fp ->
     "Reloading " <> encodeUtf8 fp
 

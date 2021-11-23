@@ -48,6 +48,8 @@ updateCrawlerMD :: Config.Index -> AppM ()
 updateCrawlerMD index = do
   shouldReload <- getCrawlerMDNeedReload
   when shouldReload $ do
+    logger <- glLogger <$> asks aEnv
+    liftIO $ logEvent logger $ RefreshCrawlerMD index
     refreshCrawlerMD
     setCrawlerMDReloaded
   where
