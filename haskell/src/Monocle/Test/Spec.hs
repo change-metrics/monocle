@@ -47,61 +47,59 @@ main = do
           <> integrationTests
     )
 
-mkAppEnvWithSideEffect :: [Config.Index] -> TVar Bool -> IO AppEnv
-mkAppEnvWithSideEffect workspaces reloadedRef = do
+-- Create an AppEnv where the supply of a new config could be controled
+mkAppEnvWithSideEffect :: [Config.Index] -> [Config.Index] -> TVar Bool -> IO AppEnv
+mkAppEnvWithSideEffect workspaces workspaces' reloadedRef = do
   bhEnv <- mkEnv'
   cRStatus <- newTVarIO $ (\workspace -> (workspace, False)) <$> workspaces
   let glLogger _ = pure ()
       config' = Config.Config Nothing workspaces
-      config = configSE config'
+      configNew = Config.Config Nothing workspaces'
+      config = configSE config' configNew
       aEnv = Env {..}
   pure $ AppEnv {..}
   where
-    configSE :: Config.Config -> IO (Bool, Config.Config)
-    configSE conf = do
+    configSE :: Config.Config -> Config.Config -> IO (Bool, Config.Config)
+    configSE conf confNew = do
       reloaded <- readTVarIO reloadedRef
-      pure (reloaded, conf)
+      pure (reloaded, if reloaded then confNew else conf)
 
 monocleApiTests :: TestTree
 monocleApiTests =
   testGroup
     "Monocle.Api.Server"
-    [testCase "Reloaded config actions" testReloadedConfig]
+    [testCase "Test crawler MDs refreshed after config reload" testReloadedConfig]
   where
     testReloadedConfig :: Assertion
     testReloadedConfig = do
       reloadedRef <- newTVarIO False
-      let appEnv = mkAppEnvWithSideEffect [fakeWS, fakeWS2] reloadedRef
+      let appEnv =
+            mkAppEnvWithSideEffect
+              [makeFakeWS ["opendev/neutron"]]
+              [makeFakeWS ["opendev/neutron", "opendev/nova"]]
+              reloadedRef
       withTestApi appEnv $ \client ->
         do
-          let req =
+          let req offset =
                 let commitInfoRequestIndex = toLazy workspaceName
                     commitInfoRequestCrawler = toLazy crawlerName
                     commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
-                    commitInfoRequestOffset = 0
+                    commitInfoRequestOffset = offset
                  in CommitInfoRequest {..}
-          -- Run a first commitInfo request
-          void $ crawlerCommitInfo client req
-          -- Ensure both index do not need a refresh
-          crawlerReloadStatusRef <- cRStatus <$> appEnv
-          status <- readTVarIO crawlerReloadStatusRef
-          let s = snd <$> status
-          if s == [False, False]
-            then do
-              -- Now set the config has been reloaded
-              atomically $ writeTVar reloadedRef True
-              -- Run the commitInfo request
-              void $ crawlerCommitInfo client req
-              -- Read reloaded status and ensure fakeWS2 needs a reload
-              status' <- readTVarIO crawlerReloadStatusRef
-              let s' = snd <$> status'
-              if s' == [False, True]
-                then pure ()
-                else error $ "Unexpected reload states: " <> show s'
-            else error $ "Unexpected inital reload states: " <> show s
+          -- Run two commitInfo requests (and expect same resp)
+          resp1 <- crawlerCommitInfo client $ req 0
+          resp2 <- crawlerCommitInfo client $ req 1
+          if resp1 /= resp2 then error "Expected same response" else pure ()
+          -- Now set: config has been reloaded and serve the alternate config
+          atomically $ writeTVar reloadedRef True
+          -- Run two commitInfo requests (and expect different resp
+          -- as the new config as been handled and crawler MD has been refreshed)
+          resp1' <- crawlerCommitInfo client $ req 0
+          resp2' <- crawlerCommitInfo client $ req 1
+          if resp1' == resp2' then error "Expected different response" else pure ()
       assertEqual "Crawler MD reload when config change" True True
       where
-        fakeWS =
+        makeFakeWS repositories =
           (mkConfig workspaceName)
             { Config.crawlers_api_key = Just "secret",
               Config.crawlers =
@@ -113,14 +111,13 @@ monocleApiTests =
                               { gerrit_login = Nothing,
                                 gerrit_password = Nothing,
                                 gerrit_prefix = Nothing,
-                                gerrit_repositories = Just ["opendev/neutron"],
+                                gerrit_repositories = Just repositories,
                                 gerrit_url = "https://fake.url"
                               }
                           )
                    in Config.Crawler {..}
                 ]
             }
-        fakeWS2 = mkConfig "w2"
         workspaceName = "ws1"
         crawlerName = "testy"
 

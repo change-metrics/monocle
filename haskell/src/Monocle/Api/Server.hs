@@ -351,19 +351,7 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
-      -- debug
-      crawlerReloadStatusRef <- asks cRStatus
-      crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
-      print crawlerReloadStatus
-      -- debug ^
-
       void $ updateCrawlerMD index
-
-      -- debug
-      crawlerReloadStatus' <- liftIO $ readTVarIO crawlerReloadStatusRef
-      print crawlerReloadStatus'
-      -- debug ^
-
       runEmptyQueryM index $ do
         toUpdateEntityM <- I.getLastUpdated worker entity offset
         case toUpdateEntityM of
