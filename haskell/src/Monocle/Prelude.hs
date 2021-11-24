@@ -17,6 +17,7 @@ module Monocle.Prelude
 
     -- * concurrent
     modifyMVar,
+    modifyMVar_,
 
     -- * containers
     mapMutate,
@@ -151,7 +152,7 @@ module Monocle.Prelude
   )
 where
 
-import Control.Concurrent.MVar (modifyMVar)
+import Control.Concurrent.MVar (modifyMVar, modifyMVar_)
 import Control.Exception.Safe (tryAny)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)

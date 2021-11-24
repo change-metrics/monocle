@@ -86,7 +86,7 @@ runMacroscope port confPath client = do
     loop config clients = do
       -- Load the config
       mLog $ Log Macroscope LogMacroStart
-      conf <- snd <$> config
+      conf <- Config.csConfig <$> config
 
       -- Flatten each crawler from all workspaces
       let crawlerInfos = getCrawlers $ Config.getWorkspaces conf
@@ -95,7 +95,7 @@ runMacroscope port confPath client = do
       (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients
 
       -- Run the steams group
-      runCrawlers (fst <$> config) (mkStreamsActions $ catMaybes streams)
+      runCrawlers (Config.csReloaded <$> config) (mkStreamsActions $ catMaybes streams)
 
       -- Loop again
       loop config newClients

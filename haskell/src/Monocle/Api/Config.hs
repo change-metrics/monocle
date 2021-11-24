@@ -119,9 +119,15 @@ defaultTenant name =
       search_aliases = Nothing
     }
 
+data ConfigStatus = ConfigStatus
+  { csReloaded :: Bool,
+    csConfig :: Config,
+    csWorkspaceStatus :: MVar WorkspaceStatus
+  }
+
 class MonadConfig m where
   mGetSecret :: "default env name" ::: Text -> "config env name" ::: Maybe Text -> m Secret
-  mReloadConfig :: FilePath -> m (m (Bool, Config))
+  mReloadConfig :: FilePath -> m (m ConfigStatus)
 
 instance MonadConfig IO where
   mGetSecret = getSecret
@@ -151,7 +157,18 @@ loadConfig configPath = do
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
 
-reloadConfig :: FilePath -> IO (IO (Bool, Config))
+data Status = NeedRefresh | Ready
+
+type WorkspaceName = Text
+
+type WorkspaceStatus = Map WorkspaceName Status
+
+mkWorkspaceStatus :: Config -> WorkspaceStatus
+mkWorkspaceStatus config = fromList $ mkStatus <$> getWorkspaces config
+  where
+    mkStatus ws = (getWorkspaceName ws, NeedRefresh)
+
+reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config
   configTS <- getModificationTime fp
@@ -159,17 +176,19 @@ reloadConfig fp = do
 
   -- Create the reload action
   tsRef <- newMVar (configTS, config)
-  pure (modifyMVar tsRef reload)
+  wsRef <- newMVar mempty
+  pure (modifyMVar tsRef (reload wsRef))
   where
-    reload mvar@(prevConfigTS, prevConfig) = do
+    reload wsRef mvar@(prevConfigTS, prevConfig) = do
       configTS <- getModificationTime fp
       if configTS > prevConfigTS
         then do
           -- TODO: use log reload event
           putTextLn $ toText fp <> ": reloading config"
           config <- loadConfig fp
-          pure ((configTS, config), (True, config))
-        else pure (mvar, (False, prevConfig))
+          modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
+          pure ((configTS, config), (ConfigStatus True config wsRef))
+        else pure (mvar, (ConfigStatus False prevConfig wsRef))
 
 resolveEnv :: MonadIO m => Index -> m Index
 resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'

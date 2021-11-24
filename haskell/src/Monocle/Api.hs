@@ -55,13 +55,10 @@ run' port url configFile glLogger = do
   let monitoringMiddleware = prometheus def
 
   -- Initialize TVar for crawler metadata status by workspaces
-  config' <- snd <$> config
-  aWSNeedRefresh <-
-    newTVarIO $
-      ( \ws ->
-          WSRefreshState (Config.getWorkspaceName ws) False
-      )
-        <$> Config.getWorkspaces config'
+  workspacesStatus <- do
+    config' <- snd <$> config
+    ws <- mkWorkspacesStatus config'
+    newTVarIO ws
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
