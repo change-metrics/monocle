@@ -17,6 +17,8 @@ let
   };
   inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
 
+  monocleSrc = gitignoreSource ../.;
+
   # update haskell dependencies
   compilerVersion = "8107";
   compiler = "ghc" + compilerVersion;
@@ -81,13 +83,12 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          monocle = (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
+          monocle = (hpPrev.callCabal2nix "monocle" "${monocleSrc}/haskell"
             { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
-            hpPrev.callCabal2nix "monocle-codegen" (gitignoreSource ../codegen)
-            { };
+            hpPrev.callCabal2nix "monocle-codegen" "${monocleSrc}/codegen" { };
         };
       };
 
@@ -587,6 +588,18 @@ in rec {
     contents = [ (pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle) ];
 
   };
+
+  ci = pkgs.runCommand "monocle-ci" {
+    LC_ALL = "en_US.UTF-8";
+    LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+  } ''
+    echo "[+] Checking ormolu syntax"
+    ${pkgs.ormolu}/bin/ormolu                                 \
+      -o -XPatternSynonyms -o -XTypeApplications --mode check \
+      $(${pkgs.findutils}/bin/find ${monocleSrc}/haskell -name "*.hs")
+
+    mkdir $out;
+  '';
 
   # dontCheck because doctests are not working...
   monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;

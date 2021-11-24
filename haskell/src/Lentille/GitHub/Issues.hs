@@ -19,8 +19,8 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (MonadGraphQLE)
 import Lentille.GraphQL
-import Monocle.Search (TaskData (..))
 import Monocle.Prelude
+import Monocle.Search (TaskData (..))
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -77,7 +77,7 @@ defineByDocumentFile
     }
   |]
 
-streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text  -> Stream (Of TaskData) m ()
+streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
 streamLinkedIssue client time repo = streamFetch client mkArgs transformResponse
   where
     mkArgs cursor' =
