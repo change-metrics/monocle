@@ -12,4 +12,4 @@ iso8601
 dacite
 # https://github.com/pyca/cryptography/issues/5799
 cryptography<=3.3.2
-protobuf
+protobuf>=3.19
