@@ -3,14 +3,18 @@ module Monocle.Test.Spec (main) where
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import qualified Monocle.Api.Config as Config
+import Monocle.Api.Test (withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
+import Monocle.Client.Api (crawlerCommitInfo)
+import Monocle.Crawler
 import Monocle.Env
 import Monocle.Prelude
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
+import Proto3.Suite (Enumerated (Enumerated, enumerated))
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -26,7 +30,7 @@ main = do
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
-        pure [monocleIntegrationTests, monocleMacroscopeTests]
+        pure [monocleIntegrationTests, monocleMacroscopeTests, monocleApiTests]
 
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
@@ -42,10 +46,126 @@ main = do
           <> integrationTests
     )
 
+-- Create an AppEnv where the supply of a new config can be controled
+mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
+mkAppEnvWithSideEffect config' newConfig reloadedRef = do
+  bhEnv <- mkEnv'
+  ws <- newMVar $ Config.mkWorkspaceStatus config'
+  newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
+  Config.setStatus Config.Ready ws
+  let glLogger _ = pure ()
+      config = configSE (config', ws) (newConfig, newWs)
+      aEnv = Env {..}
+  pure $ AppEnv {..}
+  where
+    configSE conf confNew = do
+      reloaded <- readTVarIO reloadedRef
+      let (config, wsRef) = if reloaded then confNew else conf
+      pure $ Config.ConfigStatus reloaded config wsRef
+
+pattern UnknownIndexResp <-
+  CommitInfoResponse
+    { commitInfoResponseResult =
+        Just
+          ( CommitInfoResponseResultError
+              Enumerated {enumerated = Right CommitInfoErrorCommitGetUnknownIndex}
+            )
+    }
+
+pattern NamedEntity name <-
+  CommitInfoResponse
+    { commitInfoResponseResult =
+        Just
+          ( CommitInfoResponseResultEntity
+              CommitInfoResponse_OldestEntity
+                { commitInfoResponse_OldestEntityEntity =
+                    Just
+                      (Entity {entityEntity = Just (EntityEntityProjectName name)}),
+                  commitInfoResponse_OldestEntityLastCommitAt = Just _
+                }
+            )
+    }
+
+monocleApiTests :: TestTree
+monocleApiTests =
+  testGroup
+    "Monocle.Api.Server"
+    [testCase "Test crawler MDs refreshed after config reload" testReloadedConfig]
+  where
+    testReloadedConfig :: Assertion
+    testReloadedConfig = do
+      reloadedRef <- newTVarIO False
+      let appEnv =
+            mkAppEnvWithSideEffect
+              (Config.Config Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
+              ( Config.Config
+                  Nothing
+                  [ makeFakeWS wsName1 ["opendev/neutron", "opendev/nova"],
+                    makeFakeWS wsName2 ["opendev/swift"]
+                  ]
+              )
+              reloadedRef
+      withTestApi appEnv $ \client ->
+        do
+          -- Run two commitInfo requests (and expect same resp)
+          resp1 <- crawlerCommitInfo client $ mkReq wsName1 0
+          resp2 <- crawlerCommitInfo client $ mkReq wsName1 1
+          if resp1 /= resp2 then error "Expected same response" else pure ()
+          -- Also perform the Req on an unknown workspace (and expect failure)
+          resp3 <- crawlerCommitInfo client $ mkReq wsName2 0
+          if not $ isUnknownIndex resp3 then error "Expected UnknownIndex response" else pure ()
+
+          -- Now set: config has been reloaded and serve the alternate config
+          atomically $ writeTVar reloadedRef True
+          -- Run two commitInfo requests (and expect different resp
+          -- as the new config as been handled and crawler MD has been refreshed)
+          resp1' <- crawlerCommitInfo client $ mkReq wsName1 0
+          resp2' <- crawlerCommitInfo client $ mkReq wsName1 1
+          if resp1' == resp2' then error "Expected different response" else pure ()
+          -- Also verify that the new workspace was initilized
+          resp3' <- crawlerCommitInfo client $ mkReq wsName2 0
+          if not $ isEntitySwift resp3'
+            then error "Expected entity named 'openstack/swift'"
+            else pure ()
+      assertEqual "Crawler MD reload when config change" True True
+      where
+        isUnknownIndex UnknownIndexResp = True
+        isUnknownIndex _ = False
+        isEntitySwift (NamedEntity "opendev/swift") = True
+        isEntitySwift _ = False
+        mkReq wsName offset =
+          let commitInfoRequestIndex = toLazy wsName
+              commitInfoRequestCrawler = toLazy crawlerName
+              commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
+              commitInfoRequestOffset = offset
+           in CommitInfoRequest {..}
+        makeFakeWS wsName repositories =
+          (mkConfig wsName)
+            { Config.crawlers_api_key = Just "secret",
+              Config.crawlers =
+                [ let name = crawlerName
+                      update_since = "2000-01-01"
+                      provider =
+                        Config.GerritProvider
+                          ( Config.Gerrit
+                              { gerrit_login = Nothing,
+                                gerrit_password = Nothing,
+                                gerrit_prefix = Nothing,
+                                gerrit_repositories = Just repositories,
+                                gerrit_url = "https://fake.url"
+                              }
+                          )
+                   in Config.Crawler {..}
+                ]
+            }
+        wsName1 = "ws1"
+        wsName2 = "ws2"
+        crawlerName = "testy"
+
 monocleIntegrationTests :: TestTree
 monocleIntegrationTests =
   testGroup
-    "Monocle.Backend.Changes"
+    "Monocle.Backend.Queries"
     [ testCase
         "Index changes"
         testIndexChanges,

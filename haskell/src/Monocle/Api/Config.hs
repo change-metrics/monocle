@@ -119,9 +119,15 @@ defaultTenant name =
       search_aliases = Nothing
     }
 
+data ConfigStatus = ConfigStatus
+  { csReloaded :: Bool,
+    csConfig :: Config,
+    csWorkspaceStatus :: MVar WorkspaceStatus
+  }
+
 class MonadConfig m where
   mGetSecret :: "default env name" ::: Text -> "config env name" ::: Maybe Text -> m Secret
-  mReloadConfig :: FilePath -> m (m (Bool, Config))
+  mReloadConfig :: FilePath -> m (m ConfigStatus)
 
 instance MonadConfig IO where
   mGetSecret = getSecret
@@ -151,33 +157,50 @@ loadConfig configPath = do
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
 
-reloadConfig :: FilePath -> IO (IO (Bool, Config))
+data Status = NeedRefresh | Ready
+
+type WorkspaceName = Text
+
+type WorkspaceStatus = Map WorkspaceName Status
+
+mkWorkspaceStatus :: Config -> WorkspaceStatus
+mkWorkspaceStatus config = fromList $ mkStatus <$> getWorkspaces config
+  where
+    mkStatus ws = (getWorkspaceName ws, NeedRefresh)
+
+setStatus :: Status -> MVar WorkspaceStatus -> IO ()
+setStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
+
+reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config
   configTS <- getModificationTime fp
   config <- loadConfig fp
 
   -- Create the reload action
-  tsRef <- newIORef (configTS, config)
-  pure (reload tsRef)
+  tsRef <- newMVar (configTS, config)
+  wsRef <- newMVar mempty
+  pure (modifyMVar tsRef (reload wsRef))
   where
-    reload tsRef = do
-      (prevConfigTS, prevConfig) <- readIORef tsRef
+    reload wsRef mvar@(prevConfigTS, prevConfig) = do
       configTS <- getModificationTime fp
       if configTS > prevConfigTS
         then do
           -- TODO: use log reload event
           putTextLn $ toText fp <> ": reloading config"
           config <- loadConfig fp
-          writeIORef tsRef (configTS, config)
-          pure (True, config)
-        else pure (False, prevConfig)
+          modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
+          pure ((configTS, config), (ConfigStatus True config wsRef))
+        else pure (mvar, (ConfigStatus False prevConfig wsRef))
 
 resolveEnv :: MonadIO m => Index -> m Index
 resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
 
 getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
+
+getWorkspaceName :: Index -> Text
+getWorkspaceName Index {..} = name
 
 getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
 getSecret def keyM =

@@ -24,7 +24,7 @@ data Env = Env
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IO (Bool, Config.Config),
+  { config :: IO Config.ConfigStatus,
     aEnv :: Env
   }
 
@@ -42,18 +42,6 @@ instance BH.MonadBH AppM where
 
 instance MonadFail AppM where
   fail = error . toText
-
--- | 'getConfig' reload the config automatically from the env
-getConfig :: AppM Config.Config
-getConfig = do
-  loadConfig <- asks config
-  --  logger <- asks (glLogger . aEnv)
-  --  let logReload = (logEvent logger . ReloadConfig)
-  liftIO (snd <$> loadConfig)
-
--- | 'getWorkspaces' reload the workspaces automatically from the env
-askWorkspaces :: AppM [Config.Index]
-askWorkspaces = Config.getWorkspaces <$> getConfig
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request
@@ -279,13 +267,16 @@ doLog :: Logger -> ByteString -> IO ()
 doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
 
 data SystemEvent
-  = Ready Int Int Text
+  = SystemReady Int Int Text
   | ReloadConfig FilePath
+  | RefreshIndex Config.Index
 
 sysEventToText :: SystemEvent -> ByteString
 sysEventToText = \case
-  Ready tenantCount port url ->
+  SystemReady tenantCount port url ->
     "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
+  RefreshIndex index ->
+    encodeUtf8 $ "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
   ReloadConfig fp ->
     "Reloading " <> encodeUtf8 fp
 
