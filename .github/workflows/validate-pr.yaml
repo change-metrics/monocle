@@ -143,7 +143,9 @@ jobs:
           namespace=monocle
           kubectl create namespace "${namespace}" 
           kubectl create --namespace "${namespace}" --filename ./deployment/ 
-
+      - name: validate components have been deployed successfuly
+        run: |
+          namespace=monocle
           deploy_pod_labels_raw=$(kubectl get --namespace "${namespace}" --filename ./deployment/elastic-deployment.yaml --output go-template='{{ range $k, $v :=.spec.selector.matchLabels }}{{$k}}={{$v}},{{ end }}')
           deploy_pod_labels_elastic=$(echo "${deploy_pod_labels_raw}" | rev | cut --delimiter=',' --fields='2-' | rev)
 
@@ -153,9 +155,11 @@ jobs:
           done
           echo
 
-          kubectl wait --for=condition=Ready --namespace "${namespace}" pods --selector "${deploy_pod_labels_elastic}" --timeout=1m
+          kubectl wait --for=condition=Ready --namespace "${namespace}" pods --selector "${deploy_pod_labels_elastic}" --timeout=2m
           kubectl wait --for=condition=Ready --namespace "${namespace}" pods --all
-
+      - name: validate crawler legacy
+        run: |
+          namespace=monocle
           kubectl create --namespace "${namespace}" job test  --from $( kubectl get --namespace ${namespace} -f ./deployment/crawler-legacy-cronjob.yaml --output name) 
           kubectl wait --for=condition=complete --namespace "${namespace}" job/test 
 
@@ -168,8 +172,6 @@ jobs:
           curl -s -I -X GET http://localhost:9200/_cat/indices
 
           kill %1
-
-      # this is commented as on k8s there is no nginx to route traffic
       - name: Check api service through nginx
         run: |
           namespace=monocle
