@@ -56,7 +56,12 @@ run' port url configFile glLogger = do
 
   -- Initialize TVar for crawler metadata status by workspaces
   config' <- snd <$> config
-  aWSNeedRefresh <- newTVarIO $ (\ws -> (Config.getWorkspaceName ws, False)) <$> Config.getWorkspaces config'
+  aWSNeedRefresh <-
+    newTVarIO $
+      ( \ws ->
+          WSRefreshState (Config.getWorkspaceName ws) False
+      )
+        <$> Config.getWorkspaces config'
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

@@ -15,7 +15,7 @@ import Network.Wai
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
-  aWSNeedRefresh <- newTVarIO [(Config.getWorkspaceName workspace, False)]
+  aWSNeedRefresh <- newTVarIO [WSRefreshState (Config.getWorkspaceName workspace) False]
   let glLogger _ = pure ()
       config' = Config.Config Nothing [workspace]
       config = pure (False, config')

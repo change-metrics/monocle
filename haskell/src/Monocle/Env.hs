@@ -22,12 +22,17 @@ data Env = Env
     glLogger :: Logger
   }
 
+-- Refresh state (is workspace need a refresh)
+data WSRefreshState = WSRefreshState
+  { wsName :: Text,
+    wsNeedRefresh :: Bool
+  }
+
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO (Bool, Config.Config),
     aEnv :: Env,
-    -- Store a Boolean state (is workspace need a refresh) for each workspace
-    aWSNeedRefresh :: TVar [(Text, Bool)]
+    aWSNeedRefresh :: TVar [WSRefreshState]
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader

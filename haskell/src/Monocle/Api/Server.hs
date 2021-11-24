@@ -40,7 +40,10 @@ getConfig = do
       atomically
         . writeTVar
           indexRefreshStatus
-        $ (\ws -> (Config.getWorkspaceName ws, True)) <$> Config.getWorkspaces config
+        $ ( \ws ->
+              WSRefreshState (Config.getWorkspaceName ws) True
+          )
+          <$> Config.getWorkspaces config
   pure config
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
@@ -68,16 +71,16 @@ updateIndex index = do
       void $ atomically $ writeTVar indexRefreshStatusRef status
       where
         update v acc =
-          if fst v == Config.getWorkspaceName index
-            then (fst v, False) : acc
+          if wsName v == Config.getWorkspaceName index
+            then WSRefreshState (wsName v) False : acc
             else v : acc
 
     getIndexNeedRefresh :: AppM Bool
     getIndexNeedRefresh = do
       indexRefreshStatusRef <- asks aWSNeedRefresh
       indexRefreshStatus <- liftIO $ readTVarIO indexRefreshStatusRef
-      pure $ case filter (\v -> fst v == Config.getWorkspaceName index) indexRefreshStatus of
-        [(_, True)] -> True
+      pure $ case filter (\v -> wsName v == Config.getWorkspaceName index) indexRefreshStatus of
+        [WSRefreshState _ True] -> True
         _ -> False
 
 -- | 'askWorkspaces' reload the workspaces automatically from the env
