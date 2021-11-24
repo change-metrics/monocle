@@ -33,50 +33,50 @@ getConfig :: AppM Config.Config
 getConfig = do
   loadConfig <- asks config
   (reloaded, config) <- liftIO loadConfig
-  crawlerReloadStatus <- asks cRStatus
+  indexRefreshStatus <- asks aWSNeedRefresh
   when reloaded $ do
     liftIO $
       -- All indexed must be reloaded
       atomically
         . writeTVar
-          crawlerReloadStatus
+          indexRefreshStatus
         $ (\ws -> (Config.getWorkspaceName ws, True)) <$> Config.getWorkspaces config
   pure config
 
--- | 'updateCrawlerMD' refresh crawler Metadata if needed
-updateCrawlerMD :: Config.Index -> AppM ()
-updateCrawlerMD index = do
-  shouldReload <- getCrawlerMDNeedReload
+-- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
+updateIndex :: Config.Index -> AppM ()
+updateIndex index = do
+  shouldReload <- getIndexNeedRefresh
   when shouldReload $ do
     logger <- glLogger <$> asks aEnv
-    liftIO $ logEvent logger $ RefreshCrawlerMD index
-    refreshCrawlerMD
-    setCrawlerMDReloaded
+    liftIO $ logEvent logger $ RefreshIndex index
+    refreshIndex
+    setIndexRefreshed
   where
-    refreshCrawlerMD :: AppM ()
-    refreshCrawlerMD = do
+    refreshIndex :: AppM ()
+    refreshIndex = do
       runEmptyQueryM index I.ensureIndexSetup
       traverse_ initCrawlerMD $ Config.crawlers index
       where
         initCrawlerMD crawler = runEmptyQueryM index $ I.initCrawlerMetadata crawler
 
-    setCrawlerMDReloaded :: AppM ()
-    setCrawlerMDReloaded = do
-      crawlerReloadStatusRef <- asks cRStatus
-      crawlerReloadStatus <- readTVarIO crawlerReloadStatusRef
-      let status = foldr update [] crawlerReloadStatus
-      void $ atomically $ writeTVar crawlerReloadStatusRef status
+    setIndexRefreshed :: AppM ()
+    setIndexRefreshed = do
+      indexRefreshStatusRef <- asks aWSNeedRefresh
+      indexRefreshStatus <- readTVarIO indexRefreshStatusRef
+      let status = foldr update [] indexRefreshStatus
+      void $ atomically $ writeTVar indexRefreshStatusRef status
       where
         update v acc =
           if fst v == Config.getWorkspaceName index
             then (fst v, False) : acc
             else v : acc
 
-    getCrawlerMDNeedReload :: AppM Bool
-    getCrawlerMDNeedReload = do
-      crawlerReloadStatusRef <- asks cRStatus
-      crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
-      pure $ case filter (\v -> fst v == Config.getWorkspaceName index) crawlerReloadStatus of
+    getIndexNeedRefresh :: AppM Bool
+    getIndexNeedRefresh = do
+      indexRefreshStatusRef <- asks aWSNeedRefresh
+      indexRefreshStatus <- liftIO $ readTVarIO indexRefreshStatusRef
+      pure $ case filter (\v -> fst v == Config.getWorkspaceName index) indexRefreshStatus of
         [(_, True)] -> True
         _ -> False
 
@@ -356,7 +356,7 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
-      void $ updateCrawlerMD index
+      void $ updateIndex index
       runEmptyQueryM index $ do
         toUpdateEntityM <- I.getLastUpdated worker entity offset
         case toUpdateEntityM of

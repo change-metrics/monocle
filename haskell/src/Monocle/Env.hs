@@ -26,7 +26,8 @@ data Env = Env
 data AppEnv = AppEnv
   { config :: IO (Bool, Config.Config),
     aEnv :: Env,
-    cRStatus :: TVar [(Text, Bool)]
+    -- Store a Boolean state (is workspace need a refresh) for each workspace
+    aWSNeedRefresh :: TVar [(Text, Bool)]
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
@@ -270,14 +271,14 @@ doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <>
 data SystemEvent
   = Ready Int Int Text
   | ReloadConfig FilePath
-  | RefreshCrawlerMD Config.Index
+  | RefreshIndex Config.Index
 
 sysEventToText :: SystemEvent -> ByteString
 sysEventToText = \case
   Ready tenantCount port url ->
     "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
-  RefreshCrawlerMD index ->
-    encodeUtf8 $ "Refresh crawlers metadata for workspace: " <> Config.getWorkspaceName index
+  RefreshIndex index ->
+    encodeUtf8 $ "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
   ReloadConfig fp ->
     "Reloading " <> encodeUtf8 fp
 

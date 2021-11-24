@@ -50,7 +50,7 @@ main = do
 mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
 mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
-  cRStatus <-
+  aWSNeedRefresh  <-
     newTVarIO $
       (\workspace -> (Config.getWorkspaceName workspace, False)) <$> Config.getWorkspaces config'
   let glLogger _ = pure ()
