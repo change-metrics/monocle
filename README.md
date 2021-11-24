@@ -150,7 +150,7 @@ The `.secrets` file is used to store credentials and API keys used by crawlers t
 The `crawlers` value is a list of crawler. Each crawler is composed of:
 
 - `name`: an abitrary name used to identify the crawler.
-- `updated_since`: the crawler will fetch changes that has been created/updated since that date.
+- `update_since`: the crawler will fetch changes that has been created/updated since that date.
 - `provider`: provider settings
 
 ```YAML
@@ -158,7 +158,7 @@ workspaces:
   - name: demo
     crawlers:
       - name: spinnaker
-        updated_since: "2020-01-01"
+        update_since: "2020-01-01"
         provider: {}
 ```
 
@@ -297,7 +297,7 @@ workspaces:
           gerrit_url: https://review.opendev.org
           gerrit_repositories:
             - ^openstack/.*
-        updated_since: "2021-01-01"
+        update_since: "2021-01-01"
     projects:
       - name: compute
         repository_regex: ".*nova.*"
