@@ -69,7 +69,7 @@ run' port url configFile glLogger = do
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      logEvent glLogger $ Ready (length workspaces) port url
+      logEvent glLogger $ SystemReady (length workspaces) port url
       Warp.runSettings
         settings
         . cors (const $ Just policy)

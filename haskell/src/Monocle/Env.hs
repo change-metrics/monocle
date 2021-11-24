@@ -274,13 +274,13 @@ doLog :: Logger -> ByteString -> IO ()
 doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
 
 data SystemEvent
-  = Ready Int Int Text
+  = SystemReady Int Int Text
   | ReloadConfig FilePath
   | RefreshIndex Config.Index
 
 sysEventToText :: SystemEvent -> ByteString
 sysEventToText = \case
-  Ready tenantCount port url ->
+  SystemReady tenantCount port url ->
     "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
   RefreshIndex index ->
     encodeUtf8 $ "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
