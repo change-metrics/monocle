@@ -2,7 +2,6 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
-import Control.Concurrent.STM (stateTVar)
 import Data.List (lookup)
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
@@ -47,44 +46,35 @@ getConfig = do
 -- | 'updateCrawlerMD' refresh crawler Metadata if needed
 updateCrawlerMD :: Config.Index -> AppM ()
 updateCrawlerMD index = do
-  crawlerReloadStatusRef <- asks cRStatus
-  void $
-    atomically $
-      stateTVar
-        crawlerReloadStatusRef
-        ( \ref -> do
-            (processAtomically crawlerReloadStatusRef, ref)
-        )
+  shouldReload <- getCrawlerMDNeedReload
+  when shouldReload $ do
+    logger <- glLogger <$> asks aEnv
+    liftIO $ logEvent logger $ RefreshCrawlerMD index
+    refreshCrawlerMD
+    setCrawlerMDReloaded
   where
-    processAtomically :: TVar [(Text, Bool)] -> AppM ()
-    processAtomically ref = do
-      shouldReload <- getCrawlerMDNeedReload ref
-      when shouldReload $ do
-        logger <- glLogger <$> asks aEnv
-        liftIO $ logEvent logger $ RefreshCrawlerMD index
-        refreshCrawlerMD
-        setCrawlerMDReloaded ref
-
     refreshCrawlerMD :: AppM ()
     refreshCrawlerMD = do
       traverse_ initCrawlerMD $ Config.crawlers index
       where
         initCrawlerMD crawler = runEmptyQueryM index $ I.initCrawlerMetadata crawler
 
-    setCrawlerMDReloaded :: TVar [(Text, Bool)] -> AppM ()
-    setCrawlerMDReloaded ref = do
-      crawlerReloadStatus <- readTVarIO ref
+    setCrawlerMDReloaded :: AppM ()
+    setCrawlerMDReloaded = do
+      crawlerReloadStatusRef <- asks cRStatus
+      crawlerReloadStatus <- readTVarIO crawlerReloadStatusRef
       let status = foldr update [] crawlerReloadStatus
-      void $ atomically $ writeTVar ref status
+      void $ atomically $ writeTVar crawlerReloadStatusRef status
       where
         update v acc =
           if fst v == Config.getWorkspaceName index
             then (fst v, False) : acc
             else v : acc
 
-    getCrawlerMDNeedReload :: TVar [(Text, Bool)] -> AppM Bool
-    getCrawlerMDNeedReload ref = do
-      crawlerReloadStatus <- liftIO $ readTVarIO ref
+    getCrawlerMDNeedReload :: AppM Bool
+    getCrawlerMDNeedReload = do
+      crawlerReloadStatusRef <- asks cRStatus
+      crawlerReloadStatus <- liftIO $ readTVarIO crawlerReloadStatusRef
       pure $ case filter (\v -> fst v == Config.getWorkspaceName index) crawlerReloadStatus of
         [(_, True)] -> True
         _ -> False

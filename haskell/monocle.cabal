@@ -152,7 +152,6 @@ library
                      , servant                    ^>= 0.18.2
                      , servant-options            ^>= 0.1
                      , servant-server             ^>= 0.18.2
-                     , stm
                      , streaming                  < 0.3
                      , tasty                      < 1.5
                      , tasty-hunit                < 0.11
