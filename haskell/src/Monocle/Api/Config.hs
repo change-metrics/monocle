@@ -158,20 +158,18 @@ reloadConfig fp = do
   config <- loadConfig fp
 
   -- Create the reload action
-  tsRef <- newIORef (configTS, config)
-  pure (reload tsRef)
+  tsRef <- newMVar (configTS, config)
+  pure (modifyMVar tsRef reload)
   where
-    reload tsRef = do
-      (prevConfigTS, prevConfig) <- readIORef tsRef
+    reload mvar@(prevConfigTS, prevConfig) = do
       configTS <- getModificationTime fp
       if configTS > prevConfigTS
         then do
           -- TODO: use log reload event
           putTextLn $ toText fp <> ": reloading config"
           config <- loadConfig fp
-          writeIORef tsRef (configTS, config)
-          pure (True, config)
-        else pure (False, prevConfig)
+          pure ((configTS, config), (True, config))
+        else pure (mvar, (False, prevConfig))
 
 resolveEnv :: MonadIO m => Index -> m Index
 resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
