@@ -2,16 +2,10 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/9fc2cddf24ad1819f17174cbae47789294ea6dc4.tar.gz";
-    sha256 = "058l6ry119mkg7pwmm7z4rl1721w0zigklskq48xb5lmgig4l332";
+      "https://github.com/NixOS/nixpkgs/archive/65ce6cbbdc9ed71076c43e15e45e139fcbbf4d6c.tar.gz";
+    sha256 = "sha256:1vfpf17rcl1riasya54w690brhqs6m1fm5zcm920gy8s9mp24b0n";
   };
   nixpkgsSrc = (import nixpkgsPath);
-
-  pkgsHead = (import (fetchTarball {
-    url =
-      "https://github.com/NixOS/nixpkgs/archive/b964655a7d2ab1dcff46aa73d5510239bd193c88.tar.gz";
-    sha256 = "sha256:0h721rbi33kvw9nkvws6qjjrjmlzmkjqllbhrybp608l6zgrvnf1";
-  }) { });
 
   gitignoreSrc = pkgs.fetchFromGitHub {
     owner = "hercules-ci";
@@ -24,7 +18,7 @@ let
   inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
 
   # update haskell dependencies
-  compilerVersion = "8104";
+  compilerVersion = "8107";
   compiler = "ghc" + compilerVersion;
   overlays = [
     (final: prev: {
@@ -36,6 +30,10 @@ let
               broken = false;
             });
           proto3-suite = pkgs.haskell.lib.dontCheck hpPrev.proto3-suite;
+          contiguous = pkgs.haskell.lib.dontCheck
+            (pkgs.haskell.lib.overrideCabal hpPrev.contiguous {
+              broken = false;
+            });
 
           text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
             broken = false;
@@ -57,7 +55,6 @@ let
             sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
           };
 
-          # bloodhound needs a new release, use current master for now
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
             sha256 =
@@ -84,10 +81,8 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          # dontCheck because doctests are not working...
-          monocle = (pkgs.haskell.lib.dontCheck
-            (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
-              { })).overrideAttrs
+          monocle = (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
+            { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
@@ -105,6 +100,10 @@ let
     system = "x86_64-linux";
   };
   pkgsNonFree = nixpkgsSrc { config.allowUnfree = true; };
+
+  # manually adds build dependencies for benchmark that are not managed by cabal2nix
+  addCriterion = drv:
+    pkgs.haskell.lib.addBuildDepends drv ([ pkgs.myHaskellPackages.criterion ]);
 
   # local devel env
   elasticsearch-port = 19200;
@@ -132,6 +131,7 @@ let
     cd ${name}
   '';
 
+in rec {
   # DB
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
@@ -208,7 +208,7 @@ let
     cat ${promConf} | \
       sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > config.yml
     cd ${prom-home}
-    exec ${pkgsHead.prometheus}/bin/prometheus --config.file=config.yml --web.listen-address="$LISTEN"
+    exec ${pkgs.prometheus}/bin/prometheus --config.file=config.yml --web.listen-address="$LISTEN"
   '';
 
   promContainer = pkgs.dockerTools.buildLayeredImage {
@@ -268,7 +268,7 @@ let
     '';
   };
 
-  dhall-grafana = pkgsHead.dhallPackages.dhall-grafana;
+  dhall-grafana = pkgs.dhallPackages.dhall-grafana;
 
   grafanaConfig = pkgs.runCommand "build-grafana-config" { } ''
     echo Building grafana config
@@ -301,7 +301,7 @@ let
 
     # boot
     ${mkHome grafana-home}
-    GRAFANA_BASE=${pkgsHead.grafana}
+    GRAFANA_BASE=${pkgs.grafana}
     ${pkgs.rsync}/bin/rsync --exclude /public/ -r $GRAFANA_BASE/share/grafana/ ${grafana-home}/
     ln -sf  $GRAFANA_BASE/share/grafana/public/ ${grafana-home}/
     find ${grafana-home} -type f | xargs chmod 0600
@@ -528,10 +528,10 @@ let
   easyHlsSrc = pkgs.fetchFromGitHub {
     owner = "jkachmar";
     repo = "easy-hls-nix";
-    rev = "a332d37c59fdcc9e44907bf3f48cf20b6d275ef4";
-    sha256 = "1zwgg8qd33411c9rdlz1x7qv65pbw80snlvadifm4bm4avpkjhnk";
+    rev = "703a6bbb8441948f4c9c843e893b8235ac43c0fa";
+    sha256 = "0402ih4jla62l59g80f21fmgklj7rv0hmn82347qzms18lffbjpx";
   };
-  easyHls = pkgs.callPackage easyHlsSrc { ghcVersions = [ "8.10.4" ]; };
+  easyHls = pkgs.callPackage easyHlsSrc { ghcVersions = [ "8.10.7" ]; };
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
@@ -577,7 +577,6 @@ let
   all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req
     ++ doc-req;
 
-in rec {
   # containers
   containerPrometheus = promContainer;
   containerGrafana = grafanaContainer;
@@ -589,17 +588,18 @@ in rec {
 
   };
 
-  monocle = hsPkgs.monocle;
+  # dontCheck because doctests are not working...
+  monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;
   };
   shell = hsPkgs.shellFor {
-    packages = p: [ p.monocle p.monocle-codegen ];
+    packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid easyHls.nixosDrv ] ++ all-req ++ services-req;
+      [ hlint ghcid easyHls ] ++ all-req ++ services-req;
 
     withHoogle = true;
 
