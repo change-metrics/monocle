@@ -3,6 +3,7 @@
 module Monocle.Api.Server where
 
 import Data.List (lookup)
+import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Google.Protobuf.Timestamp as T
@@ -29,70 +30,44 @@ import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
 
 -- | 'getConfig' reload the config automatically from the env
-getConfig :: AppM Config.Config
+getConfig :: AppM Config.ConfigStatus
 getConfig = do
   loadConfig <- asks config
-  (reloaded, config) <- liftIO loadConfig
-  indexRefreshStatus <- asks aWSNeedRefresh
-  when reloaded $ do
-    liftIO $
-      -- All indexed must be reloaded
-      atomically
-        . writeTVar
-          indexRefreshStatus
-        $ ( \ws ->
-              WSRefreshState (Config.getWorkspaceName ws) True
-          )
-          <$> Config.getWorkspaces config
-  pure config
+  liftIO loadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
-updateIndex :: Config.Index -> AppM ()
-updateIndex index = do
-  shouldReload <- getIndexNeedRefresh
-  when shouldReload $ do
-    logger <- glLogger <$> asks aEnv
-    liftIO $ logEvent logger $ RefreshIndex index
-    refreshIndex
-    setIndexRefreshed
+updateIndex :: Config.Index -> MVar Config.WorkspaceStatus -> AppM ()
+updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNeeded
   where
-    refreshIndex :: AppM ()
+    doUpdateIfNeeded :: Config.WorkspaceStatus -> QueryM Config.WorkspaceStatus
+    doUpdateIfNeeded ws = case Map.lookup (Config.getWorkspaceName index) ws of
+      Just Config.Ready -> pure ws
+      Just Config.NeedRefresh -> do
+        refreshIndex
+        pure $ Map.insert (Config.getWorkspaceName index) Config.Ready ws
+      Nothing -> error $ "Unknown workspace: " <> show index
+
+    refreshIndex :: QueryM ()
     refreshIndex = do
-      runEmptyQueryM index I.ensureIndexSetup
-      traverse_ initCrawlerMD $ Config.crawlers index
-      where
-        initCrawlerMD crawler = runEmptyQueryM index $ I.initCrawlerMetadata crawler
+      logger <- glLogger <$> asks tEnv
+      liftIO $ logEvent logger $ RefreshIndex index
+      I.ensureIndexSetup
+      traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
-    setIndexRefreshed :: AppM ()
-    setIndexRefreshed = do
-      indexRefreshStatusRef <- asks aWSNeedRefresh
-      indexRefreshStatus <- readTVarIO indexRefreshStatusRef
-      let status = foldr update [] indexRefreshStatus
-      void $ atomically $ writeTVar indexRefreshStatusRef status
-      where
-        update v acc =
-          if wsName v == Config.getWorkspaceName index
-            then WSRefreshState (wsName v) False : acc
-            else v : acc
+-- | Convenient pattern to get the config from the status
+pattern GetConfig :: Config.Config -> Config.ConfigStatus
+pattern GetConfig a <- Config.ConfigStatus _ a _
 
-    getIndexNeedRefresh :: AppM Bool
-    getIndexNeedRefresh = do
-      indexRefreshStatusRef <- asks aWSNeedRefresh
-      indexRefreshStatus <- liftIO $ readTVarIO indexRefreshStatusRef
-      pure $ case filter (\v -> wsName v == Config.getWorkspaceName index) indexRefreshStatus of
-        [WSRefreshState _ True] -> True
-        _ -> False
-
--- | 'askWorkspaces' reload the workspaces automatically from the env
-askWorkspaces :: AppM [Config.Index]
-askWorkspaces = Config.getWorkspaces <$> getConfig
+-- | Convenient pattern to get the list of tenants
+pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
 
 -- | /api/2/about endpoint
 configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
 configGetAbout = const response
   where
     response = do
-      config <- getConfig
+      GetConfig config <- getConfig
       let aboutVersion = toLText version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
@@ -109,7 +84,7 @@ configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspa
 configGetWorkspaces = const response
   where
     response = do
-      tenants <- askWorkspaces
+      GetTenants tenants <- getConfig
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
       let workspaceName = toLazy name
@@ -118,7 +93,7 @@ configGetWorkspaces = const response
 -- | /api/2/user_group/list endpoint
 userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
 userGroupList request = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   let UserGroupPB.ListRequest {..} = request
 
   pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
@@ -134,7 +109,7 @@ userGroupList request = do
 -- | /api/2/get_projects
 configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
 configGetProjects ConfigPB.GetProjectsRequest {..} = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getProjectsRequestIndex) of
     Just index -> maybe [] (fmap toResp) (Config.projects index)
     Nothing -> []
@@ -150,7 +125,7 @@ configGetProjects ConfigPB.GetProjectsRequest {..} = do
 -- | /api/2/user_group/get endpoint
 userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
 userGroupGet request = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   let UserGroupPB.GetRequest {..} = request
   now <- getCurrentTime
 
@@ -221,8 +196,10 @@ userGroupGet request = do
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
+
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
+
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 
@@ -236,7 +213,7 @@ toEntity entityPB = case entityPB of
 -- | /crawler/add endpoint
 crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
 crawlerAddDoc request = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   let ( CrawlerPB.AddDocRequest
           indexName
           crawlerName
@@ -299,7 +276,7 @@ crawlerAddDoc request = do
 -- | /crawler/commit endpoint
 crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
 crawlerCommit request = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
   let requestE = do
@@ -343,7 +320,8 @@ crawlerCommit request = do
 -- | /crawler/get_commit_info endpoint
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  tenants <- askWorkspaces
+  Config.ConfigStatus _ (Config.Config {..}) wsStatus <- getConfig
+  let tenants = workspaces
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 
   let requestE = do
@@ -359,7 +337,7 @@ crawlerCommitInfo request = do
 
   case requestE of
     Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
-      void $ updateIndex index
+      updateIndex index wsStatus
       runEmptyQueryM index $ do
         toUpdateEntityM <- I.getLastUpdated worker entity offset
         case toUpdateEntityM of
@@ -412,7 +390,7 @@ validateTaskDataRequest ::
   -- | an AppM with either an Error or extracted info
   AppM (Either TDError (Config.Index, Config.Crawler, Maybe UTCTime))
 validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   pure $ do
     index <- Config.lookupTenant tenants (toStrict indexName) `orDie` TDUnknownIndex
     crawler <- Config.lookupCrawler index (toStrict crawlerName) `orDie` TDUnknownCrawler
@@ -425,7 +403,7 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
 -- | /suggestions endpoint
 searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
 searchSuggestions request = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   let SearchPB.SuggestionsRequest {..} = request
 
   let tenantM = Config.lookupTenant tenants (toStrict suggestionsRequestIndex)
@@ -444,7 +422,7 @@ searchSuggestions request = do
 -- | A helper function to decode search query
 validateSearchRequest :: LText -> LText -> LText -> AppM (Either ParseError (Config.Index, Q.Query))
 validateSearchRequest tenantName queryText username = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   now <- getCurrentTime
   let requestE =
         do
@@ -617,5 +595,5 @@ searchFields = const $ pure response
 
 lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
-  tenants <- askWorkspaces
+  GetTenants tenants <- getConfig
   pure $ Config.lookupTenant tenants name

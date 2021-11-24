@@ -168,6 +168,9 @@ mkWorkspaceStatus config = fromList $ mkStatus <$> getWorkspaces config
   where
     mkStatus ws = (getWorkspaceName ws, NeedRefresh)
 
+setStatus :: Status -> MVar WorkspaceStatus -> IO ()
+setStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
+
 reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config

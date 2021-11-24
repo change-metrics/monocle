@@ -50,23 +50,18 @@ main = do
 mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
 mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
-  aWSNeedRefresh <-
-    newTVarIO $
-      ( \workspace ->
-          WSRefreshState
-            (Config.getWorkspaceName workspace)
-            False
-      )
-        <$> Config.getWorkspaces config'
+  ws <- newMVar $ Config.mkWorkspaceStatus config'
+  newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
+  Config.setStatus Config.Ready ws
   let glLogger _ = pure ()
-      config = configSE config' newConfig
+      config = configSE (config', ws) (newConfig, newWs)
       aEnv = Env {..}
   pure $ AppEnv {..}
   where
-    configSE :: Config.Config -> Config.Config -> IO (Bool, Config.Config)
     configSE conf confNew = do
       reloaded <- readTVarIO reloadedRef
-      pure (reloaded, if reloaded then confNew else conf)
+      let (config, wsRef) = if reloaded then confNew else conf
+      pure $ Config.ConfigStatus reloaded config wsRef
 
 pattern UnknownIndexResp <-
   CommitInfoResponse

@@ -15,10 +15,6 @@ module Monocle.Prelude
     Secret (..),
     (:::),
 
-    -- * concurrent
-    modifyMVar,
-    modifyMVar_,
-
     -- * containers
     mapMutate,
 
@@ -39,6 +35,8 @@ module Monocle.Prelude
 
     -- * unliftio
     MonadUnliftIO,
+    modifyMVar,
+    modifyMVar_,
 
     -- * mmoprh
     hoist,
@@ -152,7 +150,6 @@ module Monocle.Prelude
   )
 where
 
-import Control.Concurrent.MVar (modifyMVar, modifyMVar_)
 import Control.Exception.Safe (tryAny)
 import qualified Control.Foldl as L
 import Control.Lens (Lens', lens, mapMOf, over, view)
@@ -186,6 +183,7 @@ import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
+import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
 
 -- | Prometheus

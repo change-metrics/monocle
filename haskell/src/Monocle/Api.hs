@@ -39,7 +39,7 @@ run port url configFile = withLogger (run' port url configFile)
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
 run' port url configFile glLogger = do
   config <- Config.reloadConfig configFile
-  workspaces <- Config.getWorkspaces . snd <$> config
+  workspaces <- Config.getWorkspaces . Config.csConfig <$> config
 
   -- Check alias and abort if they are not usable
   case lefts $ map loadAliases workspaces of
@@ -54,11 +54,9 @@ run' port url configFile glLogger = do
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
 
-  -- Initialize TVar for crawler metadata status by workspaces
-  workspacesStatus <- do
-    config' <- snd <$> config
-    ws <- mkWorkspacesStatus config'
-    newTVarIO ws
+  -- Initialize workspace status to ready since we are starting
+  wsRef <- Config.csWorkspaceStatus <$> config
+  Config.setStatus Config.Ready wsRef
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

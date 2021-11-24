@@ -15,10 +15,11 @@ import Network.Wai
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
-  aWSNeedRefresh <- newTVarIO [WSRefreshState (Config.getWorkspaceName workspace) False]
   let glLogger _ = pure ()
       config' = Config.Config Nothing [workspace]
-      config = pure (False, config')
+      ws = Config.mkWorkspaceStatus config'
+  wsRef <- newMVar $ fmap (const Config.Ready) ws
+  let config = pure (Config.ConfigStatus False config' wsRef)
       aEnv = Env {..}
   pure $ AppEnv {..}
 
@@ -28,7 +29,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     -- Using a mockedManager, run the Api behind a MonocleClient for the tests
     runTest :: AppEnv -> Assertion
     runTest appEnv = do
-      conf <- snd <$> config appEnv
+      conf <- Config.csConfig <$> config appEnv
       let indexes = Config.getWorkspaces conf
       traverse_
         (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.ensureIndex)
@@ -46,7 +47,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     -- Remove the index
     cleanIndex :: AppEnv -> IO ()
     cleanIndex appEnv = do
-      conf <- snd <$> config appEnv
+      conf <- Config.csConfig <$> config appEnv
       let indexes = Config.getWorkspaces conf
       traverse_
         (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.removeIndex)
