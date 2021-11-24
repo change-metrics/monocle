@@ -55,6 +55,7 @@ updateCrawlerMD index = do
   where
     refreshCrawlerMD :: AppM ()
     refreshCrawlerMD = do
+      runEmptyQueryM index I.ensureIndexSetup
       traverse_ initCrawlerMD $ Config.crawlers index
       where
         initCrawlerMD crawler = runEmptyQueryM index $ I.initCrawlerMetadata crawler

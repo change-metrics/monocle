@@ -14,6 +14,7 @@ import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import qualified Monocle.Search.Syntax as S
+import Proto3.Suite (Enumerated (Enumerated, enumerated))
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -45,17 +46,15 @@ main = do
           <> integrationTests
     )
 
--- Create an AppEnv where the supply of a new config could be controled
-mkAppEnvWithSideEffect :: [Config.Index] -> [Config.Index] -> TVar Bool -> IO AppEnv
-mkAppEnvWithSideEffect workspaces workspaces' reloadedRef = do
+-- Create an AppEnv where the supply of a new config can be controled
+mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
+mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   cRStatus <-
     newTVarIO $
-      (\workspace -> (Config.getWorkspaceName workspace, False)) <$> workspaces
+      (\workspace -> (Config.getWorkspaceName workspace, False)) <$> Config.getWorkspaces config'
   let glLogger _ = pure ()
-      config' = Config.Config Nothing workspaces
-      configNew = Config.Config Nothing workspaces'
-      config = configSE config' configNew
+      config = configSE config' newConfig
       aEnv = Env {..}
   pure $ AppEnv {..}
   where
@@ -63,6 +62,29 @@ mkAppEnvWithSideEffect workspaces workspaces' reloadedRef = do
     configSE conf confNew = do
       reloaded <- readTVarIO reloadedRef
       pure (reloaded, if reloaded then confNew else conf)
+
+pattern UnknownIndexResp <-
+  CommitInfoResponse
+    { commitInfoResponseResult =
+        Just
+          ( CommitInfoResponseResultError
+              Enumerated {enumerated = Right CommitInfoErrorCommitGetUnknownIndex}
+            )
+    }
+
+pattern NamedEntity name <-
+  CommitInfoResponse
+    { commitInfoResponseResult =
+        Just
+          ( CommitInfoResponseResultEntity
+              CommitInfoResponse_OldestEntity
+                { commitInfoResponse_OldestEntityEntity =
+                    Just
+                      (Entity {entityEntity = Just (EntityEntityProjectName name)}),
+                  commitInfoResponse_OldestEntityLastCommitAt = Just _
+                }
+            )
+    }
 
 monocleApiTests :: TestTree
 monocleApiTests =
@@ -75,32 +97,50 @@ monocleApiTests =
       reloadedRef <- newTVarIO False
       let appEnv =
             mkAppEnvWithSideEffect
-              [makeFakeWS ["opendev/neutron"]]
-              [makeFakeWS ["opendev/neutron", "opendev/nova"]]
+              (Config.Config Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
+              ( Config.Config
+                  Nothing
+                  [ makeFakeWS wsName1 ["opendev/neutron", "opendev/nova"],
+                    makeFakeWS wsName2 ["opendev/swift"]
+                  ]
+              )
               reloadedRef
       withTestApi appEnv $ \client ->
         do
-          let req offset =
-                let commitInfoRequestIndex = toLazy workspaceName
-                    commitInfoRequestCrawler = toLazy crawlerName
-                    commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
-                    commitInfoRequestOffset = offset
-                 in CommitInfoRequest {..}
           -- Run two commitInfo requests (and expect same resp)
-          resp1 <- crawlerCommitInfo client $ req 0
-          resp2 <- crawlerCommitInfo client $ req 1
+          resp1 <- crawlerCommitInfo client $ mkReq wsName1 0
+          resp2 <- crawlerCommitInfo client $ mkReq wsName1 1
           if resp1 /= resp2 then error "Expected same response" else pure ()
+          -- Also perform the Req on an unknown workspace (and expect failure)
+          resp3 <- crawlerCommitInfo client $ mkReq wsName2 0
+          if not $ isUnknownIndex resp3 then error "Expected UnknownIndex response" else pure ()
+
           -- Now set: config has been reloaded and serve the alternate config
           atomically $ writeTVar reloadedRef True
           -- Run two commitInfo requests (and expect different resp
           -- as the new config as been handled and crawler MD has been refreshed)
-          resp1' <- crawlerCommitInfo client $ req 0
-          resp2' <- crawlerCommitInfo client $ req 1
+          resp1' <- crawlerCommitInfo client $ mkReq wsName1 0
+          resp2' <- crawlerCommitInfo client $ mkReq wsName1 1
           if resp1' == resp2' then error "Expected different response" else pure ()
+          -- Also verify that the new workspace was initilized
+          resp3' <- crawlerCommitInfo client $ mkReq wsName2 0
+          if not $ isEntitySwift resp3'
+            then error "Expected entity named 'openstack/swift'"
+            else pure ()
       assertEqual "Crawler MD reload when config change" True True
       where
-        makeFakeWS repositories =
-          (mkConfig workspaceName)
+        isUnknownIndex UnknownIndexResp = True
+        isUnknownIndex _ = False
+        isEntitySwift (NamedEntity "opendev/swift") = True
+        isEntitySwift _ = False
+        mkReq wsName offset =
+          let commitInfoRequestIndex = toLazy wsName
+              commitInfoRequestCrawler = toLazy crawlerName
+              commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
+              commitInfoRequestOffset = offset
+           in CommitInfoRequest {..}
+        makeFakeWS wsName repositories =
+          (mkConfig wsName)
             { Config.crawlers_api_key = Just "secret",
               Config.crawlers =
                 [ let name = crawlerName
@@ -118,7 +158,8 @@ monocleApiTests =
                    in Config.Crawler {..}
                 ]
             }
-        workspaceName = "ws1"
+        wsName1 = "ws1"
+        wsName2 = "ws2"
         crawlerName = "testy"
 
 monocleIntegrationTests :: TestTree
