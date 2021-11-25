@@ -179,7 +179,7 @@ reloadConfig fp = do
 
   -- Create the reload action
   tsRef <- newMVar (configTS, config)
-  wsRef <- newMVar mempty
+  wsRef <- newMVar $ mkWorkspaceStatus config
   pure (modifyMVar tsRef (reload wsRef))
   where
     reload wsRef mvar@(prevConfigTS, prevConfig) = do

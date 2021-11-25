@@ -45,7 +45,7 @@ updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNee
       Just Config.NeedRefresh -> do
         refreshIndex
         pure $ Map.insert (Config.getWorkspaceName index) Config.Ready ws
-      Nothing -> error $ "Unknown workspace: " <> show index
+      Nothing -> error $ "Unknown workspace: " <> show (Config.getWorkspaceName index)
 
     refreshIndex :: QueryM ()
     refreshIndex = do
