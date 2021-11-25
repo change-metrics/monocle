@@ -589,8 +589,16 @@ in rec {
 
   ghc = hsPkgs.ghcWithPackages (p: [
     p.doctest20
-    # Disable haddock and test to speedup the build
-    (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle))
+    # Disable profiling, haddock and test to speedup the build
+    ((pkgs.haskell.lib.appendConfigureFlags
+      (pkgs.haskell.lib.disableLibraryProfiling
+        (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle)))
+      # Enable the ci flag to fail on warning
+      [ "-f ci" ]).overrideAttrs (_:
+        # Set dhall env variable to avoid warning
+        {
+          XDG_CACHE_HOME = "/tmp";
+        }))
   ]);
 
   mk-ci = name: cmd:
@@ -604,15 +612,22 @@ in rec {
       touch $out
     '';
 
-  ci = mk-ci "ci" ''
-    echo "[+] Setup local ghc shell"
-    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${ghc}/bin:${pkgs.cabal-install}/bin:${pkgs.gnugrep}/bin
-    export NIX_GHCPKG=${ghc}/bin/ghc-pkg
-    export NIX_GHC=${ghc}/bin/ghc
+  cabal-setup = ghcDrv: ''
+    export PATH=${ghcDrv}/bin:${pkgs.cabal-install}/bin:$PATH
+    export NIX_GHCPKG=${ghcDrv}/bin/ghc-pkg
+    export NIX_GHC=${ghcDrv}/bin/ghc
     export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
-    export NIX_GHC_DOCDIR="${ghc}/share/doc/ghc/html"
+    export NIX_GHC_DOCDIR="${ghcDrv}/share/doc/ghc/html"
+    export HOME=$(mktemp -d)
+    mkdir -p $HOME/.cabal
+    touch $HOME/.cabal/config
     ghc --version
     cabal --version
+  '';
+
+  ci = mk-ci "ci" ''
+    echo "[+] Setup local ghc shell"
+    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin
 
     # Copy the source so that doctest can write temp files
     mkdir $out
@@ -620,10 +635,11 @@ in rec {
     cd $out
 
     echo "[+] Running doctests"
-    export HOME=$(mktemp -d)
-    mkdir -p $HOME/.cabal
-    touch $HOME/.cabal/config
+    ${cabal-setup ghc}
     cabal repl --with-ghc=doctest
+
+    # TODO: remove monocle from the ghcWithPackages to avoid rebuild
+    # cabal test -O0 --test-show-details=direct
 
     ${lightCI}
   '';
