@@ -143,7 +143,7 @@ getBugsWithScore ::
 getBugsWithScore bzSession sinceTS product'' limit offset = do
   let request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
       page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
-      searchQuery = BZS.evalSearchExpr $ (searchExpr sinceTS product'')
+      searchQuery = BZS.evalSearchExpr (searchExpr sinceTS product'')
   getBugs bzSession request
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
@@ -167,7 +167,7 @@ toTaskData bz = map mkTaskData ebugs
         (toLazy $ bugSeverity bz)
         (toLazy $ bugPriority bz)
         (fromInteger . toInteger . bugPmScore $ bz)
-        (toLazy $ "rhbz#")
+        (toLazy "rhbz#")
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData :: MonadBZ m => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()

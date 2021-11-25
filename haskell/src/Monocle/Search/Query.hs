@@ -345,7 +345,7 @@ getAuthorField fieldName = \case
     pure $ case Config.lookupIdent index username of
       Just muid -> (fieldName <> ".muid", muid)
       Nothing -> (fieldName <> ".id", username)
-  value -> pure $ (fieldName <> ".muid", value)
+  value -> pure (fieldName <> ".muid", value)
 
 mkEqQuery :: Field -> Text -> Parser BH.Query
 mkEqQuery field value' = do
@@ -502,7 +502,7 @@ ensureMinBound query'
     -- A modifier function that ensure a min bound is set, whenever the user provided an expr.
     newModifier modifier exprM = case exprM of
       Just expr -> modifier $ Just $ AndExpr minExpr expr
-      Nothing -> modifier $ Just $ minExpr
+      Nothing -> modifier $ Just minExpr
     minExpr = GtExpr "from" $ toText $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
 
 -- | dropField remove a field from an Expr

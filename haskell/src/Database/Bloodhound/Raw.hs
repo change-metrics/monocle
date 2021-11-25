@@ -60,7 +60,7 @@ settings (BH.IndexName index) body = do
     "{\"acknowledged\":true}" -> pure ()
     _ -> error $ "Settings apply failed: " <> show resp
 
-search' :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> QS -> m (BH.Reply)
+search' :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> QS -> m BH.Reply
 search' (BH.IndexName index) body qs = do
   BH.Server s <- BH.bhServer <$> BH.getBHEnv
   let url = Text.intercalate "/" [s, index, "_search"]

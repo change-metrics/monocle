@@ -190,8 +190,8 @@ reloadConfig fp = do
           putTextLn $ toText fp <> ": reloading config"
           config <- loadConfig fp
           modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
-          pure ((configTS, config), (ConfigStatus True config wsRef))
-        else pure (mvar, (ConfigStatus False prevConfig wsRef))
+          pure ((configTS, config), ConfigStatus True config wsRef)
+        else pure (mvar, ConfigStatus False prevConfig wsRef)
 
 resolveEnv :: MonadIO m => Index -> m Index
 resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
@@ -317,7 +317,7 @@ getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index
        in Map.insert groupName (users' <> [name]) acc
 
 getTenantProjectsNames :: Index -> [Text]
-getTenantProjectsNames index = map getName $ fromMaybe [] $ projects index
+getTenantProjectsNames index = maybe [] (map getName) (projects index)
   where
     getName Project {..} = name
 

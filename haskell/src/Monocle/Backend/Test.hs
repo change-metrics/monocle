@@ -569,7 +569,7 @@ testLifecycleStats = withTenant doTest
             let queryGet _ = const []
                 queryBounds =
                   ( addUTCTime (-3600) fakeDate,
-                    addUTCTime (3600) fakeDate
+                    addUTCTime 3600 fakeDate
                   )
                 queryMinBoundsSet = True
              in Q.Query {..}

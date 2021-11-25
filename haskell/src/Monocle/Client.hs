@@ -62,9 +62,7 @@ withClient ::
   m a
 withClient url managerM callBack =
   do
-    manager <- case managerM of
-      Just manager' -> pure manager'
-      Nothing -> mkManager
+    manager <- maybe mkManager pure managerM
     callBack MonocleClient {..}
   where
     baseUrl = T.dropWhileEnd (== '/') url <> "/"

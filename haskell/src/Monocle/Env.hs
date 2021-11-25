@@ -137,7 +137,7 @@ testQueryM config tenantM = do
 
 -- | Re-export utility function to create a config for testQueryM
 mkConfig :: Text -> Config.Index
-mkConfig name = Config.defaultTenant name
+mkConfig = Config.defaultTenant
 
 -- | Utility function to hide the ReaderT layer
 getIndexName :: QueryMonad m => m BH.IndexName
@@ -186,7 +186,7 @@ withQuery query = local addQuery
 withContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
 withContext context = local setContext
   where
-    setContext (QueryEnv tenant tEnv query _) = (QueryEnv tenant tEnv query (Just contextName))
+    setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
     contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
     getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 

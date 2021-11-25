@@ -102,17 +102,17 @@ scanSearch = do
 -- | scan search the hit body, see the 'concat' doc for why we don't need catMaybes
 -- https://hackage.haskell.org/package/streaming-0.2.3.0/docs/Streaming-Prelude.html#v:concat
 scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
-scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource $ scanSearch
+scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource scanSearch
 
 -- | scan search the document id, here is an example usage for the REPL:
 -- λ> testQueryM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
 -- DocId ...
 -- DocId ...
 scanSearchId :: Stream (Of BH.DocId) QueryM ()
-scanSearchId = Streaming.map BH.hitDocId $ anyScan
+scanSearchId = Streaming.map BH.hitDocId anyScan
   where
     -- here we need to help ghc figures out what fromJSON to use
-    anyScan :: Stream (Of (BH.Hit (Value))) QueryM ()
+    anyScan :: Stream (Of (BH.Hit Value)) QueryM ()
     anyScan = scanSearch
 
 scanSearchSimple :: FromJSON resp => QueryM [resp]
@@ -216,9 +216,10 @@ changeEvents changeID limit = dropQuery $
 -- | The change created / review ratio
 changeReviewRatio :: QueryMonad m => m Float
 changeReviewRatio = withFlavor qf $ do
-  commitCount <- withFilter [documentType EChangeCreatedEvent] $ countDocs
+  commitCount <- withFilter [documentType EChangeCreatedEvent] countDocs
   reviewCount <-
-    withFilter [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]] $
+    withFilter
+      [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]]
       countDocs
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
@@ -423,7 +424,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
 
   -- Collect all the events
   resultJson <- doFastSearch 10000
-  let result = catMaybes $ map decodeJsonChangeEvent resultJson
+  let result = mapMaybe decodeJsonChangeEvent resultJson
 
   -- Group by change_id
   let changeMap :: [NonEmpty JsonChangeEvent]

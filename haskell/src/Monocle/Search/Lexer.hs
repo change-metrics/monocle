@@ -95,7 +95,7 @@ lex code = case Megaparsec.parse tokensParser "<input>" code of
   Left err -> Left (mkErr err)
   Right tokens -> Right tokens
   where
-    formatExpected :: (Set.Set (Megaparsec.ErrorItem (Megaparsec.Token Text))) -> Text
+    formatExpected :: Set.Set (Megaparsec.ErrorItem (Megaparsec.Token Text)) -> Text
     formatExpected set
       | Set.member (Megaparsec.Tokens ('"' :| "")) set = "Expected field value (spaces are not allowed after operator)"
       | Set.member (Megaparsec.Tokens (':' :| "")) set = "Expected field operator: `:`, `>`, ..."
