@@ -37,6 +37,8 @@ module Monocle.Prelude
     MonadUnliftIO,
     modifyMVar,
     modifyMVar_,
+    withAsync,
+    cancel,
 
     -- * mmoprh
     hoist,
@@ -183,6 +185,7 @@ import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
+import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
 
