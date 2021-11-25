@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [api] workspaces' crawler entities not created/refreshed at config changes (#739).
+
 ## [1.2.1] - 2021-10-28
 
 ### Fixed
