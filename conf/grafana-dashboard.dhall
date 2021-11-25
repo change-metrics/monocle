@@ -102,7 +102,7 @@ let panels =
       ]
 
 in  Grafana.Dashboard::{
-    , title = "Monocle-test"
+    , title = "Monocle"
     , editable = True
     , panels = Grafana.Utils.generateIds panels
     , links =
