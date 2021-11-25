@@ -593,11 +593,18 @@ in rec {
     (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle))
   ]);
 
-  ci = pkgs.runCommand "monocle-ci" {
-    # Set local to avoid utf-8 invalid byte sequence errors
-    LC_ALL = "en_US.UTF-8";
-    LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  } ''
+  mk-ci = name: cmd:
+    pkgs.runCommand "monocle-${name}" {
+      # Set local to avoid utf-8 invalid byte sequence errors
+      LC_ALL = "en_US.UTF-8";
+      LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+    } ''
+      ${cmd}
+
+      touch $out
+    '';
+
+  ci = mk-ci "ci" ''
     echo "[+] Setup local ghc shell"
     export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${ghc}/bin:${pkgs.cabal-install}/bin:${pkgs.gnugrep}/bin
     export NIX_GHCPKG=${ghc}/bin/ghc-pkg
@@ -618,12 +625,20 @@ in rec {
     touch $HOME/.cabal/config
     cabal repl --with-ghc=doctest
 
+    ${lightCI}
+  '';
+
+  ci-light = mk-ci "ci-light" lightCI;
+
+  lightCI = ''
+    cd ${monocleHaskellSrc}
+    echo "[+] Running hlint"
+    ${pkgs.hlint}/bin/hlint -XQuasiQuotes src/
+
     echo "[+] Checking ormolu syntax"
     ${pkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications --mode check \
       $(find ${monocleHaskellSrc} -name "*.hs")
-
-    touch $out;
   '';
 
   # dontCheck because doctests are not working...
