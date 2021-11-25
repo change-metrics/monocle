@@ -2,8 +2,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/65ce6cbbdc9ed71076c43e15e45e139fcbbf4d6c.tar.gz";
-    sha256 = "sha256:1vfpf17rcl1riasya54w690brhqs6m1fm5zcm920gy8s9mp24b0n";
+      "https://github.com/NixOS/nixpkgs/archive/a6f258f49fcd1644f08b7b3677da2c5e55713291.tar.gz";
+    sha256 = "sha256:0l8cdybgri8jhdmkxr7r1jpnggk6xz4xc5x7ik5v1qn5h2cv6jsz";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -531,13 +531,6 @@ in rec {
 
   # haskell dependencies for codegen
   hsPkgs = pkgs.myHaskellPackages;
-  easyHlsSrc = pkgs.fetchFromGitHub {
-    owner = "jkachmar";
-    repo = "easy-hls-nix";
-    rev = "703a6bbb8441948f4c9c843e893b8235ac43c0fa";
-    sha256 = "0402ih4jla62l59g80f21fmgklj7rv0hmn82347qzms18lffbjpx";
-  };
-  easyHls = pkgs.callPackage easyHlsSrc { ghcVersions = [ "8.10.7" ]; };
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
@@ -644,7 +637,8 @@ in rec {
     packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid easyHls doctest20 ] ++ all-req ++ services-req;
+      [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
+      ++ services-req;
 
     withHoogle = true;
 
