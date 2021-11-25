@@ -6,7 +6,6 @@
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
 module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
-import Control.Concurrent (forkIO)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -54,19 +53,21 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
-runMonitoringServer :: Int -> IO ()
-runMonitoringServer port = do
+withMonitoringServer :: Int -> IO () -> IO ()
+withMonitoringServer port action = do
   -- Setup GHC metrics for prometheus
   void $ promRegister ghcMetrics
 
   -- Start the Wai application in the background with Warp
   v <- newEmptyMVar
   let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) $ Warp.defaultSettings
-  void $ forkIO $ Warp.runSettings settings $ app
-  mLog $ Log Macroscope $ LogStartingMonitoring port
-
-  -- Wait for the application to be ready
-  takeMVar v
+  withAsync (Warp.runSettings settings app) $ \warpPid -> do
+    mLog $ Log Macroscope $ LogStartingMonitoring port
+    -- Wait for the warp service to be running
+    takeMVar v
+    -- Run the action
+    action
+    cancel warpPid
   where
     app req resp = case Wai.rawPathInfo req of
       "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "macroscope is running\n"
@@ -76,8 +77,7 @@ runMonitoringServer port = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 9001 "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" client
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = do
-  runMonitoringServer port
+runMacroscope port confPath client = withMonitoringServer port $ do
   runLentilleM client $ do
     mLog $ Log Macroscope LogMacroStart
     config <- Config.mReloadConfig confPath
