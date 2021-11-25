@@ -221,6 +221,15 @@ cd haskell
 cabal test
 ```
 
+Doctest can be executed using:
+
+```ShellSession
+# Ensure doctest-0.20. is installed
+cabal install doctest --overwrite-policy=always
+# Run doctest through cabal
+cabal repl --with-ghc=doctest
+```
+
 Or using ghcid to automatically run the test when the code changes:
 
 ```ShellSession

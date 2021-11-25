@@ -2,8 +2,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/65ce6cbbdc9ed71076c43e15e45e139fcbbf4d6c.tar.gz";
-    sha256 = "sha256:1vfpf17rcl1riasya54w690brhqs6m1fm5zcm920gy8s9mp24b0n";
+      "https://github.com/NixOS/nixpkgs/archive/a6f258f49fcd1644f08b7b3677da2c5e55713291.tar.gz";
+    sha256 = "sha256:0l8cdybgri8jhdmkxr7r1jpnggk6xz4xc5x7ik5v1qn5h2cv6jsz";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -16,6 +16,8 @@ let
     sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
   };
   inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
+
+  monocleHaskellSrc = gitignoreSource ../haskell/.;
 
   # update haskell dependencies
   compilerVersion = "8107";
@@ -55,6 +57,11 @@ let
             sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
           };
 
+          doctest20 = pkgs.haskell.lib.overrideCabal hpPrev.doctest {
+            version = "0.20.0";
+            sha256 = "0sk50b8zxq4hvc8qphlmfha1lsv3xha7q7ka081jgswf1qpg34y4";
+          };
+
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
             sha256 =
@@ -81,13 +88,12 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          monocle = (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
-            { }).overrideAttrs
+          monocle =
+            (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
-            hpPrev.callCabal2nix "monocle-codegen" (gitignoreSource ../codegen)
-            { };
+            hpPrev.callCabal2nix "monocle-codegen" monocleHaskellSrc { };
         };
       };
 
@@ -525,13 +531,6 @@ in rec {
 
   # haskell dependencies for codegen
   hsPkgs = pkgs.myHaskellPackages;
-  easyHlsSrc = pkgs.fetchFromGitHub {
-    owner = "jkachmar";
-    repo = "easy-hls-nix";
-    rev = "703a6bbb8441948f4c9c843e893b8235ac43c0fa";
-    sha256 = "0402ih4jla62l59g80f21fmgklj7rv0hmn82347qzms18lffbjpx";
-  };
-  easyHls = pkgs.callPackage easyHlsSrc { ghcVersions = [ "8.10.7" ]; };
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
@@ -588,6 +587,45 @@ in rec {
 
   };
 
+  ghc = hsPkgs.ghcWithPackages (p: [
+    p.doctest20
+    # Disable haddock and test to speedup the build
+    (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle))
+  ]);
+
+  ci = pkgs.runCommand "monocle-ci" {
+    # Set local to avoid utf-8 invalid byte sequence errors
+    LC_ALL = "en_US.UTF-8";
+    LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+  } ''
+    echo "[+] Setup local ghc shell"
+    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${ghc}/bin:${pkgs.cabal-install}/bin:${pkgs.gnugrep}/bin
+    export NIX_GHCPKG=${ghc}/bin/ghc-pkg
+    export NIX_GHC=${ghc}/bin/ghc
+    export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
+    export NIX_GHC_DOCDIR="${ghc}/share/doc/ghc/html"
+    ghc --version
+    cabal --version
+
+    # Copy the source so that doctest can write temp files
+    mkdir $out
+    cp -r -p ${monocleHaskellSrc}/* $out/
+    cd $out
+
+    echo "[+] Running doctests"
+    export HOME=$(mktemp -d)
+    mkdir -p $HOME/.cabal
+    touch $HOME/.cabal/config
+    cabal repl --with-ghc=doctest
+
+    echo "[+] Checking ormolu syntax"
+    ${pkgs.ormolu}/bin/ormolu                                 \
+      -o -XPatternSynonyms -o -XTypeApplications --mode check \
+      $(find ${monocleHaskellSrc} -name "*.hs")
+
+    touch $out;
+  '';
+
   # dontCheck because doctests are not working...
   monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
 
@@ -599,7 +637,8 @@ in rec {
     packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid easyHls ] ++ all-req ++ services-req;
+      [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
+      ++ services-req;
 
     withHoogle = true;
 

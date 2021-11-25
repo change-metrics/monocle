@@ -233,7 +233,7 @@ getClientGraphQL crawler url token = do
 
 -- | Groups the streams by client
 --
--- >>> map (fmap toList) $ groupByClient [(0, "gitlab"), (1, "gerrit"), (0, "gitlab 2")]
+-- >>> map (fmap toList) $ groupByClient [(0, "gitlab"), (1, "gerrit"), (0, "gitlab 2")] :: [(Int, [String])]
 -- [(0,["gitlab","gitlab 2"]),(1,["gerrit"])]
 groupByClient :: Ord clientKey => [(clientKey, a)] -> [(clientKey, NonEmpty a)]
 groupByClient = grp >>> adapt
