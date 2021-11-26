@@ -96,7 +96,7 @@ streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a cursor
-  (Text -> Args a) ->
+  (Maybe Text -> Args a) ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
@@ -110,7 +110,7 @@ streamFetch client mkArgs transformResponse = go Nothing
         lift $
           fetchWithLog
             (doGraphRequest client)
-            (mkArgs . fromMaybe (error "Missing endCursor") $ maybe (Just "") endCursor pageInfoM)
+            (mkArgs . fromMaybe (error "Missing endCursor") $ maybe Nothing (Just . endCursor) pageInfoM)
 
       (pageInfo, rateLimit, decodingErrors, xs) <-
         case respE of

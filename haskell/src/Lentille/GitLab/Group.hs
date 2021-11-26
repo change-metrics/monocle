@@ -33,7 +33,7 @@ defineByDocumentFile
     }
   |]
 
-fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either String GetGroupProjects, [ReqLog])
+fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [ReqLog])
 fetchGroupProjects client fullPath =
   fetchWithLog (doGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
@@ -44,10 +44,7 @@ streamGroupProjects ::
   LentilleStream m Project
 streamGroupProjects client fullPath = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor = GetGroupProjectsArgs (ID fullPath) $ toCursorM cursor
-    toCursorM :: Text -> Maybe String
-    toCursorM "" = Nothing
-    toCursorM cursor'' = Just . toString $ cursor''
+    mkArgs = GetGroupProjectsArgs (ID fullPath)
 
 transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
 transformResponse result =

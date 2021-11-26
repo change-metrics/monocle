@@ -31,7 +31,7 @@ newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 defineByDocumentFile
   ghSchemaLocation
   [gql|
-    query GetFavorites ($userName: String!, $cursor: String!)
+    query GetFavorites ($userName: String!, $cursor: String)
     {
       rateLimit {
         used
@@ -68,7 +68,7 @@ getFavoritesStream ::
   Stream (Of UserFavorite) m ()
 getFavoritesStream client username = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor' = GetFavoritesArgs (toString username) (toString cursor')
+    mkArgs cursor' = GetFavoritesArgs username cursor'
     transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites

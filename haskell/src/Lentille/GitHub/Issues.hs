@@ -80,14 +80,10 @@ defineByDocumentFile
 streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
 streamLinkedIssue client time repo = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor' =
+    mkArgs =
       GetLinkedIssuesArgs
-        ( "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
+        ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
         )
-        $ toCursorM cursor'
-    toCursorM :: Text -> Maybe String
-    toCursorM "" = Nothing
-    toCursorM cursor'' = Just $ toString cursor''
     toSimpleDate :: UTCTime -> String
     toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
 
