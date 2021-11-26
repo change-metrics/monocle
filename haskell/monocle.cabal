@@ -134,7 +134,7 @@ library
                      , json-syntax                >= 0.2
                      , lens
                      , megaparsec                 >= 9
-                     , morpheus-graphql-client    ^>= 0.17
+                     , morpheus-graphql-client    ^>= 0.18
                      , mmorph
                      , mtl
                      , network                    >= 3

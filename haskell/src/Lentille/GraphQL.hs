@@ -74,7 +74,7 @@ doGraphRequest GraphClient {..} jsonBody = do
   pure (HTTP.responseBody response)
 
 -- | Helper function to adapt the morpheus client fetch with a WriterT context
-fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either String a, [ReqLog])
+fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [ReqLog])
 fetchWithLog cb = runWriterT . fetch cb
 
 -------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ instance From RateLimit Text where
   from RateLimit {..} = show used <> "/" <> show remaining <> " reset at: " <> resetAt
 
 streamFetch ::
-  (MonadGraphQLE m, Fetch a, FromJSON a) =>
+  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a cursor
   (Text -> Args a) ->
@@ -115,9 +115,9 @@ streamFetch client mkArgs transformResponse = go Nothing
       (pageInfo, rateLimit, decodingErrors, xs) <-
         case respE of
           Left err -> case reqLog of
-            [(req, resp)] -> lift $ throwM $ HttpError (from err, req, resp)
-            [] -> error $ "No request log found, error is: " <> from err
-            xs -> error $ "Multiple log found for error: " <> from err <> ", " <> show xs
+            [(req, resp)] -> lift $ throwM $ HttpError (show err, req, resp)
+            [] -> error $ "No request log found, error is: " <> show err
+            xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
           Right resp -> pure $ transformResponse resp
 
       logStatus pageInfo rateLimit

@@ -22,6 +22,18 @@ let
   # update haskell dependencies
   compilerVersion = "8107";
   compiler = "ghc" + compilerVersion;
+
+  morpheus-graphql-src = pkgs.fetchFromGitHub {
+    owner = "morpheusgraphql";
+    repo = "morpheus-graphql";
+    rev = "0.18.0";
+    sha256 = "1k7x65fc8cilam2kjmmj8xw1ykxqp6wxh0fngjlq3f0992s3hj2b";
+  };
+
+  mk-morpheus-lib = hpPrev: name:
+    (hpPrev.callCabal2nix "morpheus-graphql-${name}"
+      "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
+
   overlays = [
     (final: prev: {
       myHaskellPackages = prev.haskell.packages.${compiler}.override {
@@ -64,10 +76,14 @@ let
 
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
-            sha256 =
-              "sha256:1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
+            sha256 = "1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
             broken = false;
           };
+
+          morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
+          morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
+          morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
+          morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
 
           gerrit = let
             src = builtins.fetchGit {
