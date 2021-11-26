@@ -67,8 +67,8 @@ wipeCrawlerData crawlerName = do
 removeTDCrawlerData :: Text -> QueryM ()
 removeTDCrawlerData crawlerName = do
   index <- getIndexName
-  tdDeletedCount <- (removeOrphanTaskDatas index)
-  tdChangesCount <- (removeChangeTaskDatas index)
+  tdDeletedCount <- removeOrphanTaskDatas index
+  tdChangesCount <- removeChangeTaskDatas index
   monocleLog $
     crawlerName <> ": deleted " <> show tdDeletedCount <> " td, updated " <> show tdChangesCount <> " changes"
   where

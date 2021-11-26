@@ -103,7 +103,7 @@ instance MonadLog IO where
 
 class (MonadRetry m, MonadLog m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
-  newManager :: m (HTTP.Manager)
+  newManager :: m HTTP.Manager
 
 instance MonadGraphQL IO where
   httpRequest = HTTP.httpLbs

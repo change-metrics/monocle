@@ -60,7 +60,7 @@ withMonitoringServer port action = do
 
   -- Start the Wai application in the background with Warp
   v <- newEmptyMVar
-  let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) $ Warp.defaultSettings
+  let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) Warp.defaultSettings
   withAsync (Warp.runSettings settings app) $ \warpPid -> do
     mLog $ Log Macroscope $ LogStartingMonitoring port
     -- Wait for the warp service to be running
@@ -171,7 +171,7 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
       if reloaded
         then do
           -- Update the crawlerStop ref to True so that stream gracefully stops
-          mLog $ Log Macroscope $ LogMacroReloadingStart
+          mLog $ Log Macroscope LogMacroReloadingStart
           ref <- asks crawlerStop
           liftIO $ writeIORef ref True
 

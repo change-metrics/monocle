@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
-
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
@@ -76,7 +74,7 @@ data GerritEnv = GerritEnv
     -- | A project fullname prefix as defined in the Monocle configuration
     prefix :: Maybe Text,
     -- | The identity alias callback
-    identAliasCB :: (Text -> Maybe Text),
+    identAliasCB :: Text -> Maybe Text,
     -- | The crawler name
     crawlerName :: Text
   }
@@ -223,7 +221,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
       toIdent
         (getHostFromURL serverUrl)
         identCB
-        $ name <> "/" <> (show aAccountId)
+        $ name <> "/" <> show aAccountId
       where
         name = fromMaybe nobody aName
     toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]

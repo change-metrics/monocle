@@ -127,7 +127,7 @@ testRunCrawlers = do
     runLentilleM client $
       Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
 
-  got <- reverse <$> (atomically $ readTVar logs)
+  got <- reverse <$> readTVarIO logs
   assertEqual "Stream ran" expected got
 
 testGetStream :: Assertion
@@ -136,7 +136,7 @@ testGetStream = do
   setEnv "GITLAB_TOKEN" "42"
   runLentilleM (error "nop") $ do
     (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
-    assertEqual' "Two streams created" 2 (length $ streams)
+    assertEqual' "Two streams created" 2 (length streams)
     assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
     let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
     assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))

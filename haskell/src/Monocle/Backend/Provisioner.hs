@@ -38,10 +38,10 @@ import Monocle.Search (TaskData (..))
 runProvisioner :: Text -> IO ()
 runProvisioner tenantName = testQueryM (defaultTenant tenantName) $ do
   I.ensureIndex
-  events <- liftIO $ createFakeEvents
+  events <- liftIO createFakeEvents
   putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."
   T.indexScenario events
-  putTextLn $ "[provisioner] Done."
+  putTextLn "[provisioner] Done."
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]
@@ -64,7 +64,7 @@ setChangeID xs = do
 createFakeEvents :: IO [T.ScenarioEvent]
 createFakeEvents = do
   now <- getCurrentTime
-  from' <- pure $ addUTCTime (-3600 * 24 * 7 * 3) now
+  let from' = addUTCTime (-3600 * 24 * 7 * 3) now
   baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from' now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes
@@ -91,60 +91,60 @@ fakeText = toLazy <$> Faker.TvShow.Futurama.quotes
 
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
 fakeChange from' to = do
-  echangeId <- pure $ ""
-  echangeType <- pure $ EChangeDoc
-  echangeNumber <- pure $ 1
-  echangeChangeId <- pure $ "change-id"
+  let echangeId = ""
+  let echangeType = EChangeDoc
+  let echangeNumber = 1
+  let echangeChangeId = "change-id"
   echangeTitle <- fakeTitle
-  echangeUrl <- pure $ ""
+  let echangeUrl = ""
   echangeCommitCount <- fakeCommitCount
   echangeAdditions <- fakeFileCount
   echangeDeletions <- fakeFileCount
   echangeChangedFilesCount <- fakeFileCount
-  echangeChangedFiles <- pure $ [File 0 0 "/fake/path"]
+  let echangeChangedFiles = [File 0 0 "/fake/path"]
   echangeText <- fakeText
-  echangeCommits <- pure $ []
-  echangeRepositoryPrefix <- pure $ ""
-  echangeRepositoryFullname <- pure $ ""
-  echangeRepositoryShortname <- pure $ ""
+  let echangeCommits = []
+  let echangeRepositoryPrefix = ""
+  let echangeRepositoryFullname = ""
+  let echangeRepositoryShortname = ""
   echangeAuthor <- fakeAuthor
-  echangeBranch <- pure $ ""
+  let echangeBranch = ""
   echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeUpdatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeCreatedAt to
-  echangeMergedBy <- pure $ Nothing
-  echangeTargetBranch <- pure $ "main"
-  echangeMergedAt <- pure $ Nothing
-  echangeClosedAt <- pure $ Nothing
-  echangeDuration <- pure $ Nothing
-  echangeApproval <- pure $ Just ["OK"]
-  echangeSelfMerged <- pure $ Nothing
-  echangeTasksData <- pure $ Nothing
-  echangeState <- pure $ EChangeOpen
+  let echangeMergedBy = Nothing
+  let echangeTargetBranch = "main"
+  let echangeMergedAt = Nothing
+  let echangeClosedAt = Nothing
+  let echangeDuration = Nothing
+  let echangeApproval = Just ["OK"]
+  let echangeSelfMerged = Nothing
+  let echangeTasksData = Nothing
+  let echangeState = EChangeOpen
   echangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
-  echangeLabels <- pure $ []
-  echangeAssignees <- pure $ []
-  echangeDraft <- pure $ False
+  let echangeLabels = []
+  let echangeAssignees = []
+  let echangeDraft = False
   pure $ EChange {..}
 
 fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
 fakeChangeEvent from' to = do
-  echangeeventId <- pure ""
-  echangeeventNumber <- pure 0
+  let echangeeventId = ""
+  let echangeeventNumber = 0
   echangeeventType <- Faker.Combinators.elements [minBound .. maxBound]
-  echangeeventChangeId <- pure ""
-  echangeeventUrl <- pure ""
-  echangeeventChangedFiles <- pure []
-  echangeeventRepositoryPrefix <- pure ""
-  echangeeventRepositoryShortname <- pure ""
-  echangeeventRepositoryFullname <- pure ""
-  echangeeventAuthor <- pure Nothing
+  let echangeeventChangeId = ""
+  let echangeeventUrl = ""
+  let echangeeventChangedFiles = []
+  let echangeeventRepositoryPrefix = ""
+  let echangeeventRepositoryShortname = ""
+  let echangeeventRepositoryFullname = ""
+  let echangeeventAuthor = Nothing
   echangeeventOnAuthor <- fakeAuthor
-  echangeeventBranch <- pure ""
+  let echangeeventBranch = ""
   echangeeventCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeeventOnCreatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeeventCreatedAt to
-  echangeeventApproval <- pure Nothing
-  echangeeventTasksData <- pure Nothing
-  echangeeventLabels <- pure $ Just []
+  let echangeeventApproval = Nothing
+  let echangeeventTasksData = Nothing
+  let echangeeventLabels = Just []
   pure $ EChangeEvent {..}
 
 fakeTaskId :: Faker.Fake Text
@@ -159,7 +159,7 @@ fakeETaskData = do
   tdCrawlerName <- Just <$> Faker.Creature.Dog.name
   tdTtype <- (: []) <$> Faker.Creature.Dog.sound
   tdUpdatedAt <- toMonocleTime <$> Faker.DateTime.utc
-  tdChangeUrl <- pure "no-change"
+  let tdChangeUrl = "no-change"
   tdSeverity <- Faker.TvShow.TheExpanse.locations
   tdPriority <- Faker.TvShow.TheExpanse.ships
   tdScore <- Faker.Combinators.fromRange (0, 42)
@@ -171,7 +171,7 @@ fakeETaskData = do
 fakeTaskData :: Faker.Fake TaskData
 fakeTaskData = do
   taskDataUpdatedAt <- Just . Google.Protobuf.Timestamp.fromUTCTime <$> Faker.DateTime.utc
-  taskDataChangeUrl <- pure "no-change"
+  let taskDataChangeUrl = "no-change"
   taskDataTtype <- fromList . (: []) . toLText <$> Faker.Creature.Dog.sound
   taskDataTid <- toLText <$> fakeTaskId
   taskDataUrl <- toLText <$> fakeUrl (toText taskDataTid)

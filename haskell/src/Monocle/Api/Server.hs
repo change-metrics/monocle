@@ -289,7 +289,7 @@ crawlerCommit request = do
             `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
 
         when
-          (Config.crawlers_api_key index /= (Just $ toStrict apiKey))
+          (Config.crawlers_api_key index /= Just (toStrict apiKey))
           (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
 
         ts <-
@@ -320,7 +320,7 @@ crawlerCommit request = do
 -- | /crawler/get_commit_info endpoint
 crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
 crawlerCommitInfo request = do
-  Config.ConfigStatus _ (Config.Config {..}) wsStatus <- getConfig
+  Config.ConfigStatus _ Config.Config {..} wsStatus <- getConfig
   let tenants = workspaces
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 

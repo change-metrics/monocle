@@ -589,23 +589,45 @@ in rec {
 
   ghc = hsPkgs.ghcWithPackages (p: [
     p.doctest20
-    # Disable haddock and test to speedup the build
-    (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle))
+    # Disable profiling, haddock and test to speedup the build
+    ((pkgs.haskell.lib.appendConfigureFlags
+      (pkgs.haskell.lib.disableLibraryProfiling
+        (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle)))
+      # Enable the ci flag to fail on warning
+      [ "-f ci" ]).overrideAttrs (_:
+        # Set dhall env variable to avoid warning
+        {
+          XDG_CACHE_HOME = "/tmp";
+        }))
   ]);
 
-  ci = pkgs.runCommand "monocle-ci" {
-    # Set local to avoid utf-8 invalid byte sequence errors
-    LC_ALL = "en_US.UTF-8";
-    LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  } ''
-    echo "[+] Setup local ghc shell"
-    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${ghc}/bin:${pkgs.cabal-install}/bin:${pkgs.gnugrep}/bin
-    export NIX_GHCPKG=${ghc}/bin/ghc-pkg
-    export NIX_GHC=${ghc}/bin/ghc
+  mk-ci = name: cmd:
+    pkgs.runCommand "monocle-${name}" {
+      # Set local to avoid utf-8 invalid byte sequence errors
+      LC_ALL = "en_US.UTF-8";
+      LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+    } ''
+      ${cmd}
+
+      touch $out
+    '';
+
+  cabal-setup = ghcDrv: ''
+    export PATH=${ghcDrv}/bin:${pkgs.cabal-install}/bin:$PATH
+    export NIX_GHCPKG=${ghcDrv}/bin/ghc-pkg
+    export NIX_GHC=${ghcDrv}/bin/ghc
     export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
-    export NIX_GHC_DOCDIR="${ghc}/share/doc/ghc/html"
+    export NIX_GHC_DOCDIR="${ghcDrv}/share/doc/ghc/html"
+    export HOME=$(mktemp -d)
+    mkdir -p $HOME/.cabal
+    touch $HOME/.cabal/config
     ghc --version
     cabal --version
+  '';
+
+  ci = mk-ci "ci" ''
+    echo "[+] Setup local ghc shell"
+    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin
 
     # Copy the source so that doctest can write temp files
     mkdir $out
@@ -613,17 +635,26 @@ in rec {
     cd $out
 
     echo "[+] Running doctests"
-    export HOME=$(mktemp -d)
-    mkdir -p $HOME/.cabal
-    touch $HOME/.cabal/config
+    ${cabal-setup ghc}
     cabal repl --with-ghc=doctest
+
+    # TODO: remove monocle from the ghcWithPackages to avoid rebuild
+    # cabal test -O0 --test-show-details=direct
+
+    ${lightCI}
+  '';
+
+  ci-light = mk-ci "ci-light" lightCI;
+
+  lightCI = ''
+    cd ${monocleHaskellSrc}
+    echo "[+] Running hlint"
+    ${pkgs.hlint}/bin/hlint -XQuasiQuotes src/
 
     echo "[+] Checking ormolu syntax"
     ${pkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications --mode check \
       $(find ${monocleHaskellSrc} -name "*.hs")
-
-    touch $out;
   '';
 
   # dontCheck because doctests are not working...

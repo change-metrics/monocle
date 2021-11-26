@@ -61,7 +61,7 @@ unlessStopped :: MonadCrawler m => MonadReader CrawlerEnv m => m () -> m ()
 unlessStopped action = do
   stopRef <- asks crawlerStop
   stopped <- mReadIORef stopRef
-  unless stopped $ action
+  unless stopped action
 
 runLentilleM :: MonadIO m => MonocleClient -> LentilleM a -> m a
 runLentilleM client lm = do
@@ -82,7 +82,7 @@ instance Exception LentilleError
 
 -- | Here we create the different class instance by using the LentilleM inner IO
 instance MonadTime LentilleM where
-  mGetCurrentTime = liftIO $ mGetCurrentTime
+  mGetCurrentTime = liftIO mGetCurrentTime
   mThreadDelay de = liftIO $ mThreadDelay de
 
 instance MonadLog LentilleM where

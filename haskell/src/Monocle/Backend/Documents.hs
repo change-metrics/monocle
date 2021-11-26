@@ -407,7 +407,7 @@ instance ToJSON EChangeOrphanTD where
 instance FromJSON EChangeOrphanTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-data ETaskDataAdopted = ETaskDataAdopted
+newtype ETaskDataAdopted = ETaskDataAdopted
   {_adopted :: Text}
   deriving (Generic)
 
