@@ -3,79 +3,85 @@
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 -- | The CLI entrpoints
-module CLI (mainApi, mainMacroscope, mainLentille) where
+module CLI (main) where
 
-import Env
+import Env hiding (Parser)
 import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
 import Monocle.Client (withClient)
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
+import Options.Applicative hiding (header, help, str)
 import Options.Generic
 import qualified Streaming.Prelude as S
 
 ---------------------------------------------------------------
--- API cli
+-- Unified CLI
 ---------------------------------------------------------------
 
-data CliEnv = CliEnv
-  { config :: String,
-    elastic_conn :: String
-  }
+-- | usage is an optparse-applicative Parser that provides the final action
+-- See the last example of https://github.com/pcapriotti/optparse-applicative#commands
+usage :: Parser (IO ())
+usage =
+  subparser
+    ( mkCommand "Start the API" "api" usageApi
+        <> mkCommand "Start the Crawlers" "crawler" usageCrawler
+        <> mkCommand "Maintain the database" "janitor" usageJanitor
+        <> mkCommand "Run a single crawler standlone" "lentille" usageLentille
+    )
+  where
+    -- The API entrypoint (no CLI argument).
+    usageApi = pure $ do
+      -- get parameters from the environment
+      (config, elastic, port) <- getFromEnv ((,,) <$> envConf <*> envElastic <*> envApiPort)
+      -- start the API
+      Monocle.Api.run (getInt port) (getURL elastic) config
 
-cliEnv :: IO CliEnv
-cliEnv =
-  Env.parse (header "monocle-api available environement variables") $
-    CliEnv <$> var str "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
-      <*> var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
+    -- The Crawler entrypoint (no CLI argument).
+    usageCrawler = pure $ do
+      -- get parameters from the environment
+      (config, url, monitoringPort) <-
+        getFromEnv
+          ( (,,)
+              <$> envConf
+              <*> envPublicUrl
+              <*> envMonitoring
+          )
+      -- start the Crawler
+      withClient url Nothing $ runMacroscope (getInt monitoringPort) config
 
-newtype CLIOptions w = CLIOption
-  { port :: w ::: Maybe Int <?> "The API port to listen to, default to 9898"
-  }
-  deriving stock (Generic)
+    -- The standalone lentille entrypoint (re-using optparse-generic record)
+    usageLentille = mainLentille <$> parseRecord
 
-instance ParseRecord (CLIOptions Wrapped) where
-  parseRecord = parseRecordWithModifiers lispCaseModifiers
+    -- The janitor entrypoint
+    usageJanitor = pure $ putStrLn "NotImplemented"
+
+    -- Helper to create sub command
+    mkCommand doc name parser = command name $ info parser $ progDesc doc
+
+    -- Helpers to get value fromm the env
+    getFromEnv = Env.parse (header "monocle")
+    envConf = var str "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
+    envElastic = var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
+    envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> def "9898")
+    envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle URL" <> def "http://web:8080")
+    envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> def "9001")
+    getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
+
+main :: IO ()
+main = join $ execParser opts
+  where
+    opts =
+      info
+        (usage <**> helper)
+        (fullDesc <> progDesc "change-metrics.io | monocle")
 
 getURL :: String -> Text
 getURL url =
   let hasScheme = isPrefixOf "http://" url || isPrefixOf "https://" url
       url' = if hasScheme then url else "http://" <> url
    in toText url'
-
-mainApi :: IO ()
-mainApi = do
-  -- Fetch environement variables
-  CliEnv {config, elastic_conn} <- cliEnv
-  -- Run arguments parser
-  CLIOption port' <- unwrapRecord "Monocle API"
-  -- Run the Monocle API
-  Monocle.Api.run (fromMaybe 8989 port') (getURL elastic_conn) config
-
----------------------------------------------------------------
--- Macroscope cli
----------------------------------------------------------------
-
-data Macroscope w = Macroscope
-  { monocleUrl :: w ::: Maybe Text <?> "The monocle API",
-    port :: w ::: Int <!> "9001" <?> "Health check port",
-    config :: w ::: Maybe FilePath <?> "The monocle configuration"
-  }
-  deriving stock (Generic)
-
-instance ParseRecord (Macroscope Wrapped) where
-  parseRecord = parseRecordWithModifiers lispCaseModifiers
-
-mainMacroscope :: IO ()
-mainMacroscope = do
-  Macroscope monocleUrl' port' config'' <- unwrapRecord "Macroscope lentille runner"
-  config' <- fromMaybe (error "--config or CONFIG env is required") <$> lookupEnv "CONFIG"
-  withClient (fromMaybe "http://web:8080" monocleUrl') Nothing $ \client ->
-    runMacroscope
-      port'
-      (fromMaybe config' config'')
-      client
 
 ---------------------------------------------------------------
 -- Lentille cli
@@ -100,9 +106,8 @@ dump limitM stream = do
   where
     brk = maybe id S.take limitM
 
-mainLentille :: IO ()
-mainLentille = do
-  args <- getRecord "Lentille runner"
+mainLentille :: Lentille -> IO ()
+mainLentille args =
   case args of
     GerritChange url change -> do
       env <- getGerritEnv url

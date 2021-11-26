@@ -1,6 +1,6 @@
 services:
   api:
-    command: monocle-api --port 9898
+    command: monocle api
     depends_on:
       - elastic
     env_file: ".secrets"
@@ -11,14 +11,14 @@ services:
       - 9898
     healthcheck:
       retries: 6
-      test: "curl --silent --fail localhost:9898/health || exit 1"
+      test: "curl --silent --fail localhost:$MONOCLE_API_PORT/health || exit 1"
       timeout: "60s"
     image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
     restart: unless-stopped
     volumes:
       - "./etc:/etc/monocle:z"
   crawler:
-    command: macroscope
+    command: monocle crawler
     depends_on:
       - api
     env_file: ".secrets"

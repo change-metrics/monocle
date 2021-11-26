@@ -22,9 +22,9 @@ ARG MONOCLE_COMMIT
 
 # Build project
 COPY haskell/ /build
-RUN cabal v2-install -v1 exe:monocle-api exe:macroscope
+RUN cabal v2-install -v1 exe:monocle
 
 ################################################################################
 FROM registry.fedoraproject.org/fedora:35
 
-COPY --from=0 /root/.cabal/bin/monocle-api /root/.cabal/bin/macroscope /bin/
+COPY --from=0 /root/.cabal/bin/monocle /bin/

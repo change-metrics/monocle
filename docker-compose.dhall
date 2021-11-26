@@ -118,11 +118,10 @@ let createApiService =
         let service =
               { healthcheck = Some
                   ( mkHealthCheck
-                      "curl --silent --fail localhost:9898/health || exit 1"
+                      "curl --silent --fail localhost:\$MONOCLE_API_PORT/health || exit 1"
                   )
               , depends_on = Some [ "elastic" ]
-              , command = Some
-                  (Compose.StringOrList.String "monocle-api --port 9898")
+              , command = Some (Compose.StringOrList.String "monocle api")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
               , env_file = envFile
               , environment = Some
@@ -155,7 +154,7 @@ let createCrawlerService =
       \(dev : Bool) ->
         let service =
               { depends_on = Some [ "api" ]
-              , command = Some (Compose.StringOrList.String "macroscope")
+              , command = Some (Compose.StringOrList.String "monocle crawler")
               , healthcheck = Some
                   ( mkHealthCheck
                       "curl --silent --fail localhost:9001/health || exit 1"
