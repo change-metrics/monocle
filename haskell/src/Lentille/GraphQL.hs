@@ -110,7 +110,7 @@ streamFetch client mkArgs transformResponse = go Nothing
         lift $
           fetchWithLog
             (doGraphRequest client)
-            (mkArgs . fromMaybe (error "Missing endCursor") $ maybe Nothing (Just . endCursor) pageInfoM)
+            (mkArgs . fromMaybe (error "Missing endCursor") $ (Just . endCursor) =<< pageInfoM)
 
       (pageInfo, rateLimit, decodingErrors, xs) <-
         case respE of

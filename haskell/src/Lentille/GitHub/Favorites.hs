@@ -68,7 +68,7 @@ getFavoritesStream ::
   Stream (Of UserFavorite) m ()
 getFavoritesStream client username = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor' = GetFavoritesArgs username cursor'
+    mkArgs = GetFavoritesArgs username
     transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites
