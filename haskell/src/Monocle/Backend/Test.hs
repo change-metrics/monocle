@@ -421,9 +421,10 @@ testJanitorUpdateIdents = do
 
     doUpdateIndentOnChangesTest :: QueryM ()
     doUpdateIndentOnChangesTest = do
-      I.indexChanges [change1, change2]
+      I.indexChanges [change1, change2, change3]
       count <- J.updateIdentsOnChanges
-      assertEqual' "Ensure updated changes count" 1 count
+      -- change1 and change3 will be updated
+      assertEqual' "Ensure updated changes count" 2 count
       -- Ensure change1 got the ident update
       checkEChangeField (I.getChangeDocId change1) echangeAuthor expectedAuthor
       checkEChangeField (I.getChangeDocId change1) echangeMergedBy (Just expectedAuthor)
@@ -432,9 +433,15 @@ testJanitorUpdateIdents = do
       -- Ensure change2 is the same
       change2' <- I.getChangeById $ I.getChangeDocId change2
       assertEqual' "Ensure change not changed" change2' $ Just change2
+      -- Ensure change3 got its Author fields updated - Only check author to be brief
+      -- Ident got reverted because no Ident match github.com/jane in config
+      -- then default is to remove the "<provider-host>/" prefix
+      checkEChangeField (I.getChangeDocId change3) echangeAuthor expectedAuthor'
       where
+        expectedAuthor' = Author "jane" "github.com/jane"
         change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
         change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
+        change3 = mkChangeWithAuthor "c3" (Author "Ident will revert" "github.com/jane")
         mkChangeWithAuthor ::
           -- changeId
           Text ->
