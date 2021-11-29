@@ -5,7 +5,7 @@
 -- | The CLI entrpoints
 module CLI (main) where
 
-import Env hiding (Parser)
+import Env hiding (Parser, footer)
 import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
@@ -13,6 +13,7 @@ import Monocle.Client (withClient)
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Options.Applicative hiding (header, help, str)
+import Options.Applicative.Help.Pretty (string)
 import Options.Generic
 import qualified Streaming.Prelude as S
 
@@ -25,31 +26,27 @@ import qualified Streaming.Prelude as S
 usage :: Parser (IO ())
 usage =
   subparser
-    ( mkCommand "Start the API" "api" usageApi
-        <> mkCommand "Start the Crawlers" "crawler" usageCrawler
-        <> mkCommand "Maintain the database" "janitor" usageJanitor
-        <> mkCommand "Run a single crawler standlone" "lentille" usageLentille
+    ( mkCommand "Start the API" "api" usageApi (Just usageApiEnv)
+        <> mkCommand "Start the Crawlers" "crawler" usageCrawler (Just usageCrawlerEnv)
+        <> mkCommand "Maintain the database" "janitor" usageJanitor Nothing
+        <> mkCommand "Run a single crawler standlone" "lentille" usageLentille Nothing
     )
   where
     -- The API entrypoint (no CLI argument).
     usageApi = pure $ do
       -- get parameters from the environment
-      (config, elastic, port) <- getFromEnv ((,,) <$> envConf <*> envElastic <*> envApiPort)
+      (config, elastic, port) <- getFromEnv usageApiEnv
       -- start the API
       Monocle.Api.run (getInt port) (getURL elastic) config
+    usageApiEnv = ((,,) <$> envConf <*> envElastic <*> envApiPort)
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do
       -- get parameters from the environment
-      (config, url, monitoringPort) <-
-        getFromEnv
-          ( (,,)
-              <$> envConf
-              <*> envPublicUrl
-              <*> envMonitoring
-          )
+      (config, url, monitoringPort) <- getFromEnv usageCrawlerEnv
       -- start the Crawler
       withClient url Nothing $ runMacroscope (getInt monitoringPort) config
+    usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
     -- The standalone lentille entrypoint (re-using optparse-generic record)
     usageLentille = mainLentille <$> parseRecord
@@ -58,7 +55,14 @@ usage =
     usageJanitor = pure $ putStrLn "NotImplemented"
 
     -- Helper to create sub command
-    mkCommand doc name parser = command name $ info parser $ progDesc doc
+    mkEnvDoc envParser = string (Env.helpDoc envParser)
+    mkCommand doc name parser envParser = command name . infos $ progDesc doc <> extraHelp
+      where
+        -- We only add `--help` to sub command which uses environment
+        extraHelp = maybe idm (footerDoc . Just . mkEnvDoc) envParser
+        infos = case envParser of
+          Just _ -> info (parser <**> helper)
+          Nothing -> info parser
 
     -- Helpers to get value fromm the env
     getFromEnv = Env.parse (header "monocle")
@@ -75,7 +79,7 @@ main = join $ execParser opts
     opts =
       info
         (usage <**> helper)
-        (fullDesc <> progDesc "change-metrics.io | monocle")
+        (fullDesc <> progDesc "changemetrics.io | monocle")
 
 getURL :: String -> Text
 getURL url =
