@@ -620,7 +620,16 @@ in rec {
       LC_ALL = "en_US.UTF-8";
       LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
       XDG_CACHE_HOME = "/tmp";
+      PATH = "${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin";
     } ''
+      # Create temporary home
+      export HOME=$(mktemp -d)
+
+      # Copy the source so that doctest can write temp files
+      mkdir -p $HOME/monocle-src
+      cd $HOME/monocle-src
+      cp -r -p ${monocleHaskellSrc}/* .
+
       ${cmd}
 
       touch $out
@@ -633,7 +642,6 @@ in rec {
     export NIX_GHC=$GHC_DRV/bin/ghc
     export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
     export NIX_GHC_DOCDIR="$GHC_DRV/share/doc/ghc/html"
-    export HOME=$(mktemp -d)
     mkdir -p $HOME/.cabal
     touch $HOME/.cabal/config
     ghc --version
@@ -647,12 +655,6 @@ in rec {
 
   ci = mk-ci "ci" ''
     echo "[+] Setup local ghc shell"
-    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin
-
-    # Copy the source so that doctest can write temp files
-    mkdir $out
-    cp -r -p ${monocleHaskellSrc}/* $out/
-    cd $out
     ${cabal-setup-monocle}
 
     echo "[+] Building the project"
@@ -664,23 +666,19 @@ in rec {
     echo "[+] Running doctests"
     cabal repl --with-ghc=doctest
 
-    # TODO: remove monocle from the ghcWithPackages to avoid rebuild
-    # cabal test -O0 --test-show-details=direct
-
     ${lightCI}
   '';
 
   ci-light = mk-ci "ci-light" lightCI;
 
   lightCI = ''
-    cd ${monocleHaskellSrc}
     echo "[+] Running hlint"
     ${pkgs.hlint}/bin/hlint -XQuasiQuotes src/
 
     echo "[+] Checking ormolu syntax"
     ${pkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications --mode check \
-      $(find ${monocleHaskellSrc} -name "*.hs")
+      $(find src/ -name "*.hs")
   '';
 
   # dontCheck because doctests are not working...
