@@ -80,18 +80,14 @@ defineByDocumentFile
 streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
 streamLinkedIssue client time repo = streamFetch client mkArgs transformResponse
   where
-    mkArgs cursor' =
+    mkArgs =
       GetLinkedIssuesArgs
-        ( "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
+        ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
         )
-        $ toCursorM cursor'
-    toCursorM :: Text -> Maybe String
-    toCursorM "" = Nothing
-    toCursorM cursor'' = Just $ toString cursor''
     toSimpleDate :: UTCTime -> String
     toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
 
-pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
+pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
 transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [TaskData])
 transformResponse searchResult =
@@ -141,11 +137,11 @@ transformResponse searchResult =
           ([], labels') -> Right (fmap toLazy labels')
           (errors, _) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
-        getIssueURL (SearchNodesIssue _ _ _ (URI changeURL) _ _ _) = changeURL
+        getIssueURL (SearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
         getNumber :: SearchNodesSearchResultItem -> Text
-        getNumber (SearchNodesIssue _ _ _ _ number _ _) = show number
+        getNumber (SearchNodesIssue _ _ _ _ _ number _ _) = show number
     getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
-    getUpdatedAt (SearchNodesIssue _ _ (DateTime updatedAt') _ _ _ _) =
+    getUpdatedAt (SearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
       case Timestamp.fromRFC3339 $ toLazy updatedAt' of
         Just ts -> Right ts
         Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
@@ -169,6 +165,7 @@ transformResponse searchResult =
           _
           _
           _
+          _
           ( SearchNodesTimelineItemsIssueTimelineItemsConnection
               (Just urls)
             ) -> Right <$> mapMaybe extractUrl urls
@@ -178,12 +175,12 @@ transformResponse searchResult =
       Just
         ( SearchNodesTimelineItemsNodesConnectedEvent
             "ConnectedEvent"
-            (SearchNodesTimelineItemsNodesSubjectPullRequest (Just (URI url')))
+            (SearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
           ) -> Just url'
       Just
         ( SearchNodesTimelineItemsNodesCrossReferencedEvent
             "CrossReferencedEvent"
-            (SearchNodesTimelineItemsNodesSourcePullRequest (Just (URI url')))
+            (SearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
           ) -> Just url'
       -- We are requesting Issue with connected PR we cannot get Nothing
       _ -> Nothing
