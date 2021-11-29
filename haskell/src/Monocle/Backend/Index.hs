@@ -442,6 +442,12 @@ getDocumentById docId = do
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
 
+getChangeById :: BH.DocId -> QueryM (Maybe EChange)
+getChangeById = getDocumentById
+
+getChangeEventById :: BH.DocId -> QueryM (Maybe EChangeEvent)
+getChangeEventById = getDocumentById
+
 getCrawlerMetadataDocId :: Text -> Text -> Text -> BH.DocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
   BH.DocId . Text.replace "/" "@" $

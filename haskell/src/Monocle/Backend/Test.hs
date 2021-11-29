@@ -73,14 +73,17 @@ fakeChange =
     }
 
 withTenant :: QueryM () -> IO ()
-withTenant cb = bracket_ create delete run
+withTenant = withTenantConfig index
   where
     -- todo: generate random name
-    testName = "test-tenant"
-    config = Config.defaultTenant testName
-    create = testQueryM config I.ensureIndex
-    delete = testQueryM config I.removeIndex
-    run = testQueryM config cb
+    index = Config.defaultTenant "test-tenant"
+
+withTenantConfig :: Config.Index -> QueryM () -> IO ()
+withTenantConfig index cb = bracket_ create delete run
+  where
+    create = testQueryM index I.ensureIndex
+    delete = testQueryM index I.removeIndex
+    run = testQueryM index cb
 
 checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> QueryM ()
 checkEChangeField docId field value = do
@@ -367,6 +370,63 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
       assertEqual' "Ensure expected amount of docs after wipe" 1 count'
       where
         sQuery = mkQuery [BH.MatchAllQuery Nothing]
+
+testJanitorUpdateIdents :: Assertion
+testJanitorUpdateIdents = withTenantConfig tenantConfig doTest
+  where
+    tenantConfig :: Config.Index
+    tenantConfig =
+      Config.Index
+        { name = "test-tenant",
+          crawlers = [],
+          crawlers_api_key = Nothing,
+          projects = Nothing,
+          idents = Just [mkIdent ["github.com/john"] "John Doe"],
+          search_aliases = Nothing
+        }
+    mkIdent :: [Text] -> Text -> Config.Ident
+    mkIdent uid = Config.Ident uid Nothing
+    change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
+    change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
+    expectedAuthor = Author "John Doe" "github.com/john"
+    mkChangeWithAuthor ::
+      -- changeId
+      Text ->
+      -- the Author used to build Author fields (author, mergeBy, assignees, ...)
+      Author ->
+      EChange
+    mkChangeWithAuthor did cAuthor =
+      (mkChange 0 fakeDate cAuthor (from did) mempty EChangeOpen)
+        { echangeMergedBy = Just cAuthor,
+          echangeAssignees = [cAuthor],
+          echangeCommits = [mkCommit cAuthor]
+        }
+    mkCommit :: Author -> Commit
+    mkCommit cAuthor =
+      Commit
+        { commitSha = mempty,
+          commitAuthor = cAuthor,
+          commitCommitter = cAuthor,
+          commitAuthoredAt = fakeDate,
+          commitCommittedAt = fakeDate,
+          commitAdditions = 0,
+          commitDeletions = 0,
+          commitTitle = mempty
+        }
+
+    doTest :: QueryM ()
+    doTest = do
+      I.indexChanges [change1, change2]
+      count <- J.updateIdentsOnChanges
+      assertEqual' "Ensure updated change count" 1 count
+      -- Ensure change1 got the ident update
+      checkEChangeField (I.getChangeDocId change1) echangeAuthor expectedAuthor
+      checkEChangeField (I.getChangeDocId change1) echangeMergedBy (Just expectedAuthor)
+      checkEChangeField (I.getChangeDocId change1) echangeAssignees [expectedAuthor]
+      checkEChangeField (I.getChangeDocId change1) echangeCommits [mkCommit expectedAuthor]
+      -- Ensure change2  is the same
+      change2' <- I.getChangeById $ I.getChangeDocId change2
+      assertEqual' "Ensure change not changed" change2' $ Just change2
 
 alice :: Author
 alice = Author "alice" "a"
