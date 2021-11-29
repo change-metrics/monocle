@@ -22,6 +22,18 @@ let
   # update haskell dependencies
   compilerVersion = "8107";
   compiler = "ghc" + compilerVersion;
+
+  morpheus-graphql-src = pkgs.fetchFromGitHub {
+    owner = "morpheusgraphql";
+    repo = "morpheus-graphql";
+    rev = "0.18.0";
+    sha256 = "1k7x65fc8cilam2kjmmj8xw1ykxqp6wxh0fngjlq3f0992s3hj2b";
+  };
+
+  mk-morpheus-lib = hpPrev: name:
+    (hpPrev.callCabal2nix "morpheus-graphql-${name}"
+      "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
+
   overlays = [
     (final: prev: {
       myHaskellPackages = prev.haskell.packages.${compiler}.override {
@@ -64,10 +76,14 @@ let
 
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
-            sha256 =
-              "sha256:1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
+            sha256 = "1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
             broken = false;
           };
+
+          morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
+          morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
+          morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
+          morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
 
           gerrit = let
             src = builtins.fetchGit {
@@ -587,43 +603,47 @@ in rec {
 
   };
 
-  ghc = hsPkgs.ghcWithPackages (p: [
-    p.doctest20
+  monocle-light =
     # Disable profiling, haddock and test to speedup the build
-    ((pkgs.haskell.lib.appendConfigureFlags
-      (pkgs.haskell.lib.disableLibraryProfiling
-        (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck p.monocle)))
+    (pkgs.haskell.lib.disableLibraryProfiling
+      (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck hsPkgs.monocle))
       # Enable the ci flag to fail on warning
-      [ "-f ci" ]).overrideAttrs (_:
-        # Set dhall env variable to avoid warning
-        {
-          XDG_CACHE_HOME = "/tmp";
-        }))
-  ]);
+    ).overrideAttrs (_:
+      # Set dhall env variable to avoid warning
+      {
+        XDG_CACHE_HOME = "/tmp";
+      });
 
   mk-ci = name: cmd:
     pkgs.runCommand "monocle-${name}" {
       # Set local to avoid utf-8 invalid byte sequence errors
       LC_ALL = "en_US.UTF-8";
       LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+      XDG_CACHE_HOME = "/tmp";
     } ''
       ${cmd}
 
       touch $out
     '';
 
-  cabal-setup = ghcDrv: ''
-    export PATH=${ghcDrv}/bin:${pkgs.cabal-install}/bin:$PATH
-    export NIX_GHCPKG=${ghcDrv}/bin/ghc-pkg
-    export NIX_GHC=${ghcDrv}/bin/ghc
+  cabal-setup = ghcEnv: ''
+    export GHC_DRV=$(cat ${ghcEnv})
+    export PATH=$GHC_DRV/bin:${pkgs.cabal-install}/bin:${hsPkgs.doctest20}/bin:$PATH
+    export NIX_GHCPKG=$GHC_DRV/bin/ghc-pkg
+    export NIX_GHC=$GHC_DRV/bin/ghc
     export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
-    export NIX_GHC_DOCDIR="${ghcDrv}/share/doc/ghc/html"
+    export NIX_GHC_DOCDIR="$GHC_DRV/share/doc/ghc/html"
     export HOME=$(mktemp -d)
     mkdir -p $HOME/.cabal
     touch $HOME/.cabal/config
     ghc --version
     cabal --version
+    doctest --version
   '';
+
+  # Here we use monocle.env to get a ghc with monocle dependencies, but without monocle
+  # since we are going to build it in the ci command.
+  cabal-setup-monocle = cabal-setup monocle-light.env;
 
   ci = mk-ci "ci" ''
     echo "[+] Setup local ghc shell"
@@ -633,9 +653,15 @@ in rec {
     mkdir $out
     cp -r -p ${monocleHaskellSrc}/* $out/
     cd $out
+    ${cabal-setup-monocle}
+
+    echo "[+] Building the project"
+    cabal build --enable-tests --flags=ci -O0
+
+    echo "[+] Running the tests"
+    cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
     echo "[+] Running doctests"
-    ${cabal-setup ghc}
     cabal repl --with-ghc=doctest
 
     # TODO: remove monocle from the ghcWithPackages to avoid rebuild
