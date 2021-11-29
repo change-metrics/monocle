@@ -5,7 +5,8 @@
 -- | The CLI entrpoints
 module CLI (main) where
 
-import Env hiding (Parser, footer)
+import Env hiding (Parser, auto, footer)
+import qualified Env
 import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
@@ -13,8 +14,8 @@ import Monocle.Client (withClient)
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Options.Applicative hiding (header, help, str)
+import qualified Options.Applicative as O
 import Options.Applicative.Help.Pretty (string)
-import Options.Generic
 import qualified Streaming.Prelude as S
 
 ---------------------------------------------------------------
@@ -33,12 +34,14 @@ usage =
     )
   where
     -- The API entrypoint (no CLI argument).
+    usageApi :: O.Parser (IO ())
     usageApi = pure $ do
       -- get parameters from the environment
       (config, elastic, port) <- getFromEnv usageApiEnv
       -- start the API
       Monocle.Api.run (getInt port) (getURL elastic) config
-    usageApiEnv = ((,,) <$> envConf <*> envElastic <*> envApiPort)
+    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String)
+    usageApiEnv = (,,) <$> envConf <*> envElastic <*> envApiPort
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do
@@ -48,21 +51,15 @@ usage =
       withClient url Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
-    -- The standalone lentille entrypoint (re-using optparse-generic record)
-    usageLentille = mainLentille <$> parseRecord
-
     -- The janitor entrypoint
     usageJanitor = pure $ putStrLn "NotImplemented"
 
     -- Helper to create sub command
     mkEnvDoc envParser = string (Env.helpDoc envParser)
-    mkCommand doc name parser envParser = command name . infos $ progDesc doc <> extraHelp
+    mkCommand doc name parser envParser = command name $ info (parser <**> helper) (progDesc doc <> extraHelp)
       where
         -- We only add `--help` to sub command which uses environment
         extraHelp = maybe idm (footerDoc . Just . mkEnvDoc) envParser
-        infos = case envParser of
-          Just _ -> info (parser <**> helper)
-          Nothing -> info parser
 
     -- Helpers to get value fromm the env
     getFromEnv = Env.parse (header "monocle")
@@ -90,15 +87,50 @@ getURL url =
 ---------------------------------------------------------------
 -- Lentille cli
 ---------------------------------------------------------------
+usageLentille :: Parser (IO ())
+usageLentille =
+  subparser
+    ( mkCommand "gerrit-change" "Get a single change" gerritChangeUsage
+        <> mkCommand "gerrit-projects" "Get projects list" gerritProjectsUsage
+        <> mkCommand "gerrit-changes" "Get changes list" gerritChangesUsage
+    )
+  where
+    gerritChangeUsage = io <$> parser
+      where
+        parser = (,) <$> urlOption <*> changeOption
+        io (url, change) = do
+          env <- getGerritEnv url
+          dump Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
 
-data Lentille
-  = GerritChange {url :: Text, change :: Int}
-  | GerritProjects {url :: Text, query :: Text}
-  | GerritChanges {url :: Text, project :: Text, since :: Text, limit :: Maybe Int}
-  deriving stock (Generic)
+    gerritProjectsUsage = io <$> parser
+      where
+        parser = (,) <$> urlOption <*> queryOption
+        io (url, query) = do
+          env <- getGerritEnv url
+          dump Nothing $ G.streamProject env $ G.Regexp query
 
-instance ParseRecord Lentille where
-  parseRecord = parseRecordWithModifiers lispCaseModifiers
+    gerritChangesUsage = io <$> parser
+      where
+        parser = (,,,) <$> urlOption <*> projectOption <*> sinceOption <*> limitOption
+        io (url, project, since, limit) = do
+          env <- getGerritEnv url
+          dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
+
+    toSince txt = case Monocle.Search.Query.parseDateValue txt of
+      Just x -> x
+      Nothing -> error $ "Invalid date: " <> show txt
+    getGerritEnv url = do
+      client <- G.getGerritClient url Nothing
+      pure $ G.GerritEnv client Nothing (const Nothing) "cli"
+
+    urlOption = strOption (long "url" <> O.help "Gerrit API url" <> metavar "URL")
+    queryOption = strOption (long "query" <> O.help "Gerrit regexp query")
+    changeOption = option auto (long "change" <> O.help "Change Number" <> metavar "NR")
+    projectOption = strOption (long "project" <> O.help "Project name")
+    sinceOption = strOption (long "since" <> O.help "Since date")
+    limitOption = optional $ option auto (long "limit" <> O.help "Limit count")
+
+    mkCommand name doc parser = command name $ info (parser <**> helper) $ progDesc doc
 
 dump :: (MonadCatch m, MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
 dump limitM stream = do
@@ -109,23 +141,3 @@ dump limitM stream = do
   liftIO . putLBSLn =<< exportMetricsAsText
   where
     brk = maybe id S.take limitM
-
-mainLentille :: Lentille -> IO ()
-mainLentille args =
-  case args of
-    GerritChange url change -> do
-      env <- getGerritEnv url
-      dump Nothing $ G.streamChange env [G.ChangeId $ show change]
-    GerritProjects url query -> do
-      env <- getGerritEnv url
-      dump Nothing $ G.streamProject env $ G.Regexp query
-    GerritChanges url project since limit -> do
-      env <- getGerritEnv url
-      dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
-  where
-    toSince txt = case Monocle.Search.Query.parseDateValue txt of
-      Just x -> x
-      Nothing -> error $ "Invalid date: " <> show txt
-    getGerritEnv url = do
-      client <- G.getGerritClient url Nothing
-      pure $ G.GerritEnv client Nothing (const Nothing) "cli"

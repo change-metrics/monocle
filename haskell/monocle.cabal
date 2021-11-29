@@ -134,7 +134,6 @@ library
                      , mtl
                      , network                    >= 3
                      , network-uri                >= 2.5
-                     , optparse-generic           >= 1.4
                      , optparse-applicative
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
