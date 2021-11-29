@@ -86,11 +86,17 @@ withTenantConfig index cb = bracket_ create delete run
     run = testQueryM index cb
 
 checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> QueryM ()
-checkEChangeField docId field value = do
+checkEChangeField = _checkField
+
+checkEChangeEventField :: (Show a, Eq a) => BH.DocId -> (EChangeEvent -> a) -> a -> QueryM ()
+checkEChangeEventField = _checkField
+
+_checkField :: (FromJSON t, Show a, Eq a) => BH.DocId -> (t -> a) -> a -> QueryM ()
+_checkField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
-    Just change -> assertEqual' "change field match" (field change) value
-    Nothing -> error "Change not found"
+    Just doc -> assertEqual' "Check field match" (field doc) value
+    Nothing -> error "Document not found"
 
 checkChangesCount :: Int -> QueryM ()
 checkChangesCount expectedCount = do
@@ -372,7 +378,9 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
         sQuery = mkQuery [BH.MatchAllQuery Nothing]
 
 testJanitorUpdateIdents :: Assertion
-testJanitorUpdateIdents = withTenantConfig tenantConfig doTest
+testJanitorUpdateIdents = do
+  withTenantConfig tenantConfig doUpdateIndentOnChangesTest
+  withTenantConfig tenantConfig doUpdateIndentOnEventsTest
   where
     tenantConfig :: Config.Index
     tenantConfig =
@@ -386,47 +394,71 @@ testJanitorUpdateIdents = withTenantConfig tenantConfig doTest
         }
     mkIdent :: [Text] -> Text -> Config.Ident
     mkIdent uid = Config.Ident uid Nothing
-    change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
-    change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
     expectedAuthor = Author "John Doe" "github.com/john"
-    mkChangeWithAuthor ::
-      -- changeId
-      Text ->
-      -- the Author used to build Author fields (author, mergeBy, assignees, ...)
-      Author ->
-      EChange
-    mkChangeWithAuthor did cAuthor =
-      (mkChange 0 fakeDate cAuthor (from did) mempty EChangeOpen)
-        { echangeMergedBy = Just cAuthor,
-          echangeAssignees = [cAuthor],
-          echangeCommits = [mkCommit cAuthor]
-        }
-    mkCommit :: Author -> Commit
-    mkCommit cAuthor =
-      Commit
-        { commitSha = mempty,
-          commitAuthor = cAuthor,
-          commitCommitter = cAuthor,
-          commitAuthoredAt = fakeDate,
-          commitCommittedAt = fakeDate,
-          commitAdditions = 0,
-          commitDeletions = 0,
-          commitTitle = mempty
-        }
 
-    doTest :: QueryM ()
-    doTest = do
+    doUpdateIndentOnEventsTest :: QueryM ()
+    doUpdateIndentOnEventsTest = do
+      I.indexEvents [evt1, evt2]
+      count <- J.updateIdentsOnEvents
+      assertEqual' "Ensure updated events count" 1 count
+      -- Ensure evt1 got the ident update
+      checkEChangeEventField (I.getEventDocId evt1) echangeeventAuthor (Just expectedAuthor)
+      checkEChangeEventField (I.getEventDocId evt1) echangeeventOnAuthor expectedAuthor
+      -- Ensure evt2 is the same
+      evt2' <- I.getChangeEventById $ I.getEventDocId evt2
+      assertEqual' "Ensure event not changed" evt2' $ Just evt2
+      where
+        evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john")
+        evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul")
+        mkEventWithAuthor ::
+          -- eventId
+          Text ->
+          -- the Author used to build Author fields (author, mergeBy, assignees, ...)
+          Author ->
+          EChangeEvent
+        mkEventWithAuthor eid eAuthor =
+          mkEvent 0 fakeDate EChangeCommentedEvent eAuthor eAuthor (from eid) mempty
+
+    doUpdateIndentOnChangesTest :: QueryM ()
+    doUpdateIndentOnChangesTest = do
       I.indexChanges [change1, change2]
       count <- J.updateIdentsOnChanges
-      assertEqual' "Ensure updated change count" 1 count
+      assertEqual' "Ensure updated changes count" 1 count
       -- Ensure change1 got the ident update
       checkEChangeField (I.getChangeDocId change1) echangeAuthor expectedAuthor
       checkEChangeField (I.getChangeDocId change1) echangeMergedBy (Just expectedAuthor)
       checkEChangeField (I.getChangeDocId change1) echangeAssignees [expectedAuthor]
       checkEChangeField (I.getChangeDocId change1) echangeCommits [mkCommit expectedAuthor]
-      -- Ensure change2  is the same
+      -- Ensure change2 is the same
       change2' <- I.getChangeById $ I.getChangeDocId change2
       assertEqual' "Ensure change not changed" change2' $ Just change2
+      where
+        change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
+        change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
+        mkChangeWithAuthor ::
+          -- changeId
+          Text ->
+          -- the Author used to build Author fields (author, mergeBy, assignees, ...)
+          Author ->
+          EChange
+        mkChangeWithAuthor did cAuthor =
+          (mkChange 0 fakeDate cAuthor (from did) mempty EChangeOpen)
+            { echangeMergedBy = Just cAuthor,
+              echangeAssignees = [cAuthor],
+              echangeCommits = [mkCommit cAuthor]
+            }
+        mkCommit :: Author -> Commit
+        mkCommit cAuthor =
+          Commit
+            { commitSha = mempty,
+              commitAuthor = cAuthor,
+              commitCommitter = cAuthor,
+              commitAuthoredAt = fakeDate,
+              commitCommittedAt = fakeDate,
+              commitAdditions = 0,
+              commitDeletions = 0,
+              commitTitle = mempty
+            }
 
 alice :: Author
 alice = Author "alice" "a"
