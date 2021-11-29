@@ -1,8 +1,16 @@
 -- | Utility function to clean up and maintain the backend
-module Monocle.Backend.Janitor (removeTDCrawlerData, wipeCrawlerData) where
+module Monocle.Backend.Janitor
+  ( removeTDCrawlerData,
+    wipeCrawlerData,
+    updateIdentsOnEvents,
+    updateIdentsOnChanges,
+  )
+where
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Text as T
 import qualified Database.Bloodhound as BH
+import Monocle.Api.Config (getIdentByAlias)
 import qualified Monocle.Api.Config as C
 import Monocle.Backend.Documents as D
 import qualified Monocle.Backend.Index as I
@@ -10,6 +18,95 @@ import Monocle.Backend.Queries as Q
 import Monocle.Env
 import Monocle.Prelude
 import qualified Streaming.Prelude as Streaming
+
+updateAuthor :: C.Index -> D.Author -> D.Author
+updateAuthor index author@D.Author {..} = case getIdent of
+  Just ident -> D.Author ident authorUid
+  Nothing
+    | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid
+    | otherwise -> author
+  where
+    getIdent :: Maybe LText
+    getIdent = from <$> getIdentByAlias index (from authorUid)
+    -- Remove the host prefix
+    newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
+
+-- | Apply identities according to the configuration on Changes
+-- Try this on the REPL with:
+-- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnChanges
+updateIdentsOnChanges :: QueryM Int
+updateIdentsOnChanges = do
+  index <- asks tenant
+  indexName <- getIndexName
+  doUpdateIdentsOnChanges indexName (updateAuthor index)
+
+doUpdateIdentsOnChanges :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
+doUpdateIdentsOnChanges indexName updateAuthor' = do
+  withQuery changeQuery $
+    scanChanges
+      & ( Streaming.mapMaybe updateChange
+            >>> Streaming.map mkEChangeBulkUpdate
+            >>> I.bulkStream
+        )
+  where
+    scanChanges :: Stream (Of D.EChange) QueryM ()
+    scanChanges = Q.scanSearchHit
+    changeQuery = mkQuery [Q.documentType D.EChangeDoc]
+    updateChange :: D.EChange -> Maybe D.EChange
+    updateChange change@D.EChange {..} =
+      let updatedChange =
+            change
+              { echangeAuthor = updateAuthor' echangeAuthor,
+                echangeMergedBy = updateAuthor' <$> echangeMergedBy,
+                echangeAssignees = updateAuthor' <$> echangeAssignees,
+                echangeCommits = updateCommitAuthors <$> echangeCommits
+              }
+       in if updatedChange == change then Nothing else Just updatedChange
+      where
+        updateCommitAuthors :: D.Commit -> D.Commit
+        updateCommitAuthors commit@D.Commit {..} =
+          commit
+            { commitAuthor = updateAuthor' commitAuthor,
+              commitCommitter = updateAuthor' commitCommitter
+            }
+    mkEChangeBulkUpdate :: D.EChange -> BulkOperation
+    mkEChangeBulkUpdate ec =
+      BulkUpdate indexName (I.getChangeDocId ec) $ toJSON ec
+
+-- | Apply identities according to the configuration on Events
+-- Try this on the REPL with:
+-- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnEvents
+updateIdentsOnEvents :: QueryM Int
+updateIdentsOnEvents = do
+  index <- asks tenant
+  indexName <- getIndexName
+  doUpdateIdentsOnEvents indexName (updateAuthor index)
+
+doUpdateIdentsOnEvents :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
+doUpdateIdentsOnEvents indexName updateAuthor' = do
+  withQuery eventQuery $
+    scanEvents
+      & ( Streaming.mapMaybe updateEvent
+            >>> Streaming.map mkEventBulkUpdate
+            >>> I.bulkStream
+        )
+  where
+    scanEvents :: Stream (Of D.EChangeEvent) QueryM ()
+    scanEvents = Q.scanSearchHit
+    eventQuery = mkQuery [Q.documentTypes $ fromList allEventTypes]
+
+    updateEvent :: D.EChangeEvent -> Maybe D.EChangeEvent
+    updateEvent event@D.EChangeEvent {..} =
+      let updatedEvent =
+            event
+              { echangeeventAuthor = updateAuthor' <$> echangeeventAuthor,
+                echangeeventOnAuthor = updateAuthor' echangeeventOnAuthor
+              }
+       in if updatedEvent == event then Nothing else Just updatedEvent
+
+    mkEventBulkUpdate :: D.EChangeEvent -> BulkOperation
+    mkEventBulkUpdate ev =
+      BulkUpdate indexName (I.getEventDocId ev) $ toJSON ev
 
 -- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
