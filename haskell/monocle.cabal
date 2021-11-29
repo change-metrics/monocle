@@ -94,11 +94,6 @@ common codegen
                      , text
                      , vector                     >= 0.12
 
-common cli-options
-  hs-source-dirs:      app
-  build-depends:       base, monocle
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
-
 library
   import:              common-options, codegen
   build-depends:       base                       < 5
@@ -139,7 +134,7 @@ library
                      , mtl
                      , network                    >= 3
                      , network-uri                >= 2.5
-                     , optparse-generic           >= 1.4
+                     , optparse-applicative
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
                      , prometheus-metrics-ghc     >= 1.0
@@ -242,17 +237,12 @@ library
 
   autogen-modules:     Paths_monocle
 
-executable monocle-api
-  import:              common-options, cli-options
-  main-is:             Api.hs
-
-executable macroscope
-  import:              common-options, cli-options
-  main-is:             Macroscope.hs
-
-executable lentille
-  import:              common-options, cli-options
-  main-is:             LentilleStandalone.hs
+executable monocle
+  import:              common-options
+  hs-source-dirs:      app
+  build-depends:       base, monocle
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+  main-is:             Monocle.hs
 
 benchmark json-decode
   import:              common-options

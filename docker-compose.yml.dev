@@ -5,7 +5,7 @@ services:
         MONOCLE_COMMIT: "${MONOCLE_COMMIT:-HEAD}"
       context: '.'
       dockerfile: Dockerfile-api
-    command: monocle-api --port 9898
+    command: monocle api
     depends_on:
       - elastic
     env_file: ".secrets"
@@ -14,7 +14,7 @@ services:
       ELASTIC_CONN: elastic:9200
     healthcheck:
       retries: 6
-      test: "curl --silent --fail localhost:9898/health || exit 1"
+      test: "curl --silent --fail localhost:$MONOCLE_API_PORT/health || exit 1"
       timeout: "60s"
     ports:
       - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9898}:9898"
@@ -26,7 +26,7 @@ services:
         MONOCLE_COMMIT: "${MONOCLE_COMMIT:-HEAD}"
       context: '.'
       dockerfile: Dockerfile-api
-    command: macroscope
+    command: monocle crawler
     depends_on:
       - api
     env_file: ".secrets"

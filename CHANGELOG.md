@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - [web] Search field moved out of the top menu into a Patternfly PageSection.
 
 ### Removed
+
+- [baclend] The `monocle-api` and `macroscope` CLI have been merged into a single `monocle` tool.
+
 ### Fixed
 
 ## [1.2.1] - 2021-10-28

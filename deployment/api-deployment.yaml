@@ -23,9 +23,8 @@ spec:
     spec:
       containers:
         - args:
-            - monocle-api
-            - --port
-            - "9898"
+            - monocle
+            - api
           env:
             - name: CONFIG
               value: /etc/monocle/config.yaml
@@ -47,7 +46,7 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/monocle
-              name: monocle-config-volume 
+              name: monocle-config-volume
       restartPolicy: Always
       volumes:
         - name: monocle-config-volume
