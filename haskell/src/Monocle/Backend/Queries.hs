@@ -35,14 +35,14 @@ measureQueryM body action = do
   pure res
 
 -- | Call the search endpoint
-doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
+doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
   measureQueryM body $ do
     index <- getIndexName
     elasticSearch index body scrollRequest
 
 -- | A search without scroll
-doSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => body -> m (BH.SearchResult resp)
+doSearchBH :: (QueryMonad m, ToJSON body, FromJSONField resp) => body -> m (BH.SearchResult resp)
 doSearchBH = doScrollSearchBH BHR.NoScroll
 
 doAdvanceScrollBH :: (QueryMonad m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
@@ -79,7 +79,7 @@ doDeleteByQueryBH body = do
 -- Mid level queries
 
 -- | scan search the result using a streaming
-scanSearch :: FromJSON resp => Stream (Of (BH.Hit resp)) QueryM ()
+scanSearch :: FromJSONField resp => Stream (Of (BH.Hit resp)) QueryM ()
 scanSearch = do
   resp <- lift $ do
     query <- getQueryBH
@@ -101,7 +101,7 @@ scanSearch = do
 
 -- | scan search the hit body, see the 'concat' doc for why we don't need catMaybes
 -- https://hackage.haskell.org/package/streaming-0.2.3.0/docs/Streaming-Prelude.html#v:concat
-scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
+scanSearchHit :: FromJSONField resp => Stream (Of resp) QueryM ()
 scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource scanSearch
 
 -- | scan search the document id, here is an example usage for the REPL:
@@ -112,14 +112,14 @@ scanSearchId :: Stream (Of BH.DocId) QueryM ()
 scanSearchId = Streaming.map BH.hitDocId anyScan
   where
     -- here we need to help ghc figures out what fromJSON to use
-    anyScan :: Stream (Of (BH.Hit Value)) QueryM ()
+    anyScan :: Stream (Of (BH.Hit AnyJSON)) QueryM ()
     anyScan = scanSearch
 
-scanSearchSimple :: FromJSON resp => QueryM [resp]
+scanSearchSimple :: FromJSONField resp => QueryM [resp]
 scanSearchSimple = Streaming.toList_ scanSearchHit
 
 -- | Get search results hits
-doSearch :: QueryMonad m => FromJSON resp => Maybe SearchPB.Order -> Word32 -> m [resp]
+doSearch :: QueryMonad m => FromJSONField resp => Maybe SearchPB.Order -> Word32 -> m [resp]
 doSearch orderM limit = do
   query <- getQueryBH
   resp <-

@@ -396,7 +396,7 @@ getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
 -- | A simple scan search that loads all the results in memory
-runScanSearch :: forall a. FromJSON a => BH.Query -> QueryM [a]
+runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
 runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
