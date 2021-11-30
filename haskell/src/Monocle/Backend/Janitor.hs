@@ -4,6 +4,7 @@ module Monocle.Backend.Janitor
     wipeCrawlerData,
     updateIdentsOnEvents,
     updateIdentsOnChanges,
+    updateIdentsOnWorkspace,
   )
 where
 
@@ -32,6 +33,25 @@ updateAuthor index author@D.Author {..} = case getIdent of
     getIdent = from <$> getIdentByAlias index (from authorUid)
     -- Remove the host prefix
     newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
+
+updateIdentsOnWorkspace :: QueryM ()
+updateIdentsOnWorkspace = do
+  workspaceName <- C.getWorkspaceName <$> asks tenant
+  changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
+  eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
+  print @Text $
+    "Workspace "
+      <> workspaceName
+      <> " - Janitor will process on "
+      <> show changesCount
+      <> " changes and "
+      <> show eventsCount
+      <> " events."
+  print @Text "Processing (this may take some time) ..."
+  updatedChangesCount <- updateIdentsOnChanges
+  print @Text $ "Updated " <> show updatedChangesCount <> " changes."
+  updatedEventsCount <- updateIdentsOnEvents
+  print @Text $ "Updated " <> show updatedEventsCount <> " events."
 
 -- | Apply identities according to the configuration on Changes
 -- Try this on the REPL with:

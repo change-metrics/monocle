@@ -11,11 +11,9 @@ import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
 import qualified Monocle.Api.Config as Config
-import qualified Monocle.Backend.Documents as D
 import qualified Monocle.Backend.Janitor as J
-import qualified Monocle.Backend.Queries as Q
 import Monocle.Client (withClient)
-import Monocle.Env (mkEnv, mkQuery, runQueryM', withQuery)
+import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Options.Applicative hiding (header, help, str)
@@ -116,23 +114,7 @@ usageJanitor =
         workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
         configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "CONFIG")
         elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "ELASTIC_URL")
-        runOnWorkspace env workspace = do
-          let runQuery = runQueryM' env workspace
-          changesCount <- runQuery $ withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
-          eventsCount <- runQuery $ withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
-          print @Text $
-            "Workspace "
-              <> Config.getWorkspaceName workspace
-              <> " - Janitor will process on "
-              <> show changesCount
-              <> " changes and "
-              <> show eventsCount
-              <> " events."
-          print @Text "Processing (this may take some time) ..."
-          updatedChangesCount <- runQuery J.updateIdentsOnChanges
-          print @Text $ "Updated " <> show updatedChangesCount <> " changes."
-          updatedEventsCount <- runQuery J.updateIdentsOnEvents
-          print @Text $ "Updated " <> show updatedEventsCount <> " events."
+        runOnWorkspace env workspace = runQueryM' env workspace J.updateIdentsOnWorkspace
 
 ---------------------------------------------------------------
 -- Lentille cli
