@@ -1,7 +1,11 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | A module for low-level function unavailable in bloodhound
 module Database.Bloodhound.Raw (ScrollRequest (..), advance, search, searchHit, settings, aggWithDocValues) where
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Casing.Internal as AesonCasing
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
 import qualified Database.Bloodhound as BH
@@ -67,20 +71,43 @@ search' (BH.IndexName index) body qs = do
       method = HTTP.methodPost
   dispatch method url (Aeson.encode body) qs
 
+-- | Manual aeson casing implementation to create the search _source attribute
+--
+-- >>> aesonCasing "echangeCommitCount"
+-- "commit_count"
+aesonCasing :: String -> String
+aesonCasing = AesonCasing.snakeCase . AesonCasing.dropFPrefix
+
 search ::
+  forall resp m body.
   (MonadIO m, MonadBH m, MonadThrow m) =>
-  (Aeson.ToJSON body, Aeson.FromJSON resp) =>
+  (Aeson.ToJSON body, FromJSONField resp) =>
   BH.IndexName ->
   body ->
   ScrollRequest ->
   m (BH.SearchResult resp)
 search index body scrollRequest = do
-  rawResp <- search' index body qs
+  rawResp <- search' index newBody qs
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left _e -> handleError rawResp
     Right x -> pure x
   where
+    newBody = case (fields, toJSON body) of
+      -- The results has fields, and the body is an object
+      (xs@(_ : _), Aeson.Object obj) -> Aeson.Object $ addSourceFields xs obj
+      -- Otherwise we don't change the body
+      (_, bodyValue) -> bodyValue
+
+    addSourceFields xs = HM.insert "_source" (Aeson.Array $ fromList $ map toSourceElem xs)
+
+    toSourceElem :: String -> Value
+    toSourceElem = Aeson.String . from . aesonCasing
+
+    -- The fields of the result data types.
+    fields :: [String]
+    fields = selectors (Proxy :: Proxy (Rep resp))
+
     qs = case scrollRequest of
       NoScroll -> []
       GetScroll x -> [("scroll", Just x)]

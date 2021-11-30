@@ -84,7 +84,7 @@ instance QueryMonad QueryM where
 
 -- | A type class that defines the method available to query elastic
 class ElasticMonad m where
-  elasticSearch :: (ToJSON body, FromJSON resp) => BH.IndexName -> body -> BHR.ScrollRequest -> m (BH.SearchResult resp)
+  elasticSearch :: (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> m (BH.SearchResult resp)
   elasticCountByIndex :: BH.IndexName -> BH.CountQuery -> m (Either BH.EsError BH.CountResponse)
   elasticSearchHit :: ToJSON body => BH.IndexName -> body -> m [Json.Value]
   elasticAdvance :: FromJSON resp => BH.ScrollId -> m (BH.SearchResult resp)
