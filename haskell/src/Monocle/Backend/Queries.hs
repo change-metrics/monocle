@@ -83,7 +83,8 @@ scanSearch :: FromJSONField resp => Stream (Of (BH.Hit resp)) QueryM ()
 scanSearch = do
   resp <- lift $ do
     query <- getQueryBH
-    doScrollSearchBH (BHR.GetScroll "1m") (BH.mkSearch query Nothing)
+    let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 5000}
+    doScrollSearchBH (BHR.GetScroll "1m") search
   go (getHits resp) (BH.scrollId resp)
   where
     -- no more result, stop here
