@@ -35,14 +35,14 @@ measureQueryM body action = do
   pure res
 
 -- | Call the search endpoint
-doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
+doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
   measureQueryM body $ do
     index <- getIndexName
     elasticSearch index body scrollRequest
 
 -- | A search without scroll
-doSearchBH :: (QueryMonad m, ToJSON body, FromJSON resp) => body -> m (BH.SearchResult resp)
+doSearchBH :: (QueryMonad m, ToJSON body, FromJSONField resp) => body -> m (BH.SearchResult resp)
 doSearchBH = doScrollSearchBH BHR.NoScroll
 
 doAdvanceScrollBH :: (QueryMonad m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
@@ -79,11 +79,12 @@ doDeleteByQueryBH body = do
 -- Mid level queries
 
 -- | scan search the result using a streaming
-scanSearch :: FromJSON resp => Stream (Of (BH.Hit resp)) QueryM ()
+scanSearch :: FromJSONField resp => Stream (Of (BH.Hit resp)) QueryM ()
 scanSearch = do
   resp <- lift $ do
     query <- getQueryBH
-    doScrollSearchBH (BHR.GetScroll "1m") (BH.mkSearch query Nothing)
+    let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 5000}
+    doScrollSearchBH (BHR.GetScroll "1m") search
   go (getHits resp) (BH.scrollId resp)
   where
     -- no more result, stop here
@@ -101,25 +102,25 @@ scanSearch = do
 
 -- | scan search the hit body, see the 'concat' doc for why we don't need catMaybes
 -- https://hackage.haskell.org/package/streaming-0.2.3.0/docs/Streaming-Prelude.html#v:concat
-scanSearchHit :: FromJSON resp => Stream (Of resp) QueryM ()
-scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource $ scanSearch
+scanSearchHit :: FromJSONField resp => Stream (Of resp) QueryM ()
+scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource scanSearch
 
 -- | scan search the document id, here is an example usage for the REPL:
 -- λ> testQueryM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
 -- DocId ...
 -- DocId ...
 scanSearchId :: Stream (Of BH.DocId) QueryM ()
-scanSearchId = Streaming.map BH.hitDocId $ anyScan
+scanSearchId = Streaming.map BH.hitDocId anyScan
   where
     -- here we need to help ghc figures out what fromJSON to use
-    anyScan :: Stream (Of (BH.Hit (Value))) QueryM ()
+    anyScan :: Stream (Of (BH.Hit AnyJSON)) QueryM ()
     anyScan = scanSearch
 
-scanSearchSimple :: FromJSON resp => QueryM [resp]
+scanSearchSimple :: FromJSONField resp => QueryM [resp]
 scanSearchSimple = Streaming.toList_ scanSearchHit
 
 -- | Get search results hits
-doSearch :: QueryMonad m => FromJSON resp => Maybe SearchPB.Order -> Word32 -> m [resp]
+doSearch :: QueryMonad m => FromJSONField resp => Maybe SearchPB.Order -> Word32 -> m [resp]
 doSearch orderM limit = do
   query <- getQueryBH
   resp <-
@@ -216,9 +217,10 @@ changeEvents changeID limit = dropQuery $
 -- | The change created / review ratio
 changeReviewRatio :: QueryMonad m => m Float
 changeReviewRatio = withFlavor qf $ do
-  commitCount <- withFilter [documentType EChangeCreatedEvent] $ countDocs
+  commitCount <- withFilter [documentType EChangeCreatedEvent] countDocs
   reviewCount <-
-    withFilter [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]] $
+    withFilter
+      [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]]
       countDocs
   let total, commitCountF, reviewCountF :: Float
       total = reviewCountF + commitCountF
@@ -423,7 +425,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
 
   -- Collect all the events
   resultJson <- doFastSearch 10000
-  let result = catMaybes $ map decodeJsonChangeEvent resultJson
+  let result = mapMaybe decodeJsonChangeEvent resultJson
 
   -- Group by change_id
   let changeMap :: [NonEmpty JsonChangeEvent]

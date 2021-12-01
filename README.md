@@ -509,7 +509,7 @@ Some legacy component are still required until they are migrated to the new Open
 5. a crawler service to index github and gerrit changes.
 
 
-## Monistoring
+## Monitoring
 
 To setup the monitoring:
 

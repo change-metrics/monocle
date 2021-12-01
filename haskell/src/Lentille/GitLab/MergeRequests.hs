@@ -103,7 +103,7 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> String -> m (Either String GetProjectMergeRequests, [ReqLog])
+fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> Text -> m (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [ReqLog])
 fetchMergeRequest client project mrID =
   fetchWithLog (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
@@ -118,10 +118,7 @@ streamMergeRequests ::
 streamMergeRequests client getIdentIdCb untilDate project =
   breakOnDate $ streamFetch client mkArgs transformResponse'
   where
-    mkArgs cursor = GetProjectMergeRequestsArgs (ID project) Nothing $ toCursorM cursor
-    toCursorM :: Text -> Maybe String
-    toCursorM "" = Nothing
-    toCursorM cursor'' = Just . toString $ cursor''
+    mkArgs = GetProjectMergeRequestsArgs (ID project) Nothing
 
     -- This transform the stream by adding a limit.
     -- We don't care about the rest so we replace it with ()

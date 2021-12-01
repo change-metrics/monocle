@@ -27,7 +27,7 @@ import Relude
 
 decodeThrow :: LBS.ByteString -> Json.Value
 decodeThrow dat = case decode (Bytes.fromByteString (toStrict dat)) of
-  Left e -> error $ "Could not decode: " <> (show e)
+  Left e -> error $ "Could not decode: " <> show e
   Right v -> v
 
 -- | 'getAttr' return an object value

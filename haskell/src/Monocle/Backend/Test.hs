@@ -73,21 +73,30 @@ fakeChange =
     }
 
 withTenant :: QueryM () -> IO ()
-withTenant cb = bracket_ create delete run
+withTenant = withTenantConfig index
   where
     -- todo: generate random name
-    testName = "test-tenant"
-    config = Config.defaultTenant testName
-    create = testQueryM config I.ensureIndex
-    delete = testQueryM config I.removeIndex
-    run = testQueryM config cb
+    index = Config.defaultTenant "test-tenant"
+
+withTenantConfig :: Config.Index -> QueryM () -> IO ()
+withTenantConfig index cb = bracket_ create delete run
+  where
+    create = testQueryM index I.ensureIndex
+    delete = testQueryM index I.removeIndex
+    run = testQueryM index cb
 
 checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> QueryM ()
-checkEChangeField docId field value = do
+checkEChangeField = _checkField
+
+checkEChangeEventField :: (Show a, Eq a) => BH.DocId -> (EChangeEvent -> a) -> a -> QueryM ()
+checkEChangeEventField = _checkField
+
+_checkField :: (FromJSON t, Show a, Eq a) => BH.DocId -> (t -> a) -> a -> QueryM ()
+_checkField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
-    Just change -> assertEqual' "change field match" (field change) value
-    Nothing -> error "Change not found"
+    Just doc -> assertEqual' "Check field match" (field doc) value
+    Nothing -> error "Document not found"
 
 checkChangesCount :: Int -> QueryM ()
 checkChangesCount expectedCount = do
@@ -368,6 +377,96 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
       where
         sQuery = mkQuery [BH.MatchAllQuery Nothing]
 
+testJanitorUpdateIdents :: Assertion
+testJanitorUpdateIdents = do
+  withTenantConfig tenantConfig doUpdateIndentOnChangesTest
+  withTenantConfig tenantConfig doUpdateIndentOnEventsTest
+  where
+    tenantConfig :: Config.Index
+    tenantConfig =
+      Config.Index
+        { name = "test-tenant",
+          crawlers = [],
+          crawlers_api_key = Nothing,
+          projects = Nothing,
+          idents = Just [mkIdent ["github.com/john"] "John Doe"],
+          search_aliases = Nothing
+        }
+    mkIdent :: [Text] -> Text -> Config.Ident
+    mkIdent uid = Config.Ident uid Nothing
+    expectedAuthor = Author "John Doe" "github.com/john"
+
+    doUpdateIndentOnEventsTest :: QueryM ()
+    doUpdateIndentOnEventsTest = do
+      I.indexEvents [evt1, evt2]
+      count <- J.updateIdentsOnEvents
+      assertEqual' "Ensure updated events count" 1 count
+      -- Ensure evt1 got the ident update
+      checkEChangeEventField (I.getEventDocId evt1) echangeeventAuthor (Just expectedAuthor)
+      checkEChangeEventField (I.getEventDocId evt1) echangeeventOnAuthor expectedAuthor
+      -- Ensure evt2 is the same
+      evt2' <- I.getChangeEventById $ I.getEventDocId evt2
+      assertEqual' "Ensure event not changed" evt2' $ Just evt2
+      where
+        evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john")
+        evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul")
+        mkEventWithAuthor ::
+          -- eventId
+          Text ->
+          -- the Author used to build Author fields (author, mergeBy, assignees, ...)
+          Author ->
+          EChangeEvent
+        mkEventWithAuthor eid eAuthor =
+          mkEvent 0 fakeDate EChangeCommentedEvent eAuthor eAuthor (from eid) mempty
+
+    doUpdateIndentOnChangesTest :: QueryM ()
+    doUpdateIndentOnChangesTest = do
+      I.indexChanges [change1, change2, change3]
+      count <- J.updateIdentsOnChanges
+      -- change1 and change3 will be updated
+      assertEqual' "Ensure updated changes count" 2 count
+      -- Ensure change1 got the ident update
+      checkEChangeField (I.getChangeDocId change1) echangeAuthor expectedAuthor
+      checkEChangeField (I.getChangeDocId change1) echangeMergedBy (Just expectedAuthor)
+      checkEChangeField (I.getChangeDocId change1) echangeAssignees [expectedAuthor]
+      checkEChangeField (I.getChangeDocId change1) echangeCommits [mkCommit expectedAuthor]
+      -- Ensure change2 is the same
+      change2' <- I.getChangeById $ I.getChangeDocId change2
+      assertEqual' "Ensure change not changed" change2' $ Just change2
+      -- Ensure change3 got its Author fields updated - Only check author to be brief
+      -- Ident got reverted because no Ident match github.com/jane in config
+      -- then default is to remove the "<provider-host>/" prefix
+      checkEChangeField (I.getChangeDocId change3) echangeAuthor expectedAuthor'
+      where
+        expectedAuthor' = Author "jane" "github.com/jane"
+        change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
+        change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
+        change3 = mkChangeWithAuthor "c3" (Author "Ident will revert" "github.com/jane")
+        mkChangeWithAuthor ::
+          -- changeId
+          Text ->
+          -- the Author used to build Author fields (author, mergeBy, assignees, ...)
+          Author ->
+          EChange
+        mkChangeWithAuthor did cAuthor =
+          (mkChange 0 fakeDate cAuthor (from did) mempty EChangeOpen)
+            { echangeMergedBy = Just cAuthor,
+              echangeAssignees = [cAuthor],
+              echangeCommits = [mkCommit cAuthor]
+            }
+        mkCommit :: Author -> Commit
+        mkCommit cAuthor =
+          Commit
+            { commitSha = mempty,
+              commitAuthor = cAuthor,
+              commitCommitter = cAuthor,
+              commitAuthoredAt = fakeDate,
+              commitCommittedAt = fakeDate,
+              commitAdditions = 0,
+              commitDeletions = 0,
+              commitTitle = mempty
+            }
+
 alice :: Author
 alice = Author "alice" "a"
 
@@ -569,7 +668,7 @@ testLifecycleStats = withTenant doTest
             let queryGet _ = const []
                 queryBounds =
                   ( addUTCTime (-3600) fakeDate,
-                    addUTCTime (3600) fakeDate
+                    addUTCTime 3600 fakeDate
                   )
                 queryMinBoundsSet = True
              in Q.Query {..}

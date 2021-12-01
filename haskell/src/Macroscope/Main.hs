@@ -6,7 +6,6 @@
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
 module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
-import Control.Concurrent (forkIO)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -54,19 +53,21 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
-runMonitoringServer :: Int -> IO ()
-runMonitoringServer port = do
+withMonitoringServer :: Int -> IO () -> IO ()
+withMonitoringServer port action = do
   -- Setup GHC metrics for prometheus
   void $ promRegister ghcMetrics
 
   -- Start the Wai application in the background with Warp
   v <- newEmptyMVar
-  let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) $ Warp.defaultSettings
-  void $ forkIO $ Warp.runSettings settings $ app
-  mLog $ Log Macroscope $ LogStartingMonitoring port
-
-  -- Wait for the application to be ready
-  takeMVar v
+  let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) Warp.defaultSettings
+  withAsync (Warp.runSettings settings app) $ \warpPid -> do
+    mLog $ Log Macroscope $ LogStartingMonitoring port
+    -- Wait for the warp service to be running
+    takeMVar v
+    -- Run the action
+    action
+    cancel warpPid
   where
     app req resp = case Wai.rawPathInfo req of
       "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "macroscope is running\n"
@@ -76,8 +77,7 @@ runMonitoringServer port = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 9001 "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" client
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = do
-  runMonitoringServer port
+runMacroscope port confPath client = withMonitoringServer port $ do
   runLentilleM client $ do
     mLog $ Log Macroscope LogMacroStart
     config <- Config.mReloadConfig confPath
@@ -171,7 +171,7 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
       if reloaded
         then do
           -- Update the crawlerStop ref to True so that stream gracefully stops
-          mLog $ Log Macroscope $ LogMacroReloadingStart
+          mLog $ Log Macroscope LogMacroReloadingStart
           ref <- asks crawlerStop
           liftIO $ writeIORef ref True
 
@@ -233,7 +233,7 @@ getClientGraphQL crawler url token = do
 
 -- | Groups the streams by client
 --
--- >>> map (fmap toList) $ groupByClient [(0, "gitlab"), (1, "gerrit"), (0, "gitlab 2")]
+-- >>> map (fmap toList) $ groupByClient [(0, "gitlab"), (1, "gerrit"), (0, "gitlab 2")] :: [(Int, [String])]
 -- [(0,["gitlab","gitlab 2"]),(1,["gerrit"])]
 groupByClient :: Ord clientKey => [(clientKey, a)] -> [(clientKey, NonEmpty a)]
 groupByClient = grp >>> adapt

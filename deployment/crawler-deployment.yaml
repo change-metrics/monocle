@@ -23,7 +23,8 @@ spec:
     spec:
       containers:
         - args:
-            - macroscope
+            - monocle
+            - crawler
           env:
             - name: CONFIG
               value: /etc/monocle/config.yaml

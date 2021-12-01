@@ -95,11 +95,11 @@ parse :: [(Text, Expr)] -> Text -> Either ParseError (Maybe Expr)
 parse aliases code = do
   tokens' <- lex code
   case Megaparsec.parse (Combinators.optional (exprParser aliases) <* Megaparsec.eof) "<input>" tokens' of
-    Left err -> {- trace ("parser:" <> show err) -} (Left (mkErr (T.length code) err))
+    Left err -> {- trace ("parser:" <> show err) -} Left (mkErr (T.length code) err)
     Right expr -> Right expr
   where
     hasLabel label = Set.member (Megaparsec.Label (fromList label))
-    formatExpected :: Text -> (Set.Set (Megaparsec.ErrorItem (Megaparsec.Token [L.LocatedToken]))) -> Text
+    formatExpected :: Text -> Set.Set (Megaparsec.ErrorItem (Megaparsec.Token [L.LocatedToken])) -> Text
     formatExpected def set
       | hasLabel "literal" set = "Expected value"
       | hasLabel "operator" set = "Expected operator (`:`, `>`, ...)"

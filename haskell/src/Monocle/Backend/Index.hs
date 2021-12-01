@@ -396,8 +396,8 @@ getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
 -- | A simple scan search that loads all the results in memory
-runScanSearch :: forall a. FromJSON a => BH.Query -> QueryM [a]
-runScanSearch query = withQuery (mkQuery [query]) $ Q.scanSearchSimple
+runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
+runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
 getChangeDocId change = BH.DocId . toText $ echangeId change
@@ -441,6 +441,12 @@ getDocumentById docId = do
   where
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
+
+getChangeById :: BH.DocId -> QueryM (Maybe EChange)
+getChangeById = getDocumentById
+
+getChangeEventById :: BH.DocId -> QueryM (Maybe EChangeEvent)
+getChangeEventById = getDocumentById
 
 getCrawlerMetadataDocId :: Text -> Text -> Text -> BH.DocId
 getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
@@ -688,7 +694,7 @@ ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index getId
-  when (not exists) $ do
+  unless exists $ do
     lastUpdatedDate <- getDate
     withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
   where

@@ -2,8 +2,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/65ce6cbbdc9ed71076c43e15e45e139fcbbf4d6c.tar.gz";
-    sha256 = "sha256:1vfpf17rcl1riasya54w690brhqs6m1fm5zcm920gy8s9mp24b0n";
+      "https://github.com/NixOS/nixpkgs/archive/a6f258f49fcd1644f08b7b3677da2c5e55713291.tar.gz";
+    sha256 = "sha256:0l8cdybgri8jhdmkxr7r1jpnggk6xz4xc5x7ik5v1qn5h2cv6jsz";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -17,9 +17,23 @@ let
   };
   inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
 
+  monocleHaskellSrc = gitignoreSource ../haskell/.;
+
   # update haskell dependencies
   compilerVersion = "8107";
   compiler = "ghc" + compilerVersion;
+
+  morpheus-graphql-src = pkgs.fetchFromGitHub {
+    owner = "morpheusgraphql";
+    repo = "morpheus-graphql";
+    rev = "0.18.0";
+    sha256 = "1k7x65fc8cilam2kjmmj8xw1ykxqp6wxh0fngjlq3f0992s3hj2b";
+  };
+
+  mk-morpheus-lib = hpPrev: name:
+    (hpPrev.callCabal2nix "morpheus-graphql-${name}"
+      "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
+
   overlays = [
     (final: prev: {
       myHaskellPackages = prev.haskell.packages.${compiler}.override {
@@ -55,12 +69,21 @@ let
             sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
           };
 
+          doctest20 = pkgs.haskell.lib.overrideCabal hpPrev.doctest {
+            version = "0.20.0";
+            sha256 = "0sk50b8zxq4hvc8qphlmfha1lsv3xha7q7ka081jgswf1qpg34y4";
+          };
+
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
-            sha256 =
-              "sha256:1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
+            sha256 = "1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
             broken = false;
           };
+
+          morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
+          morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
+          morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
+          morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
 
           gerrit = let
             src = builtins.fetchGit {
@@ -81,13 +104,12 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
 
-          monocle = (hpPrev.callCabal2nix "monocle" (gitignoreSource ../haskell)
-            { }).overrideAttrs
+          monocle =
+            (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
-            hpPrev.callCabal2nix "monocle-codegen" (gitignoreSource ../codegen)
-            { };
+            hpPrev.callCabal2nix "monocle-codegen" monocleHaskellSrc { };
         };
       };
 
@@ -525,13 +547,6 @@ in rec {
 
   # haskell dependencies for codegen
   hsPkgs = pkgs.myHaskellPackages;
-  easyHlsSrc = pkgs.fetchFromGitHub {
-    owner = "jkachmar";
-    repo = "easy-hls-nix";
-    rev = "703a6bbb8441948f4c9c843e893b8235ac43c0fa";
-    sha256 = "0402ih4jla62l59g80f21fmgklj7rv0hmn82347qzms18lffbjpx";
-  };
-  easyHls = pkgs.callPackage easyHlsSrc { ghcVersions = [ "8.10.7" ]; };
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
@@ -588,6 +603,86 @@ in rec {
 
   };
 
+  monocle-light =
+    # Disable profiling, haddock and test to speedup the build
+    (pkgs.haskell.lib.disableLibraryProfiling
+      (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck hsPkgs.monocle))
+      # Enable the ci flag to fail on warning
+    ).overrideAttrs (_:
+      # Set dhall env variable to avoid warning
+      {
+        XDG_CACHE_HOME = "/tmp";
+      });
+
+  mk-ci = name: cmd:
+    pkgs.runCommand "monocle-${name}" {
+      # Set local to avoid utf-8 invalid byte sequence errors
+      LC_ALL = "en_US.UTF-8";
+      LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+      XDG_CACHE_HOME = "/tmp";
+    } ''
+      ${cmd}
+
+      touch $out
+    '';
+
+  cabal-setup = ghcEnv: ''
+    export GHC_DRV=$(cat ${ghcEnv})
+    export PATH=$GHC_DRV/bin:${pkgs.cabal-install}/bin:${hsPkgs.doctest20}/bin:$PATH
+    export NIX_GHCPKG=$GHC_DRV/bin/ghc-pkg
+    export NIX_GHC=$GHC_DRV/bin/ghc
+    export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
+    export NIX_GHC_DOCDIR="$GHC_DRV/share/doc/ghc/html"
+    export HOME=$(mktemp -d)
+    mkdir -p $HOME/.cabal
+    touch $HOME/.cabal/config
+    ghc --version
+    cabal --version
+    doctest --version
+  '';
+
+  # Here we use monocle.env to get a ghc with monocle dependencies, but without monocle
+  # since we are going to build it in the ci command.
+  cabal-setup-monocle = cabal-setup monocle-light.env;
+
+  ci = mk-ci "ci" ''
+    echo "[+] Setup local ghc shell"
+    export PATH=${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin
+
+    # Copy the source so that doctest can write temp files
+    mkdir $out
+    cp -r -p ${monocleHaskellSrc}/* $out/
+    cd $out
+    ${cabal-setup-monocle}
+
+    echo "[+] Building the project"
+    cabal build --enable-tests --flags=ci -O0
+
+    echo "[+] Running the tests"
+    cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
+
+    echo "[+] Running doctests"
+    cabal repl --with-ghc=doctest
+
+    # TODO: remove monocle from the ghcWithPackages to avoid rebuild
+    # cabal test -O0 --test-show-details=direct
+
+    ${lightCI}
+  '';
+
+  ci-light = mk-ci "ci-light" lightCI;
+
+  lightCI = ''
+    cd ${monocleHaskellSrc}
+    echo "[+] Running hlint"
+    ${pkgs.hlint}/bin/hlint -XQuasiQuotes src/
+
+    echo "[+] Checking ormolu syntax"
+    ${pkgs.ormolu}/bin/ormolu                                 \
+      -o -XPatternSynonyms -o -XTypeApplications --mode check \
+      $(find ${monocleHaskellSrc} -name "*.hs")
+  '';
+
   # dontCheck because doctests are not working...
   monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
 
@@ -599,7 +694,8 @@ in rec {
     packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid easyHls ] ++ all-req ++ services-req;
+      [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
+      ++ services-req;
 
     withHoogle = true;
 

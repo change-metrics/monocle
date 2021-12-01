@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+-- undefined is needed in the Generic Selector
+{-# OPTIONS_GHC -Wno-deprecations #-}
 -- witch instance for Google.Protobuf.Timestamp
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -14,6 +16,13 @@ module Monocle.Prelude
     headMaybe,
     Secret (..),
     (:::),
+
+    -- * generic
+    selectors,
+    FromJSONField,
+    Rep,
+    AnyJSON,
+    Selectors,
 
     -- * containers
     mapMutate,
@@ -37,6 +46,8 @@ module Monocle.Prelude
     MonadUnliftIO,
     modifyMVar,
     modifyMVar_,
+    withAsync,
+    cancel,
 
     -- * mmoprh
     hoist,
@@ -167,6 +178,7 @@ import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import qualified Database.Bloodhound as BH
 import GHC.Float (double2Float)
+import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import qualified Google.Protobuf.Timestamp
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Prometheus (Info (..), counter, incCounter, withLabel)
@@ -183,6 +195,7 @@ import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
+import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
 
@@ -412,3 +425,46 @@ instance From UTCTime Google.Protobuf.Timestamp.Timestamp where
 
 instance From Google.Protobuf.Timestamp.Timestamp UTCTime where
   from = Google.Protobuf.Timestamp.toUTCTime
+
+-- | A typeclass to extract the field (selectors) name of a record
+-- adapted from https://stackoverflow.com/a/27818445
+class Selectors rep where
+  selectors :: Proxy rep -> [String]
+
+-- | Create Selectors instances that works with records Rep
+-- For another implementation, see https://gist.github.com/Gabriel439/fb85640a1359491ed427526281220938
+instance Selectors f => Selectors (M1 D x f) where
+  selectors _ = selectors (Proxy :: Proxy f)
+
+instance Selectors f => Selectors (M1 C x f) where
+  selectors _ = selectors (Proxy :: Proxy f)
+
+instance Selector s => Selectors (M1 S s (K1 R t)) where
+  selectors _ = [selName (undefined :: M1 S s (K1 R t) ())]
+
+instance (Selectors a, Selectors b) => Selectors (a :*: b) where
+  selectors _ = selectors (Proxy :: Proxy a) ++ selectors (Proxy :: Proxy b)
+
+-- | For unary datatype (such as AnyJSON), there are no field
+instance Selectors U1 where
+  selectors _ = []
+
+-- | For sum type (e.g. Aeson.Value), we don't know the fields
+instance Selectors (a :+: b) where
+  selectors _ = []
+
+-- instance Selectors (D1 a b c) where
+--   selectors _ = []
+
+-- | A convenient constraint to require a FromJSON instance with the selectors function
+-- to get the record fields name, used by elasticSearch query.
+type FromJSONField a = (FromJSON a, Selectors (Rep a))
+
+-- | A little hack to satisfy the FromJSON constraint when we don't need the value
+-- for example when looking for hitDocId. In that situation, we ensure whatever the
+-- searchHit is, we can decode it.
+data AnyJSON = AnyJSON
+  deriving (Generic, Show)
+
+instance FromJSON AnyJSON where
+  parseJSON _ = pure AnyJSON

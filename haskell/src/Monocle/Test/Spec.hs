@@ -26,7 +26,7 @@ main = do
     elasticUrl <- lookupEnv "ELASTIC_URL"
     case elasticUrl of
       Nothing -> do
-        putTextLn $ "ELASTIC_URL is missing, we skip integration test"
+        putTextLn "ELASTIC_URL is missing, we skip integration test"
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
@@ -80,7 +80,7 @@ pattern NamedEntity name <-
               CommitInfoResponse_OldestEntity
                 { commitInfoResponse_OldestEntityEntity =
                     Just
-                      (Entity {entityEntity = Just (EntityEntityProjectName name)}),
+                      Entity {entityEntity = Just (EntityEntityProjectName name)},
                   commitInfoResponse_OldestEntityLastCommitAt = Just _
                 }
             )
@@ -188,7 +188,8 @@ monocleIntegrationTests =
       testCase "Test suggestions" testGetSuggestions,
       testCase "Test taskData add" testTaskDataAdd,
       testCase "Test taskData adoption" testTaskDataAdoption,
-      testCase "Test Janitor wipe crawler" testJanitorWipeCrawler
+      testCase "Test Janitor wipe crawler" testJanitorWipeCrawler,
+      testCase "Test Janitor update idents" testJanitorUpdateIdents
     ]
 
 monocleSearchLanguage :: TestTree
@@ -267,7 +268,7 @@ monocleSearchLanguage =
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
-            ( (S.AndExpr (S.OrExpr (S.GtExpr "a" "42") (S.EqExpr "a" "0")) (S.EqExpr "b" "d"))
+            ( S.AndExpr (S.OrExpr (S.GtExpr "a" "42") (S.EqExpr "a" "0")) (S.EqExpr "b" "d")
             )
         ),
       testCase
@@ -275,14 +276,14 @@ monocleSearchLanguage =
         ( parseMatch'
             [("sprint42", S.GtExpr "date" "2021-07-01")]
             "status:open sprint42"
-            ( (S.AndExpr (S.EqExpr "status" "open")) (S.GtExpr "date" "2021-07-01")
+            ( S.AndExpr (S.EqExpr "status" "open") (S.GtExpr "date" "2021-07-01")
             )
         ),
       testCase
         "Parser implicit and"
         ( parseMatch
             "state:open author:foo"
-            ( (S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo"))
+            ( S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo")
             )
         ),
       testCase
@@ -478,7 +479,7 @@ monocleSearchLanguage =
       assertEqual
         "match"
         (Right query)
-        (P.parse aliases code >>= Q.queryWithMods now mempty testTenant >>= pure . field)
+        ((P.parse aliases code >>= Q.queryWithMods now mempty testTenant) <&> field)
     headS = \case
       [x] -> x
       _ -> error "Not a list"
@@ -491,12 +492,11 @@ monocleSearchLanguage =
         { Config.name = "test",
           Config.projects = Just [testProjects],
           Config.search_aliases =
-            ( Just
-                [ let name = "sprint42"
-                      alias = "from:2021-01-01 to:2021-01-21"
-                   in Config.SearchAlias {..}
-                ]
-            ),
+            Just
+              [ let name = "sprint42"
+                    alias = "from:2021-01-01 to:2021-01-21"
+                 in Config.SearchAlias {..}
+              ],
           Config.crawlers = [],
           Config.crawlers_api_key = Nothing,
           Config.idents = Nothing
