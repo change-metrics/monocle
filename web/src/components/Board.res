@@ -242,6 +242,8 @@ module Board = {
     style: Table,
   }
 
+  let userColumn = {Column.name: "My changes", order: None, query: "state:open and author:self"}
+
   let columnsArray = (board: t) => {
     let arr = board.columns->Belt.List.toArray
     (arr, arr->Belt.Array.length)
@@ -272,7 +274,8 @@ module Board = {
     board
   }
 
-  let loadFromUrl: unit => t = () => {
+  let loadFromUrl: Store.t => t = store => {
+    let (state, _) = store
     let params = URLSearchParams.current()
     let getP = name => params->URLSearchParams.get(name)->Js.Nullable.toOption
     let rec go = pos => {
@@ -293,7 +296,11 @@ module Board = {
     }
     switch (getP("t"), go(0)) {
     | (None, _)
-    | (_, list{}) => default
+    | (_, list{}) =>
+      switch state.username {
+      | Some(_) => {...default, columns: default.columns->Belt.List.add(userColumn)}
+      | None => default
+      }
     | (Some(title), columns) => {
         title: title,
         columns: columns,
@@ -356,7 +363,7 @@ module Board = {
       }->saveToUrl(query)
     }
 
-  let use = () => React.useReducer(reducer, loadFromUrl())
+  let use = state => React.useReducer(reducer, loadFromUrl(state))
 
   module Editor = {
     @react.component
@@ -484,7 +491,7 @@ module Board = {
 @react.component
 let make = (~store: Store.t) => {
   // Load from url and store the column state
-  let (board, dispatch) = Board.use()
+  let (board, dispatch) = Board.use(store)
   // let (board, setBoard) = React.useState(Board.loadFromUrl)
   let columns = board.columns->Belt.List.toArray
 
