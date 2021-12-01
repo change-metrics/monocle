@@ -102,8 +102,7 @@ usageJanitor =
       where
         parser = (,,) <$> configOption <*> elasticOption <*> workspaceOption
         io (configPath, elasticUrl, workspaceNameM) = do
-          setEnv "CRAWLERS_API_KEY" "nokey" -- set a fake env var to resolv the configuration
-          config <- Config.loadConfig configPath
+          config <- Config.loadConfigWithoutEnv configPath
           env <- mkEnv $ getURL elasticUrl
           case workspaceNameM of
             Just workspaceName -> do
