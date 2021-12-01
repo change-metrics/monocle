@@ -7,10 +7,11 @@ module RemoteData = {
 }
 
 module UrlData = {
-  let getParam = name => {
+  let getParamOption = name => {
     let params = Prelude.URLSearchParams.current()
-    params->Prelude.URLSearchParams.get(name)->Js.Nullable.toOption->Belt.Option.getWithDefault("")
+    params->Prelude.URLSearchParams.get(name)->Js.Nullable.toOption
   }
+  let getParam = name => name->getParamOption->Belt.Option.getWithDefault("")
   let getOrder = () =>
     getParam("o")
     ->Prelude.orderFromQS
@@ -20,6 +21,20 @@ module UrlData = {
     switch getParam("q") {
     | "" => "from:now-3weeks"
     | q => q
+    }
+  let getUsername = () =>
+    switch getParamOption("username") {
+    | None =>
+      // Load from localstore
+      Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username")
+    | Some("") =>
+      // Clear local storage
+      Dom.Storage.localStorage |> Dom.Storage.removeItem("monocle_username")
+      None
+    | Some(username) =>
+      // Store in localstorage the value
+      Dom.Storage.localStorage |> Dom.Storage.setItem("monocle_username", username)
+      Some(username)
     }
   let getFilter = () => getParam("f")
   let getLimit = () => {
@@ -77,6 +92,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
+    username: UrlData.getUsername(),
     suggestions: None,
     fields: None,
     user_groups: None,
