@@ -16,10 +16,11 @@ All notable changes to this project will be documented in this file.
 
 - [web] Left side menu can be collapsed/expanded.
 - [web] Search field moved out of the top menu into a Patternfly PageSection.
+- [cli] Interface to run update-idents command.
 
 ### Removed
 
-- [baclend] The `monocle-api` and `macroscope` CLI have been merged into a single `monocle` tool.
+- [backend] The `monocle-api` and `macroscope` CLI have been merged into a single `monocle` tool.
 
 ### Fixed
 

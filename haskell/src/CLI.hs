@@ -10,7 +10,10 @@ import qualified Env
 import qualified Lentille.Gerrit as G
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
+import qualified Monocle.Api.Config as Config
+import qualified Monocle.Backend.Janitor as J
 import Monocle.Client (withClient)
+import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Options.Applicative hiding (header, help, str)
@@ -52,7 +55,6 @@ usage =
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
     -- The janitor entrypoint
-    usageJanitor = pure $ putStrLn "NotImplemented"
 
     -- Helper to create sub command
     mkEnvDoc envParser = string (Env.helpDoc envParser)
@@ -84,15 +86,44 @@ getURL url =
       url' = if hasScheme then url else "http://" <> url
    in toText url'
 
+mkSubCommand :: String -> String -> Parser a -> O.Mod CommandFields a
+mkSubCommand name doc parser = command name $ info (parser <**> helper) $ progDesc doc
+
+---------------------------------------------------------------
+-- Janitor cli
+---------------------------------------------------------------
+usageJanitor :: Parser (IO ())
+usageJanitor =
+  subparser
+    ( mkSubCommand "update-idents" "Update author identities" janitorUpdateIdent
+    )
+  where
+    janitorUpdateIdent = io <$> parser
+      where
+        parser = (,,) <$> configOption <*> elasticOption <*> workspaceOption
+        io (configPath, elasticUrl, workspaceNameM) = do
+          config <- Config.loadConfigWithoutEnv configPath
+          env <- mkEnv $ getURL elasticUrl
+          case workspaceNameM of
+            Just workspaceName -> do
+              void $ case Config.lookupTenant (Config.getWorkspaces config) workspaceName of
+                Nothing -> print $ "Unable to find the workspace " <> workspaceName <> " in the Monocle config"
+                Just workspace -> runOnWorkspace env workspace
+            Nothing -> traverse_ (runOnWorkspace env) $ Config.getWorkspaces config
+        workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
+        configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "CONFIG")
+        elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "ELASTIC_URL")
+        runOnWorkspace env workspace = runQueryM' env workspace J.updateIdentsOnWorkspace
+
 ---------------------------------------------------------------
 -- Lentille cli
 ---------------------------------------------------------------
 usageLentille :: Parser (IO ())
 usageLentille =
   subparser
-    ( mkCommand "gerrit-change" "Get a single change" gerritChangeUsage
-        <> mkCommand "gerrit-projects" "Get projects list" gerritProjectsUsage
-        <> mkCommand "gerrit-changes" "Get changes list" gerritChangesUsage
+    ( mkSubCommand "gerrit-change" "Get a single change" gerritChangeUsage
+        <> mkSubCommand "gerrit-projects" "Get projects list" gerritProjectsUsage
+        <> mkSubCommand "gerrit-changes" "Get changes list" gerritChangesUsage
     )
   where
     gerritChangeUsage = io <$> parser
@@ -129,8 +160,6 @@ usageLentille =
     projectOption = strOption (long "project" <> O.help "Project name")
     sinceOption = strOption (long "since" <> O.help "Since date")
     limitOption = optional $ option auto (long "limit" <> O.help "Limit count")
-
-    mkCommand name doc parser = command name $ info (parser <**> helper) $ progDesc doc
 
 dump :: (MonadCatch m, MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
 dump limitM stream = do
