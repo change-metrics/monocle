@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- [api] workspaces' crawler entities not created/refreshed at config changes [#739](https://github.com/change-metrics/monocle/pull/739).
+
 ## [1.2.1] - 2021-10-28
 
 ### Fixed
