@@ -44,6 +44,7 @@ module Store = {
     query: string,
     filter: string,
     limit: int,
+    username: option<string>,
     order: option<SearchTypes.order>,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
@@ -198,7 +199,7 @@ let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
 let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_query_type) => {
   SearchTypes.index: state.index,
-  username: "",
+  username: state.username->Belt.Option.getWithDefault(""),
   query: state.query,
   query_type: query_type,
   order: state.order,
