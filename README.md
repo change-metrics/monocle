@@ -384,7 +384,7 @@ Database objects must be updated to reflect the configuration. Once `config.yaml
 
 ```bash
 docker-compose restart crawler-legacy
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --config /etc/monocle/config.yaml --update-idents
+docker-compose run --rm --no-deps api monocle janitor update-idents --elastic elastic:9200 --config /etc/monocle/config.yaml
 ```
 
 ### Full configuration file example

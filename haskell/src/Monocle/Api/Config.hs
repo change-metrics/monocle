@@ -138,8 +138,8 @@ pname :: Project -> Text
 pname = name
 
 -- | Load the YAML config file
-loadConfig :: MonadIO m => FilePath -> m Config
-loadConfig configPath = do
+loadConfigWithoutEnv :: MonadIO m => FilePath -> m Config
+loadConfigWithoutEnv configPath = do
   -- Here we use the yaml-to-dhall logic to correctly decode Union value.
   -- Otherwise the decoder may fail with:
   -- AesonException "Error in $.tenants[1].crawlers[0].provider: parsing "
@@ -148,14 +148,19 @@ loadConfig configPath = do
   -- dhallFromYaml is able to infer the sum type by its value and it picks
   -- the first constructor that fit.
   expr <- liftIO $ Dhall.dhallFromYaml loadOpt =<< BS.readFile configPath
-  let config = case Dhall.extract Dhall.auto expr of
-        Success config' -> config'
-        Failure err -> error $ "Invalid configuration: " <> show err
-  configWorkspaces <- traverse resolveEnv (workspaces config)
-  pure $ config {workspaces = configWorkspaces}
+  pure $ case Dhall.extract Dhall.auto expr of
+    Success config' -> config'
+    Failure err -> error $ "Invalid configuration: " <> show err
   where
     configType = Dhall.Core.pretty configurationSchema
     loadOpt = Dhall.defaultOptions $ Just configType
+
+-- | Load the YAML config file and resolv environment variables
+loadConfig :: MonadIO m => FilePath -> m Config
+loadConfig configPath = do
+  config <- loadConfigWithoutEnv configPath
+  configWorkspaces <- traverse resolveEnv $ workspaces config
+  pure $ config {workspaces = configWorkspaces}
 
 data Status = NeedRefresh | Ready
 
