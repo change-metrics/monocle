@@ -310,9 +310,9 @@ def main() -> None:
             log.error("Please provide the --config option")
             sys.exit(1)
         if args.update_idents:
-            idents_config = config.get_idents_config(
-                yaml.safe_load(open(args.config)), args.workspace
-            )
+            realpath = os.path.expanduser(args.config)
+            configdata = config.load(open(realpath).read())
+            idents_config = config.get_idents_config(configdata, args.workspace)
         else:
             idents_config = []
         db = ELmonocleDB(
