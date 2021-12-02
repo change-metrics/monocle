@@ -20,15 +20,15 @@ Chat with us in the project Matrix room: [#monocle:matrix.org](https://matrix.to
 
 The activity view:
 
-<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-activity.png" width="70%" height="70%" />
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.3.0/monocle-activity.png" width="70%" height="70%" />
 
 The developer board:
 
-<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-board.png" width="70%" height="70%" />
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.3.0/monocle-board.png" width="70%" height="70%" />
 
 The peers strength view:
 
-<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.1.0/monocle-peers-strength.png" width="70%" height="70%" />
+<img src="https://raw.githubusercontent.com/change-metrics/monocle/assets/images/monocle-1.3.0/monocle-peers-strength.png" width="70%" height="70%" />
 
 ## Installation
 
@@ -50,7 +50,7 @@ $ ln -s docker-compose.yml.img docker-compose.yml
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce Docker container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 1.2.1 in the .env file. Please refer
+by setting the MONOCLE_VERSION to 1.3.0 in the .env file. Please refer
 to [System configuration section](#system).
 
 ### Create the config.yaml file
