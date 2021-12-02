@@ -9,9 +9,9 @@ PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-ci codegen-python codegen-javascript codegen-stubs codegen-openapi codegen-haskell doc/architecture.png
 
-codegen-ci: .github/workflows/ci.yaml
-.github/workflows/ci.yaml: .github/workflows/ci.dhall .github/workflows/mkCI.dhall
-	dhall-to-yaml --file .github/workflows/ci.dhall --output .github/workflows/ci.yaml
+codegen-ci: .github/workflows/nix.yaml
+.github/workflows/nix.yaml: .github/workflows/ci.dhall .github/workflows/mkCI.dhall
+	echo "(./.github/workflows/ci.dhall).Nix" | dhall-to-yaml > .github/workflows/nix.yaml
 
 doc/architecture.png: doc/architecture.plantuml
 	plantuml ./doc/architecture.plantuml

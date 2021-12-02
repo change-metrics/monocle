@@ -24,7 +24,7 @@ in  { GithubActions
         , run = Some "curl -s -I -X GET http://localhost:9200/_cat/indices"
         }
       ]
-    , make =
+    , makeNix =
         \(cache-name : Text) ->
         \(steps : List GithubActions.Step.Type) ->
           let boot =
