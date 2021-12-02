@@ -416,7 +416,7 @@ module Top = {
     let onSave = newValue => {
       (WebApi.Search.check({
         index: state.index,
-        username: "",
+        username: state.username->Belt.Option.getWithDefault(""),
         query: value,
       }) |> Js.Promise.then_(handleCheck(newValue)))->ignore
     }
