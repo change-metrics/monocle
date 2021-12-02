@@ -695,13 +695,16 @@ class ELmonocleDB:
             return hash(obj_json)
 
         def update_ident(dict_ident: Dict) -> Dict:
-            dict_ident["muid"] = create_muid(dict_ident["uid"], self.idents_config)
+            if dict_ident:
+                dict_ident["muid"] = create_muid(dict_ident["uid"], self.idents_config)
             return dict_ident
 
         def _update_idents(obj: Dict) -> Tuple[Optional[Union[Change, Event]], bool]:
 
             prev_hash = get_obj_hash(obj)
 
+            if not obj.get("type"):
+                return None, False
             if obj["type"] == "Change":
                 obj["author"] = update_ident(obj["author"])
                 if "committer" in obj:

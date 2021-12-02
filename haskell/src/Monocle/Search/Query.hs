@@ -339,12 +339,9 @@ mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] 
 getAuthorField :: Field -> Text -> Parser (Field, Text)
 getAuthorField fieldName = \case
   "self" -> do
-    index <- asks envIndex
     username <- asks envUsername
     when (username == mempty) (toParseError $ Left "You need to be logged in to use the self value")
-    pure $ case Config.lookupIdent index username of
-      Just muid -> (fieldName <> ".muid", muid)
-      Nothing -> (fieldName <> ".id", username)
+    pure (fieldName <> ".muid", username)
   value -> pure (fieldName <> ".muid", value)
 
 mkEqQuery :: Field -> Text -> Parser BH.Query

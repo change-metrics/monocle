@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.3.0] - 2021-12-02
+
+### Added
 
 - [config] Ability to define custom links to be displayed in the web UI.
 - [web] An about modal that displays configured links and Monocle version.
@@ -16,12 +23,15 @@ All notable changes to this project will be documented in this file.
 
 - [web] Left side menu can be collapsed/expanded.
 - [web] Search field moved out of the top menu into a Patternfly PageSection.
+- [cli] Interface to run update-idents command.
 
 ### Removed
 
-- [baclend] The `monocle-api` and `macroscope` CLI have been merged into a single `monocle` tool.
+- [backend] The `monocle-api` and `macroscope` CLI have been merged into a single `monocle` tool.
 
 ### Fixed
+
+- [api] workspaces' crawler entities not created/refreshed at config changes [#739](https://github.com/change-metrics/monocle/pull/739).
 
 ## [1.2.1] - 2021-10-28
 

@@ -45,6 +45,7 @@ defineByDocumentFile
         issueCount
         pageInfo {hasNextPage endCursor}
         nodes {
+          __typename
           ... on Issue {
             id
             title
@@ -61,11 +62,13 @@ defineByDocumentFile
                 __typename
                 ... on CrossReferencedEvent {
                    source {
+                      __typename
                       ... on PullRequest {url}
                    }
                 }
                 ... on ConnectedEvent {
                    subject {
+                     __typename
                      ... on PullRequest {url}
                    }
                 }

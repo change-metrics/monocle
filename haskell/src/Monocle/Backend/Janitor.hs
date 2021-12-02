@@ -4,10 +4,13 @@ module Monocle.Backend.Janitor
     wipeCrawlerData,
     updateIdentsOnEvents,
     updateIdentsOnChanges,
+    updateIdentsOnWorkspace,
   )
 where
 
+import Data.Aeson (genericParseJSON, genericToJSON)
 import qualified Data.Aeson as Aeson
+import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import qualified Data.Text as T
 import qualified Database.Bloodhound as BH
 import Monocle.Api.Config (getIdentByAlias)
@@ -31,6 +34,25 @@ updateAuthor index author@D.Author {..} = case getIdent of
     -- Remove the host prefix
     newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
+updateIdentsOnWorkspace :: QueryM ()
+updateIdentsOnWorkspace = do
+  workspaceName <- C.getWorkspaceName <$> asks tenant
+  changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
+  eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
+  print @Text $
+    "Workspace "
+      <> workspaceName
+      <> " - Janitor will process on "
+      <> show changesCount
+      <> " changes and "
+      <> show eventsCount
+      <> " events."
+  print @Text "Processing (this may take some time) ..."
+  updatedChangesCount <- updateIdentsOnChanges
+  print @Text $ "Updated " <> show updatedChangesCount <> " changes."
+  updatedEventsCount <- updateIdentsOnEvents
+  print @Text $ "Updated " <> show updatedEventsCount <> " events."
+
 -- | Apply identities according to the configuration on Changes
 -- Try this on the REPL with:
 -- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnChanges
@@ -39,6 +61,22 @@ updateIdentsOnChanges = do
   index <- asks tenant
   indexName <- getIndexName
   doUpdateIdentsOnChanges indexName (updateAuthor index)
+
+--- Dedicated reduced data type of EChange with only Author fields
+data EChangeAuthors = EChangeAuthors
+  { echangeaId :: LText,
+    echangeaCommits :: [Commit],
+    echangeaAuthor :: Author,
+    echangeaMergedBy :: Maybe Author,
+    echangeaAssignees :: [Author]
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EChangeAuthors where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EChangeAuthors where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 doUpdateIdentsOnChanges :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
 doUpdateIdentsOnChanges indexName updateAuthor' = do
@@ -49,17 +87,17 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
             >>> I.bulkStream
         )
   where
-    scanChanges :: Stream (Of D.EChange) QueryM ()
+    scanChanges :: Stream (Of EChangeAuthors) QueryM ()
     scanChanges = Q.scanSearchHit
     changeQuery = mkQuery [Q.documentType D.EChangeDoc]
-    updateChange :: D.EChange -> Maybe D.EChange
-    updateChange change@D.EChange {..} =
+    updateChange :: EChangeAuthors -> Maybe EChangeAuthors
+    updateChange change@EChangeAuthors {..} =
       let updatedChange =
             change
-              { echangeAuthor = updateAuthor' echangeAuthor,
-                echangeMergedBy = updateAuthor' <$> echangeMergedBy,
-                echangeAssignees = updateAuthor' <$> echangeAssignees,
-                echangeCommits = updateCommitAuthors <$> echangeCommits
+              { echangeaAuthor = updateAuthor' echangeaAuthor,
+                echangeaMergedBy = updateAuthor' <$> echangeaMergedBy,
+                echangeaAssignees = updateAuthor' <$> echangeaAssignees,
+                echangeaCommits = updateCommitAuthors <$> echangeaCommits
               }
        in if updatedChange == change then Nothing else Just updatedChange
       where
@@ -69,9 +107,12 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
             { commitAuthor = updateAuthor' commitAuthor,
               commitCommitter = updateAuthor' commitCommitter
             }
-    mkEChangeBulkUpdate :: D.EChange -> BulkOperation
+    mkEChangeBulkUpdate :: EChangeAuthors -> BulkOperation
     mkEChangeBulkUpdate ec =
-      BulkUpdate indexName (I.getChangeDocId ec) $ toJSON ec
+      BulkUpdate indexName (getChangeDocId ec) $ toJSON ec
+      where
+        getChangeDocId :: EChangeAuthors -> BH.DocId
+        getChangeDocId change = BH.DocId . toText $ echangeaId change
 
 -- | Apply identities according to the configuration on Events
 -- Try this on the REPL with:
@@ -82,6 +123,20 @@ updateIdentsOnEvents = do
   indexName <- getIndexName
   doUpdateIdentsOnEvents indexName (updateAuthor index)
 
+--- Dedicated reduced data type of EChangeEvent with only Author fields
+data EChangeEventAuthors = EChangeEventAuthors
+  { echangeeventaId :: LText,
+    echangeeventaAuthor :: Maybe Author,
+    echangeeventaOnAuthor :: Author
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EChangeEventAuthors where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EChangeEventAuthors where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 doUpdateIdentsOnEvents :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
 doUpdateIdentsOnEvents indexName updateAuthor' = do
   withQuery eventQuery $
@@ -91,22 +146,25 @@ doUpdateIdentsOnEvents indexName updateAuthor' = do
             >>> I.bulkStream
         )
   where
-    scanEvents :: Stream (Of D.EChangeEvent) QueryM ()
+    scanEvents :: Stream (Of EChangeEventAuthors) QueryM ()
     scanEvents = Q.scanSearchHit
     eventQuery = mkQuery [Q.documentTypes $ fromList allEventTypes]
 
-    updateEvent :: D.EChangeEvent -> Maybe D.EChangeEvent
-    updateEvent event@D.EChangeEvent {..} =
+    updateEvent :: EChangeEventAuthors -> Maybe EChangeEventAuthors
+    updateEvent event@EChangeEventAuthors {..} =
       let updatedEvent =
             event
-              { echangeeventAuthor = updateAuthor' <$> echangeeventAuthor,
-                echangeeventOnAuthor = updateAuthor' echangeeventOnAuthor
+              { echangeeventaAuthor = updateAuthor' <$> echangeeventaAuthor,
+                echangeeventaOnAuthor = updateAuthor' echangeeventaOnAuthor
               }
        in if updatedEvent == event then Nothing else Just updatedEvent
 
-    mkEventBulkUpdate :: D.EChangeEvent -> BulkOperation
+    mkEventBulkUpdate :: EChangeEventAuthors -> BulkOperation
     mkEventBulkUpdate ev =
-      BulkUpdate indexName (I.getEventDocId ev) $ toJSON ev
+      BulkUpdate indexName (getEventDocId ev) $ toJSON ev
+      where
+        getEventDocId :: EChangeEventAuthors -> BH.DocId
+        getEventDocId event = BH.DocId . toStrict $ echangeeventaId event
 
 -- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
