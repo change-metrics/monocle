@@ -16,6 +16,7 @@ import Monocle.Client (withClient)
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
+import qualified Monocle.Version
 import Options.Applicative hiding (header, help, str)
 import qualified Options.Applicative as O
 import Options.Applicative.Help.Pretty (string)
@@ -77,8 +78,9 @@ main = join $ execParser opts
   where
     opts =
       info
-        (usage <**> helper)
+        (versionOption <*> usage <**> helper)
         (fullDesc <> progDesc "changemetrics.io | monocle")
+    versionOption = infoOption ("monocle " <> Monocle.Version.version) (long "version" <> O.help "Show version")
 
 getURL :: String -> Text
 getURL url =

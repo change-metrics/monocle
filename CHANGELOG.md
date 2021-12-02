@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+
+- [cli] --version argument to display the current version
+
 ### Changed
 ### Removed
 ### Fixed
