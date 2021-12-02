@@ -1,3 +1,4 @@
+{ elasticsearch-port ? 19200 }:
 let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
@@ -128,7 +129,6 @@ let
     pkgs.haskell.lib.addBuildDepends drv ([ pkgs.myHaskellPackages.criterion ]);
 
   # local devel env
-  elasticsearch-port = 19200;
   nginx-port = 18080;
   monocle-port = 19876;
   monocle2-port = 19875;
@@ -661,10 +661,16 @@ in rec {
     cabal build --enable-tests --flags=ci -O0
 
     echo "[+] Running the tests"
+    export ELASTIC_URL=http://localhost:${toString elasticsearch-port}
     cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
     echo "[+] Running doctests"
     cabal repl --with-ghc=doctest
+
+    # cabal haddock
+    # cabal sdist
+    # cabal check
+    # cabal install --installdir=/tmp --overwrite-policy=always'}}
 
     ${lightCI}
   '';

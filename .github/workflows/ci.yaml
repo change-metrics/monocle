@@ -13,8 +13,22 @@ jobs:
         with:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
           name: change-metrics
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: Runs Elasticsearch
+        uses: "elastic/elastic-github-actions/elasticsearch@master"
+        with:
+          stack-version: '7.8.0'
+      - name: Display indexes
+        run: curl -s -I -X GET http://localhost:9200/_cat/indices
+      - name: Build the env
+        run: nix-build --no-out-link --attr monocle-light.env
       - name: Run Test
-        run: nix-build --no-out-link --attr ci
+        run: nix-build --no-out-link --attr ci --arg elasticsearch-port 9200
 name: Nix
 on:
   pull_request: {}
