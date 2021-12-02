@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.3.0] - 2021-12-02
+
+### Added
 
 - [config] Ability to define custom links to be displayed in the web UI.
 - [web] An about modal that displays configured links and Monocle version.
