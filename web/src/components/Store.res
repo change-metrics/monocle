@@ -22,20 +22,6 @@ module UrlData = {
     | "" => "from:now-3weeks"
     | q => q
     }
-  let getUsername = () =>
-    switch getParamOption("username") {
-    | None =>
-      // Load from localstore
-      Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username")
-    | Some("") =>
-      // Clear local storage
-      Dom.Storage.localStorage |> Dom.Storage.removeItem("monocle_username")
-      None
-    | Some(username) =>
-      // Store in localstorage the value
-      Dom.Storage.localStorage |> Dom.Storage.setItem("monocle_username", username)
-      Some(username)
-    }
   let getFilter = () => getParam("f")
   let getLimit = () => {
     let params = Prelude.URLSearchParams.current()
@@ -84,6 +70,9 @@ module Store = {
     | ReverseChangesPiePanelState
     | RemoveToast(string)
     | AddToast(string)
+    | Login(string)
+    | Logout
+
   type dispatch = action => unit
 
   let create = index => {
@@ -92,7 +81,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
-    username: UrlData.getUsername(),
+    username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,
     user_groups: None,
@@ -136,6 +125,14 @@ module Store = {
     | FetchProjects(res) => {...state, projects: res}
     | FetchAbout(res) => {...state, about: res}
     | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
+    | Login(username) => {
+        Dom.Storage.localStorage |> Dom.Storage.setItem("monocle_username", username)
+        {...state, username: username->Some}
+      }
+    | Logout => {
+        Dom.Storage.localStorage |> Dom.Storage.removeItem("monocle_username")
+        {...state, username: None}
+      }
     }
 }
 

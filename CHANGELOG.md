@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+
+- A minimal login capability to enable the use 'self' keyword in queries.
+
 ### Changed
 ### Removed
 ### Fixed

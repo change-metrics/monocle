@@ -64,6 +64,7 @@ module Content = {
           value="(repo:openstack/nova or repo:openstack/neutron) and group:qa and updated_at>2020"
         />
         <FakeInput value="author:\"Foo B.*\" and not state:open" />
+        <FakeInput value="author:self and not state:open" />
       </ul>
       <h4> {"Syntax"->str} </h4>
       <p>
