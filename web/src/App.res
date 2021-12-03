@@ -69,6 +69,53 @@ module MonocleNav = {
   }
 }
 
+module Login = {
+  module Modal = {
+    @react.component
+    let make = (~store: Store.t, ~setShowLoginModal) => {
+      let loginTitle = "Set your username"
+      let (_, dispatch) = store
+      let (username, setUsername) = React.useState(_ => "")
+      let onChange = (value, _) => setUsername(_ => value)
+      let onClick = _ => {
+        username->Login->dispatch
+        setShowLoginModal(_ => false)
+      }
+      let isDisabled = username == ""
+
+      <LoginPage loginTitle>
+        <Form>
+          <FormGroup label={"Username"} fieldId={"login"}>
+            <TextInput id={"login"} onChange value={username} />
+          </FormGroup>
+          <ActionGroup>
+            <Button _type=#Submit variant=#Primary onClick isDisabled> {"Login"} </Button>
+          </ActionGroup>
+        </Form>
+      </LoginPage>
+    }
+  }
+  module Button = {
+    @react.component
+    let make = (~store: Store.t, ~setShowLoginModal) => {
+      let (state, dispatch) = store
+      let onClickLogin = _ => setShowLoginModal(_ => true)
+      let onClickLogout = _ => Logout->dispatch
+      <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
+        {switch state.username {
+        | Some(username) =>
+          <Tooltip content={"Click to logout"}>
+            <Button variant=#Tertiary icon={<Patternfly.Icons.User />} onClick={onClickLogout}>
+              {username}
+            </Button>
+          </Tooltip>
+        | None => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
+        }}
+      </div>
+    }
+  }
+}
+
 let logoPath = "/logo.png"
 
 module About = {
@@ -143,6 +190,7 @@ let make = () => {
   let store = Store.use(initIndex)
   let (state, dispatch) = store
   let (showAbout, setShowAbout) = React.useState(_ => false)
+  let (showLoginModal, setShowLoginModal) = React.useState(_ => false)
 
   // let showSettings = _ => "settings"->RescriptReactRouter.push
   let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
@@ -150,6 +198,7 @@ let make = () => {
     <PageHeaderTools>
       <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
       <PageHeaderToolsGroup>
+        <PageHeaderToolsItem> <Login.Button store setShowLoginModal /> </PageHeaderToolsItem>
         <PageHeaderToolsItem>
           <div
             onClick={_ => setShowAbout(_ => true)}
@@ -172,34 +221,37 @@ let make = () => {
   let sidebar = state.index == "" ? React.null : <PageSidebar nav />
   let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
   let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
-  // This sep prevent footer from hidding page content, not pretty but this works!
-  let sep = {<> <br /> <br /> <br /> </>}
 
   <>
     <Page header sidebar isManagedSidebar={true}>
-      {state.index == ""
-        ? React.null
-        : <PageSection variant=#Dark> <Search.Top store /> </PageSection>}
-      <PageSection isFilled={true}>
-        {switch url.path {
-        | list{} => <Indices.Indices store />
-        | list{"help", "search"} => <HelpSearch.View store />
-        | list{_, "settings"} => <LocalSettings.View store />
-        | list{_} => <Activity store />
-        | list{_, "active_authors"} => <ActivePeopleView store />
-        | list{_, "peers_strength"} => <PeersStrengthView store />
-        | list{_, "new_authors"} => <NewContributorsView store />
-        | list{_, "projects"} => <ProjectsView store />
-        | list{_, "user_groups"} => <GroupsView store />
-        | list{_, "user_groups", group} => <GroupView group store />
-        | list{_, "repos"} => <ReposView store />
-        | list{_, "changes"} => <NChangeView store />
-        | list{_, "change", change} => <ChangeView change store />
-        | list{_, "board"} => <Board store />
-        | _ => <p> {"Not found"->str} </p>
-        }}
-        {sep}
-      </PageSection>
+      {switch showLoginModal {
+      | true => <Login.Modal store setShowLoginModal />
+      | false => <>
+          {switch state.index {
+          | "" => React.null
+          | _ => <PageSection variant=#Dark> <Search.Top store /> </PageSection>
+          }}
+          <PageSection isFilled={true}>
+            {switch url.path {
+            | list{} => <Indices.Indices store />
+            | list{"help", "search"} => <HelpSearch.View store />
+            | list{_, "settings"} => <LocalSettings.View store />
+            | list{_} => <Activity store />
+            | list{_, "active_authors"} => <ActivePeopleView store />
+            | list{_, "peers_strength"} => <PeersStrengthView store />
+            | list{_, "new_authors"} => <NewContributorsView store />
+            | list{_, "projects"} => <ProjectsView store />
+            | list{_, "user_groups"} => <GroupsView store />
+            | list{_, "user_groups", group} => <GroupView group store />
+            | list{_, "repos"} => <ReposView store />
+            | list{_, "changes"} => <NChangeView store />
+            | list{_, "change", change} => <ChangeView change store />
+            | list{_, "board"} => <Board store />
+            | _ => <p> {"Not found"->str} </p>
+            }}
+          </PageSection>
+        </>
+      }}
     </Page>
     <ul className="pf-c-alert-group pf-m-toast">
       {state.toasts

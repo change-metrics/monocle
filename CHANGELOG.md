@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- [web] A minimal login capability to enable the use 'self' keyword in queries.
 - [cli] --version argument to display the current version
 
 ### Changed
