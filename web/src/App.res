@@ -104,9 +104,11 @@ module Login = {
       <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
         {switch state.username {
         | Some(username) =>
-          <Button variant=#Tertiary icon={<Patternfly.Icons.User />} onClick={onClickLogout}>
-            {username}
-          </Button>
+          <Tooltip content={"Click to logout"}>
+            <Button variant=#Tertiary icon={<Patternfly.Icons.User />} onClick={onClickLogout}>
+              {username}
+            </Button>
+          </Tooltip>
         | None => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
         }}
       </div>
