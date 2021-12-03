@@ -10,6 +10,22 @@ from google.protobuf import json_format as pbjson
 headers = {"Content-Type": "application/json"}
 
 
+# Login methods:
+from monocle.login_pb2 import LoginValidationRequest
+from monocle.login_pb2 import LoginValidationResponse
+
+
+def login_login_validation(
+    url: str, request: LoginValidationRequest
+) -> LoginValidationResponse:
+    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
+    resp = requests.post(
+        url + "/api/2/login/username/validate", data=body, headers=headers
+    )
+    resp.raise_for_status()
+    return pbjson.Parse(resp.content, LoginValidationResponse())
+
+
 # Config methods:
 from monocle.config_pb2 import GetWorkspacesRequest
 from monocle.config_pb2 import GetWorkspacesResponse

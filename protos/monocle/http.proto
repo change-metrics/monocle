@@ -14,6 +14,17 @@ import "monocle/config.proto";
 import "monocle/search.proto";
 import "monocle/crawler.proto";
 import "monocle/user_group.proto";
+import "monocle/login.proto";
+
+service Login {
+  // Check a login username
+  rpc LoginValidation(monocle_login.LoginValidationRequest) returns (monocle_login.LoginValidationResponse) {
+    option (google.api.http) = {
+      post: "/api/2/login/username/validate"
+      body: "*"
+    };
+  }
+}
 
 service Config {
   // Return the list of workspaces

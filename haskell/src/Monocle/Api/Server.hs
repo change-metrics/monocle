@@ -17,6 +17,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
+import qualified Monocle.Login as LoginPB
 import Monocle.Prelude
 import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
@@ -61,6 +62,30 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
+
+-- | /login/validate endpoint
+loginLoginValidation ::
+  LoginPB.LoginValidationRequest -> AppM LoginPB.LoginValidationResponse
+loginLoginValidation request = do
+  GetTenants tenants <- getConfig
+  let username = request & LoginPB.loginValidationRequestUsername
+  validated <- traverse (validateOnIndex $ from username) tenants
+  let result =
+        if or validated
+          then LoginPB.LoginValidationResponse_ValidationResultKnownIdent
+          else LoginPB.LoginValidationResponse_ValidationResultUnknownIdent
+  pure
+    . LoginPB.LoginValidationResponse
+    . Just
+    . LoginPB.LoginValidationResponseResultValidationResult
+    . Enumerated
+    $ Right result
+  where
+    validateOnIndex :: Text -> Config.Index -> AppM Bool
+    validateOnIndex username index = do
+      let userQuery = Q.toUserTerm username
+      count <- runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
+      pure $ countToWord count > 0
 
 -- | /api/2/about endpoint
 configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse

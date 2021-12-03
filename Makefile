@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 .PHONY: up-stage
 
-MESSAGES = monocle/user_group.proto monocle/search.proto monocle/config.proto
+MESSAGES = monocle/user_group.proto monocle/search.proto monocle/config.proto monocle/login.proto
 CRAWLER = monocle/change.proto monocle/crawler.proto
 BACKEND_ONLY = monocle/project.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/

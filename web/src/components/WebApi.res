@@ -9,6 +9,20 @@ let serverUrl = %raw(`
   (window.API_URL !== '__API_URL__' ? window.API_URL : process.env.REACT_APP_API_URL || '')
 `)
 
+module Login = {
+  @module("axios")
+  external loginValidationRaw: (string, 'a) => axios<'b> = "post"
+
+  let loginValidation = (request: LoginTypes.login_validation_request): axios<
+    LoginTypes.login_validation_response,
+  > =>
+    request->LoginBs.encode_login_validation_request
+    |> loginValidationRaw(serverUrl ++ "/api/2/login/username/validate")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->LoginBs.decode_login_validation_response}->Js.Promise.resolve
+    )
+}
+
 module Config = {
   @module("axios")
   external getWorkspacesRaw: (string, 'a) => axios<'b> = "post"

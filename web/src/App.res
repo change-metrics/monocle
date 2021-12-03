@@ -70,23 +70,54 @@ module MonocleNav = {
 }
 
 module Login = {
+  module Validator = {
+    let checkResponse = (resp, setIsDisabled) =>
+      switch (resp: LoginTypes.login_validation_response) {
+      | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
+        <Alert variant=#Warning title={"Unknown username"} />
+      | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
+          setIsDisabled(_ => false)
+          React.null
+        }
+      }
+
+    @react.component
+    let make = (~username: string, ~setIsDisabled) => {
+      let get = {() => WebApi.Login.loginValidation({username: username})}
+      switch useAutoGetOn(get, username) {
+      | NotAsked => {
+          setIsDisabled(_ => true)
+          React.null
+        }
+      | Loading(_) => {
+          setIsDisabled(_ => true)
+          React.null
+        }
+      | Failure(_) => <Alert variant=#Danger title={"Unable to verify username :("} />
+      | Loaded(resp) => resp->checkResponse(setIsDisabled)
+      }
+    }
+  }
   module Modal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
       let loginTitle = "Set your username"
       let (_, dispatch) = store
       let (username, setUsername) = React.useState(_ => "")
-      let onChange = (value, _) => setUsername(_ => value)
+      let (isDisabled, setIsDisabled) = React.useState(_ => false)
+      let onChange = (value, _) => {
+        setUsername(_ => value)
+      }
       let onClick = _ => {
         username->Login->dispatch
         setShowLoginModal(_ => false)
       }
-      let isDisabled = username == ""
 
       <LoginPage loginTitle>
         <Form>
           <FormGroup label={"Username"} fieldId={"login"}>
             <TextInput id={"login"} onChange value={username} />
+            <Validator username setIsDisabled />
           </FormGroup>
           <ActionGroup>
             <Button _type=#Submit variant=#Primary onClick isDisabled> {"Login"} </Button>
