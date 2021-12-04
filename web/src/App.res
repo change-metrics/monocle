@@ -71,45 +71,46 @@ module MonocleNav = {
 
 module Login = {
   module Validator = {
-    let checkResponse = (resp, setIsDisabled) =>
-      switch (resp: LoginTypes.login_validation_response) {
-      | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
-        <Alert variant=#Warning title={"Unknown username"} />
-      | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
-          setIsDisabled(_ => false)
-          React.null
-        }
-      }
-
     @react.component
-    let make = (~username: string, ~setIsDisabled) => {
-      let get = {() => WebApi.Login.loginValidation({username: username})}
-      switch useAutoGetOn(get, username) {
-      | NotAsked => {
-          setIsDisabled(_ => true)
-          React.null
-        }
-      | Loading(_) => {
-          setIsDisabled(_ => true)
-          React.null
-        }
-      | Failure(_) => <Alert variant=#Danger title={"Unable to verify username :("} />
-      | Loaded(resp) => resp->checkResponse(setIsDisabled)
-      }
+    let make = (~store: Store.t, ~usernameValidated: string, ~setShowLoginModal) => {
+      let (_, dispatch) = store
+      let get = {() => WebApi.Login.loginValidation({username: usernameValidated})}
+      usernameValidated->String.length == 0
+        ? React.null
+        : {
+            switch useAutoGetOn(get, usernameValidated) {
+            | NotAsked => React.null
+            | Loading(_) => <Spinner />
+            | Failure(_) => <Alert variant=#Danger title={"Unable to verify username :("} />
+            | Loaded(resp) =>
+              switch (resp: LoginTypes.login_validation_response) {
+              | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
+                <Alert variant=#Warning title={"Unknown username"} />
+              | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
+                  usernameValidated->Login->dispatch
+                  setShowLoginModal(_ => false)
+                  React.null
+                }
+              }
+            }
+          }
     }
   }
   module Modal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
       let loginTitle = "Set your username"
-      let (_, dispatch) = store
       let (username, setUsername) = React.useState(_ => "")
-      let (isDisabled, setIsDisabled) = React.useState(_ => false)
+      let (usernameValidated, setUsernameValidated) = React.useState(_ => "")
       let onChange = (value, _) => {
         setUsername(_ => value)
       }
-      let onClick = _ => {
-        username->Login->dispatch
+      let onClick = e => {
+        e->ReactEvent.Mouse.preventDefault
+        setUsernameValidated(_ => username)
+      }
+      let close = e => {
+        e->ReactEvent.Mouse.preventDefault
         setShowLoginModal(_ => false)
       }
 
@@ -117,10 +118,11 @@ module Login = {
         <Form>
           <FormGroup label={"Username"} fieldId={"login"}>
             <TextInput id={"login"} onChange value={username} />
-            <Validator username setIsDisabled />
+            <Validator store usernameValidated setShowLoginModal />
           </FormGroup>
           <ActionGroup>
-            <Button _type=#Submit variant=#Primary onClick isDisabled> {"Login"} </Button>
+            <Button _type=#Submit variant=#Primary onClick> {"Login"} </Button>
+            <Button variant=#Primary onClick=close> {"Close"} </Button>
           </ActionGroup>
         </Form>
       </LoginPage>
