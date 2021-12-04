@@ -81,11 +81,11 @@ module Login = {
             switch useAutoGetOn(get, usernameValidated) {
             | NotAsked => React.null
             | Loading(_) => <Spinner />
-            | Failure(_) => <Alert variant=#Danger title={"Unable to verify username :("} />
+            | Failure(_) => <Alert variant=#Danger title={"Unable to verify author identity :("} />
             | Loaded(resp) =>
               switch (resp: LoginTypes.login_validation_response) {
               | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
-                <Alert variant=#Warning title={"Unknown username"} />
+                <Alert variant=#Warning title={"Author identity not found"} />
               | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
                   usernameValidated->Login->dispatch
                   setShowLoginModal(_ => false)
@@ -99,7 +99,7 @@ module Login = {
   module Modal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
-      let loginTitle = "Set your username"
+      let loginTitle = "Login on Monocle"
       let (username, setUsername) = React.useState(_ => "")
       let (usernameValidated, setUsernameValidated) = React.useState(_ => "")
       let onChange = (value, _) => {
@@ -115,6 +115,10 @@ module Login = {
       }
 
       <LoginPage loginTitle>
+        <Alert
+          variant=#Info
+          title={"This is not an authenticated login - Set your username to an author identity to get personalized content."}
+        />
         <Form>
           <FormGroup label={"Username"} fieldId={"login"}>
             <TextInput id={"login"} onChange value={username} />
