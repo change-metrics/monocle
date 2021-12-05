@@ -7,17 +7,19 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetAbout, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
+import Monocle.Api.Server (configGetAbout, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
 import Monocle.Config (GetAboutRequest, GetAboutResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
+import Monocle.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Search (CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant
 
 type MonocleAPI =
-  "get_workspaces" :> ReqBody '[JSON] GetWorkspacesRequest :> Post '[PBJSON, JSON] GetWorkspacesResponse
+  "login" :> "username" :> "validate" :> ReqBody '[JSON] LoginValidationRequest :> Post '[PBJSON, JSON] LoginValidationResponse
+    :<|> "get_workspaces" :> ReqBody '[JSON] GetWorkspacesRequest :> Post '[PBJSON, JSON] GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] GetProjectsRequest :> Post '[PBJSON, JSON] GetProjectsResponse
     :<|> "about" :> ReqBody '[JSON] GetAboutRequest :> Post '[PBJSON, JSON] GetAboutResponse
     :<|> "suggestions" :> ReqBody '[JSON] SuggestionsRequest :> Post '[PBJSON, JSON] SuggestionsResponse
@@ -32,7 +34,8 @@ type MonocleAPI =
 
 server :: ServerT MonocleAPI AppM
 server =
-  configGetWorkspaces
+  loginLoginValidation
+    :<|> configGetWorkspaces
     :<|> configGetProjects
     :<|> configGetAbout
     :<|> searchSuggestions

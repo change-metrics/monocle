@@ -12,8 +12,12 @@ import Control.Monad.IO.Class (MonadIO)
 import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Config
 import Monocle.Crawler
+import Monocle.Login
 import Monocle.Search
 import Monocle.UserGroup
+
+loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
+loginLoginValidation = monocleReq "api/2/login/username/validate"
 
 configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
 configGetWorkspaces = monocleReq "api/2/get_workspaces"

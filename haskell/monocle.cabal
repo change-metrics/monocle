@@ -229,6 +229,7 @@ library
                      , Monocle.Crawler
                      , Monocle.UserGroup
                      , Monocle.Project
+                     , Monocle.Login
 
   other-modules:       Database.Bloodhound.Raw
                      , Lentille.BugzillaMock

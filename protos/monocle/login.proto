@@ -1,0 +1,18 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_login;
+option go_package = "monocle/login";
+
+message LoginValidationRequest {
+  string username = 1;
+}
+
+message LoginValidationResponse {
+  enum ValidationResult {
+    UnknownIdent = 0;
+    KnownIdent = 1;
+  }
+  oneof result { ValidationResult validation_result = 1; }
+}

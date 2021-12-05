@@ -70,26 +70,63 @@ module MonocleNav = {
 }
 
 module Login = {
+  module Validator = {
+    @react.component
+    let make = (~store: Store.t, ~usernameValidated: string, ~setShowLoginModal) => {
+      let (_, dispatch) = store
+      let get = {() => WebApi.Login.loginValidation({username: usernameValidated})}
+      usernameValidated->String.length == 0
+        ? React.null
+        : {
+            switch useAutoGetOn(get, usernameValidated) {
+            | NotAsked => React.null
+            | Loading(_) => <Spinner />
+            | Failure(_) => <Alert variant=#Danger title={"Unable to verify author identity :("} />
+            | Loaded(resp) =>
+              switch (resp: LoginTypes.login_validation_response) {
+              | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
+                <Alert variant=#Warning title={"Author identity not found"} />
+              | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
+                  usernameValidated->Login->dispatch
+                  setShowLoginModal(_ => false)
+                  React.null
+                }
+              }
+            }
+          }
+    }
+  }
   module Modal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
-      let loginTitle = "Set your username"
-      let (_, dispatch) = store
+      let loginTitle = "Login on Monocle"
       let (username, setUsername) = React.useState(_ => "")
-      let onChange = (value, _) => setUsername(_ => value)
-      let onClick = _ => {
-        username->Login->dispatch
+      let (usernameValidated, setUsernameValidated) = React.useState(_ => "")
+      let onChange = (value, _) => {
+        setUsername(_ => value)
+      }
+      let onClick = e => {
+        e->ReactEvent.Mouse.preventDefault
+        setUsernameValidated(_ => username)
+      }
+      let close = e => {
+        e->ReactEvent.Mouse.preventDefault
         setShowLoginModal(_ => false)
       }
-      let isDisabled = username == ""
 
       <LoginPage loginTitle>
+        <Alert
+          variant=#Info
+          title={"This is not an authenticated login - Set your username to an author identity to get personalized content."}
+        />
         <Form>
           <FormGroup label={"Username"} fieldId={"login"}>
             <TextInput id={"login"} onChange value={username} />
+            <Validator store usernameValidated setShowLoginModal />
           </FormGroup>
           <ActionGroup>
-            <Button _type=#Submit variant=#Primary onClick isDisabled> {"Login"} </Button>
+            <Button _type=#Submit variant=#Primary onClick> {"Login"} </Button>
+            <Button variant=#Primary onClick=close> {"Close"} </Button>
           </ActionGroup>
         </Form>
       </LoginPage>

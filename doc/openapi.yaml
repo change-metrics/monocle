@@ -109,6 +109,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetWorkspacesResponse'
+    /api/2/login/username/validate:
+        post:
+            summary: Check a login username
+            operationId: Login_LoginValidation
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_login_LoginValidationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_login_LoginValidationResponse'
     /api/2/search/check:
         post:
             operationId: Search_Check
@@ -538,6 +555,15 @@ components:
                 td_name:
                     type: string
             description: A descriptive name of the entities being added
+        monocle_login_LoginValidationRequest:
+            properties:
+                username:
+                    type: string
+        monocle_login_LoginValidationResponse:
+            properties:
+                validation_result:
+                    type: integer
+                    format: enum
         monocle_project_Project:
             properties:
                 full_path:
