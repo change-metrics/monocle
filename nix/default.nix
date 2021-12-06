@@ -653,15 +653,12 @@ in rec {
   # since we are going to build it in the ci command.
   cabal-setup-monocle = cabal-setup monocle-light.env;
 
-  ci = mk-ci "ci" ''
-    echo "[+] Setup local ghc shell"
-    ${cabal-setup-monocle}
-
+  ci-commands = ''
+    set -e
     echo "[+] Building the project"
     cabal build --enable-tests --flags=ci -O0
 
     echo "[+] Running the tests"
-    export ELASTIC_URL=http://localhost:${toString elasticsearch-port}
     cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
     echo "[+] Running doctests"
@@ -673,6 +670,24 @@ in rec {
     # cabal install --installdir=/tmp --overwrite-policy=always'}}
 
     ${lightCI}
+  '';
+
+  # A script to be used in ci with nix-shell so that the build can access the elasticsearch service
+  ci-run = pkgs.writeScriptBin "monocle-ci-run" ''
+    #!/bin/sh
+    ${ci-commands}
+  '';
+
+  ci-shell = hsPkgs.shellFor {
+    packages = p: [ p.monocle ];
+    buildInputs = [ hsPkgs.cabal-install hsPkgs.doctest20 ci-run ];
+  };
+
+  ci = mk-ci "ci" ''
+    echo "[+] Setup local ghc shell"
+    ${cabal-setup-monocle}
+
+    ${ci-commands}
   '';
 
   ci-light = mk-ci "ci-light" lightCI;

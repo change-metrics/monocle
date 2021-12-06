@@ -11,7 +11,7 @@ in  { Nix =
               , mk.GithubActions.Step::{
                 , name = Some "Run Test"
                 , run = Some
-                    "nix-build --no-out-link --attr ci --arg elasticsearch-port 9200"
+                    "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command 'env ELASTIC_URL=http://localhost:9200 monocle-ci-run'"
                 }
               ]
           )
