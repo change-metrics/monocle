@@ -19,7 +19,7 @@ pull_request_rules:
     actions:
       queue:
         method: merge
-        strict: default
+        name: default
   - actions:
       delete_head_branch: {}
     name: Delete head branch after merge
