@@ -26,8 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: test
-        uses: instrumenta/kubeval-action@master
+        uses: vetyy/kubeval-action@master
         with:
           strict: true
           files: ./deployment
           ignore_missing_schemas: false
+          additional_schema_locations: https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/
