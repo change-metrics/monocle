@@ -21,14 +21,3 @@ jobs:
           pip install tox
       - name: Static Analysis
         run: tox -e linters
-  check-k8s:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test
-        uses: vetyy/kubeval-action@master
-        with:
-          strict: true
-          files: ./deployment
-          ignore_missing_schemas: false
-          additional_schema_locations: https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/
