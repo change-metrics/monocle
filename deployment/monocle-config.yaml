@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 # created manually using the command: 
 # oc create configmap --from-file=config.yaml monocle-config --dry-run=client -oyaml
