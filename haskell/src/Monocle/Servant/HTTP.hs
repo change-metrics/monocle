@@ -18,7 +18,7 @@ import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant
 
 type MonocleAPI =
-  "login" :> "username" :> "validate" :> ReqBody '[JSON] LoginValidationRequest :> Post '[PBJSON, JSON] LoginValidationResponse
+  "login" :> ReqBody '[JSON] LoginValidationRequest :> Post '[PBJSON, JSON] LoginValidationResponse
     :<|> "get_workspaces" :> ReqBody '[JSON] GetWorkspacesRequest :> Post '[PBJSON, JSON] GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] GetProjectsRequest :> Post '[PBJSON, JSON] GetProjectsResponse
     :<|> "about" :> ReqBody '[JSON] GetAboutRequest :> Post '[PBJSON, JSON] GetAboutResponse

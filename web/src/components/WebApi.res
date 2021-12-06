@@ -17,7 +17,7 @@ module Login = {
     LoginTypes.login_validation_response,
   > =>
     request->LoginBs.encode_login_validation_request
-    |> loginValidationRaw(serverUrl ++ "/api/2/login/username/validate")
+    |> loginValidationRaw(serverUrl ++ "/api/2/login")
     |> Js.Promise.then_(resp =>
       {data: resp.data->LoginBs.decode_login_validation_response}->Js.Promise.resolve
     )

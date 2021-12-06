@@ -109,7 +109,7 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetWorkspacesResponse'
-    /api/2/login/username/validate:
+    /api/2/login:
         post:
             summary: Check a login username
             operationId: Login_LoginValidation

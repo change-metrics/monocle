@@ -19,9 +19,7 @@ def login_login_validation(
     url: str, request: LoginValidationRequest
 ) -> LoginValidationResponse:
     body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
-    resp = requests.post(
-        url + "/api/2/login/username/validate", data=body, headers=headers
-    )
+    resp = requests.post(url + "/api/2/login", data=body, headers=headers)
     resp.raise_for_status()
     return pbjson.Parse(resp.content, LoginValidationResponse())
 

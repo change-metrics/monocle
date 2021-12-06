@@ -20,7 +20,7 @@ service Login {
   // Check a login username
   rpc LoginValidation(monocle_login.LoginValidationRequest) returns (monocle_login.LoginValidationResponse) {
     option (google.api.http) = {
-      post: "/api/2/login/username/validate"
+      post: "/api/2/login"
       body: "*"
     };
   }
