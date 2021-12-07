@@ -69,11 +69,12 @@ loginLoginValidation ::
 loginLoginValidation request = do
   GetTenants tenants <- getConfig
   let username = request & LoginPB.loginValidationRequestUsername
-  validated <- traverse (validateOnIndex $ from username) tenants
+  validated <- runMaybeT $ traverse (validateOnIndex $ from username) tenants
   let result =
-        if or validated
-          then LoginPB.LoginValidationResponse_ValidationResultKnownIdent
-          else LoginPB.LoginValidationResponse_ValidationResultUnknownIdent
+        -- validateOnIndex uses `mzero` to indicate success, resulting in a Nothing value
+        case validated of
+          Nothing -> LoginPB.LoginValidationResponse_ValidationResultKnownIdent
+          Just _ -> LoginPB.LoginValidationResponse_ValidationResultUnknownIdent
   pure
     . LoginPB.LoginValidationResponse
     . Just
@@ -81,11 +82,11 @@ loginLoginValidation request = do
     . Enumerated
     $ Right result
   where
-    validateOnIndex :: Text -> Config.Index -> AppM Bool
+    validateOnIndex :: Text -> Config.Index -> MaybeT AppM ()
     validateOnIndex username index = do
       let userQuery = Q.toUserTerm username
-      count <- runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
-      pure $ countToWord count > 0
+      count <- lift $ runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
+      when (count > 0) mzero
 
 -- | /api/2/about endpoint
 configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
