@@ -4,7 +4,6 @@ queue_rules:
       # Conditions to get out of the queue (= merged)
       - check-success=Haskell GHC
       - check-success=check-python
-      - check-success=check-k8s
       - check-success=docker
 
 pull_request_rules:
@@ -14,7 +13,6 @@ pull_request_rules:
       - label=merge me
       - check-success=Haskell GHC
       - check-success=check-python
-      - check-success=check-k8s
       - check-success=docker
     actions:
       queue:
