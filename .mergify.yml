@@ -11,7 +11,7 @@ pull_request_rules:
     conditions:
       - "#approved-reviews-by>=1"
       - label=merge me
-      - check-success=Haskell GHC
+      - check-success=tests
       - check-success=check-python
       - check-success=docker
     actions:
