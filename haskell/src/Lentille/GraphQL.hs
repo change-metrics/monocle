@@ -1,8 +1,10 @@
 -- | Helper module to define graphql client
 module Lentille.GraphQL where
 
+import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
+import Data.Time (defaultTimeLocale, parseTimeM)
 import Lentille
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
@@ -29,12 +31,14 @@ data GraphClient = GraphClient
     url :: Text,
     host :: Text,
     token :: Secret,
-    crawler :: Text
+    crawler :: Text,
+    waitUntil :: MVar (Maybe UTCTime)
   }
 
 newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
 newGraphClient crawler url token = do
   manager <- newManager
+  waitUntil <- initWaitUntil
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -105,20 +109,39 @@ streamFetch client mkArgs transformResponse = go Nothing
     liftLog = lift . logRaw
     logStatus pageInfo rateLimitM =
       liftLog $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
-    go pageInfoM = do
+    request pageInfoM waitUntilM = do
+      waitDelay <- case waitUntilM of
+        Nothing -> pure 0
+        Just resetTime -> do
+          currentTime <- getCurrentTime
+          let diffSeconds = truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime resetTime currentTime :: Double) :: Int
+          pure $ (diffSeconds + 1) * 1_000_000
+      -- wait until rateLimit reset
+      liftIO $ threadDelay waitDelay
       (respE, reqLog) <-
-        lift $
-          fetchWithLog
-            (doGraphRequest client)
-            (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+        fetchWithLog
+          (doGraphRequest client)
+          (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      (pageInfo, rateLimit, decodingErrors, xs) <- case respE of
+        Left err -> case reqLog of
+          [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+          [] -> error $ "No request log found, error is: " <> show err
+          xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+        Right resp -> pure $ transformResponse resp
+      let waitUntil =
+            if (remaining <$> rateLimit) > Just 0
+              then Nothing
+              else parseEpochSeconds . resetAt =<< rateLimit
+      pure (waitUntil, (pageInfo, rateLimit, decodingErrors, xs))
 
+    parseEpochSeconds :: Text -> Maybe UTCTime
+    parseEpochSeconds epochSText =
+      parseTimeM False defaultTimeLocale "%s" (toString epochSText)
+
+    go pageInfoM = do
+      let waitUntilMVar = waitUntil client
       (pageInfo, rateLimit, decodingErrors, xs) <-
-        case respE of
-          Left err -> case reqLog of
-            [(req, resp)] -> lift $ throwM $ HttpError (show err, req, resp)
-            [] -> error $ "No request log found, error is: " <> show err
-            xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
-          Right resp -> pure $ transformResponse resp
+        lift $ withUpdateWaitUntil waitUntilMVar $ request pageInfoM
 
       logStatus pageInfo rateLimit
 

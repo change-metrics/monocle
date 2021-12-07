@@ -101,13 +101,17 @@ instance MonadLog IO where
 -------------------------------------------------------------------------------
 -- A http system
 
-class (MonadRetry m, MonadLog m) => MonadGraphQL m where
+class (MonadRetry m, MonadLog m, MonadUnliftIO m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
+  initWaitUntil :: m (MVar (Maybe UTCTime))
+  withUpdateWaitUntil :: MVar a -> (a -> m (a, b)) -> m b
 
 instance MonadGraphQL IO where
   httpRequest = HTTP.httpLbs
   newManager = HTTP.newManager HTTP.defaultManagerSettings
+  initWaitUntil = newMVar Nothing
+  withUpdateWaitUntil = modifyMVar
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system

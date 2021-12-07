@@ -114,7 +114,7 @@ mkStreamsActions = map mkStreamGroup . groupByClient
     crawlersName = T.intercalate ", " . map (crawlerName . infoCrawler . fst) . toList
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
-runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
+runCrawlers :: (MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
 runCrawlers = runCrawlers' 500_000 600_000_000 30_000_000
 
 -- | The runCrawler implementation with custom delay for testing purpose

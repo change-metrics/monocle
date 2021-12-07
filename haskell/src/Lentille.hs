@@ -100,6 +100,8 @@ instance MonadCrawler LentilleM where
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
   newManager = liftIO mkManager
+  initWaitUntil = liftIO $ newMVar Nothing
+  withUpdateWaitUntil = modifyMVar
 
 type MonadGraphQLE m = (MonadGraphQL m, MonadThrow m)
 
