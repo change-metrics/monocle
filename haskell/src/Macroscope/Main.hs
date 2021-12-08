@@ -229,7 +229,8 @@ getClientGraphQL crawler url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient crawler url token
   modify $ \s -> s {clientsGraph = newClients}
-  pure (url, client)
+  let groupKey = url <> "-" <> unSecret token
+  pure (groupKey, client)
 
 -- | Groups the streams by client
 --

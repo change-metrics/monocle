@@ -134,23 +134,24 @@ testGetStream :: Assertion
 testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
+  setEnv "OTHER_TOKEN" "43"
   runLentilleM (error "nop") $ do
     (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
-    assertEqual' "Two streams created" 2 (length streams)
-    assertEqual' "Only one gitlab client created" 1 (length $ toList $ Macroscope.clientsGraph clients)
-    let expected = ["http://localhost for crawler-for-org1, crawler-for-org2"]
+    assertEqual' "Two streams created" 3 (length streams)
+    assertEqual' "Only two gitlab clients created" 2 (length $ toList $ Macroscope.clientsGraph clients)
+    let expected = ["http://localhost-42 for crawler-for-org1, crawler-for-org2", "http://localhost-43 for crawler-for-org3"]
     assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
   where
     conf =
       [ (Config.defaultTenant "test-stream")
-          { Config.crawlers = [gl "org1", gl "org2"],
+          { Config.crawlers = [gl "org1" "GITLAB_TOKEN", gl "org2" "GITLAB_TOKEN", gl "org3" "OTHER_TOKEN"],
             Config.crawlers_api_key = Just "CRAWLERS_API_KEY"
           }
       ]
-    gl gitlab_organization =
+    gl gitlab_organization token =
       let gitlab_url = Just "http://localhost"
           gitlab_repositories = Nothing
-          gitlab_token = Nothing
+          gitlab_token = Just token
           provider = Config.GitlabProvider Config.Gitlab {..}
           name = "crawler-for-" <> gitlab_organization
           update_since = "2021-01-01"
