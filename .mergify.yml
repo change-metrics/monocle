@@ -2,7 +2,7 @@ queue_rules:
   - name: default
     conditions:
       # Conditions to get out of the queue (= merged)
-      - check-success=Haskell GHC
+      - check-success=tests
       - check-success=check-python
       - check-success=docker
 
