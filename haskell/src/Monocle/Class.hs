@@ -101,7 +101,7 @@ instance MonadLog IO where
 -------------------------------------------------------------------------------
 -- A http system
 
-class (MonadRetry m, MonadLog m) => MonadGraphQL m where
+class (MonadRetry m, MonadLog m, MonadUnliftIO m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
 

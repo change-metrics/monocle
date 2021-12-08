@@ -1,8 +1,10 @@
 -- | Helper module to define graphql client
 module Lentille.GraphQL where
 
+import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
+import Data.Time (defaultTimeLocale, parseTimeM)
 import Lentille
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
@@ -29,12 +31,14 @@ data GraphClient = GraphClient
     url :: Text,
     host :: Text,
     token :: Secret,
-    crawler :: Text
+    crawler :: Text,
+    quotaResetAt :: MVar (Maybe UTCTime)
   }
 
 newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
 newGraphClient crawler url token = do
   manager <- newManager
+  quotaResetAt <- newMVar Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -102,25 +106,53 @@ streamFetch ::
   Stream (Of b) m ()
 streamFetch client mkArgs transformResponse = go Nothing
   where
-    liftLog = lift . logRaw
-    logStatus pageInfo rateLimitM =
-      liftLog $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
-    go pageInfoM = do
+    log :: MonadLog m => Text -> m ()
+    log = mLog . Log Macroscope . LogRaw
+
+    request pageInfoM waitUntilM = do
+      case waitUntilM of
+        Just waitUntil -> do
+          liftIO . log $ "Reached Quota limit. Waiting until reset date: " <> show waitUntil
+          liftIO $ holdOnUntil waitUntil
+        Nothing -> pure ()
       (respE, reqLog) <-
-        lift $
-          fetchWithLog
-            (doGraphRequest client)
-            (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+        fetchWithLog
+          (doGraphRequest client)
+          (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      (pageInfo, rateLimit, decodingErrors, xs) <- case respE of
+        Left err -> case reqLog of
+          [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+          [] -> error $ "No request log found, error is: " <> show err
+          xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+        Right resp -> pure $ transformResponse resp
+      let quotaResetAt = case rateLimit of
+            Just rateLimit' ->
+              if remaining rateLimit' > 0
+                then Nothing
+                else parseResetAt . resetAt =<< rateLimit
+            Nothing -> Nothing
+      pure (quotaResetAt, (pageInfo, rateLimit, decodingErrors, xs))
 
+    holdOnUntil :: MonadIO m => UTCTime -> m ()
+    holdOnUntil resetTime = do
+      currentTime <- getCurrentTime
+      let delaySec = diffUTCTimeToSec resetTime currentTime + 1
+      liftIO $ threadDelay $ delaySec * 1_000_000
+      where
+        diffUTCTimeToSec a b =
+          truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
+
+    parseResetAt :: Text -> Maybe UTCTime
+    parseResetAt epochSText =
+      parseTimeM False defaultTimeLocale "%s" (toString epochSText)
+
+    go pageInfoM = do
+      -- Perform the GraphQL request
       (pageInfo, rateLimit, decodingErrors, xs) <-
-        case respE of
-          Left err -> case reqLog of
-            [(req, resp)] -> lift $ throwM $ HttpError (show err, req, resp)
-            [] -> error $ "No request log found, error is: " <> show err
-            xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
-          Right resp -> pure $ transformResponse resp
+        lift $ modifyMVar (quotaResetAt client) $ request pageInfoM
 
-      logStatus pageInfo rateLimit
+      -- Log crawling status
+      lift . log $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
 
       -- Yield the results
       S.each xs
@@ -129,4 +161,5 @@ streamFetch client mkArgs transformResponse = go Nothing
       unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
 
       -- TODO: implement throttle
+      -- Call recursively when response has a next page
       when (hasNextPage pageInfo) (go (Just pageInfo))
