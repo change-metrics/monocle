@@ -1,7 +1,7 @@
 -- | Monocle simple effect system based on mtl and PandocMonad
 module Monocle.Class where
 
-import qualified Control.Concurrent (threadDelay)
+import qualified Control.Concurrent (modifyMVar, newMVar, threadDelay)
 import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
 import qualified Data.Text as T
@@ -27,9 +27,13 @@ instance MonadTime IO where
 -------------------------------------------------------------------------------
 -- A concurrent system handled via Control.Concurrent.MVar (Unlifted from IO)
 
-class MonadUnliftIO m => MonadSync m where
+class Monad m => MonadSync m where
   mNewMVar :: a -> m (MVar a)
   mModifyMVar :: MVar a -> (a -> m (a, b)) -> m b
+
+instance MonadSync IO where
+  mNewMVar = Control.Concurrent.newMVar
+  mModifyMVar = Control.Concurrent.modifyMVar
 
 -------------------------------------------------------------------------------
 -- A log system
@@ -113,6 +117,10 @@ instance MonadLog IO where
 class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
+
+instance MonadGraphQL IO where
+  httpRequest = HTTP.httpLbs
+  newManager = HTTP.newManager HTTP.defaultManagerSettings
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
