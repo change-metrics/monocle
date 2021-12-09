@@ -138,9 +138,9 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
         Right resp -> pure $ transformResponse resp
       let quotaResetAt' = case rateLimit of
             Just rateLimit' ->
-              if remaining rateLimit' > 0
-                then Nothing
-                else parseResetAt . resetAt =<< rateLimit
+              if remaining rateLimit' <= 0
+                then parseResetAt . resetAt =<< rateLimit
+                else Nothing
             Nothing -> Nothing
       pure (quotaResetAt', (pageInfo, rateLimit, decodingErrors, xs))
 
@@ -154,8 +154,8 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
           truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
 
     parseResetAt :: Text -> Maybe UTCTime
-    parseResetAt epochSText =
-      parseTimeM False defaultTimeLocale "%s" (toString epochSText)
+    parseResetAt dateT =
+      parseTimeM False defaultTimeLocale "%FT%XZ" $ from dateT
 
     go pageInfoM = do
       -- Perform the GraphQL request
