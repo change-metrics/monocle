@@ -31,11 +31,18 @@ data GraphClient = GraphClient
     host :: Text,
     token :: Secret,
     crawler :: Text,
+    index :: Text,
     quotaResetAt :: MVar (Maybe UTCTime)
   }
 
-newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
-newGraphClient crawler url token = do
+newGraphClient ::
+  MonadGraphQL m =>
+  "indexName" ::: Text ->
+  "crawler" ::: Text ->
+  "url" ::: Text ->
+  Secret ->
+  m GraphClient
+newGraphClient index crawler url token = do
   manager <- newManager
   quotaResetAt <- mNewMVar Nothing
   let host =
@@ -87,13 +94,16 @@ data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCou
   deriving (Show)
 
 instance From PageInfo Text where
-  from PageInfo {..} = show totalCount <> (if hasNextPage then " hasNextPage" else "")
+  from PageInfo {..} =
+    "total docs: "
+      <> maybe "" show totalCount
+      <> (if hasNextPage then " (has next page)" else "")
 
 data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: Text}
   deriving (Show)
 
 instance From RateLimit Text where
-  from RateLimit {..} = show used <> "/" <> show remaining <> " reset at: " <> resetAt
+  from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> resetAt
 
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
@@ -103,10 +113,12 @@ streamFetch ::
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client mkArgs transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
   where
     log :: MonadLog m => Text -> m ()
-    log = mLog . Log Macroscope . LogRaw
+    log = mLog . Log Macroscope . LogGraphQL lc
+      where
+        lc = LogCrawlerContext index crawler
 
     request pageInfoM waitUntilM = do
       case waitUntilM of
@@ -124,13 +136,13 @@ streamFetch client mkArgs transformResponse = go Nothing
           [] -> error $ "No request log found, error is: " <> show err
           xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
         Right resp -> pure $ transformResponse resp
-      let quotaResetAt = case rateLimit of
+      let quotaResetAt' = case rateLimit of
             Just rateLimit' ->
               if remaining rateLimit' > 0
                 then Nothing
                 else parseResetAt . resetAt =<< rateLimit
             Nothing -> Nothing
-      pure (quotaResetAt, (pageInfo, rateLimit, decodingErrors, xs))
+      pure (quotaResetAt', (pageInfo, rateLimit, decodingErrors, xs))
 
     holdOnUntil :: (MonadTime m) => UTCTime -> m ()
     holdOnUntil resetTime = do
@@ -148,10 +160,10 @@ streamFetch client mkArgs transformResponse = go Nothing
     go pageInfoM = do
       -- Perform the GraphQL request
       (pageInfo, rateLimit, decodingErrors, xs) <-
-        lift $ mModifyMVar (quotaResetAt client) $ request pageInfoM
+        lift $ mModifyMVar quotaResetAt $ request pageInfoM
 
       -- Log crawling status
-      lift . log $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
+      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
 
       -- Yield the results
       S.each xs

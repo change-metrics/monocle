@@ -69,6 +69,7 @@ data LogEvent
   | LogMacroReloadingStart
   | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
+  | LogGraphQL LogCrawlerContext Text
   | LogRaw Text
 
 instance From LogEvent Text where
@@ -95,6 +96,7 @@ instance From LogEvent Text where
     LogMacroGroupStart name -> "Group start: " <> name
     LogMacroGroupEnd name -> "Group end: " <> name
     LogMacroReloadingStart -> "Macroscope reloading beging"
+    LogGraphQL lc text -> prefix lc <> " - " <> text
     LogRaw t -> t
     where
       prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
