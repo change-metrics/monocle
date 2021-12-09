@@ -1,7 +1,6 @@
 -- | Helper module to define graphql client
 module Lentille.GraphQL where
 
-import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
 import Data.Time (defaultTimeLocale, parseTimeM)
@@ -38,7 +37,7 @@ data GraphClient = GraphClient
 newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
 newGraphClient crawler url token = do
   manager <- newManager
-  quotaResetAt <- newMVar Nothing
+  quotaResetAt <- initQuotaResetAt Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -112,8 +111,8 @@ streamFetch client mkArgs transformResponse = go Nothing
     request pageInfoM waitUntilM = do
       case waitUntilM of
         Just waitUntil -> do
-          liftIO . log $ "Reached Quota limit. Waiting until reset date: " <> show waitUntil
-          liftIO $ holdOnUntil waitUntil
+          log $ "Reached Quota limit. Waiting until reset date: " <> show waitUntil
+          holdOnUntil waitUntil
         Nothing -> pure ()
       (respE, reqLog) <-
         fetchWithLog
@@ -133,11 +132,11 @@ streamFetch client mkArgs transformResponse = go Nothing
             Nothing -> Nothing
       pure (quotaResetAt, (pageInfo, rateLimit, decodingErrors, xs))
 
-    holdOnUntil :: MonadIO m => UTCTime -> m ()
+    holdOnUntil :: (MonadTime m) => UTCTime -> m ()
     holdOnUntil resetTime = do
-      currentTime <- getCurrentTime
+      currentTime <- mGetCurrentTime
       let delaySec = diffUTCTimeToSec resetTime currentTime + 1
-      liftIO $ threadDelay $ delaySec * 1_000_000
+      mThreadDelay $ delaySec * 1_000_000
       where
         diffUTCTimeToSec a b =
           truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
@@ -149,7 +148,7 @@ streamFetch client mkArgs transformResponse = go Nothing
     go pageInfoM = do
       -- Perform the GraphQL request
       (pageInfo, rateLimit, decodingErrors, xs) <-
-        lift $ modifyMVar (quotaResetAt client) $ request pageInfoM
+        lift $ withUpdateQuotaResetAt (quotaResetAt client) $ request pageInfoM
 
       -- Log crawling status
       lift . log $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
