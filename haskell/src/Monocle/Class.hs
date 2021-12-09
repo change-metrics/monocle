@@ -1,7 +1,7 @@
 -- | Monocle simple effect system based on mtl and PandocMonad
 module Monocle.Class where
 
-import qualified Control.Concurrent (threadDelay)
+import qualified Control.Concurrent (modifyMVar, newMVar, threadDelay)
 import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
 import qualified Data.Text as T
@@ -23,6 +23,17 @@ class Monad m => MonadTime m where
 instance MonadTime IO where
   mGetCurrentTime = Data.Time.Clock.getCurrentTime
   mThreadDelay = Control.Concurrent.threadDelay
+
+-------------------------------------------------------------------------------
+-- A concurrent system handled via Control.Concurrent.MVar (Unlifted from IO)
+
+class Monad m => MonadSync m where
+  mNewMVar :: a -> m (MVar a)
+  mModifyMVar :: MVar a -> (a -> m (a, b)) -> m b
+
+instance MonadSync IO where
+  mNewMVar = Control.Concurrent.newMVar
+  mModifyMVar = Control.Concurrent.modifyMVar
 
 -------------------------------------------------------------------------------
 -- A log system
@@ -62,6 +73,7 @@ data LogEvent
   | LogMacroReloadingStart
   | LogNetworkFailure Text
   | LogGetBugs UTCTime Int Int
+  | LogGraphQL LogCrawlerContext Text
   | LogRaw Text
 
 instance From LogEvent Text where
@@ -88,6 +100,7 @@ instance From LogEvent Text where
     LogMacroGroupStart name -> "Group start: " <> name
     LogMacroGroupEnd name -> "Group end: " <> name
     LogMacroReloadingStart -> "Macroscope reloading beging"
+    LogGraphQL lc text -> prefix lc <> " - " <> text
     LogRaw t -> t
     where
       prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
@@ -99,9 +112,9 @@ instance MonadLog IO where
   mLog = sayErr . from
 
 -------------------------------------------------------------------------------
--- A http system
+-- A GraphQL client system
 
-class (MonadRetry m, MonadLog m) => MonadGraphQL m where
+class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
 

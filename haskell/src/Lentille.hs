@@ -85,6 +85,10 @@ instance MonadTime LentilleM where
   mGetCurrentTime = liftIO mGetCurrentTime
   mThreadDelay de = liftIO $ mThreadDelay de
 
+instance MonadSync LentilleM where
+  mNewMVar = newMVar
+  mModifyMVar = modifyMVar
+
 instance MonadLog LentilleM where
   mLog = logEvent
 
@@ -99,7 +103,7 @@ instance MonadCrawler LentilleM where
 
 instance MonadGraphQL LentilleM where
   httpRequest req = liftIO . HTTP.httpLbs req
-  newManager = liftIO mkManager
+  newManager = mkManager
 
 type MonadGraphQLE m = (MonadGraphQL m, MonadThrow m)
 

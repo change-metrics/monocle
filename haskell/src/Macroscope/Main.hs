@@ -224,10 +224,16 @@ getClientBZ url token = do
   pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientGraphQL :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> GetClient m GraphClient
-getClientGraphQL crawler url token = do
+getClientGraphQL ::
+  MonadGraphQL m =>
+  "indexName" ::: Text ->
+  "crawler" ::: Text ->
+  Text ->
+  Secret ->
+  GetClient m GraphClient
+getClientGraphQL index crawler url token = do
   clients <- gets clientsGraph
-  (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient crawler url token
+  (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient index crawler url token
   modify $ \s -> s {clientsGraph = newClients}
   let groupKey = url <> "-" <> unSecret token
   pure (groupKey, client)
@@ -278,7 +284,7 @@ getCrawler ::
   (Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
   InfoCrawler ->
   StateT Clients m (Maybe (ClientKey, Crawler m))
-getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
+getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
   where
     addInfos (key, streams) = (key, (inf, streams))
     getStreams =
@@ -287,6 +293,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
           token <- lift $ Config.mGetSecret "GITLAB_TOKEN" gitlab_token
           (k, glClient) <-
             getClientGraphQL
+              workspaceName
               (Config.getCrawlerName crawler)
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
               token
@@ -314,7 +321,12 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
         Config.GithubProvider ghCrawler -> do
           let Config.Github _ _ github_token github_url = ghCrawler
           ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
-          (k, ghClient) <- getClientGraphQL (Config.getCrawlerName crawler) (fromMaybe "https://api.github.com/graphql" github_url) ghToken
+          (k, ghClient) <-
+            getClientGraphQL
+              workspaceName
+              (Config.getCrawlerName crawler)
+              (fromMaybe "https://api.github.com/graphql" github_url)
+              ghToken
           pure $ Just (k, [ghIssuesCrawler ghClient])
         Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
         Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
