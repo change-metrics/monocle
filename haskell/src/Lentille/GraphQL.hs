@@ -37,7 +37,7 @@ data GraphClient = GraphClient
 newGraphClient :: MonadGraphQL m => "crawler" ::: Text -> Text -> Secret -> m GraphClient
 newGraphClient crawler url token = do
   manager <- newManager
-  quotaResetAt <- initQuotaResetAt Nothing
+  quotaResetAt <- mNewMVar Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -148,7 +148,7 @@ streamFetch client mkArgs transformResponse = go Nothing
     go pageInfoM = do
       -- Perform the GraphQL request
       (pageInfo, rateLimit, decodingErrors, xs) <-
-        lift $ withUpdateQuotaResetAt (quotaResetAt client) $ request pageInfoM
+        lift $ mModifyMVar (quotaResetAt client) $ request pageInfoM
 
       -- Log crawling status
       lift . log $ "[graphql] got " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit

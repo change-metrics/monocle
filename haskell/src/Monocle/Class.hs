@@ -25,6 +25,13 @@ instance MonadTime IO where
   mThreadDelay = Control.Concurrent.threadDelay
 
 -------------------------------------------------------------------------------
+-- A concurrent system handled via Control.Concurrent.MVar (Unlifted from IO)
+
+class MonadUnliftIO m => MonadSync m where
+  mNewMVar :: a -> m (MVar a)
+  mModifyMVar :: MVar a -> (a -> m (a, b)) -> m b
+
+-------------------------------------------------------------------------------
 -- A log system
 
 data LogAuthor = Macroscope | Unspecified
@@ -99,19 +106,11 @@ instance MonadLog IO where
   mLog = sayErr . from
 
 -------------------------------------------------------------------------------
--- A http system
+-- A GraphQL client system
 
-class (MonadRetry m, MonadLog m, MonadTime m) => MonadGraphQL m where
+class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
-  initQuotaResetAt :: a -> m (MVar a)
-  withUpdateQuotaResetAt :: MVar a -> (a -> m (a, b)) -> m b
-
-instance MonadGraphQL IO where
-  httpRequest = HTTP.httpLbs
-  newManager = HTTP.newManager HTTP.defaultManagerSettings
-  initQuotaResetAt = newMVar
-  withUpdateQuotaResetAt = modifyMVar
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
