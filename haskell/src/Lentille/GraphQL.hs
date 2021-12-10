@@ -116,7 +116,7 @@ streamFetch ::
   -- | query Args constructor, the function takes a cursor
   (Maybe Text -> Args a) ->
   -- | an action to get a RateLimit record
-  (Maybe (GraphClient -> m RateLimit)) ->
+  Maybe (GraphClient -> m RateLimit) ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
@@ -128,25 +128,13 @@ streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go 
         lc = LogCrawlerContext index crawler
 
     holdOnIfNeeded :: (MonadTime m, MonadLog m) => Maybe RateLimit -> m ()
-    holdOnIfNeeded = \case
-      Nothing -> pure ()
-      Just rl -> do
-        if remaining rl <= 0
-          then do
-            let resetAtTime = resetAt rl
-            log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
-            holdOnUntil resetAtTime
-          else pure ()
-        pure ()
+    holdOnIfNeeded = mapM_ toDelay
       where
-        holdOnUntil :: (MonadTime m) => UTCTime -> m ()
-        holdOnUntil resetTime = do
-          currentTime <- mGetCurrentTime
-          let delaySec = diffUTCTimeToSec resetTime currentTime + 1
-          mThreadDelay $ delaySec * 1_000_000
-          where
-            diffUTCTimeToSec a b =
-              truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
+        toDelay :: (MonadLog m) => RateLimit -> m ()
+        toDelay rl = when (remaining rl <= 0) $ do
+          let resetAtTime = resetAt rl
+          log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
+          holdOnUntil resetAtTime
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM

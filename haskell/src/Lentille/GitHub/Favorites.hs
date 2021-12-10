@@ -73,7 +73,7 @@ getFavoritesStream client username = streamFetch client mkArgs (Just getRateLimi
     transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites
-        (Just (RateLimitRateLimit used remaining (DateTime resetAt')))
+        (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
         ( Just
             ( UserUser
                 ( UserStarredRepositoriesStarredRepositoryConnection
@@ -83,9 +83,9 @@ getFavoritesStream client username = streamFetch client mkArgs (Just getRateLimi
                   )
               )
           ) ->
-          let rateLimit = case parseDateValue $ from resetAt' of
+          let rateLimit = case parseDateValue $ from resetAtText of
                 Just resetAt -> RateLimit {..}
-                Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
+                Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
            in ( PageInfo hasNextPage' endCursor' (Just totalCount'),
                 Just rateLimit,
                 [],
