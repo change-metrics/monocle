@@ -24,6 +24,15 @@ instance MonadTime IO where
   mGetCurrentTime = Data.Time.Clock.getCurrentTime
   mThreadDelay = Control.Concurrent.threadDelay
 
+holdOnUntil :: (MonadTime m) => UTCTime -> m ()
+holdOnUntil resetTime = do
+  currentTime <- mGetCurrentTime
+  let delaySec = diffUTCTimeToSec resetTime currentTime + 1
+  mThreadDelay $ delaySec * 1_000_000
+  where
+    diffUTCTimeToSec a b =
+      truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
+
 -------------------------------------------------------------------------------
 -- A concurrent system handled via Control.Concurrent.MVar (Unlifted from IO)
 

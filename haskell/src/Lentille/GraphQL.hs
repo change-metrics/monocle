@@ -3,7 +3,6 @@ module Lentille.GraphQL where
 
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
-import Data.Time (defaultTimeLocale, parseTimeM)
 import Lentille
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
@@ -32,7 +31,7 @@ data GraphClient = GraphClient
     token :: Secret,
     crawler :: Text,
     index :: Text,
-    quotaResetAt :: MVar (Maybe UTCTime)
+    rateLimitMVar :: MVar (Maybe RateLimit)
   }
 
 newGraphClient ::
@@ -44,7 +43,7 @@ newGraphClient ::
   m GraphClient
 newGraphClient index crawler url token = do
   manager <- newManager
-  quotaResetAt <- mNewMVar Nothing
+  rateLimitMVar <- mNewMVar Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -87,6 +86,12 @@ doGraphRequest GraphClient {..} jsonBody = do
 fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [ReqLog])
 fetchWithLog cb = runWriterT . fetch cb
 
+handleReqLog :: (MonadThrow m, Show a1) => a1 -> [(HTTP.Request, HTTP.Response LByteString)] -> m a2
+handleReqLog err reqLog = case reqLog of
+  [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+  [] -> error $ "No request log found, error is: " <> show err
+  xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+
 -------------------------------------------------------------------------------
 -- Streaming layer
 -------------------------------------------------------------------------------
@@ -99,71 +104,65 @@ instance From PageInfo Text where
       <> maybe "" show totalCount
       <> (if hasNextPage then " (has next page)" else "")
 
-data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: Text}
+data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
   deriving (Show)
 
 instance From RateLimit Text where
-  from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> resetAt
+  from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a cursor
   (Maybe Text -> Args a) ->
+  -- | an action to get a RateLimit record
+  Maybe (GraphClient -> m RateLimit) ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go Nothing
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
       where
         lc = LogCrawlerContext index crawler
 
-    request pageInfoM waitUntilM = do
-      case waitUntilM of
-        Just waitUntil -> do
-          log $ "Reached Quota limit. Waiting until reset date: " <> show waitUntil
-          holdOnUntil waitUntil
-        Nothing -> pure ()
+    holdOnIfNeeded :: (MonadTime m, MonadLog m) => Maybe RateLimit -> m ()
+    holdOnIfNeeded = mapM_ toDelay
+      where
+        toDelay :: (MonadLog m) => RateLimit -> m ()
+        toDelay rl = when (remaining rl <= 0) $ do
+          let resetAtTime = resetAt rl
+          log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
+          holdOnUntil resetAtTime
+
+    request pageInfoM storedRateLimitM = do
+      holdOnIfNeeded storedRateLimitM
       (respE, reqLog) <-
         fetchWithLog
           (doGraphRequest client)
           (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
-      (pageInfo, rateLimit, decodingErrors, xs) <- case respE of
-        Left err -> case reqLog of
-          [(req, resp)] -> throwM $ HttpError (show err, req, resp)
-          [] -> error $ "No request log found, error is: " <> show err
-          xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+      (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
+        Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp
-      let quotaResetAt' = case rateLimit of
-            Just rateLimit' ->
-              if remaining rateLimit' <= 0
-                then parseResetAt . resetAt =<< rateLimit
-                else Nothing
-            Nothing -> Nothing
-      pure (quotaResetAt', (pageInfo, rateLimit, decodingErrors, xs))
-
-    holdOnUntil :: (MonadTime m) => UTCTime -> m ()
-    holdOnUntil resetTime = do
-      currentTime <- mGetCurrentTime
-      let delaySec = diffUTCTimeToSec resetTime currentTime + 1
-      mThreadDelay $ delaySec * 1_000_000
-      where
-        diffUTCTimeToSec a b =
-          truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
-
-    parseResetAt :: Text -> Maybe UTCTime
-    parseResetAt dateT =
-      parseTimeM False defaultTimeLocale "%FT%XZ" $ from dateT
+      pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
     go pageInfoM = do
+      --- Perform a pre GraphQL request to gather rateLimit
+      case getRateLimitM of
+        Just getRateLimit -> lift $
+          mModifyMVar rateLimitMVar $
+            const $ do
+              rl <- getRateLimit client
+              pure (Just rl, ())
+        Nothing -> pure ()
+
       -- Perform the GraphQL request
-      (pageInfo, rateLimit, decodingErrors, xs) <-
-        lift $ mModifyMVar quotaResetAt $ request pageInfoM
+      (pageInfo, rateLimitM, decodingErrors, xs) <-
+        lift $ mModifyMVar rateLimitMVar $ request pageInfoM
 
       -- Log crawling status
-      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
+      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
 
       -- Yield the results
       S.each xs

@@ -85,7 +85,6 @@ runMacroscope port confPath client = withMonitoringServer port $ do
   where
     loop config clients = do
       -- Load the config
-      mLog $ Log Macroscope LogMacroStart
       conf <- Config.csConfig <$> config
 
       -- Flatten each crawler from all workspaces
