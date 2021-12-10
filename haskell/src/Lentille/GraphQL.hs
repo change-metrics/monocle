@@ -86,6 +86,12 @@ doGraphRequest GraphClient {..} jsonBody = do
 fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [ReqLog])
 fetchWithLog cb = runWriterT . fetch cb
 
+handleReqLog :: (MonadThrow m, Show a1) => a1 -> [(HTTP.Request, HTTP.Response LByteString)] -> m a2
+handleReqLog err reqLog = case reqLog of
+  [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+  [] -> error $ "No request log found, error is: " <> show err
+  xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+
 -------------------------------------------------------------------------------
 -- Streaming layer
 -------------------------------------------------------------------------------
@@ -109,10 +115,12 @@ streamFetch ::
   GraphClient ->
   -- | query Args constructor, the function takes a cursor
   (Maybe Text -> Args a) ->
+  -- | an action to get a RateLimit record
+  (Maybe (GraphClient -> m RateLimit)) ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go Nothing
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
@@ -147,14 +155,20 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
           (doGraphRequest client)
           (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
       (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
-        Left err -> case reqLog of
-          [(req, resp)] -> throwM $ HttpError (show err, req, resp)
-          [] -> error $ "No request log found, error is: " <> show err
-          xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
+        Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp
       pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
     go pageInfoM = do
+      --- Perform a pre GraphQL request to gather rateLimit
+      case getRateLimitM of
+        Just getRateLimit -> lift $
+          mModifyMVar rateLimitMVar $
+            const $ do
+              rl <- getRateLimit client
+              pure (Just rl, ())
+        Nothing -> pure ()
+
       -- Perform the GraphQL request
       (pageInfo, rateLimitM, decodingErrors, xs) <-
         lift $ mModifyMVar rateLimitMVar $ request pageInfoM

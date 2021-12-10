@@ -11,6 +11,7 @@ module Lentille.GitLab.Group where
 import Data.Morpheus.Client
 import Data.Time.Clock
 import Lentille
+import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
 import Monocle.Prelude hiding (break)
@@ -42,7 +43,7 @@ streamGroupProjects ::
   GraphClient ->
   Text ->
   LentilleStream m Project
-streamGroupProjects client fullPath = streamFetch client mkArgs transformResponse
+streamGroupProjects client fullPath = streamFetch client mkArgs (Just getRateLimit) transformResponse
   where
     mkArgs = GetGroupProjectsArgs (ID fullPath)
 

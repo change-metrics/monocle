@@ -6,7 +6,7 @@
 module Lentille.GitHub.RateLimit where
 
 import Data.Morpheus.Client
-import Lentille (MonadGraphQL)
+import Lentille (MonadGraphQLE)
 import Lentille.GraphQL
 import Monocle.Prelude
 
@@ -34,8 +34,11 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit ::
-  (MonadGraphQL m) =>
-  GraphClient ->
-  m (Either (FetchError GetRateLimit) GetRateLimit, [ReqLog])
-getRateLimit client = fetchWithLog (doGraphRequest client) ()
+getRateLimit :: (MonadGraphQLE m) => GraphClient -> m RateLimit
+getRateLimit client = do
+  (respE, reqLog) <- getLimit
+  case respE of
+    Left err -> handleReqLog err reqLog
+    Right resp -> pure $ transformResponse resp
+  where
+    getLimit = fetchWithLog (doGraphRequest client) ()

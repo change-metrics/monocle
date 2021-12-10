@@ -116,7 +116,7 @@ streamMergeRequests ::
   Text ->
   LentilleStream m Changes
 streamMergeRequests client getIdentIdCb untilDate project =
-  breakOnDate $ streamFetch client mkArgs transformResponse'
+  breakOnDate $ streamFetch client mkArgs Nothing transformResponse'
   where
     mkArgs = GetProjectMergeRequestsArgs (ID project) Nothing
 

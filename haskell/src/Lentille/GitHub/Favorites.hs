@@ -23,6 +23,7 @@ module Lentille.GitHub.Favorites where
 
 import Data.Morpheus.Client
 import Lentille (MonadGraphQLE)
+import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Prelude
 
@@ -66,7 +67,7 @@ getFavoritesStream ::
   GraphClient ->
   Text ->
   Stream (Of UserFavorite) m ()
-getFavoritesStream client username = streamFetch client mkArgs transformResponse
+getFavoritesStream client username = streamFetch client mkArgs (Just getRateLimit) transformResponse
   where
     mkArgs = GetFavoritesArgs username
     transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])

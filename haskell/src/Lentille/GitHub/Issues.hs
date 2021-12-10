@@ -18,6 +18,7 @@ import Data.Time.Format
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (MonadGraphQLE)
+import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Prelude
 import Monocle.Search (TaskData (..))
@@ -81,7 +82,7 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
-streamLinkedIssue client time repo = streamFetch client mkArgs transformResponse
+streamLinkedIssue client time repo = streamFetch client mkArgs (Just getRateLimit) transformResponse
   where
     mkArgs =
       GetLinkedIssuesArgs
