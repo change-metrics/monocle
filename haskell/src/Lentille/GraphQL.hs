@@ -32,7 +32,7 @@ data GraphClient = GraphClient
     token :: Secret,
     crawler :: Text,
     index :: Text,
-    quotaResetAt :: MVar (Maybe UTCTime)
+    rateLimitMVar :: MVar (Maybe RateLimit)
   }
 
 newGraphClient ::
@@ -44,7 +44,7 @@ newGraphClient ::
   m GraphClient
 newGraphClient index crawler url token = do
   manager <- newManager
-  quotaResetAt <- mNewMVar Nothing
+  rateLimitMVar <- mNewMVar Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -120,50 +120,54 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
       where
         lc = LogCrawlerContext index crawler
 
-    request pageInfoM waitUntilM = do
-      case waitUntilM of
-        Just waitUntil -> do
-          log $ "Reached Quota limit. Waiting until reset date: " <> show waitUntil
-          holdOnUntil waitUntil
-        Nothing -> pure ()
+    holdOnIfNeeded :: (MonadTime m, MonadLog m) => Maybe RateLimit -> m ()
+    holdOnIfNeeded = \case
+      Nothing -> pure ()
+      Just rl -> do
+        if remaining rl <= 0
+          then do
+            case parseResetAt $ resetAt rl of
+              Just waitDelay -> do
+                log $ "Reached Quota limit. Waiting until reset date: " <> show waitDelay
+                holdOnUntil waitDelay
+              Nothing -> do
+                error $ "Unable to parse the resetAt date: " <> resetAt rl
+          else pure ()
+        pure ()
+      where
+        holdOnUntil :: (MonadTime m) => UTCTime -> m ()
+        holdOnUntil resetTime = do
+          currentTime <- mGetCurrentTime
+          let delaySec = diffUTCTimeToSec resetTime currentTime + 1
+          mThreadDelay $ delaySec * 1_000_000
+          where
+            diffUTCTimeToSec a b =
+              truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
+        parseResetAt :: Text -> Maybe UTCTime
+        parseResetAt dateT =
+          parseTimeM False defaultTimeLocale "%FT%XZ" $ from dateT
+
+    request pageInfoM storedRateLimitM = do
+      holdOnIfNeeded storedRateLimitM
       (respE, reqLog) <-
         fetchWithLog
           (doGraphRequest client)
           (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
-      (pageInfo, rateLimit, decodingErrors, xs) <- case respE of
+      (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
         Left err -> case reqLog of
           [(req, resp)] -> throwM $ HttpError (show err, req, resp)
           [] -> error $ "No request log found, error is: " <> show err
           xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
         Right resp -> pure $ transformResponse resp
-      let quotaResetAt' = case rateLimit of
-            Just rateLimit' ->
-              if remaining rateLimit' <= 0
-                then parseResetAt . resetAt =<< rateLimit
-                else Nothing
-            Nothing -> Nothing
-      pure (quotaResetAt', (pageInfo, rateLimit, decodingErrors, xs))
-
-    holdOnUntil :: (MonadTime m) => UTCTime -> m ()
-    holdOnUntil resetTime = do
-      currentTime <- mGetCurrentTime
-      let delaySec = diffUTCTimeToSec resetTime currentTime + 1
-      mThreadDelay $ delaySec * 1_000_000
-      where
-        diffUTCTimeToSec a b =
-          truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
-
-    parseResetAt :: Text -> Maybe UTCTime
-    parseResetAt dateT =
-      parseTimeM False defaultTimeLocale "%FT%XZ" $ from dateT
+      pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
     go pageInfoM = do
       -- Perform the GraphQL request
-      (pageInfo, rateLimit, decodingErrors, xs) <-
-        lift $ mModifyMVar quotaResetAt $ request pageInfoM
+      (pageInfo, rateLimitM, decodingErrors, xs) <-
+        lift $ mModifyMVar rateLimitMVar $ request pageInfoM
 
       -- Log crawling status
-      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimit
+      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
 
       -- Yield the results
       S.each xs
