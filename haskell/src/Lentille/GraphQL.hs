@@ -3,7 +3,6 @@ module Lentille.GraphQL where
 
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
-import Data.Time (defaultTimeLocale, parseTimeM)
 import Lentille
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
@@ -99,11 +98,11 @@ instance From PageInfo Text where
       <> maybe "" show totalCount
       <> (if hasNextPage then " (has next page)" else "")
 
-data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: Text}
+data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
   deriving (Show)
 
 instance From RateLimit Text where
-  from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> resetAt
+  from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
@@ -126,12 +125,9 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
       Just rl -> do
         if remaining rl <= 0
           then do
-            case parseResetAt $ resetAt rl of
-              Just waitDelay -> do
-                log $ "Reached Quota limit. Waiting until reset date: " <> show waitDelay
-                holdOnUntil waitDelay
-              Nothing -> do
-                error $ "Unable to parse the resetAt date: " <> resetAt rl
+            let resetAtTime = resetAt rl
+            log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
+            holdOnUntil resetAtTime
           else pure ()
         pure ()
       where
@@ -143,9 +139,6 @@ streamFetch client@GraphClient {..} mkArgs transformResponse = go Nothing
           where
             diffUTCTimeToSec a b =
               truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
-        parseResetAt :: Text -> Maybe UTCTime
-        parseResetAt dateT =
-          parseTimeM False defaultTimeLocale "%FT%XZ" $ from dateT
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM

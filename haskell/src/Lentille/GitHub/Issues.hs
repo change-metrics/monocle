@@ -96,15 +96,18 @@ transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [Tas
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
-      (Just (RateLimitRateLimit used' remaining' (DateTime resetAt')))
+      (Just (RateLimitRateLimit used remaining (DateTime resetAt')))
       ( SearchSearchResultItemConnection
           issueCount'
           (SearchPageInfoPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
+            rateLimit = case parseDateValue $ from resetAt' of
+              Just resetAt -> RateLimit {..}
+              Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
          in ( PageInfo hasNextPage' endCursor' (Just issueCount'),
-              Just $ RateLimit used' remaining' resetAt',
+              Just rateLimit,
               lefts newTaskDataE,
               rights newTaskDataE
             )

@@ -28,8 +28,10 @@ transformResponse :: GetRateLimit -> RateLimit
 transformResponse = \case
   GetRateLimit
     ( Just
-        (RateLimitRateLimit used remaining (DateTime resetAt))
-      ) -> RateLimit {..}
+        (RateLimitRateLimit used remaining (DateTime resetAt'))
+      ) -> case parseDateValue $ from resetAt' of
+      Just resetAt -> RateLimit {..}
+      Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
 getRateLimit ::

@@ -327,7 +327,7 @@ formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatT
 
 -- | Helper
 parseDateValue :: String -> Maybe UTCTime
-parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z"
+parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z" <|> tryParse "%FT%XZ"
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
