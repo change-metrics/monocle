@@ -39,7 +39,7 @@ data MonocleClient = MonocleClient
   }
 
 -- | Create a HTTP manager
-mkManager :: MonadIO m => m Manager
+mkManager :: IO Manager
 mkManager = do
   disableTlsM <- lookupEnv "TLS_NO_VERIFY"
   let managerSettings = case disableTlsM of
@@ -47,7 +47,7 @@ mkManager = do
           let tlsSettings = Connection.TLSSettingsSimple True False False
            in HTTP.mkManagerSettings tlsSettings Nothing
         Nothing -> HTTP.tlsManagerSettings
-  liftIO $ newManager managerSettings
+  newManager managerSettings
 
 -- | Create the 'MonocleClient'
 withClient ::
@@ -62,7 +62,7 @@ withClient ::
   m a
 withClient url managerM callBack =
   do
-    manager <- maybe mkManager pure managerM
+    manager <- maybe (liftIO mkManager) pure managerM
     callBack MonocleClient {..}
   where
     baseUrl = T.dropWhileEnd (== '/') url <> "/"
