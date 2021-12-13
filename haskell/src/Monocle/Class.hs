@@ -6,7 +6,7 @@ import Control.Retry (RetryStatus (..))
 import qualified Control.Retry as Retry
 import qualified Data.Text as T
 import qualified Data.Time.Clock (getCurrentTime)
-import Monocle.Client (MonocleClient)
+import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Prelude
@@ -34,7 +34,7 @@ holdOnUntil resetTime = do
       truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
 
 -------------------------------------------------------------------------------
--- A concurrent system handled via Control.Concurrent.MVar (Unlifted from IO)
+-- A concurrent system handled via Control.Concurrent.MVar
 
 class Monad m => MonadSync m where
   mNewMVar :: a -> m (MVar a)
@@ -129,7 +129,7 @@ class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m) => MonadGraphQL m whe
 
 instance MonadGraphQL IO where
   httpRequest = HTTP.httpLbs
-  newManager = HTTP.newManager HTTP.defaultManagerSettings
+  newManager = mkManager
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
