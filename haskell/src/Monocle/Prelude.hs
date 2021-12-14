@@ -105,6 +105,7 @@ module Monocle.Prelude
     dropMilliSec,
     MonocleTime,
     toMonocleTime,
+    diffUTCTimeToSec,
 
     -- * qq-literals
     utctime,
@@ -330,6 +331,11 @@ parseDateValue :: String -> Maybe UTCTime
 parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z" <|> tryParse "%FT%XZ"
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt str
+
+-- | diffUTCTime a - b
+diffUTCTimeToSec :: a ::: UTCTime -> b ::: UTCTime -> Int
+diffUTCTimeToSec a b =
+  truncate (realToFrac . nominalDiffTimeToSeconds $ diffUTCTime a b :: Double) :: Int
 
 -- | Numerical type to count documents
 newtype Count = MkCount Word32
