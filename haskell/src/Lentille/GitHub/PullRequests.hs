@@ -182,35 +182,30 @@ fakePageInfo :: PageInfo
 fakePageInfo = PageInfo False Nothing Nothing
 
 transformResponse :: GetProjectPullRequests -> (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
-transformResponse _ = do
-  (fakePageInfo, Nothing, [], [(fakeChange, [fakeEvent])])
-
---   case result of
---     GetProjects
---       (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
---       ( Just
---           ( OrganizationOrganization
---               ( OrganizationRepositoriesRepositoryConnection
---                   totalCount
---                   (OrganizationRepositoriesPageInfoPageInfo hasNextPage endCursor)
---                   (Just orgRepositories)
---                 )
---             )
---         ) ->
---         let rateLimit = case parseDateValue $ from resetAtText of
---               Just resetAt -> RateLimit {..}
---               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
---          in ( PageInfo hasNextPage endCursor (Just totalCount),
---               Just rateLimit,
---               [],
---               getRepos orgRepositories
---             )
---     _anyOtherResponse ->
---       ( PageInfo False Nothing Nothing,
---         Nothing,
---         ["Unknown GetProjects response: " <> show result],
---         []
---       )
---   where
---     getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
---     getRepos r = Project . from . nameWithOwner <$> catMaybes r
+transformResponse result = do
+  case result of
+    GetProjectPullRequests
+      (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
+      ( Just
+          ( RepositoryRepository
+              ( RepositoryPullRequestsPullRequestConnection
+                  totalCount'
+                  (RepositoryPullRequestsPageInfoPageInfo hasNextPage endCursor)
+                  (Just projectPRs)
+                )
+            )
+        ) ->
+        let rateLimit = case parseDateValue $ from resetAtText of
+              Just resetAt -> RateLimit {..}
+              Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
+            totalCount = Just totalCount'
+         in (PageInfo {..}, Just rateLimit, [], transPR <$> catMaybes projectPRs)
+    _anyOtherResponse ->
+      ( PageInfo False Nothing Nothing,
+        Nothing,
+        ["Unknown GetProjectPullRequests response: " <> show result],
+        []
+      )
+  where
+    transPR :: RepositoryPullRequestsNodesPullRequest -> (Change, [ChangeEvent])
+    transPR _ = (fakeChange, [fakeEvent])
