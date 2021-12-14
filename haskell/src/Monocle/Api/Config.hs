@@ -277,6 +277,7 @@ removeTrailingSlash = T.dropWhileEnd (== '/')
 getCrawlerOrganization :: Crawler -> [Text]
 getCrawlerOrganization Crawler {..} = case provider of
   GitlabProvider Gitlab {..} -> [gitlab_organization]
+  GithubProvider Github {..} -> [github_organization]
   GerritProvider Gerrit {..} -> maybe [] (filter (T.isPrefixOf "^")) gerrit_repositories
   _anyOtherProvider -> []
 

@@ -15,6 +15,7 @@ import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBug
 import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
+import Lentille.GitHub.Organization (streamOrganizationProjects)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
@@ -318,7 +319,7 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
           (k, bzClient) <- getClientBZ bugzilla_url bzToken
           pure $ Just (k, [bzCrawler bzClient])
         Config.GithubProvider ghCrawler -> do
-          let Config.Github _ _ github_token github_url = ghCrawler
+          let Config.Github {..} = ghCrawler
           ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
           (k, ghClient) <-
             getClientGraphQL
@@ -326,7 +327,10 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
               (Config.getCrawlerName crawler)
               (fromMaybe "https://api.github.com/graphql" github_url)
               ghToken
-          pure $ Just (k, [ghIssuesCrawler ghClient])
+          let crawlers =
+                [ghOrgCrawler ghClient | isNothing github_repositories]
+                  <> [ghIssuesCrawler ghClient]
+          pure $ Just (k, crawlers)
         Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
         Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
     getIdentByAliasCB :: Text -> Maybe Text
@@ -343,6 +347,9 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
 
     ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
     ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
+
+    ghOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
+    ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
