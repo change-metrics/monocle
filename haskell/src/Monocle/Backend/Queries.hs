@@ -990,9 +990,7 @@ getLifecycleStats = do
       lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` merged
       lifecycleStatsAbandoned = countToWord abandoned
 
-  lifecycleStatsTtmMean <-
-    double2Float
-      <$> withFilter (changeState EChangeMerged) (averageDuration qf)
+  lifecycleStatsTtmMean <- runMetric metricTimeToMerge
   lifecycleStatsTtmVariability <-
     double2Float
       <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
@@ -1127,3 +1125,38 @@ getSuggestions index = do
     getTop field' = do
       tt <- getDocTypeTopCountByField (EChangeDoc :| []) field' (Just 1000)
       pure $ V.fromList $ toLazy . trTerm <$> tsrTR tt
+
+-------------------------------------------------------------------------------
+-- The final metrics
+data MetricInfo = MetricInfo
+  { miName :: Text,
+    miDesc :: Text
+  }
+
+data Metric m a = Metric
+  { metricInfo :: MetricInfo,
+    runMetric :: m a
+  }
+
+instance Functor m => Functor (Metric m) where
+  fmap f x = Metric (metricInfo x) (f <$> runMetric x)
+
+metricTimeToMerge :: QueryMonad m => Metric m Float
+metricTimeToMerge =
+  Metric
+    ( MetricInfo
+        "Time to merge"
+        "The average duration for an open change"
+    )
+    compute
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (averageDuration qf)
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+
+allMetricsJSON :: QueryMonad m => [Metric m Value]
+allMetricsJSON = [toJSON <$> metricTimeToMerge]
+
+allMetrics :: [MetricInfo]
+allMetrics = map metricInfo (allMetricsJSON @QueryM)
