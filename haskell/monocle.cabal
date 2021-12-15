@@ -209,6 +209,7 @@ library
                      , Lentille.GitHub.Favorites
                      , Lentille.GitHub.Issues
                      , Lentille.GitHub.RateLimit
+                     , Lentille.GitHub.Organization
 
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Group

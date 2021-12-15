@@ -287,7 +287,12 @@ crawlerAddDoc request = do
       pure $ CrawlerPB.AddDocResponse Nothing
     addProjects crawler organizationName projects = do
       monocleLogEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
-      I.initCrawlerEntities (Project <$> projectNames projects) crawler
+      let names = projectNames projects
+          -- TODO(fbo) Enable crawl github issues by default for an organization.
+          -- We might need to re-think some data fetching like priority/severity.
+          -- entities = (Project <$> names) <> (TaskDataEntity <$> names)
+          entities = Project <$> names
+      I.initCrawlerEntities entities crawler
       pure $ CrawlerPB.AddDocResponse Nothing
     projectNames projectsV = toList (toText . ProjectPB.projectFullPath <$> projectsV)
 
