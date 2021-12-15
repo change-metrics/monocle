@@ -77,6 +77,7 @@ protoToHaskell = fromProto headers mkService
         "import Monocle.Client (MonocleClient, monocleReq)",
         "import Monocle.Config",
         "import Monocle.Crawler",
+        "import Monocle.Login",
         "import Monocle.Search",
         "import Monocle.UserGroup"
       ]
@@ -207,7 +208,7 @@ protoToServant pb =
         Text.intercalate "\n :<|>" $ map mkApi methods
       ]
       where
-        mkApi (_, name, path) =
+        mkApi (moduleName, name, path) =
           "  "
             <> ( Text.intercalate " :> "
                    . map (\c -> "\"" <> c <> "\"")
@@ -215,9 +216,9 @@ protoToServant pb =
                    $ Text.drop (Text.length "/api/2/") path
                )
             <> " :> ReqBody '[JSON] "
-            <> (name <> "Request")
+            <> ("Monocle." <> moduleName <> "." <> name <> "Request")
             <> " :> Post  '[PBJSON, JSON] "
-            <> (name <> "Response")
+            <> ("Monocle." <> moduleName <> "." <> name <> "Response")
     server =
       [ "server :: ServerT MonocleAPI AppM",
         "server =",

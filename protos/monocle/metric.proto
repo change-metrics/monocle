@@ -1,0 +1,20 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_metric;
+option go_package = "monocle/metric";
+
+message MetricInfo {
+  string name = 1;
+  string description = 2;
+  string long_description = 3;
+}
+
+message ListRequest {
+  string void = 1;
+}
+
+message ListResponse {
+  repeated MetricInfo metrics = 1;
+}

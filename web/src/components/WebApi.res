@@ -98,6 +98,18 @@ module Search = {
     )
 }
 
+module Metric = {
+  @module("axios")
+  external listRaw: (string, 'a) => axios<'b> = "post"
+
+  let list = (request: MetricTypes.list_request): axios<MetricTypes.list_response> =>
+    request->MetricBs.encode_list_request
+    |> listRaw(serverUrl ++ "/api/2/metric/list")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->MetricBs.decode_list_response}->Js.Promise.resolve
+    )
+}
+
 module UserGroup = {
   @module("axios")
   external listRaw: (string, 'a) => axios<'b> = "post"

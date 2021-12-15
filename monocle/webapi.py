@@ -97,6 +97,18 @@ def search_query(url: str, request: QueryRequest) -> QueryResponse:
     return pbjson.Parse(resp.content, QueryResponse())
 
 
+# Metric methods:
+from monocle.metric_pb2 import ListRequest
+from monocle.metric_pb2 import ListResponse
+
+
+def metric_list(url: str, request: ListRequest) -> ListResponse:
+    body = pbjson.MessageToJson(request, preserving_proto_field_name=True)
+    resp = requests.post(url + "/api/2/metric/list", data=body, headers=headers)
+    resp.raise_for_status()
+    return pbjson.Parse(resp.content, ListResponse())
+
+
 # UserGroup methods:
 from monocle.user_group_pb2 import ListRequest
 from monocle.user_group_pb2 import ListResponse
