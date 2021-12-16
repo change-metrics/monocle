@@ -18,9 +18,8 @@ doc/architecture.png: doc/architecture.plantuml
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../monocle/webapi.py ../srcgen/WebApi.res)
+	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../srcgen/WebApi.res)
 	ormolu -i ./haskell/src/Monocle/Client/Api.hs ./haskell/src/Monocle/Servant/HTTP.hs
-	black ./monocle/webapi.py
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
 
