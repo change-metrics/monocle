@@ -35,97 +35,100 @@ defineByDocumentFile
         resetAt
       }
       repository(owner: $owner, name: $reponame) {
-        pullRequests(first: 100, after: $cursor, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        prs: pullRequests(first: 100, after: $cursor, orderBy: { field: UPDATED_AT, direction: DESC }) {
           totalCount
           pageInfo {hasNextPage endCursor}
           nodes {
-            id
-            updatedAt
-            createdAt
-            mergedAt
-            closedAt
-            author {login}
-            mergedBy {login}
-            repository {
-              owner {login}
-              name
-            }
-            additions
-            deletions
-            changedFiles
-            title
-            headRefName
-            baseRefName
-            bodyText
-            state
-            reviewDecision
-            number
-            mergeable
-            isDraft
-            labels (first: 100) {
-              nodes {name}
-            }
-            assignees (first: 100) {
-              nodes {login}
-            }
-            comments (first: 100) {
-              nodes {
-                id
-                createdAt
-                author {login}
-              }
-            }
-            commits (first: 100) {
-              totalCount
-              nodes {
-                commit {
-                  oid
-                  pushedDate
-                  authoredDate
-                  committedDate
-                  additions
-                  deletions
-                  message
-                  author {user {login}}
-                  committer {user {login}}
-                }
-              }
-            }
-            files (first: 100) {
-              nodes {
-                additions
-                deletions
-                path
-              }
-            }
-            timelineItems (first: 100 itemTypes: [
-                CLOSED_EVENT, PULL_REQUEST_REVIEW, HEAD_REF_FORCE_PUSHED_EVENT
-              ]) {
-              nodes {
-                __typename
-                ... on ClosedEvent {
-                  id
-                  createdAt
-                  actor {login}
-                }
-                ... on PullRequestReview {
-                  id
-                  createdAt
-                  state
-                  author {login}
-                }
-                ... on HeadRefForcePushedEvent {
-                  id
-                  createdAt
-                  fpactor: actor {login}
-                }
-              }
-            }
+            ...prdata
           }
         }
       }
     }
-  |]
+    fragment prdata on PullRequest {
+      id
+      updatedAt
+      createdAt
+      mergedAt
+      closedAt
+      author {login}
+      mergedBy {login}
+      repository {
+        owner {login}
+        name
+      }
+      additions
+      deletions
+      changedFiles
+      title
+      headRefName
+      baseRefName
+      bodyText
+      state
+      reviewDecision
+      number
+      mergeable
+      isDraft
+      labels (first: 100) {
+        nodes {name}
+      }
+      assignees (first: 100) {
+        nodes {login}
+      }
+      comments (first: 100) {
+        nodes {
+          id
+          createdAt
+          author {login}
+        }
+      }
+      commits (first: 100) {
+        totalCount
+        nodes {
+          commit {
+            oid
+            pushedDate
+            authoredDate
+            committedDate
+            additions
+            deletions
+            message
+            author {user {login}}
+            committer {user {login}}
+          }
+        }
+      }
+      files (first: 100) {
+        nodes {
+          additions
+          deletions
+          path
+        }
+      }
+      timelineItems (first: 100 itemTypes: [
+          CLOSED_EVENT, PULL_REQUEST_REVIEW, HEAD_REF_FORCE_PUSHED_EVENT
+        ]) {
+        nodes {
+          __typename
+          ... on ClosedEvent {
+            id
+            createdAt
+            actor {login}
+          }
+          ... on PullRequestReview {
+            id
+            createdAt
+            state
+            author {login}
+          }
+          ... on HeadRefForcePushedEvent {
+            id
+            createdAt
+            fpactor: actor {login}
+          }
+        }
+      }
+    }
+|]
 
 instance From Int Int32 where
   from = fromIntToInt32
@@ -169,9 +172,9 @@ transformResponse host baseUrl identCB result = do
       (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
       ( Just
           ( RepositoryRepository
-              ( RepositoryPullRequestsPullRequestConnection
+              ( RepositoryPrsPullRequestConnection
                   totalCount'
-                  (RepositoryPullRequestsPageInfoPageInfo hasNextPage endCursor)
+                  (RepositoryPrsPageInfoPageInfo hasNextPage endCursor)
                   (Just projectPRs)
                 )
             )
@@ -191,33 +194,33 @@ transformResponse host baseUrl identCB result = do
     getIdent :: Text -> Ident
     getIdent = toIdent host identCB
     getGhostIdent = ghostIdent host
-    repoOwnerName :: RepositoryPullRequestsNodesRepositoryRepository -> (Text, Text)
+    repoOwnerName :: RepositoryPrsNodesRepositoryRepository -> (Text, Text)
     repoOwnerName
-      ( RepositoryPullRequestsNodesRepositoryRepository
-          (RepositoryPullRequestsNodesRepositoryOwnerRepositoryOwner _ login)
+      ( RepositoryPrsNodesRepositoryRepository
+          (RepositoryPrsNodesRepositoryOwnerRepositoryOwner _ login)
           name
         ) = (login, name)
-    repoFullname :: RepositoryPullRequestsNodesRepositoryRepository -> Text
+    repoFullname :: RepositoryPrsNodesRepositoryRepository -> Text
     repoFullname r = let (owner, name) = repoOwnerName r in owner <> "/" <> name
     webUrl :: Text -> Text -> Text
     webUrl fullName number = removeTrailingSlash baseUrl <> "/" <> fullName <> "/" <> number
-    commitCount :: RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> Int
-    commitCount (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection count _) = count
-    toChangedFiles :: RepositoryPullRequestsNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
-    toChangedFiles (RepositoryPullRequestsNodesFilesPullRequestChangedFileConnection nodes) =
+    commitCount :: RepositoryPrsNodesCommitsPullRequestCommitConnection -> Int
+    commitCount (RepositoryPrsNodesCommitsPullRequestCommitConnection count _) = count
+    toChangedFiles :: RepositoryPrsNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
+    toChangedFiles (RepositoryPrsNodesFilesPullRequestChangedFileConnection nodes) =
       toChangedFile <$> catMaybes (fromMaybe [] nodes)
       where
-        toChangedFile :: RepositoryPullRequestsNodesFilesNodesPullRequestChangedFile -> ChangedFile
-        toChangedFile RepositoryPullRequestsNodesFilesNodesPullRequestChangedFile {..} =
+        toChangedFile :: RepositoryPrsNodesFilesNodesPullRequestChangedFile -> ChangedFile
+        toChangedFile RepositoryPrsNodesFilesNodesPullRequestChangedFile {..} =
           ChangedFile (fromIntToInt32 additions) (fromIntToInt32 deletions) (from path)
     toChangeFilePath :: ChangedFile -> ChangedFilePath
     toChangeFilePath (ChangedFile _ _ path) = ChangedFilePath path
-    toChangeCommits :: RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> [Commit]
-    toChangeCommits (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection _ nodes) =
+    toChangeCommits :: RepositoryPrsNodesCommitsPullRequestCommitConnection -> [Commit]
+    toChangeCommits (RepositoryPrsNodesCommitsPullRequestCommitConnection _ nodes) =
       toCommit . commit <$> catMaybes (fromMaybe [] nodes)
       where
-        toCommit :: RepositoryPullRequestsNodesCommitsNodesCommitCommit -> Commit
-        toCommit RepositoryPullRequestsNodesCommitsNodesCommitCommit {..} =
+        toCommit :: RepositoryPrsNodesCommitsNodesCommitCommit -> Commit
+        toCommit RepositoryPrsNodesCommitsNodesCommitCommit {..} =
           let commitSha = show oid
               commitAuthor = getAuthor <$> author
               commitCommitter = getCommitter <$> committer
@@ -229,19 +232,19 @@ transformResponse host baseUrl identCB result = do
            in Commit {..}
           where
             getAuthor
-              ( RepositoryPullRequestsNodesCommitsNodesCommitAuthorGitActor
-                  (Just (RepositoryPullRequestsNodesCommitsNodesCommitAuthorUserUser login))
+              ( RepositoryPrsNodesCommitsNodesCommitAuthorGitActor
+                  (Just (RepositoryPrsNodesCommitsNodesCommitAuthorUserUser login))
                 ) = getIdent login
             getAuthor _ = ghostIdent host
             getCommitter
-              ( RepositoryPullRequestsNodesCommitsNodesCommitCommitterGitActor
-                  (Just (RepositoryPullRequestsNodesCommitsNodesCommitCommitterUserUser login))
+              ( RepositoryPrsNodesCommitsNodesCommitCommitterGitActor
+                  (Just (RepositoryPrsNodesCommitsNodesCommitCommitterUserUser login))
                 ) = getIdent login
             getCommitter _ = ghostIdent host
-    getPRAuthor :: RepositoryPullRequestsNodesAuthorActor -> Text
-    getPRAuthor (RepositoryPullRequestsNodesAuthorActor _ login) = login
-    getPRMergedBy :: RepositoryPullRequestsNodesMergedByActor -> Text
-    getPRMergedBy (RepositoryPullRequestsNodesMergedByActor _ login) = login
+    getPRAuthor :: RepositoryPrsNodesAuthorActor -> Text
+    getPRAuthor (RepositoryPrsNodesAuthorActor _ login) = login
+    getPRMergedBy :: RepositoryPrsNodesMergedByActor -> Text
+    getPRMergedBy (RepositoryPrsNodesMergedByActor _ login) = login
     toPRState :: PullRequestState -> Enumerated Change_ChangeState
     toPRState = \case
       PullRequestStateCLOSED -> Enumerated (Right Change_ChangeStateClosed)
@@ -254,18 +257,18 @@ transformResponse host baseUrl identCB result = do
       MergeableStateCONFLICTING -> "CONFLICT"
       MergeableStateMERGEABLE -> "MERGEABLE"
       MergeableStateUNKNOWN -> "MERGEABLE"
-    toLabels :: RepositoryPullRequestsNodesLabelsLabelConnection -> [Text]
-    toLabels (RepositoryPullRequestsNodesLabelsLabelConnection nodes) =
+    toLabels :: RepositoryPrsNodesLabelsLabelConnection -> [Text]
+    toLabels (RepositoryPrsNodesLabelsLabelConnection nodes) =
       toLabel <$> catMaybes (fromMaybe [] nodes)
       where
-        toLabel :: RepositoryPullRequestsNodesLabelsNodesLabel -> Text
-        toLabel (RepositoryPullRequestsNodesLabelsNodesLabel name) = name
-    toAssignees :: RepositoryPullRequestsNodesAssigneesUserConnection -> [Ident]
-    toAssignees (RepositoryPullRequestsNodesAssigneesUserConnection nodes) =
+        toLabel :: RepositoryPrsNodesLabelsNodesLabel -> Text
+        toLabel (RepositoryPrsNodesLabelsNodesLabel name) = name
+    toAssignees :: RepositoryPrsNodesAssigneesUserConnection -> [Ident]
+    toAssignees (RepositoryPrsNodesAssigneesUserConnection nodes) =
       getIdent . toAssignee <$> catMaybes (fromMaybe [] nodes)
       where
-        toAssignee :: RepositoryPullRequestsNodesAssigneesNodesUser -> Text
-        toAssignee (RepositoryPullRequestsNodesAssigneesNodesUser login) = login
+        toAssignee :: RepositoryPrsNodesAssigneesNodesUser -> Text
+        toAssignee (RepositoryPrsNodesAssigneesNodesUser login) = login
     toApprovals :: PullRequestReviewDecision -> Text
     toApprovals = \case
       PullRequestReviewDecisionAPPROVED -> "APPROVED"
@@ -292,17 +295,17 @@ transformResponse host baseUrl identCB result = do
           changeEventCreatedAt = Nothing,
           changeEventAuthor = Nothing
         }
-    getEventsFromTimeline :: Change -> RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
-    getEventsFromTimeline change (RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
+    getEventsFromTimeline :: Change -> RepositoryPrsNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
+    getEventsFromTimeline change (RepositoryPrsNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
       catMaybes $ toEventM <$> catMaybes (fromMaybe [] nodes)
       where
-        toEventM :: RepositoryPullRequestsNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
+        toEventM :: RepositoryPrsNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
         toEventM = \case
-          RepositoryPullRequestsNodesTimelineItemsNodesClosedEvent
+          RepositoryPrsNodesTimelineItemsNodesClosedEvent
             _
             _
             createdAt
-            (Just (RepositoryPullRequestsNodesTimelineItemsNodesActorActor _ actor)) ->
+            (Just (RepositoryPrsNodesTimelineItemsNodesActorActor _ actor)) ->
               Just
                 ( baseEvent
                     (ChangeEventTypeChangeAbandoned ChangeAbandonedEvent)
@@ -312,12 +315,12 @@ transformResponse host baseUrl identCB result = do
                   { changeEventAuthor = Just $ getIdent actor,
                     changeEventCreatedAt = Just $ from createdAt
                   }
-          RepositoryPullRequestsNodesTimelineItemsNodesPullRequestReview
+          RepositoryPrsNodesTimelineItemsNodesPullRequestReview
             _
             _
             createdAt
             reviewState
-            (Just (RepositoryPullRequestsNodesTimelineItemsNodesAuthorActor _ actor)) ->
+            (Just (RepositoryPrsNodesTimelineItemsNodesAuthorActor _ actor)) ->
               let approval = case reviewState of
                     PullRequestReviewStateAPPROVED -> "APPROVED"
                     PullRequestReviewStateCHANGES_REQUESTED -> "CHANGES_REQUESTED"
@@ -334,11 +337,11 @@ transformResponse host baseUrl identCB result = do
                         changeEventCreatedAt = Just $ from createdAt
                       }
                in Just event
-          RepositoryPullRequestsNodesTimelineItemsNodesHeadRefForcePushedEvent
+          RepositoryPrsNodesTimelineItemsNodesHeadRefForcePushedEvent
             _
             _
             createdAt
-            (Just (RepositoryPullRequestsNodesTimelineItemsNodesFpactorActor _ actor)) ->
+            (Just (RepositoryPrsNodesTimelineItemsNodesFpactorActor _ actor)) ->
               Just
                 ( baseEvent
                     (ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent)
@@ -349,12 +352,12 @@ transformResponse host baseUrl identCB result = do
                     changeEventCreatedAt = Just $ from createdAt
                   }
           _ -> Nothing
-    getCommitEvents :: Change -> RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> [ChangeEvent]
-    getCommitEvents change (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection _ nodes) =
+    getCommitEvents :: Change -> RepositoryPrsNodesCommitsPullRequestCommitConnection -> [ChangeEvent]
+    getCommitEvents change (RepositoryPrsNodesCommitsPullRequestCommitConnection _ nodes) =
       toEvent <$> catMaybes (fromMaybe [] nodes)
       where
-        toEvent :: RepositoryPullRequestsNodesCommitsNodesPullRequestCommit -> ChangeEvent
-        toEvent (RepositoryPullRequestsNodesCommitsNodesPullRequestCommit commit) =
+        toEvent :: RepositoryPrsNodesCommitsNodesPullRequestCommit -> ChangeEvent
+        toEvent (RepositoryPrsNodesCommitsNodesPullRequestCommit commit) =
           let actor = ""
            in ( baseEvent
                   (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
@@ -364,16 +367,16 @@ transformResponse host baseUrl identCB result = do
                 { changeEventAuthor = Just $ getIdent actor,
                   changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
                 }
-    getCommentEvents :: Change -> RepositoryPullRequestsNodesCommentsIssueCommentConnection -> [ChangeEvent]
-    getCommentEvents change (RepositoryPullRequestsNodesCommentsIssueCommentConnection nodes) =
+    getCommentEvents :: Change -> RepositoryPrsNodesCommentsIssueCommentConnection -> [ChangeEvent]
+    getCommentEvents change (RepositoryPrsNodesCommentsIssueCommentConnection nodes) =
       catMaybes $ toEvent <$> catMaybes (fromMaybe [] nodes)
       where
-        toEvent :: RepositoryPullRequestsNodesCommentsNodesIssueComment -> Maybe ChangeEvent
+        toEvent :: RepositoryPrsNodesCommentsNodesIssueComment -> Maybe ChangeEvent
         toEvent
-          ( RepositoryPullRequestsNodesCommentsNodesIssueComment
+          ( RepositoryPrsNodesCommentsNodesIssueComment
               (ID eId)
               createdAt
-              (Just (RepositoryPullRequestsNodesCommentsNodesAuthorActor _ actor))
+              (Just (RepositoryPrsNodesCommentsNodesAuthorActor _ actor))
             ) =
             Just
               ( baseEvent
@@ -385,8 +388,8 @@ transformResponse host baseUrl identCB result = do
                   changeEventCreatedAt = Just $ from createdAt
                 }
         toEvent _ = Nothing
-    transPR :: RepositoryPullRequestsNodesPullRequest -> (Change, [ChangeEvent])
-    transPR RepositoryPullRequestsNodesPullRequest {..} =
+    transPR :: RepositoryPrsNodesPullRequest -> (Change, [ChangeEvent])
+    transPR RepositoryPrsNodesPullRequest {..} =
       let change =
             Change
               { changeId = from . sanitizeID $ unpackID id,
