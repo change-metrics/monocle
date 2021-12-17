@@ -15,6 +15,7 @@ import "monocle/search.proto";
 import "monocle/crawler.proto";
 import "monocle/user_group.proto";
 import "monocle/login.proto";
+import "monocle/metric.proto";
 
 service Login {
   // Check a login username
@@ -78,6 +79,16 @@ service Search {
       returns (monocle_search.QueryResponse) {
     option (google.api.http) = {
       post: "/api/2/search/query"
+      body: "*"
+    };
+  }
+}
+
+service Metric {
+  rpc List(monocle_metric.ListRequest)
+      returns (monocle_metric.ListResponse) {
+    option (google.api.http) = {
+      post: "/api/2/metric/list"
       body: "*"
     };
   }

@@ -18,6 +18,7 @@ import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import qualified Monocle.Login as LoginPB
+import qualified Monocle.Metric as MetricPB
 import Monocle.Prelude
 import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
@@ -628,3 +629,14 @@ lookupTenant :: Text -> AppM (Maybe Config.Index)
 lookupTenant name = do
   GetTenants tenants <- getConfig
   pure $ Config.lookupTenant tenants name
+
+metricList :: MetricPB.ListRequest -> AppM MetricPB.ListResponse
+metricList =
+  const . pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
+  where
+    toResp Q.MetricInfo {..} =
+      MetricPB.MetricInfo
+        { metricInfoName = from miName,
+          metricInfoDescription = from miDesc,
+          metricInfoLongDescription = mempty
+        }

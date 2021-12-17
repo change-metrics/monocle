@@ -40,6 +40,9 @@ searchCheck = monocleReq "api/2/search/check"
 searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
 
+metricList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
+metricList = monocleReq "api/2/metric/list"
+
 userGroupList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
 userGroupList = monocleReq "api/2/user_group/list"
 

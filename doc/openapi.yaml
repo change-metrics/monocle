@@ -126,6 +126,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_login_LoginValidationResponse'
+    /api/2/metric/list:
+        post:
+            operationId: Metric_List
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_metric_ListRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_metric_ListResponse'
     /api/2/search/check:
         post:
             operationId: Search_Check
@@ -564,6 +580,24 @@ components:
                 validation_result:
                     type: integer
                     format: enum
+        monocle_metric_ListRequest:
+            properties:
+                void:
+                    type: string
+        monocle_metric_ListResponse:
+            properties:
+                metrics:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_MetricInfo'
+        monocle_metric_MetricInfo:
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                long_description:
+                    type: string
         monocle_project_Project:
             properties:
                 full_path:
