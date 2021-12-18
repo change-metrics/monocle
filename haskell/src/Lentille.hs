@@ -115,10 +115,6 @@ instance MonadConfig LentilleM where
 
 type LentilleStream m a = Stream (Of a) m ()
 
--------------------------------------------------------------------------------
--- The BugZilla context
-
--- | LentilleMonad is an alias for a bunch of constaints
 type LentilleMonad m =
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility

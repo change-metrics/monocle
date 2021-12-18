@@ -9,10 +9,12 @@
 module Lentille.GitHub.PullRequests where
 
 import Data.Morpheus.Client
--- import Lentille (MonadGraphQLE)
 -- import Lentille.GitHub.RateLimit (getRateLimit)
 
+import Data.Time.Format
 import qualified Google.Protobuf.Timestamp as T
+import Lentille (LentilleStream, MonadGraphQLE)
+import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GitLab.Adapter (fromIntToInt32, getChangeId, ghostIdent, isMerged, sanitizeID, toIdent)
 import Lentille.GraphQL
 import Monocle.Api.Config (removeTrailingSlash)
@@ -156,6 +158,35 @@ instance From DateTime ChangeOptionalMergedAt where
 
 instance From DateTime ChangeOptionalClosedAt where
   from = ChangeOptionalClosedAtClosedAt . dateTimeToTimestamp
+
+type Changes = (Change, [ChangeEvent])
+
+data GHQueryArgs = GHQueryArgs
+  { repo :: Text,
+    time :: Maybe UTCTime,
+    extraQ :: Maybe Text
+  }
+
+getQS :: GHQueryArgs -> Text
+getQS GHQueryArgs {..} =
+  from $ unwords ["is:pr", toRepoFrag, from toDateFrag, toExtraQ]
+  where
+    toRepoFrag = from $ "repo:" <> repo
+    toDateFrag = maybe "" (\d -> "updated:>=" <> formatTime defaultTimeLocale "%F" d) time
+    toExtraQ = from (fromMaybe mempty extraQ)
+
+streamPullRequests ::
+  MonadGraphQLE m =>
+  GraphClient ->
+  -- A callback to get Ident ID from an alias
+  (Text -> Maybe Text) ->
+  GHQueryArgs ->
+  LentilleStream m Changes
+streamPullRequests client cb qArgs = streamFetch client mkArgs (Just getRateLimit) transformResponse'
+  where
+    mkArgs =
+      GetProjectPullRequestsArgs $ getQS qArgs
+    transformResponse' = transformResponse (host client) (url client) cb
 
 transformResponse ::
   -- hostname of the provider
