@@ -17,7 +17,6 @@ import Lentille (LentilleStream, MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GitLab.Adapter (fromIntToInt32, getChangeId, ghostIdent, isMerged, sanitizeID, toIdent)
 import Lentille.GraphQL
-import Monocle.Api.Config (removeTrailingSlash)
 import Monocle.Change
 import Monocle.Prelude hiding (id, state)
 import Proto3.Suite (Enumerated (Enumerated))
@@ -25,6 +24,8 @@ import Proto3.Suite (Enumerated (Enumerated))
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 newtype GitObjectID = GitObjectID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+
+newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 -- https://docs.github.com/en/graphql/reference/objects#pullrequest
 defineByDocumentFile
@@ -53,16 +54,26 @@ defineByDocumentFile
     createdAt
     mergedAt
     closedAt
-    author {login}
-    mergedBy {login}
+    author {
+      __typename
+      login
+    }
+    mergedBy {
+      __typename
+      login
+    }
     repository {
-      owner {login}
+      owner {
+        __typename
+        login
+      }
       name
     }
     additions
     deletions
     changedFiles
     title
+    webURL: url
     headRefName
     baseRefName
     bodyText
@@ -81,7 +92,10 @@ defineByDocumentFile
       nodes {
         id
         createdAt
-        author {login}
+        author {
+          __typename
+          login
+        }
       }
     }
     commits (first: 100) {
@@ -115,18 +129,27 @@ defineByDocumentFile
         ... on ClosedEvent {
           id
           createdAt
-          actor {login}
+          actor {
+            __typename
+            login
+          }
         }
         ... on PullRequestReview {
           id
           createdAt
           state
-          author {login}
+          author {
+            __typename
+            login
+          }
         }
         ... on HeadRefForcePushedEvent {
           id
           createdAt
-          fpactor: actor {login}
+          fpactor: actor {
+            __typename
+            login
+          }
         }
       }
     }
@@ -138,11 +161,14 @@ instance From Int Int32 where
 
 dateTimeToUTCTime :: DateTime -> UTCTime
 dateTimeToUTCTime dt =
-  let dtText = show dt
+  let dtText = unDatetime dt
    in fromMaybe
         ( error $ "Unable to parse date string: " <> from dtText
         )
         (parseDateValue dtText)
+  where
+    unDatetime :: DateTime -> String
+    unDatetime (DateTime s) = from s
 
 dateTimeToTimestamp :: DateTime -> T.Timestamp
 dateTimeToTimestamp = T.fromUTCTime . dateTimeToUTCTime
@@ -186,19 +212,17 @@ streamPullRequests client cb qArgs = streamFetch client mkArgs (Just getRateLimi
   where
     mkArgs =
       GetProjectPullRequestsArgs $ getQS qArgs
-    transformResponse' = transformResponse (host client) (url client) cb
+    transformResponse' = transformResponse (host client) cb
 
 transformResponse ::
   -- hostname of the provider
-  Text ->
-  -- baseUrl of the provider
   Text ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   -- The response payload
   GetProjectPullRequests ->
   (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
-transformResponse host baseUrl identCB result = do
+transformResponse host identCB result = do
   case result of
     GetProjectPullRequests
       (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
@@ -230,8 +254,8 @@ transformResponse host baseUrl identCB result = do
         ) = (login, name)
     repoFullname :: SearchNodesRepositoryRepository -> Text
     repoFullname r = let (owner, name) = repoOwnerName r in owner <> "/" <> name
-    webUrl :: Text -> Text -> Text
-    webUrl fullName number = removeTrailingSlash baseUrl <> "/" <> fullName <> "/" <> number
+    getURL :: URI -> Text
+    getURL (URI url) = url
     commitCount :: SearchNodesCommitsPullRequestCommitConnection -> Int
     commitCount (SearchNodesCommitsPullRequestCommitConnection count _) = count
     toChangedFiles :: SearchNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
@@ -249,7 +273,7 @@ transformResponse host baseUrl identCB result = do
       where
         toCommit :: SearchNodesCommitsNodesCommitCommit -> Commit
         toCommit SearchNodesCommitsNodesCommitCommit {..} =
-          let commitSha = show oid
+          let commitSha = show $ getSHA oid
               commitAuthor = getAuthor <$> author
               commitCommitter = getCommitter <$> committer
               commitAuthoredAt = Just $ from authoredDate
@@ -269,6 +293,7 @@ transformResponse host baseUrl identCB result = do
                   (Just (SearchNodesCommitsNodesCommitCommitterUserUser login))
                 ) = getIdent login
             getCommitter _ = ghostIdent host
+            getSHA (GitObjectID sha) = sha
     getPRAuthor :: SearchNodesAuthorActor -> Text
     getPRAuthor (SearchNodesAuthorActor _ login) = login
     getPRMergedBy :: SearchNodesMergedByActor -> Text
@@ -284,7 +309,7 @@ transformResponse host baseUrl identCB result = do
     toPRMergeableState = \case
       MergeableStateCONFLICTING -> "CONFLICT"
       MergeableStateMERGEABLE -> "MERGEABLE"
-      MergeableStateUNKNOWN -> "MERGEABLE"
+      MergeableStateUNKNOWN -> "UNKNOWN"
     toLabels :: SearchNodesLabelsLabelConnection -> [Text]
     toLabels (SearchNodesLabelsLabelConnection nodes) =
       toLabel <$> catMaybes (fromMaybe [] nodes)
@@ -334,15 +359,18 @@ transformResponse host baseUrl identCB result = do
             _
             createdAt
             (Just (SearchNodesTimelineItemsNodesActorActor _ actor)) ->
-              Just
-                ( baseEvent
-                    (ChangeEventTypeChangeAbandoned ChangeAbandonedEvent)
-                    ("ChangeAbandonedEvent-" <> changeId change)
-                    change
-                )
-                  { changeEventAuthor = Just $ getIdent actor,
-                    changeEventCreatedAt = Just $ from createdAt
-                  }
+              if not . isMerged $ changeState change
+                then
+                  Just
+                    ( baseEvent
+                        (ChangeEventTypeChangeAbandoned ChangeAbandonedEvent)
+                        ("ChangeAbandonedEvent-" <> changeId change)
+                        change
+                    )
+                      { changeEventAuthor = Just $ getIdent actor,
+                        changeEventCreatedAt = Just $ from createdAt
+                      }
+                else Nothing
           SearchNodesTimelineItemsNodesPullRequestReview
             _
             _
@@ -386,15 +414,23 @@ transformResponse host baseUrl identCB result = do
       where
         toEvent :: SearchNodesCommitsNodesPullRequestCommit -> ChangeEvent
         toEvent (SearchNodesCommitsNodesPullRequestCommit commit) =
-          let actor = ""
-           in ( baseEvent
-                  (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
-                  ("ChangeCommitPushedEvent-" <> changeId change)
-                  change
-              )
-                { changeEventAuthor = Just $ getIdent actor,
-                  changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
-                }
+          ( baseEvent
+              (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
+              ("ChangeCommitPushedEvent-" <> changeId change)
+              change
+          )
+            { changeEventAuthor = Just $ getCommitter $ committer commit,
+              changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
+            }
+          where
+            getCommitter :: Maybe SearchNodesCommitsNodesCommitCommitterGitActor -> Ident
+            getCommitter
+              ( Just
+                  ( SearchNodesCommitsNodesCommitCommitterGitActor
+                      (Just (SearchNodesCommitsNodesCommitCommitterUserUser login))
+                    )
+                ) = getIdent login
+            getCommitter _ = getGhostIdent
     getCommentEvents :: Change -> SearchNodesCommentsIssueCommentConnection -> [ChangeEvent]
     getCommentEvents change (SearchNodesCommentsIssueCommentConnection nodes) =
       catMaybes $ toEvent <$> catMaybes (fromMaybe [] nodes)
@@ -426,7 +462,7 @@ transformResponse host baseUrl identCB result = do
                 changeChangeId = getChangeId (repoFullname repository) (show number),
                 changeTitle = from title,
                 changeText = from bodyText,
-                changeUrl = from $ webUrl (repoFullname repository) (show number),
+                changeUrl = from . getURL $ fromMaybe (error "Unable to decode change w/o webURL") webURL,
                 changeCommitCount = from $ commitCount commits,
                 changeAdditions = from additions,
                 changeDeletions = from deletions,
