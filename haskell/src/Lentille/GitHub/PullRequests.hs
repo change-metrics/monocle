@@ -212,7 +212,10 @@ streamPullRequests client cb qArgs = streamFetch client mkArgs (Just getRateLimi
   where
     mkArgs =
       GetProjectPullRequestsArgs $ getQS qArgs
-    transformResponse' = transformResponse (host client) cb
+    transformResponse' = transformResponse getHost cb
+    getHost =
+      let host' = host client
+       in if host' == "api.github.com" then "github.com" else host'
 
 transformResponse ::
   -- hostname of the provider
