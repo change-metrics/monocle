@@ -16,6 +16,7 @@ import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitHub.Organization (streamOrganizationProjects)
+import Lentille.GitHub.PullRequests (getPullRequestStream)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
@@ -330,6 +331,7 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
           let crawlers =
                 [ghOrgCrawler ghClient | isNothing github_repositories]
                   <> [ghIssuesCrawler ghClient]
+                  <> [ghPRCrawler ghClient getIdentByAliasCB]
           pure $ Just (k, crawlers)
         Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
         Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
@@ -350,6 +352,9 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
 
     ghOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
     ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
+
+    ghPRCrawler :: forall m. MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
+    ghPRCrawler glClient cb = Changes $ getPullRequestStream glClient cb
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects

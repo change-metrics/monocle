@@ -36,7 +36,7 @@ defineByDocumentFile
         remaining
         resetAt
       }
-      search(query: $qs, type: ISSUE, first: 100, after: $cursor) {
+      search(query: $qs, type: ISSUE, first: 30, after: $cursor) {
         issueCount
         pageInfo {hasNextPage endCursor}
         nodes {
@@ -189,12 +189,23 @@ data GHQueryArgs = GHQueryArgs
     extraQ :: Maybe Text
   }
 
+getPullRequestStream ::
+  MonadGraphQLE m =>
+  GraphClient ->
+  -- A callback to get Ident ID from an alias
+  (Text -> Maybe Text) ->
+  UTCTime ->
+  Text ->
+  LentilleStream m Changes
+getPullRequestStream client cb time repo =
+  let args = GHQueryArgs repo (Just time) Nothing
+   in streamPullRequests client cb args
+
 getQS :: GHQueryArgs -> Text
-getQS GHQueryArgs {..} =
-  from $ unwords ["is:pr", toRepoFrag, from toDateFrag, toExtraQ]
+getQS GHQueryArgs {..} = unwords ["is:pr", toRepoFrag, toDateFrag, toExtraQ]
   where
     toRepoFrag = from $ "repo:" <> repo
-    toDateFrag = maybe "" (\d -> "updated:>=" <> formatTime defaultTimeLocale "%F" d) time
+    toDateFrag = from $ maybe "" (\d -> "updated:>=" <> formatTime defaultTimeLocale "%F" d) time
     toExtraQ = from (fromMaybe mempty extraQ)
 
 streamPullRequests ::
