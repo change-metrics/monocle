@@ -13,9 +13,8 @@ import Data.Morpheus.Client
 
 import Data.Time.Format
 import qualified Google.Protobuf.Timestamp as T
-import Lentille (LentilleStream, MonadGraphQLE)
+import Lentille
 import Lentille.GitHub.RateLimit (getRateLimit)
-import Lentille.GitLab.Adapter (fromIntToInt32, getChangeId, ghostIdent, isMerged, sanitizeID, toIdent)
 import Lentille.GraphQL
 import Monocle.Change
 import Monocle.Prelude hiding (id, state)
@@ -156,9 +155,6 @@ defineByDocumentFile
   }
 |]
 
-instance From Int Int32 where
-  from = fromIntToInt32
-
 dateTimeToUTCTime :: DateTime -> UTCTime
 dateTimeToUTCTime dt =
   let dtText = unDatetime dt
@@ -267,7 +263,7 @@ transformResponse host identCB result = do
       where
         toChangedFile :: SearchNodesFilesNodesPullRequestChangedFile -> ChangedFile
         toChangedFile SearchNodesFilesNodesPullRequestChangedFile {..} =
-          ChangedFile (fromIntToInt32 additions) (fromIntToInt32 deletions) (from path)
+          ChangedFile (from additions) (from deletions) (from path)
     toChangeFilePath :: ChangedFile -> ChangedFilePath
     toChangeFilePath (ChangedFile _ _ path) = ChangedFilePath path
     toChangeCommits :: SearchNodesCommitsPullRequestCommitConnection -> [Commit]
@@ -307,7 +303,7 @@ transformResponse host identCB result = do
       PullRequestStateMERGED -> Enumerated $ Right Change_ChangeStateMerged
       PullRequestStateOPEN -> Enumerated $ Right Change_ChangeStateOpen
     toDuration :: DateTime -> DateTime -> ChangeOptionalDuration
-    toDuration d1 d2 = ChangeOptionalDurationDuration . from $ diffUTCTimeToSec (from d1) (from d2)
+    toDuration d1 d2 = ChangeOptionalDurationDuration . from $ diffTimeSec (from d1) (from d2)
     toPRMergeableState :: MergeableState -> Text
     toPRMergeableState = \case
       MergeableStateCONFLICTING -> "CONFLICT"

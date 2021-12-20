@@ -11,7 +11,9 @@ import qualified Data.Text as TE
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Google.Protobuf.Timestamp as T
+import Lentille (ghostIdent, nobody, toIdent)
 import Monocle.Change
+import Monocle.Prelude
 import Proto3.Suite (Enumerated (..))
 import Relude
 
@@ -58,19 +60,7 @@ commitFormatString = Just "%FT%X%EZ"
 defaultTimestamp :: Time
 defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
 
-nobody :: Text
-nobody = "ghost"
-
 -- Generic utility fonction
-
-fromIntToInt32 :: Int -> Int32
-fromIntToInt32 = fromInteger . toInteger
-
-removeSpace :: Text -> Text
-removeSpace = TE.replace " " ""
-
-sanitizeID :: Text -> Text
-sanitizeID = TE.replace ":" "@" . TE.replace "/" "@"
 
 fromMTtoLT :: (LazyStrict l s, IsString s) => Maybe s -> l
 fromMTtoLT t = toLazy $ fromMaybe "" t
@@ -102,14 +92,11 @@ getDSS dssM item =
     Nothing -> 0
 
 getChangedFile :: DiffStats -> ChangedFile
-getChangedFile DiffStats {..} = ChangedFile (fromIntToInt32 additions) (fromIntToInt32 deletions) (toLazy path)
+getChangedFile DiffStats {..} = ChangedFile (from additions) (from deletions) (toLazy path)
 
 getChangeNumber :: Text -> Int32
 getChangeNumber iid =
-  fromIntToInt32 $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
-
-getChangeId :: Text -> Text -> LText
-getChangeId fullName iid = toLazy . removeSpace $ TE.replace "/" "@" fullName <> "@" <> toText iid
+  from $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
 
 toCommit :: Text -> (Text -> Maybe Text) -> MRCommit -> Commit
 toCommit host cb MRCommit {..} =
@@ -128,39 +115,12 @@ toCommit host cb MRCommit {..} =
     getAuthor Nothing = nobody
     toIdent' = toIdent host cb
 
-toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
-toIdent host cb username = Ident {..}
-  where
-    uid = host <> "/" <> username
-    identUid = toLazy uid
-    identMuid = toLazy $ fromMaybe username (cb uid)
-
-ghostIdent :: Text -> Ident
-ghostIdent host = toIdent host (const Nothing) nobody
-
-diffTime :: UTCTime -> UTCTime -> Int
-diffTime l e =
-  trunc $
-    fromMaybe (error "Unable to read show nominalDiffTimeToSeconds") $
-      readMaybe
-        ( show $
-            nominalDiffTimeToSeconds . negate $ diffUTCTime l e
-        )
-  where
-    trunc :: Float -> Int
-    trunc = truncate
-
 toState :: Text -> Enumerated Change_ChangeState
 toState state' = case state' of
   "closed" -> Enumerated (Right Change_ChangeStateClosed)
   "merged" -> Enumerated $ Right Change_ChangeStateMerged
   "opened" -> Enumerated $ Right Change_ChangeStateOpen
   _otherwise -> error ("Unable to decode Merge Request state: " <> _otherwise)
-
-isMerged :: Enumerated Change_ChangeState -> Bool
-isMerged state' = case state' of
-  Enumerated (Right Change_ChangeStateMerged) -> True
-  _otherwise -> False
 
 isClosed :: Enumerated Change_ChangeState -> Bool
 isClosed state' = case state' of

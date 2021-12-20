@@ -27,7 +27,7 @@ instance MonadTime IO where
 holdOnUntil :: (MonadTime m) => UTCTime -> m ()
 holdOnUntil resetTime = do
   currentTime <- mGetCurrentTime
-  let delaySec = diffUTCTimeToSec resetTime currentTime + 1
+  let delaySec = diffTimeSec resetTime currentTime + 1
   mThreadDelay $ delaySec * 1_000_000
 
 -------------------------------------------------------------------------------

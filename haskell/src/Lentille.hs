@@ -24,19 +24,31 @@ module Lentille
 
     -- * Facilities
     getClientBaseUrl,
+    getChangeId,
+    isMerged,
+    nobody,
+    toIdent,
+    ghostIdent,
+    sanitizeID,
 
     -- * Re-export
     module Monocle.Class,
   )
 where
 
+import qualified Data.Text as T
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
+import Monocle.Change
+  ( Change_ChangeState (Change_ChangeStateMerged),
+    Ident (..),
+  )
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
+import Proto3.Suite (Enumerated (Enumerated))
 
 -------------------------------------------------------------------------------
 -- The Lentille context
@@ -136,3 +148,31 @@ logEvent x = do
 
 logRaw :: MonadLog m => Text -> m ()
 logRaw text = mLog $ Log Unspecified (LogRaw text)
+
+-------------------------------------------------------------------------------
+-- Utility functions for crawlers
+-------------------------------------------------------------------------------
+
+getChangeId :: Text -> Text -> LText
+getChangeId fullName iid = toLazy . stripSpaces $ T.replace "/" "@" fullName <> "@" <> toText iid
+
+isMerged :: Enumerated Change_ChangeState -> Bool
+isMerged state' = case state' of
+  Enumerated (Right Change_ChangeStateMerged) -> True
+  _otherwise -> False
+
+sanitizeID :: Text -> Text
+sanitizeID = T.replace ":" "@" . T.replace "/" "@"
+
+nobody :: Text
+nobody = "ghost"
+
+toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
+toIdent host cb username = Ident {..}
+  where
+    uid = host <> "/" <> username
+    identUid = toLazy uid
+    identMuid = toLazy $ fromMaybe username (cb uid)
+
+ghostIdent :: Text -> Ident
+ghostIdent host = toIdent host (const Nothing) nobody
