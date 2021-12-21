@@ -21,6 +21,8 @@ jobs:
 
   run-k8s-deployment:
     runs-on: ubuntu-latest
+    env:
+      namespace: monocle
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -30,12 +32,10 @@ jobs:
           minikube-version: 1.24.0
       - name: run k8s deployment on the cluster
         run: |
-          namespace=monocle
           kubectl create namespace "${namespace}" 
           kubectl create --namespace "${namespace}" --filename ./deployment/ 
       - name: validate components have been deployed successfuly
         run: |
-          namespace=monocle
           deploy_pod_labels_raw=$(kubectl get --namespace "${namespace}" --filename ./deployment/elastic-deployment.yaml --output go-template='{{ range $k, $v :=.spec.selector.matchLabels }}{{$k}}={{$v}},{{ end }}')
           deploy_pod_labels_elastic=$(echo "${deploy_pod_labels_raw}" | rev | cut --delimiter=',' --fields='2-' | rev)
 
@@ -47,15 +47,15 @@ jobs:
 
           kubectl wait --for=condition=Ready --namespace "${namespace}" pods --selector "${deploy_pod_labels_elastic}" --timeout=2m
           kubectl wait --for=condition=Ready --namespace "${namespace}" pods --all
+
+          kubectl get po --namespace "${namespace}"
       - name: validate crawler legacy
         run: |
-          namespace=monocle
           kubectl create --namespace "${namespace}" job test  --from $( kubectl get --namespace ${namespace} -f ./deployment/crawler-legacy-cronjob.yaml --output name) 
           kubectl wait --for=condition=complete --namespace "${namespace}" job/test 
 
       - name: Display indexes
         run: |
-          namespace=monocle
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/elastic-service.yaml --output name) 9200:9200 &
           sleep 5s
 
@@ -64,7 +64,6 @@ jobs:
           kill %1
       - name: Check api service through nginx
         run: |
-          namespace=monocle
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
           sleep 5s
 
@@ -72,7 +71,6 @@ jobs:
           kill %1
       - name: Check web service to fetch web app
         run: |
-          namespace=monocle
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
           sleep 5s
 
