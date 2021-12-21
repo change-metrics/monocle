@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'deployment/*'
+      - '.github/workflows/k8s.yaml'
+
 
 jobs:
   check-k8s:
