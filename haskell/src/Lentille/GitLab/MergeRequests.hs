@@ -116,9 +116,9 @@ streamMergeRequests ::
   Text ->
   LentilleStream m Changes
 streamMergeRequests client getIdentIdCb untilDate project =
-  breakOnDate $ streamFetch client mkArgs Nothing transformResponse'
+  breakOnDate $ streamFetch client mkArgs Nothing Nothing Nothing transformResponse'
   where
-    mkArgs = GetProjectMergeRequestsArgs (ID project) Nothing
+    mkArgs _ = GetProjectMergeRequestsArgs (ID project) Nothing
 
     -- This transform the stream by adding a limit.
     -- We don't care about the rest so we replace it with ()

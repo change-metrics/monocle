@@ -148,19 +148,29 @@ instance MonadCrawler IO where
 
 class Monad m => MonadRetry m where
   retry :: (Text, Text, Text) -> m a -> m a
+  genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> (Int -> m a) -> m a
 
 instance MonadRetry IO where
   retry = retry'
+  genericRetry = genericRetry'
 
--- | Retry 5 times network action, doubling backoff each time
+counterT :: Int -> Int -> Text
+counterT count max' = show count <> "/" <> show max'
+
+-- | Retry HTTP network action, doubling backoff each time
 -- Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) => (Text, Text, Text) -> m a -> m a
+retry' ::
+  (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) =>
+  (Text, Text, Text) ->
+  m a ->
+  m a
 retry' label baseAction =
   Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries 7)
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries limit)
     [handler]
     (const action)
   where
+    limit = 7
     action = do
       res <- baseAction
       incrementCounter httpRequestCounter label
@@ -172,7 +182,40 @@ retry' label baseAction =
         let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
             arg = decodeUtf8 $ HTTP.queryString req
             loc = if num == 0 then url <> arg else url
-        mLog . Log Unspecified . LogNetworkFailure $ show num <> "/6 " <> loc <> " failed: " <> show ctx
+        mLog . Log Unspecified . LogNetworkFailure $
+          counterT num limit
+            <> " "
+            <> loc
+            <> " failed: "
+            <> show ctx
         incrementCounter httpFailureCounter label
         pure True
       InvalidUrlException _ _ -> pure False
+
+-- | Retry IO action, with a constant 500ms delay.
+-- | Action to retry get the current retry attempt value to optionaly
+-- | adapt its behavior.
+-- Use this genricRetry' to implement MonadRetry in IO.
+genericRetry' ::
+  (MonadMask m, MonadIO m, MonadLog m) =>
+  -- The Log emitter author
+  LogAuthor ->
+  -- A log message to display at each attempt
+  Text ->
+  -- The check function that to determine whether or not to retry
+  (RetryStatus -> a -> m Bool) ->
+  -- The IO action to retry if needed
+  (Int -> m a) ->
+  m a
+genericRetry' author msg checker baseAction =
+  Retry.retrying
+    (Retry.constantDelay delay <> Retry.limitRetries limit)
+    checker
+    action
+  where
+    limit = 7
+    delay = 500000 -- 500ms
+    action (RetryStatus num _ _) = do
+      when (num > 0) $
+        mLog . Log author . LogRaw $ counterT num limit <> " failed: " <> msg
+      baseAction num

@@ -106,6 +106,7 @@ instance MonadLog LentilleM where
 
 instance MonadRetry LentilleM where
   retry = retry'
+  genericRetry = genericRetry'
 
 instance MonadCrawler LentilleM where
   mReadIORef = liftIO . mReadIORef

@@ -67,6 +67,6 @@ transformResponse result = do
     getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
 streamOrganizationProjects :: MonadGraphQLE m => GraphClient -> Text -> Stream (Of Project) m ()
-streamOrganizationProjects client login = streamFetch client mkArgs (Just getRateLimit) transformResponse
+streamOrganizationProjects client login = streamFetch client mkArgs Nothing Nothing (Just getRateLimit) transformResponse
   where
-    mkArgs = GetProjectsArgs login
+    mkArgs _ = GetProjectsArgs login

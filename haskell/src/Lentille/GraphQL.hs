@@ -1,5 +1,31 @@
 -- | Helper module to define graphql client
-module Lentille.GraphQL where
+module Lentille.GraphQL
+  ( -- * client
+    newGraphClient,
+    GraphClient (host),
+
+    -- * Some cross crawler values
+    glSchemaLocation,
+    ghSchemaLocation,
+    ghDefaultURL,
+
+    -- * Main functions to fetch from a GraphQL server
+    doGraphRequest,
+    streamFetch,
+    fetchWithLog,
+
+    -- * Utility functions to parse query logs
+    handleReqLog,
+
+    -- * Some data types
+    RateLimit (..),
+    PageInfo (..),
+
+    -- * Some type aliases
+    ReqLog,
+    RetryCheck,
+  )
+where
 
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
@@ -110,17 +136,55 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
+type RetryCheck m a = (Either (FetchError a) a, [ReqLog]) -> m Bool
+
+-- | wrapper around fetchWithLog than can optionaly handle fetch retries
+-- based on the returned data inspection via a provided function (see RetryCheck).
+-- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
+doRequest ::
+  forall a.
+  forall m.
+  (MonadGraphQLE m, Fetch a, FromJSON a) =>
+  GraphClient ->
+  (Maybe Int -> Maybe Text -> Args a) ->
+  Maybe (RetryCheck m a) ->
+  Maybe Int ->
+  Maybe PageInfo ->
+  m (Either (FetchError a) a, [ReqLog])
+doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck runFetch
+  where
+    gRetry = genericRetry Macroscope "Retrying request with smaller depth"
+    retryCheck _ = fromMaybe (const $ pure False) retryCheckM
+    runFetch :: (MonadGraphQLE m) => Int -> m (Either (FetchError a) a, [ReqLog])
+    runFetch retried = do
+      let adapedDepth = adaptDepth
+      if adapedDepth == Just 0
+        then error "Unable to reduce depth more"
+        else
+          fetchWithLog
+            (doGraphRequest client)
+            (mkArgs depthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      where
+        adaptDepth :: Maybe Int
+        adaptDepth =
+          let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral <$> depthM
+           in (-) <$> depthM <*> decValue
+
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
-  -- | query Args constructor, the function takes a cursor
-  (Maybe Text -> Args a) ->
+  -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
+  (Maybe Int -> Maybe Text -> Args a) ->
+  -- | an optional retryCheck function
+  Maybe (RetryCheck m a) ->
+  -- | a starting value for the depth
+  Maybe Int ->
   -- | an action to get a RateLimit record
   Maybe (GraphClient -> m RateLimit) ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs retryCheckM depthM getRateLimitM transformResponse = go Nothing
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
@@ -138,10 +202,7 @@ streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go 
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM
-      (respE, reqLog) <-
-        fetchWithLog
-          (doGraphRequest client)
-          (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      (respE, reqLog) <- doRequest client mkArgs retryCheckM depthM pageInfoM
       (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
         Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp

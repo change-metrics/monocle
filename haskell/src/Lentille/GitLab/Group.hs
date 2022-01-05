@@ -43,9 +43,9 @@ streamGroupProjects ::
   GraphClient ->
   Text ->
   LentilleStream m Project
-streamGroupProjects client fullPath = streamFetch client mkArgs (Just getRateLimit) transformResponse
+streamGroupProjects client fullPath = streamFetch client mkArgs Nothing Nothing (Just getRateLimit) transformResponse
   where
-    mkArgs = GetGroupProjectsArgs (ID fullPath)
+    mkArgs _ = GetGroupProjectsArgs (ID fullPath)
 
 transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
 transformResponse result =

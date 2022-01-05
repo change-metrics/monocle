@@ -82,9 +82,9 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
-streamLinkedIssue client time repo = streamFetch client mkArgs (Just getRateLimit) transformResponse
+streamLinkedIssue client time repo = streamFetch client mkArgs Nothing Nothing (Just getRateLimit) transformResponse
   where
-    mkArgs =
+    mkArgs _ =
       GetLinkedIssuesArgs
         ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
         )

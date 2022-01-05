@@ -67,9 +67,9 @@ getFavoritesStream ::
   GraphClient ->
   Text ->
   Stream (Of UserFavorite) m ()
-getFavoritesStream client username = streamFetch client mkArgs (Just getRateLimit) transformResponse
+getFavoritesStream client username = streamFetch client mkArgs Nothing Nothing (Just getRateLimit) transformResponse
   where
-    mkArgs = GetFavoritesArgs username
+    mkArgs _ = GetFavoritesArgs username
     transformResponse :: GetFavorites -> (PageInfo, Maybe RateLimit, [Text], [UserFavorite])
     transformResponse resp = case resp of
       GetFavorites

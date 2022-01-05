@@ -109,6 +109,7 @@ module Monocle.Prelude
 
     -- * text
     stripSpaces,
+    inText,
 
     -- * qq-literals
     utctime,
@@ -178,6 +179,7 @@ import qualified Data.Aeson.Encode.Pretty as Aeson
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Data.Text.Internal.Search
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
@@ -390,6 +392,11 @@ getExn (Left err) = error (toText err)
 -- "johndoe"
 stripSpaces :: Text -> Text
 stripSpaces = T.replace " " ""
+
+inText :: Text -> Text -> Bool
+inText sub txt = case indices sub txt of
+  [] -> False
+  _ -> True
 
 monocleLog :: MonadIO m => Text -> m ()
 monocleLog = sayErr

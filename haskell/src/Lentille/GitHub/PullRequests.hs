@@ -9,8 +9,6 @@
 module Lentille.GitHub.PullRequests where
 
 import Data.Morpheus.Client
--- import Lentille.GitHub.RateLimit (getRateLimit)
-
 import Data.Time.Format
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
@@ -18,7 +16,22 @@ import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Change
 import Monocle.Prelude hiding (id, state)
+import Network.HTTP.Client (responseBody, responseStatus)
+import Network.HTTP.Types (badGateway502)
 import Proto3.Suite (Enumerated (Enumerated))
+
+retryCheck :: MonadGraphQLE m => RetryCheck m a
+retryCheck respI = do
+  pure $ case snd respI of
+    [reqlog] -> checkResp $ snd reqlog
+    _other -> error "Unexpected empty reqlog"
+  where
+    checkResp resp =
+      let status = responseStatus resp
+          body = decodeUtf8 $ responseBody resp
+          msg = "Something went wrong while executing your query. This may be the result of a timeout"
+          shouldRetry = status == badGateway502 && inText msg body
+       in shouldRetry
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -30,13 +43,13 @@ newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 defineByDocumentFile
   ghSchemaLocation
   [gql|
-    query GetProjectPullRequests ($qs: String!, $cursor: String)  {
+    query GetProjectPullRequests ($qs: String!, $depth: Int, $cursor: String)  {
       rateLimit {
         used
         remaining
         resetAt
       }
-      search(query: $qs, type: ISSUE, first: 30, after: $cursor) {
+      search(query: $qs, type: ISSUE, first: $depth, after: $cursor) {
         issueCount
         pageInfo {hasNextPage endCursor}
         nodes {
@@ -215,11 +228,12 @@ streamPullRequests ::
   (Text -> Maybe Text) ->
   GHQueryArgs ->
   LentilleStream m Changes
-streamPullRequests client cb qArgs = streamFetch client mkArgs (Just getRateLimit) transformResponse'
+streamPullRequests client cb qArgs =
+  streamFetch client mkArgs (Just retryCheck) (Just defaultDepthCount) (Just getRateLimit) transformResponse'
   where
-    mkArgs =
-      GetProjectPullRequestsArgs $ getQS qArgs
+    mkArgs = GetProjectPullRequestsArgs (getQS qArgs)
     transformResponse' = transformResponse getHost cb
+    defaultDepthCount = 40
     getHost =
       let host' = host client
        in if host' == "api.github.com" then "github.com" else host'
