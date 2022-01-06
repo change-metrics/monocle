@@ -87,6 +87,14 @@ instance ToJSON ChangesIndexMapping where
                                       "muid" .= object ["type" .= ("keyword" :: Text)]
                                     ]
                               ],
+                          "committer"
+                            .= object
+                              [ "properties"
+                                  .= object
+                                    [ "uid" .= object ["type" .= ("keyword" :: Text)],
+                                      "muid" .= object ["type" .= ("keyword" :: Text)]
+                                    ]
+                              ],
                           "authored_at"
                             .= object
                               [ "type" .= ("date" :: Text),

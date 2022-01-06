@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [index] fix missing schema info for commit.committer fields.
+
 ## [1.3.0] - 2021-12-02
 
 ### Added
