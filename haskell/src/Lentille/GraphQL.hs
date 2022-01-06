@@ -142,8 +142,7 @@ type RetryCheck m a = (Either (FetchError a) a, [ReqLog]) -> m Bool
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
-  forall a.
-  forall m.
+  forall a m.
   (MonadGraphQLE m, Fetch a, FromJSON a) =>
   GraphClient ->
   (Maybe Int -> Maybe Text -> Args a) ->
@@ -155,20 +154,23 @@ doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck runFetc
   where
     gRetry = genericRetry Macroscope "Retrying request with smaller depth"
     retryCheck _ = fromMaybe (const $ pure False) retryCheckM
-    runFetch :: (MonadGraphQLE m) => Int -> m (Either (FetchError a) a, [ReqLog])
-    runFetch retried = do
-      let adapedDepth = adaptDepth
-      if adapedDepth == Just 0
-        then error "Unable to reduce depth more"
-        else
-          fetchWithLog
-            (doGraphRequest client)
-            (mkArgs depthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+    runFetch :: Int -> m (Either (FetchError a) a, [ReqLog])
+    runFetch retried =
+      fetchWithLog
+        (doGraphRequest client)
+        (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
       where
-        adaptDepth :: Maybe Int
-        adaptDepth =
-          let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral <$> depthM
-           in (-) <$> depthM <*> decValue
+        aDepthM = decreaseValue retried <$> depthM
+
+-- | Slowly decrease a value to workaround api timeout when a graph depth is too deep.
+-- >>> decreaseValue 1 42
+-- 30
+-- >>> decreaseValue 2 42
+-- 17
+decreaseValue :: Int -> Int -> Int
+decreaseValue retried depth =
+  let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral $ depth
+   in max 1 $ depth - decValue
 
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>

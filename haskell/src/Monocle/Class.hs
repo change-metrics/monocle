@@ -146,6 +146,7 @@ instance MonadCrawler IO where
 -------------------------------------------------------------------------------
 -- A network retry system
 
+-- TODO: remove retry in favor of genericRetry
 class Monad m => MonadRetry m where
   retry :: (Text, Text, Text) -> m a -> m a
   genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> (Int -> m a) -> m a
