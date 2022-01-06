@@ -229,9 +229,14 @@ streamPullRequests ::
   GHQueryArgs ->
   LentilleStream m Changes
 streamPullRequests client cb qArgs =
-  streamFetch client mkArgs (Just retryCheck) (Just defaultDepthCount) (Just getRateLimit) transformResponse'
+  streamFetch client mkArgs optParams transformResponse'
   where
     mkArgs = GetProjectPullRequestsArgs (getQS qArgs)
+    optParams =
+      let fpRetryCheck = Just retryCheck
+          fpDepth = Just defaultDepthCount
+          fpGetRatelimit = Just getRateLimit
+       in StreamFetchOptParams {..}
     transformResponse' = transformResponse getHost cb
     defaultDepthCount = 40
     getHost =

@@ -20,6 +20,8 @@ module Lentille.GraphQL
     -- * Some data types
     RateLimit (..),
     PageInfo (..),
+    StreamFetchOptParams (..),
+    defaultStreamFetchOptParams,
 
     -- * Some type aliases
     ReqLog,
@@ -172,21 +174,28 @@ decreaseValue retried depth =
   let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral $ depth
    in max 1 $ depth - decValue
 
+data StreamFetchOptParams m a = StreamFetchOptParams
+  { -- | an optional retryCheck function
+    fpRetryCheck :: Maybe (RetryCheck m a),
+    -- | an optional starting value for the depth
+    fpDepth :: Maybe Int,
+    -- | an optional action to get a RateLimit record
+    fpGetRatelimit :: Maybe (GraphClient -> m RateLimit)
+  }
+
+defaultStreamFetchOptParams :: StreamFetchOptParams m a
+defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
+
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
-  -- | an optional retryCheck function
-  Maybe (RetryCheck m a) ->
-  -- | a starting value for the depth
-  Maybe Int ->
-  -- | an action to get a RateLimit record
-  Maybe (GraphClient -> m RateLimit) ->
+  StreamFetchOptParams m a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs retryCheckM depthM getRateLimitM transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
@@ -204,7 +213,7 @@ streamFetch client@GraphClient {..} mkArgs retryCheckM depthM getRateLimitM tran
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM
-      (respE, reqLog) <- doRequest client mkArgs retryCheckM depthM pageInfoM
+      (respE, reqLog) <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
       (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
         Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp
@@ -212,7 +221,7 @@ streamFetch client@GraphClient {..} mkArgs retryCheckM depthM getRateLimitM tran
 
     go pageInfoM = do
       --- Perform a pre GraphQL request to gather rateLimit
-      case getRateLimitM of
+      case fpGetRatelimit of
         Just getRateLimit -> lift $
           mModifyMVar rateLimitMVar $
             const $ do
