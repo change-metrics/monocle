@@ -26,6 +26,7 @@ module Lentille
     getClientBaseUrl,
     getChangeId,
     isMerged,
+    isClosed,
     nobody,
     toIdent,
     ghostIdent,
@@ -41,7 +42,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
 import Monocle.Change
-  ( Change_ChangeState (Change_ChangeStateMerged),
+  ( Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
     Ident (..),
   )
 import Monocle.Class
@@ -160,6 +161,11 @@ getChangeId fullName iid = toLazy . stripSpaces $ T.replace "/" "@" fullName <> 
 isMerged :: Enumerated Change_ChangeState -> Bool
 isMerged state' = case state' of
   Enumerated (Right Change_ChangeStateMerged) -> True
+  _otherwise -> False
+
+isClosed :: Enumerated Change_ChangeState -> Bool
+isClosed state' = case state' of
+  Enumerated (Right Change_ChangeStateClosed) -> True
   _otherwise -> False
 
 sanitizeID :: Text -> Text

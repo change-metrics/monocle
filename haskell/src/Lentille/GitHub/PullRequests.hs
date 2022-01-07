@@ -283,8 +283,8 @@ transformResponse host identCB result = do
         ) = (login, name)
     repoFullname :: SearchNodesRepositoryRepository -> Text
     repoFullname r = let (owner, name) = repoOwnerName r in owner <> "/" <> name
-    getURL :: URI -> Text
     getURL (URI url) = url
+    getSHA (GitObjectID sha) = sha
     commitCount :: SearchNodesCommitsPullRequestCommitConnection -> Int
     commitCount (SearchNodesCommitsPullRequestCommitConnection count _) = count
     toChangedFiles :: SearchNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
@@ -302,7 +302,7 @@ transformResponse host identCB result = do
       where
         toCommit :: SearchNodesCommitsNodesCommitCommit -> Commit
         toCommit SearchNodesCommitsNodesCommitCommit {..} =
-          let commitSha = show $ getSHA oid
+          let commitSha = from $ getSHA oid
               commitAuthor = getAuthor <$> author
               commitCommitter = getCommitter <$> committer
               commitAuthoredAt = Just $ from authoredDate
@@ -322,7 +322,6 @@ transformResponse host identCB result = do
                   (Just (SearchNodesCommitsNodesCommitCommitterUserUser login))
                 ) = getIdent login
             getCommitter _ = ghostIdent host
-            getSHA (GitObjectID sha) = sha
     getPRAuthor :: SearchNodesAuthorActor -> Text
     getPRAuthor (SearchNodesAuthorActor _ login) = login
     getPRMergedBy :: SearchNodesMergedByActor -> Text
@@ -365,7 +364,7 @@ transformResponse host identCB result = do
           changeEventBranch = changeBranch change,
           changeEventTargetBranch = changeTargetBranch change,
           changeEventNumber = changeNumber change,
-          changeEventChangeId = changeId change,
+          changeEventChangeId = changeChangeId change,
           changeEventUrl = changeUrl change,
           changeEventOnAuthor = changeAuthor change,
           changeEventOnCreatedAt = changeCreatedAt change,
@@ -381,19 +380,23 @@ transformResponse host identCB result = do
     getEventsFromTimeline change (SearchNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
       catMaybes $ toEventM <$> catMaybes (fromMaybe [] nodes)
       where
+        getID (ID v) = v
         toEventM :: SearchNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
         toEventM = \case
           SearchNodesTimelineItemsNodesClosedEvent
             _
-            _
+            eId
             createdAt
             (Just (SearchNodesTimelineItemsNodesActorActor _ actor)) ->
-              if not . isMerged $ changeState change
+              if isMerged (changeState change) || isClosed (changeState change)
                 then
                   Just
                     ( baseEvent
-                        (ChangeEventTypeChangeAbandoned ChangeAbandonedEvent)
-                        ("ChangeAbandonedEvent-" <> changeId change)
+                        ( if isMerged $ changeState change
+                            then ChangeEventTypeChangeMerged ChangeMergedEvent
+                            else ChangeEventTypeChangeAbandoned ChangeAbandonedEvent
+                        )
+                        (from $ getID eId)
                         change
                     )
                       { changeEventAuthor = Just $ getIdent actor,
@@ -402,7 +405,7 @@ transformResponse host identCB result = do
                 else Nothing
           SearchNodesTimelineItemsNodesPullRequestReview
             _
-            _
+            eId
             createdAt
             reviewState
             (Just (SearchNodesTimelineItemsNodesAuthorActor _ actor)) ->
@@ -415,7 +418,7 @@ transformResponse host identCB result = do
                   event =
                     ( baseEvent
                         (ChangeEventTypeChangeReviewed $ ChangeReviewedEvent $ fromList [approval])
-                        ("ChangeReviewedEvent-" <> changeId change)
+                        (from $ getID eId)
                         change
                     )
                       { changeEventAuthor = Just $ getIdent actor,
@@ -424,13 +427,13 @@ transformResponse host identCB result = do
                in Just event
           SearchNodesTimelineItemsNodesHeadRefForcePushedEvent
             _
-            _
+            eId
             createdAt
             (Just (SearchNodesTimelineItemsNodesFpactorActor _ actor)) ->
               Just
                 ( baseEvent
                     (ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent)
-                    ("ChangeCommitForcePushedEvent-" <> changeId change)
+                    (from $ getID eId)
                     change
                 )
                   { changeEventAuthor = Just $ getIdent actor,
@@ -445,7 +448,7 @@ transformResponse host identCB result = do
         toEvent (SearchNodesCommitsNodesPullRequestCommit commit) =
           ( baseEvent
               (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
-              ("ChangeCommitPushedEvent-" <> changeId change)
+              (from . getSHA $ oid commit)
               change
           )
             { changeEventAuthor = Just $ getCommitter $ committer commit,
@@ -474,7 +477,7 @@ transformResponse host identCB result = do
             Just
               ( baseEvent
                   (ChangeEventTypeChangeCommented ChangeCommentedEvent)
-                  ("ChangeCommmentedEvent-" <> changeId change <> "-" <> from eId)
+                  (from eId)
                   change
               )
                 { changeEventAuthor = Just $ getIdent actor,
@@ -510,7 +513,10 @@ transformResponse host identCB result = do
                 changeUpdatedAt = Just $ from updatedAt,
                 changeOptionalClosedAt = from <$> closedAt,
                 changeState = toPRState state,
-                changeOptionalDuration = Just $ toDuration (fromMaybe updatedAt closedAt) createdAt,
+                changeOptionalDuration =
+                  if isMerged (toPRState state) || isClosed (toPRState state)
+                    then Just $ toDuration (fromMaybe updatedAt closedAt) createdAt
+                    else Nothing,
                 changeMergeable = from $ toPRMergeableState mergeable,
                 changeLabels = fromList $ from <$> maybe [] toLabels labels,
                 changeAssignees = fromList $ toAssignees assignees,
@@ -523,30 +529,15 @@ transformResponse host identCB result = do
           createdEvent =
             ( baseEvent
                 (ChangeEventTypeChangeCreated ChangeCreatedEvent)
-                ("ChangeCreatedEvent-" <> changeId change)
+                ("CCEPR-" <> changeChangeId change)
                 change
             )
               { changeEventCreatedAt = changeCreatedAt change,
                 changeEventAuthor = changeAuthor change
               }
-          mergedEvent =
-            [ ( baseEvent
-                  (ChangeEventTypeChangeMerged ChangeMergedEvent)
-                  ("ChangeMergedEvent-" <> changeId change)
-                  change
-              )
-                { changeEventAuthor = getMergedByIdent <$> changeOptionalMergedBy change,
-                  changeEventCreatedAt = getMergedAt <$> changeOptionalMergedAt change
-                }
-              | isMerged $ changeState change
-            ]
-            where
-              getMergedByIdent (ChangeOptionalMergedByMergedBy ident) = ident
-              getMergedAt (ChangeOptionalMergedAtMergedAt ts) = ts
        in Just
             ( change,
               [createdEvent]
-                <> mergedEvent
                 <> getEventsFromTimeline change timelineItems
                 <> getCommitEvents change commits
                 <> getCommentEvents change comments

@@ -122,11 +122,6 @@ toState state' = case state' of
   "opened" -> Enumerated $ Right Change_ChangeStateOpen
   _otherwise -> error ("Unable to decode Merge Request state: " <> _otherwise)
 
-isClosed :: Enumerated Change_ChangeState -> Bool
-isClosed state' = case state' of
-  Enumerated (Right Change_ChangeStateClosed) -> True
-  _otherwise -> False
-
 isComment :: MRComment -> Bool
 isComment MRComment {..} = case coType of
   CoComment -> True
