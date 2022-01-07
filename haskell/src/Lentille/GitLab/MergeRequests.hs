@@ -122,17 +122,7 @@ streamMergeRequests client getIdentIdCb untilDate project =
 
     -- This transform the stream by adding a limit.
     -- We don't care about the rest so we replace it with ()
-    breakOnDate = fmap (pure ()) . S.break isChangeTooOld
-
-    isChangeTooOld :: Changes -> Bool
-    isChangeTooOld (change, _) =
-      case changeUpdatedAt change of
-        Just changeDate -> isDateOlderThan (T.toUTCTime changeDate) untilDate
-        _ -> True
-
-    -- t1 is older than t2 then return True
-    isDateOlderThan :: UTCTime -> UTCTime -> Bool
-    isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
+    breakOnDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
 
     transformResponse' = transformResponse (host client) getIdentIdCb
 

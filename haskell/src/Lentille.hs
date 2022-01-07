@@ -31,6 +31,7 @@ module Lentille
     toIdent,
     ghostIdent,
     sanitizeID,
+    isChangeTooOld,
 
     -- * Re-export
     module Monocle.Class,
@@ -39,12 +40,10 @@ where
 
 import qualified Data.Text as T
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Google.Protobuf.Timestamp as T
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
-import Monocle.Change
-  ( Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
-    Ident (..),
-  )
+import Monocle.Change (Change (changeUpdatedAt), ChangeEvent, Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged), Ident (..))
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
 import Monocle.Prelude
@@ -183,3 +182,9 @@ toIdent host cb username = Ident {..}
 
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody
+
+isChangeTooOld :: UTCTime -> (Change, [ChangeEvent]) -> Bool
+isChangeTooOld date (change, _) =
+  case changeUpdatedAt change of
+    Just changeDate -> T.toUTCTime changeDate < date
+    _ -> True

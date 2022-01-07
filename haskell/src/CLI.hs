@@ -130,7 +130,7 @@ usageLentille =
         <> mkSubCommand "gerrit-projects" "Get projects list" gerritProjectsUsage
         <> mkSubCommand "gerrit-changes" "Get changes list" gerritChangesUsage
         <> mkSubCommand "github-projects" "Get projects list" githubProjectsUsage
-        <> mkSubCommand "github-changes" "Get projects list" githubChangesUsage
+        <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
     )
   where
     gerritChangeUsage = io <$> parser
@@ -164,17 +164,15 @@ usageLentille =
     githubChangesUsage = io <$> parser
       where
         parser =
-          (,,,,,)
+          (,,,,)
             <$> urlOption
             <*> secretOption
             <*> projectOption
-            <*> optional sinceOption
-            <*> extraQOption
+            <*> sinceOption
             <*> limitOption
-        io (url, secret, repo, sinceM, extraQM, limitM) = do
+        io (url, secret, repo, since, limitM) = do
           client <- getGraphClient url secret
-          let args = GH_PR.GHQueryArgs repo (toSince <$> sinceM) extraQM
-          dump limitM $ GH_PR.streamPullRequests client (const Nothing) args
+          dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
 
     toSince txt = case Monocle.Search.Query.parseDateValue txt of
       Just x -> x
@@ -192,7 +190,6 @@ usageLentille =
     projectOption = strOption (long "project" <> O.help "Project name")
     sinceOption = strOption (long "since" <> O.help "Since date")
     limitOption = optional $ option auto (long "limit" <> O.help "Limit count")
-    extraQOption = optional $ strOption (long "extra" <> O.help "GitHub extra query")
 
 dump :: (MonadCatch m, MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
 dump limitM stream = do

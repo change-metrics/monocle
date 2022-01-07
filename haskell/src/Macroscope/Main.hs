@@ -16,7 +16,7 @@ import Lentille.Gerrit (MonadGerrit (..))
 import qualified Lentille.Gerrit as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitHub.Organization (streamOrganizationProjects)
-import Lentille.GitHub.PullRequests (getPullRequestStream)
+import Lentille.GitHub.PullRequests (streamPullRequests)
 import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
@@ -354,7 +354,7 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
     ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
     ghPRCrawler :: forall m. MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
-    ghPRCrawler glClient cb = Changes $ getPullRequestStream glClient cb
+    ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects

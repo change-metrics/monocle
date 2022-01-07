@@ -9,7 +9,7 @@
 module Lentille.GitHub.PullRequests where
 
 import Data.Morpheus.Client
-import Data.Time.Format
+import qualified Data.Text (takeWhile, takeWhileEnd)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import Lentille.GitHub.RateLimit (getRateLimit)
@@ -19,6 +19,7 @@ import Monocle.Prelude hiding (id, state)
 import Network.HTTP.Client (responseBody, responseStatus)
 import Network.HTTP.Types (badGateway502)
 import Proto3.Suite (Enumerated (Enumerated))
+import qualified Streaming.Prelude as S (break)
 
 retryCheck :: MonadGraphQLE m => RetryCheck m a
 retryCheck respI = do
@@ -43,19 +44,21 @@ newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 defineByDocumentFile
   ghSchemaLocation
   [gql|
-    query GetProjectPullRequests ($qs: String!, $depth: Int, $cursor: String)  {
+    query GetProjectPullRequests ($org: String!, $repo: String!, $depth: Int, $cursor: String) {
       rateLimit {
         used
         remaining
         resetAt
       }
-      search(query: $qs, type: ISSUE, first: $depth, after: $cursor) {
-        issueCount
-        pageInfo {hasNextPage endCursor}
-        nodes {
-          __typename
-          ... on PullRequest {
-            ...prdata
+      repository(owner: $org, name: $repo) {
+        pullRequests (first: $depth, after: $cursor, orderBy: { field: UPDATED_AT, direction: DESC }) {
+          totalCount
+          pageInfo {hasNextPage endCursor}
+          nodes {
+            __typename
+            ... on PullRequest {
+              ...prdata
+            }
           }
         }
       }
@@ -196,13 +199,7 @@ instance From DateTime ChangeOptionalClosedAt where
 
 type Changes = (Change, [ChangeEvent])
 
-data GHQueryArgs = GHQueryArgs
-  { repo :: Text,
-    time :: Maybe UTCTime,
-    extraQ :: Maybe Text
-  }
-
-getPullRequestStream ::
+streamPullRequests ::
   MonadGraphQLE m =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
@@ -210,28 +207,12 @@ getPullRequestStream ::
   UTCTime ->
   Text ->
   LentilleStream m Changes
-getPullRequestStream client cb time repo =
-  let args = GHQueryArgs repo (Just time) Nothing
-   in streamPullRequests client cb args
-
-getQS :: GHQueryArgs -> Text
-getQS GHQueryArgs {..} = unwords ["is:pr", toRepoFrag, toDateFrag, toExtraQ]
+streamPullRequests client cb untilDate repoFullname =
+  breakOnDate $ streamFetch client mkArgs optParams transformResponse'
   where
-    toRepoFrag = from $ "repo:" <> repo
-    toDateFrag = from $ maybe "" (\d -> "updated:>=" <> formatTime defaultTimeLocale "%F" d) time
-    toExtraQ = from (fromMaybe mempty extraQ)
-
-streamPullRequests ::
-  MonadGraphQLE m =>
-  GraphClient ->
-  -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
-  GHQueryArgs ->
-  LentilleStream m Changes
-streamPullRequests client cb qArgs =
-  streamFetch client mkArgs optParams transformResponse'
-  where
-    mkArgs = GetProjectPullRequestsArgs (getQS qArgs)
+    org = Data.Text.takeWhile (/= '/') repoFullname
+    repo = Data.Text.takeWhileEnd (/= '/') repoFullname
+    mkArgs = GetProjectPullRequestsArgs org repo
     optParams =
       let fpRetryCheck = Just retryCheck
           fpDepth = Just defaultDepthCount
@@ -242,6 +223,9 @@ streamPullRequests client cb qArgs =
     getHost =
       let host' = host client
        in if host' == "api.github.com" then "github.com" else host'
+    -- This transform the stream by adding a limit.
+    -- We don't care about the rest so we replace it with ()
+    breakOnDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
 
 transformResponse ::
   -- hostname of the provider
@@ -255,10 +239,14 @@ transformResponse host identCB result = do
   case result of
     GetProjectPullRequests
       (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
-      ( SearchSearchResultItemConnection
-          totalCount'
-          (SearchPageInfoPageInfo hasNextPage endCursor)
-          (Just projectPRs)
+      ( Just
+          ( RepositoryRepository
+              ( RepositoryPullRequestsPullRequestConnection
+                  totalCount'
+                  (RepositoryPullRequestsPageInfoPageInfo hasNextPage endCursor)
+                  (Just projectPRs)
+                )
+            )
         ) ->
         let rateLimit = case parseDateValue $ from resetAtText of
               Just resetAt -> RateLimit {..}
@@ -275,33 +263,33 @@ transformResponse host identCB result = do
     getIdent :: Text -> Ident
     getIdent = toIdent host identCB
     getGhostIdent = ghostIdent host
-    repoOwnerName :: SearchNodesRepositoryRepository -> (Text, Text)
+    repoOwnerName :: RepositoryPullRequestsNodesRepositoryRepository -> (Text, Text)
     repoOwnerName
-      ( SearchNodesRepositoryRepository
-          (SearchNodesRepositoryOwnerRepositoryOwner _ login)
+      ( RepositoryPullRequestsNodesRepositoryRepository
+          (RepositoryPullRequestsNodesRepositoryOwnerRepositoryOwner _ login)
           name
         ) = (login, name)
-    repoFullname :: SearchNodesRepositoryRepository -> Text
+    repoFullname :: RepositoryPullRequestsNodesRepositoryRepository -> Text
     repoFullname r = let (owner, name) = repoOwnerName r in owner <> "/" <> name
     getURL (URI url) = url
     getSHA (GitObjectID sha) = sha
-    commitCount :: SearchNodesCommitsPullRequestCommitConnection -> Int
-    commitCount (SearchNodesCommitsPullRequestCommitConnection count _) = count
-    toChangedFiles :: SearchNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
-    toChangedFiles (SearchNodesFilesPullRequestChangedFileConnection nodes) =
+    commitCount :: RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> Int
+    commitCount (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection count _) = count
+    toChangedFiles :: RepositoryPullRequestsNodesFilesPullRequestChangedFileConnection -> [ChangedFile]
+    toChangedFiles (RepositoryPullRequestsNodesFilesPullRequestChangedFileConnection nodes) =
       toChangedFile <$> catMaybes (fromMaybe [] nodes)
       where
-        toChangedFile :: SearchNodesFilesNodesPullRequestChangedFile -> ChangedFile
-        toChangedFile SearchNodesFilesNodesPullRequestChangedFile {..} =
+        toChangedFile :: RepositoryPullRequestsNodesFilesNodesPullRequestChangedFile -> ChangedFile
+        toChangedFile RepositoryPullRequestsNodesFilesNodesPullRequestChangedFile {..} =
           ChangedFile (from additions) (from deletions) (from path)
     toChangeFilePath :: ChangedFile -> ChangedFilePath
     toChangeFilePath (ChangedFile _ _ path) = ChangedFilePath path
-    toChangeCommits :: SearchNodesCommitsPullRequestCommitConnection -> [Commit]
-    toChangeCommits (SearchNodesCommitsPullRequestCommitConnection _ nodes) =
+    toChangeCommits :: RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> [Commit]
+    toChangeCommits (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection _ nodes) =
       toCommit . commit <$> catMaybes (fromMaybe [] nodes)
       where
-        toCommit :: SearchNodesCommitsNodesCommitCommit -> Commit
-        toCommit SearchNodesCommitsNodesCommitCommit {..} =
+        toCommit :: RepositoryPullRequestsNodesCommitsNodesCommitCommit -> Commit
+        toCommit RepositoryPullRequestsNodesCommitsNodesCommitCommit {..} =
           let commitSha = from $ getSHA oid
               commitAuthor = getAuthor <$> author
               commitCommitter = getCommitter <$> committer
@@ -313,19 +301,19 @@ transformResponse host identCB result = do
            in Commit {..}
           where
             getAuthor
-              ( SearchNodesCommitsNodesCommitAuthorGitActor
-                  (Just (SearchNodesCommitsNodesCommitAuthorUserUser login))
+              ( RepositoryPullRequestsNodesCommitsNodesCommitAuthorGitActor
+                  (Just (RepositoryPullRequestsNodesCommitsNodesCommitAuthorUserUser login))
                 ) = getIdent login
             getAuthor _ = ghostIdent host
             getCommitter
-              ( SearchNodesCommitsNodesCommitCommitterGitActor
-                  (Just (SearchNodesCommitsNodesCommitCommitterUserUser login))
+              ( RepositoryPullRequestsNodesCommitsNodesCommitCommitterGitActor
+                  (Just (RepositoryPullRequestsNodesCommitsNodesCommitCommitterUserUser login))
                 ) = getIdent login
             getCommitter _ = ghostIdent host
-    getPRAuthor :: SearchNodesAuthorActor -> Text
-    getPRAuthor (SearchNodesAuthorActor _ login) = login
-    getPRMergedBy :: SearchNodesMergedByActor -> Text
-    getPRMergedBy (SearchNodesMergedByActor _ login) = login
+    getPRAuthor :: RepositoryPullRequestsNodesAuthorActor -> Text
+    getPRAuthor (RepositoryPullRequestsNodesAuthorActor _ login) = login
+    getPRMergedBy :: RepositoryPullRequestsNodesMergedByActor -> Text
+    getPRMergedBy (RepositoryPullRequestsNodesMergedByActor _ login) = login
     toPRState :: PullRequestState -> Enumerated Change_ChangeState
     toPRState = \case
       PullRequestStateCLOSED -> Enumerated (Right Change_ChangeStateClosed)
@@ -338,18 +326,18 @@ transformResponse host identCB result = do
       MergeableStateCONFLICTING -> "CONFLICT"
       MergeableStateMERGEABLE -> "MERGEABLE"
       MergeableStateUNKNOWN -> "UNKNOWN"
-    toLabels :: SearchNodesLabelsLabelConnection -> [Text]
-    toLabels (SearchNodesLabelsLabelConnection nodes) =
+    toLabels :: RepositoryPullRequestsNodesLabelsLabelConnection -> [Text]
+    toLabels (RepositoryPullRequestsNodesLabelsLabelConnection nodes) =
       toLabel <$> catMaybes (fromMaybe [] nodes)
       where
-        toLabel :: SearchNodesLabelsNodesLabel -> Text
-        toLabel (SearchNodesLabelsNodesLabel name) = name
-    toAssignees :: SearchNodesAssigneesUserConnection -> [Ident]
-    toAssignees (SearchNodesAssigneesUserConnection nodes) =
+        toLabel :: RepositoryPullRequestsNodesLabelsNodesLabel -> Text
+        toLabel (RepositoryPullRequestsNodesLabelsNodesLabel name) = name
+    toAssignees :: RepositoryPullRequestsNodesAssigneesUserConnection -> [Ident]
+    toAssignees (RepositoryPullRequestsNodesAssigneesUserConnection nodes) =
       getIdent . toAssignee <$> catMaybes (fromMaybe [] nodes)
       where
-        toAssignee :: SearchNodesAssigneesNodesUser -> Text
-        toAssignee (SearchNodesAssigneesNodesUser login) = login
+        toAssignee :: RepositoryPullRequestsNodesAssigneesNodesUser -> Text
+        toAssignee (RepositoryPullRequestsNodesAssigneesNodesUser login) = login
     toApprovals :: PullRequestReviewDecision -> Text
     toApprovals = \case
       PullRequestReviewDecisionAPPROVED -> "APPROVED"
@@ -376,18 +364,18 @@ transformResponse host identCB result = do
           changeEventCreatedAt = Nothing,
           changeEventAuthor = Nothing
         }
-    getEventsFromTimeline :: Change -> SearchNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
-    getEventsFromTimeline change (SearchNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
+    getEventsFromTimeline :: Change -> RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
+    getEventsFromTimeline change (RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
       catMaybes $ toEventM <$> catMaybes (fromMaybe [] nodes)
       where
         getID (ID v) = v
-        toEventM :: SearchNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
+        toEventM :: RepositoryPullRequestsNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
         toEventM = \case
-          SearchNodesTimelineItemsNodesClosedEvent
+          RepositoryPullRequestsNodesTimelineItemsNodesClosedEvent
             _
             eId
             createdAt
-            (Just (SearchNodesTimelineItemsNodesActorActor _ actor)) ->
+            (Just (RepositoryPullRequestsNodesTimelineItemsNodesActorActor _ actor)) ->
               if isMerged (changeState change) || isClosed (changeState change)
                 then
                   Just
@@ -403,12 +391,12 @@ transformResponse host identCB result = do
                         changeEventCreatedAt = Just $ from createdAt
                       }
                 else Nothing
-          SearchNodesTimelineItemsNodesPullRequestReview
+          RepositoryPullRequestsNodesTimelineItemsNodesPullRequestReview
             _
             eId
             createdAt
             reviewState
-            (Just (SearchNodesTimelineItemsNodesAuthorActor _ actor)) ->
+            (Just (RepositoryPullRequestsNodesTimelineItemsNodesAuthorActor _ actor)) ->
               let approval = case reviewState of
                     PullRequestReviewStateAPPROVED -> "APPROVED"
                     PullRequestReviewStateCHANGES_REQUESTED -> "CHANGES_REQUESTED"
@@ -425,11 +413,11 @@ transformResponse host identCB result = do
                         changeEventCreatedAt = Just $ from createdAt
                       }
                in Just event
-          SearchNodesTimelineItemsNodesHeadRefForcePushedEvent
+          RepositoryPullRequestsNodesTimelineItemsNodesHeadRefForcePushedEvent
             _
             eId
             createdAt
-            (Just (SearchNodesTimelineItemsNodesFpactorActor _ actor)) ->
+            (Just (RepositoryPullRequestsNodesTimelineItemsNodesFpactorActor _ actor)) ->
               Just
                 ( baseEvent
                     (ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent)
@@ -440,12 +428,12 @@ transformResponse host identCB result = do
                     changeEventCreatedAt = Just $ from createdAt
                   }
           _ -> Nothing
-    getCommitEvents :: Change -> SearchNodesCommitsPullRequestCommitConnection -> [ChangeEvent]
-    getCommitEvents change (SearchNodesCommitsPullRequestCommitConnection _ nodes) =
+    getCommitEvents :: Change -> RepositoryPullRequestsNodesCommitsPullRequestCommitConnection -> [ChangeEvent]
+    getCommitEvents change (RepositoryPullRequestsNodesCommitsPullRequestCommitConnection _ nodes) =
       toEvent <$> catMaybes (fromMaybe [] nodes)
       where
-        toEvent :: SearchNodesCommitsNodesPullRequestCommit -> ChangeEvent
-        toEvent (SearchNodesCommitsNodesPullRequestCommit commit) =
+        toEvent :: RepositoryPullRequestsNodesCommitsNodesPullRequestCommit -> ChangeEvent
+        toEvent (RepositoryPullRequestsNodesCommitsNodesPullRequestCommit commit) =
           ( baseEvent
               (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
               (from . getSHA $ oid commit)
@@ -455,24 +443,24 @@ transformResponse host identCB result = do
               changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
             }
           where
-            getCommitter :: Maybe SearchNodesCommitsNodesCommitCommitterGitActor -> Ident
+            getCommitter :: Maybe RepositoryPullRequestsNodesCommitsNodesCommitCommitterGitActor -> Ident
             getCommitter
               ( Just
-                  ( SearchNodesCommitsNodesCommitCommitterGitActor
-                      (Just (SearchNodesCommitsNodesCommitCommitterUserUser login))
+                  ( RepositoryPullRequestsNodesCommitsNodesCommitCommitterGitActor
+                      (Just (RepositoryPullRequestsNodesCommitsNodesCommitCommitterUserUser login))
                     )
                 ) = getIdent login
             getCommitter _ = getGhostIdent
-    getCommentEvents :: Change -> SearchNodesCommentsIssueCommentConnection -> [ChangeEvent]
-    getCommentEvents change (SearchNodesCommentsIssueCommentConnection nodes) =
+    getCommentEvents :: Change -> RepositoryPullRequestsNodesCommentsIssueCommentConnection -> [ChangeEvent]
+    getCommentEvents change (RepositoryPullRequestsNodesCommentsIssueCommentConnection nodes) =
       catMaybes $ toEvent <$> catMaybes (fromMaybe [] nodes)
       where
-        toEvent :: SearchNodesCommentsNodesIssueComment -> Maybe ChangeEvent
+        toEvent :: RepositoryPullRequestsNodesCommentsNodesIssueComment -> Maybe ChangeEvent
         toEvent
-          ( SearchNodesCommentsNodesIssueComment
+          ( RepositoryPullRequestsNodesCommentsNodesIssueComment
               (ID eId)
               createdAt
-              (Just (SearchNodesCommentsNodesAuthorActor _ actor))
+              (Just (RepositoryPullRequestsNodesCommentsNodesAuthorActor _ actor))
             ) =
             Just
               ( baseEvent
@@ -484,9 +472,8 @@ transformResponse host identCB result = do
                   changeEventCreatedAt = Just $ from createdAt
                 }
         toEvent _ = Nothing
-    transPR :: SearchNodesSearchResultItem -> Maybe (Change, [ChangeEvent])
-    transPR (SearchNodesSearchResultItem _) = Nothing
-    transPR SearchNodesPullRequest {..} =
+    transPR :: RepositoryPullRequestsNodesPullRequest -> Maybe (Change, [ChangeEvent])
+    transPR RepositoryPullRequestsNodesPullRequest {..} =
       let change =
             Change
               { changeId = from . sanitizeID $ unpackID id,
