@@ -220,12 +220,17 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
     go pageInfoM = do
+      --- Start be waiting one second if we request a new page
+      when (isJust pageInfoM) $ lift $ mThreadDelay 1_000_000
+
       --- Perform a pre GraphQL request to gather rateLimit
       case fpGetRatelimit of
         Just getRateLimit -> lift $
           mModifyMVar rateLimitMVar $
             const $ do
               rl <- getRateLimit client
+              -- Wait one second to delay the next call
+              mThreadDelay 1_000_000
               pure (Just rl, ())
         Nothing -> pure ()
 
@@ -242,6 +247,5 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       -- Abort the stream when there are errors
       unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
 
-      -- TODO: implement throttle
       -- Call recursively when response has a next page
-      when (hasNextPage pageInfo) (go (Just pageInfo))
+      when (hasNextPage pageInfo) $ go (Just pageInfo)
