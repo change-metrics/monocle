@@ -126,12 +126,6 @@ handleReqLog err reqLog = case reqLog of
 data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
   deriving (Show)
 
-instance From PageInfo Text where
-  from PageInfo {..} =
-    "total docs: "
-      <> maybe "" show totalCount
-      <> (if hasNextPage then " (has next page)" else "")
-
 data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
   deriving (Show)
 
@@ -195,7 +189,7 @@ streamFetch ::
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
@@ -219,7 +213,17 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
         Right resp -> pure $ transformResponse resp
       pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
-    go pageInfoM = do
+    logStep pageInfo rateLimitM xs totalFetched = do
+      lift . log $
+        show (length xs)
+          <> " doc(s) fetched from current page (total fetched: "
+          <> show (totalFetched + length xs)
+          <> ") - "
+          <> show pageInfo
+          <> " - "
+          <> maybe "no ratelimit" show rateLimitM
+
+    go pageInfoM totalFetched = do
       --- Start be waiting one second if we request a new page
       when (isJust pageInfoM) $ lift $ mThreadDelay 1_000_000
 
@@ -239,7 +243,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
         lift $ mModifyMVar rateLimitMVar $ request pageInfoM
 
       -- Log crawling status
-      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
+      logStep pageInfo rateLimitM xs totalFetched
 
       -- Yield the results
       S.each xs
@@ -248,4 +252,4 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
 
       -- Call recursively when response has a next page
-      when (hasNextPage pageInfo) $ go (Just pageInfo)
+      when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
