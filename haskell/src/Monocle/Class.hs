@@ -149,7 +149,7 @@ instance MonadCrawler IO where
 -- TODO: remove retry in favor of genericRetry
 class Monad m => MonadRetry m where
   retry :: (Text, Text, Text) -> m a -> m a
-  genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> (Int -> m a) -> m a
+  genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> Int -> (Int -> m a) -> m a
 
 instance MonadRetry IO where
   retry = retry'
@@ -193,7 +193,7 @@ retry' label baseAction =
         pure True
       InvalidUrlException _ _ -> pure False
 
--- | Retry IO action, with a constant 500ms delay.
+-- | Retry IO action, with a constant configuration delay.
 -- | Action to retry get the current retry attempt value to optionaly
 -- | adapt its behavior.
 -- Use this genricRetry' to implement MonadRetry in IO.
@@ -205,17 +205,18 @@ genericRetry' ::
   Text ->
   -- The check function that to determine whether or not to retry
   (RetryStatus -> a -> m Bool) ->
+  -- The constant delay to wait for between retries (in millisecond)
+  Int ->
   -- The IO action to retry if needed
   (Int -> m a) ->
   m a
-genericRetry' author msg checker baseAction =
+genericRetry' author msg checker delay baseAction =
   Retry.retrying
     (Retry.constantDelay delay <> Retry.limitRetries limit)
     checker
     action
   where
     limit = 7
-    delay = 500000 -- 500ms
     action (RetryStatus num _ _) = do
       when (num > 0) $
         mLog . Log author . LogRaw $ counterT num limit <> " failed: " <> msg

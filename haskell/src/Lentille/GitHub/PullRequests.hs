@@ -219,7 +219,7 @@ streamPullRequests client cb untilDate repoFullname =
           fpGetRatelimit = Just getRateLimit
        in StreamFetchOptParams {..}
     transformResponse' = transformResponse getHost cb
-    defaultDepthCount = 40
+    defaultDepthCount = 25
     getHost =
       let host' = host client
        in if host' == "api.github.com" then "github.com" else host'

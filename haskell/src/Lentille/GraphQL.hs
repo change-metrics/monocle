@@ -146,7 +146,7 @@ doRequest ::
   Maybe Int ->
   Maybe PageInfo ->
   m (Either (FetchError a) a, [ReqLog])
-doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck runFetch
+doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck 1_000_000 runFetch
   where
     gRetry = genericRetry Macroscope "Retrying request with smaller depth"
     retryCheck _ = fromMaybe (const $ pure False) retryCheckM
