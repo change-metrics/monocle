@@ -516,7 +516,7 @@ transformResponse host identCB result = do
           createdEvent =
             ( baseEvent
                 (ChangeEventTypeChangeCreated ChangeCreatedEvent)
-                ("CCEPR-" <> changeChangeId change)
+                ("CCE" <> changeId change)
                 change
             )
               { changeEventCreatedAt = changeCreatedAt change,
