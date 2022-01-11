@@ -12,27 +12,12 @@ import Data.Morpheus.Client
 import qualified Data.Text (takeWhile, takeWhileEnd)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
-import Lentille.GitHub.RateLimit (getRateLimit)
+import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
 import Monocle.Change
 import Monocle.Prelude hiding (id, state)
-import Network.HTTP.Client (responseBody, responseStatus)
-import Network.HTTP.Types (badGateway502)
 import Proto3.Suite (Enumerated (Enumerated))
 import qualified Streaming.Prelude as S (break)
-
-retryCheck :: MonadGraphQLE m => RetryCheck m a
-retryCheck respI = do
-  pure $ case snd respI of
-    [reqlog] -> checkResp $ snd reqlog
-    _other -> error "Unexpected empty reqlog"
-  where
-    checkResp resp =
-      let status = responseStatus resp
-          body = decodeUtf8 $ responseBody resp
-          msg = "Something went wrong while executing your query. This may be the result of a timeout"
-          shouldRetry = status == badGateway502 && inText msg body
-       in shouldRetry
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -214,7 +199,7 @@ streamPullRequests client cb untilDate repoFullname =
     repo = Data.Text.takeWhileEnd (/= '/') repoFullname
     mkArgs = GetProjectPullRequestsArgs org repo
     optParams =
-      let fpRetryCheck = Just retryCheck
+      let fpRetryCheck = Just $ retryCheck Macroscope
           fpDepth = Just defaultDepthCount
           fpGetRatelimit = Just getRateLimit
        in StreamFetchOptParams {..}

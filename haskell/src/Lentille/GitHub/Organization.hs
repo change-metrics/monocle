@@ -6,8 +6,8 @@
 module Lentille.GitHub.Organization where
 
 import Data.Morpheus.Client
-import Lentille (MonadGraphQLE)
-import Lentille.GitHub.RateLimit (getRateLimit)
+import Lentille (LogAuthor (Macroscope), MonadGraphQLE)
+import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
 import Monocle.Prelude
 import Monocle.Project
@@ -70,4 +70,8 @@ streamOrganizationProjects :: MonadGraphQLE m => GraphClient -> Text -> Stream (
 streamOrganizationProjects client login = streamFetch client mkArgs optParams transformResponse
   where
     mkArgs _ = GetProjectsArgs login
-    optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just getRateLimit}
+    optParams =
+      defaultStreamFetchOptParams
+        { fpRetryCheck = Just $ retryCheck Macroscope,
+          fpGetRatelimit = Just getRateLimit
+        }

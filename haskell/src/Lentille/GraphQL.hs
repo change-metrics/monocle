@@ -8,6 +8,7 @@ module Lentille.GraphQL
     glSchemaLocation,
     ghSchemaLocation,
     ghDefaultURL,
+    remoteCallDelay,
 
     -- * Main functions to fetch from a GraphQL server
     doGraphRequest,
@@ -134,6 +135,9 @@ instance From RateLimit Text where
 
 type RetryCheck m a = (Either (FetchError a) a, [ReqLog]) -> m Bool
 
+remoteCallDelay :: Int
+remoteCallDelay = 1_100_000 -- 1.1 seconds
+
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
@@ -146,9 +150,9 @@ doRequest ::
   Maybe Int ->
   Maybe PageInfo ->
   m (Either (FetchError a) a, [ReqLog])
-doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck 1_000_000 runFetch
+doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck remoteCallDelay runFetch
   where
-    gRetry = genericRetry Macroscope "Retrying request with smaller depth"
+    gRetry = genericRetry Macroscope "Faulty response - retrying request"
     retryCheck _ = fromMaybe (const $ pure False) retryCheckM
     runFetch :: Int -> m (Either (FetchError a) a, [ReqLog])
     runFetch retried =
@@ -225,7 +229,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     go pageInfoM totalFetched = do
       --- Start be waiting one second if we request a new page
-      when (isJust pageInfoM) $ lift $ mThreadDelay 1_000_000
+      when (isJust pageInfoM) $ lift $ mThreadDelay remoteCallDelay
 
       --- Perform a pre GraphQL request to gather rateLimit
       case fpGetRatelimit of
@@ -234,7 +238,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
             const $ do
               rl <- getRateLimit client
               -- Wait one second to delay the next call
-              mThreadDelay 1_000_000
+              mThreadDelay remoteCallDelay
               pure (Just rl, ())
         Nothing -> pure ()
 
