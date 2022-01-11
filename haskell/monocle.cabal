@@ -206,7 +206,6 @@ library
                      , Lentille.GraphQL
                      , Lentille.Bugzilla
 
-                     , Lentille.GitHub.Favorites
                      , Lentille.GitHub.Issues
                      , Lentille.GitHub.RateLimit
                      , Lentille.GitHub.Organization
