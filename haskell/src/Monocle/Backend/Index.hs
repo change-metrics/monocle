@@ -661,6 +661,13 @@ getWorkerUpdatedSince Config.Crawler {..} =
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (toString update_since)
 
+crawlerMDQuery :: EntityType -> Text -> BH.Query
+crawlerMDQuery entity crawlerName =
+  mkAnd
+    [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" crawlerName) Nothing,
+      BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
+    ]
+
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
 getLastUpdated crawler entity offset = do
   index <- getIndexName
@@ -670,19 +677,15 @@ getLastUpdated crawler entity offset = do
     Just xs -> pure . Just $ getRespFromMetadata (last xs)
   where
     search =
-      (BH.mkSearch (Just query) Nothing)
+      (BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing)
         { BH.size = BH.Size (fromInteger . toInteger $ offset + 1),
           BH.sortBody = Just [BH.DefaultSortSpec bhSort]
         }
 
     bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
-    query =
-      mkAnd
-        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
-          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
-        ]
     getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
       (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
+    crawlerName = getWorkerName crawler
 
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
 -- the entity info response defined in protobuf. When requesting the last updated, we provide

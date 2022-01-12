@@ -5,6 +5,7 @@ module Monocle.Backend.Janitor
     updateIdentsOnEvents,
     updateIdentsOnChanges,
     updateIdentsOnWorkspace,
+    removeProjectMD,
   )
 where
 
@@ -16,8 +17,10 @@ import qualified Database.Bloodhound as BH
 import Monocle.Api.Config (getIdentByAlias)
 import qualified Monocle.Api.Config as C
 import Monocle.Backend.Documents as D
+import Monocle.Backend.Index (crawlerMDQuery, getCrawlerTypeAsText)
 import qualified Monocle.Backend.Index as I
 import Monocle.Backend.Queries as Q
+import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
 import Monocle.Env
 import Monocle.Prelude
 import qualified Streaming.Prelude as Streaming
@@ -267,7 +270,7 @@ removeTDCrawlerData crawlerName = do
     removeOrphanTaskDatas index =
       withQuery taskDataQuery $ -- filter on orphaned task data from that crawler
         Q.scanSearchId -- scan the DocId
-          & ( Streaming.map mkOrphanBulkDelete -- create bulk delete operation
+          & ( Streaming.map (BulkDelete index) -- create bulk delete operation
                 >>> I.bulkStream -- perform the bulk operation stream
             )
       where
@@ -276,5 +279,18 @@ removeTDCrawlerData crawlerName = do
             [ mkTerm "tasks_data.crawler_name" crawlerName,
               Q.documentType D.EOrphanTaskData
             ]
-        mkOrphanBulkDelete :: DocId -> BulkOperation
-        mkOrphanBulkDelete = BulkDelete index
+
+removeProjectMD :: Text -> QueryM ()
+removeProjectMD = removeMD (EntityEntityProjectName "")
+
+removeMD :: EntityEntity -> Text -> QueryM ()
+removeMD entity crawlerName = do
+  monocleLog $ "Will delete " <> getCrawlerTypeAsText entity <> " crawler metadata for " <> crawlerName
+  index <- getIndexName
+  deletedCount <-
+    withFilter [crawlerMDQuery entity crawlerName] $
+      Q.scanSearchId
+        & ( Streaming.map (BulkDelete index)
+              >>> I.bulkStream
+          )
+  monocleLog $ crawlerName <> ": deleted " <> show deletedCount <> " project metadata"
