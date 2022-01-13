@@ -423,30 +423,6 @@ for the matching installation and use it to query the GitHub API.
 1. Save the private key into `etc/app_key.rsa`
 2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
 
-## Database migration
-
-### From version 0.8.X to next stable
-
-Identities are consolidated in the database, to enable multiple code review identities (across code review systems) to be grouped.
-
-1. Run the migration process for each workspace
-
-```
-docker-compose stop
-docker-compose start elastic
-# For each workspace
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --run-migrate from-0.8-to-last-stable
-docker-compose up -d
-```
-
-### From version 0.7.0
-
-A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
-
-```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <index-name> --run-migrate self-merge
-```
-
 #### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
