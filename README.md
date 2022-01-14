@@ -398,31 +398,6 @@ Here are the expected environment variables that need to be added to the `.secre
 
 Open the sample [config.yaml](haskell/test/data/config.yaml).
 
-### GitHub application
-
-Monocle can interact with a GitHub application to create and use installed
-application token to query the API.
-
-Once the application is created and Monocle started with application id and
-private key. If a `github_orgs` entry's token attribute is missing Monocle will
-search accross the application installations for an installed application
-on the related GitHub organization. If any, it will generate an installation token
-for the matching installation and use it to query the GitHub API.
-
-#### Create the application on GitHub
-
-1. [Register new GitHub App](https://github.com/settings/apps/new)
-2. In `Repository permissions` set `Metadata` as `Read-Only`,
-   `Pull requests` as `Read-Only` and `Contents` as `Read-Only`
-3. Click `Create the GitHub App`
-4. Click `Generate a private key` and download the key
-5. Save the `App ID`
-
-#### Setup Monocle to use the application
-
-1. Save the private key into `etc/app_key.rsa`
-2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
-
 #### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
