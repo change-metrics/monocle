@@ -43,11 +43,6 @@ server {
   gzip_types text/plain text/xml application/javascript text/css;
   client_max_body_size 1024M;
 
-  location /api/ {
-    proxy_pass http://localhost:9878/api/;
-    proxy_http_version 1.1;
-  }
-
   location /api/2/ {
     proxy_pass http://localhost:9879/;
     proxy_http_version 1.1;

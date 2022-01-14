@@ -130,7 +130,6 @@ let
 
   # local devel env
   nginx-port = 18080;
-  monocle-port = 19876;
   monocle2-port = 19875;
   web-port = 13000;
   prom-port = 19090;
@@ -381,11 +380,6 @@ in rec {
           location /api/2/ {
              proxy_pass http://localhost:${toString monocle2-port}/;
              proxy_http_version 1.1;
-          }
-
-          location /api/ {
-              proxy_pass http://localhost:${toString monocle-port}/api/;
-              proxy_http_version 1.1;
           }
 
           location /auth {
