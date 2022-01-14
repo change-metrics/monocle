@@ -462,25 +462,6 @@ in rec {
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  monocleCrawlersLegacy = pkgs.writeScriptBin "monocle-crawlers-legacy-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${
-      toString elasticsearch-port
-    }" crawler --config etc/config.yaml
-  '';
-
   monocleEmacsLauncher = pkgs.writeTextFile {
     name = "monocle.el";
     text = ''
@@ -535,7 +516,6 @@ in rec {
     monocleApiStart
     monocleApi2Start
     monocleWebStart
-    monocleCrawlersLegacy
     monocleEmacsStart
     monocleGhcid
   ];

@@ -38,15 +38,6 @@ services:
       timeout: "60s"
     volumes:
       - "./etc:/etc/monocle:z"
-  crawler-legacy:
-    build: '.'
-    command: monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml
-    depends_on:
-      - elastic
-    env_file: ".secrets"
-    volumes:
-      - "./etc:/etc/monocle:z"
-      - "./dump:/var/lib/crawler:Z"
   elastic:
     environment:
       ES_JAVA_OPTS: "-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"

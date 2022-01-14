@@ -50,10 +50,6 @@ jobs:
           kubectl wait --for=condition=Ready --namespace "${namespace}" pods --all
 
           kubectl get po --namespace "${namespace}"
-      - name: validate crawler legacy
-        run: |
-          kubectl create --namespace "${namespace}" job test  --from $( kubectl get --namespace ${namespace} -f ./deployment/crawler-legacy-cronjob.yaml --output name) 
-          kubectl wait --for=condition=complete --namespace "${namespace}" job/test 
 
       - name: Display indexes
         run: |

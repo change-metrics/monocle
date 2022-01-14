@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 ### Removed
+
+- [compose] Removed the crawler-legacy container.
+
 ### Fixed
 
 - [index] fix missing schema info for commit.committer fields.

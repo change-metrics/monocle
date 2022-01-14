@@ -3,8 +3,6 @@
 This document provides some instructions to get started with Monocle development. It covers topics
 such as running tests, running services w/o docker-compose or running the codegen.
 
-As explained in the [README](README.md), Monocle is composed of several services, some services run though the Python runtime (legacy components) and the new one are built using the Haskell runtime.
-
 ## Understanding the design choices
 
 Follow the [Architectural Decision Records](doc/adr/index.md) to understand the choices made by the project.
@@ -110,14 +108,6 @@ The Monocle React WebAPP (hot reload is enabled).
 firefox http://localhost:3000
 ```
 
-#### Start legacy crawlers process
-
-Run this command to start the GitHub or/and Gerrit crawlers.
-
-```ShellSession
-./contrib/start-crawlers-legacy.sh
-```
-
 #### Start crawlers process
 
 Run this commands to start the Macroscope which is the new Monocle crawler system.
@@ -175,12 +165,6 @@ nix-shell --command monocle-web-start
 firefox http://localhost:13000
 ```
 
-#### Start legacy crawlers process
-
-```ShellSession
-nix-shell --command monocle-crawlers-legacy-start
-```
-
 #### Start crawlers process
 
 ```ShellSession
@@ -201,15 +185,6 @@ source of knowledge to hack on a new crawler.
 
 Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the
 related nix-shell command.
-
-### On Python code base (legacy)
-
-Tests can be executed using:
-
-```ShellSession
-export ELASTIC_CONN=127.0.0.1:9200
-tox
-```
 
 ### On the Haskell code base
 

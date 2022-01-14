@@ -83,8 +83,5 @@ jobs:
           docker tag monocle_web:latest quay.io/change-metrics/monocle_web:latest
           docker push quay.io/change-metrics/monocle_web:latest
 
-          docker tag monocle_crawler-legacy:latest quay.io/change-metrics/monocle_backend:latest
-          docker push quay.io/change-metrics/monocle_backend:latest
-
           docker tag monocle_api:latest quay.io/change-metrics/monocle_api:latest
           docker push quay.io/change-metrics/monocle_api:latest
