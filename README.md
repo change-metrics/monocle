@@ -99,16 +99,9 @@ You might need to check the crawler logs to ensure the crawler started to fetch 
 
 ```ShellSession
 $ docker-compose logs -f crawler
-$ docker-compose logs -f crawler-legacy
 ```
 
 You should be able to access the web UI at <http://localhost:8080>.
-
-After a change in the configuration file, the crawler-legacy service need to be restarted:
-
-```ShellSession
-$ docker-compose restart crawler-legacy
-```
 
 ## Configuration
 
@@ -191,8 +184,6 @@ token value. Default is "GITHUB_TOKEN"
 To crawl privates repositories, either you must use a [GitHub Application](#github-application)
 or you must generate a Personal Access Token with the "repo" scope.
 
-Note that this crawler is managed by the `crawler-legacy` container.
-
 ###### Gerrit
 
 A Gerrit provider settings
@@ -243,8 +234,6 @@ the listed repositories.
 
 `gitlab_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITLAB_TOKEN"
-
-Note that this crawler is managed by the `crawler` container.
 
 ##### TaskData
 
@@ -445,16 +434,11 @@ docker-compose run --rm --no-deps api curl \
 Monocle is composed of the following services:
 
 1. an Elasticsearch data store.
-2. an api service to perform user query and index crawler output.
-3. a crawler service to retrieve change from provider.
-4. a web proxy and web application to browse metrics.
+2. an API service to serve user and crawler requests.
+3. a crawler service to retrieve change from providers.
+4. a web proxy and web application as a frontend for users.
 
 The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
-
-Some legacy component are still required until they are migrated to the new OpenAPI (see the related [topic](https://github.com/change-metrics/monocle/labels/legacy)):
-
-5. a crawler service to index github and gerrit changes.
-
 
 ## Monitoring
 
