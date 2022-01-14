@@ -3,7 +3,6 @@ queue_rules:
     conditions:
       # Conditions to get out of the queue (= merged)
       - check-success=tests
-      - check-success=check-python
       - check-success=docker
 
 pull_request_rules:
@@ -12,7 +11,6 @@ pull_request_rules:
       - "#approved-reviews-by>=1"
       - label=merge me
       - check-success=tests
-      - check-success=check-python
       - check-success=docker
     actions:
       queue:

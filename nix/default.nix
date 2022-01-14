@@ -413,27 +413,6 @@ in rec {
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
   '';
 
-  monocle-home = "/tmp/monocle-home";
-  monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    export ELASTIC_CONN="localhost:${toString elasticsearch-port}"
-    exec ${monocle-home}/bin/uwsgi --http ":${
-      toString monocle-port
-    }" --manage-script-name --mount /app=monocle.webapp:app
-  '';
-
   monocleApi2Start = pkgs.writeScriptBin "monocle-api2-start" ''
     #!/bin/sh
     set -ex
@@ -494,7 +473,6 @@ in rec {
         (monocle-startp "nginx" "${nginxStart}" )
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
-        (monocle-startp "monocle-api" "${monocleApiStart}" )
         (monocle-startp "monocle-api2" "${monocleApi2Start}" )
         (monocle-startp "monocle-web" "${monocleWebStart}" ))
 
@@ -513,7 +491,6 @@ in rec {
     nginxStart
     promStart
     grafanaStart
-    monocleApiStart
     monocleApi2Start
     monocleWebStart
     monocleEmacsStart
@@ -529,9 +506,6 @@ in rec {
   hsPkgs = pkgs.myHaskellPackages;
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
-
-  # define python requirements
-  python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
 
   # define javascript requirements
   javascript-req = [ pkgs.nodejs ];
@@ -569,8 +543,7 @@ in rec {
   doc-req = [ pkgs.plantuml ];
 
   # all requirement
-  all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req
-    ++ doc-req;
+  all-req = codegen-req ++ hs-req ++ javascript-req ++ go-req ++ doc-req;
 
   # containers
   containerPrometheus = promContainer;
