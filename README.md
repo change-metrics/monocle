@@ -444,18 +444,13 @@ or make the data directory writable for other:
 $ chmod o+w data
 ```
 
-You might want to wipe a Monocle project:
+To delete a workspace (a workspace is an elasticsearch index):
 
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
-```
-
-or delete a workspace:
-
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
+```ShellSession
+# List indexes with:
+docker-compose run --rm --no-deps api curl http://elastic:9200/_aliases?pretty=true
+# Delete an index with
+docker-compose run --rm --no-deps api curl -XDELETE http://elastic:9200/<index-name>
 ```
 
 ElasticSearch sets defaults settings on new indexes. The default setting for queries based
@@ -463,8 +458,8 @@ on regex is set to a value that might not fit your usage especially when your pr
 uses regex above that limit. However the limit could be increased using the following command:
 
 ```ShellSession
-docker-compose run --rm --no-deps crawler-legacy curl \
--XPUT http://localhost:9200/monocle.changes.1.<workspace-name>/_settings \
+docker-compose run --rm --no-deps api curl \
+-XPUT http://localhost:9200/monocle.changes.1.<index-name>/_settings \
 -H "Content-Type: application/json" -d '{"index": {"max_regex_length": 50000}}'
 ```
 
