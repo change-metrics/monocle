@@ -275,8 +275,14 @@ configIndex = BH.IndexName "monocle.config"
 configDoc :: BH.DocId
 configDoc = BH.DocId "config"
 
-upgradeConfigV1 :: Monad m => Config.Config -> m ()
-upgradeConfigV1 _conf = pure ()
+-- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
+upgradeConfigV1 :: QueryM ()
+upgradeConfigV1 = do
+  -- Get all the GH crawler metadata.
+  -- Keep the one that have the default starting date
+  -- Lookup the age of the most recent update
+  -- Update the last_commit_at
+  pure ()
 
 -- | Extract the `version` attribute of an Aeson object value
 --
@@ -294,17 +300,23 @@ getVersion = fromInteger . fromMaybe 0 . preview (key "version" . _Integer)
 setVersion :: Natural -> Value -> Value
 setVersion v = over (_Object . at "version") (const . Just . Number . fromInteger . toInteger $ v)
 
-ensureConfig :: (BH.MonadBH m, MonadFail m, MonadThrow m) => Config.Config -> m ()
-ensureConfig conf = do
+ensureConfig :: QueryM ()
+ensureConfig = do
+  QueryConfig conf <- asks tenant
   createIndex configIndex ConfigIndexMapping
   currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
   let currentVersion = getVersion currentConfig
 
-  when (currentVersion == 0) $ upgradeConfigV1 conf
+  when (currentVersion == 0) $ traverseWorkspace upgradeConfigV1 conf
 
   let newConfig = setVersion 1 currentConfig
   _ <- BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
   pure ()
+  where
+    -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
+    traverseWorkspace action conf = do
+      traverse_ (\ws -> local (setTenant ws) action) (Config.getWorkspaces conf)
+    setTenant ws e = e {tenant = QueryWorkspace ws}
 
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do

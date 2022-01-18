@@ -339,7 +339,7 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
              in Config.GerritProvider Config.Gerrit {..}
        in Config.Crawler {..}
     updateEnv :: QueryEnv -> QueryEnv
-    updateEnv orig = orig {tenant = tenant}
+    updateEnv orig = orig {tenant = QueryWorkspace tenant}
       where
         tenant =
           Config.Index
@@ -798,9 +798,12 @@ testGetSuggestions = withTenant doTest
       let neutron = SProject "openstack/neutron" [eve] [alice] [bob]
       traverse_ (indexScenarioNM nova) ["42", "43"]
       traverse_ (indexScenarioNO neutron) ["142", "143"]
+      let ws = case tenant tEnv of
+            QueryWorkspace x -> x
+            QueryConfig _ -> error "Can't get config suggestions"
 
       withQuery defaultQuery $ do
-        results <- Q.getSuggestions $ tenant tEnv
+        results <- Q.getSuggestions ws
         assertEqual'
           "Check getChangesTops result"
           ( SearchPB.SuggestionsResponse

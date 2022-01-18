@@ -47,10 +47,17 @@ instance MonadFail AppM where
 -- The query context, associated to each individual http request
 -------------------------------------------------------------------------------
 
+-- | 'QueryTarget' is the target of the query.
+data QueryTarget
+  = -- | It's either a single workspace
+    QueryWorkspace Config.Index
+  | -- | Or the whole config (e.g. for maintainance operation)
+    QueryConfig Config.Config
+
 -- | 'QueryEnv' is the request environment, after validation
 data QueryEnv = QueryEnv
   { -- | The current workspace configuration (todo: rename tenant and Index into Workspace)
-    tenant :: Config.Index,
+    tenant :: QueryTarget,
     -- | The application env, for logging and accessing bloodhound
     tEnv :: Env,
     -- | The query language expression, used by the `withXXX` combinator below
@@ -103,15 +110,20 @@ runEmptyQueryM = flip runQueryM (mkQuery [])
 
 -- | Run a QueryM in the AppM
 runQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
-runQueryM tenant tQuery (QueryM im) = do
+runQueryM ws tQuery (QueryM im) = do
   tEnv <- asks aEnv
   liftIO $ runReaderT im (QueryEnv {..})
   where
+    tenant = QueryWorkspace ws
     tContext = Nothing
 
 -- | Run a 'QueryM' with an existing BHEnv
 runQueryM' :: forall a. BH.BHEnv -> Config.Index -> QueryM a -> IO a
-runQueryM' bhEnv tenant tenantM = withLogger $ \glLogger ->
+runQueryM' bhEnv ws tenantM =
+  runQueryTarget bhEnv (QueryWorkspace ws) tenantM
+
+runQueryTarget :: forall a. BH.BHEnv -> QueryTarget -> QueryM a -> IO a
+runQueryTarget bhEnv tenant tenantM = withLogger $ \glLogger ->
   let tEnv = Env {..}
       tQuery = mkQuery []
       tContext = Nothing
@@ -141,14 +153,22 @@ mkConfig = Config.defaultTenant
 
 -- | Utility function to hide the ReaderT layer
 getIndexName :: QueryMonad m => m BH.IndexName
-getIndexName = tenantIndexName <$> asks tenant
+getIndexName = do
+  queryTarget <- asks tenant
+  pure $ case queryTarget of
+    QueryWorkspace ws -> tenantIndexName ws
+    QueryConfig _ -> BH.IndexName "monocle.config"
   where
     tenantIndexName :: Config.Index -> BH.IndexName
     tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | Utility function to hide the ReaderT layer
 getIndexConfig :: QueryMonad m => m Config.Index
-getIndexConfig = asks tenant
+getIndexConfig = do
+  queryTarget <- asks tenant
+  pure $ case queryTarget of
+    QueryWorkspace ws -> ws
+    QueryConfig _ -> error "Config has no index config"
 
 -- | Utility function to hide the ReaderT layer
 getQuery :: QueryMonad m => m Q.Query

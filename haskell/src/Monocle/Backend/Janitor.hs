@@ -39,7 +39,10 @@ updateAuthor index author@D.Author {..} = case getIdent of
 
 updateIdentsOnWorkspace :: QueryM ()
 updateIdentsOnWorkspace = do
-  workspaceName <- C.getWorkspaceName <$> asks tenant
+  target <- asks tenant
+  workspaceName <- case target of
+    QueryWorkspace ws -> pure $ C.getWorkspaceName ws
+    QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
   print @Text $
@@ -61,9 +64,11 @@ updateIdentsOnWorkspace = do
 -- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnChanges
 updateIdentsOnChanges :: QueryM Int
 updateIdentsOnChanges = do
-  index <- asks tenant
+  target <- asks tenant
   indexName <- getIndexName
-  doUpdateIdentsOnChanges indexName (updateAuthor index)
+  case target of
+    QueryWorkspace index -> doUpdateIdentsOnChanges indexName (updateAuthor index)
+    QueryConfig _ -> error "Config can't be updated"
 
 --- Dedicated reduced data type of EChange with only Author fields
 data EChangeAuthors = EChangeAuthors
@@ -122,9 +127,11 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
 -- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnEvents
 updateIdentsOnEvents :: QueryM Int
 updateIdentsOnEvents = do
-  index <- asks tenant
+  target <- asks tenant
   indexName <- getIndexName
-  doUpdateIdentsOnEvents indexName (updateAuthor index)
+  case target of
+    QueryWorkspace index -> doUpdateIdentsOnEvents indexName (updateAuthor index)
+    QueryConfig _ -> error "Config can't be updated"
 
 --- Dedicated reduced data type of EChangeEvent with only Author fields
 data EChangeEventAuthors = EChangeEventAuthors
