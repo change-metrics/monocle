@@ -2,43 +2,6 @@ name: PR validation
 on: pull_request
 
 jobs:
-  tox:
-    if: github.repository_owner == 'change-metrics'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Configure sysctl limits
-        run: |
-          sudo swapoff -a
-          sudo sysctl -w vm.swappiness=1
-          sudo sysctl -w fs.file-max=262144
-          sudo sysctl -w vm.max_map_count=262144
-
-      - name: Runs Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
-        with:
-          stack-version: 7.8.0
-
-      - name: Display indexes
-        run: curl -s -I -X GET http://localhost:9200/_cat/indices
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install tox
-
-      - name: Test with tox
-        run: tox -e py3
-
   docker:
     runs-on: ubuntu-latest
     steps:
