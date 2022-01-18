@@ -120,11 +120,18 @@ module Monocle.Prelude
     mapMOf,
     view,
     over,
+    preview,
+    at,
+
+    -- * lens-aeson
+    key,
+    _Integer,
+    _Object,
 
     -- * aeson
     FromJSON (..),
     ToJSON (..),
-    Value,
+    Value (Number),
     encode,
     encodePretty,
     encodePrettyWithSpace,
@@ -169,13 +176,14 @@ where
 
 import Control.Exception.Safe (tryAny)
 import qualified Control.Foldl as L
-import Control.Lens (Lens', lens, mapMOf, over, view)
+import Control.Lens (Lens', lens, mapMOf, over, view, preview, at)
+import Data.Aeson.Lens (key, _Object, _Integer)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String, Number), encode, withText, (.=))
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import qualified Data.Map as Map

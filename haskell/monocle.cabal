@@ -128,6 +128,7 @@ library
                      , http-types                 >=0.12
                      , json-syntax                >= 0.2
                      , lens
+                     , lens-aeson
                      , megaparsec                 >= 9
                      , morpheus-graphql-client    ^>= 0.18
                      , mmorph

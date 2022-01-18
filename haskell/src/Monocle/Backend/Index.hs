@@ -272,9 +272,39 @@ createIndex indexName mapping = do
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
 
-ensureConfig :: (BH.MonadBH m, MonadFail m) => Config.Config -> m ()
+configDoc :: BH.DocId
+configDoc = BH.DocId "config"
+
+upgradeConfigV1 :: Monad m => Config.Config -> m ()
+upgradeConfigV1 _conf = pure ()
+
+-- | Extract the `version` attribute of an Aeson object value
+--
+-- >>> getVersion (object ["version" .= (42 :: Int)])
+-- 42
+-- >>> (getVersion (object []), getVersion (Number 1))
+-- (0,0)
+getVersion :: Value -> Natural
+getVersion = fromInteger . fromMaybe 0 . preview (key "version" . _Integer)
+
+-- | Set the `version` attribute of an Aeson object
+--
+-- >>> setVersion 23 (object ["version" .= (22 :: Int)])
+-- Object (fromList [("version",Number 23.0)])
+setVersion :: Natural -> Value -> Value
+setVersion v = over (_Object . at "version") (const . Just . Number . fromInteger . toInteger $ v)
+
+ensureConfig :: (BH.MonadBH m, MonadFail m, MonadThrow m) => Config.Config -> m ()
 ensureConfig conf = do
   createIndex configIndex ConfigIndexMapping
+  currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
+  let currentVersion = getVersion currentConfig
+
+  when (currentVersion == 0) $ upgradeConfigV1 conf
+
+  let newConfig = setVersion 1 currentConfig
+  _ <- BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
+  pure ()
 
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do
@@ -456,9 +486,8 @@ checkDocExists docId = do
   index <- getIndexName
   BH.documentExists index docId
 
-getDocumentById :: (FromJSON a) => BH.DocId -> QueryM (Maybe a)
-getDocumentById docId = do
-  index <- getIndexName
+getDocumentById' :: (BH.MonadBH m, FromJSON a, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
+getDocumentById' index docId = do
   resp <- BH.getDocument index docId
   if isNotFound resp
     then pure Nothing
@@ -470,6 +499,11 @@ getDocumentById docId = do
   where
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
+
+getDocumentById :: FromJSON a => BH.DocId -> QueryM (Maybe a)
+getDocumentById docId = do
+  index <- getIndexName
+  getDocumentById' index docId
 
 getChangeById :: BH.DocId -> QueryM (Maybe EChange)
 getChangeById = getDocumentById
