@@ -39,7 +39,8 @@ run port url configFile = withLogger (run' port url configFile)
 run' :: Int -> Text -> FilePath -> Logger -> IO ()
 run' port url configFile glLogger = do
   config <- Config.reloadConfig configFile
-  workspaces <- Config.getWorkspaces . Config.csConfig <$> config
+  conf <- Config.csConfig <$> config
+  let workspaces = Config.getWorkspaces conf
 
   -- Check alias and abort if they are not usable
   case lefts $ map loadAliases workspaces of
@@ -60,6 +61,7 @@ run' port url configFile glLogger = do
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
+  retry ("elastic-client", url, "internal") $ runBH bhEnv (I.ensureConfig conf)
   retry ("elastic-client", url, "internal") $ liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
   liftIO $
     withStdoutLogger $ \aplogger -> do

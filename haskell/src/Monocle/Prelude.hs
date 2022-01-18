@@ -140,6 +140,7 @@ module Monocle.Prelude
     mkOr,
     mkNot,
     mkTerm,
+    BH.runBH,
 
     -- * proto3
     fromPBEnum,

@@ -25,6 +25,16 @@ import qualified Proto3.Suite.Types as PT (Enumerated (..))
 import qualified Streaming as S (chunksOf)
 import qualified Streaming.Prelude as S
 
+data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
+
+instance ToJSON ConfigIndexMapping where
+  toJSON ConfigIndexMapping =
+    object
+      [ "properties"
+          .= object
+            ["version" .= object ["type" .= ("integer" :: Text)]]
+      ]
+
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
 instance ToJSON ChangesIndexMapping where
@@ -248,18 +258,29 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-ensureIndexSetup :: QueryM ()
-ensureIndexSetup = do
-  indexName <- getIndexName
+createIndex :: (BH.MonadBH m, ToJSON mapping, MonadFail m) => BH.IndexName -> mapping -> m ()
+createIndex indexName mapping = do
   _respCI <- BH.createIndex indexSettings indexName
-  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
   -- print respCI
-  _respPM <- BH.putMapping indexName ChangesIndexMapping
+  _respPM <- BH.putMapping indexName mapping
   -- print respPM
   True <- BH.indexExists indexName
   pure ()
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+configIndex :: BH.IndexName
+configIndex = BH.IndexName "monocle.config"
+
+ensureConfig :: (BH.MonadBH m, MonadFail m) => Config.Config -> m ()
+ensureConfig conf = do
+  createIndex configIndex ConfigIndexMapping
+
+ensureIndexSetup :: QueryM ()
+ensureIndexSetup = do
+  indexName <- getIndexName
+  createIndex indexName ChangesIndexMapping
+  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
 ensureIndexCrawlerMetadata :: QueryM ()
 ensureIndexCrawlerMetadata = do
