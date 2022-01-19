@@ -284,21 +284,25 @@ upgradeConfigV1 = do
   -- Update the last_commit_at
   pure ()
 
+newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
+
 -- | Extract the `version` attribute of an Aeson object value
 --
 -- >>> getVersion (object ["version" .= (42 :: Int)])
--- 42
--- >>> (getVersion (object []), getVersion (Number 1))
--- (0,0)
-getVersion :: Value -> Natural
-getVersion = fromInteger . fromMaybe 0 . preview (key "version" . _Integer)
+-- ConfigVersion 42
+-- >>> getVersion (object [])
+-- ConfigVersion 0
+getVersion :: Value -> ConfigVersion
+getVersion = ConfigVersion . fromMaybe 0 . preview (_Object . at "version" . traverse . _Integer)
 
 -- | Set the `version` attribute of an Aeson object
 --
--- >>> setVersion 23 (object ["version" .= (22 :: Int)])
+-- >>> setVersion (ConfigVersion 23) (object ["version" .= (22 :: Int)])
 -- Object (fromList [("version",Number 23.0)])
-setVersion :: Natural -> Value -> Value
-setVersion v = over (_Object . at "version") (const . Just . Number . fromInteger . toInteger $ v)
+-- >>> setVersion (ConfigVersion 42) (object [])
+-- Object (fromList [("version",Number 42.0)])
+setVersion :: ConfigVersion -> Value -> Value
+setVersion (ConfigVersion v) = set (_Object . at "version") (Just . Number . fromInteger $ v)
 
 ensureConfig :: QueryM ()
 ensureConfig = do
@@ -307,9 +311,9 @@ ensureConfig = do
   currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
   let currentVersion = getVersion currentConfig
 
-  when (currentVersion == 0) $ traverseWorkspace upgradeConfigV1 conf
+  when (currentVersion == ConfigVersion 0) $ traverseWorkspace upgradeConfigV1 conf
 
-  let newConfig = setVersion 1 currentConfig
+  let newConfig = setVersion (ConfigVersion 1) currentConfig
   _ <- BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
   pure ()
   where
