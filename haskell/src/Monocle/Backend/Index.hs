@@ -15,6 +15,7 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
+import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
@@ -278,11 +279,50 @@ configDoc = BH.DocId "config"
 -- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
 upgradeConfigV1 :: QueryM ()
 upgradeConfigV1 = do
-  -- Get all the GH crawler metadata.
+  QueryWorkspace ws <- asks tenant
+  -- Get GitHub crawler names
+  let ghCrawlerNames = getGHCrawlerNames ws
+  -- Get all the GH crawler project metadata.
+  ghCrawlerMD <- traverse getProjectCrawlerMDByName ghCrawlerNames
   -- Keep the one that have the default starting date
-  -- Lookup the age of the most recent update
-  -- Update the last_commit_at
-  pure ()
+  let ghCrawlerMDToReset = filter (isCrawlerLastCommitAtIsDefault ws) $ concat ghCrawlerMD
+  -- Update the last_commit_at from the age of the most recent update
+  traverse_ setLastUpdatedDate ghCrawlerMDToReset
+  where
+    getGHCrawlerNames :: Config.Index -> [Text]
+    getGHCrawlerNames ws =
+      let isGHProvider crawler = case Config.provider crawler of
+            Config.GithubProvider _ -> True
+            _otherwise -> False
+       in Config.getCrawlerName
+            <$> filter isGHProvider (Config.crawlers ws)
+    getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
+    getProjectCrawlerMDByName crawlerName = do
+      let entity = EntityEntityProjectName ""
+          search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
+      index <- getIndexName
+      resp <- fmap BH.hitSource <$> simpleSearch index search
+      pure $ catMaybes resp
+    isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
+    isCrawlerLastCommitAtIsDefault
+      ws
+      ( ECrawlerMetadata
+          ECrawlerMetadataObject {ecmCrawlerName, ecmLastCommitAt}
+        ) =
+        case Config.lookupCrawler ws (from ecmCrawlerName) of
+          Nothing -> False
+          Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
+    setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
+    setLastUpdatedDate
+      (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerTypeValue}) = do
+        lastUpdatedDateM <- getLastUpdatedDate $ from ecmCrawlerTypeValue
+        case lastUpdatedDateM of
+          Nothing -> pure ()
+          Just lastUpdatedAt ->
+            setLastUpdated
+              (from ecmCrawlerName)
+              lastUpdatedAt
+              $ Project . from $ ecmCrawlerTypeValue
 
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
 
