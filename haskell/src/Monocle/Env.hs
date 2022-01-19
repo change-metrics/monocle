@@ -119,8 +119,7 @@ runQueryM ws tQuery (QueryM im) = do
 
 -- | Run a 'QueryM' with an existing BHEnv
 runQueryM' :: forall a. BH.BHEnv -> Config.Index -> QueryM a -> IO a
-runQueryM' bhEnv ws tenantM =
-  runQueryTarget bhEnv (QueryWorkspace ws) tenantM
+runQueryM' bhEnv ws = runQueryTarget bhEnv (QueryWorkspace ws)
 
 runQueryTarget :: forall a. BH.BHEnv -> QueryTarget -> QueryM a -> IO a
 runQueryTarget bhEnv tenant tenantM = withLogger $ \glLogger ->
