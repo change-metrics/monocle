@@ -277,6 +277,8 @@ configDoc :: BH.DocId
 configDoc = BH.DocId "config"
 
 -- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
+-- | This function looks for GitHub project crawler metadata docs and reset the
+-- | lastCommitAt to the lastUpdatedAt date of the most recent change of the repository.
 upgradeConfigV1 :: QueryM ()
 upgradeConfigV1 = do
   QueryWorkspace ws <- asks tenant
@@ -344,18 +346,22 @@ getVersion = ConfigVersion . fromMaybe 0 . preview (_Object . at "version" . tra
 setVersion :: ConfigVersion -> Value -> Value
 setVersion (ConfigVersion v) = set (_Object . at "version") (Just . Number . fromInteger $ v)
 
-ensureConfig :: QueryM ()
-ensureConfig = do
+getConfigVersion :: QueryM (ConfigVersion, Value)
+getConfigVersion = do
+  QueryConfig _ <- asks tenant
+  currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
+  pure (getVersion currentConfig, currentConfig)
+
+ensureConfigIndex :: QueryM ()
+ensureConfigIndex = do
   QueryConfig conf <- asks tenant
   createIndex configIndex ConfigIndexMapping
-  currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
-  let currentVersion = getVersion currentConfig
+  (currentVersion, currentConfig) <- getConfigVersion
 
   when (currentVersion == ConfigVersion 0) $ traverseWorkspace upgradeConfigV1 conf
 
   let newConfig = setVersion (ConfigVersion 1) currentConfig
-  _ <- BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
-  pure ()
+  void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
   where
     -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
     traverseWorkspace action conf = do

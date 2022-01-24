@@ -142,8 +142,7 @@ mkEnv' = do
 -- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
 testQueryM :: Config.Index -> QueryM a -> IO a
 testQueryM config tenantM = do
-  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
-  bhEnv <- mkEnv (toText url)
+  bhEnv <- mkEnv'
   runQueryM' bhEnv config tenantM
 
 -- | Re-export utility function to create a config for testQueryM

@@ -10,6 +10,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Google.Protobuf.Timestamp as T
+import Monocle.Api.Config (defaultTenant)
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
@@ -317,6 +318,94 @@ testTaskDataCrawlerMetadata = withTenant doTest
            in Config.Crawler {..}
         fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
         fakeDateB = [utctime|2021-05-31 10:00:00|]
+
+testEnsureConfig :: Assertion
+testEnsureConfig = bracket_ create delete doTest
+  where
+    wrap :: QueryM () -> IO ()
+    wrap action = do
+      bhEnv <- mkEnv'
+      let qt = QueryConfig $ Config.Config Nothing [tenantConfig]
+      runQueryTarget bhEnv qt action
+
+    create = wrap I.ensureConfigIndex
+    delete = wrap I.removeIndex
+    doTest = wrap $ do
+      (currentVersion, _) <- I.getConfigVersion
+      assertEqual' "Check expected Config Index Version 1" (I.ConfigVersion 1) currentVersion
+    tenantConfig = defaultTenant "test-index"
+
+testUpgradeConfigV1 :: Assertion
+testUpgradeConfigV1 = do
+  -- Index docs, run upgradeConfigV1, and check project crawler MD state
+  withTenantConfig tenantConfig $ do
+    -- Index some events and set lastCommitAt for the first (repoGH1 and repoGL1) project crawler MD
+    setDocs crawlerGH crawlerGHName "org/repoGH1" "org/repoGH2"
+    setDocs crawlerGL crawlerGLName "org/repoGL1" "org/repoGL2"
+    -- Run upgrade V1 function
+    I.upgradeConfigV1
+    -- Fetch crawler MD for project repoGH1 and expect previously set date
+    crawlerMDrepoGH1 <- getCrawlerProjectMD crawlerGHName "org/repoGH1"
+    assertCommitAtDate crawlerMDrepoGH1 createdAtDate
+    -- Fetch crawler MD for project repoGH2 and expect date set by the upgrade function
+    crawlerMDrepoGH2 <- getCrawlerProjectMD crawlerGHName "org/repoGH2"
+    assertCommitAtDate crawlerMDrepoGH2 createdAtDate
+    -- Fetch crawler MD for project repoGL1 and expect previously set date
+    crawlerMDrepoGL1 <- getCrawlerProjectMD crawlerGLName "org/repoGL1"
+    assertCommitAtDate crawlerMDrepoGL1 createdAtDate
+    -- Fetch crawler MD for project repoGL2 and expect default crawler date
+    crawlerMDrepoGL2 <- getCrawlerProjectMD crawlerGLName "org/repoGL2"
+    assertCommitAtDate crawlerMDrepoGL2 defaultCrawlerDate
+  where
+    assertCommitAtDate :: Maybe ECrawlerMetadata -> UTCTime -> QueryM ()
+    assertCommitAtDate (Just (ECrawlerMetadata ECrawlerMetadataObject {ecmLastCommitAt, ecmCrawlerTypeValue})) d =
+      assertEqual' ("Check crawler Metadata lastCommitAt for repo: " <> from ecmCrawlerTypeValue) d ecmLastCommitAt
+    assertCommitAtDate Nothing _ = error "Unexpected missing lastCommitAt date"
+    getCrawlerProjectMD :: Text -> Text -> QueryM (Maybe ECrawlerMetadata)
+    getCrawlerProjectMD crawlerName repoName = I.getDocumentById getCrawlerProjectMDDocID
+      where
+        getCrawlerProjectMDDocID =
+          let entity = Project repoName
+           in I.getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
+    setDocs :: Config.Crawler -> Text -> Text -> Text -> QueryM ()
+    setDocs crawler crawlerName repo1 repo2 = do
+      -- Init crawler metadata
+      I.initCrawlerMetadata crawler
+      -- Index two events
+      I.indexChanges
+        [ emptyChange
+            { echangeId = "fakeId-" <> from repo1,
+              echangeRepositoryFullname = from repo1,
+              echangeUpdatedAt = createdAtDate
+            },
+          emptyChange
+            { echangeId = "fakeId-" <> from repo2,
+              echangeRepositoryFullname = from repo2,
+              echangeUpdatedAt = createdAtDate
+            }
+        ]
+      -- Set crawler metadata (lastCommitAt) (for project entity) to a correct date
+      I.setLastUpdated crawlerName createdAtDate (Project repo1)
+    createdAtDate = [utctime|2020-01-02 00:00:00|]
+    defaultCrawlerDate = [utctime|2020-01-01 00:00:00|]
+    crawlerGHName = "crawlerGH"
+    crawlerGH =
+      let providerGH = Config.GithubProvider $ Config.Github "org" (Just ["repoGH1", "repoGH2"]) Nothing Nothing
+       in Config.Crawler crawlerGHName providerGH "2020-01-01"
+    crawlerGLName = "crawlerGL"
+    crawlerGL =
+      let providerGL = Config.GitlabProvider $ Config.Gitlab "org" (Just ["repoGL1", "repoGL2"]) Nothing Nothing
+       in Config.Crawler crawlerGLName providerGL "2020-01-01"
+    tenantConfig :: Config.Index
+    tenantConfig =
+      Config.Index
+        { name = "test-tenant",
+          crawlers = [crawlerGH, crawlerGL],
+          crawlers_api_key = Nothing,
+          projects = Nothing,
+          idents = Nothing,
+          search_aliases = Nothing
+        }
 
 testJanitorWipeCrawler :: Assertion
 testJanitorWipeCrawler = withTenant $ local updateEnv doTest
