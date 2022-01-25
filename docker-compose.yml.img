@@ -11,7 +11,7 @@ services:
       - 9898
     healthcheck:
       retries: 6
-      test: "curl --silent --fail localhost:$MONOCLE_API_PORT/health || exit 1"
+      test: "curl --silent --fail localhost:9898/health || exit 1"
       timeout: "60s"
     image: "quay.io/change-metrics/monocle_api:${MONOCLE_VERSION:-latest}"
     restart: unless-stopped
