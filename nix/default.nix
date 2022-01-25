@@ -130,7 +130,6 @@ let
 
   # local devel env
   nginx-port = 18080;
-  monocle-port = 19876;
   monocle2-port = 19875;
   web-port = 13000;
   prom-port = 19090;
@@ -383,11 +382,6 @@ in rec {
              proxy_http_version 1.1;
           }
 
-          location /api/ {
-              proxy_pass http://localhost:${toString monocle-port}/api/;
-              proxy_http_version 1.1;
-          }
-
           location /auth {
               proxy_pass http://localhost:${toString monocle2-port}/auth;
               proxy_http_version 1.1;
@@ -411,27 +405,6 @@ in rec {
     set -ex
     mkdir -p ${nginx-home};
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
-  '';
-
-  monocle-home = "/tmp/monocle-home";
-  monocleApiStart = pkgs.writeScriptBin "monocle-api-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    export ELASTIC_CONN="localhost:${toString elasticsearch-port}"
-    exec ${monocle-home}/bin/uwsgi --http ":${
-      toString monocle-port
-    }" --manage-script-name --mount /app=monocle.webapp:app
   '';
 
   monocleApi2Start = pkgs.writeScriptBin "monocle-api2-start" ''
@@ -460,25 +433,6 @@ in rec {
     export REACT_APP_API_URL=http://localhost:${toString nginx-port}
     export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
-  '';
-
-  monocleCrawlersLegacy = pkgs.writeScriptBin "monocle-crawlers-legacy-start" ''
-    #!/bin/sh
-    set -ex
-    export $(cat .secrets)
-    if ! test -d ${monocle-home}; then
-        ${pkgs.python3}/bin/python -mvenv ${monocle-home}
-        ${monocle-home}/bin/pip install --upgrade pip
-        ${monocle-home}/bin/pip install -r requirements.txt
-    fi
-
-    if ! test -f ${monocle-home}/bin/monocle; then
-        ${monocle-home}/bin/python3 setup.py install
-    fi
-
-    exec ${monocle-home}/bin/monocle --elastic-conn "localhost:${
-      toString elasticsearch-port
-    }" crawler --config etc/config.yaml
   '';
 
   monocleEmacsLauncher = pkgs.writeTextFile {
@@ -513,7 +467,6 @@ in rec {
         (monocle-startp "nginx" "${nginxStart}" )
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
-        (monocle-startp "monocle-api" "${monocleApiStart}" )
         (monocle-startp "monocle-api2" "${monocleApi2Start}" )
         (monocle-startp "monocle-web" "${monocleWebStart}" ))
 
@@ -532,10 +485,8 @@ in rec {
     nginxStart
     promStart
     grafanaStart
-    monocleApiStart
     monocleApi2Start
     monocleWebStart
-    monocleCrawlersLegacy
     monocleEmacsStart
     monocleGhcid
   ];
@@ -549,9 +500,6 @@ in rec {
   hsPkgs = pkgs.myHaskellPackages;
 
   hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
-
-  # define python requirements
-  python-req = [ pkgs.python39Packages.mypy-protobuf pkgs.black ];
 
   # define javascript requirements
   javascript-req = [ pkgs.nodejs ];
@@ -589,8 +537,7 @@ in rec {
   doc-req = [ pkgs.plantuml ];
 
   # all requirement
-  all-req = codegen-req ++ hs-req ++ python-req ++ javascript-req ++ go-req
-    ++ doc-req;
+  all-req = codegen-req ++ hs-req ++ javascript-req ++ go-req ++ doc-req;
 
   # containers
   containerPrometheus = promContainer;

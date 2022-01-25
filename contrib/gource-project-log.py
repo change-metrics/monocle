@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# TODO: This piece of code is not longer functional and needs to be reworked.
 
 """Generate log lines for the activity of the merged PR following the
 gource format.

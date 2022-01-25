@@ -82,12 +82,13 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue :: MonadGraphQLE m => GraphClient -> UTCTime -> Text -> Stream (Of TaskData) m ()
-streamLinkedIssue client time repo = streamFetch client mkArgs (Just getRateLimit) transformResponse
+streamLinkedIssue client time repo = streamFetch client mkArgs optParams transformResponse
   where
-    mkArgs =
+    mkArgs _ =
       GetLinkedIssuesArgs
         ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
         )
+    optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just getRateLimit}
     toSimpleDate :: UTCTime -> String
     toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
 

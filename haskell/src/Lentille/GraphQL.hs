@@ -1,5 +1,34 @@
 -- | Helper module to define graphql client
-module Lentille.GraphQL where
+module Lentille.GraphQL
+  ( -- * client
+    newGraphClient,
+    GraphClient (host),
+
+    -- * Some cross crawler values
+    glSchemaLocation,
+    ghSchemaLocation,
+    ghDefaultURL,
+    remoteCallDelay,
+
+    -- * Main functions to fetch from a GraphQL server
+    doGraphRequest,
+    streamFetch,
+    fetchWithLog,
+
+    -- * Utility functions to parse query logs
+    handleReqLog,
+
+    -- * Some data types
+    RateLimit (..),
+    PageInfo (..),
+    StreamFetchOptParams (..),
+    defaultStreamFetchOptParams,
+
+    -- * Some type aliases
+    ReqLog,
+    RetryCheck,
+  )
+where
 
 import qualified Data.ByteString.Lazy as LBS
 import Data.Morpheus.Client
@@ -98,29 +127,73 @@ handleReqLog err reqLog = case reqLog of
 data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
   deriving (Show)
 
-instance From PageInfo Text where
-  from PageInfo {..} =
-    "total docs: "
-      <> maybe "" show totalCount
-      <> (if hasNextPage then " (has next page)" else "")
-
 data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
   deriving (Show)
 
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
+type RetryCheck m a = (Either (FetchError a) a, [ReqLog]) -> m Bool
+
+remoteCallDelay :: Int
+remoteCallDelay = 1_100_000 -- 1.1 seconds
+
+-- | wrapper around fetchWithLog than can optionaly handle fetch retries
+-- based on the returned data inspection via a provided function (see RetryCheck).
+-- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
+doRequest ::
+  forall a m.
+  (MonadGraphQLE m, Fetch a, FromJSON a) =>
+  GraphClient ->
+  (Maybe Int -> Maybe Text -> Args a) ->
+  Maybe (RetryCheck m a) ->
+  Maybe Int ->
+  Maybe PageInfo ->
+  m (Either (FetchError a) a, [ReqLog])
+doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck remoteCallDelay runFetch
+  where
+    gRetry = genericRetry Macroscope "Faulty response - retrying request"
+    retryCheck _ = fromMaybe (const $ pure False) retryCheckM
+    runFetch :: Int -> m (Either (FetchError a) a, [ReqLog])
+    runFetch retried =
+      fetchWithLog
+        (doGraphRequest client)
+        (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      where
+        aDepthM = decreaseValue retried <$> depthM
+
+-- | Slowly decrease a value to workaround api timeout when a graph depth is too deep.
+-- >>> decreaseValue 1 42
+-- 30
+-- >>> decreaseValue 2 42
+-- 17
+decreaseValue :: Int -> Int -> Int
+decreaseValue retried depth =
+  let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral $ depth
+   in max 1 $ depth - decValue
+
+data StreamFetchOptParams m a = StreamFetchOptParams
+  { -- | an optional retryCheck function
+    fpRetryCheck :: Maybe (RetryCheck m a),
+    -- | an optional starting value for the depth
+    fpDepth :: Maybe Int,
+    -- | an optional action to get a RateLimit record
+    fpGetRatelimit :: Maybe (GraphClient -> m RateLimit)
+  }
+
+defaultStreamFetchOptParams :: StreamFetchOptParams m a
+defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
+
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
-  -- | query Args constructor, the function takes a cursor
-  (Maybe Text -> Args a) ->
-  -- | an action to get a RateLimit record
-  Maybe (GraphClient -> m RateLimit) ->
+  -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
+  (Maybe Int -> Maybe Text -> Args a) ->
+  StreamFetchOptParams m a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go Nothing
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
@@ -138,22 +211,34 @@ streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go 
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM
-      (respE, reqLog) <-
-        fetchWithLog
-          (doGraphRequest client)
-          (mkArgs $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      (respE, reqLog) <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
       (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
         Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp
       pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
-    go pageInfoM = do
+    logStep pageInfo rateLimitM xs totalFetched = do
+      lift . log $
+        show (length xs)
+          <> " doc(s) fetched from current page (total fetched: "
+          <> show (totalFetched + length xs)
+          <> ") - "
+          <> show pageInfo
+          <> " - "
+          <> maybe "no ratelimit" show rateLimitM
+
+    go pageInfoM totalFetched = do
+      --- Start be waiting one second if we request a new page
+      when (isJust pageInfoM) $ lift $ mThreadDelay remoteCallDelay
+
       --- Perform a pre GraphQL request to gather rateLimit
-      case getRateLimitM of
+      case fpGetRatelimit of
         Just getRateLimit -> lift $
           mModifyMVar rateLimitMVar $
             const $ do
               rl <- getRateLimit client
+              -- Wait one second to delay the next call
+              mThreadDelay remoteCallDelay
               pure (Just rl, ())
         Nothing -> pure ()
 
@@ -162,7 +247,7 @@ streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go 
         lift $ mModifyMVar rateLimitMVar $ request pageInfoM
 
       -- Log crawling status
-      lift . log $ "graphQL client infos: " <> from pageInfo <> " ratelimit " <> maybe "NA" from rateLimitM
+      logStep pageInfo rateLimitM xs totalFetched
 
       -- Yield the results
       S.each xs
@@ -170,6 +255,5 @@ streamFetch client@GraphClient {..} mkArgs getRateLimitM transformResponse = go 
       -- Abort the stream when there are errors
       unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
 
-      -- TODO: implement throttle
       -- Call recursively when response has a next page
-      when (hasNextPage pageInfo) (go (Just pageInfo))
+      when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)

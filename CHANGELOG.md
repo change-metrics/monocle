@@ -4,13 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 
+This release mainly removes a technical dept where the GitHub Pull-Requests crawler
+was managed differently than other crawlers. With this release, the crawler is managed
+by the same process (or container) than other crawlers and respects the same API.
+Note this change should be transparent as it does not require changes in the Monocle
+configuration or database schema updates.
+
 ### Added
 
 - [web] A minimal login capability to enable the use 'self' keyword in queries.
 - [cli] --version argument to display the current version
 
 ### Changed
+
+- [crawler] Legacy crawler for GitHub Pull Request has been migrated to the new crawler api.
+
 ### Removed
+
+- [compose] crawler-legacy container.
+- [kube] crawler-legacy container.
+- [crawler] support for GitHub APP.
+
 ### Fixed
 
 - [index] fix missing schema info for commit.committer fields.

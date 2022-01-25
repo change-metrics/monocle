@@ -178,31 +178,6 @@ let createCrawlerService =
                                          }
                                    )
 
-let createCrawlerLegacyService =
-      \(dev : Bool) ->
-        let service =
-              { depends_on = Some [ "elastic" ]
-              , command = Some
-                  ( Compose.StringOrList.String
-                      "monocle --elastic-conn elastic:9200 crawler --config /etc/monocle/config.yaml"
-                  )
-              , env_file = envFile
-              , volumes = Some
-                [ "./etc:/etc/monocle:z", "./dump:/var/lib/crawler:Z" ]
-              }
-
-        in  if    dev
-            then  Compose.Service::(     service
-                                     //  { build = Some
-                                             (Compose.Build.String ".")
-                                         }
-                                   )
-            else  Compose.Service::(     service
-                                     //  { image = Some (monocleImage "backend")
-                                         , restart = Some "unless-stopped"
-                                         }
-                                   )
-
 let createWebService =
       \(dev : Bool) ->
         let service =
@@ -244,7 +219,6 @@ let createServices =
         toMap
           { api = createApiService dev
           , web = createWebService dev
-          , crawler-legacy = createCrawlerLegacyService dev
           , crawler = createCrawlerService dev
           , elastic = createElasticService dev
           }

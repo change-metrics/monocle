@@ -99,16 +99,9 @@ You might need to check the crawler logs to ensure the crawler started to fetch 
 
 ```ShellSession
 $ docker-compose logs -f crawler
-$ docker-compose logs -f crawler-legacy
 ```
 
 You should be able to access the web UI at <http://localhost:8080>.
-
-After a change in the configuration file, the crawler-legacy service need to be restarted:
-
-```ShellSession
-$ docker-compose restart crawler-legacy
-```
 
 ## Configuration
 
@@ -180,7 +173,8 @@ A GitHub provider settings
 
 `github_organization` is the only mandatory key. If `github_repositories` is not specified then
 the crawler will crawl the whole organization repositories. If specified then it will crawl only
-the listed repositories.
+the listed repositories. To crawl repositories from a personnal GitHub account, you need to set
+`github_organization` to you account name and list repositories under the `github_repositories` key.
 
 `github_url` might be specified in case of an alternate url. Default is "github.com".
 
@@ -189,8 +183,6 @@ token value. Default is "GITHUB_TOKEN"
 
 To crawl privates repositories, either you must use a [GitHub Application](#github-application)
 or you must generate a Personal Access Token with the "repo" scope.
-
-Note that this crawler is managed by the `crawler-legacy` container.
 
 ###### Gerrit
 
@@ -242,8 +234,6 @@ the listed repositories.
 
 `gitlab_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITLAB_TOKEN"
-
-Note that this crawler is managed by the `crawler` container.
 
 ##### TaskData
 
@@ -397,55 +387,6 @@ Here are the expected environment variables that need to be added to the `.secre
 
 Open the sample [config.yaml](haskell/test/data/config.yaml).
 
-### GitHub application
-
-Monocle can interact with a GitHub application to create and use installed
-application token to query the API.
-
-Once the application is created and Monocle started with application id and
-private key. If a `github_orgs` entry's token attribute is missing Monocle will
-search accross the application installations for an installed application
-on the related GitHub organization. If any, it will generate an installation token
-for the matching installation and use it to query the GitHub API.
-
-#### Create the application on GitHub
-
-1. [Register new GitHub App](https://github.com/settings/apps/new)
-2. In `Repository permissions` set `Metadata` as `Read-Only`,
-   `Pull requests` as `Read-Only` and `Contents` as `Read-Only`
-3. Click `Create the GitHub App`
-4. Click `Generate a private key` and download the key
-5. Save the `App ID`
-
-#### Setup Monocle to use the application
-
-1. Save the private key into `etc/app_key.rsa`
-2. Into the `.secrets` file add `GITHUB_APP_ID=<APP_ID>` and `GITHUB_APP_KEY_PATH=/etc/monocle/app_key.rsa`
-
-## Database migration
-
-### From version 0.8.X to next stable
-
-Identities are consolidated in the database, to enable multiple code review identities (across code review systems) to be grouped.
-
-1. Run the migration process for each workspace
-
-```
-docker-compose stop
-docker-compose start elastic
-# For each workspace
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --run-migrate from-0.8-to-last-stable
-docker-compose up -d
-```
-
-### From version 0.7.0
-
-A new field `self_merged` has been added. Previously indexed changes can be updated by running the `self-merge` migration process.
-
-```
-docker-compose run --rm --no-deps crawler /usr/local/bin/monocle --elastic-conn elastic:9200 dbmanage --workspace <index-name> --run-migrate self-merge
-```
-
 #### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
@@ -467,18 +408,13 @@ or make the data directory writable for other:
 $ chmod o+w data
 ```
 
-You might want to wipe a Monocle project:
+To delete a workspace (a workspace is an elasticsearch index):
 
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-repository ".*"
-```
-
-or delete a workspace:
-
-```
-docker-compose run --rm --no-deps crawler-legacy /usr/local/bin/monocle \
---elastic-conn elastic:9200 dbmanage --workspace <workspace-name> --delete-workspace
+```ShellSession
+# List indexes with:
+docker-compose run --rm --no-deps api curl http://elastic:9200/_aliases?pretty=true
+# Delete an index with
+docker-compose run --rm --no-deps api curl -XDELETE http://elastic:9200/<index-name>
 ```
 
 ElasticSearch sets defaults settings on new indexes. The default setting for queries based
@@ -486,8 +422,8 @@ on regex is set to a value that might not fit your usage especially when your pr
 uses regex above that limit. However the limit could be increased using the following command:
 
 ```ShellSession
-docker-compose run --rm --no-deps crawler-legacy curl \
--XPUT http://localhost:9200/monocle.changes.1.<workspace-name>/_settings \
+docker-compose run --rm --no-deps api curl \
+-XPUT http://localhost:9200/monocle.changes.1.<index-name>/_settings \
 -H "Content-Type: application/json" -d '{"index": {"max_regex_length": 50000}}'
 ```
 
@@ -498,16 +434,11 @@ docker-compose run --rm --no-deps crawler-legacy curl \
 Monocle is composed of the following services:
 
 1. an Elasticsearch data store.
-2. an api service to perform user query and index crawler output.
-3. a crawler service to retrieve change from provider.
-4. a web proxy and web application to browse metrics.
+2. an API service to serve user and crawler requests.
+3. a crawler service to retrieve change from providers.
+4. a web proxy and web application as a frontend for users.
 
 The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
-
-Some legacy component are still required until they are migrated to the new OpenAPI (see the related [topic](https://github.com/change-metrics/monocle/labels/legacy)):
-
-5. a crawler service to index github and gerrit changes.
-
 
 ## Monitoring
 

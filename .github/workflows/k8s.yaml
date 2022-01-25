@@ -50,15 +50,11 @@ jobs:
           kubectl wait --for=condition=Ready --namespace "${namespace}" pods --all
 
           kubectl get po --namespace "${namespace}"
-      - name: validate crawler legacy
-        run: |
-          kubectl create --namespace "${namespace}" job test  --from $( kubectl get --namespace ${namespace} -f ./deployment/crawler-legacy-cronjob.yaml --output name) 
-          kubectl wait --for=condition=complete --namespace "${namespace}" job/test 
 
       - name: Display indexes
         run: |
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/elastic-service.yaml --output name) 9200:9200 &
-          sleep 10s
+          sleep 30s
 
           curl -s -I -X GET http://localhost:9200/_cat/indices
 
@@ -66,14 +62,14 @@ jobs:
       - name: Check api service through nginx
         run: |
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
-          sleep 10s
+          sleep 30s
 
           curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'
           kill %1
       - name: Check web service to fetch web app
         run: |
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
-          sleep 10s
+          sleep 30s
 
           curl -s http://localhost:8080/index.html | grep 'window.TITLE'
 

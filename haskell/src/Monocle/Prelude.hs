@@ -105,6 +105,11 @@ module Monocle.Prelude
     dropMilliSec,
     MonocleTime,
     toMonocleTime,
+    diffTimeSec,
+
+    -- * text
+    stripSpaces,
+    inText,
 
     -- * qq-literals
     utctime,
@@ -115,11 +120,18 @@ module Monocle.Prelude
     mapMOf,
     view,
     over,
+    preview,
+    at,
+    set,
+
+    -- * lens-aeson
+    _Integer,
+    _Object,
 
     -- * aeson
     FromJSON (..),
     ToJSON (..),
-    Value,
+    Value (Number),
     encode,
     encodePretty,
     encodePrettyWithSpace,
@@ -135,6 +147,7 @@ module Monocle.Prelude
     mkOr,
     mkNot,
     mkTerm,
+    BH.runBH,
 
     -- * proto3
     fromPBEnum,
@@ -163,16 +176,19 @@ where
 
 import Control.Exception.Safe (tryAny)
 import qualified Control.Foldl as L
-import Control.Lens (Lens', lens, mapMOf, over, view)
+import Control.Lens (Lens', at, lens, mapMOf, over, preview, set, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), encode, withText, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
 import qualified Data.Aeson.Encode.Pretty as Aeson
+import Data.Aeson.Lens (_Integer, _Object)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import qualified Data.Map as Map
+import qualified Data.Text as T
+import Data.Text.Internal.Search
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
@@ -327,9 +343,18 @@ formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatT
 
 -- | Helper
 parseDateValue :: String -> Maybe UTCTime
-parseDateValue str = tryParse "%F" <|> tryParse "%F %T %Z" <|> tryParse "%FT%XZ"
+parseDateValue str =
+  tryParse "%F"
+    <|> tryParse "%F %T %Z"
+    <|> tryParse "%FT%XZ"
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt str
+
+-- | diffTimeSec a - b
+-- >>> diffTimeSec [utctime|2000-01-01 01:00:00|] [utctime|2000-01-01 00:00:00|]
+-- 3600
+diffTimeSec :: a ::: UTCTime -> b ::: UTCTime -> Int
+diffTimeSec a b = truncate (realToFrac $ elapsedSeconds b a :: Double) :: Int
 
 -- | Numerical type to count documents
 newtype Count = MkCount Word32
@@ -356,6 +381,9 @@ instance Num Count where
   fromInteger x = MkCount $ fromInteger x
   abs x = x
 
+instance From Int Int32 where
+  from = fromInteger . toInteger
+
 -- | From https://hackage.haskell.org/package/astro-0.4.3.0/docs/src/Data.Astro.Utils.html#fromFixed
 fromFixed :: (Fractional a, HasResolution b) => Fixed b -> a
 fromFixed fv@(MkFixed v) = fromIntegral v / fromIntegral (resolution fv)
@@ -368,6 +396,16 @@ Nothing `orDie` err = Left err
 getExn :: (ToText e, HasCallStack) => Either e a -> a
 getExn (Right x) = x
 getExn (Left err) = error (toText err)
+
+-- >>> stripSpaces "john doe "
+-- "johndoe"
+stripSpaces :: Text -> Text
+stripSpaces = T.replace " " ""
+
+inText :: Text -> Text -> Bool
+inText sub txt = case indices sub txt of
+  [] -> False
+  _ -> True
 
 monocleLog :: MonadIO m => Text -> m ()
 monocleLog = sayErr

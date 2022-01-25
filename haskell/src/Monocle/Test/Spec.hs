@@ -189,7 +189,9 @@ monocleIntegrationTests =
       testCase "Test taskData add" testTaskDataAdd,
       testCase "Test taskData adoption" testTaskDataAdoption,
       testCase "Test Janitor wipe crawler" testJanitorWipeCrawler,
-      testCase "Test Janitor update idents" testJanitorUpdateIdents
+      testCase "Test Janitor update idents" testJanitorUpdateIdents,
+      testCase "Test Config Index initialization" testEnsureConfig,
+      testCase "Test Config Upgrade to version 1" testUpgradeConfigV1
     ]
 
 monocleSearchLanguage :: TestTree

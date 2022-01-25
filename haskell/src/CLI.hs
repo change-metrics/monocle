@@ -8,6 +8,9 @@ module CLI (main) where
 import Env hiding (Parser, auto, footer)
 import qualified Env
 import qualified Lentille.Gerrit as G
+import qualified Lentille.GitHub.Organization as GH_ORG
+import qualified Lentille.GitHub.PullRequests as GH_PR
+import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
 import qualified Monocle.Api.Config as Config
@@ -126,6 +129,8 @@ usageLentille =
     ( mkSubCommand "gerrit-change" "Get a single change" gerritChangeUsage
         <> mkSubCommand "gerrit-projects" "Get projects list" gerritProjectsUsage
         <> mkSubCommand "gerrit-changes" "Get changes list" gerritChangesUsage
+        <> mkSubCommand "github-projects" "Get projects list" githubProjectsUsage
+        <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
     )
   where
     gerritChangeUsage = io <$> parser
@@ -149,15 +154,38 @@ usageLentille =
           env <- getGerritEnv url
           dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
 
+    githubProjectsUsage = io <$> parser
+      where
+        parser = (,,) <$> urlOption <*> secretOption <*> orgOption
+        io (url, secret, org) = do
+          client <- getGraphClient url secret
+          dump Nothing $ GH_ORG.streamOrganizationProjects client org
+
+    githubChangesUsage = io <$> parser
+      where
+        parser =
+          (,,,,)
+            <$> urlOption
+            <*> secretOption
+            <*> projectOption
+            <*> sinceOption
+            <*> limitOption
+        io (url, secret, repo, since, limitM) = do
+          client <- getGraphClient url secret
+          dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
+
     toSince txt = case Monocle.Search.Query.parseDateValue txt of
       Just x -> x
       Nothing -> error $ "Invalid date: " <> show txt
     getGerritEnv url = do
       client <- G.getGerritClient url Nothing
       pure $ G.GerritEnv client Nothing (const Nothing) "cli"
+    getGraphClient url secret = newGraphClient "" "" url (Secret secret)
 
-    urlOption = strOption (long "url" <> O.help "Gerrit API url" <> metavar "URL")
+    urlOption = strOption (long "url" <> O.help "API url" <> metavar "URL")
     queryOption = strOption (long "query" <> O.help "Gerrit regexp query")
+    orgOption = strOption (long "organization" <> O.help "GitHub organization name")
+    secretOption = strOption (long "token" <> O.help "GitHub token")
     changeOption = option auto (long "change" <> O.help "Change Number" <> metavar "NR")
     projectOption = strOption (long "project" <> O.help "Project name")
     sinceOption = strOption (long "since" <> O.help "Since date")
@@ -168,7 +196,7 @@ dump limitM stream = do
   xsE <- tryAny $ S.toList_ $ brk stream
   case xsE of
     Right xs -> liftIO . putBSLn . from . encodePrettyWithSpace 2 $ xs
-    Left _ -> liftIO . putBSLn $ "Couldn't evalue the stream"
+    Left err -> liftIO . putBSLn $ "Couldn't evalue the stream due to " <> show err
   liftIO . putLBSLn =<< exportMetricsAsText
   where
     brk = maybe id S.take limitM

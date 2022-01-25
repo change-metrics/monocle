@@ -15,6 +15,7 @@ import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
 import Monocle.Change
+import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Prelude
@@ -24,6 +25,16 @@ import qualified Network.HTTP.Types.Status as NHTS
 import qualified Proto3.Suite.Types as PT (Enumerated (..))
 import qualified Streaming as S (chunksOf)
 import qualified Streaming.Prelude as S
+
+data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
+
+instance ToJSON ConfigIndexMapping where
+  toJSON ConfigIndexMapping =
+    object
+      [ "properties"
+          .= object
+            ["version" .= object ["type" .= ("integer" :: Text)]]
+      ]
 
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
@@ -248,18 +259,120 @@ instance ToJSON ChangesIndexMapping where
             ]
       ]
 
-ensureIndexSetup :: QueryM ()
-ensureIndexSetup = do
-  indexName <- getIndexName
+createIndex :: (BH.MonadBH m, ToJSON mapping, MonadFail m) => BH.IndexName -> mapping -> m ()
+createIndex indexName mapping = do
   _respCI <- BH.createIndex indexSettings indexName
-  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
   -- print respCI
-  _respPM <- BH.putMapping indexName ChangesIndexMapping
+  _respPM <- BH.putMapping indexName mapping
   -- print respPM
   True <- BH.indexExists indexName
   pure ()
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+
+configIndex :: BH.IndexName
+configIndex = BH.IndexName "monocle.config"
+
+configDoc :: BH.DocId
+configDoc = BH.DocId "config"
+
+-- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
+-- | This function looks for GitHub project crawler metadata docs and reset the
+-- | lastCommitAt to the lastUpdatedAt date of the most recent change of the repository.
+upgradeConfigV1 :: QueryM ()
+upgradeConfigV1 = do
+  QueryWorkspace ws <- asks tenant
+  -- Get GitHub crawler names
+  let ghCrawlerNames = getGHCrawlerNames ws
+  -- Get all the GH crawler project metadata.
+  ghCrawlerMD <- traverse getProjectCrawlerMDByName ghCrawlerNames
+  -- Keep the one that have the default starting date
+  let ghCrawlerMDToReset = filter (isCrawlerLastCommitAtIsDefault ws) $ concat ghCrawlerMD
+  -- Update the last_commit_at from the age of the most recent update
+  traverse_ setLastUpdatedDate ghCrawlerMDToReset
+  where
+    getGHCrawlerNames :: Config.Index -> [Text]
+    getGHCrawlerNames ws =
+      let isGHProvider crawler = case Config.provider crawler of
+            Config.GithubProvider _ -> True
+            _otherwise -> False
+       in Config.getCrawlerName
+            <$> filter isGHProvider (Config.crawlers ws)
+    getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
+    getProjectCrawlerMDByName crawlerName = do
+      let entity = EntityEntityProjectName ""
+          search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
+      index <- getIndexName
+      resp <- fmap BH.hitSource <$> simpleSearch index search
+      pure $ catMaybes resp
+    isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
+    isCrawlerLastCommitAtIsDefault
+      ws
+      ( ECrawlerMetadata
+          ECrawlerMetadataObject {ecmCrawlerName, ecmLastCommitAt}
+        ) =
+        case Config.lookupCrawler ws (from ecmCrawlerName) of
+          Nothing -> False
+          Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
+    setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
+    setLastUpdatedDate
+      (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerTypeValue}) = do
+        lastUpdatedDateM <- getLastUpdatedDate $ from ecmCrawlerTypeValue
+        case lastUpdatedDateM of
+          Nothing -> pure ()
+          Just lastUpdatedAt ->
+            setLastUpdated
+              (from ecmCrawlerName)
+              lastUpdatedAt
+              $ Project . from $ ecmCrawlerTypeValue
+
+newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
+
+-- | Extract the `version` attribute of an Aeson object value
+--
+-- >>> getVersion (object ["version" .= (42 :: Int)])
+-- ConfigVersion 42
+-- >>> getVersion (object [])
+-- ConfigVersion 0
+getVersion :: Value -> ConfigVersion
+getVersion = ConfigVersion . fromMaybe 0 . preview (_Object . at "version" . traverse . _Integer)
+
+-- | Set the `version` attribute of an Aeson object
+--
+-- >>> setVersion (ConfigVersion 23) (object ["version" .= (22 :: Int)])
+-- Object (fromList [("version",Number 23.0)])
+-- >>> setVersion (ConfigVersion 42) (object [])
+-- Object (fromList [("version",Number 42.0)])
+setVersion :: ConfigVersion -> Value -> Value
+setVersion (ConfigVersion v) = set (_Object . at "version") (Just . Number . fromInteger $ v)
+
+getConfigVersion :: QueryM (ConfigVersion, Value)
+getConfigVersion = do
+  QueryConfig _ <- asks tenant
+  currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
+  pure (getVersion currentConfig, currentConfig)
+
+ensureConfigIndex :: QueryM ()
+ensureConfigIndex = do
+  QueryConfig conf <- asks tenant
+  createIndex configIndex ConfigIndexMapping
+  (currentVersion, currentConfig) <- getConfigVersion
+
+  when (currentVersion == ConfigVersion 0) $ traverseWorkspace upgradeConfigV1 conf
+
+  let newConfig = setVersion (ConfigVersion 1) currentConfig
+  void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
+  where
+    -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
+    traverseWorkspace action conf = do
+      traverse_ (\ws -> local (setTenant ws) action) (Config.getWorkspaces conf)
+    setTenant ws e = e {tenant = QueryWorkspace ws}
+
+ensureIndexSetup :: QueryM ()
+ensureIndexSetup = do
+  indexName <- getIndexName
+  createIndex indexName ChangesIndexMapping
+  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
 ensureIndexCrawlerMetadata :: QueryM ()
 ensureIndexCrawlerMetadata = do
@@ -435,9 +548,8 @@ checkDocExists docId = do
   index <- getIndexName
   BH.documentExists index docId
 
-getDocumentById :: (FromJSON a) => BH.DocId -> QueryM (Maybe a)
-getDocumentById docId = do
-  index <- getIndexName
+getDocumentById' :: (BH.MonadBH m, FromJSON a, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
+getDocumentById' index docId = do
   resp <- BH.getDocument index docId
   if isNotFound resp
     then pure Nothing
@@ -449,6 +561,11 @@ getDocumentById docId = do
   where
     getHit (Just (BH.EsResultFound _ cm)) = Just cm
     getHit Nothing = Nothing
+
+getDocumentById :: FromJSON a => BH.DocId -> QueryM (Maybe a)
+getDocumentById docId = do
+  index <- getIndexName
+  getDocumentById' index docId
 
 getChangeById :: BH.DocId -> QueryM (Maybe EChange)
 getChangeById = getDocumentById
@@ -661,6 +778,13 @@ getWorkerUpdatedSince Config.Crawler {..} =
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (toString update_since)
 
+crawlerMDQuery :: EntityType -> Text -> BH.Query
+crawlerMDQuery entity crawlerName =
+  mkAnd
+    [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" crawlerName) Nothing,
+      BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
+    ]
+
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
 getLastUpdated crawler entity offset = do
   index <- getIndexName
@@ -670,19 +794,15 @@ getLastUpdated crawler entity offset = do
     Just xs -> pure . Just $ getRespFromMetadata (last xs)
   where
     search =
-      (BH.mkSearch (Just query) Nothing)
+      (BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing)
         { BH.size = BH.Size (fromInteger . toInteger $ offset + 1),
           BH.sortBody = Just [BH.DefaultSortSpec bhSort]
         }
 
     bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
-    query =
-      mkAnd
-        [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" (getWorkerName crawler)) Nothing,
-          BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
-        ]
     getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
       (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
+    crawlerName = getWorkerName crawler
 
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
 -- the entity info response defined in protobuf. When requesting the last updated, we provide

@@ -32,14 +32,6 @@ import Gerrit.Data.Change
 import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
-import Lentille.GitLab.Adapter
-  ( diffTime,
-    fromIntToInt32,
-    getChangeId,
-    ghostIdent,
-    nobody,
-    toIdent,
-  )
 import qualified Monocle.Change as C
 import Monocle.Prelude hiding (all, id)
 import qualified Monocle.Project as P
@@ -306,14 +298,14 @@ streamChange' env identCB serverUrl query prefixM = go 0
     toMChange :: GerritChange -> C.Change
     toMChange GerritChange {..} =
       let changeId = toLazy id
-          changeNumber = fromIntToInt32 number
+          changeNumber = from number
           changeChangeId = getChangeId project (show number)
           changeTitle = toLazy subject
           changeText = getCommitMessage
           changeUrl = toLazy $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
           changeCommitCount = 1
-          changeAdditions = fromIntToInt32 insertions
-          changeDeletions = fromIntToInt32 deletions
+          changeAdditions = from insertions
+          changeDeletions = from deletions
           changeChangedFilesCount = getFilesCount
           changeChangedFiles = V.fromList getFiles
           changeCommits = V.fromList $ maybe [] getCommits current_revision
@@ -342,7 +334,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
             _ -> Nothing
           changeState = toState status
           changeOptionalDuration =
-            C.ChangeOptionalDurationDuration . fromIntToInt32 . diffTime (unGerritTime created)
+            C.ChangeOptionalDurationDuration . from . diffTimeSec (unGerritTime created)
               <$> (unGerritTime <$> submitted)
           changeMergeable = case mergeable of
             Just False -> "CONFLICT"
@@ -367,12 +359,12 @@ streamChange' env identCB serverUrl query prefixM = go 0
         toTimestamp = T.fromUTCTime . unGerritTime
         ghostIdent' = ghostIdent $ getHostFromURL serverUrl
         getCommitMessage = maybe "" (toLazy . cMessage . grCommit) revision
-        getFilesCount = fromIntToInt32 $ maybe 0 (length . M.keys . grFiles) revision
+        getFilesCount = from $ maybe 0 (length . M.keys . grFiles) revision
         getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
           where
             toChangeFile (fp, details) =
-              let changedFileAdditions = maybe 0 fromIntToInt32 $ gfLinesInserted details
-                  changedFileDeletions = maybe 0 fromIntToInt32 $ gfLinesDeleted details
+              let changedFileAdditions = maybe 0 from $ gfLinesInserted details
+                  changedFileDeletions = maybe 0 from $ gfLinesDeleted details
                   changedFilePath = toLazy fp
                in C.ChangedFile {..}
         getCommits sha = maybe [] toCommit $ grCommit <$> revision
@@ -383,8 +375,8 @@ streamChange' env identCB serverUrl query prefixM = go 0
                   commitCommitter = Just $ maybe ghostIdent' getIdent uploader
                   commitAuthoredAt = Just . T.fromUTCTime . unGerritTime . caDate $ cAuthor
                   commitCommittedAt = Just . T.fromUTCTime . unGerritTime . caDate $ cCommitter
-                  commitAdditions = fromIntToInt32 insertions
-                  commitDeletions = fromIntToInt32 deletions
+                  commitAdditions = from insertions
+                  commitDeletions = from deletions
                   commitTitle = toLazy cSubject
                in [C.Commit {..}]
         toState :: GerritChangeStatus -> Enumerated C.Change_ChangeState

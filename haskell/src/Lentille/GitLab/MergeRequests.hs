@@ -116,23 +116,13 @@ streamMergeRequests ::
   Text ->
   LentilleStream m Changes
 streamMergeRequests client getIdentIdCb untilDate project =
-  breakOnDate $ streamFetch client mkArgs Nothing transformResponse'
+  breakOnDate $ streamFetch client mkArgs defaultStreamFetchOptParams transformResponse'
   where
-    mkArgs = GetProjectMergeRequestsArgs (ID project) Nothing
+    mkArgs _ = GetProjectMergeRequestsArgs (ID project) Nothing
 
     -- This transform the stream by adding a limit.
     -- We don't care about the rest so we replace it with ()
-    breakOnDate = fmap (pure ()) . S.break isChangeTooOld
-
-    isChangeTooOld :: Changes -> Bool
-    isChangeTooOld (change, _) =
-      case changeUpdatedAt change of
-        Just changeDate -> isDateOlderThan (T.toUTCTime changeDate) untilDate
-        _ -> True
-
-    -- t1 is older than t2 then return True
-    isDateOlderThan :: UTCTime -> UTCTime -> Bool
-    isDateOlderThan t1 t2 = diffUTCTime t1 t2 < 0
+    breakOnDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
 
     transformResponse' = transformResponse (host client) getIdentIdCb
 
@@ -210,14 +200,14 @@ transformResponse host getIdentIdCB result =
               changeTitle = toLazy title
               changeText = fromMTtoLT description
               changeUrl = fromMTtoLT webUrl
-              changeCommitCount = (fromIntToInt32 $ fromMaybe 0 commitCount)
-              changeAdditions = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSAdditions)
-              changeDeletions = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSDeletions)
-              changeChangedFilesCount = (fromIntToInt32 $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
+              changeCommitCount = (from $ fromMaybe 0 commitCount)
+              changeAdditions = (from $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSAdditions)
+              changeDeletions = (from $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSDeletions)
+              changeChangedFilesCount = (from $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
               changeChangedFiles = (fromList $ getChangedFile . toDiffStats <$> fromMaybe [] diffStats)
               changeCommits = (fromList $ toCommit' . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
-              changeRepositoryPrefix = toLazy $ TE.replace ("/" <> shortName) "" $ removeSpace fullName
-              changeRepositoryFullname = toLazy $ removeSpace fullName
+              changeRepositoryPrefix = toLazy $ TE.replace ("/" <> shortName) "" $ stripSpaces fullName
+              changeRepositoryFullname = toLazy $ stripSpaces fullName
               changeRepositoryShortname = toLazy shortName
               changeAuthor = Just (maybe (ghostIdent host) (toIdent' . getAuthorUsername) author)
               changeOptionalMergedBy =
@@ -236,8 +226,8 @@ transformResponse host getIdentIdCB result =
                   else Nothing
               changeState = toState state
               changeOptionalDuration =
-                ( ChangeOptionalDurationDuration . fromIntToInt32
-                    . diffTime
+                ( ChangeOptionalDurationDuration . from
+                    . diffTimeSec
                       ( timeToUTCTime Nothing createdAt
                       )
                     <$> (timeToUTCTime Nothing <$> mergedAt)
