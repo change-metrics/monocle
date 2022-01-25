@@ -46,6 +46,7 @@ import qualified Monocle.Api.Config
 import Monocle.Change (Change (changeUpdatedAt), ChangeEvent, Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged), Ident (..))
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
+import Monocle.Logging
 import Monocle.Prelude
 import qualified Network.HTTP.Client as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
