@@ -2,9 +2,30 @@
 module Monocle.Logging where
 
 import qualified Data.Text as T
+import qualified Monocle.Api.Config as Config
 import Monocle.Prelude
+import Monocle.Search (QueryRequest_QueryType (..))
+import qualified Monocle.Search.Query as Q
 
 data LogCrawlerContext = LogCrawlerContext {index :: Text, crawler :: Text}
+
+data Entity = Project Text | Organization Text | TaskDataEntity Text
+  deriving (Eq, Show)
+
+instance From Entity Text where
+  from = \case
+    Project _ -> "project"
+    Organization _ -> "organization"
+    TaskDataEntity _ -> "taskdata"
+
+instance From Entity LText where
+  from = via @Text
+
+getEntityName :: Entity -> Text
+getEntityName = \case
+  Project n -> n
+  Organization n -> n
+  TaskDataEntity n -> n
 
 data LogEvent
   = LogMacroStart
@@ -29,6 +50,14 @@ data LogEvent
   | LogGetBugs UTCTime Int Int
   | LogGraphQL LogCrawlerContext Text
   | LogRaw Text
+  | AddingChange LText Int Int
+  | AddingProject Text Text Int
+  | AddingTaskData LText Int
+  | UpdatingEntity LText Entity UTCTime
+  | Searching QueryRequest_QueryType LText Q.Query
+  | SystemReady Int Int Text
+  | ReloadConfig FilePath
+  | RefreshIndex Config.Index
 
 instance From LogEvent Text where
   from = \case
@@ -56,5 +85,22 @@ instance From LogEvent Text where
     LogMacroReloadingStart -> "Macroscope reloading beging"
     LogGraphQL lc text -> prefix lc <> " - " <> text
     LogRaw t -> t
+    AddingChange crawler changes events ->
+      toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
+    AddingProject crawler organizationName projects ->
+      crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
+    AddingTaskData crawler tds ->
+      toStrict crawler <> " adding " <> show tds
+    UpdatingEntity crawler entity ts ->
+      toStrict crawler <> " updating " <> show entity <> " to " <> show ts
+    Searching queryType queryText query ->
+      let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
+       in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
+    SystemReady tenantCount port url ->
+      "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> url
+    RefreshIndex index ->
+      "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
+    ReloadConfig fp ->
+      "Reloading " <> from fp
     where
       prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler

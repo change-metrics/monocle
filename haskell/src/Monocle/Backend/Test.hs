@@ -18,6 +18,7 @@ import qualified Monocle.Backend.Janitor as J
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search (TaskData (..))
 import qualified Monocle.Search as SearchPB

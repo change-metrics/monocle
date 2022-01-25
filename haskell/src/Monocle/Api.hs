@@ -5,6 +5,7 @@ import Lentille (retry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
@@ -66,7 +67,7 @@ run' port url configFile glLogger = do
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      logEvent glLogger $ SystemReady (length workspaces) port url
+      doLog glLogger $ via @Text $ SystemReady (length workspaces) port url
       Warp.runSettings
         settings
         . cors (const $ Just policy)

@@ -18,6 +18,7 @@ import Monocle.Change
 import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
+import Monocle.Logging (Entity (..), getEntityName)
 import Monocle.Prelude
 import Monocle.Search (Order (..), Order_Direction (..), TaskData (..))
 import qualified Network.HTTP.Client as HTTP
