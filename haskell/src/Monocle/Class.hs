@@ -43,7 +43,6 @@ instance MonadSync IO where
 
 -------------------------------------------------------------------------------
 -- A log system
-
 data LogAuthor = Macroscope | Unspecified
 
 instance From LogAuthor Text where

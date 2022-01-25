@@ -39,7 +39,6 @@ module Lentille
 where
 
 import qualified Data.Text as T
-import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Google.Protobuf.Timestamp as T
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
@@ -61,6 +60,7 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
 
 data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient,
+    crawlerLogger :: Logger,
     crawlerStop :: IORef Bool
   }
 
@@ -76,12 +76,12 @@ unlessStopped action = do
   stopped <- mReadIORef stopRef
   unless stopped action
 
-runLentilleM :: MonadIO m => MonocleClient -> LentilleM a -> m a
-runLentilleM client lm = do
+runLentilleM :: MonadIO m => Logger -> MonocleClient -> LentilleM a -> m a
+runLentilleM logger client lm = do
   r <- liftIO $ newIORef False
   liftIO . flip runReaderT (env r) . unLentille $ lm
   where
-    env = CrawlerEnv client
+    env = CrawlerEnv client logger
 
 stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
 stopLentille = lift . throwM
@@ -141,12 +141,12 @@ type LentilleMonad m =
 -- Log system
 -------------------------------------------------------------------------------
 
-logEvent :: (MonadTime m, MonadIO m) => Log -> m ()
+logEvent :: Log -> LentilleM ()
 logEvent x = do
-  now <- mGetCurrentTime
-  say $ "[" <> showTime now <> "] " <> from x
+  logger <- asks crawlerLogger
+  liftIO $ doLog logger message
   where
-    showTime now = toText . take 23 $ formatTime defaultTimeLocale "%F %T.%q" now
+    message = encodeUtf8 @Text @ByteString . from $ x
 
 logRaw :: MonadLog m => Text -> m ()
 logRaw text = mLog $ Log Unspecified (LogRaw text)

@@ -42,6 +42,11 @@ module Monocle.Prelude
     Of (..),
     toVector,
 
+    -- * fast-logger
+    Logger,
+    withLogger,
+    doLog,
+
     -- * unliftio
     MonadUnliftIO,
     modifyMVar,
@@ -210,6 +215,7 @@ import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
+import qualified System.Log.FastLogger as FastLogger
 import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
@@ -319,6 +325,19 @@ dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ truncate sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
+
+type Logger = FastLogger.TimedFastLogger
+
+-- | withLogger create the logger
+withLogger :: (Logger -> IO a) -> IO a
+withLogger cb = do
+  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
+  FastLogger.withTimedFastLogger tc logger cb
+  where
+    logger = FastLogger.LogStderr 1024
+
+doLog :: Logger -> ByteString -> IO ()
+doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
 
 getEnv' :: Text -> IO Text
 getEnv' var = do

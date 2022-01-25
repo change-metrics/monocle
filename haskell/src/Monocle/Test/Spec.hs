@@ -105,7 +105,7 @@ monocleApiTests =
                   ]
               )
               reloadedRef
-      withTestApi appEnv $ \client ->
+      withTestApi appEnv $ \_logger client ->
         do
           -- Run two commitInfo requests (and expect same resp)
           resp1 <- crawlerCommitInfo client $ mkReq wsName1 0

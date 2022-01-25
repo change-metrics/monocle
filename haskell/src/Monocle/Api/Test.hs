@@ -23,7 +23,7 @@ mkAppEnv workspace = do
       aEnv = Env {..}
   pure $ AppEnv {..}
 
-withTestApi :: IO AppEnv -> (MonocleClient -> Assertion) -> IO ()
+withTestApi :: IO AppEnv -> (Logger -> MonocleClient -> Assertion) -> IO ()
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
   where
     -- Using a mockedManager, run the Api behind a MonocleClient for the tests
@@ -36,7 +36,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
         indexes
       withMockedManager
         (dropVersionPath $ app appEnv)
-        (\manager -> withClient "http://localhost" (Just manager) testCb)
+        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
     dropVersionPath app' req = do
       app'
         ( req

@@ -12,7 +12,6 @@ import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
 import qualified Servant (Handler)
-import qualified System.Log.FastLogger as FastLogger
 
 -------------------------------------------------------------------------------
 -- The main AppM context, embeded in the Servant handler
@@ -268,22 +267,6 @@ getEntityName = \case
 -------------------------------------------------------------------------------
 -- logging function
 -------------------------------------------------------------------------------
-type Logger = FastLogger.TimedFastLogger
-
--- | withLogger create the logger
---
--- try with repl:
--- λ> runQueryM' Prelude.undefined (Config.defaultTenant "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
-withLogger :: (Logger -> IO a) -> IO a
-withLogger cb = do
-  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
-  FastLogger.withTimedFastLogger tc logger cb
-  where
-    logger = FastLogger.LogStderr 1024
-
-doLog :: Logger -> ByteString -> IO ()
-doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
-
 data SystemEvent
   = SystemReady Int Int Text
   | ReloadConfig FilePath
