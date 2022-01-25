@@ -118,7 +118,7 @@ let createApiService =
         let service =
               { healthcheck = Some
                   ( mkHealthCheck
-                      "curl --silent --fail localhost:\$MONOCLE_API_PORT/health || exit 1"
+                      "curl --silent --fail localhost:9898/health || exit 1"
                   )
               , depends_on = Some [ "elastic" ]
               , command = Some (Compose.StringOrList.String "monocle api")
