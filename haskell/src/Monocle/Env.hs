@@ -6,13 +6,12 @@ import qualified Database.Bloodhound.Raw as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
+import Monocle.Logging
 import Monocle.Prelude
-import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (Expr)
 import qualified Network.HTTP.Client as HTTP
 import qualified Servant (Handler)
-import qualified System.Log.FastLogger as FastLogger
 
 -------------------------------------------------------------------------------
 -- The main AppM context, embeded in the Servant handler
@@ -247,83 +246,11 @@ withFilter extraQueries = local addFilter
       let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
-data Entity = Project Text | Organization Text | TaskDataEntity Text
-  deriving (Eq, Show)
-
-instance From Entity Text where
-  from = \case
-    Project _ -> "project"
-    Organization _ -> "organization"
-    TaskDataEntity _ -> "taskdata"
-
-instance From Entity LText where
-  from = via @Text
-
-getEntityName :: Entity -> Text
-getEntityName = \case
-  Project n -> n
-  Organization n -> n
-  TaskDataEntity n -> n
-
 -------------------------------------------------------------------------------
 -- logging function
 -------------------------------------------------------------------------------
-type Logger = FastLogger.TimedFastLogger
-
--- | withLogger create the logger
---
--- try with repl:
--- λ> runQueryM' Prelude.undefined (Config.defaultTenant "tenant") $ monocleLogEvent (AddingChange "test" 42 42)
-withLogger :: (Logger -> IO a) -> IO a
-withLogger cb = do
-  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
-  FastLogger.withTimedFastLogger tc logger cb
-  where
-    logger = FastLogger.LogStderr 1024
-
-doLog :: Logger -> ByteString -> IO ()
-doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
-
-data SystemEvent
-  = SystemReady Int Int Text
-  | ReloadConfig FilePath
-  | RefreshIndex Config.Index
-
-sysEventToText :: SystemEvent -> ByteString
-sysEventToText = \case
-  SystemReady tenantCount port url ->
-    "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> encodeUtf8 url
-  RefreshIndex index ->
-    encodeUtf8 $ "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
-  ReloadConfig fp ->
-    "Reloading " <> encodeUtf8 fp
-
-logEvent :: Logger -> SystemEvent -> IO ()
-logEvent logger ev = doLog logger (sysEventToText ev)
-
-data MonocleEvent
-  = AddingChange LText Int Int
-  | AddingProject Text Text Int
-  | AddingTaskData LText Int
-  | UpdatingEntity LText Entity UTCTime
-  | Searching QueryRequest_QueryType LText Q.Query
-
-eventToText :: MonocleEvent -> Text
-eventToText ev = case ev of
-  AddingChange crawler changes events ->
-    toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
-  AddingProject crawler organizationName projects ->
-    crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
-  AddingTaskData crawler tds ->
-    toStrict crawler <> " adding " <> show tds
-  UpdatingEntity crawler entity ts ->
-    toStrict crawler <> " updating " <> show entity <> " to " <> show ts
-  Searching queryType queryText query ->
-    let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
-     in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
-
-monocleLogEvent :: MonocleEvent -> QueryM ()
-monocleLogEvent ev = do
+logEvent :: LogEvent -> QueryM ()
+logEvent ev = do
   Config.Index {..} <- getIndexConfig
   logger <- asks (glLogger . tEnv)
-  liftIO $ doLog logger (encodeUtf8 $ name <> ": " <> eventToText ev)
+  liftIO $ doLog logger (encodeUtf8 $ name <> ": " <> from ev)

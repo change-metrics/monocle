@@ -170,6 +170,7 @@ library
   exposed-modules:     Monocle.Prelude
                      , Monocle.Env
                      , Monocle.Class
+                     , Monocle.Logging
                      , Monocle.Version
                      , CLI
 

@@ -79,12 +79,13 @@ withMonitoringServer port action = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 9001 "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" client
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = withMonitoringServer port $ do
-  runLentilleM client $ do
+runMacroscope port confPath client = withMonitoringAndLogger $ \logger -> do
+  runLentilleM logger client $ do
     mLog $ Log Macroscope LogMacroStart
     config <- Config.mReloadConfig confPath
     loop config (from ())
   where
+    withMonitoringAndLogger = withMonitoringServer port . withLogger
     loop config clients = do
       -- Load the config
       conf <- Config.csConfig <$> config

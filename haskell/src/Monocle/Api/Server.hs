@@ -17,6 +17,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
+import Monocle.Logging
 import qualified Monocle.Login as LoginPB
 import qualified Monocle.Metric as MetricPB
 import Monocle.Prelude
@@ -51,8 +52,7 @@ updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNee
 
     refreshIndex :: QueryM ()
     refreshIndex = do
-      logger <- glLogger <$> asks tEnv
-      liftIO $ logEvent logger $ RefreshIndex index
+      logEvent $ RefreshIndex index
       I.ensureIndexSetup
       traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
@@ -275,11 +275,11 @@ crawlerAddDoc request = do
     Left err -> pure $ toErrorResponse err
   where
     addTDs crawlerName taskDatas = do
-      monocleLogEvent $ AddingTaskData crawlerName (length taskDatas)
+      logEvent $ AddingTaskData crawlerName (length taskDatas)
       I.taskDataAdd (toText crawlerName) $ toList taskDatas
       pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
-      monocleLogEvent $ AddingChange crawlerName (length changes) (length events)
+      logEvent $ AddingChange crawlerName (length changes) (length events)
       let changes' = map from $ toList changes
           events' = map I.toEChangeEvent $ toList events
       I.indexChanges changes'
@@ -287,7 +287,7 @@ crawlerAddDoc request = do
       I.updateChangesAndEventsFromOrphanTaskData changes' events'
       pure $ CrawlerPB.AddDocResponse Nothing
     addProjects crawler organizationName projects = do
-      monocleLogEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
+      logEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
       let names = projectNames projects
           -- TODO(fbo) Enable crawl github issues by default for an organization.
           -- We might need to re-think some data fetching like priority/severity.
@@ -333,7 +333,7 @@ crawlerCommit request = do
   case requestE of
     Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
-      monocleLogEvent $ UpdatingEntity crawlerName entity date
+      logEvent $ UpdatingEntity crawlerName entity date
       -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (toStrict crawlerName) date entity
 
@@ -498,7 +498,7 @@ searchQuery request = do
   case requestE of
     Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
       let queryType = fromPBEnum queryRequestQueryType
-      monocleLogEvent $ Searching queryType queryRequestQuery query
+      logEvent $ Searching queryType queryRequestQuery query
 
       case queryType of
         SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
