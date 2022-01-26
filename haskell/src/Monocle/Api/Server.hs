@@ -8,7 +8,6 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import qualified Google.Protobuf.Timestamp as T
 import qualified Monocle.Api.Config as Config
-import Monocle.Logging
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
@@ -18,6 +17,7 @@ import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
+import Monocle.Logging
 import qualified Monocle.Login as LoginPB
 import qualified Monocle.Metric as MetricPB
 import Monocle.Prelude
