@@ -86,7 +86,7 @@ class (Functor m, Applicative m, Monad m, MonadReader QueryEnv m, ElasticMonad m
 
 instance QueryMonad QueryM where
   getCurrentTime' = liftIO getCurrentTime
-  trace' msg = liftIO $ say msg
+  trace' msg = logEvent $ LogRaw msg
 
 -- | A type class that defines the method available to query elastic
 class ElasticMonad m where

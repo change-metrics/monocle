@@ -144,7 +144,6 @@ library
                      , relude                     >= 1.0
                      , retry                      >= 0.8
                      , safe-exceptions            >= 0.1
-                     , say                        >= 0.1
                      , servant                    >= 0.18.2
                      , servant-options            >= 0.1
                      , servant-server             >= 0.18.2

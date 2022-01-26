@@ -59,7 +59,7 @@ class (Monad m, MonadTime m) => MonadLog m where
   mLog :: Log -> m ()
 
 instance MonadLog IO where
-  mLog = sayErr . from
+  mLog = logText . from
 
 -------------------------------------------------------------------------------
 -- A GraphQL client system

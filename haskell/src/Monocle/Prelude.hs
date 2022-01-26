@@ -46,6 +46,8 @@ module Monocle.Prelude
     Logger,
     withLogger,
     doLog,
+    logMessage,
+    logText,
 
     -- * unliftio
     MonadUnliftIO,
@@ -91,11 +93,6 @@ module Monocle.Prelude
     countToWord,
     countToDeci,
     naturalToCount,
-
-    -- * say
-    say,
-    sayErr,
-    monocleLog,
 
     -- * time
     UTCTime,
@@ -209,7 +206,6 @@ import QQLiterals (qqLiteral)
 import Relude
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
-import Say (say, sayErr)
 import Streaming (Of (..))
 import Streaming.Prelude (Stream)
 import qualified Streaming.Prelude as S
@@ -326,6 +322,9 @@ dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ truncate sec)
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
 
+-----------------------------------------------------------
+-- Logging facilities
+
 type Logger = FastLogger.TimedFastLogger
 
 -- | withLogger create the logger
@@ -338,6 +337,14 @@ withLogger cb = do
 
 doLog :: Logger -> ByteString -> IO ()
 doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
+
+-- | Print a message to the stderr with a timestamp
+logMessage :: MonadIO m => ByteString -> m ()
+logMessage msg = liftIO $ withLogger (`doLog` msg)
+
+-- | Print a text message to the stderr with a timestamp
+logText :: MonadIO m => Text -> m ()
+logText = logMessage . from
 
 getEnv' :: Text -> IO Text
 getEnv' var = do
@@ -426,9 +433,6 @@ inText sub txt = case indices sub txt of
   [] -> False
   _ -> True
 
-monocleLog :: MonadIO m => Text -> m ()
-monocleLog = sayErr
-
 fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
 fromPBEnum (Enumerated (Right x)) = x
@@ -449,16 +453,16 @@ toVector s = do
 -- | Helper search func that can be replaced by a scanSearch
 doSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearch indexName search = do
-  -- monocleLog . decodeUtf8 . encode $ search
+  -- logText . decodeUtf8 . encode $ search
   rawResp <- BH.searchByIndex indexName search
-  -- monocleLog $ show rawResp
+  -- logText $ show rawResp
   resp <- BH.parseEsResponse rawResp
   case resp of
     Left _e -> handleError rawResp
     Right x -> pure x
   where
     handleError resp = do
-      monocleLog (show resp)
+      logText (show resp)
       error "Elastic response failed"
 
 simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
