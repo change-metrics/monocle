@@ -184,6 +184,10 @@ let createWebService =
               { depends_on = Some [ "api" ]
               , ports = Some [ mkPort "WEB" 8080 8080 ]
               , volumes = Some [ "./web/conf:/etc/nginx/conf.d:z" ]
+              , healthcheck = Some
+                  ( mkHealthCheck
+                      "curl --silent --fail localhost:8080 || exit 1"
+                  )
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "REACT_APP_API_URL"
