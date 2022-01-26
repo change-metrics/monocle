@@ -51,7 +51,7 @@ advance scroll = do
     Right x -> pure x
   where
     handleError resp = do
-      monocleLog (show resp)
+      logText (show resp)
       error "Elastic scroll response failed"
 
 settings :: (MonadIO m, MonadBH m, ToJSON body) => BH.IndexName -> body -> m ()
@@ -112,7 +112,7 @@ search index body scrollRequest = do
       NoScroll -> []
       GetScroll x -> [("scroll", Just x)]
     handleError resp = do
-      monocleLog (show resp)
+      logText (show resp)
       error "Elastic response failed"
 
 -- | A special purpose search implementation that uses the faster json-syntax

@@ -188,10 +188,10 @@ wipeCrawlerData crawlerName = do
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
       prefixM = C.getPrefix crawler
       prefix = fromMaybe mempty prefixM
-  monocleLog $ "Discovered crawler prefix: " <> (show prefixM :: Text)
+  logText $ "Discovered crawler prefix: " <> (show prefixM :: Text)
   -- Get projects for this crawler from the crawler metadata objects
   projects <- getProjectsCrawler
-  monocleLog $ "Discovered " <> (show $ length projects :: Text) <> " projects"
+  logText $ "Discovered " <> (show $ length projects :: Text) <> " projects"
   -- For each projects delete related changes and events
   traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
   -- Finally remove crawler metadata objects
@@ -211,7 +211,7 @@ wipeCrawlerData crawlerName = do
         getValue (ECrawlerMetadata ECrawlerMetadataObject {..}) = ecmCrawlerTypeValue
     deleteDocsByRepoName :: Text -> QueryM ()
     deleteDocsByRepoName fullname = do
-      monocleLog $ "Deleting " <> fullname <> " ..."
+      logText $ "Deleting " <> fullname <> " ..."
       withQuery sQuery Q.deleteDocs
       where
         sQuery =
@@ -221,7 +221,7 @@ wipeCrawlerData crawlerName = do
             ]
     deleteCrawlerMDs :: QueryM ()
     deleteCrawlerMDs = do
-      monocleLog $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
+      logText $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
       withQuery sQuery Q.deleteDocs
       where
         sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
@@ -234,7 +234,7 @@ removeTDCrawlerData crawlerName = do
   index <- getIndexName
   tdDeletedCount <- removeOrphanTaskDatas index
   tdChangesCount <- removeChangeTaskDatas index
-  monocleLog $
+  logText $
     crawlerName <> ": deleted " <> show tdDeletedCount <> " td, updated " <> show tdChangesCount <> " changes"
   where
     -- Note about the structure:
@@ -292,7 +292,7 @@ removeProjectMD = removeMD (EntityEntityProjectName "")
 
 removeMD :: EntityEntity -> Text -> QueryM ()
 removeMD entity crawlerName = do
-  monocleLog $ "Will delete " <> getCrawlerTypeAsText entity <> " crawler metadata for " <> crawlerName
+  logText $ "Will delete " <> getCrawlerTypeAsText entity <> " crawler metadata for " <> crawlerName
   index <- getIndexName
   deletedCount <-
     withFilter [crawlerMDQuery entity crawlerName] $
@@ -300,4 +300,4 @@ removeMD entity crawlerName = do
         & ( Streaming.map (BulkDelete index)
               >>> I.bulkStream
           )
-  monocleLog $ crawlerName <> ": deleted " <> show deletedCount <> " project metadata"
+  logText $ crawlerName <> ": deleted " <> show deletedCount <> " project metadata"
