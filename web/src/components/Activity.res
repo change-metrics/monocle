@@ -90,9 +90,9 @@ module ChangesLifeCycleStats = {
         ("Mean Time To Merge: " ++ data.ttm_mean->momentHumanizeDuration)->str,
         ("TTM Median Deviation: " ++ data.ttm_variability->momentHumanizeDuration)->str,
         (data.updates_of_changes->int32_str ++ " updates of changes")->str,
-        ("Changes with tests: " ++ data.changes_with_tests->Belt.Float.toString ++ "%")->str,
-        (data.iterations_per_change->Belt.Float.toString ++ " iterations per change")->str,
-        (data.commits_per_change->Belt.Float.toString ++ " commits per change")->str,
+        ("Changes with tests: " ++ data.changes_with_tests->float_str ++ "%")->str,
+        (data.iterations_per_change->float_str ++ " iterations per change")->str,
+        (data.commits_per_change->float_str ++ " commits per change")->str,
       }
       <GraphWithStats graph stats />
     }

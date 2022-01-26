@@ -205,6 +205,7 @@ let maybeRenderList = (xs: list<'a>, component) =>
   }
 let lower = s => s->Js.String.toLowerCase
 let int32_str = i32 => string_of_int(Int32.to_int(i32))
+let float_str = Js.Float.toFixedWithPrecision(~digits=1)
 
 let quoteValue = v => Js.String.includes(" ", v) ? "\"" ++ v ++ "\"" : v
 
