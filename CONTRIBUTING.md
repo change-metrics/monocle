@@ -1,13 +1,16 @@
 # Contributing
 
 This document provides some instructions to get started with Monocle development. It covers topics
-such as running tests, running services w/o docker-compose or running the codegen.
+such as running tests, running services or running the codegen.
 
 ## Understanding the design choices
 
 Follow the [Architectural Decision Records](doc/adr/index.md) to understand the choices made by the project.
 
 ## Deploy from source code
+
+See [Instructions from the README.md](README.md#checkout-the-code) to checkout the code and prepare
+the .secret file.
 
 ### Running the services manually
 
@@ -99,7 +102,8 @@ cabal repl monocle
 The Monocle React WebAPP (hot reload is enabled).
 
 ```ShellSession
-./contrib/start-web.sh
+cd web
+REACT_APP_API_URL=http://localhost:8081 npm start
 firefox http://localhost:3000
 ```
 
@@ -121,11 +125,6 @@ cabal repl monocle
 
 This section describes how to start the Monocle services directly on your host using nix.
 
-Note that the commands below can be started in emacs buffer using:
-
-```ShellSession
-nix-shell --command launch-monocle-with-emacs
-```
 
 #### HTTP gateway (nginx)
 
@@ -136,22 +135,17 @@ nix-shell --command nginx-start
 #### ElasticSearch
 
 ```ShellSession
-nix-shell --command elk-start
+nix-shell --command elasticsearch-start
 ```
 
 #### API
 
 ```ShellSession
-nix-shell --command monocle-api2-start
+nix-shell --command monocle-repl
 λ> import Monocle.Api
 λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
 ```
 
-In another terminal you could run ghcid with
-
-```ShellSession
-nix-shell --command monocle-ghcid
-```
 
 #### Web
 
@@ -163,11 +157,17 @@ firefox http://localhost:13000
 #### Start crawlers process
 
 ```ShellSession
-nix-shell --command monocle-api2-start
+nix-shell --command monocle-repl
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
 λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+```
+
+#### Run ghcid
+
+```ShellSession
+nix-shell --command monocle-ghcid
 ```
 
 ## Contributing a new driver
@@ -178,8 +178,7 @@ source of knowledge to hack on a new crawler.
 
 ## Running tests
 
-Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the
-related nix-shell command.
+Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the related nix-shell command.
 
 ### On the Haskell code base
 
