@@ -135,7 +135,21 @@ runStream ::
   CrawlerName ->
   DocumentStream m ->
   m ()
-runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
+runStream apiKey indexName crawlerName documentStream = do
+  -- It is important to get the commit date before starting the process to not miss
+  -- document updated when we start
+  startTime <- mGetCurrentTime
+  runStream' startTime apiKey indexName crawlerName documentStream
+
+runStream' ::
+  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawlerE m) =>
+  UTCTime ->
+  ApiKey ->
+  IndexName ->
+  CrawlerName ->
+  DocumentStream m ->
+  m ()
+runStream' startTime apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
     lc = LogCrawlerContext (toText indexName) (toText crawlerName)
     wLog event = mLog $ Log Macroscope event
@@ -144,9 +158,6 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
         safeDrainEntities offset `catch` handleStreamError offset
 
     safeDrainEntities offset = do
-      -- It is important to get the commit date before starting the process to not miss
-      -- document updated when we start
-      startTime <- mGetCurrentTime
       wLog $ LogMacroRequestOldestEntity lc (streamType documentStream)
       monocleBaseUrl <- getClientBaseUrl
       let ident = "api-client"
@@ -160,7 +171,8 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
               processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
           wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
 
-          if addUTCTime 600 (oldestEntityDate entity) >= startTime
+          -- add a 1 second delta to avoid Hysteresis
+          if addUTCTime 1 (oldestEntityDate entity) >= startTime
             then wLog $ LogMacroEnded lc
             else do
               -- Run the document stream for that entity
@@ -172,7 +184,7 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
               case foldr collectPostFailure [] postResult of
                 [] -> do
                   -- Post the commit date
-                  res <- retry (ident, monocleBaseUrl, "internal") $ commitTimestamp entity startTime
+                  res <- retry (ident, monocleBaseUrl, "internal") $ commitTimestamp entity
                   if not res
                     then wLog $ LogMacroCommitFailed lc
                     else do
@@ -278,7 +290,7 @@ runStream apiKey indexName crawlerName documentStream = drainEntities (0 :: Word
           _ -> Nothing
 
     -- 'commitTimestamp' post the commit date.
-    commitTimestamp oe startTime = do
+    commitTimestamp oe = do
       client <- asks crawlerClient
       commitResp <-
         mCrawlerCommit
