@@ -216,7 +216,9 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
     logStep pageInfo rateLimitM xs totalFetched = do
       lift . log $
         show (length xs)
-          <> " doc(s) fetched from current page (total fetched: "
+          <> " doc(s)"
+          <> maybe "" (mappend " for " . show) (lccEntity lc)
+          <> " fetched from current page (total fetched: "
           <> show (totalFetched + length xs)
           <> ") - "
           <> show pageInfo
