@@ -1,7 +1,7 @@
 -- |
 module Monocle.Api (app, run) where
 
-import Lentille (retry)
+import Lentille (httpRetry)
 import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
 import Monocle.Env
@@ -62,8 +62,10 @@ run' port url configFile glLogger = do
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
-  retry ("elastic-client", url, "internal") $ liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-  retry ("elastic-client", url, "internal") $ liftIO $ runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
+  httpRetry ("elastic-client", url, "internal") $
+    liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
+  httpRetry ("elastic-client", url, "internal") $
+    liftIO $ runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

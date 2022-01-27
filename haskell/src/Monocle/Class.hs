@@ -64,7 +64,7 @@ instance MonadLog IO where
 -------------------------------------------------------------------------------
 -- A GraphQL client system
 
-class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m) => MonadGraphQL m where
+class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
 
@@ -90,45 +90,51 @@ instance MonadCrawler IO where
 -------------------------------------------------------------------------------
 -- A network retry system
 
--- TODO: remove retry in favor of genericRetry
 class Monad m => MonadRetry m where
-  retry :: (Text, Text, Text) -> m a -> m a
+  -- TODO: make graphql error throw an exception on error, then use the 'retry' instead of genericRetry
   genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> Int -> (Int -> m a) -> m a
+
+  retry ::
+    "handler" ::: (RetryStatus -> Handler m Bool) ->
+    "action" ::: (Int -> m a) ->
+    m a
 
 instance MonadRetry IO where
   retry = retry'
   genericRetry = genericRetry'
 
+retryLimit :: Int
+retryLimit = 7
+
 counterT :: Int -> Int -> Text
 counterT count max' = show count <> "/" <> show max'
 
--- | Retry HTTP network action, doubling backoff each time
--- Use this retry' to implement MonadRetry in IO.
-retry' ::
-  (MonadMask m, MonadLog m, MonadIO m, MonadMonitor m) =>
-  (Text, Text, Text) ->
-  m a ->
-  m a
-retry' label baseAction =
+-- | Use this retry' to implement MonadRetry in IO.
+retry' :: (MonadMask m, MonadIO m) => (RetryStatus -> Handler m Bool) -> (Int -> m a) -> m a
+retry' handler baseAction =
   Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries limit)
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit)
     [handler]
-    (const action)
+    (action)
   where
-    limit = 7
+    backoff = 500000 -- 500ms
+    action (RetryStatus num _ _) = baseAction num
+
+-- | Retry HTTP network action, doubling backoff each time
+httpRetry :: (MonadLog m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
+httpRetry label baseAction = retry httpHandler (const action)
+  where
     action = do
       res <- baseAction
       incrementCounter httpRequestCounter label
       pure res
-    backoff = 500000 -- 500ms
-    -- Log network error
-    handler (RetryStatus num _ _) = Handler $ \case
+    httpHandler (RetryStatus num _ _) = Handler $ \case
       HttpExceptionRequest req ctx -> do
         let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
             arg = decodeUtf8 $ HTTP.queryString req
             loc = if num == 0 then url <> arg else url
         mLog . Log Unspecified . LogNetworkFailure $
-          counterT num limit
+          counterT num retryLimit
             <> " "
             <> loc
             <> " failed: "
@@ -156,12 +162,11 @@ genericRetry' ::
   m a
 genericRetry' author msg checker delay baseAction =
   Retry.retrying
-    (Retry.constantDelay delay <> Retry.limitRetries limit)
+    (Retry.constantDelay delay <> Retry.limitRetries retryLimit)
     checker
     action
   where
-    limit = 7
     action (RetryStatus num _ _) = do
       when (num > 0) $
-        mLog . Log author . LogRaw $ counterT num limit <> " failed: " <> msg
+        mLog . Log author . LogRaw $ counterT num retryLimit <> " failed: " <> msg
       baseAction num

@@ -44,7 +44,7 @@ import Prelude (init, last)
 -- Gerrit context
 -------------------------------------------------------------------------------
 
-class (MonadRetry m, MonadLog m) => MonadGerrit m where
+class (MonadRetry m, MonadLog m, MonadMonitor m) => MonadGerrit m where
   getGerritClient :: Text -> Maybe (Text, Secret) -> m G.GerritClient
   getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
   queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
@@ -178,7 +178,7 @@ streamProject env query = go 0
     size = 100
     doGet offset = getProjects env size query (Just offset)
     go offset = do
-      projects <- lift $ do retry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
+      projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
       let pNames = M.keys projects
       S.each $ P.Project . toLazy <$> pNames
       when (length pNames == size) $ go (offset + size)
@@ -204,7 +204,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
   where
     size = 100
     go offset = do
-      changes <- lift $ do retry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
+      changes <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)

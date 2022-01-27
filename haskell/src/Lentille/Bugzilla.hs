@@ -33,7 +33,7 @@ import qualified Web.Bugzilla.RedHat as BZ
 import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
 import qualified Web.Bugzilla.RedHat.Search as BZS
 
-class (MonadLog m, MonadRetry m) => MonadBZ m where
+class (MonadLog m, MonadRetry m, MonadMonitor m) => MonadBZ m where
   bzRequest :: FromJSON bugs => BugzillaSession -> BZ.Request -> m bugs
   newContext :: BZ.BugzillaServer -> m BZ.BugzillaContext
 
@@ -181,7 +181,7 @@ getBZData bzSession sinceTS productName = go 0
       -- Retrieve rhbz
       bugs <- lift $ do
         mLog $ Log Unspecified (LogGetBugs sinceTS offset limit)
-        retry ("bz", "https://bugzilla.redhat.com/show_bug.cgi", "crawler") . doGet $ offset
+        httpRetry ("bz", "https://bugzilla.redhat.com/show_bug.cgi", "crawler") . doGet $ offset
       -- Create a flat stream of tracker data
       S.each (concatMap toTaskData bugs)
       -- Keep on retrieving the rest

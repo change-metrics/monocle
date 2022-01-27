@@ -129,7 +129,7 @@ type MonadCrawlerE m = (MonadCrawler m, MonadReader CrawlerEnv m)
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawlerE m) =>
+  (MonadCatch m, MonadLog m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -142,7 +142,7 @@ runStream apiKey indexName crawlerName documentStream = do
   runStream' startTime apiKey indexName crawlerName documentStream
 
 runStream' ::
-  (MonadCatch m, MonadLog m, MonadRetry m, MonadCrawlerE m) =>
+  (MonadCatch m, MonadLog m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
   UTCTime ->
   ApiKey ->
   IndexName ->
@@ -163,7 +163,7 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
       let ident = "api-client"
 
       -- Query the monocle api for the oldest entity to be updated.
-      entityM <- retry (ident, monocleBaseUrl, "internal") $ getOldestEntity offset
+      entityM <- httpRetry (ident, monocleBaseUrl, "internal") $ getOldestEntity offset
       case entityM of
         Nothing -> wLog $ LogMacroNoOldestEnity lc
         Just entity -> do
@@ -179,12 +179,12 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
               postResult <-
                 process
                   processLogFunc
-                  (retry (ident, monocleBaseUrl, "internal") . addDoc entity)
+                  (httpRetry (ident, monocleBaseUrl, "internal") . addDoc entity)
                   (getStream entity)
               case foldr collectPostFailure [] postResult of
                 [] -> do
                   -- Post the commit date
-                  res <- retry (ident, monocleBaseUrl, "internal") $ commitTimestamp entity
+                  res <- httpRetry (ident, monocleBaseUrl, "internal") $ commitTimestamp entity
                   if not res
                     then wLog $ LogMacroCommitFailed lc
                     else do
