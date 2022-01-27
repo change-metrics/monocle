@@ -10,11 +10,13 @@ and to detect anomalies in the way changes are produced and reviewed.
 
 Monocle supports GitHub, GitLab and Gerrit.
 
-Explore the website and blog: [changemetrics.io website](https://changemetrics.io)
+How to get started with Monocle:
 
-Try on the demo instance: [demo.changemetrics.io](https://demo.changemetrics.io)
-
-Chat with us in the project Matrix room: [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org)
+- Explore the website and blog: [changemetrics.io](https://changemetrics.io)
+- Try on the demo instance: [demo.changemetrics.io](https://demo.changemetrics.io)
+- Chat with us in the project Matrix room: [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org)
+- Run your own instance: [Read the installation guide](#installation)
+- Hack on it: [Read the contributing guide](CONTRIBUTING.md)
 
 ## Screenshots of Monocle from the demo instance
 
@@ -37,21 +39,17 @@ and then how to start the web UI to browse metrics.
 
 The deployment is based on Docker via a docker-compose definition.
 
-### Clone and create the needed directories
+Note that you can also [deploy from source code](CONTRIBUTING.md#deploy-from-source-code).
+
+### Checkout the code
 
 ```Shell
-$ git clone https://github.com/change-metrics/monocle.git
-$ cd monocle
-$ git submodule update --init --recursive
-$ echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
-$ ln -s docker-compose.yml.img docker-compose.yml
+git clone https://github.com/change-metrics/monocle.git
+cd monocle
+git submodule update --init --recursive
+# Init a .secret file with a default API key for the crawler process
+echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
 ```
-
-By default docker-compose will fetch the latest published container images.
-Indeed, we produce Docker container images for the master version of Monocle.
-If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 1.3.0 in the .env file. Please refer
-to [System configuration section](#system).
 
 ### Create the config.yaml file
 
@@ -83,25 +81,37 @@ the configuration.
 
 ### Start docker-compose
 
+By default docker-compose will fetch the latest published container images.
+Indeed, we produce container images for the master version of Monocle.
+If running master does not fit your needs, you could still use the last release
+by setting the MONOCLE_VERSION to 1.3.0 in the .env file. Please refer
+to [System configuration section](#system).
+
 Start Monocle:
 
 ```ShellSession
-$ docker-compose up -d
+# Set to the Docker compose file to use the published container images
+ln -s docker-compose.yml.img docker-compose.yml
+# Then start services
+docker-compose up -d
 ```
 
-Ensure services are running:
+Ensure services are running and healthy:
 
 ```ShellSession
-$ docker-compose ps
+docker-compose ps
 ```
 
-You might need to check the crawler logs to ensure the crawler started to fetch changes:
+Inspect services logs:
 
 ```ShellSession
-$ docker-compose logs -f crawler
+docker-compose logs -f
 ```
 
 You should be able to access the web UI at <http://localhost:8080>.
+
+See [Troubleshooting](#troubleshooting) section if needed. 
+
 
 ## Configuration
 
@@ -470,10 +480,6 @@ for service in prometheus grafana; do systemctl --user start monocle-$service; d
 ```
 
 4. Check metrics with grafana dashboard at http://localhost:19030/ (login with 'admin:secret')
-
-## Contributing
-
-Follow [our contributing guide](CONTRIBUTING.md).
 
 [monocle-protobuf]: ./protos/monocle
 [monocle-openapi]: ./doc/openapi.yaml

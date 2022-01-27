@@ -130,7 +130,7 @@ let
 
   # local devel env
   nginx-port = 18080;
-  monocle2-port = 19875;
+  monocle-port = 19875;
   web-port = 13000;
   prom-port = 19090;
   grafana-port = 19030;
@@ -218,7 +218,7 @@ in rec {
     ${headers}
 
     # config from env
-    API_TARGET=''${API_TARGET:-localhost:${toString monocle2-port}}
+    API_TARGET=''${API_TARGET:-localhost:${toString monocle-port}}
     CRAWLER_TARGET=''${CRAWLER_TARGET:-localhost:9001}
     LISTEN=''${PROMETHEUS_TARGET:-0.0.0.0:${toString prom-port}}
 
@@ -378,12 +378,12 @@ in rec {
           gzip_types text/plain text/xml application/javascript text/css;
 
           location /api/2/ {
-             proxy_pass http://localhost:${toString monocle2-port}/;
+             proxy_pass http://localhost:${toString monocle-port}/;
              proxy_http_version 1.1;
           }
 
           location /auth {
-              proxy_pass http://localhost:${toString monocle2-port}/auth;
+              proxy_pass http://localhost:${toString monocle-port}/auth;
               proxy_http_version 1.1;
           }
 
@@ -407,7 +407,7 @@ in rec {
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
   '';
 
-  monocleApi2Start = pkgs.writeScriptBin "monocle-api2-start" ''
+  monocleReplStart = pkgs.writeScriptBin "monocle-repl" ''
     #!/bin/sh
     set -ex
     export $(cat .secrets)
@@ -467,7 +467,7 @@ in rec {
         (monocle-startp "nginx" "${nginxStart}" )
         (monocle-startp "prometheus" "${promStart}" )
         (monocle-startp "grafana" "${grafanaStart}" )
-        (monocle-startp "monocle-api2" "${monocleApi2Start}" )
+        (monocle-startp "monocle-api" "${monocleReplStart}" )
         (monocle-startp "monocle-web" "${monocleWebStart}" ))
 
       (monocle-start)
@@ -485,7 +485,7 @@ in rec {
     nginxStart
     promStart
     grafanaStart
-    monocleApi2Start
+    monocleReplStart
     monocleWebStart
     monocleEmacsStart
     monocleGhcid
