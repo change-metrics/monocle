@@ -259,7 +259,7 @@ groupByClient = grp >>> adapt
     keepOrder :: NonEmpty (clientKey, a) -> NonEmpty a
     keepOrder = fmap snd . NonEmpty.reverse
 
--- | MonadMacro is an alias for a bunch of constraints
+-- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
 type MonadMacro m = (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
 
 -- | 'runCrawler' evaluate a single crawler

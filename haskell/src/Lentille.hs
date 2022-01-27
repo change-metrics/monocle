@@ -132,7 +132,6 @@ type LentilleStream m a = Stream (Of a) m ()
 type LentilleMonad m =
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility
-    MonadGraphQL m, -- for http worker
     MonadCrawler m, -- for monocle crawler http api
     MonadConfig m
   )
