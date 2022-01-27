@@ -99,7 +99,7 @@ doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
           }
 
   -- Do the request
-  response <- lift $ retry (lccIndex, url, lccName) $ httpRequest request manager
+  response <- lift $ httpRetry (lccIndex, url, lccName) $ httpRequest request manager
 
   -- Record the event
   tell [(request, response)]
