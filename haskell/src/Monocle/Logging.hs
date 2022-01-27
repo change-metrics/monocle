@@ -7,7 +7,14 @@ import Monocle.Prelude
 import Monocle.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
 
-data LogCrawlerContext = LogCrawlerContext {index :: Text, crawler :: Text}
+data LogCrawlerContext = LogCrawlerContext
+  { lccIndex :: Text,
+    lccName :: Text,
+    lccEntity :: Maybe Entity
+  }
+
+noContext :: LogCrawlerContext
+noContext = LogCrawlerContext "<direct>" "CLI" Nothing
 
 data Entity = Project Text | Organization Text | TaskDataEntity Text
   deriving (Eq, Show)
@@ -103,4 +110,4 @@ instance From LogEvent Text where
     ReloadConfig fp ->
       "Reloading " <> from fp
     where
-      prefix LogCrawlerContext {..} = "[" <> index <> "] " <> "Crawler: " <> crawler
+      prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName

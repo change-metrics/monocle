@@ -18,6 +18,7 @@ import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
 import Monocle.Change
+import Monocle.Logging (Entity (Project), LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (id, state)
 import qualified Streaming.Prelude as S
 
@@ -105,18 +106,19 @@ type Changes = (Change, [ChangeEvent])
 
 fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> Text -> m (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [ReqLog])
 fetchMergeRequest client project mrID =
-  fetchWithLog (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
+  fetchWithLog (doGraphRequest noContext client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
   MonadGraphQLE m =>
   GraphClient ->
+  (Entity -> LogCrawlerContext) ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
   LentilleStream m Changes
-streamMergeRequests client getIdentIdCb untilDate project =
-  breakOnDate $ streamFetch client mkArgs defaultStreamFetchOptParams transformResponse'
+streamMergeRequests client mkLC getIdentIdCb untilDate project =
+  breakOnDate $ streamFetch client (mkLC $ Project project) mkArgs defaultStreamFetchOptParams transformResponse'
   where
     mkArgs _ = GetProjectMergeRequestsArgs (ID project) Nothing
 

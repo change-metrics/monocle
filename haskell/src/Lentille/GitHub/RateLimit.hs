@@ -17,6 +17,7 @@ import Lentille
     mLog,
   )
 import Lentille.GraphQL
+import Monocle.Logging (LogCrawlerContext)
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403)
@@ -45,22 +46,22 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: (MonadGraphQLE m) => GraphClient -> m RateLimit
-getRateLimit client = do
+getRateLimit :: (MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> m RateLimit
+getRateLimit lc client = do
   (respE, reqLog) <- gRetry (const $ retryCheck Macroscope) remoteCallDelay getLimit
   case respE of
     Left err -> handleReqLog err reqLog
     Right resp -> pure $ transformResponse resp
   where
     gRetry = genericRetry Macroscope "Faulty response when fetching rateLimit - retrying request"
-    getLimit _ = fetchWithLog (doGraphRequest client) ()
+    getLimit _ = fetchWithLog (doGraphRequest lc client) ()
 
 data GHRequestIssue = GHRequestTimeout | GHRequestSecondaryRateLimit | GHRequestUnmatchedIssue Text
 
 retryCheck :: (Show a, MonadLog m) => LogAuthor -> RetryCheck m a
 retryCheck author respI = do
   issueType <- case respI of
-    (Left err, [reqlog]) -> Just <$> (checkResp err $ snd reqlog)
+    (Left err, [reqlog]) -> Just <$> checkResp err (snd reqlog)
     (Right _, _) -> pure Nothing
     _other -> error "Unexpected empty reqlog"
   case issueType of

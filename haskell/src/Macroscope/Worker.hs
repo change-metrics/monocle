@@ -151,7 +151,7 @@ runStream' ::
   m ()
 runStream' startTime apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
-    lc = LogCrawlerContext (toText indexName) (toText crawlerName)
+    lc = LogCrawlerContext (toText indexName) (toText crawlerName) Nothing
     wLog event = mLog $ Log Macroscope event
     drainEntities offset =
       unlessStopped $
