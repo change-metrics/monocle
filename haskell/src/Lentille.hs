@@ -88,7 +88,7 @@ stopLentille = lift . throwM
 
 data LentilleError
   = DecodeError [Text]
-  | HttpError (Text, HTTP.Request, HTTP.Response LByteString)
+  | GraphQLError (Text, HTTP.Request, HTTP.Response LByteString)
   deriving (Show)
 
 instance Exception LentilleError

@@ -117,7 +117,7 @@ fetchWithLog cb = runWriterT . fetch cb
 
 handleReqLog :: (MonadThrow m, Show a1) => a1 -> [(HTTP.Request, HTTP.Response LByteString)] -> m a2
 handleReqLog err reqLog = case reqLog of
-  [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+  [(req, resp)] -> throwM $ GraphQLError (show err, req, resp)
   [] -> error $ "No request log found, error is: " <> show err
   xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
 
