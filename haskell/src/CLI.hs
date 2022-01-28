@@ -17,6 +17,7 @@ import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Janitor as J
 import Monocle.Client (withClient)
 import Monocle.Env (mkEnv, runQueryM')
+import Monocle.Logging (LogCrawlerContext (..))
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import qualified Monocle.Version
@@ -159,7 +160,7 @@ usageLentille =
         parser = (,,) <$> urlOption <*> secretOption <*> orgOption
         io (url, secret, org) = do
           client <- getGraphClient url secret
-          dump Nothing $ GH_ORG.streamOrganizationProjects client org
+          dump Nothing $ GH_ORG.streamOrganizationProjects client mkLC org
 
     githubChangesUsage = io <$> parser
       where
@@ -172,7 +173,7 @@ usageLentille =
             <*> limitOption
         io (url, secret, repo, since, limitM) = do
           client <- getGraphClient url secret
-          dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
+          dump limitM $ GH_PR.streamPullRequests client mkLC (const Nothing) (toSince since) repo
 
     toSince txt = case Monocle.Search.Query.parseDateValue txt of
       Just x -> x
@@ -180,7 +181,9 @@ usageLentille =
     getGerritEnv url = do
       client <- G.getGerritClient url Nothing
       pure $ G.GerritEnv client Nothing (const Nothing) "cli"
-    getGraphClient url secret = newGraphClient "" "" url (Secret secret)
+    getGraphClient url secret = newGraphClient url (Secret secret)
+
+    mkLC = LogCrawlerContext "<stdout>" "cli" . Just
 
     urlOption = strOption (long "url" <> O.help "API url" <> metavar "URL")
     queryOption = strOption (long "query" <> O.help "Gerrit regexp query")

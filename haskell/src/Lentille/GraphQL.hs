@@ -58,19 +58,15 @@ data GraphClient = GraphClient
     url :: Text,
     host :: Text,
     token :: Secret,
-    crawler :: Text,
-    index :: Text,
     rateLimitMVar :: MVar (Maybe RateLimit)
   }
 
 newGraphClient ::
   MonadGraphQL m =>
-  "indexName" ::: Text ->
-  "crawler" ::: Text ->
   "url" ::: Text ->
   Secret ->
   m GraphClient
-newGraphClient index crawler url token = do
+newGraphClient url token = do
   manager <- newManager
   rateLimitMVar <- mNewMVar Nothing
   let host =
@@ -87,8 +83,8 @@ type DoFetch m = LBS.ByteString -> WriterT [ReqLog] m LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: MonadGraphQL m => GraphClient -> DoFetch m
-doGraphRequest GraphClient {..} jsonBody = do
+doGraphRequest :: MonadGraphQL m => LogCrawlerContext -> GraphClient -> DoFetch m
+doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (toString url)
       request =
@@ -103,7 +99,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request
-  response <- lift $ retry (crawler, url, "crawler") $ httpRequest request manager
+  response <- lift $ retry (lccIndex, url, lccName) $ httpRequest request manager
 
   -- Record the event
   tell [(request, response)]
@@ -117,7 +113,7 @@ fetchWithLog cb = runWriterT . fetch cb
 
 handleReqLog :: (MonadThrow m, Show a1) => a1 -> [(HTTP.Request, HTTP.Response LByteString)] -> m a2
 handleReqLog err reqLog = case reqLog of
-  [(req, resp)] -> throwM $ HttpError (show err, req, resp)
+  [(req, resp)] -> throwM $ GraphQLError (show err, req, resp)
   [] -> error $ "No request log found, error is: " <> show err
   xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
 
@@ -145,19 +141,20 @@ doRequest ::
   forall a m.
   (MonadGraphQLE m, Fetch a, FromJSON a) =>
   GraphClient ->
+  LogCrawlerContext ->
   (Maybe Int -> Maybe Text -> Args a) ->
   Maybe (RetryCheck m a) ->
   Maybe Int ->
   Maybe PageInfo ->
   m (Either (FetchError a) a, [ReqLog])
-doRequest client mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck remoteCallDelay runFetch
+doRequest client lc mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck remoteCallDelay runFetch
   where
     gRetry = genericRetry Macroscope "Faulty response - retrying request"
     retryCheck _ = fromMaybe (const $ pure False) retryCheckM
     runFetch :: Int -> m (Either (FetchError a) a, [ReqLog])
     runFetch retried =
       fetchWithLog
-        (doGraphRequest client)
+        (doGraphRequest lc client)
         (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
       where
         aDepthM = decreaseValue retried <$> depthM
@@ -187,18 +184,17 @@ defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
 streamFetch ::
   (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
+  LogCrawlerContext ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
   StreamFetchOptParams m a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
+streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
   where
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
-      where
-        lc = LogCrawlerContext index crawler
 
     holdOnIfNeeded :: (MonadTime m, MonadLog m) => Maybe RateLimit -> m ()
     holdOnIfNeeded = mapM_ toDelay
@@ -211,7 +207,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM
-      (respE, reqLog) <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
+      (respE, reqLog) <- doRequest client lc mkArgs fpRetryCheck fpDepth pageInfoM
       (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
         Left err -> handleReqLog err reqLog
         Right resp -> pure $ transformResponse resp
@@ -220,7 +216,9 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
     logStep pageInfo rateLimitM xs totalFetched = do
       lift . log $
         show (length xs)
-          <> " doc(s) fetched from current page (total fetched: "
+          <> " doc(s)"
+          <> maybe "" (mappend " for " . show) (lccEntity lc)
+          <> " fetched from current page (total fetched: "
           <> show (totalFetched + length xs)
           <> ") - "
           <> show pageInfo

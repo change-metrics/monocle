@@ -9,6 +9,7 @@ import Data.Morpheus.Client
 import Lentille (LogAuthor (Macroscope), MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
+import Monocle.Logging (Entity (Organization), LogCrawlerContext)
 import Monocle.Prelude
 import Monocle.Project
 
@@ -66,12 +67,14 @@ transformResponse result = do
     getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
     getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
-streamOrganizationProjects :: MonadGraphQLE m => GraphClient -> Text -> Stream (Of Project) m ()
-streamOrganizationProjects client login = streamFetch client mkArgs optParams transformResponse
+streamOrganizationProjects :: MonadGraphQLE m => GraphClient -> (Entity -> LogCrawlerContext) -> Text -> Stream (Of Project) m ()
+streamOrganizationProjects client mkLC login =
+  streamFetch client lc mkArgs optParams transformResponse
   where
+    lc = mkLC $ Organization login
     mkArgs _ = GetProjectsArgs login
     optParams =
       defaultStreamFetchOptParams
         { fpRetryCheck = Just $ retryCheck Macroscope,
-          fpGetRatelimit = Just getRateLimit
+          fpGetRatelimit = Just $ getRateLimit lc
         }

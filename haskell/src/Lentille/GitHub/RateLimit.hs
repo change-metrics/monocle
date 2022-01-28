@@ -17,6 +17,7 @@ import Lentille
     mLog,
   )
 import Lentille.GraphQL
+import Monocle.Logging (LogCrawlerContext)
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403)
@@ -45,35 +46,39 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: (MonadGraphQLE m) => GraphClient -> m RateLimit
-getRateLimit client = do
+getRateLimit :: (MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> m RateLimit
+getRateLimit lc client = do
   (respE, reqLog) <- gRetry (const $ retryCheck Macroscope) remoteCallDelay getLimit
   case respE of
     Left err -> handleReqLog err reqLog
     Right resp -> pure $ transformResponse resp
   where
     gRetry = genericRetry Macroscope "Faulty response when fetching rateLimit - retrying request"
-    getLimit _ = fetchWithLog (doGraphRequest client) ()
+    getLimit _ = fetchWithLog (doGraphRequest lc client) ()
 
-data GHRequestIssue = GHRequestTimeout | GHRequestSecondaryRateLimit | GHRequestUnmatchedIssue
+data GHRequestIssue = GHRequestTimeout | GHRequestSecondaryRateLimit | GHRequestUnmatchedIssue Text
 
-retryCheck :: MonadLog m => LogAuthor -> RetryCheck m a
+retryCheck :: (Show a, MonadLog m) => LogAuthor -> RetryCheck m a
 retryCheck author respI = do
-  issueType <- case snd respI of
-    [reqlog] -> checkResp $ snd reqlog
+  issueType <- case respI of
+    (Left err, [reqlog]) -> Just <$> checkResp err (snd reqlog)
+    (Right _, _) -> pure Nothing
     _other -> error "Unexpected empty reqlog"
   case issueType of
-    GHRequestTimeout -> do
+    Just GHRequestTimeout -> do
       mLog $ Log author $ LogRaw "Server side timeout error. Will retry with lower query depth ..."
       pure True
-    GHRequestSecondaryRateLimit -> do
+    Just GHRequestSecondaryRateLimit -> do
       mLog $ Log author $ LogRaw "Secondary rate limit error. Will retry after 60 seconds ..."
       mThreadDelay $ 60 * 1_000_000
       pure True
-    GHRequestUnmatchedIssue -> pure False
+    Just (GHRequestUnmatchedIssue e) -> do
+      mLog $ Log author $ LogRaw $ "Unexpected error: " <> e
+      pure True
+    Nothing -> pure False
   where
-    checkResp :: MonadLog m => Response LByteString -> m GHRequestIssue
-    checkResp resp = do
+    checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m GHRequestIssue
+    checkResp err resp = do
       let status = responseStatus resp
           body = decodeUtf8 $ responseBody resp
       if isTimeoutError status body
@@ -81,7 +86,7 @@ retryCheck author respI = do
         else
           if isSecondaryRateLimitError status body
             then pure GHRequestSecondaryRateLimit
-            else pure GHRequestUnmatchedIssue
+            else pure $ GHRequestUnmatchedIssue (show err)
     isTimeoutError :: Status -> Text -> Bool
     isTimeoutError status body =
       let msg = "Something went wrong while executing your query. This may be the result of a timeout"

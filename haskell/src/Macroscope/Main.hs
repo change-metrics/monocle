@@ -23,6 +23,7 @@ import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import qualified Monocle.Api.Config as Config
 import Monocle.Client
+import Monocle.Logging (Entity)
 import Monocle.Prelude
 import qualified Network.HTTP.Types.Status as HTTP
 import qualified Network.Wai as Wai
@@ -228,14 +229,12 @@ getClientBZ url token = do
 -- | Boilerplate function to retrieve a client from the store
 getClientGraphQL ::
   MonadGraphQL m =>
-  "indexName" ::: Text ->
-  "crawler" ::: Text ->
   Text ->
   Secret ->
   GetClient m GraphClient
-getClientGraphQL index crawler url token = do
+getClientGraphQL url token = do
   clients <- gets clientsGraph
-  (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient index crawler url token
+  (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
   modify $ \s -> s {clientsGraph = newClients}
   let groupKey = url <> "-" <> unSecret token
   pure (groupKey, client)
@@ -259,7 +258,7 @@ groupByClient = grp >>> adapt
     keepOrder :: NonEmpty (clientKey, a) -> NonEmpty a
     keepOrder = fmap snd . NonEmpty.reverse
 
--- | MonadMacro is an alias for a bunch of constraints
+-- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
 type MonadMacro m = (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
 
 -- | 'runCrawler' evaluate a single crawler
@@ -272,11 +271,11 @@ runCrawler = safeCrawl
         Right () -> pure ()
         Left exc ->
           let (InfoCrawler index _ Config.Crawler {..} _, _) = crawler
-           in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name) (show exc)
+           in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name Nothing) (show exc)
 
     crawl :: MonadMacro m => Crawler m -> m ()
     crawl (InfoCrawler index key crawler _, docStreams) = do
-      mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler)
+      mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler) Nothing
 
       let runner = runStream (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
       traverse_ runner docStreams
@@ -295,8 +294,6 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
           token <- lift $ Config.mGetSecret "GITLAB_TOKEN" gitlab_token
           (k, glClient) <-
             getClientGraphQL
-              workspaceName
-              (Config.getCrawlerName crawler)
               (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
               token
           let streams =
@@ -325,8 +322,6 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
           ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
           (k, ghClient) <-
             getClientGraphQL
-              workspaceName
-              (Config.getCrawlerName crawler)
               (fromMaybe "https://api.github.com/graphql" github_url)
               ghToken
           let crawlers =
@@ -339,23 +334,26 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
     getIdentByAliasCB :: Text -> Maybe Text
     getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
+    mkLC :: Entity -> LogCrawlerContext
+    mkLC = LogCrawlerContext workspaceName (Config.getCrawlerName crawler) . Just
+
     glMRCrawler :: MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
-    glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
+    glMRCrawler glClient cb = Changes $ streamMergeRequests glClient mkLC cb
 
     glOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-    glOrgCrawler glClient = Projects $ streamGroupProjects glClient
+    glOrgCrawler glClient = Projects $ streamGroupProjects glClient mkLC
 
     bzCrawler :: MonadBZ m => BugzillaSession -> DocumentStream m
     bzCrawler bzSession = TaskDatas $ getBZData bzSession
 
     ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-    ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
+    ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient mkLC
 
     ghOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-    ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
+    ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient mkLC
 
     ghPRCrawler :: forall m. MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
-    ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
+    ghPRCrawler glClient cb = Changes $ streamPullRequests glClient mkLC cb
 
     gerritRegexProjects :: [Text] -> [Text]
     gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
