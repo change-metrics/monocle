@@ -22,7 +22,6 @@ module Lentille.GraphQL
     defaultStreamFetchOptParams,
 
     -- * Some type aliases
-    ReqLog,
     RetryCheck,
   )
 where
@@ -81,9 +80,7 @@ newGraphClient url token = do
   pure $ GraphClient {..}
 
 -- | A log of http request and response
-type ReqLog = (HTTP.Request, HTTP.Response LByteString)
-
-type DoFetch m = LBS.ByteString -> WriterT [ReqLog] m LBS.ByteString
+type DoFetch m = LBS.ByteString -> WriterT [RequestLog] m LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
@@ -106,13 +103,14 @@ doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
   response <- lift $ httpRetry (lccIndex, url, lccName) $ httpRequest request manager
 
   -- Record the event
-  tell [(request, response)]
+  let responseBody = HTTP.responseBody response
+  tell [RequestLog request jsonBody response responseBody]
 
   -- Return the body so that morpheus run the json decoder
-  pure (HTTP.responseBody response)
+  pure responseBody
 
 -- | Helper function to adapt the morpheus client fetch with a WriterT context
-fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [ReqLog])
+fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [RequestLog])
 fetchWithLog cb = runWriterT . fetch cb
 
 -------------------------------------------------------------------------------

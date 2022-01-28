@@ -193,8 +193,8 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
                 xs -> wLog $ LogMacroPostDataFailed lc xs
 
     handleStreamError offset err = do
-      -- TODO: report decoding error
       wLog $ LogMacroStreamError lc (show (err :: LentilleError))
+      -- TODO: log a structured error on filesystem or audit index in elastic
       unless (isTDStream documentStream) $ drainEntities (offset + 1)
 
     collectPostFailure :: ProcessResult -> [Text] -> [Text]

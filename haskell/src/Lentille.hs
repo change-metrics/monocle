@@ -13,6 +13,7 @@ module Lentille
     -- * Lentille Errors
     MonadGraphQLE,
     LentilleError (..),
+    RequestLog (..),
 
     -- * Log context
     LogEvent (..),
@@ -86,10 +87,18 @@ runLentilleM logger client lm = do
 stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
 stopLentille = lift . throwM
 
+data RequestLog = RequestLog
+  { rlRequest :: HTTP.Request,
+    rlRequestBody :: LByteString,
+    rlResponse :: HTTP.Response LByteString,
+    rlResponseBody :: LByteString
+  }
+  deriving (Show)
+
 data LentilleError
   = DecodeError [Text]
   | GetRateLimitError (Text, HTTP.Request, HTTP.Response LByteString)
-  | GraphQLError (Text, (HTTP.Request, HTTP.Response LByteString))
+  | GraphQLError (Text, RequestLog)
   deriving (Show)
 
 instance Exception LentilleError

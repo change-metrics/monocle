@@ -34,7 +34,7 @@ defineByDocumentFile
     }
   |]
 
-fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [ReqLog])
+fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
 fetchGroupProjects client fullPath =
   fetchWithLog (doGraphRequest noContext client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 

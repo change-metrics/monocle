@@ -14,6 +14,7 @@ import Lentille
     MonadGraphQLE,
     MonadLog,
     MonadTime (mThreadDelay),
+    RequestLog (..),
     mLog,
   )
 import Lentille.GraphQL
@@ -63,7 +64,7 @@ retryResultToBool DontRetry = False
 
 retryCheck :: MonadLog m => LogAuthor -> RetryCheck m
 retryCheck author = Handler $ \case
-  GraphQLError (err, (_req, resp)) -> retryResultToBool <$> checkResp err resp
+  GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
   _anyOtherExceptionAreNotRetried -> pure False
   where
     checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m RetryResult
