@@ -2,7 +2,7 @@
 module Monocle.Class where
 
 import qualified Control.Concurrent (modifyMVar, newMVar, threadDelay)
-import Control.Retry (RetryStatus (..))
+import Control.Retry (RetryPolicyM, RetryStatus (..))
 import qualified Control.Retry as Retry
 import qualified Data.Time.Clock (getCurrentTime)
 import Monocle.Client (MonocleClient, mkManager)
@@ -91,17 +91,14 @@ instance MonadCrawler IO where
 -- A network retry system
 
 class Monad m => MonadRetry m where
-  -- TODO: make graphql error throw an exception on error, then use the 'retry' instead of genericRetry
-  genericRetry :: LogAuthor -> Text -> (RetryStatus -> a -> m Bool) -> Int -> (Int -> m a) -> m a
-
   retry ::
+    "policy" ::: RetryPolicyM m ->
     "handler" ::: (RetryStatus -> Handler m Bool) ->
     "action" ::: (Int -> m a) ->
     m a
 
 instance MonadRetry IO where
   retry = retry'
-  genericRetry = genericRetry'
 
 retryLimit :: Int
 retryLimit = 7
@@ -110,20 +107,21 @@ counterT :: Int -> Int -> Text
 counterT count max' = show count <> "/" <> show max'
 
 -- | Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadIO m) => (RetryStatus -> Handler m Bool) -> (Int -> m a) -> m a
-retry' handler baseAction =
+retry' :: (MonadMask m, MonadIO m) => RetryPolicyM m -> (RetryStatus -> Handler m Bool) -> (Int -> m a) -> m a
+retry' policy handler baseAction =
   Retry.recovering
-    (Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit)
+    policy
     [handler]
     (action)
   where
-    backoff = 500000 -- 500ms
     action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
 httpRetry :: (MonadLog m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
-httpRetry label baseAction = retry httpHandler (const action)
+httpRetry label baseAction = retry policy httpHandler (const action)
   where
+    backoff = 500000 -- 500ms
+    policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
     action = do
       res <- baseAction
       incrementCounter httpRequestCounter label
@@ -143,30 +141,14 @@ httpRetry label baseAction = retry httpHandler (const action)
         pure True
       InvalidUrlException _ _ -> pure False
 
--- | Retry IO action, with a constant configuration delay.
--- | Action to retry get the current retry attempt value to optionaly
--- | adapt its behavior.
--- Use this genricRetry' to implement MonadRetry in IO.
-genericRetry' ::
-  (MonadMask m, MonadIO m, MonadLog m) =>
-  -- The Log emitter author
-  LogAuthor ->
-  -- A log message to display at each attempt
-  Text ->
-  -- The check function that to determine whether or not to retry
-  (RetryStatus -> a -> m Bool) ->
-  -- The constant delay to wait for between retries (in millisecond)
-  Int ->
-  -- The IO action to retry if needed
-  (Int -> m a) ->
-  m a
-genericRetry' author msg checker delay baseAction =
-  Retry.retrying
-    (Retry.constantDelay delay <> Retry.limitRetries retryLimit)
-    checker
-    action
+-- | A retry helper with a constant policy. This helper is in charge of low level logging
+-- and TODO: incrementCounter for graphql request and errors
+constantRetry :: (MonadRetry m, MonadLog m) => Text -> Handler m Bool -> (Int -> m a) -> m a
+constantRetry msg handler baseAction = retry policy (const handler) action
   where
-    action (RetryStatus num _ _) = do
+    delay = 1_100_000 -- 1.1 seconds
+    policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
+    action num = do
       when (num > 0) $
-        mLog . Log author . LogRaw $ counterT num retryLimit <> " failed: " <> msg
+        mLog . Log Macroscope . LogRaw $ counterT num retryLimit <> " failed: " <> msg
       baseAction num
