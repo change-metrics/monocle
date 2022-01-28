@@ -86,6 +86,15 @@ pattern NamedEntity name <-
             )
     }
 
+pattern NoEntity <-
+  CommitInfoResponse
+    { commitInfoResponseResult =
+        Just
+          ( CommitInfoResponseResultError
+              Enumerated {enumerated = Right CommitInfoErrorCommitGetNoEntity}
+            )
+    }
+
 monocleApiTests :: TestTree
 monocleApiTests =
   testGroup
@@ -107,10 +116,14 @@ monocleApiTests =
               reloadedRef
       withTestApi appEnv $ \_logger client ->
         do
-          -- Run two commitInfo requests (and expect same resp)
+          -- Run a commitInfo and expect an Entity
           resp1 <- crawlerCommitInfo client $ mkReq wsName1 0
+          if not $ isEntityNeutron resp1
+            then error "Expected entity name 'openstack/neutron'"
+            else pure ()
+          -- Run a commitInfo (with an offset) on first workspace and expect noEntity
           resp2 <- crawlerCommitInfo client $ mkReq wsName1 1
-          if resp1 /= resp2 then error "Expected same response" else pure ()
+          if not $ isNoEntity resp2 then error "Expected noEntity response" else pure ()
           -- Also perform the Req on an unknown workspace (and expect failure)
           resp3 <- crawlerCommitInfo client $ mkReq wsName2 0
           if not $ isUnknownIndex resp3 then error "Expected UnknownIndex response" else pure ()
@@ -122,6 +135,7 @@ monocleApiTests =
           resp1' <- crawlerCommitInfo client $ mkReq wsName1 0
           resp2' <- crawlerCommitInfo client $ mkReq wsName1 1
           if resp1' == resp2' then error "Expected different response" else pure ()
+          if isNoEntity resp2' then error "Expected an Entity" else pure ()
           -- Also verify that the new workspace was initilized
           resp3' <- crawlerCommitInfo client $ mkReq wsName2 0
           if not $ isEntitySwift resp3'
@@ -131,8 +145,12 @@ monocleApiTests =
       where
         isUnknownIndex UnknownIndexResp = True
         isUnknownIndex _ = False
+        isNoEntity NoEntity = True
+        isNoEntity _ = False
         isEntitySwift (NamedEntity "opendev/swift") = True
         isEntitySwift _ = False
+        isEntityNeutron (NamedEntity "opendev/neutron") = True
+        isEntityNeutron _ = False
         mkReq wsName offset =
           let commitInfoRequestIndex = toLazy wsName
               commitInfoRequestCrawler = toLazy crawlerName

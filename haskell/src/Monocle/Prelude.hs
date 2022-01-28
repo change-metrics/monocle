@@ -410,6 +410,9 @@ instance Num Count where
 instance From Int Int32 where
   from = fromInteger . toInteger
 
+instance From Word32 Int where
+  from = fromInteger . toInteger
+
 -- | From https://hackage.haskell.org/package/astro-0.4.3.0/docs/src/Data.Astro.Utils.html#fromFixed
 fromFixed :: (Fractional a, HasResolution b) => Fixed b -> a
 fromFixed fv@(MkFixed v) = fromIntegral v / fromIntegral (resolution fv)
