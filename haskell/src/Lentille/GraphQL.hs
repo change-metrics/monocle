@@ -15,9 +15,6 @@ module Lentille.GraphQL
     fetchWithLog,
     doRequest,
 
-    -- * exception
-    GraphQLError (..),
-
     -- * Some data types
     RateLimit (..),
     PageInfo (..),
@@ -56,11 +53,6 @@ ghDefaultURL = "https://api.github.com/graphql"
 
 -- | GraphQLError is a wrapper around the morpheus's FetchError.
 -- TODO: keep the original error data type (instead of the Text)
-newtype GraphQLError
-  = GraphQLError (Text, (HTTP.Request, HTTP.Response LByteString))
-  deriving (Show)
-
-instance Exception GraphQLError
 
 -------------------------------------------------------------------------------
 -- HTTP Client
