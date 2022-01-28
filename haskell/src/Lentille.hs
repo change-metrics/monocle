@@ -88,7 +88,7 @@ stopLentille = lift . throwM
 
 data LentilleError
   = DecodeError [Text]
-  | GraphQLError (Text, HTTP.Request, HTTP.Response LByteString)
+  | GetRateLimitError (Text, HTTP.Request, HTTP.Response LByteString)
   deriving (Show)
 
 instance Exception LentilleError
@@ -107,7 +107,6 @@ instance MonadLog LentilleM where
 
 instance MonadRetry LentilleM where
   retry = retry'
-  genericRetry = genericRetry'
 
 instance MonadCrawler LentilleM where
   mReadIORef = liftIO . mReadIORef

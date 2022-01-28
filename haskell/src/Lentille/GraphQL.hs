@@ -8,15 +8,15 @@ module Lentille.GraphQL
     glSchemaLocation,
     ghSchemaLocation,
     ghDefaultURL,
-    remoteCallDelay,
 
     -- * Main functions to fetch from a GraphQL server
     doGraphRequest,
     streamFetch,
     fetchWithLog,
+    doRequest,
 
-    -- * Utility functions to parse query logs
-    handleReqLog,
+    -- * exception
+    GraphQLError (..),
 
     -- * Some data types
     RateLimit (..),
@@ -49,6 +49,18 @@ glSchemaLocation = "./gitlab-schema/schema.graphql"
 
 ghDefaultURL :: Text
 ghDefaultURL = "https://api.github.com/graphql"
+
+-------------------------------------------------------------------------------
+-- Exception
+-------------------------------------------------------------------------------
+
+-- | GraphQLError is a wrapper around the morpheus's FetchError.
+-- TODO: keep the original error data type (instead of the Text)
+data GraphQLError
+  = GraphQLError (Text, (HTTP.Request, HTTP.Response LByteString))
+  deriving (Show)
+
+instance Exception GraphQLError
 
 -------------------------------------------------------------------------------
 -- HTTP Client
@@ -98,7 +110,7 @@ doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
             HTTP.requestBody = HTTP.RequestBodyLBS jsonBody
           }
 
-  -- Do the request
+  -- Do the request (and retry on HttpException raised by the http-client)
   response <- lift $ httpRetry (lccIndex, url, lccName) $ httpRequest request manager
 
   -- Record the event
@@ -110,12 +122,6 @@ doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
 -- | Helper function to adapt the morpheus client fetch with a WriterT context
 fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [ReqLog])
 fetchWithLog cb = runWriterT . fetch cb
-
-handleReqLog :: (MonadThrow m, Show a1) => a1 -> [(HTTP.Request, HTTP.Response LByteString)] -> m a2
-handleReqLog err reqLog = case reqLog of
-  [(req, resp)] -> throwM $ GraphQLError (show err, req, resp)
-  [] -> error $ "No request log found, error is: " <> show err
-  xs -> error $ "Multiple log found for error: " <> show err <> ", " <> show xs
 
 -------------------------------------------------------------------------------
 -- Streaming layer
@@ -129,33 +135,40 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
-type RetryCheck m a = (Either (FetchError a) a, [ReqLog]) -> m Bool
-
-remoteCallDelay :: Int
-remoteCallDelay = 1_100_000 -- 1.1 seconds
+-- TODO: find a better name, or remove the type alias.
+type RetryCheck m = Handler m Bool
 
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
   forall a m.
-  (MonadGraphQLE m, Fetch a, FromJSON a) =>
+  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   LogCrawlerContext ->
   (Maybe Int -> Maybe Text -> Args a) ->
-  Maybe (RetryCheck m a) ->
+  Maybe (RetryCheck m) ->
   Maybe Int ->
   Maybe PageInfo ->
-  m (Either (FetchError a) a, [ReqLog])
-doRequest client lc mkArgs retryCheckM depthM pageInfoM = gRetry retryCheck remoteCallDelay runFetch
+  m a
+doRequest client lc mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
   where
-    gRetry = genericRetry Macroscope "Faulty response - retrying request"
-    retryCheck _ = fromMaybe (const $ pure False) retryCheckM
-    runFetch :: Int -> m (Either (FetchError a) a, [ReqLog])
-    runFetch retried =
-      fetchWithLog
-        (doGraphRequest lc client)
-        (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+    retryCheck action = case retryCheckM of
+      Just rc -> constantRetry retryMessage rc action
+      Nothing -> runFetch 0
+    -- TODO: Take the retryMessage as a doRequest argument
+    retryMessage = "Faulty response - retrying request"
+    runFetch :: Int -> m a
+    runFetch retried = do
+      resp <-
+        fetchWithLog
+          (doGraphRequest lc client)
+          (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+      case resp of
+        (Right x, _) -> pure x
+        -- Throw an exception for the retryCheckM
+        (Left e, [req]) -> throwM $ GraphQLError (show e, req)
+        _ -> error $ "Unknown response: " <> show resp
       where
         aDepthM = decreaseValue retried <$> depthM
 
@@ -171,7 +184,7 @@ decreaseValue retried depth =
 
 data StreamFetchOptParams m a = StreamFetchOptParams
   { -- | an optional retryCheck function
-    fpRetryCheck :: Maybe (RetryCheck m a),
+    fpRetryCheck :: Maybe (RetryCheck m),
     -- | an optional starting value for the depth
     fpDepth :: Maybe Int,
     -- | an optional action to get a RateLimit record
@@ -207,10 +220,8 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
 
     request pageInfoM storedRateLimitM = do
       holdOnIfNeeded storedRateLimitM
-      (respE, reqLog) <- doRequest client lc mkArgs fpRetryCheck fpDepth pageInfoM
-      (pageInfo, rateLimitM, decodingErrors, xs) <- case respE of
-        Left err -> handleReqLog err reqLog
-        Right resp -> pure $ transformResponse resp
+      resp <- doRequest client lc mkArgs fpRetryCheck fpDepth pageInfoM
+      let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
       pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
     logStep pageInfo rateLimitM xs totalFetched = do
@@ -227,7 +238,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
 
     go pageInfoM totalFetched = do
       --- Start be waiting one second if we request a new page
-      when (isJust pageInfoM) $ lift $ mThreadDelay remoteCallDelay
+      when (isJust pageInfoM) $ lift $ mThreadDelay 1_000_000
 
       --- Perform a pre GraphQL request to gather rateLimit
       case fpGetRatelimit of
@@ -236,7 +247,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
             const $ do
               rl <- getRateLimit client
               -- Wait one second to delay the next call
-              mThreadDelay remoteCallDelay
+              mThreadDelay 1_000_000
               pure (Just rl, ())
         Nothing -> pure ()
 
