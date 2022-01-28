@@ -62,7 +62,7 @@ retryResultToBool :: RetryResult -> Bool
 retryResultToBool DoRetry = True
 retryResultToBool DontRetry = False
 
-retryCheck :: MonadLog m => LogAuthor -> RetryCheck m
+retryCheck :: MonadLog m => LogAuthor -> Handler m Bool
 retryCheck author = Handler $ \case
   GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
   _anyOtherExceptionAreNotRetried -> pure False

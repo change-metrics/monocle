@@ -98,7 +98,9 @@ data RequestLog = RequestLog
 data LentilleError
   = DecodeError [Text]
   | GetRateLimitError (Text, HTTP.Request, HTTP.Response LByteString)
-  | GraphQLError (Text, RequestLog)
+  | -- | GraphQLError is a wrapper around the morpheus's FetchError.
+    -- TODO: keep the original error data type (instead of the Text)
+    GraphQLError (Text, RequestLog)
   deriving (Show)
 
 instance Exception LentilleError

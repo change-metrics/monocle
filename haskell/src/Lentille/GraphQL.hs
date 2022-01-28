@@ -20,9 +20,6 @@ module Lentille.GraphQL
     PageInfo (..),
     StreamFetchOptParams (..),
     defaultStreamFetchOptParams,
-
-    -- * Some type aliases
-    RetryCheck,
   )
 where
 
@@ -45,13 +42,6 @@ glSchemaLocation = "./gitlab-schema/schema.graphql"
 
 ghDefaultURL :: Text
 ghDefaultURL = "https://api.github.com/graphql"
-
--------------------------------------------------------------------------------
--- Exception
--------------------------------------------------------------------------------
-
--- | GraphQLError is a wrapper around the morpheus's FetchError.
--- TODO: keep the original error data type (instead of the Text)
 
 -------------------------------------------------------------------------------
 -- HTTP Client
@@ -125,9 +115,6 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
--- TODO: find a better name, or remove the type alias.
-type RetryCheck m = Handler m Bool
-
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
@@ -137,7 +124,7 @@ doRequest ::
   GraphClient ->
   LogCrawlerContext ->
   (Maybe Int -> Maybe Text -> Args a) ->
-  Maybe (RetryCheck m) ->
+  Maybe (Handler m Bool) ->
   Maybe Int ->
   Maybe PageInfo ->
   m a
@@ -173,8 +160,8 @@ decreaseValue retried depth =
    in max 1 $ depth - decValue
 
 data StreamFetchOptParams m a = StreamFetchOptParams
-  { -- | an optional retryCheck function
-    fpRetryCheck :: Maybe (RetryCheck m),
+  { -- | an optional exception handler
+    fpRetryCheck :: Maybe (Handler m Bool),
     -- | an optional starting value for the depth
     fpDepth :: Maybe Int,
     -- | an optional action to get a RateLimit record
