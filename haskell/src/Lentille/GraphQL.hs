@@ -236,9 +236,11 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
           <> " - "
           <> maybe "no ratelimit" show rateLimitM
 
+    retryDelay = 1_100_000
+
     go pageInfoM totalFetched = do
-      --- Start be waiting one second if we request a new page
-      when (isJust pageInfoM) $ lift $ mThreadDelay 1_000_000
+      --- Start by waiting for a few moment if we request a new page
+      when (isJust pageInfoM) $ lift $ mThreadDelay retryDelay
 
       --- Perform a pre GraphQL request to gather rateLimit
       case fpGetRatelimit of
@@ -246,8 +248,8 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
           mModifyMVar rateLimitMVar $
             const $ do
               rl <- getRateLimit client
-              -- Wait one second to delay the next call
-              mThreadDelay 1_000_000
+              -- Wait few moment to delay the next call
+              mThreadDelay retryDelay
               pure (Just rl, ())
         Nothing -> pure ()
 
