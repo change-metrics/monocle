@@ -792,11 +792,15 @@ getLastUpdated crawler entity offset = do
   resp <- fmap BH.hitSource <$> simpleSearch index search
   case nonEmpty (catMaybes resp) of
     Nothing -> pure Nothing
-    Just xs -> pure . Just $ getRespFromMetadata (last xs)
+    Just xs ->
+      if length xs == from size
+        then pure . Just $ getRespFromMetadata (last xs)
+        else pure Nothing
   where
+    size = offset + 1
     search =
       (BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing)
-        { BH.size = BH.Size (fromInteger . toInteger $ offset + 1),
+        { BH.size = BH.Size $ from size,
           BH.sortBody = Just [BH.DefaultSortSpec bhSort]
         }
 

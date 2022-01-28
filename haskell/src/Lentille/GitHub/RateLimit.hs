@@ -20,7 +20,7 @@ import Lentille.GraphQL
 import Monocle.Logging (LogCrawlerContext)
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
-import Network.HTTP.Types (Status, badGateway502, forbidden403)
+import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -56,7 +56,11 @@ getRateLimit lc client = do
     gRetry = genericRetry Macroscope "Faulty response when fetching rateLimit - retrying request"
     getLimit _ = fetchWithLog (doGraphRequest lc client) ()
 
-data GHRequestIssue = GHRequestTimeout | GHRequestSecondaryRateLimit | GHRequestUnmatchedIssue Text
+data GHRequestIssue
+  = GHRequestTimeout
+  | GHRequestSecondaryRateLimit
+  | GHRequestRepoNotFound
+  | GHRequestUnmatchedIssue Text
 
 retryCheck :: (Show a, MonadLog m) => LogAuthor -> RetryCheck m a
 retryCheck author respI = do
@@ -75,6 +79,9 @@ retryCheck author respI = do
     Just (GHRequestUnmatchedIssue e) -> do
       mLog $ Log author $ LogRaw $ "Unexpected error: " <> e
       pure True
+    Just GHRequestRepoNotFound -> do
+      mLog $ Log author $ LogRaw "Repository not found. Will not retry."
+      pure False
     Nothing -> pure False
   where
     checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m GHRequestIssue
@@ -86,7 +93,10 @@ retryCheck author respI = do
         else
           if isSecondaryRateLimitError status body
             then pure GHRequestSecondaryRateLimit
-            else pure $ GHRequestUnmatchedIssue (show err)
+            else
+              if isRepoNotFound status body
+                then pure GHRequestRepoNotFound
+                else pure $ GHRequestUnmatchedIssue (show err)
     isTimeoutError :: Status -> Text -> Bool
     isTimeoutError status body =
       let msg = "Something went wrong while executing your query. This may be the result of a timeout"
@@ -96,3 +106,7 @@ retryCheck author respI = do
     isSecondaryRateLimitError status body =
       let msg = "You have exceeded a secondary rate limit."
        in status == forbidden403 && inText msg body
+    isRepoNotFound :: Status -> Text -> Bool
+    isRepoNotFound status body =
+      let msg = "Could not resolve to a Repository with the name"
+       in status == ok200 && inText msg body
