@@ -56,7 +56,7 @@ ghDefaultURL = "https://api.github.com/graphql"
 
 -- | GraphQLError is a wrapper around the morpheus's FetchError.
 -- TODO: keep the original error data type (instead of the Text)
-data GraphQLError
+newtype GraphQLError
   = GraphQLError (Text, (HTTP.Request, HTTP.Response LByteString))
   deriving (Show)
 

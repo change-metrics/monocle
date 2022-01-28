@@ -52,44 +52,37 @@ getRateLimit lc client = do
   where
     mkRateLimitArgs = const . const $ ()
 
-data GHRequestIssue
-  = GHRequestTimeout
-  | GHRequestSecondaryRateLimit
-  | GHRequestRepoNotFound
-  | GHRequestUnmatchedIssue Text
+data RetryResult
+  = DoRetry
+  | DontRetry
+
+retryResultToBool :: RetryResult -> Bool
+retryResultToBool DoRetry = True
+retryResultToBool DontRetry = False
 
 retryCheck :: MonadLog m => LogAuthor -> RetryCheck m
 retryCheck author = Handler $ \case
-  GraphQLError (err, (_req, resp)) -> do
-    issueType <- checkResp err resp
-    case issueType of
-      GHRequestTimeout -> do
+  GraphQLError (err, (_req, resp)) -> retryResultToBool <$> checkResp err resp
+  where
+    checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m RetryResult
+    checkResp err resp
+      | isTimeoutError status body = do
         mLog $ Log author $ LogRaw "Server side timeout error. Will retry with lower query depth ..."
-        pure True
-      GHRequestSecondaryRateLimit -> do
+        pure DoRetry
+      | isSecondaryRateLimitError status body = do
         mLog $ Log author $ LogRaw "Secondary rate limit error. Will retry after 60 seconds ..."
         mThreadDelay $ 60 * 1_000_000
-        pure True
-      (GHRequestUnmatchedIssue e) -> do
-        mLog $ Log author $ LogRaw $ "Unexpected error: " <> e
-        pure True
-       GHRequestRepoNotFound -> do
+        pure DoRetry
+      | isRepoNotFound status body = do
         mLog $ Log author $ LogRaw "Repository not found. Will not retry."
-        pure False
-  where
-    checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m GHRequestIssue
-    checkResp err resp = do
-      let status = responseStatus resp
-          body = decodeUtf8 $ responseBody resp
-      if isTimeoutError status body
-        then pure GHRequestTimeout
-        else
-          if isSecondaryRateLimitError status body
-            then pure GHRequestSecondaryRateLimit
-            else
-              if isRepoNotFound status body
-                then pure GHRequestRepoNotFound
-                else pure $ GHRequestUnmatchedIssue (show err)
+        pure DontRetry
+      | otherwise = do
+        mLog $ Log author $ LogRaw $ "Unexpected error: " <> show err
+        pure DoRetry
+      where
+        status = responseStatus resp
+        body = decodeUtf8 $ responseBody resp
+
     isTimeoutError :: Status -> Text -> Bool
     isTimeoutError status body =
       let msg = "Something went wrong while executing your query. This may be the result of a timeout"
@@ -99,6 +92,7 @@ retryCheck author = Handler $ \case
     isSecondaryRateLimitError status body =
       let msg = "You have exceeded a secondary rate limit."
        in status == forbidden403 && inText msg body
+
     isRepoNotFound :: Status -> Text -> Bool
     isRepoNotFound status body =
       let msg = "Could not resolve to a Repository with the name"

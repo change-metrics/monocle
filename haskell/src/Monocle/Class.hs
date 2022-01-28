@@ -112,7 +112,7 @@ retry' policy handler baseAction =
   Retry.recovering
     policy
     [handler]
-    (action)
+    action
   where
     action (RetryStatus num _ _) = baseAction num
 

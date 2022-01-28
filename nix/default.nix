@@ -661,7 +661,7 @@ in rec {
 
     buildInputs = with pkgs.myHaskellPackages;
       [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
-      ++ services-req;
+      ++ services-req ++ [ci-run];
 
     withHoogle = true;
 
