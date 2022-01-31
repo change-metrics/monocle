@@ -7,12 +7,14 @@ module Lentille.GitHub.RateLimit where
 
 import Data.Morpheus.Client
 import Lentille
-  ( Log (Log),
+  ( LentilleError (GraphQLError),
+    Log (Log),
     LogAuthor (Macroscope),
     LogEvent (LogRaw),
     MonadGraphQLE,
     MonadLog,
     MonadTime (mThreadDelay),
+    RequestLog (..),
     mLog,
   )
 import Lentille.GraphQL
@@ -60,9 +62,10 @@ retryResultToBool :: RetryResult -> Bool
 retryResultToBool DoRetry = True
 retryResultToBool DontRetry = False
 
-retryCheck :: MonadLog m => LogAuthor -> RetryCheck m
+retryCheck :: MonadLog m => LogAuthor -> Handler m Bool
 retryCheck author = Handler $ \case
-  GraphQLError (err, (_req, resp)) -> retryResultToBool <$> checkResp err resp
+  GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
+  _anyOtherExceptionAreNotRetried -> pure False
   where
     checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m RetryResult
     checkResp err resp
