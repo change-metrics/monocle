@@ -84,7 +84,7 @@ the configuration.
 By default docker-compose will fetch the latest published container images.
 Indeed, we produce container images for the master version of Monocle.
 If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 1.3.0 in the .env file. Please refer
+by setting the MONOCLE_VERSION to 1.4.0 in the .env file. Please refer
 to [System configuration section](#system).
 
 Start Monocle:

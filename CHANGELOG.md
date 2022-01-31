@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.4.0] - 2022-01-31
 
 This release mainly removes a technical dept where the GitHub Pull-Requests crawler
 was managed differently than other crawlers. With this release, the crawler is managed
@@ -18,6 +24,7 @@ configuration or database schema updates.
 ### Changed
 
 - [crawler] Legacy crawler for GitHub Pull Request has been migrated to the new crawler api.
+- [crawler] Improved retry logic for graphQL crawler API call errors.
 
 ### Removed
 

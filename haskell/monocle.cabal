@@ -1,13 +1,13 @@
 cabal-version:       3.0
 name:                monocle
-version:             0.1.3.0
+version:             0.1.4.0
 homepage:            https://github.com/change-metrics/monocle#readme
 bug-reports:         https://github.com/change-metrics/monocle/issues
 license:             AGPL-3.0-only
 license-file:        LICENSE
 author:              Monocle authors
 maintainer:          Monocle authors <fboucher@redhat.com>
-copyright:           2021 Monocle authors
+copyright:           2021,2022 Monocle authors
 category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
