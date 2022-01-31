@@ -13,11 +13,19 @@ import Monocle.Prelude
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
-data IdentInfo = IdentInfo
-  { iiName :: Maybe Text,
-    iiCompany :: Maybe Text
-  }
+newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
+data IdentInfo = IdentInfo
+  { iiAvatarUrl :: Text,
+    iiName :: Maybe Text,
+    iiCompany :: Maybe Text,
+    iiLocation :: Maybe Text,
+    iiOrganizations :: [Text]
+  }
+  deriving (Show)
+
+-- https://docs.github.com/en/graphql/reference/objects#user
+-- To get the orgs login the following scope: ['read:org'] is required
 defineByDocumentFile
   ghSchemaLocation
   [gql|
@@ -28,27 +36,45 @@ defineByDocumentFile
         resetAt
       }
       user(login: $login) {
+        avatarUrl
         name
         company
+        location
+        organizations (first: 100) {
+          nodes {
+            orgLogin: login
+          }
+        }
       }
     }
   |]
 
-transformResponse :: GetUser -> (Maybe RateLimit, IdentInfo)
+transformResponse :: GetUser -> (RateLimit, IdentInfo)
 transformResponse = \case
   GetUser
     (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
-    (Just (UserUser name company)) ->
+    ( Just
+        ( UserUser
+            (URI iiAvatarUrl)
+            iiName
+            iiCompany
+            iiLocation
+            (UserOrganizationsOrganizationConnection (Just orgListM))
+          )
+      ) ->
       let rateLimit = case parseDateValue $ from resetAtText of
             Just resetAt -> RateLimit {..}
             Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
-       in (Just rateLimit, IdentInfo name company)
+          iiOrganizations = orgLogin <$> catMaybes orgListM
+       in (rateLimit, IdentInfo {..})
   respOther -> error ("Invalid response: " <> show respOther)
 
 getUser :: (MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> Text -> m IdentInfo
 getUser lc client login =
   do
-    (_, info) <- transformResponse <$> doRequest client lc mkArgs (Just $ retryCheck Macroscope) Nothing Nothing
+    (_, info) <-
+      transformResponse
+        <$> doRequest client lc mkArgs (Just $ retryCheck Macroscope) Nothing Nothing
     pure info
   where
     mkArgs _ _ = GetUserArgs login
