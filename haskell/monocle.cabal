@@ -211,6 +211,7 @@ library
                      , Lentille.GitHub.RateLimit
                      , Lentille.GitHub.Organization
                      , Lentille.GitHub.PullRequests
+                     , Lentille.GitHub.User
 
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Group
