@@ -260,38 +260,41 @@ module View = {
     | 0 => <p> {"No changes matched"->str} </p>
     | _ =>
       <MStack>
-        <MStackItem> <MCenteredContent> <ChangesTopPies store /> </MCenteredContent> </MStackItem>
-        <MStackItem> <MCenteredContent> <Search.Filter store /> </MCenteredContent> </MStackItem>
-        <MStackItem>
-          <MCenteredContent> <ChangeList store changes dispatchChange /> </MCenteredContent>
-        </MStackItem>
+        <MStackItem> <ChangesTopPies store /> </MStackItem>
+        <MStackItem> <Search.Filter store /> </MStackItem>
+        <MStackItem> <ChangeList store changes dispatchChange /> </MStackItem>
       </MStack>
     }
   }
 }
 
 @react.component
-let make = (~store: Store.t) => {
+let make = (~store: Store.t, ~contextQuery: option<string>=?) => {
   let (state, _) = store
-  let query = addQuery(state.query, state.filter)
+  let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_change)
+  let query = addQuery(baseRequest.query, state.filter)
   let request = {
-    ...Store.mkSearchRequest(state, SearchTypes.Query_change),
-    query: query,
+    ...baseRequest,
+    query: switch contextQuery {
+    | Some(contextQ) => addQuery(query, contextQ)
+    | None => query
+    },
     limit: 256->Int32.of_int,
   }
+  let trigger = {query ++ state.order->orderToQS}
+  let title = "Changes"
+  let tooltip_content = "This shows the list of changes"
+  let icon = <Patternfly.Icons.Integration />
+  let match = resp =>
+    switch resp {
+    | SearchTypes.Changes(items) => items.changes->Some
+    | _ => None
+    }
+  let childrenBuilder = changes => <View store changesAll={changes->Belt.List.toArray} />
 
-  <div>
-    <QueryRender
-      request
-      trigger={query ++ state.order->orderToQS}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Changes(items) => <View store changesAll={items.changes->Belt.List.toArray} />
-
-        | _ => <Alert title={"Invalid response"} />
-        }}
-    />
-  </div>
+  <QueryRenderCard
+    request trigger title tooltip_content icon match childrenBuilder isCentered=false
+  />
 }
 
 let default = make

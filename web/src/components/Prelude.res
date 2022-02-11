@@ -16,6 +16,10 @@ type axiosGetCallback<'data> = unit => axios<'data>
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
+@val @scope(("window", "location"))
+external windowLocationPathname: string = "pathname"
+let readWindowLocationPathname = () => windowLocationPathname
+
 // Bindings for moment
 %%raw(`
 import moment from 'moment'

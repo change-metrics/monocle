@@ -8,7 +8,7 @@ open Prelude
 module MonocleNav = {
   @react.component
   let make = (~active: string, ~store: Store.t) => {
-    let (state, _) = store
+    let (state, dispatch) = store
 
     let navItem = (name, dest) => {
       let query = [
@@ -35,7 +35,10 @@ module MonocleNav = {
         }
       <NavItem
         key={name}
-        onClick={_ => navUrl->RescriptReactRouter.push}
+        onClick={_ => {
+          None->SetAuthorScoped->dispatch
+          navUrl->RescriptReactRouter.push
+        }}
         isActive={active == dest}
         preventDefault={true}
         _to={navUrl}>
@@ -274,6 +277,8 @@ let make = () => {
             | list{"help", "search"} => <HelpSearch.View store />
             | list{_, "settings"} => <LocalSettings.View store />
             | list{_} => <Activity store />
+            | list{_, "author", _} => <AuthorView store />
+            | list{_, "group", _} => <AuthorView store />
             | list{_, "active_authors"} => <ActivePeopleView store />
             | list{_, "peers_strength"} => <PeersStrengthView store />
             | list{_, "new_authors"} => <NewContributorsView store />

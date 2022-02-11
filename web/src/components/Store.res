@@ -6,6 +6,8 @@ module RemoteData = {
   }
 }
 
+type author_t = Author(string) | Group(string)
+
 module UrlData = {
   let getParamOption = name => {
     let params = Prelude.URLSearchParams.current()
@@ -17,6 +19,14 @@ module UrlData = {
     ->Prelude.orderFromQS
     ->Belt.Option.getWithDefault({field: "updated_at", direction: Desc})
     ->Some
+  let getAuthorScope = () => {
+    let splittedPath = Js.String.split("/", Prelude.readWindowLocationPathname())
+    switch splittedPath {
+    | ["", _index, "group", name] => Group(name)->Some
+    | ["", _index, "author", name] => Author(name)->Some
+    | _ => None
+    }
+  }
   let getQuery = () =>
     switch getParam("q") {
     | "" => "from:now-3weeks"
@@ -47,6 +57,7 @@ module Store = {
     limit: int,
     username: option<string>,
     order: option<SearchTypes.order>,
+    author_scoped: option<author_t>,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
@@ -62,6 +73,7 @@ module Store = {
     | SetFilter(string)
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
+    | SetAuthorScoped(option<author_t>)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
@@ -81,6 +93,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
+    author_scoped: UrlData.getAuthorScope(),
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,
@@ -115,6 +128,7 @@ module Store = {
         Prelude.setLocationSearch("o", order->Prelude.orderToQS)->ignore
         {...state, order: order}
       }
+    | SetAuthorScoped(author) => {...state, author_scoped: author}
     | SetLimit(limit) => {
         Prelude.setLocationSearch("l", limit->string_of_int)->ignore
         {...state, limit: limit}
@@ -210,10 +224,22 @@ module Fetch = {
 
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
+let scopedQuery = (state: Store.t) => {
+  let authorToQuery = (author: author_t) =>
+    switch author {
+    | Group(name) => "group:" ++ name
+    | Author(name) => "author:" ++ name
+    }
+  switch state.author_scoped {
+  | Some(author) => Prelude.addQuery(state.query, authorToQuery(author))
+  | None => state.query
+  }
+}
+
 let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_query_type) => {
   SearchTypes.index: state.index,
   username: state.username->Belt.Option.getWithDefault(""),
-  query: state.query,
+  query: state->scopedQuery,
   query_type: query_type,
   order: state.order,
   limit: state.limit->Int32.of_int,
