@@ -15,7 +15,6 @@ where
 
 import qualified Data.Text as T
 import Monocle.Prelude
-import qualified Network.Connection as Connection
 import Network.HTTP.Client
   ( Manager,
     RequestBody (..),
@@ -27,7 +26,8 @@ import Network.HTTP.Client
     requestHeaders,
     responseBody,
   )
-import qualified Network.HTTP.Client.TLS as HTTP
+import qualified Network.HTTP.Client.OpenSSL as OpenSSL
+import OpenSSL.Session (VerificationMode (VerifyNone))
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
 import qualified Proto3.Suite.JSONPB as JSONPB
 
@@ -42,12 +42,11 @@ data MonocleClient = MonocleClient
 mkManager :: IO Manager
 mkManager = do
   disableTlsM <- lookupEnv "TLS_NO_VERIFY"
-  let managerSettings = case disableTlsM of
-        Just _ ->
-          let tlsSettings = Connection.TLSSettingsSimple True False False
-           in HTTP.mkManagerSettings tlsSettings Nothing
-        Nothing -> HTTP.tlsManagerSettings
-  newManager managerSettings
+  let opensslSettings = case disableTlsM of
+        Just _ -> OpenSSL.defaultOpenSSLSettings {OpenSSL.osslSettingsVerifyMode = VerifyNone}
+        Nothing -> OpenSSL.defaultOpenSSLSettings
+  ctx <- OpenSSL.defaultMakeContext opensslSettings
+  newManager $ OpenSSL.opensslManagerSettings (pure ctx)
 
 -- | Create the 'MonocleClient'
 withClient ::

@@ -19,7 +19,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = do
+main = withOpenSSL $ do
   setEnv "API_KEY" "secret"
   setEnv "CRAWLERS_API_KEY" "secret"
   integrationTests <- do

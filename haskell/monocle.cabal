@@ -97,6 +97,7 @@ common codegen
 library
   import:              common-options, codegen
   build-depends:       base                       < 5
+                     , HsOpenSSL                  >= 0.11
                      , MonadRandom
                      , aeson
                      , aeson-casing
@@ -108,7 +109,6 @@ library
                      , bugzilla-redhat            >= 0.3.2
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10
-                     , connection
                      , containers                 >= 0.6
                      , dhall                      >= 1.39
                      , dhall-yaml                 >= 1.2
@@ -123,7 +123,7 @@ library
                      , gitrev                     >= 1.3.1
                      , hashtables                 >= 1.2
                      , http-client                >= 0.6
-                     , http-client-tls            >= 0.3
+                     , http-client-openssl        >= 0.3
                      , http-mock                  >= 0.1
                      , http-types                 >=0.12
                      , json-syntax                >= 0.2
