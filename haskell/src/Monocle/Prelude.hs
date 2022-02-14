@@ -139,6 +139,9 @@ module Monocle.Prelude
     encodePrettyWithSpace,
     (.=),
 
+    -- * http-client-openssl
+    withOpenSSL,
+
     -- * bloodhound
     BH.MonadBH,
     BH.DocId,
@@ -199,6 +202,7 @@ import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import qualified Google.Protobuf.Timestamp
 import Language.Haskell.TH.Quote (QuasiQuoter)
+import Network.HTTP.Client.OpenSSL (withOpenSSL)
 import Prometheus (Info (..), counter, incCounter, withLabel)
 import qualified Prometheus
 import Proto3.Suite (Enumerated (..))

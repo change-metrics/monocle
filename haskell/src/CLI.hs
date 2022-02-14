@@ -78,7 +78,7 @@ usage =
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
 
 main :: IO ()
-main = join $ execParser opts
+main = withOpenSSL $ join $ execParser opts
   where
     opts =
       info

@@ -1,7 +1,7 @@
 module Main (main) where
 
+import Monocle.Prelude
 import qualified Monocle.Test.Spec
-import Prelude (IO)
 
 main :: IO ()
-main = Monocle.Test.Spec.main
+main = withOpenSSL $ Monocle.Test.Spec.main
