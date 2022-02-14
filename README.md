@@ -383,7 +383,6 @@ workspaces:
 Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
 
 ```bash
-docker-compose restart crawler-legacy
 docker-compose run --rm --no-deps api monocle janitor update-idents --elastic elastic:9200 --config /etc/monocle/config.yaml
 ```
 
