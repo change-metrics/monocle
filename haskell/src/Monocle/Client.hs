@@ -45,7 +45,8 @@ mkManager = do
   let opensslSettings = case disableTlsM of
         Just _ -> OpenSSL.defaultOpenSSLSettings {OpenSSL.osslSettingsVerifyMode = VerifyNone}
         Nothing -> OpenSSL.defaultOpenSSLSettings
-  ctx <- OpenSSL.defaultMakeContext opensslSettings
+  tlsCiphers <- fromMaybe "DEFAULT" <$> lookupEnv "TLS_CIPHERS"
+  ctx <- OpenSSL.defaultMakeContext (opensslSettings {OpenSSL.osslSettingsCiphers = tlsCiphers})
   newManager $ OpenSSL.opensslManagerSettings (pure ctx)
 
 -- | Create the 'MonocleClient'
