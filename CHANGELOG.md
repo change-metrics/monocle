@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [webui] avoid failure to access a group with url encoded name.
+
 ## [1.4.0] - 2022-01-31
 
 This release mainly removes a technical dept where the GitHub Pull-Requests crawler

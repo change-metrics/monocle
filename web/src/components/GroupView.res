@@ -105,8 +105,13 @@ module GroupTable = {
 @react.component
 let make = (~group: string, ~store: Store.t) => {
   let (state, _) = store
-  let request: UserGroupTypes.get_request = {index: state.index, name: group, query: state.query}
-  let title = group
+  let groupName = group->Js.Global.decodeURIComponent
+  let request: UserGroupTypes.get_request = {
+    index: state.index,
+    name: groupName,
+    query: state.query,
+  }
+  let title = groupName
   let tooltip_content =
     "This shows for each member " ++
     "the ratio between changes created " ++ "and changes reviewed as well as daily activity charts"
