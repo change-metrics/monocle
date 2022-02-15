@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 ### Added
+
+- [crawler] A new env var "TLS_CIPHERS" to override the default OpenSSL cyphers list.
+
 ### Changed
 ### Removed
 ### Fixed
