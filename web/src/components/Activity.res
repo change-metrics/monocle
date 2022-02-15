@@ -32,6 +32,16 @@ module GraphWithStats = {
 let box = (title: string, value: React.element) =>
   <div> <span> <b> {title->str} </b> </span> <span> {value} </span> </div>
 
+let getTrigger = (store: Store.t) => {
+  let (state, _) = store
+  state.query ++
+  switch state.author_scoped {
+  | Some(Group(name)) => "group-" ++ name
+  | Some(Author(name)) => "author-" ++ name
+  | None => ""
+  }
+}
+
 module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
     @react.component @module("./chartjs.jsx")
@@ -46,7 +56,7 @@ module ChangesLifeCycleStats = {
   let make = (~store: Store.t) => {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
-    let trigger = state.query
+    let trigger = getTrigger(store)
     let title = "Changes lifecycle stats"
     let tooltip_content = "This shows trends of change related metrics such as the evolution of the amount of change created"
     let icon = <Patternfly.Icons.Running />
@@ -123,7 +133,7 @@ module ChangesReviewStats = {
   let make = (~store: Store.t) => {
     let (state, _) = store
     let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
-    let trigger = state.query
+    let trigger = getTrigger(store)
     let title = "Changes review stats"
     let tooltip_content = "This shows trends of reviews and comments"
     let icon = <Patternfly.Icons.OutlinedComments />
