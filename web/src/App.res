@@ -144,11 +144,25 @@ module Login = {
       <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
         {switch state.username {
         | Some(username) =>
-          <Tooltip content={"Click to logout"}>
-            <Button variant=#Tertiary icon={<Patternfly.Icons.User />} onClick={onClickLogout}>
-              {username}
-            </Button>
-          </Tooltip>
+          <Patternfly.Layout.Flex>
+            <Patternfly.Layout.FlexItem>
+              <Button
+                variant=#Tertiary
+                icon={<Patternfly.Icons.User color="cyan" title={username} />}
+                onClick={_ => {
+                  let homeUrl = "/" ++ state.index ++ "/" ++ "author" ++ "/" ++ username
+                  Author(username)->Some->SetAuthorScoped->dispatch
+                  homeUrl->RescriptReactRouter.push
+                }}>
+                {username}
+              </Button>
+            </Patternfly.Layout.FlexItem>
+            <Patternfly.Layout.FlexItem>
+              <div onClick={onClickLogout} style={ReactDOM.Style.make(~cursor="pointer", ())}>
+                <Patternfly.Icons.Arrow color="coral" title="Logout" />
+              </div>
+            </Patternfly.Layout.FlexItem>
+          </Patternfly.Layout.Flex>
         | None => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
         }}
       </div>
