@@ -22,8 +22,8 @@ module UrlData = {
   let getAuthorScope = () => {
     let splittedPath = Js.String.split("/", Prelude.readWindowLocationPathname())
     switch splittedPath {
-    | ["", _index, "group", name] => Group(name)->Some
-    | ["", _index, "author", name] => Author(name)->Some
+    | ["", _index, "group", name] => Group(name->Js.Global.decodeURIComponent)->Some
+    | ["", _index, "author", name] => Author(name->Js.Global.decodeURIComponent)->Some
     | _ => None
     }
   }
@@ -225,10 +225,11 @@ module Fetch = {
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
 let scopedQuery = (state: Store.t) => {
+  let toSearchValue = (value: string) => "\"" ++ value ++ "\""
   let authorToQuery = (author: author_t) =>
     switch author {
-    | Group(name) => "group:" ++ name
-    | Author(name) => "author:" ++ name
+    | Group(name) => "group:" ++ toSearchValue(name)
+    | Author(name) => "author:" ++ toSearchValue(name)
     }
   switch state.author_scoped {
   | Some(author) => Prelude.addQuery(state.query, authorToQuery(author))

@@ -150,7 +150,13 @@ module Login = {
                 variant=#Tertiary
                 icon={<Patternfly.Icons.User color="cyan" title={username} />}
                 onClick={_ => {
-                  let homeUrl = "/" ++ state.index ++ "/" ++ "author" ++ "/" ++ username
+                  let homeUrl =
+                    "/" ++
+                    state.index ++
+                    "/" ++
+                    "author" ++
+                    "/" ++
+                    username->Js.Global.encodeURIComponent
                   Author(username)->Some->SetAuthorScoped->dispatch
                   homeUrl->RescriptReactRouter.push
                 }}>
