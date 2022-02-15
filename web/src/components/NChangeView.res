@@ -162,15 +162,19 @@ module ChangeList = {
 
 module ChangesTopPies = {
   @react.component
-  let make = (~store) => {
+  let make = (~store, ~contextQuery: option<string>=?) => {
     let (state, dispatch) = store
     let qtype = SearchTypes.Query_changes_tops
+    let baseRequest = Store.mkSearchRequest(state, qtype)
+    let query = addQuery(baseRequest.query, state.filter)
     let request = {
-      ...Store.mkSearchRequest(state, qtype),
+      ...baseRequest,
+      query: switch contextQuery {
+      | Some(contextQ) => addQuery(query, contextQ)
+      | None => query
+      },
       limit: 10->Int32.of_int,
-      query: addQuery(state.query, state.filter),
     }
-    let query = request.query
     let getEntry = (e: SearchTypes.term_count): PieWithLegend.entry => {
       doc_count: e.count->Int32.to_int,
       key: e.term,
@@ -253,14 +257,14 @@ module ChangesTopPies = {
 
 module View = {
   @react.component
-  let make = (~store: Store.t, ~changesAll) => {
+  let make = (~store: Store.t, ~changesAll, ~contextQuery) => {
     let (state, _) = store
     let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
     | 0 => <p> {"No changes matched"->str} </p>
     | _ =>
       <MStack>
-        <MStackItem> <ChangesTopPies store /> </MStackItem>
+        <MStackItem> <ChangesTopPies store ?contextQuery /> </MStackItem>
         <MStackItem> <Search.Filter store /> </MStackItem>
         <MStackItem> <ChangeList store changes dispatchChange /> </MStackItem>
       </MStack>
@@ -290,7 +294,8 @@ let make = (~store: Store.t, ~contextQuery: option<string>=?) => {
     | SearchTypes.Changes(items) => items.changes->Some
     | _ => None
     }
-  let childrenBuilder = changes => <View store changesAll={changes->Belt.List.toArray} />
+  let childrenBuilder = changes =>
+    <View store changesAll={changes->Belt.List.toArray} contextQuery />
 
   <QueryRenderCard
     request trigger title tooltip_content icon match childrenBuilder isCentered=false
