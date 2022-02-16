@@ -162,14 +162,14 @@ module ChangeList = {
 
 module ChangesTopPies = {
   @react.component
-  let make = (~store, ~contextQuery: option<string>=?) => {
+  let make = (~store, ~extraQuery: option<string>=?) => {
     let (state, dispatch) = store
     let qtype = SearchTypes.Query_changes_tops
     let baseRequest = Store.mkSearchRequest(state, qtype)
     let query = addQuery(baseRequest.query, state.filter)
     let request = {
       ...baseRequest,
-      query: switch contextQuery {
+      query: switch extraQuery {
       | Some(contextQ) => addQuery(query, contextQ)
       | None => query
       },
@@ -257,14 +257,14 @@ module ChangesTopPies = {
 
 module View = {
   @react.component
-  let make = (~store: Store.t, ~changesAll, ~contextQuery) => {
+  let make = (~store: Store.t, ~changesAll, ~extraQuery) => {
     let (state, _) = store
     let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
     | 0 => <p> {"No changes matched"->str} </p>
     | _ =>
       <MStack>
-        <MStackItem> <ChangesTopPies store ?contextQuery /> </MStackItem>
+        <MStackItem> <ChangesTopPies store ?extraQuery /> </MStackItem>
         <MStackItem> <Search.Filter store /> </MStackItem>
         <MStackItem> <ChangeList store changes dispatchChange /> </MStackItem>
       </MStack>
@@ -273,19 +273,19 @@ module View = {
 }
 
 @react.component
-let make = (~store: Store.t, ~contextQuery: option<string>=?) => {
+let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
   let (state, _) = store
   let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_change)
   let query = addQuery(baseRequest.query, state.filter)
   let request = {
     ...baseRequest,
-    query: switch contextQuery {
+    query: switch extraQuery {
     | Some(contextQ) => addQuery(query, contextQ)
     | None => query
     },
     limit: 256->Int32.of_int,
   }
-  let trigger = {query ++ state.order->orderToQS}
+  let trigger = query ++ state.order->orderToQS
   let title = "Changes"
   let tooltip_content = "This shows the list of changes"
   let icon = <Patternfly.Icons.Integration />
@@ -294,8 +294,7 @@ let make = (~store: Store.t, ~contextQuery: option<string>=?) => {
     | SearchTypes.Changes(items) => items.changes->Some
     | _ => None
     }
-  let childrenBuilder = changes =>
-    <View store changesAll={changes->Belt.List.toArray} contextQuery />
+  let childrenBuilder = changes => <View store changesAll={changes->Belt.List.toArray} extraQuery />
 
   <QueryRenderCard
     request trigger title tooltip_content icon match childrenBuilder isCentered=false

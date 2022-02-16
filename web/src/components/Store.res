@@ -6,8 +6,6 @@ module RemoteData = {
   }
 }
 
-type author_t = Author(string) | Group(string)
-
 module UrlData = {
   let getParamOption = name => {
     let params = Prelude.URLSearchParams.current()
@@ -19,14 +17,6 @@ module UrlData = {
     ->Prelude.orderFromQS
     ->Belt.Option.getWithDefault({field: "updated_at", direction: Desc})
     ->Some
-  let getAuthorScope = () => {
-    let splittedPath = Js.String.split("/", Prelude.readWindowLocationPathname())
-    switch splittedPath {
-    | ["", _index, "group", name] => Group(name->Js.Global.decodeURIComponent)->Some
-    | ["", _index, "author", name] => Author(name->Js.Global.decodeURIComponent)->Some
-    | _ => None
-    }
-  }
   let getQuery = () =>
     switch getParam("q") {
     | "" => "from:now-3weeks"
@@ -57,7 +47,7 @@ module Store = {
     limit: int,
     username: option<string>,
     order: option<SearchTypes.order>,
-    author_scoped: option<author_t>,
+    author_scoped_tab: string,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
@@ -73,7 +63,7 @@ module Store = {
     | SetFilter(string)
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
-    | SetAuthorScoped(option<author_t>)
+    | SetAuthorScopedTab(string)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
@@ -93,7 +83,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
-    author_scoped: UrlData.getAuthorScope(),
+    author_scoped_tab: "1",
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,
@@ -128,7 +118,7 @@ module Store = {
         Prelude.setLocationSearch("o", order->Prelude.orderToQS)->ignore
         {...state, order: order}
       }
-    | SetAuthorScoped(author) => {...state, author_scoped: author}
+    | SetAuthorScopedTab(name) => {...state, author_scoped_tab: name}
     | SetLimit(limit) => {
         Prelude.setLocationSearch("l", limit->string_of_int)->ignore
         {...state, limit: limit}
@@ -224,23 +214,10 @@ module Fetch = {
 
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
 
-let scopedQuery = (state: Store.t) => {
-  let toSearchValue = (value: string) => "\"" ++ value ++ "\""
-  let authorToQuery = (author: author_t) =>
-    switch author {
-    | Group(name) => "group:" ++ toSearchValue(name)
-    | Author(name) => "author:" ++ toSearchValue(name)
-    }
-  switch state.author_scoped {
-  | Some(author) => Prelude.addQuery(state.query, authorToQuery(author))
-  | None => state.query
-  }
-}
-
 let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_query_type) => {
   SearchTypes.index: state.index,
   username: state.username->Belt.Option.getWithDefault(""),
-  query: state->scopedQuery,
+  query: state.query,
   query_type: query_type,
   order: state.order,
   limit: state.limit->Int32.of_int,

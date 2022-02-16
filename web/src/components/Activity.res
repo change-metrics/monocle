@@ -32,16 +32,6 @@ module GraphWithStats = {
 let box = (title: string, value: React.element) =>
   <div> <span> <b> {title->str} </b> </span> <span> {value} </span> </div>
 
-let getTrigger = (store: Store.t) => {
-  let (state, _) = store
-  state.query ++
-  switch state.author_scoped {
-  | Some(Group(name)) => "group-" ++ name
-  | Some(Author(name)) => "author-" ++ name
-  | None => ""
-  }
-}
-
 module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
     @react.component @module("./chartjs.jsx")
@@ -53,17 +43,20 @@ module ChangesLifeCycleStats = {
     ) => React.element = "CChangesLifeCycleHisto"
   }
   @react.component
-  let make = (~store: Store.t) => {
+  let make = (~store: Store.t, ~extraQuery: option<string>=?, ~displayAuthors: option<bool>=?) => {
     let (state, _) = store
-    let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
-    let trigger = getTrigger(store)
+    let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
+    let request = {
+      ...baseRequest,
+      query: switch extraQuery {
+      | Some(ex) => addQuery(baseRequest.query, ex)
+      | None => baseRequest.query
+      },
+    }
+    let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
     let title = "Changes lifecycle stats"
     let tooltip_content = "This shows trends of change related metrics such as the evolution of the amount of change created"
     let icon = <Patternfly.Icons.Running />
-    let displayAuthors = switch state.author_scoped {
-    | Some(Author(_)) => false
-    | _ => true
-    }
 
     let match = resp =>
       switch resp {
@@ -106,12 +99,14 @@ module ChangesLifeCycleStats = {
         box("Iterations by change: ", data.iterations_per_change->float_str->str),
         box("Changes with tests: ", (data.changes_with_tests->float_str ++ "%")->str),
       }
-      let authorsStats = displayAuthors
-        ? switch data.created {
-          | Some(created) => list{box("Changes authors: ", created.authors_count->int32_str->str)}
-          | None => list{}
-          }
-        : list{}
+      let authorsStats = switch displayAuthors {
+      | Some(true) =>
+        switch data.created {
+        | Some(created) => list{box("Changes authors: ", created.authors_count->int32_str->str)}
+        | None => list{}
+        }
+      | _ => list{}
+      }
       let stats = Belt.List.concat(stats, authorsStats)
       <GraphWithStats graph stats />
     }
@@ -130,17 +125,20 @@ module ChangesReviewStats = {
     ) => React.element = "CChangeReviewEventsHisto"
   }
   @react.component
-  let make = (~store: Store.t) => {
+  let make = (~store: Store.t, ~extraQuery: option<string>=?, ~displayAuthors: option<bool>=?) => {
     let (state, _) = store
-    let request = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
-    let trigger = getTrigger(store)
+    let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_changes_review_stats)
+    let request = {
+      ...baseRequest,
+      query: switch extraQuery {
+      | Some(ex) => addQuery(baseRequest.query, ex)
+      | None => baseRequest.query
+      },
+    }
+    let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
     let title = "Changes review stats"
     let tooltip_content = "This shows trends of reviews and comments"
     let icon = <Patternfly.Icons.OutlinedComments />
-    let displayAuthors = switch state.author_scoped {
-    | Some(Author(_)) => false
-    | _ => true
-    }
 
     let match = resp =>
       switch resp {
@@ -165,20 +163,20 @@ module ChangesReviewStats = {
         },
         box("1st comment mean time: ", data.comment_delay->momentHumanizeDuration->str),
       }
-      let authorsStats = displayAuthors
-        ? Belt.List.concat(
-            switch data.review_count {
-            | Some(review) => list{box("Reviews authors: ", review.authors_count->int32_str->str)}
-            | None => list{}
-            },
-            switch data.comment_count {
-            | Some(comment) => list{
-                box("Comments authors: ", comment.authors_count->int32_str->str),
-              }
-            | None => list{}
-            },
-          )
-        : list{}
+      let authorsStats = switch displayAuthors {
+      | Some(true) =>
+        Belt.List.concat(
+          switch data.review_count {
+          | Some(review) => list{box("Reviews authors: ", review.authors_count->int32_str->str)}
+          | None => list{}
+          },
+          switch data.comment_count {
+          | Some(comment) => list{box("Comments authors: ", comment.authors_count->int32_str->str)}
+          | None => list{}
+          },
+        )
+      | _ => list{}
+      }
 
       let stats = Belt.List.concat(stats, authorsStats)
       <GraphWithStats graph stats />

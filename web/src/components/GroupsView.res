@@ -3,14 +3,11 @@ open Prelude
 module GroupItem = {
   @react.component
   let make = (~store: Store.t, ~group: UserGroupTypes.group_definition) => {
-    let (state, dispatch) = store
+    let (state, _) = store
     let link = "/" ++ state.index ++ "/group/" ++ group.name
     <MSimpleCard
       style={ReactDOM.Style.make(~cursor="pointer", ())}
-      onClick={_ => {
-        Group(group.name)->Some->SetAuthorScoped->dispatch
-        link->RescriptReactRouter.push
-      }}>
+      onClick={_ => link->RescriptReactRouter.push}>
       {(group.name ++ " (" ++ group.members->Int32.to_int->string_of_int ++ " member)")->str}
     </MSimpleCard>
   }
