@@ -205,7 +205,7 @@ module ChangesTopPies = {
       let filter = Js.String.includes(newFilter, state.filter)
         ? state.filter
         : addQuery(state.filter, newFilter)
-      let base = "/" ++ state.index ++ "/" ++ "changes" ++ "?"
+      let base = readWindowLocationPathname() ++ "?"
       let query = switch state.query {
       | "" => ""
       | query => "q=" ++ query ++ "&"
@@ -266,7 +266,11 @@ module View = {
     let (state, _) = store
     let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
-    | 0 => <p> {"No changes matched"->str} </p>
+    | 0 =>
+      <MStack>
+        <MStackItem> <Search.Filter store /> </MStackItem>
+        <MStackItem> <p> {"No changes matched"->str} </p> </MStackItem>
+      </MStack>
     | _ =>
       <MStack>
         <MStackItem> <ChangesTopPies store ?extraQuery ?hideAuthors /> </MStackItem>
