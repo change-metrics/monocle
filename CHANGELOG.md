@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - [webui] avoid failure to access a group with url encoded name.
+- [api] wrong author filtering for TOP_REVIEWED_AUTHORS and TOP_COMMENTED_AUTHORS queries.
 
 ## [1.4.0] - 2022-01-31
 

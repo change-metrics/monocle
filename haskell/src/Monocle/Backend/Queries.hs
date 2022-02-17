@@ -677,12 +677,12 @@ getMostActiveAuthorByChangeCommented limit =
 
 getMostReviewedAuthor :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostReviewedAuthor limit =
-  withFlavor (QueryFlavor OnAuthor CreatedAt) $
+  withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeReviewedEvent :| []) "on_author.muid" (Just limit)
 
 getMostCommentedAuthor :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostCommentedAuthor limit =
-  withFlavor (QueryFlavor OnAuthor CreatedAt) $
+  withFlavor (QueryFlavor Author CreatedAt) $
     getDocTypeTopCountByField (EChangeCommentedEvent :| []) "on_author.muid" (Just limit)
 
 -- | peer strength authors
