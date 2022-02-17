@@ -199,6 +199,12 @@ let str = React.string
 // Render component if the predicate is true
 let maybeRender = (pred: bool, component: React.element): React.element =>
   pred ? component : React.null
+// Hide if predicate is Some(true) (useful in case of optional parameter)
+let maybeHide = (pred: option<bool>, component: React.element): React.element =>
+  switch pred {
+  | Some(true) => React.null
+  | _ => component
+  }
 // Render component if the list is not empty
 let maybeRenderArray = (xs: array<'a>, component) =>
   xs->Belt.Array.length > 0 ? component : React.null
