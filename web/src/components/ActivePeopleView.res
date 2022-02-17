@@ -53,13 +53,19 @@ module MostActiveAuthor = {
     ~title: string,
     ~tooltip_content: string,
     ~link: TopTermsTable.t,
+    ~extraQuery: option<string>=?,
   ) => {
     let (state, _) = store
     let (limit, setLimit) = React.useState(() => 10)
     let limit_values = list{10, 25, 50, 100, 500}
     let columnNames = ["Name", "Count"]
+    let baseRequest = Store.mkSearchRequest(state, qtype)
     let request = {
-      ...Store.mkSearchRequest(state, qtype),
+      ...baseRequest,
+      query: switch extraQuery {
+      | None => baseRequest.query
+      | Some(ex) => addQuery(baseRequest.query, ex)
+      },
       limit: limit->Int32.of_int,
     }
     let trigger = state.query ++ limit->string_of_int

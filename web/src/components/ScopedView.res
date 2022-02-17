@@ -1,5 +1,6 @@
 open Prelude
 open Activity
+open ActivePeopleView
 
 let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, isGroup: bool) => {
   let (state, dispatch) = store
@@ -23,7 +24,28 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
       </Tab>
       <Tab eventKey="2" title={<TabTitleText> "Review activity" </TabTitleText>}>
         <MStack>
-          <MStackItem> <ChangesReviewStats store extraQuery hideAuthors /> </MStackItem>
+          <MStackItem> <p> {" "->str} </p> </MStackItem>
+          <MStackItem>
+            <Layout.Grid sm=Column._12 lg=Column._6 xl=Column._4 hasGutter={true}>
+              <Layout.GridItem>
+                <ChangesReviewStats store extraQuery hideAuthors />
+              </Layout.GridItem>
+              <Layout.GridItem>
+                {
+                  let (qtype, _, tooltip_content, link) = ByMostReviewed->TopMetricsInfo.getQD
+                  let title = "Top reviewed authors"
+                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                }
+              </Layout.GridItem>
+              <Layout.GridItem>
+                {
+                  let (qtype, _, tooltip_content, link) = ByMostCommented->TopMetricsInfo.getQD
+                  let title = "Top commented authors"
+                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                }
+              </Layout.GridItem>
+            </Layout.Grid>
+          </MStackItem>
         </MStack>
       </Tab>
       <Tab eventKey="3" title={<TabTitleText> "Open changes" </TabTitleText>}>
