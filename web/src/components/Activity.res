@@ -8,20 +8,9 @@ open MLink
 
 module GraphWithStats = {
   @react.component
-  let make = (~graph: React.element, ~stats: list<React.element>) => {
+  let make = (~graph: React.element, ~stats: React.element) => {
     <Patternfly.Layout.Stack hasGutter={true}>
-      <Patternfly.Layout.StackItem>
-        <Patternfly.Layout.Grid hasGutter={false}>
-          {stats
-          ->Belt.List.mapWithIndex((i, statE) =>
-            <Patternfly.Layout.GridItem key={i->string_of_int} md=Column._6 xl=Column._4>
-              <Card isCompact={true}> <CardBody> {statE} </CardBody> </Card>
-            </Patternfly.Layout.GridItem>
-          )
-          ->Belt.List.toArray
-          ->React.array}
-        </Patternfly.Layout.Grid>
-      </Patternfly.Layout.StackItem>
+      <Patternfly.Layout.StackItem> {stats} </Patternfly.Layout.StackItem>
       <Patternfly.Layout.StackItem>
         <Card> <CardBody> {graph} </CardBody> </Card>
       </Patternfly.Layout.StackItem>
@@ -29,8 +18,8 @@ module GraphWithStats = {
   }
 }
 
-let box = (title: string, value: React.element) =>
-  <div> <span> <b> {title->str} </b> </span> <span> {value} </span> </div>
+let item = (title: string, value: React.element) =>
+  <ListItem key={title}> <span> <b> {title->str} </b> </span> <span> {value} </span> </ListItem>
 
 module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
@@ -71,43 +60,68 @@ module ChangesLifeCycleStats = {
           merged={data.merged_histo->Belt.List.toArray}
           abandoned={data.abandoned_histo->Belt.List.toArray}
         />
-      let stats = list{
-        switch data.created {
-        | Some(created) => box("Changes created: ", created.events_count->int32_str->str)
-        | None => React.null
-        },
-        box(
-          "Changes merged: ",
-          <MonoLink store filter="state:merged" path="changes" name={data.merged->int32_str} />,
-        ),
-        box(
-          "Changes self-merged: ",
-          <MonoLink
-            store filter="state:self_merged" path="changes" name={data.self_merged->int32_str}
-          />,
-        ),
-        box(
-          "Changes abandoned: ",
-          <MonoLink
-            store filter="state:abandoned" path="changes" name={data.abandoned->int32_str}
-          />,
-        ),
-        box("Mean TTM: ", data.ttm_mean->momentHumanizeDuration->str),
-        box("TTM Median Deviation: ", data.ttm_variability->momentHumanizeDuration->str),
-        box("Changes updates: ", data.updates_of_changes->int32_str->str),
-        box("Commits by change: ", data.commits_per_change->float_str->str),
-        box("Iterations by change: ", data.iterations_per_change->float_str->str),
-        box("Changes with tests: ", (data.changes_with_tests->float_str ++ "%")->str),
-      }
-      let authorsStats = switch hideAuthors {
-      | Some(true) => list{}
-      | _ =>
-        switch data.created {
-        | Some(created) => list{box("Changes authors: ", created.authors_count->int32_str->str)}
-        | None => list{}
-        }
-      }
-      let stats = Belt.List.concat(stats, authorsStats)
+      let stats =
+        <Layout.Grid md=Column._4>
+          <Layout.GridItem>
+            <List>
+              {Belt.Array.concatMany([
+                switch data.created {
+                | Some(created) => [item("Changes created: ", created.events_count->int32_str->str)]
+                | None => []
+                },
+                [
+                  item(
+                    "Changes merged: ",
+                    <MonoLink
+                      store filter="state:merged" path="changes" name={data.merged->int32_str}
+                    />,
+                  ),
+                ],
+                [
+                  item(
+                    "Changes self-merged: ",
+                    <MonoLink
+                      store
+                      filter="state:self_merged"
+                      path="changes"
+                      name={data.self_merged->int32_str}
+                    />,
+                  ),
+                ],
+                [
+                  item(
+                    "Changes abandoned: ",
+                    <MonoLink
+                      store filter="state:abandoned" path="changes" name={data.abandoned->int32_str}
+                    />,
+                  ),
+                ],
+              ])->React.array}
+            </List>
+          </Layout.GridItem>
+          <List>
+            {[
+              item("Changes with tests: ", (data.changes_with_tests->float_str ++ "%")->str),
+              item("Mean TTM: ", data.ttm_mean->momentHumanizeDuration->str),
+              item("TTM Median Deviation: ", data.ttm_variability->momentHumanizeDuration->str),
+              item("Changes updates: ", data.updates_of_changes->int32_str->str),
+            ]->React.array}
+          </List>
+          <Layout.GridItem>
+            <List>
+              {Belt.Array.concatMany([
+                [item("Commits by change: ", data.commits_per_change->float_str->str)],
+                [item("Iterations by change: ", data.iterations_per_change->float_str->str)],
+                switch (hideAuthors->Belt.Option.getWithDefault(false), data.created) {
+                | (false, Some(created)) => [
+                    item("Changes authors: ", created.authors_count->int32_str->str),
+                  ]
+                | _ => []
+                },
+              ])->React.array}
+            </List>
+          </Layout.GridItem>
+        </Layout.Grid>
       <GraphWithStats graph stats />
     }
     <QueryRenderCard
@@ -151,34 +165,45 @@ module ChangesReviewStats = {
           comment_histo={data.comment_histo->Belt.List.toArray}
           review_histo={data.review_histo->Belt.List.toArray}
         />
-      let stats = list{
-        switch data.review_count {
-        | Some(review) => box("Changes reviewed: ", review.events_count->int32_str->str)
-        | None => React.null
-        },
-        box("1st review mean time: ", data.review_delay->momentHumanizeDuration->str),
-        switch data.comment_count {
-        | Some(comment) => box("Changes commented: ", comment.events_count->int32_str->str)
-        | None => React.null
-        },
-        box("1st comment mean time: ", data.comment_delay->momentHumanizeDuration->str),
-      }
-      let authorsStats = switch hideAuthors {
-      | Some(true) => list{}
-      | _ =>
-        Belt.List.concat(
-          switch data.review_count {
-          | Some(review) => list{box("Reviews authors: ", review.authors_count->int32_str->str)}
-          | None => list{}
-          },
-          switch data.comment_count {
-          | Some(comment) => list{box("Comments authors: ", comment.authors_count->int32_str->str)}
-          | None => list{}
-          },
-        )
-      }
-
-      let stats = Belt.List.concat(stats, authorsStats)
+      let stats =
+        <Layout.Grid md=Column._4>
+          <Layout.GridItem>
+            <List>
+              {Belt.Array.concatMany([
+                switch data.review_count {
+                | Some(review) => [item("Changes reviewed: ", review.events_count->int32_str->str)]
+                | None => []
+                },
+                [item("1st review mean time: ", data.review_delay->momentHumanizeDuration->str)],
+                switch (hideAuthors->Belt.Option.getWithDefault(false), data.review_count) {
+                | (false, Some(review)) => [
+                    item("Reviews authors: ", review.authors_count->int32_str->str),
+                  ]
+                | _ => []
+                },
+              ])->React.array}
+            </List>
+          </Layout.GridItem>
+          <Layout.GridItem>
+            <List>
+              {Belt.Array.concatMany([
+                switch data.comment_count {
+                | Some(comment) => [
+                    item("Changes commented: ", comment.events_count->int32_str->str),
+                  ]
+                | None => []
+                },
+                [item("1st comment mean time: ", data.comment_delay->momentHumanizeDuration->str)],
+                switch (hideAuthors->Belt.Option.getWithDefault(false), data.comment_count) {
+                | (false, Some(comment)) => [
+                    item("Comments authors: ", comment.authors_count->int32_str->str),
+                  ]
+                | _ => []
+                },
+              ])->React.array}
+            </List>
+          </Layout.GridItem>
+        </Layout.Grid>
       <GraphWithStats graph stats />
     }
     <QueryRenderCard
@@ -216,7 +241,7 @@ module ChangesMergedDuration = {
       }
     let childrenBuilder = (data: Web.SearchTypes.changes) => {
       let graph = <DurationComplexicityGraph data={data.changes->Belt.List.toArray} onClick />
-      <GraphWithStats graph stats={list{}} />
+      <GraphWithStats graph stats=React.null />
     }
 
     <QueryRenderCard
@@ -255,11 +280,19 @@ module AuthorHistoStats = {
           comment_histo={data.comments_histo->Belt.List.toArray}
           review_histo={data.reviews_histo->Belt.List.toArray}
         />
-      let stats = list{
-        {box("Change authors: ", data.change_authors->int32_str->str)},
-        {box("Review authors: ", data.review_authors->int32_str->str)},
-        {box("Comment authors: ", data.comment_authors->int32_str->str)},
-      }
+
+      let stats =
+        <Layout.Grid md=Column._4>
+          <Layout.GridItem>
+            <List>
+              {[
+                item("Change authors: ", data.change_authors->int32_str->str),
+                item("Review authors: ", data.review_authors->int32_str->str),
+                item("Comment authors: ", data.comment_authors->int32_str->str),
+              ]->React.array}
+            </List>
+          </Layout.GridItem>
+        </Layout.Grid>
       <GraphWithStats graph stats />
     }
     <QueryRenderCard
