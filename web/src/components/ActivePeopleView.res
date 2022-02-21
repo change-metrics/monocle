@@ -7,7 +7,7 @@
 open Prelude
 
 module TopTermsTable = {
-  type t = NoLink | AuthorLink | AuthorWithFilter(string)
+  type t = NoLink | AuthorLink | ScopedAuthorLink | AuthorWithFilter(string)
   @react.component
   let make = (
     ~store,
@@ -15,6 +15,7 @@ module TopTermsTable = {
     ~columnNames: array<string>,
     ~link: t,
   ) => {
+    let (state, dispatch) = store
     let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
       switch index {
       | 0 => first.term < second.term
@@ -37,6 +38,16 @@ module TopTermsTable = {
         | NoLink => item.term->str
         | AuthorLink => item.term->mkAuthorLink(None)
         | AuthorWithFilter(filter) => item.term->mkAuthorLink(filter->Some)
+        | ScopedAuthorLink =>
+          <a
+            onClick={e => {
+              let link = "/" ++ state.index ++ "/author/" ++ item.term->Js.Global.encodeURIComponent
+              e->ReactEvent.Mouse.preventDefault
+              "1"->SetAuthorScopedTab->dispatch
+              link->RescriptReactRouter.push
+            }}>
+            {item.term->str}
+          </a>
         },
       item => item.count->int32_str->str,
     }

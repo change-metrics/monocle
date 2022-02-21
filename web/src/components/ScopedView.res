@@ -9,6 +9,7 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
   let extraQuery = isGroup
     ? "group:" ++ toSearchValue(entityName)
     : "author:" ++ toSearchValue(entityName)
+  let link = TopTermsTable.ScopedAuthorLink
   <MonoCard
     title={entityTypeAsText ++ " details for " ++ entityName}
     tooltip_content={"This view is scoped to the " ++ entityName ++ " " ++ entityTypeAsText}
@@ -23,12 +24,12 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
           {isGroup
             ? {
                 let byChangeCreated = {
-                  let (qtype, _, tooltip_content, link) = ByChangeCreated->TopMetricsInfo.getQD
+                  let (qtype, _, tooltip_content, _) = ByChangeCreated->TopMetricsInfo.getQD
                   let title = "Top authors by change created"
                   <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                 }
                 let byChangeMerged = {
-                  let (qtype, _, tooltip_content, link) = ByChangeMerged->TopMetricsInfo.getQD
+                  let (qtype, _, tooltip_content, _) = ByChangeMerged->TopMetricsInfo.getQD
                   let title = "Top authors by change merged"
                   <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                 }
@@ -59,14 +60,14 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
                 <MStack>
                   <MStackItem>
                     {
-                      let (qtype, _, tooltip_content, link) = ByMostReviewed->TopMetricsInfo.getQD
+                      let (qtype, _, tooltip_content, _) = ByMostReviewed->TopMetricsInfo.getQD
                       let title = "Most reviewed authors"
                       <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                     }
                   </MStackItem>
                   <MStackItem>
                     {
-                      let (qtype, _, tooltip_content, link) = ByMostCommented->TopMetricsInfo.getQD
+                      let (qtype, _, tooltip_content, _) = ByMostCommented->TopMetricsInfo.getQD
                       let title = "Most commented authors"
                       <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                     }
@@ -75,14 +76,12 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
                     isGroup,
                     {
                       let byChangeReviewed = {
-                        let (qtype, _, tooltip_content, link) =
-                          ByChangeReviewed->TopMetricsInfo.getQD
+                        let (qtype, _, tooltip_content, _) = ByChangeReviewed->TopMetricsInfo.getQD
                         let title = "Top authors by reviews"
                         <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                       }
                       let byChangeCommented = {
-                        let (qtype, _, tooltip_content, link) =
-                          ByChangeCommented->TopMetricsInfo.getQD
+                        let (qtype, _, tooltip_content, _) = ByChangeCommented->TopMetricsInfo.getQD
                         let title = "Top authors by comments"
                         <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                       }
