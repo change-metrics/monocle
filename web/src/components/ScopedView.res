@@ -19,7 +19,32 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
       onSelect={(_, key) => key->SetAuthorScopedTab->dispatch}>
       <Tab eventKey="1" title={<TabTitleText> "Change activity" </TabTitleText>}>
         <MStack>
-          <MStackItem> <ChangesLifeCycleStats store extraQuery hideAuthors /> </MStackItem>
+          <MStackItem> <p> {" "->str} </p> </MStackItem>
+          {isGroup
+            ? {
+                let byChangeCreated = {
+                  let (qtype, _, tooltip_content, link) = ByChangeCreated->TopMetricsInfo.getQD
+                  let title = "Top authors by change created"
+                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                }
+                let byChangeMerged = {
+                  let (qtype, _, tooltip_content, link) = ByChangeMerged->TopMetricsInfo.getQD
+                  let title = "Top authors by change merged"
+                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                }
+                <Layout.Grid sm=Column._12 xl=Column._6 hasGutter={true}>
+                  <Layout.GridItem>
+                    <ChangesLifeCycleStats store extraQuery hideAuthors />
+                  </Layout.GridItem>
+                  <Layout.GridItem>
+                    <MStack>
+                      <MStackItem> {byChangeCreated} </MStackItem>
+                      <MStackItem> {byChangeMerged} </MStackItem>
+                    </MStack>
+                  </Layout.GridItem>
+                </Layout.Grid>
+              }
+            : <MStackItem> <ChangesLifeCycleStats store extraQuery hideAuthors /> </MStackItem>}
         </MStack>
       </Tab>
       <Tab eventKey="2" title={<TabTitleText> "Review activity" </TabTitleText>}>
@@ -46,6 +71,27 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
                       <MostActiveAuthor store qtype title tooltip_content link extraQuery />
                     }
                   </MStackItem>
+                  {maybeRender(
+                    isGroup,
+                    {
+                      let byChangeReviewed = {
+                        let (qtype, _, tooltip_content, link) =
+                          ByChangeReviewed->TopMetricsInfo.getQD
+                        let title = "Top authors by reviews"
+                        <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                      }
+                      let byChangeCommented = {
+                        let (qtype, _, tooltip_content, link) =
+                          ByChangeCommented->TopMetricsInfo.getQD
+                        let title = "Top authors by comments"
+                        <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                      }
+                      <React.Fragment>
+                        <MStackItem> {byChangeReviewed} </MStackItem>
+                        <MStackItem> {byChangeCommented} </MStackItem>
+                      </React.Fragment>
+                    },
+                  )}
                 </MStack>
               </Layout.GridItem>
             </Layout.Grid>
