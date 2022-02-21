@@ -26,23 +26,27 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
         <MStack>
           <MStackItem> <p> {" "->str} </p> </MStackItem>
           <MStackItem>
-            <Layout.Grid sm=Column._12 lg=Column._6 xl=Column._4 hasGutter={true}>
+            <Layout.Grid sm=Column._12 xl=Column._6 hasGutter={true}>
               <Layout.GridItem>
                 <ChangesReviewStats store extraQuery hideAuthors />
               </Layout.GridItem>
               <Layout.GridItem>
-                {
-                  let (qtype, _, tooltip_content, link) = ByMostReviewed->TopMetricsInfo.getQD
-                  let title = "Top reviewed authors"
-                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
-                }
-              </Layout.GridItem>
-              <Layout.GridItem>
-                {
-                  let (qtype, _, tooltip_content, link) = ByMostCommented->TopMetricsInfo.getQD
-                  let title = "Top commented authors"
-                  <MostActiveAuthor store qtype title tooltip_content link extraQuery />
-                }
+                <MStack>
+                  <MStackItem>
+                    {
+                      let (qtype, _, tooltip_content, link) = ByMostReviewed->TopMetricsInfo.getQD
+                      let title = "Most reviewed authors"
+                      <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                    }
+                  </MStackItem>
+                  <MStackItem>
+                    {
+                      let (qtype, _, tooltip_content, link) = ByMostCommented->TopMetricsInfo.getQD
+                      let title = "Most commented authors"
+                      <MostActiveAuthor store qtype title tooltip_content link extraQuery />
+                    }
+                  </MStackItem>
+                </MStack>
               </Layout.GridItem>
             </Layout.Grid>
           </MStackItem>
