@@ -648,16 +648,11 @@ module QueryRenderCard = {
     ~match: Web.SearchTypes.query_response => option<'a>,
     // The child builder
     ~childrenBuilder: 'a => React.element,
-    // Center the child content
-    ~isCentered: bool=true,
   ) => {
     let render = resp => {
       switch match(resp) {
-      | Some(data) => {
-          let content =
-            <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
-          isCentered ? <MCenteredContent> {content} </MCenteredContent> : {content}
-        }
+      | Some(data) =>
+        <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
       | None => React.null
       }
     }

@@ -296,7 +296,7 @@ let make = () => {
             | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
             | list{_, "group", name} => <ScopedView.GroupScopedView store name />
             | list{_, "active_authors"} => <ActivePeopleView store />
-            | list{_, "peers_strength"} => <PeersStrengthView store />
+            | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
             | list{_, "new_authors"} => <NewContributorsView store />
             | list{_, "projects"} => <ProjectsView store />
             | list{_, "user_groups"} => <GroupsView store />

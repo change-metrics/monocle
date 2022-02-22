@@ -124,9 +124,7 @@ module ChangesLifeCycleStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard
-      request trigger title tooltip_content icon match childrenBuilder isCentered=false
-    />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -206,9 +204,7 @@ module ChangesReviewStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard
-      request trigger title tooltip_content icon match childrenBuilder isCentered=false
-    />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -244,9 +240,7 @@ module ChangesMergedDuration = {
       <GraphWithStats graph stats=React.null />
     }
 
-    <QueryRenderCard
-      request trigger title tooltip_content icon match childrenBuilder isCentered=false
-    />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -295,9 +289,7 @@ module AuthorHistoStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard
-      request trigger title tooltip_content icon match childrenBuilder isCentered=false
-    />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 

@@ -37,7 +37,12 @@ let reviewActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
     <MStackItem> <p> {" "->str} </p> </MStackItem>
     <MStackItem>
       <Layout.Grid sm=Column._12 xl=Column._6 hasGutter={true}>
-        <Layout.GridItem> <ChangesReviewStats store extraQuery hideAuthors /> </Layout.GridItem>
+        <Layout.GridItem>
+          <MStack>
+            <MStackItem> <ChangesReviewStats store extraQuery hideAuthors /> </MStackItem>
+            <MStackItem> <PeersStrengthView store stacked={true} extraQuery /> </MStackItem>
+          </MStack>
+        </Layout.GridItem>
         <Layout.GridItem>
           <MStack>
             <MStackItem>

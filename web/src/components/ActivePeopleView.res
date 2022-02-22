@@ -90,15 +90,7 @@ module MostActiveAuthor = {
     let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
       <TopTermsTable store items=data.termcount columnNames link />
     <QueryRenderCard
-      request
-      trigger
-      title
-      tooltip_content
-      icon
-      limitSelector
-      match
-      childrenBuilder
-      isCentered=false
+      request trigger title tooltip_content icon limitSelector match childrenBuilder
     />
   }
 }

@@ -306,9 +306,7 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?, ~hideAuthors: option
   let childrenBuilder = changes =>
     <View store changesAll={changes->Belt.List.toArray} extraQuery hideAuthors />
 
-  <QueryRenderCard
-    request trigger title tooltip_content icon match childrenBuilder isCentered=false
-  />
+  <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }
 
 let default = make
