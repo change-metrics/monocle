@@ -109,14 +109,21 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
       <Tab eventKey="3" title={<TabTitleText> "Open changes" </TabTitleText>}>
         <MStack>
           <MStackItem>
-            <NChangeView store extraQuery={extraQuery ++ " state:open"} hideAuthors />
+            <NChangeView
+              store extraQuery={extraQuery ++ " state:open"} hideAuthors disableHiddenChange={true}
+            />
           </MStackItem>
         </MStack>
       </Tab>
       <Tab eventKey="4" title={<TabTitleText> "Merged changes" </TabTitleText>}>
         <MStack>
           <MStackItem>
-            <NChangeView store extraQuery={extraQuery ++ " state:merged"} hideAuthors />
+            <NChangeView
+              store
+              extraQuery={extraQuery ++ " state:merged"}
+              hideAuthors
+              disableHiddenChange={true}
+            />
           </MStackItem>
         </MStack>
       </Tab>

@@ -140,23 +140,28 @@ module ChangeList = {
     ~store: Store.t,
     ~changes: HiddenChanges.changeArray,
     ~dispatchChange: HiddenChanges.dispatch,
+    ~disableHiddenChange: option<bool>=?,
   ) => {
-    let (toggle, isChangeVisible) = HiddenChanges.useToggle()
+    let (toggle, isChangeVisible) = switch disableHiddenChange {
+    | Some(true) => (React.null, _ => true)
+    | _ => HiddenChanges.useToggle()
+    }
     let (changesArray, paginate) = usePagination(changes)
-    <>
-      {toggle}
-      {paginate}
-      <br />
-      <Patternfly.DataList isCompact={true}>
-        {changesArray
-        ->Belt.Array.map(((status, change)) =>
-          isChangeVisible(status)
-            ? <Change.DataItem store key={change.change_id} change status dispatchChange />
-            : React.null
-        )
-        ->React.array}
-      </Patternfly.DataList>
-    </>
+    <MStack>
+      <MStackItem> {toggle} </MStackItem>
+      <MStackItem> {paginate} </MStackItem>
+      <MStackItem>
+        <Patternfly.DataList isCompact={true}>
+          {changesArray
+          ->Belt.Array.map(((status, change)) =>
+            isChangeVisible(status)
+              ? <Change.DataItem store key={change.change_id} change status dispatchChange />
+              : React.null
+          )
+          ->React.array}
+        </Patternfly.DataList>
+      </MStackItem>
+    </MStack>
   }
 }
 
@@ -262,7 +267,7 @@ module ChangesTopPies = {
 
 module View = {
   @react.component
-  let make = (~store: Store.t, ~changesAll, ~extraQuery, ~hideAuthors) => {
+  let make = (~store: Store.t, ~changesAll, ~extraQuery, ~hideAuthors, ~disableHiddenChange) => {
     let (state, _) = store
     let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
@@ -275,14 +280,19 @@ module View = {
       <MStack>
         <MStackItem> <ChangesTopPies store ?extraQuery ?hideAuthors /> </MStackItem>
         <MStackItem> <Search.Filter store /> </MStackItem>
-        <MStackItem> <ChangeList store changes dispatchChange /> </MStackItem>
+        <MStackItem> <ChangeList store changes dispatchChange ?disableHiddenChange /> </MStackItem>
       </MStack>
     }
   }
 }
 
 @react.component
-let make = (~store: Store.t, ~extraQuery: option<string>=?, ~hideAuthors: option<bool>=?) => {
+let make = (
+  ~store: Store.t,
+  ~extraQuery: option<string>=?,
+  ~hideAuthors: option<bool>=?,
+  ~disableHiddenChange: option<bool>=?,
+) => {
   let (state, _) = store
   let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_change)
   let query = addQuery(baseRequest.query, state.filter)
@@ -304,7 +314,9 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?, ~hideAuthors: option
     | _ => None
     }
   let childrenBuilder = changes =>
-    <View store changesAll={changes->Belt.List.toArray} extraQuery hideAuthors />
+    <View
+      store changesAll={changes->Belt.List.toArray} extraQuery hideAuthors disableHiddenChange
+    />
 
   <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }

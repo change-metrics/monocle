@@ -64,9 +64,12 @@ let useToggle = () => {
   }
   let onChange = (_, _) => setToggle(x => !x)
   let isChangeVisible = status => isChecked ? true : status != Hidden
-  let style = ReactDOM.Style.make(~float="right", ())
   (
-    <span style> <Patternfly.Checkbox id="hidden-toggle" isChecked onChange label /> </span>,
+    <span style={ReactDOM.Style.make(~float="right", ())}>
+      <Patternfly.Tooltip content="Set to show or hide hidden changes">
+        <Patternfly.Checkbox id="hidden-toggle" isChecked onChange label />
+      </Patternfly.Tooltip>
+    </span>,
     isChangeVisible,
   )
 }
