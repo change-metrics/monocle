@@ -664,3 +664,15 @@ module QueryRenderCard = {
     <QueryRender request trigger render />
   }
 }
+
+// Minimal Patternfly Tabs component binding
+// TODO: Remove after new release of re-patternfly
+module MonoTabs = {
+  @react.component @module("@patternfly/react-core")
+  external make: (
+    ~children: 'children,
+    ~activeKey: string=?,
+    ~isBox: bool=?,
+    ~onSelect: (unit, string) => unit=?,
+  ) => React.element = "Tabs"
+}

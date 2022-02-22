@@ -14,7 +14,7 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
     title={entityTypeAsText ++ " details for " ++ entityName}
     tooltip_content={"This view is scoped to the " ++ entityName ++ " " ++ entityTypeAsText}
     icon={<Patternfly.Icons.User />}>
-    <Tabs
+    <MonoTabs
       activeKey={state.author_scoped_tab}
       isBox=true
       onSelect={(_, key) => key->SetAuthorScopedTab->dispatch}>
@@ -116,7 +116,7 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
             <MStack> <MStackItem> <GroupView store group=entityName /> </MStackItem> </MStack>
           </Tab>
         : React.null}
-    </Tabs>
+    </MonoTabs>
   </MonoCard>
 }
 
