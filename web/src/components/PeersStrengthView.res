@@ -76,7 +76,7 @@ let make = (~store: Store.t, ~stacked: bool, ~extraQuery: option<string>=?) => {
     },
     limit: limit->Int32.of_int,
   }
-  let trigger = state.query ++ limit->string_of_int
+  let trigger = state.query ++ limit->string_of_int ++ extraQuery->Belt.Option.getWithDefault("")
   let limitSelector = <LimitSelector limit setLimit default=25 values=limit_values />
   let title = "Peers Strength"
   let icon = <Patternfly.Icons.Integration />

@@ -127,8 +127,11 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
           </MStackItem>
         </MStack>
       </Tab>
+      <Tab eventKey="5" title={<TabTitleText> "Repositories" </TabTitleText>}>
+        <MStack> <MStackItem> <ReposView store extraQuery /> </MStackItem> </MStack>
+      </Tab>
       {isGroup
-        ? <Tab eventKey="5" title={<TabTitleText> "Group members" </TabTitleText>}>
+        ? <Tab eventKey="6" title={<TabTitleText> "Group members" </TabTitleText>}>
             <MStack> <MStackItem> <GroupView store group=entityName /> </MStackItem> </MStack>
           </Tab>
         : React.null}

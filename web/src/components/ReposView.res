@@ -78,10 +78,17 @@ module RepoSummaryTable = {
 }
 
 @react.component
-let make = (~store: Store.t) => {
+let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
   let (state, _) = store
-  let request = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
-  let trigger = state.query
+  let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
+  let request = {
+    ...baseRequest,
+    query: switch extraQuery {
+    | Some(ex) => addQuery(baseRequest.query, ex)
+    | None => baseRequest.query
+    },
+  }
+  let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
   let tooltip_content = "This shows the list of repositories (which received some activities) along with some metrics"
   let title = "Repository summary"
   let icon = <Patternfly.Icons.Repository />
