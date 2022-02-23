@@ -19,7 +19,7 @@ let changeActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
           }
           <Layout.Grid sm=Column._12 xl=Column._6 hasGutter={true}>
             <Layout.GridItem>
-              <ChangesLifeCycleStats store extraQuery hideAuthors />
+              <ChangesLifeCycleStats store extraQuery hideAuthors isScoped={true} />
             </Layout.GridItem>
             <Layout.GridItem>
               <MStack>
@@ -29,7 +29,9 @@ let changeActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
             </Layout.GridItem>
           </Layout.Grid>
         }
-      : <MStackItem> <ChangesLifeCycleStats store extraQuery hideAuthors /> </MStackItem>}
+      : <MStackItem>
+          <ChangesLifeCycleStats store extraQuery hideAuthors isScoped={true} />
+        </MStackItem>}
   </MStack>
 
 let reviewActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>

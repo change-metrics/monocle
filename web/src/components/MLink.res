@@ -12,12 +12,15 @@ module MonoLink = {
   let make = (
     ~store: Store.t,
     ~filter: string,
-    ~path: string,
+    ~path: option<string>=?,
     ~name: string,
     ~action: option<Store.Store.action>=?,
   ) => {
     let (state, dispatch) = store
-    let base = "/" ++ state.index ++ "/" ++ path ++ "?"
+    let base = switch path {
+    | Some(path') => "/" ++ state.index ++ "/" ++ path' ++ "?"
+    | None => readWindowLocationPathname() ++ "?"
+    }
     let query = switch state.query {
     | "" => ""
     | query => "q=" ++ query ++ "&"

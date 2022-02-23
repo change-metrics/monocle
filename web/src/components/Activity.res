@@ -32,7 +32,12 @@ module ChangesLifeCycleStats = {
     ) => React.element = "CChangesLifeCycleHisto"
   }
   @react.component
-  let make = (~store: Store.t, ~extraQuery: option<string>=?, ~hideAuthors: option<bool>=?) => {
+  let make = (
+    ~store: Store.t,
+    ~extraQuery: option<string>=?,
+    ~hideAuthors: option<bool>=?,
+    ~isScoped: option<bool>=?,
+  ) => {
     let (state, _) = store
     let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_changes_lifecycle_stats)
     let request = {
@@ -72,9 +77,21 @@ module ChangesLifeCycleStats = {
                 [
                   item(
                     "Changes merged: ",
-                    <MonoLink
-                      store filter="state:merged" path="changes" name={data.merged->int32_str}
-                    />,
+                    {
+                      switch isScoped {
+                      | Some(true) =>
+                        <MonoLink
+                          store
+                          filter=""
+                          name={data.merged->int32_str}
+                          action={SetAuthorScopedTab(MergedChanges)}
+                        />
+                      | _ =>
+                        <MonoLink
+                          store filter="state:merged" path="changes" name={data.merged->int32_str}
+                        />
+                      }
+                    },
                   ),
                 ],
                 [
@@ -91,9 +108,24 @@ module ChangesLifeCycleStats = {
                 [
                   item(
                     "Changes abandoned: ",
-                    <MonoLink
-                      store filter="state:abandoned" path="changes" name={data.abandoned->int32_str}
-                    />,
+                    {
+                      switch isScoped {
+                      | Some(true) =>
+                        <MonoLink
+                          store
+                          filter=""
+                          name={data.abandoned->int32_str}
+                          action={SetAuthorScopedTab(AbandonedChanges)}
+                        />
+                      | _ =>
+                        <MonoLink
+                          store
+                          filter="state:abandoned"
+                          path="changes"
+                          name={data.abandoned->int32_str}
+                        />
+                      }
+                    },
                   ),
                 ],
               ])->React.array}
