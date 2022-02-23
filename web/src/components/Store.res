@@ -45,6 +45,7 @@ module Store = {
     | ReviewActivity
     | OpenChanges
     | MergedChanges
+    | AbandonedChanges
     | RepoSummary
     | GroupMembers
 

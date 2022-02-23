@@ -90,6 +90,7 @@ let tabTypeToName = (tab: Store.Store.authorScopedTab) =>
   | ReviewActivity => "review"
   | OpenChanges => "openChanges"
   | MergedChanges => "mergedChanges"
+  | AbandonedChanges => "abandonedChanges"
   | RepoSummary => "repoSummary"
   | GroupMembers => "groupMembers"
   }
@@ -100,6 +101,7 @@ let tabNameToType = (tab: string) =>
   | "review" => ReviewActivity
   | "openChanges" => OpenChanges
   | "mergedChanges" => MergedChanges
+  | "abandonedChanges" => AbandonedChanges
   | "repoSummary" => RepoSummary
   | "groupMembers" => GroupMembers
   | _ => ChangeActivity
@@ -150,6 +152,18 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
             <NChangeView
               store
               extraQuery={extraQuery ++ " state:merged"}
+              hideAuthors
+              disableHiddenChange={true}
+            />
+          </MStackItem>
+        </MStack>
+      </Tab>
+      <Tab eventKey="abandonedChanges" title={<TabTitleText> "Abandoned changes" </TabTitleText>}>
+        <MStack>
+          <MStackItem>
+            <NChangeView
+              store
+              extraQuery={extraQuery ++ " state:abandoned"}
               hideAuthors
               disableHiddenChange={true}
             />

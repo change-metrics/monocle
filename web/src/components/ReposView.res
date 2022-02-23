@@ -15,6 +15,7 @@ module ChangeLink = {
     | MergedChanges(string)
     | ScopedMergedChanges(string)
     | AbandonedChanges(string)
+    | ScopedAbandonedChanges(string)
 
   let getFilter = (name: string, cStateM: option<string>) =>
     "repo:" ++
@@ -25,15 +26,18 @@ module ChangeLink = {
     | None => ""
     }
 
-  let createFilter = (entity: t): (string, option<Store.Store.action>) =>
+  let createFilter = (entity: t): (string, option<Store.Store.action>) => {
+    let toScoped = (n, tabType) => ("repo:" ++ n, Store.Store.SetAuthorScopedTab(tabType)->Some)
     switch entity {
     | AllChanges(n) => (getFilter(n, None), None)
     | OpenChanges(n) => (getFilter(n, "open"->Some), None)
-    | ScopedOpenChanges(n) => ("repo:" ++ n, SetAuthorScopedTab(OpenChanges)->Some)
+    | ScopedOpenChanges(n) => n->toScoped(OpenChanges)
+    | ScopedMergedChanges(n) => n->toScoped(MergedChanges)
+    | ScopedAbandonedChanges(n) => n->toScoped(AbandonedChanges)
     | MergedChanges(n) => (getFilter(n, "merged"->Some), None)
-    | ScopedMergedChanges(n) => ("repo:" ++ n, SetAuthorScopedTab(MergedChanges)->Some)
     | AbandonedChanges(n) => (getFilter(n, "abandoned"->Some), None)
     }
+  }
 
   @react.component
   let make = (~store: Store.t, ~entity: t, ~path: string, ~name: string) => {
@@ -92,9 +96,11 @@ module RepoSummaryTable = {
             : ChangeLink.MergedChanges(repo.fullname)
         )->mkLink(repo.merged_changes->int32_str),
       repo =>
-        isScoped
-          ? repo.abandoned_changes->int32_str->str
-          : ChangeLink.AbandonedChanges(repo.fullname)->mkLink(repo.abandoned_changes->int32_str),
+        (
+          isScoped
+            ? ChangeLink.ScopedAbandonedChanges(repo.fullname)
+            : ChangeLink.AbandonedChanges(repo.fullname)
+        )->mkLink(repo.abandoned_changes->int32_str),
     }
 
     <SortableTable items=repos defaultSortedColumn=2 columnNames isOrdered formatters />
