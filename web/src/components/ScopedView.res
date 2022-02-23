@@ -86,6 +86,11 @@ let reviewActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
 
 let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, isGroup: bool) => {
   let (state, dispatch) = store
+  React.useEffect0(() => {
+    ""->SetFilter->dispatch
+    "1"->SetAuthorScopedTab->dispatch
+    None
+  })
   let hideAuthors = isGroup ? false : true
   let toSearchValue = (value: string) => "\"" ++ value ++ "\""
   let extraQuery = isGroup
@@ -99,7 +104,10 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
     <MonoTabs
       activeKey={state.author_scoped_tab}
       isBox=true
-      onSelect={(_, key) => key->SetAuthorScopedTab->dispatch}>
+      onSelect={(_, key) => {
+        ""->SetFilter->dispatch
+        key->SetAuthorScopedTab->dispatch
+      }}>
       <Tab eventKey="1" title={<TabTitleText> "Change activity" </TabTitleText>}>
         {changeActivityTab(store, isGroup, link, extraQuery, hideAuthors)}
       </Tab>
