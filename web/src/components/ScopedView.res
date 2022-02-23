@@ -173,7 +173,7 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
         </MStack>
       </Tab>
       <Tab eventKey="repoSummary" title={<TabTitleText> "Repositories" </TabTitleText>}>
-        <MStack> <MStackItem> <ReposView store extraQuery /> </MStackItem> </MStack>
+        <MStack> <MStackItem> <ReposView store extraQuery isScoped={true} /> </MStackItem> </MStack>
       </Tab>
       {isGroup
         ? <Tab eventKey="groupMembers" title={<TabTitleText> "Group members" </TabTitleText>}>

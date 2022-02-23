@@ -40,15 +40,19 @@ module ChangeLink = {
   }
 
   @react.component
-  let make = (~store: Store.t, ~entity: t, ~path: string, ~name: string) => {
+  let make = (~store: Store.t, ~entity: t, ~path: option<string>=?, ~name: string) => {
     let (filter, action) = createFilter(entity)
-    <MonoLink store filter path name ?action />
+    <MonoLink store filter ?path name ?action />
   }
 }
 
 module RepoSummaryTable = {
   @react.component
-  let make = (~store: Store.t, ~repos: list<SearchTypes.repo_summary>) => {
+  let make = (
+    ~store: Store.t,
+    ~repos: list<SearchTypes.repo_summary>,
+    ~isScoped: option<bool>=?,
+  ) => {
     let columnNames = [
       "Repository",
       "Open changes",
@@ -58,12 +62,10 @@ module RepoSummaryTable = {
       "Abandoned changes",
     ]
 
-    let getPath = (): (string, bool) =>
-      switch readWindowLocationPathname()->Js.String2.split("/") {
-      | ["", _, "group", name] => ("group" ++ "/" ++ name, true)
-      | ["", _, "author", name] => ("author" ++ "/" ++ name, true)
-      | _ => ("changes", false)
-      }
+    let scoped = switch isScoped {
+    | Some(true) => true
+    | _ => false
+    }
 
     let isOrdered = (first: SearchTypes.repo_summary, second: SearchTypes.repo_summary, index) =>
       switch index {
@@ -76,14 +78,16 @@ module RepoSummaryTable = {
       | _ => false
       }
 
-    let (path, isScoped) = getPath()
     let mkLink = (entity: ChangeLink.t, label: string) =>
-      <ChangeLink store entity path name={label} />
+      scoped
+        ? <ChangeLink store entity name={label} />
+        : <ChangeLink store entity path="changes" name={label} />
+
     let formatters: list<SearchTypes.repo_summary => React.element> = list{
       repo => repo.fullname->str,
       repo =>
         (
-          isScoped
+          scoped
             ? ChangeLink.ScopedOpenChanges(repo.fullname)
             : ChangeLink.OpenChanges(repo.fullname)
         )->mkLink(repo.open_changes->int32_str),
@@ -91,13 +95,13 @@ module RepoSummaryTable = {
       repo => repo.updated_changes->int32_str->str,
       repo =>
         (
-          isScoped
+          scoped
             ? ChangeLink.ScopedMergedChanges(repo.fullname)
             : ChangeLink.MergedChanges(repo.fullname)
         )->mkLink(repo.merged_changes->int32_str),
       repo =>
         (
-          isScoped
+          scoped
             ? ChangeLink.ScopedAbandonedChanges(repo.fullname)
             : ChangeLink.AbandonedChanges(repo.fullname)
         )->mkLink(repo.abandoned_changes->int32_str),
@@ -108,7 +112,7 @@ module RepoSummaryTable = {
 }
 
 @react.component
-let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
+let make = (~store: Store.t, ~extraQuery: option<string>=?, ~isScoped: option<bool>=?) => {
   let (state, _) = store
   let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_repos_summary)
   let request = {
@@ -128,7 +132,7 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
     | _ => None
     }
   let childrenBuilder = (repos: list<Web.SearchTypes.repo_summary>) =>
-    <RepoSummaryTable store repos />
+    <RepoSummaryTable store repos ?isScoped />
 
   <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }
