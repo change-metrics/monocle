@@ -57,7 +57,7 @@ module RowItem = {
         {<a
           onClick={e => {
             e->ReactEvent.Mouse.preventDefault
-            "1"->SetAuthorScopedTab->dispatch
+            ChangeActivity->SetAuthorScopedTab->dispatch
             link->RescriptReactRouter.push
           }}>
           {user.name->str}

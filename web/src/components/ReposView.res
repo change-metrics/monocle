@@ -29,9 +29,9 @@ module ChangeLink = {
     switch entity {
     | AllChanges(n) => (getFilter(n, None), None)
     | OpenChanges(n) => (getFilter(n, "open"->Some), None)
-    | ScopedOpenChanges(n) => ("repo:" ++ n, SetAuthorScopedTab("3")->Some)
+    | ScopedOpenChanges(n) => ("repo:" ++ n, SetAuthorScopedTab(OpenChanges)->Some)
     | MergedChanges(n) => (getFilter(n, "merged"->Some), None)
-    | ScopedMergedChanges(n) => ("repo:" ++ n, SetAuthorScopedTab("4")->Some)
+    | ScopedMergedChanges(n) => ("repo:" ++ n, SetAuthorScopedTab(MergedChanges)->Some)
     | AbandonedChanges(n) => (getFilter(n, "abandoned"->Some), None)
     }
 

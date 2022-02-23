@@ -40,6 +40,14 @@ module Store = {
   type projectsR = RemoteData.t<ConfigTypes.get_projects_response>
   type aboutR = RemoteData.t<ConfigTypes.get_about_response>
 
+  type authorScopedTab =
+    | ChangeActivity
+    | ReviewActivity
+    | OpenChanges
+    | MergedChanges
+    | RepoSummary
+    | GroupMembers
+
   type t = {
     index: string,
     query: string,
@@ -47,7 +55,7 @@ module Store = {
     limit: int,
     username: option<string>,
     order: option<SearchTypes.order>,
-    author_scoped_tab: string,
+    author_scoped_tab: authorScopedTab,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
@@ -63,7 +71,7 @@ module Store = {
     | SetFilter(string)
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
-    | SetAuthorScopedTab(string)
+    | SetAuthorScopedTab(authorScopedTab)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
@@ -83,7 +91,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
-    author_scoped_tab: "1",
+    author_scoped_tab: ChangeActivity,
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,

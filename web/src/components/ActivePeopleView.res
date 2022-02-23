@@ -43,7 +43,7 @@ module TopTermsTable = {
             onClick={e => {
               let link = "/" ++ state.index ++ "/author/" ++ item.term->Js.Global.encodeURIComponent
               e->ReactEvent.Mouse.preventDefault
-              "1"->SetAuthorScopedTab->dispatch
+              ChangeActivity->SetAuthorScopedTab->dispatch
               link->RescriptReactRouter.push
             }}>
             {item.term->str}

@@ -84,11 +84,32 @@ let reviewActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
     </MStackItem>
   </MStack>
 
+let tabTypeToName = (tab: Store.Store.authorScopedTab) =>
+  switch tab {
+  | ChangeActivity => "activity"
+  | ReviewActivity => "review"
+  | OpenChanges => "openChanges"
+  | MergedChanges => "mergedChanges"
+  | RepoSummary => "repoSummary"
+  | GroupMembers => "groupMembers"
+  }
+
+let tabNameToType = (tab: string) =>
+  switch tab {
+  | "activity" => Store.Store.ChangeActivity
+  | "review" => ReviewActivity
+  | "openChanges" => OpenChanges
+  | "mergedChanges" => MergedChanges
+  | "repoSummary" => RepoSummary
+  | "groupMembers" => GroupMembers
+  | _ => ChangeActivity
+  }
+
 let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, isGroup: bool) => {
   let (state, dispatch) = store
   React.useEffect0(() => {
     ""->SetFilter->dispatch
-    "1"->SetAuthorScopedTab->dispatch
+    ChangeActivity->SetAuthorScopedTab->dispatch
     None
   })
   let hideAuthors = isGroup ? false : true
@@ -102,19 +123,19 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
     tooltip_content={"This view is scoped to the " ++ entityName ++ " " ++ entityTypeAsText}
     icon={<Patternfly.Icons.User />}>
     <MonoTabs
-      activeKey={state.author_scoped_tab}
+      activeKey={state.author_scoped_tab->tabTypeToName}
       isBox=true
       onSelect={(_, key) => {
         ""->SetFilter->dispatch
-        key->SetAuthorScopedTab->dispatch
+        key->tabNameToType->SetAuthorScopedTab->dispatch
       }}>
-      <Tab eventKey="1" title={<TabTitleText> "Change activity" </TabTitleText>}>
+      <Tab eventKey="activity" title={<TabTitleText> "Change activity" </TabTitleText>}>
         {changeActivityTab(store, isGroup, link, extraQuery, hideAuthors)}
       </Tab>
-      <Tab eventKey="2" title={<TabTitleText> "Review activity" </TabTitleText>}>
+      <Tab eventKey="review" title={<TabTitleText> "Review activity" </TabTitleText>}>
         {reviewActivityTab(store, isGroup, link, extraQuery, hideAuthors)}
       </Tab>
-      <Tab eventKey="3" title={<TabTitleText> "Open changes" </TabTitleText>}>
+      <Tab eventKey="openChanges" title={<TabTitleText> "Open changes" </TabTitleText>}>
         <MStack>
           <MStackItem>
             <NChangeView
@@ -123,7 +144,7 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
           </MStackItem>
         </MStack>
       </Tab>
-      <Tab eventKey="4" title={<TabTitleText> "Merged changes" </TabTitleText>}>
+      <Tab eventKey="mergedChanges" title={<TabTitleText> "Merged changes" </TabTitleText>}>
         <MStack>
           <MStackItem>
             <NChangeView
@@ -135,11 +156,11 @@ let buildView = (store: Store.t, entityTypeAsText: string, entityName: string, i
           </MStackItem>
         </MStack>
       </Tab>
-      <Tab eventKey="5" title={<TabTitleText> "Repositories" </TabTitleText>}>
+      <Tab eventKey="repoSummary" title={<TabTitleText> "Repositories" </TabTitleText>}>
         <MStack> <MStackItem> <ReposView store extraQuery /> </MStackItem> </MStack>
       </Tab>
       {isGroup
-        ? <Tab eventKey="6" title={<TabTitleText> "Group members" </TabTitleText>}>
+        ? <Tab eventKey="groupMembers" title={<TabTitleText> "Group members" </TabTitleText>}>
             <MStack> <MStackItem> <GroupView store group=entityName /> </MStackItem> </MStack>
           </Tab>
         : React.null}
