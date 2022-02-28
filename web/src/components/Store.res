@@ -40,6 +40,15 @@ module Store = {
   type projectsR = RemoteData.t<ConfigTypes.get_projects_response>
   type aboutR = RemoteData.t<ConfigTypes.get_about_response>
 
+  type authorScopedTab =
+    | ChangeActivity
+    | ReviewActivity
+    | OpenChanges
+    | MergedChanges
+    | AbandonedChanges
+    | RepoSummary
+    | GroupMembers
+
   type t = {
     index: string,
     query: string,
@@ -47,6 +56,7 @@ module Store = {
     limit: int,
     username: option<string>,
     order: option<SearchTypes.order>,
+    author_scoped_tab: authorScopedTab,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
     user_groups: userGroupsR,
@@ -62,6 +72,7 @@ module Store = {
     | SetFilter(string)
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
+    | SetAuthorScopedTab(authorScopedTab)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchUserGroups(userGroupsR)
@@ -81,6 +92,7 @@ module Store = {
     filter: UrlData.getFilter(),
     limit: UrlData.getLimit(),
     order: UrlData.getOrder(),
+    author_scoped_tab: ChangeActivity,
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,
@@ -115,6 +127,7 @@ module Store = {
         Prelude.setLocationSearch("o", order->Prelude.orderToQS)->ignore
         {...state, order: order}
       }
+    | SetAuthorScopedTab(name) => {...state, author_scoped_tab: name}
     | SetLimit(limit) => {
         Prelude.setLocationSearch("l", limit->string_of_int)->ignore
         {...state, limit: limit}

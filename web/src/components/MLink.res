@@ -9,9 +9,18 @@ open Prelude
 // Monocle nav
 module MonoLink = {
   @react.component
-  let make = (~store: Store.t, ~filter: string, ~path: string, ~name: string) => {
+  let make = (
+    ~store: Store.t,
+    ~filter: string,
+    ~path: option<string>=?,
+    ~name: string,
+    ~action: option<Store.Store.action>=?,
+  ) => {
     let (state, dispatch) = store
-    let base = "/" ++ state.index ++ "/" ++ path ++ "?"
+    let base = switch path {
+    | Some(path') => "/" ++ state.index ++ "/" ++ path' ++ "?"
+    | None => readWindowLocationPathname() ++ "?"
+    }
     let query = switch state.query {
     | "" => ""
     | query => "q=" ++ query ++ "&"
@@ -21,6 +30,10 @@ module MonoLink = {
     let onClick = e => {
       e->ReactEvent.Mouse.preventDefault
       filter->Store.Store.SetFilter->dispatch
+      switch action {
+      | Some(action') => action'->dispatch
+      | None => ()
+      }
       href->RescriptReactRouter.push
     }
     <a onClick style={ReactDOM.Style.make(~whiteSpace="nowrap", ())} href> {name->str} </a>

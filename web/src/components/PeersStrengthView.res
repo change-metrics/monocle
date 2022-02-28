@@ -42,18 +42,18 @@ module ConnectionDiagram = {
 module PeersStrengthTable = {
   @react.component
   let make = (~items: list<SearchTypes.author_peer>) => {
-    let columnNames = ["Change author", "Peer reviewer", "Strength"]
+    let columnNames = ["Peer reviewer", "Change author", "Strength"]
 
     let isOrdered = (first: SearchTypes.author_peer, second: SearchTypes.author_peer, index) =>
       switch index {
-      | 0 => first.author < second.author
-      | 1 => first.peer < second.peer
+      | 0 => first.peer < second.peer
+      | 1 => first.author < second.author
       | 2 => first.strength < second.strength
       | _ => false
       }
     let formatters: list<SearchTypes.author_peer => React.element> = list{
-      item => item.author->str,
       item => item.peer->str,
+      item => item.author->str,
       item => item.strength->int32_str->str,
     }
 
@@ -62,16 +62,21 @@ module PeersStrengthTable = {
 }
 
 @react.component
-let make = (~store: Store.t) => {
+let make = (~store: Store.t, ~stacked: bool, ~extraQuery: option<string>=?) => {
   let (state, _) = store
   let (limit, setLimit) = React.useState(() => 25)
   let limit_values = list{10, 25, 50, 100, 500}
   let tooltip_content = "This shows the strength between change authors and peer reviewers"
+  let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_top_authors_peers)
   let request = {
-    ...Store.mkSearchRequest(state, SearchTypes.Query_top_authors_peers),
+    ...baseRequest,
+    query: switch extraQuery {
+    | Some(ex) => addQuery(baseRequest.query, ex)
+    | None => baseRequest.query
+    },
     limit: limit->Int32.of_int,
   }
-  let trigger = state.query ++ limit->string_of_int
+  let trigger = state.query ++ limit->string_of_int ++ extraQuery->Belt.Option.getWithDefault("")
   let limitSelector = <LimitSelector limit setLimit default=25 values=limit_values />
   let title = "Peers Strength"
   let icon = <Patternfly.Icons.Integration />
@@ -81,12 +86,20 @@ let make = (~store: Store.t) => {
     | _ => None
     }
   let childrenBuilder = (data: Web.SearchTypes.authors_peers) =>
-    <MGrid>
-      <MGridItemXl5> <PeersStrengthTable items={data.author_peer} /> </MGridItemXl5>
-      <MGridItemXl7>
-        <ConnectionDiagram data={data.author_peer->ConnectionDiagram.adapt} />
-      </MGridItemXl7>
-    </MGrid>
+    stacked
+      ? <MStack>
+          <MStackItem>
+            <ConnectionDiagram data={data.author_peer->ConnectionDiagram.adapt} />
+          </MStackItem>
+          <MStackItem> <PeersStrengthTable items={data.author_peer} /> </MStackItem>
+        </MStack>
+      : <MGrid>
+          <MGridItemXl5> <PeersStrengthTable items={data.author_peer} /> </MGridItemXl5>
+          <MGridItemXl7>
+            <ConnectionDiagram data={data.author_peer->ConnectionDiagram.adapt} />
+          </MGridItemXl7>
+        </MGrid>
+
   <QueryRenderCard request trigger title tooltip_content icon limitSelector match childrenBuilder />
 }
 

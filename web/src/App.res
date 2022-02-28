@@ -141,11 +141,30 @@ module Login = {
       <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
         {switch state.username {
         | Some(username) =>
-          <Tooltip content={"Click to logout"}>
-            <Button variant=#Tertiary icon={<Patternfly.Icons.User />} onClick={onClickLogout}>
-              {username}
-            </Button>
-          </Tooltip>
+          <Patternfly.Layout.Flex>
+            <Patternfly.Layout.FlexItem>
+              <Button
+                variant=#Tertiary
+                icon={<Patternfly.Icons.User color="cyan" title={username} />}
+                onClick={_ => {
+                  let homeUrl =
+                    "/" ++
+                    state.index ++
+                    "/" ++
+                    "author" ++
+                    "/" ++
+                    username->Js.Global.encodeURIComponent
+                  homeUrl->RescriptReactRouter.push
+                }}>
+                {username}
+              </Button>
+            </Patternfly.Layout.FlexItem>
+            <Patternfly.Layout.FlexItem>
+              <div onClick={onClickLogout} style={ReactDOM.Style.make(~cursor="pointer", ())}>
+                <Patternfly.Icons.Arrow color="coral" title="Logout" />
+              </div>
+            </Patternfly.Layout.FlexItem>
+          </Patternfly.Layout.Flex>
         | None => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
         }}
       </div>
@@ -274,8 +293,10 @@ let make = () => {
             | list{"help", "search"} => <HelpSearch.View store />
             | list{_, "settings"} => <LocalSettings.View store />
             | list{_} => <Activity store />
+            | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
+            | list{_, "group", name} => <ScopedView.GroupScopedView store name />
             | list{_, "active_authors"} => <ActivePeopleView store />
-            | list{_, "peers_strength"} => <PeersStrengthView store />
+            | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
             | list{_, "new_authors"} => <NewContributorsView store />
             | list{_, "projects"} => <ProjectsView store />
             | list{_, "user_groups"} => <GroupsView store />

@@ -7,7 +7,7 @@
 open Prelude
 
 module TopTermsTable = {
-  type t = NoLink | AuthorLink | AuthorWithFilter(string)
+  type t = NoLink | AuthorLink | ScopedAuthorLink | AuthorWithFilter(string)
   @react.component
   let make = (
     ~store,
@@ -15,6 +15,7 @@ module TopTermsTable = {
     ~columnNames: array<string>,
     ~link: t,
   ) => {
+    let (state, dispatch) = store
     let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
       switch index {
       | 0 => first.term < second.term
@@ -37,6 +38,16 @@ module TopTermsTable = {
         | NoLink => item.term->str
         | AuthorLink => item.term->mkAuthorLink(None)
         | AuthorWithFilter(filter) => item.term->mkAuthorLink(filter->Some)
+        | ScopedAuthorLink =>
+          <a
+            onClick={e => {
+              let link = "/" ++ state.index ++ "/author/" ++ item.term->Js.Global.encodeURIComponent
+              e->ReactEvent.Mouse.preventDefault
+              ChangeActivity->SetAuthorScopedTab->dispatch
+              link->RescriptReactRouter.push
+            }}>
+            {item.term->str}
+          </a>
         },
       item => item.count->int32_str->str,
     }
@@ -53,13 +64,19 @@ module MostActiveAuthor = {
     ~title: string,
     ~tooltip_content: string,
     ~link: TopTermsTable.t,
+    ~extraQuery: option<string>=?,
   ) => {
     let (state, _) = store
     let (limit, setLimit) = React.useState(() => 10)
     let limit_values = list{10, 25, 50, 100, 500}
     let columnNames = ["Name", "Count"]
+    let baseRequest = Store.mkSearchRequest(state, qtype)
     let request = {
-      ...Store.mkSearchRequest(state, qtype),
+      ...baseRequest,
+      query: switch extraQuery {
+      | None => baseRequest.query
+      | Some(ex) => addQuery(baseRequest.query, ex)
+      },
       limit: limit->Int32.of_int,
     }
     let trigger = state.query ++ limit->string_of_int
@@ -73,15 +90,7 @@ module MostActiveAuthor = {
     let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
       <TopTermsTable store items=data.termcount columnNames link />
     <QueryRenderCard
-      request
-      trigger
-      title
-      tooltip_content
-      icon
-      limitSelector
-      match
-      childrenBuilder
-      isCentered=false
+      request trigger title tooltip_content icon limitSelector match childrenBuilder
     />
   }
 }

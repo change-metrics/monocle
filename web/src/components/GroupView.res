@@ -48,10 +48,21 @@ module RowItem = {
       </thead>
   }
   @react.component
-  let make = (~user: UserGroupTypes.user_stat) => {
+  let make = (~store: Store.t, ~user: UserGroupTypes.user_stat) => {
+    let (state, dispatch) = store
     let stat = user.stat->Belt.Option.getExn
+    let link = "/" ++ state.index ++ "/author/" ++ user.name->Js.Global.encodeURIComponent
     <tr role="row">
-      <td role="cell"> {user.name->str} </td>
+      <td role="cell">
+        {<a
+          onClick={e => {
+            e->ReactEvent.Mouse.preventDefault
+            ChangeActivity->SetAuthorScopedTab->dispatch
+            link->RescriptReactRouter.push
+          }}>
+          {user.name->str}
+        </a>}
+      </td>
       <td role="cell">
         {stat.change_review_ratio >= 0.0
           ? <Canvas.Dom
@@ -89,12 +100,12 @@ module RowItem = {
 
 module GroupTable = {
   @react.component
-  let make = (~group: UserGroupTypes.get_response) => {
+  let make = (~store: Store.t, ~group: UserGroupTypes.get_response) => {
     <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
       <RowItem.Head />
       <tbody role="rowgroup">
         {group.users
-        ->Belt.List.mapWithIndex((idx, user) => <RowItem key={string_of_int(idx)} user />)
+        ->Belt.List.mapWithIndex((idx, user) => <RowItem key={string_of_int(idx)} store user />)
         ->Belt.List.toArray
         ->React.array}
       </tbody>
@@ -116,14 +127,12 @@ let make = (~group: string, ~store: Store.t) => {
     "This shows for each member " ++
     "the ratio between changes created " ++ "and changes reviewed as well as daily activity charts"
   let icon = <Patternfly.Icons.UsersAlt />
-  <MCenteredContent>
-    <MonoCard title tooltip_content icon>
-      <NetworkRender
-        get={() => WebApi.UserGroup.get(request)}
-        trigger={state.query}
-        render={group => <GroupTable group />}
-      />
-    </MonoCard>
-  </MCenteredContent>
+  <MonoCard title tooltip_content icon>
+    <NetworkRender
+      get={() => WebApi.UserGroup.get(request)}
+      trigger={state.query}
+      render={group => <GroupTable store group />}
+    />
+  </MonoCard>
 }
 let default = make

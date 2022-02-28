@@ -140,37 +140,46 @@ module ChangeList = {
     ~store: Store.t,
     ~changes: HiddenChanges.changeArray,
     ~dispatchChange: HiddenChanges.dispatch,
+    ~disableHiddenChange: option<bool>=?,
   ) => {
-    let (toggle, isChangeVisible) = HiddenChanges.useToggle()
+    let (toggle, isChangeVisible) = switch disableHiddenChange {
+    | Some(true) => (React.null, _ => true)
+    | _ => HiddenChanges.useToggle()
+    }
     let (changesArray, paginate) = usePagination(changes)
-    <>
-      {toggle}
-      {paginate}
-      <br />
-      <Patternfly.DataList isCompact={true}>
-        {changesArray
-        ->Belt.Array.map(((status, change)) =>
-          isChangeVisible(status)
-            ? <Change.DataItem store key={change.change_id} change status dispatchChange />
-            : React.null
-        )
-        ->React.array}
-      </Patternfly.DataList>
-    </>
+    <MStack>
+      <MStackItem> {toggle} </MStackItem>
+      <MStackItem> {paginate} </MStackItem>
+      <MStackItem>
+        <Patternfly.DataList isCompact={true}>
+          {changesArray
+          ->Belt.Array.map(((status, change)) =>
+            isChangeVisible(status)
+              ? <Change.DataItem store key={change.change_id} change status dispatchChange />
+              : React.null
+          )
+          ->React.array}
+        </Patternfly.DataList>
+      </MStackItem>
+    </MStack>
   }
 }
 
 module ChangesTopPies = {
   @react.component
-  let make = (~store) => {
+  let make = (~store, ~extraQuery: option<string>=?, ~hideAuthors: option<bool>=?) => {
     let (state, dispatch) = store
     let qtype = SearchTypes.Query_changes_tops
+    let baseRequest = Store.mkSearchRequest(state, qtype)
+    let query = addQuery(baseRequest.query, state.filter)
     let request = {
-      ...Store.mkSearchRequest(state, qtype),
+      ...baseRequest,
+      query: switch extraQuery {
+      | Some(contextQ) => addQuery(query, contextQ)
+      | None => query
+      },
       limit: 10->Int32.of_int,
-      query: addQuery(state.query, state.filter),
     }
-    let query = request.query
     let getEntry = (e: SearchTypes.term_count): PieWithLegend.entry => {
       doc_count: e.count->Int32.to_int,
       key: e.term,
@@ -201,7 +210,7 @@ module ChangesTopPies = {
       let filter = Js.String.includes(newFilter, state.filter)
         ? state.filter
         : addQuery(state.filter, newFilter)
-      let base = "/" ++ state.index ++ "/" ++ "changes" ++ "?"
+      let base = readWindowLocationPathname() ++ "?"
       let query = switch state.query {
       | "" => ""
       | query => "q=" ++ query ++ "&"
@@ -212,38 +221,43 @@ module ChangesTopPies = {
     }
     <QueryRender
       request
-      trigger={query}
+      trigger={query ++ extraQuery->Belt.Option.getWithDefault("")}
       render={resp =>
         switch resp {
         | SearchTypes.Changes_tops(items) =>
           <MExpandablePanel
             title={"Show changes pie charts"} stateControler={(state.changes_pies_panel, tee)}>
-            <MGrid>
-              <MGridItemXl4>
-                <PieWithLegend
-                  data={items.authors->Belt.Option.getExn->adapt(_ => true)}
-                  title={"Changes per author"}
-                  handleClick={handlePieClick(state, dispatch, ~field="author")}
-                />
-              </MGridItemXl4>
-              <MGridItemXl4>
-                <PieWithLegend
-                  data={items.repos->Belt.Option.getExn->adapt(_ => true)}
-                  title={"Changes per repository"}
-                  handleClick={handlePieClick(state, dispatch, ~field="repo")}
-                />
-              </MGridItemXl4>
-              <MGridItemXl4>
-                <PieWithLegend
-                  data={items.approvals
-                  ->Belt.Option.getExn
-                  ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
-                  title={"Changes per approval"}
-                  handleClick={handlePieClick(state, dispatch, ~field="approval")}
-                  namedPalette={approvals_palette}
-                />
-              </MGridItemXl4>
-            </MGrid>
+            <Layout.Bullseye>
+              <Layout.Flex>
+                {maybeHide(
+                  hideAuthors,
+                  <Layout.FlexItem>
+                    <PieWithLegend
+                      data={items.authors->Belt.Option.getExn->adapt(_ => true)}
+                      title={"Changes per author"}
+                      handleClick={handlePieClick(state, dispatch, ~field="author")}
+                    />
+                  </Layout.FlexItem>,
+                )}
+                <Layout.FlexItem>
+                  <PieWithLegend
+                    data={items.repos->Belt.Option.getExn->adapt(_ => true)}
+                    title={"Changes per repository"}
+                    handleClick={handlePieClick(state, dispatch, ~field="repo")}
+                  />
+                </Layout.FlexItem>
+                <Layout.FlexItem>
+                  <PieWithLegend
+                    data={items.approvals
+                    ->Belt.Option.getExn
+                    ->adapt(e => ignoredApproval->Belt.Array.some(e' => e' != e.key))}
+                    title={"Changes per approval"}
+                    handleClick={handlePieClick(state, dispatch, ~field="approval")}
+                    namedPalette={approvals_palette}
+                  />
+                </Layout.FlexItem>
+              </Layout.Flex>
+            </Layout.Bullseye>
           </MExpandablePanel>
         | _ => <Alert title={"Invalid response"} />
         }}
@@ -253,45 +267,58 @@ module ChangesTopPies = {
 
 module View = {
   @react.component
-  let make = (~store: Store.t, ~changesAll) => {
+  let make = (~store: Store.t, ~changesAll, ~extraQuery, ~hideAuthors, ~disableHiddenChange) => {
     let (state, _) = store
     let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     switch changes->Belt.Array.length {
-    | 0 => <p> {"No changes matched"->str} </p>
+    | 0 =>
+      <MStack>
+        <MStackItem> <Search.Filter store /> </MStackItem>
+        <MStackItem> <p> {"No changes matched"->str} </p> </MStackItem>
+      </MStack>
     | _ =>
       <MStack>
-        <MStackItem> <MCenteredContent> <ChangesTopPies store /> </MCenteredContent> </MStackItem>
-        <MStackItem> <MCenteredContent> <Search.Filter store /> </MCenteredContent> </MStackItem>
-        <MStackItem>
-          <MCenteredContent> <ChangeList store changes dispatchChange /> </MCenteredContent>
-        </MStackItem>
+        <MStackItem> <ChangesTopPies store ?extraQuery ?hideAuthors /> </MStackItem>
+        <MStackItem> <Search.Filter store /> </MStackItem>
+        <MStackItem> <ChangeList store changes dispatchChange ?disableHiddenChange /> </MStackItem>
       </MStack>
     }
   }
 }
 
 @react.component
-let make = (~store: Store.t) => {
+let make = (
+  ~store: Store.t,
+  ~extraQuery: option<string>=?,
+  ~hideAuthors: option<bool>=?,
+  ~disableHiddenChange: option<bool>=?,
+) => {
   let (state, _) = store
-  let query = addQuery(state.query, state.filter)
+  let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_change)
+  let query = addQuery(baseRequest.query, state.filter)
   let request = {
-    ...Store.mkSearchRequest(state, SearchTypes.Query_change),
-    query: query,
+    ...baseRequest,
+    query: switch extraQuery {
+    | Some(contextQ) => addQuery(query, contextQ)
+    | None => query
+    },
     limit: 256->Int32.of_int,
   }
-
-  <div>
-    <QueryRender
-      request
-      trigger={query ++ state.order->orderToQS}
-      render={resp =>
-        switch resp {
-        | SearchTypes.Changes(items) => <View store changesAll={items.changes->Belt.List.toArray} />
-
-        | _ => <Alert title={"Invalid response"} />
-        }}
+  let trigger = query ++ state.order->orderToQS ++ extraQuery->Belt.Option.getWithDefault("")
+  let title = "Changes"
+  let tooltip_content = "This shows the list of changes"
+  let icon = <Patternfly.Icons.Integration />
+  let match = resp =>
+    switch resp {
+    | SearchTypes.Changes(items) => items.changes->Some
+    | _ => None
+    }
+  let childrenBuilder = changes =>
+    <View
+      store changesAll={changes->Belt.List.toArray} extraQuery hideAuthors disableHiddenChange
     />
-  </div>
+
+  <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }
 
 let default = make

@@ -16,6 +16,10 @@ type axiosGetCallback<'data> = unit => axios<'data>
 external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
+@val @scope(("window", "location"))
+external windowLocationPathname: string = "pathname"
+let readWindowLocationPathname = () => windowLocationPathname
+
 // Bindings for moment
 %%raw(`
 import moment from 'moment'
@@ -195,6 +199,12 @@ let str = React.string
 // Render component if the predicate is true
 let maybeRender = (pred: bool, component: React.element): React.element =>
   pred ? component : React.null
+// Hide if predicate is Some(true) (useful in case of optional parameter)
+let maybeHide = (pred: option<bool>, component: React.element): React.element =>
+  switch pred {
+  | Some(true) => React.null
+  | _ => component
+  }
 // Render component if the list is not empty
 let maybeRenderArray = (xs: array<'a>, component) =>
   xs->Belt.Array.length > 0 ? component : React.null
@@ -638,19 +648,26 @@ module QueryRenderCard = {
     ~match: Web.SearchTypes.query_response => option<'a>,
     // The child builder
     ~childrenBuilder: 'a => React.element,
-    // Center the child content
-    ~isCentered: bool=true,
   ) => {
     let render = resp => {
       switch match(resp) {
-      | Some(data) => {
-          let content =
-            <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
-          isCentered ? <MCenteredContent> {content} </MCenteredContent> : {content}
-        }
+      | Some(data) =>
+        <MonoCard title tooltip_content icon ?limitSelector> {childrenBuilder(data)} </MonoCard>
       | None => React.null
       }
     }
     <QueryRender request trigger render />
   }
+}
+
+// Minimal Patternfly Tabs component binding
+// TODO: Remove after new release of re-patternfly
+module MonoTabs = {
+  @react.component @module("@patternfly/react-core")
+  external make: (
+    ~children: 'children,
+    ~activeKey: string=?,
+    ~isBox: bool=?,
+    ~onSelect: (unit, string) => unit=?,
+  ) => React.element = "Tabs"
 }

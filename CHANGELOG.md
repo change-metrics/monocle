@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [crawler] A new env var "TLS_CIPHERS" to override the default OpenSSL cyphers list.
+- [webui] A scoped view for Author and Group that features tailored metrics and changes lists.
+
 
 ### Changed
 ### Removed
