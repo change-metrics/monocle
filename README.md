@@ -177,7 +177,7 @@ A GitHub provider settings
     # Optional settings
     github_repositories:
       - pipeline
-    github_url: https://github.com
+    github_url: https://github.com/api/graphql
     github_token: GITHUB_TOKEN
 ```
 
@@ -186,7 +186,7 @@ the crawler will crawl the whole organization repositories. If specified then it
 the listed repositories. To crawl repositories from a personnal GitHub account, you need to set
 `github_organization` to you account name and list repositories under the `github_repositories` key.
 
-`github_url` might be specified in case of an alternate url. Default is "github.com".
+`github_url` might be specified in case of an alternate url. Default is "https://github.com/api/graphql".
 
 `github_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITHUB_TOKEN"
@@ -435,6 +435,11 @@ docker-compose run --rm --no-deps api curl \
 -XPUT http://localhost:9200/monocle.changes.1.<index-name>/_settings \
 -H "Content-Type: application/json" -d '{"index": {"max_regex_length": 50000}}'
 ```
+
+Crawler default ciphers can be restrictive and not able to work with some load balancer of remote
+server advertising an unsupported cipher. If you experience `wrong signature type` errors in the
+crawler container, you should consider changing ciphers using the `TLS_CIPHER` environment variable
+in your docker-compose configuration file. You can find [additional information](https://fedoraproject.org/wiki/Changes/StrongCryptoSettings2) on Fedora changelog.
 
 ## Components
 
