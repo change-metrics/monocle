@@ -43,10 +43,18 @@ service Config {
     };
   }
 
-  // Rteurn the list of user groups
+  // Return the list of user groups
   rpc GetGroups(monocle_config.GetGroupsRequest) returns (monocle_config.GetGroupsResponse) {
       option (google.api.http) = {
       post: "/api/2/get_groups"
+      body: "*"
+    };
+  }
+
+  // Return the members of a user group
+  rpc GetGroupMembers(monocle_config.GetGroupMembersRequest) returns (monocle_config.GetGroupMembersResponse) {
+      option (google.api.http) = {
+      post: "/api/2/get_group_members"
       body: "*"
     };
   }

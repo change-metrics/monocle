@@ -1,12 +1,15 @@
 module Monocle.Test.Spec (main) where
 
+import qualified Data.Vector as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
+import Monocle.Api.Config (Ident (Ident), defaultTenant, idents)
 import qualified Monocle.Api.Config as Config
-import Monocle.Api.Test (withTestApi)
+import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
-import Monocle.Client.Api (crawlerCommitInfo)
+import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
+import Monocle.Config (GetGroupMembersRequest (GetGroupMembersRequest), GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers), GetGroupsRequest (GetGroupsRequest), GetGroupsResponse (GetGroupsResponse, getGroupsResponseItems), GroupDefinition (GroupDefinition))
 import Monocle.Crawler
 import Monocle.Env
 import Monocle.Prelude
@@ -30,7 +33,11 @@ main = withOpenSSL $ do
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
-        pure [monocleIntegrationTests, monocleMacroscopeTests, monocleApiTests]
+        pure
+          [ monocleBackendQueriesTests,
+            monocleMacroscopeTests,
+            monocleApiTests
+          ]
 
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
@@ -99,8 +106,37 @@ monocleApiTests :: TestTree
 monocleApiTests =
   testGroup
     "Monocle.Api.Server"
-    [testCase "Test crawler MDs refreshed after config reload" testReloadedConfig]
+    [ testCase "Test getGroups and getGroupMembers" testGetGroups,
+      testCase "Test crawler MDs refreshed after config reload" testReloadedConfig
+    ]
   where
+    testGetGroups :: Assertion
+    testGetGroups = do
+      let appEnv =
+            mkAppEnv $
+              (defaultTenant "ws")
+                { idents =
+                    Just
+                      [ Ident [] (Just ["grp1", "grp2"]) "John",
+                        Ident [] (Just ["grp2", "grp3"]) "Jane"
+                      ]
+                }
+      withTestApi appEnv $ \_logger client ->
+        do
+          GetGroupsResponse {..} <- configGetGroups client $ GetGroupsRequest "ws"
+          assertEqual
+            "Validate getGroups"
+            ( V.fromList
+                [ GroupDefinition "grp1" 1,
+                  GroupDefinition "grp2" 2,
+                  GroupDefinition "grp3" 1
+                ]
+            )
+            getGroupsResponseItems
+          GetGroupMembersResponse {..} <- configGetGroupMembers client $ GetGroupMembersRequest "ws" "grp2"
+          assertEqual "Validate getGroupMembers" (V.fromList ["Jane", "John"]) getGroupMembersResponseMembers
+      assertEqual "Validate getGroups and getGroupMembers" True True
+
     testReloadedConfig :: Assertion
     testReloadedConfig = do
       reloadedRef <- newTVarIO False
@@ -180,8 +216,8 @@ monocleApiTests =
         wsName2 = "ws2"
         crawlerName = "testy"
 
-monocleIntegrationTests :: TestTree
-monocleIntegrationTests =
+monocleBackendQueriesTests :: TestTree
+monocleBackendQueriesTests =
   testGroup
     "Monocle.Backend.Queries"
     [ testCase

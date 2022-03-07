@@ -28,6 +28,9 @@ configGetProjects = monocleReq "api/2/get_projects"
 configGetGroups :: (MonadThrow m, MonadIO m) => MonocleClient -> GetGroupsRequest -> m GetGroupsResponse
 configGetGroups = monocleReq "api/2/get_groups"
 
+configGetGroupMembers :: (MonadThrow m, MonadIO m) => MonocleClient -> GetGroupMembersRequest -> m GetGroupMembersResponse
+configGetGroupMembers = monocleReq "api/2/get_group_members"
+
 configGetAbout :: (MonadThrow m, MonadIO m) => MonocleClient -> GetAboutRequest -> m GetAboutResponse
 configGetAbout = monocleReq "api/2/about"
 

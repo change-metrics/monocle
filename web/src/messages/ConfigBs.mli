@@ -42,6 +42,12 @@ val encode_get_groups_request : ConfigTypes.get_groups_request -> Js.Json.t Js.D
 val encode_get_groups_response : ConfigTypes.get_groups_response -> Js.Json.t Js.Dict.t
 (** [encode_get_groups_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_get_group_members_request : ConfigTypes.get_group_members_request -> Js.Json.t Js.Dict.t
+(** [encode_get_group_members_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_group_members_response : ConfigTypes.get_group_members_response -> Js.Json.t Js.Dict.t
+(** [encode_get_group_members_response v dict] encodes [v] int the given JSON [dict] *)
+
 
 (** {2 BS Decoding} *)
 
@@ -83,3 +89,9 @@ val decode_get_groups_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_groups_re
 
 val decode_get_groups_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_groups_response
 (** [decode_get_groups_response decoder] decodes a [get_groups_response] value from [decoder] *)
+
+val decode_get_group_members_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_group_members_request
+(** [decode_get_group_members_request decoder] decodes a [get_group_members_request] value from [decoder] *)
+
+val decode_get_group_members_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_group_members_response
+(** [decode_get_group_members_response decoder] decodes a [get_group_members_response] value from [decoder] *)

@@ -118,6 +118,24 @@ let default_get_groups_response_mutable () : get_groups_response_mutable = {
   items = [];
 }
 
+type get_group_members_request_mutable = {
+  mutable index : string;
+  mutable group : string;
+}
+
+let default_get_group_members_request_mutable () : get_group_members_request_mutable = {
+  index = "";
+  group = "";
+}
+
+type get_group_members_response_mutable = {
+  mutable members : string list;
+}
+
+let default_get_group_members_response_mutable () : get_group_members_response_mutable = {
+  members = [];
+}
+
 
 let rec decode_project_definition json =
   let v = default_project_definition_mutable () in
@@ -379,6 +397,48 @@ let rec decode_get_groups_response json =
     ConfigTypes.items = v.items;
   } : ConfigTypes.get_groups_response)
 
+let rec decode_get_group_members_request json =
+  let v = default_get_group_members_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "index" -> 
+      let json = Js.Dict.unsafeGet json "index" in
+      v.index <- Pbrt_bs.string json "get_group_members_request" "index"
+    | "group" -> 
+      let json = Js.Dict.unsafeGet json "group" in
+      v.group <- Pbrt_bs.string json "get_group_members_request" "group"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.index = v.index;
+    ConfigTypes.group = v.group;
+  } : ConfigTypes.get_group_members_request)
+
+let rec decode_get_group_members_response json =
+  let v = default_get_group_members_response_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "members" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "members" in 
+        Pbrt_bs.array_ a "get_group_members_response" "members"
+      in
+      v.members <- Array.map (fun json -> 
+        Pbrt_bs.string json "get_group_members_response" "members"
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.members = v.members;
+  } : ConfigTypes.get_group_members_response)
+
 let rec encode_project_definition (v:ConfigTypes.project_definition) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "name" (Js.Json.string v.ConfigTypes.name);
@@ -496,4 +556,16 @@ let rec encode_get_groups_response (v:ConfigTypes.get_groups_response) =
     in
     Js.Dict.set json "items" items';
   end;
+  json
+
+let rec encode_get_group_members_request (v:ConfigTypes.get_group_members_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "index" (Js.Json.string v.ConfigTypes.index);
+  Js.Dict.set json "group" (Js.Json.string v.ConfigTypes.group);
+  json
+
+let rec encode_get_group_members_response (v:ConfigTypes.get_group_members_response) = 
+  let json = Js.Dict.empty () in
+  let a = v.ConfigTypes.members |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "members" (Js.Json.array a);
   json

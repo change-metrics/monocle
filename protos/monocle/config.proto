@@ -62,3 +62,12 @@ message GetGroupsRequest {
 message GetGroupsResponse {
   repeated GroupDefinition items = 1;
 }
+
+message GetGroupMembersRequest {
+  string index = 1;
+  string group = 2;
+}
+
+message GetGroupMembersResponse {
+  repeated string members = 1;
+}

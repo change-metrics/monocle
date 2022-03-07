@@ -7,8 +7,8 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetAbout, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchCheck, searchFields, searchQuery, searchSuggestions)
-import Monocle.Config (GetAboutRequest, GetAboutResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
+import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
 import Monocle.Login (LoginValidationRequest, LoginValidationResponse)
@@ -22,6 +22,7 @@ type MonocleAPI =
     :<|> "get_workspaces" :> ReqBody '[JSON] Monocle.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Config.GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] Monocle.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetProjectsResponse
     :<|> "get_groups" :> ReqBody '[JSON] Monocle.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetGroupsResponse
+    :<|> "get_group_members" :> ReqBody '[JSON] Monocle.Config.GetGroupMembersRequest :> Post '[PBJSON, JSON] Monocle.Config.GetGroupMembersResponse
     :<|> "about" :> ReqBody '[JSON] Monocle.Config.GetAboutRequest :> Post '[PBJSON, JSON] Monocle.Config.GetAboutResponse
     :<|> "suggestions" :> ReqBody '[JSON] Monocle.Search.SuggestionsRequest :> Post '[PBJSON, JSON] Monocle.Search.SuggestionsResponse
     :<|> "search" :> "fields" :> ReqBody '[JSON] Monocle.Search.FieldsRequest :> Post '[PBJSON, JSON] Monocle.Search.FieldsResponse
@@ -38,6 +39,7 @@ server =
     :<|> configGetWorkspaces
     :<|> configGetProjects
     :<|> configGetGroups
+    :<|> configGetGroupMembers
     :<|> configGetAbout
     :<|> searchSuggestions
     :<|> searchFields

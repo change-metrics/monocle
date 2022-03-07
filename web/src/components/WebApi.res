@@ -58,6 +58,17 @@ module Config = {
       {data: resp.data->ConfigBs.decode_get_groups_response}->Js.Promise.resolve
     )
   @module("axios")
+  external getGroupMembersRaw: (string, 'a) => axios<'b> = "post"
+
+  let getGroupMembers = (request: ConfigTypes.get_group_members_request): axios<
+    ConfigTypes.get_group_members_response,
+  > =>
+    request->ConfigBs.encode_get_group_members_request
+    |> getGroupMembersRaw(serverUrl ++ "/api/2/get_group_members")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->ConfigBs.decode_get_group_members_response}->Js.Promise.resolve
+    )
+  @module("axios")
   external getAboutRaw: (string, 'a) => axios<'b> = "post"
 
   let getAbout = (request: ConfigTypes.get_about_request): axios<ConfigTypes.get_about_response> =>

@@ -2,6 +2,7 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
+import Data.List (lookup)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
@@ -130,6 +131,17 @@ configGetGroups request = do
       let groupDefinitionName = toLazy name
           groupDefinitionMembers = fromInteger . toInteger $ length users
        in ConfigPB.GroupDefinition {..}
+
+-- | /api/2/get_group_members endpoint
+configGetGroupMembers :: ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
+configGetGroupMembers request = do
+  GetTenants tenants <- getConfig
+  let ConfigPB.GetGroupMembersRequest {..} = request
+  members <- case Config.lookupTenant tenants (toStrict getGroupMembersRequestIndex) of
+    Just index -> pure $ fromMaybe [] $ lookup (toStrict getGroupMembersRequestGroup) (Config.getTenantGroups index)
+    Nothing -> pure []
+
+  pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
 configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse

@@ -60,6 +60,15 @@ type get_groups_response = {
   items : group_definition list;
 }
 
+type get_group_members_request = {
+  index : string;
+  group : string;
+}
+
+type get_group_members_response = {
+  members : string list;
+}
+
 let rec default_project_definition 
   ?name:((name:string) = "")
   ?repository_regex:((repository_regex:string) = "")
@@ -150,4 +159,18 @@ let rec default_get_groups_response
   ?items:((items:group_definition list) = [])
   () : get_groups_response  = {
   items;
+}
+
+let rec default_get_group_members_request 
+  ?index:((index:string) = "")
+  ?group:((group:string) = "")
+  () : get_group_members_request  = {
+  index;
+  group;
+}
+
+let rec default_get_group_members_response 
+  ?members:((members:string list) = [])
+  () : get_group_members_response  = {
+  members;
 }

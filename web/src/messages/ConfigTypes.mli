@@ -63,6 +63,15 @@ type get_groups_response = {
   items : group_definition list;
 }
 
+type get_group_members_request = {
+  index : string;
+  group : string;
+}
+
+type get_group_members_response = {
+  members : string list;
+}
+
 
 (** {2 Default values} *)
 
@@ -150,3 +159,16 @@ val default_get_groups_response :
   unit ->
   get_groups_response
 (** [default_get_groups_response ()] is the default value for type [get_groups_response] *)
+
+val default_get_group_members_request : 
+  ?index:string ->
+  ?group:string ->
+  unit ->
+  get_group_members_request
+(** [default_get_group_members_request ()] is the default value for type [get_group_members_request] *)
+
+val default_get_group_members_response : 
+  ?members:string list ->
+  unit ->
+  get_group_members_response
+(** [default_get_group_members_response ()] is the default value for type [get_group_members_response] *)

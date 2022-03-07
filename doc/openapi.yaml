@@ -75,9 +75,26 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_crawler_CommitInfoResponse'
+    /api/2/get_group_members:
+        post:
+            summary: Return the members of a user group
+            operationId: Config_GetGroupMembers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_config_GetGroupMembersRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_config_GetGroupMembersResponse'
     /api/2/get_groups:
         post:
-            summary: Rteurn the list of user groups
+            summary: Return the list of user groups
             operationId: Config_GetGroups
             requestBody:
                 content:
@@ -439,6 +456,18 @@ components:
             properties:
                 about:
                     $ref: '#/components/schemas/monocle_config_About'
+        monocle_config_GetGroupMembersRequest:
+            properties:
+                index:
+                    type: string
+                group:
+                    type: string
+        monocle_config_GetGroupMembersResponse:
+            properties:
+                members:
+                    type: array
+                    items:
+                        type: string
         monocle_config_GetGroupsRequest:
             properties:
                 index:
