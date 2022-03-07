@@ -25,6 +25,9 @@ configGetWorkspaces = monocleReq "api/2/get_workspaces"
 configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/2/get_projects"
 
+configGetGroups :: (MonadThrow m, MonadIO m) => MonocleClient -> GetGroupsRequest -> m GetGroupsResponse
+configGetGroups = monocleReq "api/2/get_groups"
+
 configGetAbout :: (MonadThrow m, MonadIO m) => MonocleClient -> GetAboutRequest -> m GetAboutResponse
 configGetAbout = monocleReq "api/2/about"
 
@@ -42,12 +45,6 @@ searchQuery = monocleReq "api/2/search/query"
 
 metricList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
 metricList = monocleReq "api/2/metric/list"
-
-userGroupList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
-userGroupList = monocleReq "api/2/user_group/list"
-
-userGroupGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
-userGroupGet = monocleReq "api/2/user_group/get"
 
 crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
 crawlerAddDoc = monocleReq "api/2/crawler/add"

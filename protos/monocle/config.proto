@@ -49,3 +49,16 @@ message GetAboutRequest {
 message GetAboutResponse {
   About about = 1;
 }
+
+message GroupDefinition {
+  string name = 1;
+  uint32 members = 2;
+}
+
+message GetGroupsRequest {
+  string index = 1;
+}
+
+message GetGroupsResponse {
+  repeated GroupDefinition items = 1;
+}

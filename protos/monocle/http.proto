@@ -13,7 +13,6 @@ import "google/api/annotations.proto";
 import "monocle/config.proto";
 import "monocle/search.proto";
 import "monocle/crawler.proto";
-import "monocle/user_group.proto";
 import "monocle/login.proto";
 import "monocle/metric.proto";
 
@@ -40,6 +39,14 @@ service Config {
   rpc GetProjects(monocle_config.GetProjectsRequest) returns (monocle_config.GetProjectsResponse) {
     option (google.api.http) = {
       post: "/api/2/get_projects"
+      body: "*"
+    };
+  }
+
+  // Rteurn the list of user groups
+  rpc GetGroups(monocle_config.GetGroupsRequest) returns (monocle_config.GetGroupsResponse) {
+      option (google.api.http) = {
+      post: "/api/2/get_groups"
       body: "*"
     };
   }
@@ -89,23 +96,6 @@ service Metric {
       returns (monocle_metric.ListResponse) {
     option (google.api.http) = {
       post: "/api/2/metric/list"
-      body: "*"
-    };
-  }
-}
-
-service UserGroup {
-  rpc List(monocle_user_group.ListRequest)
-      returns (monocle_user_group.ListResponse) {
-    option (google.api.http) = {
-      post: "/api/2/user_group/list"
-      body: "*"
-    };
-  }
-  rpc Get(monocle_user_group.GetRequest)
-      returns (monocle_user_group.GetResponse) {
-    option (google.api.http) = {
-      post: "/api/2/user_group/get"
       body: "*"
     };
   }

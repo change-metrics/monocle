@@ -75,6 +75,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_crawler_CommitInfoResponse'
+    /api/2/get_groups:
+        post:
+            summary: Rteurn the list of user groups
+            operationId: Config_GetGroups
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_config_GetGroupsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_config_GetGroupsResponse'
     /api/2/get_projects:
         post:
             summary: Return the list of projects
@@ -206,38 +223,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_search_SuggestionsResponse'
-    /api/2/user_group/get:
-        post:
-            operationId: UserGroup_Get
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_user_group_GetRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_user_group_GetResponse'
-    /api/2/user_group/list:
-        post:
-            operationId: UserGroup_List
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_user_group_ListRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_user_group_ListResponse'
 components:
     schemas:
         monocle_change_Change:
@@ -454,6 +439,16 @@ components:
             properties:
                 about:
                     $ref: '#/components/schemas/monocle_config_About'
+        monocle_config_GetGroupsRequest:
+            properties:
+                index:
+                    type: string
+        monocle_config_GetGroupsResponse:
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_config_GroupDefinition'
         monocle_config_GetProjectsRequest:
             properties:
                 index:
@@ -474,6 +469,13 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_config_Workspace'
+        monocle_config_GroupDefinition:
+            properties:
+                name:
+                    type: string
+                members:
+                    type: integer
+                    format: uint32
         monocle_config_ProjectDefinition:
             properties:
                 name:
@@ -1067,66 +1069,3 @@ components:
                 total_hits:
                     type: integer
                     format: uint32
-        monocle_user_group_GetRequest:
-            properties:
-                index:
-                    type: string
-                name:
-                    type: string
-                query:
-                    type: string
-        monocle_user_group_GetResponse:
-            properties:
-                all:
-                    $ref: '#/components/schemas/monocle_user_group_GroupStat'
-                users:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_user_group_UserStat'
-        monocle_user_group_GroupDefinition:
-            properties:
-                name:
-                    type: string
-                members:
-                    type: integer
-                    format: uint32
-        monocle_user_group_GroupStat:
-            properties:
-                change_review_ratio:
-                    type: number
-                    format: float
-                author_review_ratio:
-                    type: number
-                    format: float
-                commit_histo:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_user_group_ReviewHisto'
-                review_histo:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_user_group_ReviewHisto'
-        monocle_user_group_ListRequest:
-            properties:
-                index:
-                    type: string
-        monocle_user_group_ListResponse:
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_user_group_GroupDefinition'
-        monocle_user_group_ReviewHisto:
-            properties:
-                date:
-                    type: integer
-                    format: uint64
-                count:
-                    type: integer
-                    format: uint32
-        monocle_user_group_UserStat:
-            properties:
-                name:
-                    type: string
-                stat:
-                    $ref: '#/components/schemas/monocle_user_group_GroupStat'

@@ -7,29 +7,27 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetAbout, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchCheck, searchFields, searchQuery, searchSuggestions, userGroupGet, userGroupList)
-import Monocle.Config (GetAboutRequest, GetAboutResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
+import Monocle.Api.Server (configGetAbout, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Config (GetAboutRequest, GetAboutResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
 import Monocle.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Metric (ListRequest, ListResponse)
 import Monocle.Search (CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
-import Monocle.UserGroup (GetRequest, GetResponse, ListRequest, ListResponse)
 import Servant
 
 type MonocleAPI =
   "login" :> "username" :> "validate" :> ReqBody '[JSON] Monocle.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Login.LoginValidationResponse
     :<|> "get_workspaces" :> ReqBody '[JSON] Monocle.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Config.GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] Monocle.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetProjectsResponse
+    :<|> "get_groups" :> ReqBody '[JSON] Monocle.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetGroupsResponse
     :<|> "about" :> ReqBody '[JSON] Monocle.Config.GetAboutRequest :> Post '[PBJSON, JSON] Monocle.Config.GetAboutResponse
     :<|> "suggestions" :> ReqBody '[JSON] Monocle.Search.SuggestionsRequest :> Post '[PBJSON, JSON] Monocle.Search.SuggestionsResponse
     :<|> "search" :> "fields" :> ReqBody '[JSON] Monocle.Search.FieldsRequest :> Post '[PBJSON, JSON] Monocle.Search.FieldsResponse
     :<|> "search" :> "check" :> ReqBody '[JSON] Monocle.Search.CheckRequest :> Post '[PBJSON, JSON] Monocle.Search.CheckResponse
     :<|> "search" :> "query" :> ReqBody '[JSON] Monocle.Search.QueryRequest :> Post '[PBJSON, JSON] Monocle.Search.QueryResponse
     :<|> "metric" :> "list" :> ReqBody '[JSON] Monocle.Metric.ListRequest :> Post '[PBJSON, JSON] Monocle.Metric.ListResponse
-    :<|> "user_group" :> "list" :> ReqBody '[JSON] Monocle.UserGroup.ListRequest :> Post '[PBJSON, JSON] Monocle.UserGroup.ListResponse
-    :<|> "user_group" :> "get" :> ReqBody '[JSON] Monocle.UserGroup.GetRequest :> Post '[PBJSON, JSON] Monocle.UserGroup.GetResponse
     :<|> "crawler" :> "add" :> ReqBody '[JSON] Monocle.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> ReqBody '[JSON] Monocle.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] Monocle.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Crawler.CommitInfoResponse
@@ -39,14 +37,13 @@ server =
   loginLoginValidation
     :<|> configGetWorkspaces
     :<|> configGetProjects
+    :<|> configGetGroups
     :<|> configGetAbout
     :<|> searchSuggestions
     :<|> searchFields
     :<|> searchCheck
     :<|> searchQuery
     :<|> metricList
-    :<|> userGroupList
-    :<|> userGroupGet
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo

@@ -50,6 +50,19 @@ type get_about_response = {
   about : about option;
 }
 
+type group_definition = {
+  name : string;
+  members : int32;
+}
+
+type get_groups_request = {
+  index : string;
+}
+
+type get_groups_response = {
+  items : group_definition list;
+}
+
 
 (** {2 Default values} *)
 
@@ -118,3 +131,22 @@ val default_get_about_response :
   unit ->
   get_about_response
 (** [default_get_about_response ()] is the default value for type [get_about_response] *)
+
+val default_group_definition : 
+  ?name:string ->
+  ?members:int32 ->
+  unit ->
+  group_definition
+(** [default_group_definition ()] is the default value for type [group_definition] *)
+
+val default_get_groups_request : 
+  ?index:string ->
+  unit ->
+  get_groups_request
+(** [default_get_groups_request ()] is the default value for type [get_groups_request] *)
+
+val default_get_groups_response : 
+  ?items:group_definition list ->
+  unit ->
+  get_groups_response
+(** [default_get_groups_response ()] is the default value for type [get_groups_response] *)

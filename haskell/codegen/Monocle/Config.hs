@@ -1067,3 +1067,285 @@ instance HsJSONPB.ToSchema GetAboutResponse where
                   }
             }
         )
+
+data GroupDefinition = GroupDefinition
+  { groupDefinitionName ::
+      Hs.Text,
+    groupDefinitionMembers :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GroupDefinition where
+  nameOf _ = (Hs.fromString "GroupDefinition")
+
+instance HsProtobuf.HasDefault GroupDefinition
+
+instance HsProtobuf.Message GroupDefinition where
+  encodeMessage
+    _
+    GroupDefinition
+      { groupDefinitionName = groupDefinitionName,
+        groupDefinitionMembers = groupDefinitionMembers
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                groupDefinitionName
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                groupDefinitionMembers
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GroupDefinition)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "name")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "members")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GroupDefinition where
+  toJSONPB (GroupDefinition f1 f2) =
+    (HsJSONPB.object ["name" .= f1, "members" .= f2])
+  toEncodingPB (GroupDefinition f1 f2) =
+    (HsJSONPB.pairs ["name" .= f1, "members" .= f2])
+
+instance HsJSONPB.FromJSONPB GroupDefinition where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GroupDefinition"
+        ( \obj ->
+            (Hs.pure GroupDefinition) <*> obj .: "name" <*> obj .: "members"
+        )
+    )
+
+instance HsJSONPB.ToJSON GroupDefinition where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GroupDefinition where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GroupDefinition where
+  declareNamedSchema _ =
+    do
+      let declare_name = HsJSONPB.declareSchemaRef
+      groupDefinitionName <- declare_name Proxy.Proxy
+      let declare_members = HsJSONPB.declareSchemaRef
+      groupDefinitionMembers <- declare_members Proxy.Proxy
+      let _ =
+            Hs.pure GroupDefinition <*> HsJSONPB.asProxy declare_name
+              <*> HsJSONPB.asProxy declare_members
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GroupDefinition",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("name", groupDefinitionName),
+                          ("members", groupDefinitionMembers)
+                        ]
+                  }
+            }
+        )
+
+newtype GetGroupsRequest = GetGroupsRequest
+  { getGroupsRequestIndex ::
+      Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetGroupsRequest where
+  nameOf _ = (Hs.fromString "GetGroupsRequest")
+
+instance HsProtobuf.HasDefault GetGroupsRequest
+
+instance HsProtobuf.Message GetGroupsRequest where
+  encodeMessage
+    _
+    GetGroupsRequest {getGroupsRequestIndex = getGroupsRequestIndex} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                getGroupsRequestIndex
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetGroupsRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "index")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetGroupsRequest where
+  toJSONPB (GetGroupsRequest f1) = (HsJSONPB.object ["index" .= f1])
+  toEncodingPB (GetGroupsRequest f1) =
+    (HsJSONPB.pairs ["index" .= f1])
+
+instance HsJSONPB.FromJSONPB GetGroupsRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetGroupsRequest"
+        (\obj -> (Hs.pure GetGroupsRequest) <*> obj .: "index")
+    )
+
+instance HsJSONPB.ToJSON GetGroupsRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetGroupsRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetGroupsRequest where
+  declareNamedSchema _ =
+    do
+      let declare_index = HsJSONPB.declareSchemaRef
+      getGroupsRequestIndex <- declare_index Proxy.Proxy
+      let _ = Hs.pure GetGroupsRequest <*> HsJSONPB.asProxy declare_index
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetGroupsRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("index", getGroupsRequestIndex)]
+                  }
+            }
+        )
+
+newtype GetGroupsResponse = GetGroupsResponse
+  { getGroupsResponseItems ::
+      Hs.Vector Monocle.Config.GroupDefinition
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetGroupsResponse where
+  nameOf _ = (Hs.fromString "GetGroupsResponse")
+
+instance HsProtobuf.HasDefault GetGroupsResponse
+
+instance HsProtobuf.Message GetGroupsResponse where
+  encodeMessage
+    _
+    GetGroupsResponse {getGroupsResponseItems = getGroupsResponseItems} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Config.GroupDefinition)
+                    @(HsProtobuf.NestedVec Monocle.Config.GroupDefinition)
+                    getGroupsResponseItems
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure GetGroupsResponse)
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Config.GroupDefinition))
+              @(_ (Hs.Vector Monocle.Config.GroupDefinition))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "GroupDefinition"))
+          )
+          (HsProtobuf.Single "items")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB GetGroupsResponse where
+  toJSONPB (GetGroupsResponse f1) = (HsJSONPB.object ["items" .= f1])
+  toEncodingPB (GetGroupsResponse f1) =
+    (HsJSONPB.pairs ["items" .= f1])
+
+instance HsJSONPB.FromJSONPB GetGroupsResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "GetGroupsResponse"
+        (\obj -> (Hs.pure GetGroupsResponse) <*> obj .: "items")
+    )
+
+instance HsJSONPB.ToJSON GetGroupsResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON GetGroupsResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema GetGroupsResponse where
+  declareNamedSchema _ =
+    do
+      let declare_items = HsJSONPB.declareSchemaRef
+      getGroupsResponseItems <- declare_items Proxy.Proxy
+      let _ =
+            Hs.pure GetGroupsResponse
+              <*> HsJSONPB.asProxy declare_items
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "GetGroupsResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("items", getGroupsResponseItems)]
+                  }
+            }
+        )
