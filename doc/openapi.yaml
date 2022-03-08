@@ -857,6 +857,12 @@ components:
                 count:
                     type: integer
                     format: uint32
+        monocle_search_HistoStat:
+            properties:
+                histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Histo'
         monocle_search_LifecycleStats:
             properties:
                 created_histo:
@@ -965,6 +971,11 @@ components:
                     $ref: '#/components/schemas/monocle_search_ChangeAndEvents'
                 changes_tops:
                     $ref: '#/components/schemas/monocle_search_ChangesTops'
+                ratio:
+                    type: number
+                    format: float
+                histo:
+                    $ref: '#/components/schemas/monocle_search_HistoStat'
         monocle_search_RepoSummary:
             properties:
                 fullname:

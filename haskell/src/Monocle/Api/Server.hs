@@ -496,6 +496,18 @@ searchQuery request = do
           SearchPB.QueryResponse . Just
             . SearchPB.QueryResponseResultChangesTops
             <$> Q.getChangesTops queryRequestLimit
+        SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
+          ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultRatio ratio
+        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
+          histo <- Q.getHisto Q.COMMITS_HISTO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
+          histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse

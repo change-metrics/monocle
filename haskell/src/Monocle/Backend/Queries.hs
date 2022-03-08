@@ -214,23 +214,42 @@ changeEvents changeID limit = dropQuery $
 
     pure (change, result)
 
--- | The change created / review ratio
-changeReviewRatio :: QueryMonad m => m Float
-changeReviewRatio = withFlavor qf $ do
-  commitCount <- withFilter [documentType EChangeCreatedEvent] countDocs
+data RatioQuery = CHANGES_VS_REVIEWS_RATIO | COMMITS_VS_REVIEWS_RATIO
+
+getRatio :: QueryMonad m => RatioQuery -> m Float
+getRatio = \case
+  CHANGES_VS_REVIEWS_RATIO -> changesReviewsRatio
+  COMMITS_VS_REVIEWS_RATIO -> commitsReviewsRatio
+
+-- | The base review ratio
+baseReviewsRatio :: QueryMonad m => [EDocType] -> m Float
+baseReviewsRatio events = withFlavor qf $ do
+  count <- withFilter [documentTypes $ fromList events] countDocs
   reviewCount <-
     withFilter
       [documentTypes $ fromList [EChangeReviewedEvent, EChangeCommentedEvent]]
       countDocs
-  let total, commitCountF, reviewCountF :: Float
-      total = reviewCountF + commitCountF
+  let total, countF, reviewCountF :: Float
+      total = reviewCountF + countF
       reviewCountF = fromIntegral reviewCount
-      commitCountF = fromIntegral commitCount
+      countF = fromIntegral count
   pure (if total > 0 then reviewCountF * 100 / total else -1)
   where
     -- Author makes query author match the change event author, not the receiver of the event.
     -- CreatedAt is necessary for change event.
     qf = QueryFlavor Author CreatedAt
+
+-- | The changes created / reviews ratio
+changesReviewsRatio :: QueryMonad m => m Float
+changesReviewsRatio = baseReviewsRatio [EChangeCreatedEvent]
+
+-- | The commits / reviews ratio
+commitsReviewsRatio :: QueryMonad m => m Float
+commitsReviewsRatio =
+  baseReviewsRatio
+    [ EChangeCommitForcePushedEvent,
+      EChangeCommitPushedEvent
+    ]
 
 -- | Add a change state filter to the query
 changeState :: EChangeState -> [BH.Query]
@@ -846,9 +865,31 @@ getChangesTops limit = do
             termsCountTotalHits = total
           }
 
--- | getReviewHisto
-getHisto :: QueryMonad m => RangeFlavor -> m (V.Vector HistoSimple)
-getHisto rf = do
+data HistoType = COMMITS_HISTO | REVIEWS_AND_COMMENTS_HISTO
+
+getHisto :: QueryMonad m => HistoType -> m (V.Vector SearchPB.Histo)
+getHisto = \case
+  COMMITS_HISTO ->
+    withFilter
+      [ documentTypes $
+          fromList
+            [ EChangeCommitForcePushedEvent,
+              EChangeCommitPushedEvent
+            ]
+      ]
+      $ getHistoPB CreatedAt
+  REVIEWS_AND_COMMENTS_HISTO ->
+    withFilter
+      [ documentTypes $
+          fromList
+            [ EChangeReviewedEvent,
+              EChangeCommentedEvent
+            ]
+      ]
+      $ getHistoPB CreatedAt
+
+baseGetHisto :: QueryMonad m => RangeFlavor -> m (V.Vector HistoSimple)
+baseGetHisto rf = do
   query <- getQuery
   queryBH <- getQueryBH
 
@@ -883,7 +924,7 @@ getHisto rf = do
   hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
 getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector SearchPB.Histo)
-getHistoPB rf = fmap toPBHisto <$> getHisto rf
+getHistoPB rf = fmap toPBHisto <$> baseGetHisto rf
   where
     toPBHisto :: HistoSimple -> SearchPB.Histo
     toPBHisto HistoBucket {..} =

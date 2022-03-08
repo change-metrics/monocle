@@ -90,6 +90,9 @@ type query_request_query_type =
   | Query_active_authors_stats 
   | Query_change_and_events 
   | Query_changes_tops 
+  | Query_ratio_commits_vs_reviews 
+  | Query_histo_commits 
+  | Query_histo_reviews_and_comments 
 
 type query_request = {
   index : string;
@@ -153,6 +156,10 @@ type changes = {
   changes : change list;
 }
 
+type ratio = {
+  ratio : float;
+}
+
 type change_event = {
   id : string;
   type_ : string;
@@ -177,6 +184,10 @@ type review_count = {
 type histo = {
   date : string;
   count : int32;
+}
+
+type histo_stat = {
+  histo : histo list;
 }
 
 type review_stats = {
@@ -266,6 +277,8 @@ type query_response =
   | Activity_stats of activity_stats
   | Change_events of change_and_events
   | Changes_tops of changes_tops
+  | Ratio of float
+  | Histo of histo_stat
 
 let rec default_task_data 
   ?updated_at:((updated_at:TimestampTypes.timestamp option) = None)
@@ -483,6 +496,12 @@ let rec default_changes
   changes;
 }
 
+let rec default_ratio 
+  ?ratio:((ratio:float) = 0.)
+  () : ratio  = {
+  ratio;
+}
+
 let rec default_change_event 
   ?id:((id:string) = "")
   ?type_:((type_:string) = "")
@@ -525,6 +544,12 @@ let rec default_histo
   () : histo  = {
   date;
   count;
+}
+
+let rec default_histo_stat 
+  ?histo:((histo:histo list) = [])
+  () : histo_stat  = {
+  histo;
 }
 
 let rec default_review_stats 

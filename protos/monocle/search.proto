@@ -107,6 +107,13 @@ message QueryRequest {
     // Change page
     QUERY_CHANGE_AND_EVENTS = 30;
     QUERY_CHANGES_TOPS = 31;
+
+    // Ratio
+    QUERY_RATIO_COMMITS_VS_REVIEWS = 40;
+
+    // Histo
+    QUERY_HISTO_COMMITS = 50;
+    QUERY_HISTO_REVIEWS_AND_COMMENTS = 51;
   }
   QueryType query_type = 4;
 
@@ -179,6 +186,10 @@ message Changes {
   repeated Change changes = 1;
 }
 
+message Ratio {
+  float ratio = 1;
+}
+
 message ChangeEvent {
   string id = 1;
   string type = 2;
@@ -206,6 +217,10 @@ message ReviewCount {
 message Histo {
   string date = 1;
   uint32 count = 2;
+}
+
+message HistoStat {
+  repeated Histo histo = 1;
 }
 
 message ReviewStats {
@@ -239,6 +254,8 @@ message QueryResponse {
     ActivityStats activity_stats = 22;
     ChangeAndEvents change_events = 30;
     ChangesTops changes_tops = 31;
+    float ratio = 40;
+    HistoStat histo = 50;
   }
 }
 
