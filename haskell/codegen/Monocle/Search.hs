@@ -1967,6 +1967,9 @@ data QueryRequest_QueryType
   | QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS
   | QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
   | QueryRequest_QueryTypeQUERY_CHANGES_TOPS
+  | QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS
+  | QueryRequest_QueryTypeQUERY_HISTO_COMMITS
+  | QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryRequest_QueryType where
@@ -1976,7 +1979,7 @@ instance HsProtobuf.HasDefault QueryRequest_QueryType
 
 instance Hs.Bounded QueryRequest_QueryType where
   minBound = QueryRequest_QueryTypeQUERY_CHANGE
-  maxBound = QueryRequest_QueryTypeQUERY_CHANGES_TOPS
+  maxBound = QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS
 
 instance Hs.Ord QueryRequest_QueryType where
   compare x y =
@@ -2014,6 +2017,12 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
   toProtoEnumMay 31 =
     Hs.Just QueryRequest_QueryTypeQUERY_CHANGES_TOPS
+  toProtoEnumMay 40 =
+    Hs.Just QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS
+  toProtoEnumMay 50 =
+    Hs.Just QueryRequest_QueryTypeQUERY_HISTO_COMMITS
+  toProtoEnumMay 51 =
+    Hs.Just QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE) = 0
   fromProtoEnum (QueryRequest_QueryTypeQUERY_REPOS_SUMMARY) = 2
@@ -2040,6 +2049,11 @@ instance HsProtobuf.ProtoEnum QueryRequest_QueryType where
     22
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS) = 30
   fromProtoEnum (QueryRequest_QueryTypeQUERY_CHANGES_TOPS) = 31
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS) = 40
+  fromProtoEnum (QueryRequest_QueryTypeQUERY_HISTO_COMMITS) = 50
+  fromProtoEnum
+    (QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS) = 51
 
 instance HsJSONPB.ToJSONPB QueryRequest_QueryType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -2076,6 +2090,12 @@ instance HsJSONPB.FromJSONPB QueryRequest_QueryType where
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS
   parseJSONPB (HsJSONPB.String "QUERY_CHANGES_TOPS") =
     Hs.pure QueryRequest_QueryTypeQUERY_CHANGES_TOPS
+  parseJSONPB (HsJSONPB.String "QUERY_RATIO_COMMITS_VS_REVIEWS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS
+  parseJSONPB (HsJSONPB.String "QUERY_HISTO_COMMITS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_HISTO_COMMITS
+  parseJSONPB (HsJSONPB.String "QUERY_HISTO_REVIEWS_AND_COMMENTS") =
+    Hs.pure QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS
   parseJSONPB v = (HsJSONPB.typeMismatch "QueryRequest_QueryType" v)
 
 instance HsJSONPB.ToJSON QueryRequest_QueryType where
@@ -3464,6 +3484,80 @@ instance HsJSONPB.ToSchema Changes where
             }
         )
 
+newtype Ratio = Ratio {ratioRatio :: Hs.Float}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Ratio where
+  nameOf _ = (Hs.fromString "Ratio")
+
+instance HsProtobuf.HasDefault Ratio
+
+instance HsProtobuf.Message Ratio where
+  encodeMessage _ Ratio {ratioRatio = ratioRatio} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              ratioRatio
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure Ratio)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.Float)
+          (HsProtobuf.Single "ratio")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Ratio where
+  toJSONPB (Ratio f1) = (HsJSONPB.object ["ratio" .= f1])
+  toEncodingPB (Ratio f1) = (HsJSONPB.pairs ["ratio" .= f1])
+
+instance HsJSONPB.FromJSONPB Ratio where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Ratio"
+        (\obj -> (Hs.pure Ratio) <*> obj .: "ratio")
+    )
+
+instance HsJSONPB.ToJSON Ratio where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Ratio where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Ratio where
+  declareNamedSchema _ =
+    do
+      let declare_ratio = HsJSONPB.declareSchemaRef
+      ratioRatio <- declare_ratio Proxy.Proxy
+      let _ = Hs.pure Ratio <*> HsJSONPB.asProxy declare_ratio
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Ratio",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("ratio", ratioRatio)]
+                  }
+            }
+        )
+
 data ChangeEvent = ChangeEvent
   { changeEventId :: Hs.Text,
     changeEventType :: Hs.Text,
@@ -4086,6 +4180,92 @@ instance HsJSONPB.ToSchema Histo where
             }
         )
 
+newtype HistoStat = HistoStat
+  { histoStatHisto ::
+      Hs.Vector Monocle.Search.Histo
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named HistoStat where
+  nameOf _ = (Hs.fromString "HistoStat")
+
+instance HsProtobuf.HasDefault HistoStat
+
+instance HsProtobuf.Message HistoStat where
+  encodeMessage _ HistoStat {histoStatHisto = histoStatHisto} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              ( Hs.coerce @(Hs.Vector Monocle.Search.Histo)
+                  @(HsProtobuf.NestedVec Monocle.Search.Histo)
+                  histoStatHisto
+              )
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure HistoStat)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Histo))
+              @(_ (Hs.Vector Monocle.Search.Histo))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Histo"))
+          )
+          (HsProtobuf.Single "histo")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB HistoStat where
+  toJSONPB (HistoStat f1) = (HsJSONPB.object ["histo" .= f1])
+  toEncodingPB (HistoStat f1) = (HsJSONPB.pairs ["histo" .= f1])
+
+instance HsJSONPB.FromJSONPB HistoStat where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "HistoStat"
+        (\obj -> (Hs.pure HistoStat) <*> obj .: "histo")
+    )
+
+instance HsJSONPB.ToJSON HistoStat where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON HistoStat where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema HistoStat where
+  declareNamedSchema _ =
+    do
+      let declare_histo = HsJSONPB.declareSchemaRef
+      histoStatHisto <- declare_histo Proxy.Proxy
+      let _ = Hs.pure HistoStat <*> HsJSONPB.asProxy declare_histo
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "HistoStat",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("histo", histoStatHisto)]
+                  }
+            }
+        )
+
 data ReviewStats = ReviewStats
   { reviewStatsCommentCount ::
       Hs.Maybe Monocle.Search.ReviewCount,
@@ -4693,6 +4873,19 @@ instance HsProtobuf.Message QueryResponse where
                             (Hs.Just y)
                         )
                     )
+                  QueryResponseResultRatio y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 40)
+                        (HsProtobuf.ForceEmit y)
+                    )
+                  QueryResponseResultHisto y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 50)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Search.HistoStat)
+                            @(HsProtobuf.Nested Monocle.Search.HistoStat)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -4775,6 +4968,17 @@ instance HsProtobuf.Message QueryResponse where
                             @(_ (Hs.Maybe Monocle.Search.ChangesTops))
                             HsProtobuf.decodeMessageField
                         )
+                ),
+                ( (HsProtobuf.FieldNumber 40),
+                  (Hs.pure (Hs.Just Hs.. QueryResponseResultRatio))
+                    <*> HsProtobuf.decodeMessageField
+                ),
+                ( (HsProtobuf.FieldNumber 50),
+                  (Hs.pure (Hs.fmap QueryResponseResultHisto))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Search.HistoStat))
+                            @(_ (Hs.Maybe Monocle.Search.HistoStat))
+                            HsProtobuf.decodeMessageField
+                        )
                 )
               ]
           )
@@ -4783,11 +4987,11 @@ instance HsProtobuf.Message QueryResponse where
 instance HsJSONPB.ToJSONPB QueryResponse where
   toJSONPB
     ( QueryResponse
-        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31_or_f40_or_f50
       ) =
       ( HsJSONPB.object
           [ ( let encodeResult =
-                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31 of
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31_or_f40_or_f50 of
                         Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                         Hs.Just (QueryResponseResultChanges f2) ->
                           (HsJSONPB.pair "changes" f2)
@@ -4809,6 +5013,10 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                           (HsJSONPB.pair "change_events" f30)
                         Hs.Just (QueryResponseResultChangesTops f31) ->
                           (HsJSONPB.pair "changes_tops" f31)
+                        Hs.Just (QueryResponseResultRatio f40) ->
+                          (HsJSONPB.pair "ratio" f40)
+                        Hs.Just (QueryResponseResultHisto f50) ->
+                          (HsJSONPB.pair "histo" f50)
                         Hs.Nothing -> Hs.mempty
                     )
                in \options ->
@@ -4822,11 +5030,11 @@ instance HsJSONPB.ToJSONPB QueryResponse where
       )
   toEncodingPB
     ( QueryResponse
-        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31
+        f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31_or_f40_or_f50
       ) =
       ( HsJSONPB.pairs
           [ ( let encodeResult =
-                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31 of
+                    ( case f1_or_f2_or_f3_or_f4_or_f5_or_f6_or_f20_or_f21_or_f22_or_f30_or_f31_or_f40_or_f50 of
                         Hs.Just (QueryResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                         Hs.Just (QueryResponseResultChanges f2) ->
                           (HsJSONPB.pair "changes" f2)
@@ -4848,6 +5056,10 @@ instance HsJSONPB.ToJSONPB QueryResponse where
                           (HsJSONPB.pair "change_events" f30)
                         Hs.Just (QueryResponseResultChangesTops f31) ->
                           (HsJSONPB.pair "changes_tops" f31)
+                        Hs.Just (QueryResponseResultRatio f40) ->
+                          (HsJSONPB.pair "ratio" f40)
+                        Hs.Just (QueryResponseResultHisto f50) ->
+                          (HsJSONPB.pair "histo" f50)
                         Hs.Nothing -> Hs.mempty
                     )
                in \options ->
@@ -4888,6 +5100,10 @@ instance HsJSONPB.FromJSONPB QueryResponse where
                                 <$> (HsJSONPB.parseField parseObj "change_events"),
                               Hs.Just Hs.. QueryResponseResultChangesTops
                                 <$> (HsJSONPB.parseField parseObj "changes_tops"),
+                              Hs.Just Hs.. QueryResponseResultRatio
+                                <$> (HsJSONPB.parseField parseObj "ratio"),
+                              Hs.Just Hs.. QueryResponseResultHisto
+                                <$> (HsJSONPB.parseField parseObj "histo"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -4941,6 +5157,8 @@ data QueryResponseResult
   | QueryResponseResultActivityStats Monocle.Search.ActivityStats
   | QueryResponseResultChangeEvents Monocle.Search.ChangeAndEvents
   | QueryResponseResultChangesTops Monocle.Search.ChangesTops
+  | QueryResponseResultRatio Hs.Float
+  | QueryResponseResultHisto Monocle.Search.HistoStat
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -5014,6 +5232,16 @@ instance HsJSONPB.ToSchema QueryResponseResult where
       let _ =
             Hs.pure QueryResponseResultChangesTops
               <*> HsJSONPB.asProxy declare_changes_tops
+      let declare_ratio = HsJSONPB.declareSchemaRef
+      queryResponseResultRatio <- declare_ratio Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultRatio
+              <*> HsJSONPB.asProxy declare_ratio
+      let declare_histo = HsJSONPB.declareSchemaRef
+      queryResponseResultHisto <- declare_histo Proxy.Proxy
+      let _ =
+            Hs.pure QueryResponseResultHisto
+              <*> HsJSONPB.asProxy declare_histo
       Hs.return
         ( HsJSONPB.NamedSchema
             { HsJSONPB._namedSchemaName =
@@ -5055,7 +5283,9 @@ instance HsJSONPB.ToSchema QueryResponseResult where
                           ),
                           ( "changes_tops",
                             queryResponseResultChangesTops
-                          )
+                          ),
+                          ("ratio", queryResponseResultRatio),
+                          ("histo", queryResponseResultHisto)
                         ],
                     HsJSONPB._schemaMinProperties = Hs.Just 1,
                     HsJSONPB._schemaMaxProperties = Hs.Just 1

@@ -33,6 +33,21 @@ val encode_get_about_request : ConfigTypes.get_about_request -> Js.Json.t Js.Dic
 val encode_get_about_response : ConfigTypes.get_about_response -> Js.Json.t Js.Dict.t
 (** [encode_get_about_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_group_definition : ConfigTypes.group_definition -> Js.Json.t Js.Dict.t
+(** [encode_group_definition v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_groups_request : ConfigTypes.get_groups_request -> Js.Json.t Js.Dict.t
+(** [encode_get_groups_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_groups_response : ConfigTypes.get_groups_response -> Js.Json.t Js.Dict.t
+(** [encode_get_groups_response v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_group_members_request : ConfigTypes.get_group_members_request -> Js.Json.t Js.Dict.t
+(** [encode_get_group_members_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_group_members_response : ConfigTypes.get_group_members_response -> Js.Json.t Js.Dict.t
+(** [encode_get_group_members_response v dict] encodes [v] int the given JSON [dict] *)
+
 
 (** {2 BS Decoding} *)
 
@@ -65,3 +80,18 @@ val decode_get_about_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_about_requ
 
 val decode_get_about_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_about_response
 (** [decode_get_about_response decoder] decodes a [get_about_response] value from [decoder] *)
+
+val decode_group_definition : Js.Json.t Js.Dict.t -> ConfigTypes.group_definition
+(** [decode_group_definition decoder] decodes a [group_definition] value from [decoder] *)
+
+val decode_get_groups_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_groups_request
+(** [decode_get_groups_request decoder] decodes a [get_groups_request] value from [decoder] *)
+
+val decode_get_groups_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_groups_response
+(** [decode_get_groups_response decoder] decodes a [get_groups_response] value from [decoder] *)
+
+val decode_get_group_members_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_group_members_request
+(** [decode_get_group_members_request decoder] decodes a [get_group_members_request] value from [decoder] *)
+
+val decode_get_group_members_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_group_members_response
+(** [decode_get_group_members_response decoder] decodes a [get_group_members_response] value from [decoder] *)

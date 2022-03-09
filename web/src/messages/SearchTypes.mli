@@ -93,6 +93,9 @@ type query_request_query_type =
   | Query_active_authors_stats 
   | Query_change_and_events 
   | Query_changes_tops 
+  | Query_ratio_commits_vs_reviews 
+  | Query_histo_commits 
+  | Query_histo_reviews_and_comments 
 
 type query_request = {
   index : string;
@@ -156,6 +159,10 @@ type changes = {
   changes : change list;
 }
 
+type ratio = {
+  ratio : float;
+}
+
 type change_event = {
   id : string;
   type_ : string;
@@ -180,6 +187,10 @@ type review_count = {
 type histo = {
   date : string;
   count : int32;
+}
+
+type histo_stat = {
+  histo : histo list;
 }
 
 type review_stats = {
@@ -269,6 +280,8 @@ type query_response =
   | Activity_stats of activity_stats
   | Change_events of change_and_events
   | Changes_tops of changes_tops
+  | Ratio of float
+  | Histo of histo_stat
 
 
 (** {2 Default values} *)
@@ -433,6 +446,12 @@ val default_changes :
   changes
 (** [default_changes ()] is the default value for type [changes] *)
 
+val default_ratio : 
+  ?ratio:float ->
+  unit ->
+  ratio
+(** [default_ratio ()] is the default value for type [ratio] *)
+
 val default_change_event : 
   ?id:string ->
   ?type_:string ->
@@ -466,6 +485,12 @@ val default_histo :
   unit ->
   histo
 (** [default_histo ()] is the default value for type [histo] *)
+
+val default_histo_stat : 
+  ?histo:histo list ->
+  unit ->
+  histo_stat
+(** [default_histo_stat ()] is the default value for type [histo_stat] *)
 
 val default_review_stats : 
   ?comment_count:review_count option ->

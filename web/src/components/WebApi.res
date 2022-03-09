@@ -47,6 +47,28 @@ module Config = {
       {data: resp.data->ConfigBs.decode_get_projects_response}->Js.Promise.resolve
     )
   @module("axios")
+  external getGroupsRaw: (string, 'a) => axios<'b> = "post"
+
+  let getGroups = (request: ConfigTypes.get_groups_request): axios<
+    ConfigTypes.get_groups_response,
+  > =>
+    request->ConfigBs.encode_get_groups_request
+    |> getGroupsRaw(serverUrl ++ "/api/2/get_groups")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->ConfigBs.decode_get_groups_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external getGroupMembersRaw: (string, 'a) => axios<'b> = "post"
+
+  let getGroupMembers = (request: ConfigTypes.get_group_members_request): axios<
+    ConfigTypes.get_group_members_response,
+  > =>
+    request->ConfigBs.encode_get_group_members_request
+    |> getGroupMembersRaw(serverUrl ++ "/api/2/get_group_members")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->ConfigBs.decode_get_group_members_response}->Js.Promise.resolve
+    )
+  @module("axios")
   external getAboutRaw: (string, 'a) => axios<'b> = "post"
 
   let getAbout = (request: ConfigTypes.get_about_request): axios<ConfigTypes.get_about_response> =>
@@ -107,27 +129,6 @@ module Metric = {
     |> listRaw(serverUrl ++ "/api/2/metric/list")
     |> Js.Promise.then_(resp =>
       {data: resp.data->MetricBs.decode_list_response}->Js.Promise.resolve
-    )
-}
-
-module UserGroup = {
-  @module("axios")
-  external listRaw: (string, 'a) => axios<'b> = "post"
-
-  let list = (request: UserGroupTypes.list_request): axios<UserGroupTypes.list_response> =>
-    request->UserGroupBs.encode_list_request
-    |> listRaw(serverUrl ++ "/api/2/user_group/list")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->UserGroupBs.decode_list_response}->Js.Promise.resolve
-    )
-  @module("axios")
-  external getRaw: (string, 'a) => axios<'b> = "post"
-
-  let get = (request: UserGroupTypes.get_request): axios<UserGroupTypes.get_response> =>
-    request->UserGroupBs.encode_get_request
-    |> getRaw(serverUrl ++ "/api/2/user_group/get")
-    |> Js.Promise.then_(resp =>
-      {data: resp.data->UserGroupBs.decode_get_response}->Js.Promise.resolve
     )
 }
 

@@ -60,6 +60,9 @@ val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 val encode_changes : SearchTypes.changes -> Js.Json.t Js.Dict.t
 (** [encode_changes v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_ratio : SearchTypes.ratio -> Js.Json.t Js.Dict.t
+(** [encode_ratio v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_change_event : SearchTypes.change_event -> Js.Json.t Js.Dict.t
 (** [encode_change_event v dict] encodes [v] int the given JSON [dict] *)
 
@@ -71,6 +74,9 @@ val encode_review_count : SearchTypes.review_count -> Js.Json.t Js.Dict.t
 
 val encode_histo : SearchTypes.histo -> Js.Json.t Js.Dict.t
 (** [encode_histo v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_histo_stat : SearchTypes.histo_stat -> Js.Json.t Js.Dict.t
+(** [encode_histo_stat v dict] encodes [v] int the given JSON [dict] *)
 
 val encode_review_stats : SearchTypes.review_stats -> Js.Json.t Js.Dict.t
 (** [encode_review_stats v dict] encodes [v] int the given JSON [dict] *)
@@ -165,6 +171,9 @@ val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 val decode_changes : Js.Json.t Js.Dict.t -> SearchTypes.changes
 (** [decode_changes decoder] decodes a [changes] value from [decoder] *)
 
+val decode_ratio : Js.Json.t Js.Dict.t -> SearchTypes.ratio
+(** [decode_ratio decoder] decodes a [ratio] value from [decoder] *)
+
 val decode_change_event : Js.Json.t Js.Dict.t -> SearchTypes.change_event
 (** [decode_change_event decoder] decodes a [change_event] value from [decoder] *)
 
@@ -176,6 +185,9 @@ val decode_review_count : Js.Json.t Js.Dict.t -> SearchTypes.review_count
 
 val decode_histo : Js.Json.t Js.Dict.t -> SearchTypes.histo
 (** [decode_histo decoder] decodes a [histo] value from [decoder] *)
+
+val decode_histo_stat : Js.Json.t Js.Dict.t -> SearchTypes.histo_stat
+(** [decode_histo_stat decoder] decodes a [histo_stat] value from [decoder] *)
 
 val decode_review_stats : Js.Json.t Js.Dict.t -> SearchTypes.review_stats
 (** [decode_review_stats decoder] decodes a [review_stats] value from [decoder] *)

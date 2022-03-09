@@ -35,7 +35,7 @@ def fix_field_name(content):
         )
         .replace("Task_data_types", "TaskDataTypes")
         .replace("Task_data_bs", "TaskDataBs")
-        .replace("Ratio", "_ratio")
+        #.replace("Ratio", "_ratio")
         .replace("_ofChanges", "_of_changes")
         .replace("_withTests", "_with_tests")
         .replace("_perChange", "_per_change")

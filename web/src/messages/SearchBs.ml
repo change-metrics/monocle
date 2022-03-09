@@ -234,6 +234,14 @@ let default_changes_mutable () : changes_mutable = {
   changes = [];
 }
 
+type ratio_mutable = {
+  mutable ratio : float;
+}
+
+let default_ratio_mutable () : ratio_mutable = {
+  ratio = 0.;
+}
+
 type change_event_mutable = {
   mutable id : string;
   mutable type_ : string;
@@ -284,6 +292,14 @@ type histo_mutable = {
 let default_histo_mutable () : histo_mutable = {
   date = "";
   count = 0l;
+}
+
+type histo_stat_mutable = {
+  mutable histo : SearchTypes.histo list;
+}
+
+let default_histo_stat_mutable () : histo_stat_mutable = {
+  histo = [];
 }
 
 type review_stats_mutable = {
@@ -781,6 +797,9 @@ let rec decode_query_request_query_type (json:Js.Json.t) =
   | "QUERY_ACTIVE_AUTHORS_STATS" -> (SearchTypes.Query_active_authors_stats : SearchTypes.query_request_query_type)
   | "QUERY_CHANGE_AND_EVENTS" -> (SearchTypes.Query_change_and_events : SearchTypes.query_request_query_type)
   | "QUERY_CHANGES_TOPS" -> (SearchTypes.Query_changes_tops : SearchTypes.query_request_query_type)
+  | "QUERY_RATIO_COMMITS_VS_REVIEWS" -> (SearchTypes.Query_ratio_commits_vs_reviews : SearchTypes.query_request_query_type)
+  | "QUERY_HISTO_COMMITS" -> (SearchTypes.Query_histo_commits : SearchTypes.query_request_query_type)
+  | "QUERY_HISTO_REVIEWS_AND_COMMENTS" -> (SearchTypes.Query_histo_reviews_and_comments : SearchTypes.query_request_query_type)
   | "" -> SearchTypes.Query_change
   | _ -> Pbrt_bs.E.malformed_variant "query_request_query_type"
 
@@ -1077,6 +1096,22 @@ let rec decode_changes json =
     SearchTypes.changes = v.changes;
   } : SearchTypes.changes)
 
+let rec decode_ratio json =
+  let v = default_ratio_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "ratio" -> 
+      let json = Js.Dict.unsafeGet json "ratio" in
+      v.ratio <- Pbrt_bs.float json "ratio" "ratio"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.ratio = v.ratio;
+  } : SearchTypes.ratio)
+
 let rec decode_change_event json =
   let v = default_change_event_mutable () in
   let keys = Js.Dict.keys json in
@@ -1186,6 +1221,28 @@ let rec decode_histo json =
     SearchTypes.date = v.date;
     SearchTypes.count = v.count;
   } : SearchTypes.histo)
+
+let rec decode_histo_stat json =
+  let v = default_histo_stat_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "histo" in 
+        Pbrt_bs.array_ a "histo_stat" "histo"
+      in
+      v.histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "histo_stat" "histo"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.histo = v.histo;
+  } : SearchTypes.histo_stat)
 
 let rec decode_review_stats json =
   let v = default_review_stats_mutable () in
@@ -1493,8 +1550,8 @@ let rec decode_lifecycle_stats json =
     | "self_merged" -> 
       let json = Js.Dict.unsafeGet json "self_merged" in
       v.self_merged <- Pbrt_bs.int32 json "lifecycle_stats" "self_merged"
-    | "self_merged_ratio" -> 
-      let json = Js.Dict.unsafeGet json "self_merged_ratio" in
+    | "self_mergedRatio" -> 
+      let json = Js.Dict.unsafeGet json "self_mergedRatio" in
       v.self_merged_ratio <- Pbrt_bs.float json "lifecycle_stats" "self_merged_ratio"
     | "ttm_mean" -> 
       let json = Js.Dict.unsafeGet json "ttm_mean" in
@@ -1598,6 +1655,12 @@ let rec decode_query_response json =
       | "changes_tops" -> 
         let json = Js.Dict.unsafeGet json "changes_tops" in
         (SearchTypes.Changes_tops ((decode_changes_tops (Pbrt_bs.object_ json "query_response" "Changes_tops"))) : SearchTypes.query_response)
+      | "ratio" -> 
+        let json = Js.Dict.unsafeGet json "ratio" in
+        (SearchTypes.Ratio (Pbrt_bs.float json "query_response" "Ratio") : SearchTypes.query_response)
+      | "histo" -> 
+        let json = Js.Dict.unsafeGet json "histo" in
+        (SearchTypes.Histo ((decode_histo_stat (Pbrt_bs.object_ json "query_response" "Histo"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -1740,6 +1803,9 @@ let rec encode_query_request_query_type (v:SearchTypes.query_request_query_type)
   | SearchTypes.Query_active_authors_stats -> "QUERY_ACTIVE_AUTHORS_STATS"
   | SearchTypes.Query_change_and_events -> "QUERY_CHANGE_AND_EVENTS"
   | SearchTypes.Query_changes_tops -> "QUERY_CHANGES_TOPS"
+  | SearchTypes.Query_ratio_commits_vs_reviews -> "QUERY_RATIO_COMMITS_VS_REVIEWS"
+  | SearchTypes.Query_histo_commits -> "QUERY_HISTO_COMMITS"
+  | SearchTypes.Query_histo_reviews_and_comments -> "QUERY_HISTO_REVIEWS_AND_COMMENTS"
 
 let rec encode_query_request (v:SearchTypes.query_request) = 
   let json = Js.Dict.empty () in
@@ -1901,6 +1967,11 @@ let rec encode_changes (v:SearchTypes.changes) =
   end;
   json
 
+let rec encode_ratio (v:SearchTypes.ratio) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "ratio" (Js.Json.number v.SearchTypes.ratio);
+  json
+
 let rec encode_change_event (v:SearchTypes.change_event) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "id" (Js.Json.string v.SearchTypes.id);
@@ -1960,6 +2031,21 @@ let rec encode_histo (v:SearchTypes.histo) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "date" (Js.Json.string v.SearchTypes.date);
   Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.SearchTypes.count));
+  json
+
+let rec encode_histo_stat (v:SearchTypes.histo_stat) = 
+  let json = Js.Dict.empty () in
+  begin (* histo field *)
+    let (histo':Js.Json.t) =
+      v.SearchTypes.histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "histo" histo';
+  end;
   json
 
 let rec encode_review_stats (v:SearchTypes.review_stats) = 
@@ -2172,7 +2258,7 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
   Js.Dict.set json "abandoned" (Js.Json.number (Int32.to_float v.SearchTypes.abandoned));
   Js.Dict.set json "merged" (Js.Json.number (Int32.to_float v.SearchTypes.merged));
   Js.Dict.set json "self_merged" (Js.Json.number (Int32.to_float v.SearchTypes.self_merged));
-  Js.Dict.set json "self_merged_ratio" (Js.Json.number v.SearchTypes.self_merged_ratio);
+  Js.Dict.set json "self_mergedRatio" (Js.Json.number v.SearchTypes.self_merged_ratio);
   Js.Dict.set json "ttm_mean" (Js.Json.number v.SearchTypes.ttm_mean);
   Js.Dict.set json "ttm_variability" (Js.Json.number v.SearchTypes.ttm_variability);
   Js.Dict.set json "updates_of_changes" (Js.Json.number (Int32.to_float v.SearchTypes.updates_of_changes));
@@ -2266,6 +2352,13 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     begin (* changesTops field *)
       let json' = encode_changes_tops v in
       Js.Dict.set json "changes_tops" (Js.Json.object_ json');
+    end;
+  | SearchTypes.Ratio v ->
+    Js.Dict.set json "ratio" (Js.Json.number v);
+  | SearchTypes.Histo v ->
+    begin (* histo field *)
+      let json' = encode_histo_stat v in
+      Js.Dict.set json "histo" (Js.Json.object_ json');
     end;
   end;
   json

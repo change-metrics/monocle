@@ -25,10 +25,8 @@ import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
-import Monocle.Search.Query (RangeFlavor (..))
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
-import qualified Monocle.UserGroup as UserGroupPB
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
 
@@ -117,21 +115,32 @@ configGetWorkspaces = const response
       let workspaceName = toLazy name
        in ConfigPB.Workspace {..}
 
--- | /api/2/user_group/list endpoint
-userGroupList :: UserGroupPB.ListRequest -> AppM UserGroupPB.ListResponse
-userGroupList request = do
+-- | /api/2/get_groups endpoint
+configGetGroups :: ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
+configGetGroups request = do
   GetTenants tenants <- getConfig
-  let UserGroupPB.ListRequest {..} = request
+  let ConfigPB.GetGroupsRequest {..} = request
 
-  pure . UserGroupPB.ListResponse . V.fromList $ case Config.lookupTenant tenants (toStrict listRequestIndex) of
+  pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getGroupsRequestIndex) of
     Just index -> toGroupCounts <$> Config.getTenantGroups index
     Nothing -> []
   where
-    toGroupCounts :: (Text, [Text]) -> UserGroupPB.GroupDefinition
+    toGroupCounts :: (Text, [Text]) -> ConfigPB.GroupDefinition
     toGroupCounts (name, users) =
       let groupDefinitionName = toLazy name
           groupDefinitionMembers = fromInteger . toInteger $ length users
-       in UserGroupPB.GroupDefinition {..}
+       in ConfigPB.GroupDefinition {..}
+
+-- | /api/2/get_group_members endpoint
+configGetGroupMembers :: ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
+configGetGroupMembers request = do
+  GetTenants tenants <- getConfig
+  let ConfigPB.GetGroupMembersRequest {..} = request
+  members <- case Config.lookupTenant tenants (toStrict getGroupMembersRequestIndex) of
+    Just index -> pure $ fromMaybe [] $ lookup (toStrict getGroupMembersRequestGroup) (Config.getTenantGroups index)
+    Nothing -> pure []
+
+  pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
 configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
@@ -148,78 +157,6 @@ configGetProjects ConfigPB.GetProjectsRequest {..} = do
           projectDefinitionBranchRegex = toLazy $ fromMaybe "" branch_regex
           projectDefinitionFileRegex = toLazy $ fromMaybe "" file_regex
        in ConfigPB.ProjectDefinition {..}
-
--- | /api/2/user_group/get endpoint
-userGroupGet :: UserGroupPB.GetRequest -> AppM UserGroupPB.GetResponse
-userGroupGet request = do
-  GetTenants tenants <- getConfig
-  let UserGroupPB.GetRequest {..} = request
-  now <- getCurrentTime
-
-  let requestE = do
-        index <-
-          Config.lookupTenant tenants (toStrict getRequestIndex)
-            `orDie` ParseError "unknown index" 0
-
-        users <-
-          lookup (toStrict getRequestName) (Config.getTenantGroups index)
-            `orDie` ParseError "unknown group" 0
-
-        expr <- P.parse (Q.loadAliases' index) (toStrict getRequestQuery)
-
-        query <-
-          Q.queryWithMods now mempty index expr
-
-        -- Date histogram needs explicit bound to be set:
-        let queryWithBound = Q.ensureMinBound query
-
-        pure (index, users, queryWithBound)
-
-  case requestE of
-    Right (index, users, query) -> runQueryM index query $ getGroupStats users
-    Left err -> error (show err)
-  where
-    getGroupStats :: [Text] -> QueryM UserGroupPB.GetResponse
-    getGroupStats users = do
-      let allQuery = mkOr $ map Q.toUserTerm users
-
-      allStats <- withFilter [allQuery] $ do
-        UserGroupPB.GroupStat
-          <$> Q.changeReviewRatio
-          <*> pure 0
-          <*> pure mempty
-          <*> pure mempty
-
-      userStats <- traverse getUserStat users
-
-      pure $ UserGroupPB.GetResponse (Just allStats) (V.fromList userStats)
-
-    getUserStat :: Text -> QueryM UserGroupPB.UserStat
-    getUserStat name = do
-      let userQuery = Q.toUserTerm name
-          reviewQuery = mkOr $ map (mkTerm "type") ["ChangeReviewedEvent", "ChangeCommentedEvent"]
-          commitQuery =
-            mkOr $
-              map
-                (mkTerm "type")
-                [ "ChangeCommitPushedEvent",
-                  "ChangeCommitForcePushedEvent"
-                ]
-
-      userStats <- withFilter [userQuery] $ do
-        reviewHisto <- withFilter [reviewQuery] $ Q.getHisto CreatedAt
-        commitHisto <- withFilter [commitQuery] $ Q.getHisto CreatedAt
-
-        UserGroupPB.GroupStat
-          <$> Q.changeReviewRatio
-          <*> pure 0
-          <*> pure (toReviewHisto <$> commitHisto)
-          <*> pure (toReviewHisto <$> reviewHisto)
-
-      pure $ UserGroupPB.UserStat (toLazy name) (Just userStats)
-
-    toReviewHisto :: Q.HistoSimple -> UserGroupPB.ReviewHisto
-    toReviewHisto Q.HistoBucket {..} = UserGroupPB.ReviewHisto hbKey hbCount
 
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
@@ -558,6 +495,18 @@ searchQuery request = do
           SearchPB.QueryResponse . Just
             . SearchPB.QueryResponseResultChangesTops
             <$> Q.getChangesTops queryRequestLimit
+        SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
+          ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultRatio ratio
+        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
+          histo <- Q.getHisto Q.COMMITS_HISTO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
+          histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
+          pure . SearchPB.QueryResponse . Just $
+            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
     Left err -> pure . handleError $ err
   where
     handleError :: ParseError -> SearchPB.QueryResponse
