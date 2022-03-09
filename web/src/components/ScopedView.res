@@ -47,6 +47,9 @@ let reviewActivityTab = (store, isGroup, link, extraQuery, hideAuthors) =>
         </Layout.GridItem>
         <Layout.GridItem>
           <MStack>
+            <MStackItem> <CommitsReviewsRatio store extraQuery /> </MStackItem>
+            <MStackItem> <HistoBox.ReviewsCommentsHistoBox store extraQuery /> </MStackItem>
+            <MStackItem> <HistoBox.CommitsHistoBox store extraQuery /> </MStackItem>
             <MStackItem>
               {
                 let (qtype, _, tooltip_content, _) = ByMostReviewed->TopMetricsInfo.getQD
