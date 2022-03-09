@@ -36,7 +36,6 @@ module UrlData = {
 module Store = {
   type suggestionsR = RemoteData.t<SearchTypes.suggestions_response>
   type fieldsRespR = RemoteData.t<SearchTypes.fields_response>
-  type userGroupsR = RemoteData.t<UserGroupTypes.list_response>
   type projectsR = RemoteData.t<ConfigTypes.get_projects_response>
   type aboutR = RemoteData.t<ConfigTypes.get_about_response>
 
@@ -59,7 +58,6 @@ module Store = {
     author_scoped_tab: authorScopedTab,
     suggestions: suggestionsR,
     fields: RemoteData.t<list<SearchTypes.field>>,
-    user_groups: userGroupsR,
     projects: projectsR,
     changes_pies_panel: bool,
     about: aboutR,
@@ -75,7 +73,6 @@ module Store = {
     | SetAuthorScopedTab(authorScopedTab)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
-    | FetchUserGroups(userGroupsR)
     | FetchProjects(projectsR)
     | FetchAbout(aboutR)
     | ReverseChangesPiePanelState
@@ -96,7 +93,6 @@ module Store = {
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
     suggestions: None,
     fields: None,
-    user_groups: None,
     projects: None,
     about: None,
     changes_pies_panel: false,
@@ -134,7 +130,6 @@ module Store = {
       }
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
-    | FetchUserGroups(res) => {...state, user_groups: res}
     | FetchProjects(res) => {...state, projects: res}
     | FetchAbout(res) => {...state, about: res}
     | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
@@ -189,15 +184,6 @@ module Fetch = {
       state.fields,
       () => WebApi.Search.fields({version: "1"}),
       res => Store.FetchFields(res),
-      dispatch,
-    )
-  }
-
-  let user_groups = ((state: Store.t, dispatch)) => {
-    fetch(
-      state.user_groups,
-      () => WebApi.UserGroup.list({UserGroupTypes.index: state.index}),
-      res => Store.FetchUserGroups(res),
       dispatch,
     )
   }

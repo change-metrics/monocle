@@ -16,9 +16,6 @@ module Fixture = {
   @module external changeJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/change.json"
   let change: SearchTypes.change = SearchBs.decode_change(changeJson)
 
-  @module external groupGetJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/user_group_get.json"
-  let group_get: UserGroupTypes.get_response = UserGroupBs.decode_get_response(groupGetJson)
-
   @module
   external searchFieldsJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/search_fields.json"
   let fields: SearchTypes.fields_response = SearchBs.decode_fields_response(searchFieldsJson)
@@ -35,7 +32,6 @@ module App = {
     <>
       {[
         ("title", <h2> {"Monocle designer mode"->str} </h2>),
-        ("group", <GroupView.GroupTable store group={Fixture.group_get} />),
         (
           "change",
           <div className="container">

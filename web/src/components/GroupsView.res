@@ -2,7 +2,7 @@ open Prelude
 
 module GroupItem = {
   @react.component
-  let make = (~store: Store.t, ~group: UserGroupTypes.group_definition) => {
+  let make = (~store: Store.t, ~group: ConfigTypes.group_definition) => {
     let (state, _) = store
     let link = "/" ++ state.index ++ "/group/" ++ group.name
     <MSimpleCard
@@ -15,20 +15,22 @@ module GroupItem = {
 
 @react.component
 let make = (~store: Store.t) => {
+  let (state, _) = store
   let title = "User Groups"
   let tooltip_content = "This shows the list of available user groups"
   let icon = <Patternfly.Icons.Users />
+  let trigger = ""
+
+  let toItems = (resp: ConfigTypes.get_groups_response) => {
+    resp.items->Belt.List.map(group => <GroupItem store key={group.name} group />)
+  }
+
   <MonoCard title tooltip_content icon>
-    {switch Store.Fetch.user_groups(store) {
-    | None => <Spinner />
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok({items: list{}})) => <Alert variant=#Warning title={"Please define user groups."} />
-    | Some(Ok({items})) =>
-      items
-      ->Belt.List.map(group => <GroupItem store key={group.name} group />)
-      ->Belt.List.toArray
-      ->React.array
-    }}
+    <NetworkRender
+      get={() => WebApi.Config.getGroups({ConfigTypes.index: state.index})}
+      trigger
+      render={resp => resp->toItems->Belt.List.toArray->React.array}
+    />
   </MonoCard>
 }
 
