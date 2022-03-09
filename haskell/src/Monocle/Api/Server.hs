@@ -14,7 +14,6 @@ import Monocle.Backend.Documents
   )
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Config as Config
 import qualified Monocle.Config as ConfigPB
 import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env

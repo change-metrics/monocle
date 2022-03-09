@@ -3,13 +3,19 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+
 ### Added
 
 - [crawler] A new env var "TLS_CIPHERS" to override the default OpenSSL cyphers list.
 - [webui] A scoped view for Author and Group that features tailored metrics and changes lists.
-
+- [api] Search query QUERY_RATIO_COMMITS_VS_REVIEWS.
+- [api] Search queries QUERY_HISTO_COMMITS, QUERY_HISTO_REVIEWS_AND_COMMENTS.
 
 ### Changed
+
+- [api] user_group/get and user_group/get endpoints to get_groups and get_group_members endpoints.
+- [webui] Commits/Reviews histo and commits VS reviews ratio moved to the new scoped view components.
+
 ### Removed
 ### Fixed
 
