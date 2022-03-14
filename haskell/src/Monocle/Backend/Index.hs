@@ -39,6 +39,21 @@ instance ToJSON ConfigIndexMapping where
 
 data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
+data AuthorIndexMapping = AuthorIndexMapping deriving (Eq, Show)
+
+data AuthorMapping = AuthorMapping deriving (Eq, Show)
+
+instance ToJSON AuthorMapping where
+  toJSON AuthorMapping =
+    object
+      [ "uid" .= object ["type" .= ("keyword" :: Text)],
+        "muid" .= object ["type" .= ("keyword" :: Text)]
+      ]
+
+instance ToJSON AuthorIndexMapping where
+  toJSON AuthorIndexMapping =
+    object ["properties" .= AuthorMapping]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
@@ -91,22 +106,8 @@ instance ToJSON ChangesIndexMapping where
                   [ "properties"
                       .= object
                         [ "sha" .= object ["type" .= ("keyword" :: Text)],
-                          "author"
-                            .= object
-                              [ "properties"
-                                  .= object
-                                    [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                                      "muid" .= object ["type" .= ("keyword" :: Text)]
-                                    ]
-                              ],
-                          "committer"
-                            .= object
-                              [ "properties"
-                                  .= object
-                                    [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                                      "muid" .= object ["type" .= ("keyword" :: Text)]
-                                    ]
-                              ],
+                          "author" .= AuthorIndexMapping,
+                          "committer" .= AuthorIndexMapping,
                           "authored_at"
                             .= object
                               [ "type" .= ("date" :: Text),
@@ -125,38 +126,10 @@ instance ToJSON ChangesIndexMapping where
               "repository_prefix" .= object ["type" .= ("keyword" :: Text)],
               "repository_fullname" .= object ["type" .= ("keyword" :: Text)],
               "repository_shortname" .= object ["type" .= ("keyword" :: Text)],
-              "author"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                          "muid" .= object ["type" .= ("keyword" :: Text)]
-                        ]
-                  ],
-              "on_author"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                          "muid" .= object ["type" .= ("keyword" :: Text)]
-                        ]
-                  ],
-              "committer"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                          "muid" .= object ["type" .= ("keyword" :: Text)]
-                        ]
-                  ],
-              "merged_by"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                          "muid" .= object ["type" .= ("keyword" :: Text)]
-                        ]
-                  ],
+              "author" .= AuthorIndexMapping,
+              "on_author" .= AuthorIndexMapping,
+              "committer" .= AuthorIndexMapping,
+              "merged_by" .= AuthorIndexMapping,
               "branch" .= object ["type" .= ("keyword" :: Text)],
               "target_branch" .= object ["type" .= ("keyword" :: Text)],
               "created_at"
@@ -192,11 +165,7 @@ instance ToJSON ChangesIndexMapping where
               "assignees"
                 .= object
                   [ "type" .= ("nested" :: Text),
-                    "properties"
-                      .= object
-                        [ "uid" .= object ["type" .= ("keyword" :: Text)],
-                          "muid" .= object ["type" .= ("keyword" :: Text)]
-                        ]
+                    "properties" .= AuthorMapping
                   ],
               "approval" .= object ["type" .= ("keyword" :: Text)],
               "draft" .= object ["type" .= ("boolean" :: Text)],
