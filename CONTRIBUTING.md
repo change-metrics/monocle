@@ -20,6 +20,7 @@ This can be used to better understand how the system works and to enable fast re
 #### Requirements
 
 These requirements are for a Fedora-based system. Please adapt them to your own OS if needed.
+Run the following commands with a non-root user, if possible.
 
 ```ShellSession
 sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
@@ -30,6 +31,8 @@ If needed, it is possible to install a distro-agnostic Haskell environment using
 ```ShellSession
 curl -sSf https://get-ghcup.haskell.org | sh
 ```
+If the above command fails read the output from more information, usually are missing dependencies.
+Then logout and login again, for the new configurations to be loaded.
 
 #### HTTP gateway (nginx)
 
@@ -77,6 +80,7 @@ Monocle relies on ElasticSearch as backend to store Changes events.
 ```ShellSession
 ./contrib/start-elk.sh 9200
 ```
+Make sure data directory has writing permissions.
 
 #### API
 
@@ -103,9 +107,11 @@ The Monocle React WebAPP (hot reload is enabled).
 
 ```ShellSession
 cd web
+npm install
 REACT_APP_API_URL=http://localhost:8081 npm start
 firefox http://localhost:3000
 ```
+If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8081`. FQDN must be known in your network.
 
 #### Start crawlers process
 
@@ -118,12 +124,14 @@ cabal repl monocle
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope True "../etc/config.yaml" 30 client
+λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 ### Running the services manually using NIX
 
 This section describes how to start the Monocle services directly on your host using nix.
+
+If you have not installed nix-shell follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
 
 
 #### HTTP gateway (nginx)
