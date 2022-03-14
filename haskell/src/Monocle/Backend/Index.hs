@@ -89,6 +89,11 @@ data IntegerMapping = IntegerMapping deriving (Eq, Show)
 instance ToJSON IntegerMapping where
   toJSON IntegerMapping = object ["type" .= ("integer" :: Text)]
 
+data BoolMapping = BoolMapping deriving (Eq, Show)
+
+instance ToJSON BoolMapping where
+  toJSON BoolMapping = object ["type" .= ("boolean" :: Text)]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
@@ -152,8 +157,8 @@ instance ToJSON ChangesIndexMapping where
                     "properties" .= AuthorMapping
                   ],
               "approval" .= KWMapping,
-              "draft" .= object ["type" .= ("boolean" :: Text)],
-              "self_merged" .= object ["type" .= ("boolean" :: Text)],
+              "draft" .= BoolMapping,
+              "self_merged" .= BoolMapping,
               "crawler_metadata"
                 .= object
                   [ "properties"
@@ -184,7 +189,7 @@ instance ToJSON ChangesIndexMapping where
                           "url" .= KWMapping,
                           "prefix" .= KWMapping,
                           "title" .= TextAndKWMapping,
-                          "_adopted" .= object ["type" .= ("boolean" :: Text)]
+                          "_adopted" .= BoolMapping
                         ]
                   ]
             ]
