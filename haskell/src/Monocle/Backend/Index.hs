@@ -54,6 +54,15 @@ instance ToJSON AuthorIndexMapping where
   toJSON AuthorIndexMapping =
     object ["properties" .= AuthorMapping]
 
+data DateIndexMapping = DateIndexMapping deriving (Eq, Show)
+
+instance ToJSON DateIndexMapping where
+  toJSON DateIndexMapping =
+    object
+      [ "type" .= ("date" :: Text),
+        "format" .= ("date_time_no_millis" :: Text)
+      ]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
@@ -108,16 +117,8 @@ instance ToJSON ChangesIndexMapping where
                         [ "sha" .= object ["type" .= ("keyword" :: Text)],
                           "author" .= AuthorIndexMapping,
                           "committer" .= AuthorIndexMapping,
-                          "authored_at"
-                            .= object
-                              [ "type" .= ("date" :: Text),
-                                "format" .= ("date_time_no_millis" :: Text)
-                              ],
-                          "committed_at"
-                            .= object
-                              [ "type" .= ("date" :: Text),
-                                "format" .= ("date_time_no_millis" :: Text)
-                              ],
+                          "authored_at" .= DateIndexMapping,
+                          "committed_at" .= DateIndexMapping,
                           "additions" .= object ["type" .= ("integer" :: Text)],
                           "deletions" .= object ["type" .= ("integer" :: Text)],
                           "title" .= object ["type" .= ("text" :: Text)]
@@ -132,31 +133,11 @@ instance ToJSON ChangesIndexMapping where
               "merged_by" .= AuthorIndexMapping,
               "branch" .= object ["type" .= ("keyword" :: Text)],
               "target_branch" .= object ["type" .= ("keyword" :: Text)],
-              "created_at"
-                .= object
-                  [ "type" .= ("date" :: Text),
-                    "format" .= ("date_time_no_millis" :: Text)
-                  ],
-              "on_created_at"
-                .= object
-                  [ "type" .= ("date" :: Text),
-                    "format" .= ("date_time_no_millis" :: Text)
-                  ],
-              "merged_at"
-                .= object
-                  [ "type" .= ("date" :: Text),
-                    "format" .= ("date_time_no_millis" :: Text)
-                  ],
-              "updated_at"
-                .= object
-                  [ "type" .= ("date" :: Text),
-                    "format" .= ("date_time_no_millis" :: Text)
-                  ],
-              "closed_at"
-                .= object
-                  [ "type" .= ("date" :: Text),
-                    "format" .= ("date_time_no_millis" :: Text)
-                  ],
+              "created_at" .= DateIndexMapping,
+              "on_created_at" .= DateIndexMapping,
+              "merged_at" .= DateIndexMapping,
+              "updated_at" .= DateIndexMapping,
+              "closed_at" .= DateIndexMapping,
               "state"
                 .= object ["type" .= ("keyword" :: Text)],
               "duration" .= object ["type" .= ("integer" :: Text)],
@@ -177,16 +158,8 @@ instance ToJSON ChangesIndexMapping where
                         [ "crawler_name" .= object ["type" .= ("keyword" :: Text)],
                           "crawler_type" .= object ["type" .= ("keyword" :: Text)],
                           "crawler_type_value" .= object ["type" .= ("keyword" :: Text)],
-                          "last_commit_at"
-                            .= object
-                              [ "type" .= ("date" :: Text),
-                                "format" .= ("date_time_no_millis" :: Text)
-                              ],
-                          "last_post_at"
-                            .= object
-                              [ "type" .= ("date" :: Text),
-                                "format" .= ("date_time_no_millis" :: Text)
-                              ],
+                          "last_commit_at" .= DateIndexMapping,
+                          "last_post_at" .= DateIndexMapping,
                           "total_docs_posted" .= object ["type" .= ("integer" :: Text)],
                           "total_changes_updated" .= object ["type" .= ("integer" :: Text)],
                           "total_change_events_updated" .= object ["type" .= ("integer" :: Text)],
@@ -200,11 +173,7 @@ instance ToJSON ChangesIndexMapping where
                         [ "tid" .= object ["type" .= ("keyword" :: Text)],
                           "ttype" .= object ["type" .= ("keyword" :: Text)],
                           "crawler_name" .= object ["type" .= ("keyword" :: Text)],
-                          "updated_at"
-                            .= object
-                              [ "type" .= ("date" :: Text),
-                                "format" .= ("date_time_no_millis" :: Text)
-                              ],
+                          "updated_at" .= DateIndexMapping,
                           "change_url" .= object ["type" .= ("keyword" :: Text)],
                           "severity" .= object ["type" .= ("keyword" :: Text)],
                           "priority" .= object ["type" .= ("keyword" :: Text)],
