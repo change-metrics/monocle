@@ -16,7 +16,7 @@ module Lentille.Bugzilla
     MonadBZ,
     BugzillaSession,
     BugWithScore,
-    BZ.BugzillaApikey (..),
+    BZ.BugzillaApiKey (..),
     getApikey,
   )
 where
@@ -28,22 +28,19 @@ import Lentille
 import Monocle.Prelude
 import Monocle.Search (TaskData (..))
 import qualified Streaming.Prelude as S
-import Web.Bugzilla.RedHat (BugzillaSession)
-import qualified Web.Bugzilla.RedHat as BZ
-import Web.Bugzilla.RedHat.Search ((.&&.), (.==.))
-import qualified Web.Bugzilla.RedHat.Search as BZS
+import Web.RedHatBugzilla (BugzillaSession)
+import qualified Web.RedHatBugzilla as BZ
+import Web.RedHatBugzilla.Search ((.&&.), (.==.))
+import qualified Web.RedHatBugzilla.Search as BZS
 
 class (MonadLog m, MonadRetry m, MonadMonitor m) => MonadBZ m where
-  bzRequest :: FromJSON bugs => BugzillaSession -> BZ.Request -> m bugs
-  newContext :: BZ.BugzillaServer -> m BZ.BugzillaContext
+  bzRequest :: FromJSON bugs => BZ.Request -> m bugs
 
 instance MonadBZ LentilleM where
-  bzRequest req = liftIO . bzRequest req
-  newContext = liftIO . newContext
+  bzRequest = liftIO . bzRequest
 
 instance MonadBZ IO where
   bzRequest = BZ.sendBzRequest
-  newContext = BZ.newBugzillaContext
 
 -------------------------------------------------------------------------------
 -- BugZilla system
@@ -111,19 +108,19 @@ instance FromJSON BugsWithScore where
     pure $ BugsWithScore bugs
   parseJSON _ = mzero
 
-getApikey :: Text -> BZ.BugzillaApikey
-getApikey = BZ.BugzillaApikey
+getApikey :: Text -> BZ.BugzillaApiKey
+getApikey = BZ.BugzillaApiKey
 
 -- getBugs unwraps the 'BugsWithScore' newtype wrapper
-getBugs :: MonadBZ m => BugzillaSession -> BZ.Request -> m [BugWithScore]
-getBugs bzSession request = do
-  BugsWithScore bugs <- bzRequest bzSession request
+getBugs :: MonadBZ m => BZ.Request -> m [BugWithScore]
+getBugs request = do
+  BugsWithScore bugs <- bzRequest request
   pure bugs
 
 getBugWithScore :: MonadBZ m => BugzillaSession -> BZ.BugId -> m BugWithScore
 getBugWithScore bzSession bugId' = do
   let request = BZ.newBzRequest bzSession ["bug", show bugId'] bugWithScoreIncludeFieldQuery
-  bugs <- getBugs bzSession request
+  bugs <- getBugs request
   case bugs of
     [x] -> pure x
     xs -> error $ "Got more or less than one bug " <> show xs
@@ -144,7 +141,7 @@ getBugsWithScore bzSession sinceTS product'' limit offset = do
   let request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
       page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
       searchQuery = BZS.evalSearchExpr (searchExpr sinceTS product'')
-  getBugs bzSession request
+  getBugs request
 
 -- | Convert a Bugzilla bug to TaskDatas (a bug can link many changes)
 toTaskData :: BugWithScore -> [TaskData]
@@ -187,6 +184,6 @@ getBZData bzSession sinceTS productName = go 0
       -- Keep on retrieving the rest
       unless (length bugs < limit) (go (offset + length bugs))
 
-getBugzillaSession :: MonadBZ m => Text -> Maybe BZ.BugzillaApikey -> m BugzillaSession
-getBugzillaSession host Nothing = BZ.AnonymousSession <$> newContext host
-getBugzillaSession host (Just apiKey) = flip BZ.ApikeySession apiKey <$> newContext host
+getBugzillaSession :: Text -> Maybe BZ.BugzillaApiKey -> BugzillaSession
+getBugzillaSession host Nothing = BZ.AnonymousSession host
+getBugzillaSession host (Just apiKey) = BZ.ApiKeySession host apiKey

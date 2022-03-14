@@ -9,7 +9,7 @@ import Network.Socket (Socket)
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Relude
-import qualified Web.Bugzilla.RedHat as BZ
+import qualified Web.RedHatBugzilla as BZ
 
 bugzillaMockApplication :: Wai.Application
 bugzillaMockApplication req respond = do
@@ -43,8 +43,4 @@ bugzillaMockServer = do
   pure url
 
 bugzillaMockClient :: IO BZ.BugzillaSession
-bugzillaMockClient = do
-  url <- bugzillaMockServer
-  -- putTextLn $ "Creating bz client with " <> show url
-  ctx <- BZ.newBugzillaContext url
-  pure $ BZ.anonymousSession ctx
+bugzillaMockClient = BZ.anonymousSession <$> bugzillaMockServer
