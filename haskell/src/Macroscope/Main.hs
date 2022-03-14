@@ -222,7 +222,7 @@ getClientGerrit url auth = do
 getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
 getClientBZ url token = do
   clients <- gets clientsBugzilla
-  (client, newClients) <- mapMutate clients (url, token) $ lift $ getBugzillaSession url $ Just $ getApikey (unSecret token)
+  (client, newClients) <- mapMutate clients (url, token) $ pure $ getBugzillaSession url $ Just $ getApikey (unSecret token)
   modify $ \s -> s {clientsBugzilla = newClients}
   pure (url, client)
 
