@@ -79,18 +79,23 @@ instance ToJSON TextAndKWMapping where
             ]
       ]
 
+data KWMapping = KWMapping deriving (Eq, Show)
+
+instance ToJSON KWMapping where
+  toJSON KWMapping = object ["type" .= ("keyword" :: Text)]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
       [ "properties"
           .= object
-            [ "id" .= object ["type" .= ("keyword" :: Text)],
-              "type" .= object ["type" .= ("keyword" :: Text)],
-              "number" .= object ["type" .= ("keyword" :: Text)],
-              "change_id" .= object ["type" .= ("keyword" :: Text)],
+            [ "id" .= KWMapping,
+              "type" .= KWMapping,
+              "number" .= KWMapping,
+              "change_id" .= KWMapping,
               "title" .= TextAndKWMapping,
               "text" .= TextAndKWMapping,
-              "url" .= object ["type" .= ("keyword" :: Text)],
+              "url" .= KWMapping,
               "commit_count" .= object ["type" .= ("integer" :: Text)],
               "additions" .= object ["type" .= ("integer" :: Text)],
               "deletions" .= object ["type" .= ("integer" :: Text)],
@@ -101,14 +106,14 @@ instance ToJSON ChangesIndexMapping where
                       .= object
                         [ "additions" .= object ["type" .= ("integer" :: Text)],
                           "deletions" .= object ["type" .= ("integer" :: Text)],
-                          "path" .= object ["type" .= ("keyword" :: Text)]
+                          "path" .= KWMapping
                         ]
                   ],
               "commits"
                 .= object
                   [ "properties"
                       .= object
-                        [ "sha" .= object ["type" .= ("keyword" :: Text)],
+                        [ "sha" .= KWMapping,
                           "author" .= AuthorIndexMapping,
                           "committer" .= AuthorIndexMapping,
                           "authored_at" .= DateIndexMapping,
@@ -118,40 +123,39 @@ instance ToJSON ChangesIndexMapping where
                           "title" .= object ["type" .= ("text" :: Text)]
                         ]
                   ],
-              "repository_prefix" .= object ["type" .= ("keyword" :: Text)],
-              "repository_fullname" .= object ["type" .= ("keyword" :: Text)],
-              "repository_shortname" .= object ["type" .= ("keyword" :: Text)],
+              "repository_prefix" .= KWMapping,
+              "repository_fullname" .= KWMapping,
+              "repository_shortname" .= KWMapping,
               "author" .= AuthorIndexMapping,
               "on_author" .= AuthorIndexMapping,
               "committer" .= AuthorIndexMapping,
               "merged_by" .= AuthorIndexMapping,
-              "branch" .= object ["type" .= ("keyword" :: Text)],
-              "target_branch" .= object ["type" .= ("keyword" :: Text)],
+              "branch" .= KWMapping,
+              "target_branch" .= KWMapping,
               "created_at" .= DateIndexMapping,
               "on_created_at" .= DateIndexMapping,
               "merged_at" .= DateIndexMapping,
               "updated_at" .= DateIndexMapping,
               "closed_at" .= DateIndexMapping,
-              "state"
-                .= object ["type" .= ("keyword" :: Text)],
+              "state" .= KWMapping,
               "duration" .= object ["type" .= ("integer" :: Text)],
-              "mergeable" .= object ["type" .= ("keyword" :: Text)],
-              "labels" .= object ["type" .= ("keyword" :: Text)],
+              "mergeable" .= KWMapping,
+              "labels" .= KWMapping,
               "assignees"
                 .= object
                   [ "type" .= ("nested" :: Text),
                     "properties" .= AuthorMapping
                   ],
-              "approval" .= object ["type" .= ("keyword" :: Text)],
+              "approval" .= KWMapping,
               "draft" .= object ["type" .= ("boolean" :: Text)],
               "self_merged" .= object ["type" .= ("boolean" :: Text)],
               "crawler_metadata"
                 .= object
                   [ "properties"
                       .= object
-                        [ "crawler_name" .= object ["type" .= ("keyword" :: Text)],
-                          "crawler_type" .= object ["type" .= ("keyword" :: Text)],
-                          "crawler_type_value" .= object ["type" .= ("keyword" :: Text)],
+                        [ "crawler_name" .= KWMapping,
+                          "crawler_type" .= KWMapping,
+                          "crawler_type_value" .= KWMapping,
                           "last_commit_at" .= DateIndexMapping,
                           "last_post_at" .= DateIndexMapping,
                           "total_docs_posted" .= object ["type" .= ("integer" :: Text)],
@@ -164,16 +168,16 @@ instance ToJSON ChangesIndexMapping where
                 .= object
                   [ "properties"
                       .= object
-                        [ "tid" .= object ["type" .= ("keyword" :: Text)],
-                          "ttype" .= object ["type" .= ("keyword" :: Text)],
-                          "crawler_name" .= object ["type" .= ("keyword" :: Text)],
+                        [ "tid" .= KWMapping,
+                          "ttype" .= KWMapping,
+                          "crawler_name" .= KWMapping,
                           "updated_at" .= DateIndexMapping,
-                          "change_url" .= object ["type" .= ("keyword" :: Text)],
-                          "severity" .= object ["type" .= ("keyword" :: Text)],
-                          "priority" .= object ["type" .= ("keyword" :: Text)],
+                          "change_url" .= KWMapping,
+                          "severity" .= KWMapping,
+                          "priority" .= KWMapping,
                           "score" .= object ["type" .= ("integer" :: Text)],
-                          "url" .= object ["type" .= ("keyword" :: Text)],
-                          "prefix" .= object ["type" .= ("keyword" :: Text)],
+                          "url" .= KWMapping,
+                          "prefix" .= KWMapping,
                           "title" .= TextAndKWMapping,
                           "_adopted" .= object ["type" .= ("boolean" :: Text)]
                         ]
