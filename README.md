@@ -110,7 +110,7 @@ docker-compose logs -f
 
 You should be able to access the web UI at <http://localhost:8080>.
 
-See [Troubleshooting](#troubleshooting) section if needed. 
+See [Troubleshooting](#troubleshooting) section if needed.
 
 
 ## Configuration
@@ -207,7 +207,6 @@ A Gerrit provider settings
     # Optional settings
     gerrit_login: monocle
     gerrit_password: GERRIT_PASSWORD
-    gerrit_url_insecure: true
     gerrit_prefix: opendev/
 ```
 
@@ -217,8 +216,6 @@ A Gerrit provider settings
 `gerrit_login` might be specified to authenticate on the provider API.
 `gerrit_password`might be specified to use an alternate environment variable name to look for the
 password. Default is "GERRIT_PASSWORD"
-
-`gerrit_url_insecure` could be set to true to prevent HTTP certificate check.
 
 `gerrit_prefix` might be set to configure the crawler to prepend the repository name with a prefix.
 
@@ -440,6 +437,8 @@ Crawler default ciphers can be restrictive and not able to work with some load b
 server advertising an unsupported cipher. If you experience `wrong signature type` errors in the
 crawler container, you should consider changing ciphers using the `TLS_CIPHER` environment variable
 in your docker-compose configuration file. You can find [additional information](https://fedoraproject.org/wiki/Changes/StrongCryptoSettings2) on Fedora changelog.
+
+To disable TLS verification, use the `TLS_NO_VERIFY` environment variable.
 
 ## Components
 
