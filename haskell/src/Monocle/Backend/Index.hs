@@ -84,6 +84,11 @@ data KWMapping = KWMapping deriving (Eq, Show)
 instance ToJSON KWMapping where
   toJSON KWMapping = object ["type" .= ("keyword" :: Text)]
 
+data IntegerMapping = IntegerMapping deriving (Eq, Show)
+
+instance ToJSON IntegerMapping where
+  toJSON IntegerMapping = object ["type" .= ("integer" :: Text)]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
@@ -96,16 +101,16 @@ instance ToJSON ChangesIndexMapping where
               "title" .= TextAndKWMapping,
               "text" .= TextAndKWMapping,
               "url" .= KWMapping,
-              "commit_count" .= object ["type" .= ("integer" :: Text)],
-              "additions" .= object ["type" .= ("integer" :: Text)],
-              "deletions" .= object ["type" .= ("integer" :: Text)],
-              "change_files_count" .= object ["type" .= ("integer" :: Text)],
+              "commit_count" .= IntegerMapping,
+              "additions" .= IntegerMapping,
+              "deletions" .= IntegerMapping,
+              "change_files_count" .= IntegerMapping,
               "changed_files"
                 .= object
                   [ "properties"
                       .= object
-                        [ "additions" .= object ["type" .= ("integer" :: Text)],
-                          "deletions" .= object ["type" .= ("integer" :: Text)],
+                        [ "additions" .= IntegerMapping,
+                          "deletions" .= IntegerMapping,
                           "path" .= KWMapping
                         ]
                   ],
@@ -118,8 +123,8 @@ instance ToJSON ChangesIndexMapping where
                           "committer" .= AuthorIndexMapping,
                           "authored_at" .= DateIndexMapping,
                           "committed_at" .= DateIndexMapping,
-                          "additions" .= object ["type" .= ("integer" :: Text)],
-                          "deletions" .= object ["type" .= ("integer" :: Text)],
+                          "additions" .= IntegerMapping,
+                          "deletions" .= IntegerMapping,
                           "title" .= object ["type" .= ("text" :: Text)]
                         ]
                   ],
@@ -138,7 +143,7 @@ instance ToJSON ChangesIndexMapping where
               "updated_at" .= DateIndexMapping,
               "closed_at" .= DateIndexMapping,
               "state" .= KWMapping,
-              "duration" .= object ["type" .= ("integer" :: Text)],
+              "duration" .= IntegerMapping,
               "mergeable" .= KWMapping,
               "labels" .= KWMapping,
               "assignees"
@@ -158,10 +163,10 @@ instance ToJSON ChangesIndexMapping where
                           "crawler_type_value" .= KWMapping,
                           "last_commit_at" .= DateIndexMapping,
                           "last_post_at" .= DateIndexMapping,
-                          "total_docs_posted" .= object ["type" .= ("integer" :: Text)],
-                          "total_changes_updated" .= object ["type" .= ("integer" :: Text)],
-                          "total_change_events_updated" .= object ["type" .= ("integer" :: Text)],
-                          "total_orphans_updated" .= object ["type" .= ("integer" :: Text)]
+                          "total_docs_posted" .= IntegerMapping,
+                          "total_changes_updated" .= IntegerMapping,
+                          "total_change_events_updated" .= IntegerMapping,
+                          "total_orphans_updated" .= IntegerMapping
                         ]
                   ],
               "tasks_data"
@@ -175,7 +180,7 @@ instance ToJSON ChangesIndexMapping where
                           "change_url" .= KWMapping,
                           "severity" .= KWMapping,
                           "priority" .= KWMapping,
-                          "score" .= object ["type" .= ("integer" :: Text)],
+                          "score" .= IntegerMapping,
                           "url" .= KWMapping,
                           "prefix" .= KWMapping,
                           "title" .= TextAndKWMapping,
