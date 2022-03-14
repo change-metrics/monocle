@@ -63,6 +63,22 @@ instance ToJSON DateIndexMapping where
         "format" .= ("date_time_no_millis" :: Text)
       ]
 
+data TextAndKWMapping = TextAndKWMapping deriving (Eq, Show)
+
+instance ToJSON TextAndKWMapping where
+  toJSON TextAndKWMapping =
+    object
+      [ "type" .= ("text" :: Text),
+        "fields"
+          .= object
+            [ "keyword"
+                .= object
+                  [ "type" .= ("keyword" :: Text),
+                    "ignore_above" .= (8191 :: Int)
+                  ]
+            ]
+      ]
+
 instance ToJSON ChangesIndexMapping where
   toJSON ChangesIndexMapping =
     object
@@ -72,30 +88,8 @@ instance ToJSON ChangesIndexMapping where
               "type" .= object ["type" .= ("keyword" :: Text)],
               "number" .= object ["type" .= ("keyword" :: Text)],
               "change_id" .= object ["type" .= ("keyword" :: Text)],
-              "title"
-                .= object
-                  [ "type" .= ("text" :: Text),
-                    "fields"
-                      .= object
-                        [ "keyword"
-                            .= object
-                              [ "type" .= ("keyword" :: Text),
-                                "ignore_above" .= (8191 :: Int)
-                              ]
-                        ]
-                  ],
-              "text"
-                .= object
-                  [ "type" .= ("text" :: Text),
-                    "fields"
-                      .= object
-                        [ "keyword"
-                            .= object
-                              [ "type" .= ("keyword" :: Text),
-                                "ignore_above" .= (8191 :: Int)
-                              ]
-                        ]
-                  ],
+              "title" .= TextAndKWMapping,
+              "text" .= TextAndKWMapping,
               "url" .= object ["type" .= ("keyword" :: Text)],
               "commit_count" .= object ["type" .= ("integer" :: Text)],
               "additions" .= object ["type" .= ("integer" :: Text)],
@@ -180,18 +174,7 @@ instance ToJSON ChangesIndexMapping where
                           "score" .= object ["type" .= ("integer" :: Text)],
                           "url" .= object ["type" .= ("keyword" :: Text)],
                           "prefix" .= object ["type" .= ("keyword" :: Text)],
-                          "title"
-                            .= object
-                              [ "type" .= ("text" :: Text),
-                                "fields"
-                                  .= object
-                                    [ "keyword"
-                                        .= object
-                                          [ "type" .= ("keyword" :: Text),
-                                            "ignore_above" .= (8191 :: Int)
-                                          ]
-                                    ]
-                              ],
+                          "title" .= TextAndKWMapping,
                           "_adopted" .= object ["type" .= ("boolean" :: Text)]
                         ]
                   ]
