@@ -106,7 +106,7 @@ library
                      , base64-bytestring          >= 1.1
                      , binary                     >= 0.8
                      , bloodhound                 >= 0.18.0.0
-                     , bugzilla-redhat            >= 0.3.2
+                     , bugzilla-redhat            ^>= 1.0
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10
                      , containers                 >= 0.6

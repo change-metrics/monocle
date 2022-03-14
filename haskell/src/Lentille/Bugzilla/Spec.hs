@@ -7,7 +7,7 @@ import Monocle.Search (TaskData (..))
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified Web.Bugzilla.RedHat as BZ
+import qualified Web.RedHatBugzilla as BZ
 
 bzClientTests :: TestTree
 bzClientTests =
