@@ -38,13 +38,24 @@ data MonocleClient = MonocleClient
     manager :: Manager
   }
 
+data TlsVerify = Verify | Insecure
+
+lookupTlsVerify :: IO TlsVerify
+lookupTlsVerify = do
+  disableTls <- lookupEnv "TLS_NO_VERIFY"
+  pure $ case disableTls of
+    Just x | x /= "0" -> Insecure
+    _ -> Verify
+
 -- | Create a HTTP manager
 mkManager :: IO Manager
-mkManager = do
-  disableTlsM <- lookupEnv "TLS_NO_VERIFY"
-  let opensslSettings = case disableTlsM of
-        Just _ -> OpenSSL.defaultOpenSSLSettings {OpenSSL.osslSettingsVerifyMode = VerifyNone}
-        Nothing -> OpenSSL.defaultOpenSSLSettings
+mkManager = mkManager' =<< lookupTlsVerify
+
+mkManager' :: TlsVerify -> IO Manager
+mkManager' verify = do
+  let opensslSettings = case verify of
+        Insecure -> OpenSSL.defaultOpenSSLSettings {OpenSSL.osslSettingsVerifyMode = VerifyNone}
+        Verify -> OpenSSL.defaultOpenSSLSettings
   tlsCiphers <- fromMaybe "DEFAULT" <$> lookupEnv "TLS_CIPHERS"
   ctx <- OpenSSL.defaultMakeContext (opensslSettings {OpenSSL.osslSettingsCiphers = tlsCiphers})
   newManager $ OpenSSL.opensslManagerSettings (pure ctx)

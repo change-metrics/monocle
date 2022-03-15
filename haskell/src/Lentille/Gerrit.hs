@@ -33,6 +33,7 @@ import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import qualified Monocle.Change as C
+import Monocle.Client (mkManager)
 import Monocle.Prelude hiding (all, id)
 import qualified Monocle.Project as P
 import qualified Network.URI as URI
@@ -55,10 +56,15 @@ instance MonadGerrit LentilleM where
   queryChanges env count queries = liftIO . queryChanges env count queries
 
 instance MonadGerrit IO where
-  getGerritClient url Nothing = G.getClient url Nothing
-  getGerritClient url (Just (user, Secret password)) = G.getClient url $ Just (user, password)
+  getGerritClient url Nothing = getClient url Nothing
+  getGerritClient url (Just (user, Secret password)) = getClient url $ Just (user, password)
   getProjects env count query startM = G.getProjects count query startM (client env)
   queryChanges env count queries startM = G.queryChanges count queries startM (client env)
+
+getClient :: Text -> Maybe (Text, Text) -> IO G.GerritClient
+getClient url auth = do
+  manager <- mkManager
+  pure $ G.getClientWithManager manager url auth
 
 data GerritEnv = GerritEnv
   { -- | The Gerrit connexion client
