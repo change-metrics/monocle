@@ -438,7 +438,7 @@ server advertising an unsupported cipher. If you experience `wrong signature typ
 crawler container, you should consider changing ciphers using the `TLS_CIPHER` environment variable
 in your docker-compose configuration file. You can find [additional information](https://fedoraproject.org/wiki/Changes/StrongCryptoSettings2) on Fedora changelog.
 
-To disable TLS verification, use the `TLS_NO_VERIFY` environment variable.
+To disable TLS verification, set the `TLS_NO_VERIFY` environment variable to `1`.
 
 ## Components
 
