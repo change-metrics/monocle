@@ -81,6 +81,12 @@ let
             broken = false;
           };
 
+          bugzilla-redhat = pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
+            version = "1.0.0";
+            sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
+            broken = false;
+          };
+
           morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
           morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
           morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
