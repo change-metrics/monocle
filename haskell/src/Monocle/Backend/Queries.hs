@@ -9,6 +9,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
+import Database.Bloodhound.Raw (TermsCompositeAggBucket)
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
 import qualified Monocle.Api.Config as Config
@@ -198,22 +199,24 @@ queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
 
 -- | Run a Terms composite aggregation (composite agg result is paginated)
 -- | Composite aggregations are adviced when dealing with high cardinality terms
--- TODO: return an iterator
-doTermsCompositeAgg :: QueryMonad m => Text -> m (V.Vector BHR.TermsCompositeAggBucket)
-doTermsCompositeAgg term = getPages Nothing mempty
+doTermsCompositeAgg :: forall m. QueryMonad m => Text -> Stream (Of BHR.TermsCompositeAggBucket) m ()
+doTermsCompositeAgg term = getPages Nothing
   where
-    getPages afterM acc = do
-      ret <- doAgg afterM
+    getPages :: Maybe Value -> Stream (Of BHR.TermsCompositeAggBucket) m ()
+    getPages afterM = do
+      ret <- lift $ queryAggResult $ BHR.mkAgg [BHR.mkTermsCompositeAgg term afterM] Nothing Nothing
+      Streaming.each $ getBuckets ret
       case getAfterValue ret of
-        Just afterValue -> getPages (Just afterValue) $ acc <> getBuckets ret
-        Nothing -> pure acc
-    doAgg :: QueryMonad m => Maybe Value -> m BHR.TermsCompositeAggResult
-    doAgg afterM = queryAggResult $ BHR.mkAgg [BHR.mkTermsCompositeAgg term afterM] Nothing Nothing
+        Just afterValue -> getPages (Just afterValue)
+        Nothing -> pure ()
     getAfterValue :: BHR.TermsCompositeAggResult -> Maybe Value
     getAfterValue (BHR.TermsCompositeAggResult (Just (BHR.TermsCompositeAggKey v)) _) = Just v
     getAfterValue (BHR.TermsCompositeAggResult Nothing _) = Nothing
     getBuckets :: BHR.TermsCompositeAggResult -> V.Vector BHR.TermsCompositeAggBucket
     getBuckets (BHR.TermsCompositeAggResult _ buckets) = buckets
+
+doTermsCompositeAgg' :: QueryMonad m => Text -> m [TermsCompositeAggBucket]
+doTermsCompositeAgg' = Streaming.toList_ . doTermsCompositeAgg
 
 -------------------------------------------------------------------------------
 -- High level queries
