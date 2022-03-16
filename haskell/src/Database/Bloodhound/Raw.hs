@@ -1,13 +1,27 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | A module for low-level function unavailable in bloodhound
-module Database.Bloodhound.Raw (ScrollRequest (..), advance, search, searchHit, settings, aggWithDocValues) where
+module Database.Bloodhound.Raw
+  ( ScrollRequest (..),
+    TermsCompositeAggResult (..),
+    TermsCompositeAggKey (..),
+    TermsCompositeAggBucket (..),
+    advance,
+    search,
+    searchHit,
+    settings,
+    aggWithDocValues,
+    mkAgg,
+    mkTermsCompositeAgg,
+  )
+where
 
+import Data.Aeson
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Casing.Internal as AesonCasing
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as Text
-import qualified Data.Vector as Vector
+import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Json.Extras as Json
 import Monocle.Prelude
@@ -137,21 +151,78 @@ searchHit index body = do
       Just v -> v
 
 aggWithDocValues :: [(Text, Value)] -> Maybe BH.Query -> Value
-aggWithDocValues agg query =
+aggWithDocValues agg = mkAgg agg (Just dv)
+  where
+    dv =
+      Aeson.Array
+        ( V.fromList
+            [ Aeson.object
+                [ "field" .= Aeson.String "created_at",
+                  "format" .= Aeson.String "date_time"
+                ]
+            ]
+        )
+
+mkAgg :: [(Text, Value)] -> Maybe Value -> Maybe BH.Query -> Value
+mkAgg agg docvalues query =
   Aeson.object $
     [ "aggregations" .= Aeson.object agg,
-      "size"
-        .= Aeson.Number 0,
-      "docvalue_fields"
-        .= Aeson.Array
-          ( Vector.fromList
-              [ Aeson.object
-                  [ "field" .= Aeson.String "created_at",
-                    "format" .= Aeson.String "date_time"
-                  ]
-              ]
-          )
+      "size" .= Aeson.Number 0
     ]
+      <> case docvalues of
+        Just dv -> ["docvalue_fields" .= dv]
+        Nothing -> []
       <> case query of
         Just q -> ["query" .= Aeson.toJSON q]
         Nothing -> []
+
+mkTermsCompositeAgg :: Text -> Maybe Value -> (Text, Value)
+mkTermsCompositeAgg term afterM =
+  ( "agg1",
+    Aeson.object
+      [ "composite" .= Aeson.object (["sources" .= [agg]] <> after)
+      ]
+  )
+  where
+    after = case afterM of
+      Just v -> ["after" .= Aeson.object ["agg" .= v]]
+      Nothing -> []
+    agg =
+      Aeson.object
+        [ "agg"
+            .= Aeson.object
+              [ "terms" .= Aeson.object ["field" .= term]
+              ]
+        ]
+
+-- Make Value a type parameter for TermsCompositeAggResult
+newtype TermsCompositeAggKey = TermsCompositeAggKey
+  {tcaaKey :: Value}
+  deriving (Eq, Show)
+
+instance FromJSON TermsCompositeAggKey where
+  parseJSON (Object v) =
+    TermsCompositeAggKey <$> v .: "agg"
+  parseJSON _ = mzero
+
+data TermsCompositeAggBucket = TermsCompositeAggBucket
+  { tcaKey :: TermsCompositeAggKey,
+    tcaDocCount :: Word32
+  }
+  deriving (Eq, Show)
+
+instance FromJSON TermsCompositeAggBucket where
+  parseJSON (Object v) =
+    TermsCompositeAggBucket <$> v .: "key" <*> v .: "doc_count"
+  parseJSON _ = mzero
+
+data TermsCompositeAggResult = TermsCompositeAggResult
+  { tcarAfterKey :: Maybe TermsCompositeAggKey,
+    tcarBuckets :: V.Vector TermsCompositeAggBucket
+  }
+  deriving (Eq, Show)
+
+instance FromJSON TermsCompositeAggResult where
+  parseJSON (Object v) =
+    TermsCompositeAggResult <$> v .:? "after_key" <*> v .: "buckets"
+  parseJSON _ = mzero
