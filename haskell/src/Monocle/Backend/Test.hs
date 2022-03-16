@@ -908,6 +908,16 @@ testGetSuggestions = withTenant doTest
           )
           results
 
+testGetAllAuthorsMuid :: Assertion
+testGetAllAuthorsMuid = withTenant doTest
+  where
+    doTest :: QueryM ()
+    doTest = do
+      traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
+      withQuery defaultQuery $ do
+        results <- Q.getAllAuthorsMuid'
+        assertEqual' "Check getAllAuthorsMuid result" ["alice", "eve"] results
+
 mkTaskData :: LText -> TaskData
 mkTaskData changeId =
   let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate

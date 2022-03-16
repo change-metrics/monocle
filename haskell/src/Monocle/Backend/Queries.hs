@@ -273,6 +273,20 @@ commitsReviewsRatio =
       EChangeCommitPushedEvent
     ]
 
+-- | Scroll over all know authors
+getAllAuthorsMuid :: QueryMonad m => Stream (Of Text) m ()
+getAllAuthorsMuid = do
+  Streaming.mapMaybe trans $ local updateEnv (doTermsCompositeAgg "author.muid")
+  where
+    trans :: TermsCompositeAggBucket -> Maybe Text
+    trans (BHR.TermsCompositeAggBucket (BHR.TermsCompositeAggKey value) _) = case value of
+      Aeson.String muid -> Just muid
+      _ -> Nothing
+    updateEnv = addFilter [documentTypes $ fromList allEventTypes]
+
+getAllAuthorsMuid' :: QueryMonad m => m [Text]
+getAllAuthorsMuid' = Streaming.toList_ getAllAuthorsMuid
+
 -- | Add a change state filter to the query
 changeState :: EChangeState -> [BH.Query]
 changeState state' =
