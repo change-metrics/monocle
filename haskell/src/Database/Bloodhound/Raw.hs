@@ -180,7 +180,13 @@ mkTermsCompositeAgg :: Text -> Maybe Value -> (Text, Value)
 mkTermsCompositeAgg term afterM =
   ( "agg1",
     Aeson.object
-      [ "composite" .= Aeson.object (["sources" .= [agg]] <> after)
+      [ "composite"
+          .= Aeson.object
+            ( [ "sources" .= [agg],
+                "size" .= Aeson.Number 1024
+              ]
+                <> after
+            )
       ]
   )
   where
