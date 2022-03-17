@@ -2,6 +2,7 @@
 module Monocle.Backend.Index where
 
 import Data.Aeson (object)
+import Data.Aeson.Types (Pair)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.HashTable.IO as H
 import qualified Data.Map as Map
@@ -41,6 +42,8 @@ data ChangesIndexMapping = ChangesIndexMapping deriving (Eq, Show)
 
 data AuthorIndexMapping = AuthorIndexMapping deriving (Eq, Show)
 
+data CachedAuthorIndexMapping = CachedAuthorIndexMapping deriving (Eq, Show)
+
 data AuthorMapping = AuthorMapping deriving (Eq, Show)
 
 instance ToJSON AuthorMapping where
@@ -53,6 +56,13 @@ instance ToJSON AuthorMapping where
 instance ToJSON AuthorIndexMapping where
   toJSON AuthorIndexMapping =
     object ["properties" .= AuthorMapping]
+
+cachedAuthorFields :: [Pair]
+cachedAuthorFields = ["cached_author_muid" .= TextAndKWMapping]
+
+instance ToJSON CachedAuthorIndexMapping where
+  toJSON CachedAuthorIndexMapping =
+    object ["properties" .= object cachedAuthorFields]
 
 data DateIndexMapping = DateIndexMapping deriving (Eq, Show)
 
@@ -99,100 +109,102 @@ instance ToJSON ChangesIndexMapping where
     object
       [ "properties"
           .= object
-            [ "id" .= KWMapping,
-              "type" .= KWMapping,
-              "number" .= KWMapping,
-              "change_id" .= KWMapping,
-              "title" .= TextAndKWMapping,
-              "text" .= TextAndKWMapping,
-              "url" .= KWMapping,
-              "commit_count" .= IntegerMapping,
-              "additions" .= IntegerMapping,
-              "deletions" .= IntegerMapping,
-              "change_files_count" .= IntegerMapping,
-              "changed_files"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "additions" .= IntegerMapping,
-                          "deletions" .= IntegerMapping,
-                          "path" .= KWMapping
-                        ]
-                  ],
-              "commits"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "sha" .= KWMapping,
-                          "author" .= AuthorIndexMapping,
-                          "committer" .= AuthorIndexMapping,
-                          "authored_at" .= DateIndexMapping,
-                          "committed_at" .= DateIndexMapping,
-                          "additions" .= IntegerMapping,
-                          "deletions" .= IntegerMapping,
-                          "title" .= object ["type" .= ("text" :: Text)]
-                        ]
-                  ],
-              "repository_prefix" .= KWMapping,
-              "repository_fullname" .= KWMapping,
-              "repository_shortname" .= KWMapping,
-              "author" .= AuthorIndexMapping,
-              "on_author" .= AuthorIndexMapping,
-              "committer" .= AuthorIndexMapping,
-              "merged_by" .= AuthorIndexMapping,
-              "branch" .= KWMapping,
-              "target_branch" .= KWMapping,
-              "created_at" .= DateIndexMapping,
-              "on_created_at" .= DateIndexMapping,
-              "merged_at" .= DateIndexMapping,
-              "updated_at" .= DateIndexMapping,
-              "closed_at" .= DateIndexMapping,
-              "state" .= KWMapping,
-              "duration" .= IntegerMapping,
-              "mergeable" .= KWMapping,
-              "labels" .= KWMapping,
-              "assignees"
-                .= object
-                  [ "type" .= ("nested" :: Text),
-                    "properties" .= AuthorMapping
-                  ],
-              "approval" .= KWMapping,
-              "draft" .= BoolMapping,
-              "self_merged" .= BoolMapping,
-              "crawler_metadata"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "crawler_name" .= KWMapping,
-                          "crawler_type" .= KWMapping,
-                          "crawler_type_value" .= KWMapping,
-                          "last_commit_at" .= DateIndexMapping,
-                          "last_post_at" .= DateIndexMapping,
-                          "total_docs_posted" .= IntegerMapping,
-                          "total_changes_updated" .= IntegerMapping,
-                          "total_change_events_updated" .= IntegerMapping,
-                          "total_orphans_updated" .= IntegerMapping
-                        ]
-                  ],
-              "tasks_data"
-                .= object
-                  [ "properties"
-                      .= object
-                        [ "tid" .= KWMapping,
-                          "ttype" .= KWMapping,
-                          "crawler_name" .= KWMapping,
-                          "updated_at" .= DateIndexMapping,
-                          "change_url" .= KWMapping,
-                          "severity" .= KWMapping,
-                          "priority" .= KWMapping,
-                          "score" .= IntegerMapping,
-                          "url" .= KWMapping,
-                          "prefix" .= KWMapping,
-                          "title" .= TextAndKWMapping,
-                          "_adopted" .= BoolMapping
-                        ]
-                  ]
-            ]
+            ( [ "id" .= KWMapping,
+                "type" .= KWMapping,
+                "number" .= KWMapping,
+                "change_id" .= KWMapping,
+                "title" .= TextAndKWMapping,
+                "text" .= TextAndKWMapping,
+                "url" .= KWMapping,
+                "commit_count" .= IntegerMapping,
+                "additions" .= IntegerMapping,
+                "deletions" .= IntegerMapping,
+                "change_files_count" .= IntegerMapping,
+                "changed_files"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "additions" .= IntegerMapping,
+                            "deletions" .= IntegerMapping,
+                            "path" .= KWMapping
+                          ]
+                    ],
+                "commits"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "sha" .= KWMapping,
+                            "author" .= AuthorIndexMapping,
+                            "committer" .= AuthorIndexMapping,
+                            "authored_at" .= DateIndexMapping,
+                            "committed_at" .= DateIndexMapping,
+                            "additions" .= IntegerMapping,
+                            "deletions" .= IntegerMapping,
+                            "title" .= object ["type" .= ("text" :: Text)]
+                          ]
+                    ],
+                "repository_prefix" .= KWMapping,
+                "repository_fullname" .= KWMapping,
+                "repository_shortname" .= KWMapping,
+                "author" .= AuthorIndexMapping,
+                "on_author" .= AuthorIndexMapping,
+                "committer" .= AuthorIndexMapping,
+                "merged_by" .= AuthorIndexMapping,
+                "branch" .= KWMapping,
+                "target_branch" .= KWMapping,
+                "created_at" .= DateIndexMapping,
+                "on_created_at" .= DateIndexMapping,
+                "merged_at" .= DateIndexMapping,
+                "updated_at" .= DateIndexMapping,
+                "closed_at" .= DateIndexMapping,
+                "state" .= KWMapping,
+                "duration" .= IntegerMapping,
+                "mergeable" .= KWMapping,
+                "labels" .= KWMapping,
+                "assignees"
+                  .= object
+                    [ "type" .= ("nested" :: Text),
+                      "properties" .= AuthorMapping
+                    ],
+                "approval" .= KWMapping,
+                "draft" .= BoolMapping,
+                "self_merged" .= BoolMapping,
+                "crawler_metadata"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "crawler_name" .= KWMapping,
+                            "crawler_type" .= KWMapping,
+                            "crawler_type_value" .= KWMapping,
+                            "last_commit_at" .= DateIndexMapping,
+                            "last_post_at" .= DateIndexMapping,
+                            "total_docs_posted" .= IntegerMapping,
+                            "total_changes_updated" .= IntegerMapping,
+                            "total_change_events_updated" .= IntegerMapping,
+                            "total_orphans_updated" .= IntegerMapping
+                          ]
+                    ],
+                "tasks_data"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "tid" .= KWMapping,
+                            "ttype" .= KWMapping,
+                            "crawler_name" .= KWMapping,
+                            "updated_at" .= DateIndexMapping,
+                            "change_url" .= KWMapping,
+                            "severity" .= KWMapping,
+                            "priority" .= KWMapping,
+                            "score" .= IntegerMapping,
+                            "url" .= KWMapping,
+                            "prefix" .= KWMapping,
+                            "title" .= TextAndKWMapping,
+                            "_adopted" .= BoolMapping
+                          ]
+                    ]
+              ]
+                <> cachedAuthorFields
+            )
       ]
 
 createIndex :: (BH.MonadBH m, ToJSON mapping, MonadFail m) => BH.IndexName -> mapping -> m ()
@@ -206,6 +218,9 @@ createIndex indexName mapping = do
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
+schemaVersion :: ConfigVersion
+schemaVersion = ConfigVersion 2
+
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
 
@@ -217,6 +232,8 @@ configDoc = BH.DocId "config"
 -- | lastCommitAt to the lastUpdatedAt date of the most recent change of the repository.
 upgradeConfigV1 :: QueryM ()
 upgradeConfigV1 = do
+  indexName <- getIndexName
+  logMessage $ "Applying migration to schema V1 on workspace " <> show indexName
   QueryWorkspace ws <- asks tenant
   -- Get GitHub crawler names
   let ghCrawlerNames = getGHCrawlerNames ws
@@ -262,6 +279,12 @@ upgradeConfigV1 = do
               lastUpdatedAt
               $ Project . from $ ecmCrawlerTypeValue
 
+upgradeConfigV2 :: QueryM ()
+upgradeConfigV2 = do
+  indexName <- getIndexName
+  logMessage $ "Applying migration to schema V2 on workspace " <> show indexName
+  void $ BH.putMapping indexName CachedAuthorIndexMapping
+
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
 
 -- | Extract the `version` attribute of an Aeson object value
@@ -294,10 +317,14 @@ ensureConfigIndex = do
   createIndex configIndex ConfigIndexMapping
   (currentVersion, currentConfig) <- getConfigVersion
 
-  when (currentVersion == ConfigVersion 0) $ traverseWorkspace upgradeConfigV1 conf
+  when (currentVersion == ConfigVersion 0) $ do
+    traverseWorkspace upgradeConfigV1 conf
+    traverseWorkspace upgradeConfigV2 conf
+  when (currentVersion == ConfigVersion 1) $ traverseWorkspace upgradeConfigV2 conf
 
-  let newConfig = setVersion (ConfigVersion 1) currentConfig
+  let newConfig = setVersion schemaVersion currentConfig
   void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
+  logMessage $ "Ensure schema version to " <> show schemaVersion
   where
     -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
     traverseWorkspace action conf = do
@@ -307,6 +334,7 @@ ensureConfigIndex = do
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do
   indexName <- getIndexName
+  logMessage $ "Ensure workspace " <> show indexName
   createIndex indexName ChangesIndexMapping
   BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 

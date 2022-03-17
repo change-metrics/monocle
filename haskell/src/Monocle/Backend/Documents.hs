@@ -40,6 +40,16 @@ instance From CrawlerPB.Ident Author where
         authorUid = identUid
       }
 
+-- | CachedAuthor is used by the Author search cache
+newtype CachedAuthor = CachedAuthor {cachedAuthorMuid :: LText}
+  deriving (Show, Eq, Generic)
+
+instance ToJSON CachedAuthor where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON CachedAuthor where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data File = File
   { fileAdditions :: Word32,
     fileDeletions :: Word32,
