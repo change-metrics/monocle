@@ -486,7 +486,7 @@ getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
 -- | Generate an DocID from Text
 getBHDocID :: Text -> BH.DocId
-getBHDocID = BH.DocId . decodeUtf8 . hash . encodeUtf8
+getBHDocID = BH.DocId . decodeUtf8 . B64.encode . hash . encodeUtf8
 
 -- | A simple scan search that loads all the results in memory
 runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
@@ -877,6 +877,14 @@ initCrawlerMetadata crawler =
     )
     crawler
 
+-- Author cache functions
+-------------------------
+
+toCachedAuthorValue :: Text -> Value
+toCachedAuthorValue muid = toJSON $ CachedAuthor ECachedAuthor (from muid)
+
+-- | Wipe then fill the author cache
+-- The CachedAuthor list is built from all uniq Author in the EL index
 populateAuthorCache :: QueryM Int
 populateAuthorCache = do
   indexName <- getIndexName
@@ -895,5 +903,23 @@ populateAuthorCache = do
   where
     mkECachedAuthorBulkInsert :: BH.IndexName -> Text -> BulkOperation
     mkECachedAuthorBulkInsert indexName muid =
-      let doc = toJSON $ CachedAuthor ECachedAuthor (from muid)
-       in BulkIndex indexName (getBHDocID muid) doc
+      BulkIndex indexName (getBHDocID muid) $ toCachedAuthorValue muid
+
+-- | This function extacts authors from events and adds them to the author cache
+addCachedAuthors :: [EChangeEvent] -> QueryM ()
+addCachedAuthors events = do
+  indexName <- getIndexName
+  let muids = from . authorMuid <$> mapMaybe echangeeventAuthor events
+      bulkOps = mkECachedAuthorBulkUpsert indexName <$> muids
+  void $ BH.bulk $ fromList bulkOps
+  void $ BH.refreshIndex indexName
+  where
+    mkECachedAuthorBulkUpsert indexName muid =
+      BulkUpsert indexName (getBHDocID muid) (BH.UpsertDoc $ toCachedAuthorValue muid) []
+
+-- | This function returns the author cache contents
+getAuthorCache :: QueryM [CachedAuthor]
+getAuthorCache =
+  withFilter
+    [Q.documentType ECachedAuthor]
+    Q.scanSearchSimple

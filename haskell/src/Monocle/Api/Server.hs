@@ -222,6 +222,7 @@ crawlerAddDoc request = do
       I.indexChanges changes'
       I.indexEvents events'
       I.updateChangesAndEventsFromOrphanTaskData changes' events'
+      I.addCachedAuthors events'
       pure $ CrawlerPB.AddDocResponse Nothing
     addProjects crawler organizationName projects = do
       logEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)

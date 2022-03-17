@@ -58,6 +58,8 @@ updateIdentsOnWorkspace = do
   print @Text $ "Updated " <> show updatedChangesCount <> " changes."
   updatedEventsCount <- updateIdentsOnEvents
   print @Text $ "Updated " <> show updatedEventsCount <> " events."
+  populatedCount <- I.populateAuthorCache
+  print @Text $ "Author cache re-populated with " <> show populatedCount <> " entries."
 
 -- | Apply identities according to the configuration on Changes
 -- Try this on the REPL with:
@@ -148,7 +150,7 @@ instance FromJSON EChangeEventAuthors where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 doUpdateIdentsOnEvents :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
-doUpdateIdentsOnEvents indexName updateAuthor' = do
+doUpdateIdentsOnEvents indexName updateAuthor' =
   withQuery eventQuery $
     scanEvents
       & ( Streaming.mapMaybe updateEvent

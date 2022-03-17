@@ -922,6 +922,40 @@ testGetAllAuthorsMuid = withTenant doTest
         results <- Q.getAllAuthorsMuid'
         assertEqual' "Check getAllAuthorsMuid result" ["alice", "eve"] results
 
+testAuthorCache :: Assertion
+testAuthorCache = withTenant doTest
+  where
+    doTest = do
+      -- Index a change and some events
+      traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
+
+      -- Validate that populate clear and index 2 authors in the cache
+      added <- I.populateAuthorCache
+      assertEqual' "Check author cache populated with" 2 added
+      added' <- I.populateAuthorCache
+      assertEqual' "Check author cache populated with" 2 added'
+
+      -- Validate that addCachedAuthors extracts the bob author from the event and adds in the cache
+      I.addCachedAuthors [mkEvent 0 fakeDate EChangeCreatedEvent bob bob "change-44" "openstack/nova"]
+      resp <- I.getAuthorCache
+      assertEqual' "Check author cache populated with" 3 $ length resp
+      assertEqual'
+        "Check author cache populated with"
+        [ CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "alice"
+            },
+          CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "eve"
+            },
+          CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "bob"
+            }
+        ]
+        resp
+
 mkTaskData :: LText -> TaskData
 mkTaskData changeId =
   let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
