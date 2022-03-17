@@ -1,6 +1,7 @@
 -- | Index management functions such as document mapping and ingest
 module Monocle.Backend.Index where
 
+import Crypto.Hash.SHA256 (hash)
 import Data.Aeson (object)
 import Data.Aeson.Types (Pair)
 import qualified Data.ByteString.Base64 as B64
@@ -27,6 +28,7 @@ import qualified Network.HTTP.Types.Status as NHTS
 import qualified Proto3.Suite.Types as PT (Enumerated (..))
 import qualified Streaming as S (chunksOf)
 import qualified Streaming.Prelude as S
+import qualified Streaming.Prelude as Streaming
 
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
 
@@ -480,6 +482,10 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 getBase64Text :: Text -> Text
 getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
 
+-- | Generate an DocID from Text
+getBHDocID :: Text -> BH.DocId
+getBHDocID = BH.DocId . decodeUtf8 . hash . encodeUtf8
+
 -- | A simple scan search that loads all the results in memory
 runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
 runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
@@ -868,3 +874,24 @@ initCrawlerMetadata crawler =
         <> getTaskDataEntityFromCrawler crawler
     )
     crawler
+
+populateAuthorCache :: QueryM Int
+populateAuthorCache = do
+  indexName <- getIndexName
+  -- First wipe the cache
+  void $
+    withFilter [Q.documentType ECachedAuthor] $
+      Q.scanSearchId
+        & ( Streaming.map (BulkDelete indexName)
+              >>> bulkStream
+          )
+  -- Second populate the cache
+  Q.getAllAuthorsMuid
+    & ( Streaming.map (mkECachedAuthorBulkInsert indexName)
+          >>> bulkStream
+      )
+  where
+    mkECachedAuthorBulkInsert :: BH.IndexName -> Text -> BulkOperation
+    mkECachedAuthorBulkInsert indexName muid =
+      let doc = toJSON $ CachedAuthor ECachedAuthor (from muid)
+       in BulkIndex indexName (getBHDocID muid) doc
