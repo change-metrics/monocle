@@ -329,8 +329,12 @@ testEnsureConfig = bracket_ create delete doTest
       let qt = QueryConfig $ Config.Config Nothing [tenantConfig]
       runQueryTarget bhEnv qt action
 
-    create = wrap I.ensureConfigIndex
-    delete = wrap I.removeIndex
+    create = do
+      testQueryM tenantConfig I.ensureIndexSetup
+      wrap I.ensureConfigIndex
+    delete = do
+      testQueryM tenantConfig I.removeIndex
+      wrap I.removeIndex
     doTest = wrap $ do
       (currentVersion, _) <- I.getConfigVersion
       assertEqual' "Check expected Config Index" I.schemaVersion currentVersion

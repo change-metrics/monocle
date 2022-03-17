@@ -286,6 +286,8 @@ upgradeConfigV2 = do
   indexName <- getIndexName
   logMessage $ "Applying migration to schema V2 on workspace " <> show indexName
   void $ BH.putMapping indexName CachedAuthorIndexMapping
+  added <- populateAuthorCache
+  logMessage $ "Authors cache populated with " <> show added <> " Monocle uids"
 
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
 
