@@ -937,3 +937,21 @@ getAuthorCache =
   withFilter
     [Q.documentType ECachedAuthor]
     Q.scanSearchSimple
+
+-- | This function returns matched author muid(s) based on the match query
+searchAuthorCache :: Text -> QueryM [Text]
+searchAuthorCache matchQuery = do
+  indexName <- getIndexName
+  ret <- runSearch indexName
+  pure $ mapMaybe trans ret
+  where
+    runSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit CachedAuthor]
+    runSearch index = BH.scanSearch index search
+    search = BH.mkSearch (Just query) Nothing
+    query =
+      BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $
+        BH.QueryString matchQuery
+    trans :: BH.Hit CachedAuthor -> Maybe Text
+    trans BH.Hit {..} = case hitSource of
+      Just CachedAuthor {..} -> Just . from $ caCachedAuthorMuid
+      _ -> Nothing

@@ -27,14 +27,16 @@ import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
 import qualified Streaming.Prelude as Streaming
 
-fakeDate :: UTCTime
+fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
-
-fakeDateAlt :: UTCTime
 fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 
-fakeAuthor :: Author
+alice, bob, eve, fakeAuthor, fakeAuthorAlt :: Author
+alice = Author "alice" "a"
+bob = Author "bob" "b"
+eve = Author "eve" "e"
 fakeAuthor = Author "John" "John"
+fakeAuthorAlt = Author "John Doe/12" "review.opendev.org/John Doe/12"
 
 fakeChange :: EChange
 fakeChange =
@@ -561,15 +563,6 @@ testJanitorUpdateIdents = do
               commitTitle = mempty
             }
 
-alice :: Author
-alice = Author "alice" "a"
-
-bob :: Author
-bob = Author "bob" "b"
-
-eve :: Author
-eve = Author "eve" "e"
-
 reviewers :: [Author]
 reviewers = [alice, bob]
 
@@ -935,8 +928,17 @@ testAuthorCache = withTenant doTest
       added' <- I.populateAuthorCache
       assertEqual' "Check author cache populated with" 2 added'
 
-      -- Validate that addCachedAuthors extracts the bob author from the event and adds in the cache
-      I.addCachedAuthors [mkEvent 0 fakeDate EChangeCreatedEvent bob bob "change-44" "openstack/nova"]
+      -- Validate that addCachedAuthors extracts the new author from the event and adds in the cache
+      I.addCachedAuthors
+        [ mkEvent
+            0
+            fakeDate
+            EChangeCreatedEvent
+            fakeAuthorAlt
+            fakeAuthorAlt
+            "change-44"
+            "openstack/nova"
+        ]
       resp <- I.getAuthorCache
       assertEqual' "Check author cache populated with" 3 $ length resp
       assertEqual'
@@ -951,10 +953,14 @@ testAuthorCache = withTenant doTest
             },
           CachedAuthor
             { caType = ECachedAuthor,
-              caCachedAuthorMuid = "bob"
+              caCachedAuthorMuid = "John Doe/12"
             }
         ]
         resp
+
+      -- Validate that we can search in the author cache
+      authors <- I.searchAuthorCache "doe"
+      assertEqual' "Check search author" ["John Doe/12"] authors
 
 mkTaskData :: LText -> TaskData
 mkTaskData changeId =
