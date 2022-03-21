@@ -220,8 +220,8 @@ createIndex indexName mapping = do
   where
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
 
-schemaVersion :: ConfigVersion
-schemaVersion = ConfigVersion 2
+configVersion :: ConfigVersion
+configVersion = ConfigVersion 2
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -289,7 +289,13 @@ upgradeConfigV2 = do
   added <- populateAuthorCache
   logMessage $ "Authors cache populated with " <> show added <> " Monocle uids"
 
-newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show)
+upgrades :: [(ConfigVersion, QueryM ())]
+upgrades =
+  [ (ConfigVersion 1, upgradeConfigV1),
+    (ConfigVersion 2, upgradeConfigV2)
+  ]
+
+newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show, Ord)
 
 -- | Extract the `version` attribute of an Aeson object value
 --
@@ -318,17 +324,25 @@ getConfigVersion = do
 ensureConfigIndex :: QueryM ()
 ensureConfigIndex = do
   QueryConfig conf <- asks tenant
+
+  -- Ensure index and index mapping
   createIndex configIndex ConfigIndexMapping
+
+  -- Get current config version
   (currentVersion, currentConfig) <- getConfigVersion
 
-  when (currentVersion == ConfigVersion 0) $ do
-    traverseWorkspace upgradeConfigV1 conf
-    traverseWorkspace upgradeConfigV2 conf
-  when (currentVersion == ConfigVersion 1) $ traverseWorkspace upgradeConfigV2 conf
+  -- Apply upgrade processes
+  traverse_
+    ( \(version, procedure) ->
+        when (currentVersion < version) $
+          traverseWorkspace procedure conf
+    )
+    upgrades
 
-  let newConfig = setVersion schemaVersion currentConfig
+  -- Write new config version in config index
+  let newConfig = setVersion configVersion currentConfig
   void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
-  logMessage $ "Ensure schema version to " <> show schemaVersion
+  logMessage $ "Ensure schema version to " <> show configVersion
   where
     -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
     traverseWorkspace action conf = do

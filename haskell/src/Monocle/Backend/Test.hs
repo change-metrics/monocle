@@ -337,7 +337,7 @@ testEnsureConfig = bracket_ create delete doTest
       wrap I.removeIndex
     doTest = wrap $ do
       (currentVersion, _) <- I.getConfigVersion
-      assertEqual' "Check expected Config Index" I.schemaVersion currentVersion
+      assertEqual' "Check expected Config Index" I.configVersion currentVersion
     tenantConfig = defaultTenant "test-index"
 
 testUpgradeConfigV1 :: Assertion
