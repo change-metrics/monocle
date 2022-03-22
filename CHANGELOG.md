@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - [webui] A scoped view for Author and Group that features tailored metrics and changes lists.
 - [api] Search query QUERY_RATIO_COMMITS_VS_REVIEWS.
 - [api] Search queries QUERY_HISTO_COMMITS, QUERY_HISTO_REVIEWS_AND_COMMENTS.
+- [api] Endpoint to search author by name.
 
 ### Changed
 

@@ -33,6 +33,15 @@ val encode_check_request : SearchTypes.check_request -> Js.Json.t Js.Dict.t
 val encode_check_response : SearchTypes.check_response -> Js.Json.t Js.Dict.t
 (** [encode_check_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_author : SearchTypes.author -> Js.Json.t Js.Dict.t
+(** [encode_author v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_author_request : SearchTypes.author_request -> Js.Json.t Js.Dict.t
+(** [encode_author_request v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_author_response : SearchTypes.author_response -> Js.Json.t Js.Dict.t
+(** [encode_author_response v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_order_direction : SearchTypes.order_direction -> string
 (** [encode_order_direction v] returns JSON string*)
 
@@ -143,6 +152,15 @@ val decode_check_request : Js.Json.t Js.Dict.t -> SearchTypes.check_request
 
 val decode_check_response : Js.Json.t Js.Dict.t -> SearchTypes.check_response
 (** [decode_check_response decoder] decodes a [check_response] value from [decoder] *)
+
+val decode_author : Js.Json.t Js.Dict.t -> SearchTypes.author
+(** [decode_author decoder] decodes a [author] value from [decoder] *)
+
+val decode_author_request : Js.Json.t Js.Dict.t -> SearchTypes.author_request
+(** [decode_author_request decoder] decodes a [author_request] value from [decoder] *)
+
+val decode_author_response : Js.Json.t Js.Dict.t -> SearchTypes.author_response
+(** [decode_author_response decoder] decodes a [author_response] value from [decoder] *)
 
 val decode_order_direction : Js.Json.t -> SearchTypes.order_direction
 (** [decode_order_direction value] decodes a [order_direction] from a Json value*)

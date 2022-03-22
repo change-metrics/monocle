@@ -65,6 +65,21 @@ type check_response =
   | Success of string
   | Error of query_error
 
+type author = {
+  muid : string;
+  aliases : string list;
+  groups : string list;
+}
+
+type author_request = {
+  index : string;
+  query : string;
+}
+
+type author_response = {
+  authors : author list;
+}
+
 type order_direction =
   | Asc 
   | Desc 
@@ -373,6 +388,30 @@ let rec default_check_request
 }
 
 let rec default_check_response () : check_response = Success ("")
+
+let rec default_author 
+  ?muid:((muid:string) = "")
+  ?aliases:((aliases:string list) = [])
+  ?groups:((groups:string list) = [])
+  () : author  = {
+  muid;
+  aliases;
+  groups;
+}
+
+let rec default_author_request 
+  ?index:((index:string) = "")
+  ?query:((query:string) = "")
+  () : author_request  = {
+  index;
+  query;
+}
+
+let rec default_author_response 
+  ?authors:((authors:author list) = [])
+  () : author_response  = {
+  authors;
+}
 
 let rec default_order_direction () = (Asc:order_direction)
 

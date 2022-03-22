@@ -1554,6 +1554,342 @@ instance HsJSONPB.ToSchema CheckResponseResult where
             }
         )
 
+data Author = Author
+  { authorMuid :: Hs.Text,
+    authorAliases :: Hs.Vector Hs.Text,
+    authorGroups :: Hs.Vector Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Author where
+  nameOf _ = (Hs.fromString "Author")
+
+instance HsProtobuf.HasDefault Author
+
+instance HsProtobuf.Message Author where
+  encodeMessage
+    _
+    Author
+      { authorMuid = authorMuid,
+        authorAliases = authorAliases,
+        authorGroups = authorGroups
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                authorMuid
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    authorAliases
+                )
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
+                    authorGroups
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure Author)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.UnpackedVec Hs.Text))
+              @(_ (Hs.Vector Hs.Text))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "muid")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "aliases")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Repeated HsProtobuf.String)
+          (HsProtobuf.Single "groups")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Author where
+  toJSONPB (Author f1 f2 f3) =
+    (HsJSONPB.object ["muid" .= f1, "aliases" .= f2, "groups" .= f3])
+  toEncodingPB (Author f1 f2 f3) =
+    (HsJSONPB.pairs ["muid" .= f1, "aliases" .= f2, "groups" .= f3])
+
+instance HsJSONPB.FromJSONPB Author where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Author"
+        ( \obj ->
+            (Hs.pure Author) <*> obj .: "muid" <*> obj .: "aliases"
+              <*> obj .: "groups"
+        )
+    )
+
+instance HsJSONPB.ToJSON Author where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Author where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema Author where
+  declareNamedSchema _ =
+    do
+      let declare_muid = HsJSONPB.declareSchemaRef
+      authorMuid <- declare_muid Proxy.Proxy
+      let declare_aliases = HsJSONPB.declareSchemaRef
+      authorAliases <- declare_aliases Proxy.Proxy
+      let declare_groups = HsJSONPB.declareSchemaRef
+      authorGroups <- declare_groups Proxy.Proxy
+      let _ =
+            Hs.pure Author <*> HsJSONPB.asProxy declare_muid
+              <*> HsJSONPB.asProxy declare_aliases
+              <*> HsJSONPB.asProxy declare_groups
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName = Hs.Just "Author",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("muid", authorMuid),
+                          ("aliases", authorAliases),
+                          ("groups", authorGroups)
+                        ]
+                  }
+            }
+        )
+
+data AuthorRequest = AuthorRequest
+  { authorRequestIndex :: Hs.Text,
+    authorRequestQuery :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named AuthorRequest where
+  nameOf _ = (Hs.fromString "AuthorRequest")
+
+instance HsProtobuf.HasDefault AuthorRequest
+
+instance HsProtobuf.Message AuthorRequest where
+  encodeMessage
+    _
+    AuthorRequest
+      { authorRequestIndex = authorRequestIndex,
+        authorRequestQuery = authorRequestQuery
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                authorRequestIndex
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                authorRequestQuery
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure AuthorRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "index")
+          []
+          ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "query")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB AuthorRequest where
+  toJSONPB (AuthorRequest f1 f2) =
+    (HsJSONPB.object ["index" .= f1, "query" .= f2])
+  toEncodingPB (AuthorRequest f1 f2) =
+    (HsJSONPB.pairs ["index" .= f1, "query" .= f2])
+
+instance HsJSONPB.FromJSONPB AuthorRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "AuthorRequest"
+        ( \obj ->
+            (Hs.pure AuthorRequest) <*> obj .: "index" <*> obj .: "query"
+        )
+    )
+
+instance HsJSONPB.ToJSON AuthorRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON AuthorRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema AuthorRequest where
+  declareNamedSchema _ =
+    do
+      let declare_index = HsJSONPB.declareSchemaRef
+      authorRequestIndex <- declare_index Proxy.Proxy
+      let declare_query = HsJSONPB.declareSchemaRef
+      authorRequestQuery <- declare_query Proxy.Proxy
+      let _ =
+            Hs.pure AuthorRequest <*> HsJSONPB.asProxy declare_index
+              <*> HsJSONPB.asProxy declare_query
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "AuthorRequest",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [ ("index", authorRequestIndex),
+                          ("query", authorRequestQuery)
+                        ]
+                  }
+            }
+        )
+
+newtype AuthorResponse = AuthorResponse
+  { authorResponseAuthors ::
+      Hs.Vector Monocle.Search.Author
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named AuthorResponse where
+  nameOf _ = (Hs.fromString "AuthorResponse")
+
+instance HsProtobuf.HasDefault AuthorResponse
+
+instance HsProtobuf.Message AuthorResponse where
+  encodeMessage
+    _
+    AuthorResponse {authorResponseAuthors = authorResponseAuthors} =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Search.Author)
+                    @(HsProtobuf.NestedVec Monocle.Search.Author)
+                    authorResponseAuthors
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure AuthorResponse)
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Search.Author))
+              @(_ (Hs.Vector Monocle.Search.Author))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "Author"))
+          )
+          (HsProtobuf.Single "authors")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB AuthorResponse where
+  toJSONPB (AuthorResponse f1) = (HsJSONPB.object ["authors" .= f1])
+  toEncodingPB (AuthorResponse f1) =
+    (HsJSONPB.pairs ["authors" .= f1])
+
+instance HsJSONPB.FromJSONPB AuthorResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "AuthorResponse"
+        (\obj -> (Hs.pure AuthorResponse) <*> obj .: "authors")
+    )
+
+instance HsJSONPB.ToJSON AuthorResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON AuthorResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsJSONPB.ToSchema AuthorResponse where
+  declareNamedSchema _ =
+    do
+      let declare_authors = HsJSONPB.declareSchemaRef
+      authorResponseAuthors <- declare_authors Proxy.Proxy
+      let _ = Hs.pure AuthorResponse <*> HsJSONPB.asProxy declare_authors
+      Hs.return
+        ( HsJSONPB.NamedSchema
+            { HsJSONPB._namedSchemaName =
+                Hs.Just "AuthorResponse",
+              HsJSONPB._namedSchemaSchema =
+                Hs.mempty
+                  { HsJSONPB._schemaParamSchema =
+                      Hs.mempty
+                        { HsJSONPB._paramSchemaType =
+                            Hs.Just HsJSONPB.SwaggerObject
+                        },
+                    HsJSONPB._schemaProperties =
+                      HsJSONPB.insOrdFromList
+                        [("authors", authorResponseAuthors)]
+                  }
+            }
+        )
+
 data Order = Order
   { orderField :: Hs.Text,
     orderDirection ::

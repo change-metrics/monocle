@@ -68,6 +68,21 @@ type check_response =
   | Success of string
   | Error of query_error
 
+type author = {
+  muid : string;
+  aliases : string list;
+  groups : string list;
+}
+
+type author_request = {
+  index : string;
+  query : string;
+}
+
+type author_response = {
+  authors : author list;
+}
+
 type order_direction =
   | Asc 
   | Desc 
@@ -360,6 +375,27 @@ val default_check_request :
 
 val default_check_response : unit -> check_response
 (** [default_check_response ()] is the default value for type [check_response] *)
+
+val default_author : 
+  ?muid:string ->
+  ?aliases:string list ->
+  ?groups:string list ->
+  unit ->
+  author
+(** [default_author ()] is the default value for type [author] *)
+
+val default_author_request : 
+  ?index:string ->
+  ?query:string ->
+  unit ->
+  author_request
+(** [default_author_request ()] is the default value for type [author_request] *)
+
+val default_author_response : 
+  ?authors:author list ->
+  unit ->
+  author_response
+(** [default_author_response ()] is the default value for type [author_response] *)
 
 val default_order_direction : unit -> order_direction
 (** [default_order_direction ()] is the default value for type [order_direction] *)

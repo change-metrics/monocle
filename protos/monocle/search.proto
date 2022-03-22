@@ -74,6 +74,21 @@ message CheckResponse {
   }
 }
 
+message Author {
+  string muid = 1;
+  repeated string aliases = 2;
+  repeated string groups = 3;
+}
+
+message AuthorRequest {
+  string index = 1;
+  string query = 2;
+}
+
+message AuthorResponse {
+  repeated Author authors = 1;
+}
+
 message Order {
   string field = 1;
   enum Direction {

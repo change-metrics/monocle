@@ -176,6 +176,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_metric_ListResponse'
+    /api/2/search/author:
+        post:
+            operationId: Search_Author
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_search_AuthorRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_search_AuthorResponse'
     /api/2/search/check:
         post:
             operationId: Search_Check
@@ -656,6 +672,18 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_Histo'
+        monocle_search_Author:
+            properties:
+                muid:
+                    type: string
+                aliases:
+                    type: array
+                    items:
+                        type: string
+                groups:
+                    type: array
+                    items:
+                        type: string
         monocle_search_AuthorPeer:
             properties:
                 author:
@@ -665,6 +693,18 @@ components:
                 strength:
                     type: integer
                     format: uint32
+        monocle_search_AuthorRequest:
+            properties:
+                index:
+                    type: string
+                query:
+                    type: string
+        monocle_search_AuthorResponse:
+            properties:
+                authors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_search_Author'
         monocle_search_AuthorsPeers:
             properties:
                 author_peer:

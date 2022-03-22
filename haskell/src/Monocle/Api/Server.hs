@@ -409,6 +409,28 @@ validateSearchRequest tenantName queryText username = do
 
   pure requestE
 
+-- | /search/author endpoint
+searchAuthor :: SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
+searchAuthor request = do
+  let SearchPB.AuthorRequest {..} = request
+  GetTenants tenants <- getConfig
+  let indexM = Config.lookupTenant tenants $ from authorRequestIndex
+
+  authors <- case indexM of
+    Just index -> do
+      let toSearchAuthor muid = case Config.lookupIdent index muid of
+            Nothing -> SearchPB.Author (from muid) mempty mempty
+            Just Config.Ident {..} ->
+              let authorMuid = from muid
+                  authorAliases = V.fromList $ from <$> aliases
+                  authorGroups = V.fromList $ from <$> fromMaybe mempty groups
+               in SearchPB.Author {..}
+      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
+      pure $ toSearchAuthor <$> found
+    Nothing -> pure []
+
+  pure . SearchPB.AuthorResponse $ V.fromList authors
+
 -- | /search/check endpoint
 searchCheck :: SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
 searchCheck request = do

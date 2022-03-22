@@ -118,6 +118,15 @@ module Search = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->SearchBs.decode_query_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external authorRaw: (string, 'a) => axios<'b> = "post"
+
+  let author = (request: SearchTypes.author_request): axios<SearchTypes.author_response> =>
+    request->SearchBs.encode_author_request
+    |> authorRaw(serverUrl ++ "/api/2/search/author")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->SearchBs.decode_author_response}->Js.Promise.resolve
+    )
 }
 
 module Metric = {
