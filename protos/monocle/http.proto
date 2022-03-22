@@ -97,6 +97,13 @@ service Search {
       body: "*"
     };
   }
+  rpc Author(monocle_search.AuthorRequest)
+      returns (monocle_search.AuthorResponse) {
+    option (google.api.http) = {
+      post: "/api/2/search/author"
+      body: "*"
+    };
+  }
 }
 
 service Metric {

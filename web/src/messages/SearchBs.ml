@@ -106,6 +106,36 @@ let default_check_request_mutable () : check_request_mutable = {
   query = "";
 }
 
+type author_mutable = {
+  mutable muid : string;
+  mutable aliases : string list;
+  mutable groups : string list;
+}
+
+let default_author_mutable () : author_mutable = {
+  muid = "";
+  aliases = [];
+  groups = [];
+}
+
+type author_request_mutable = {
+  mutable index : string;
+  mutable query : string;
+}
+
+let default_author_request_mutable () : author_request_mutable = {
+  index = "";
+  query = "";
+}
+
+type author_response_mutable = {
+  mutable authors : SearchTypes.author list;
+}
+
+let default_author_response_mutable () : author_response_mutable = {
+  authors = [];
+}
+
 type order_mutable = {
   mutable field : string;
   mutable direction : SearchTypes.order_direction;
@@ -752,6 +782,84 @@ let rec decode_check_response json =
       end
   in
   loop (Array.length keys - 1)
+
+let rec decode_author json =
+  let v = default_author_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "muid" -> 
+      let json = Js.Dict.unsafeGet json "muid" in
+      v.muid <- Pbrt_bs.string json "author" "muid"
+    | "aliases" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "aliases" in 
+        Pbrt_bs.array_ a "author" "aliases"
+      in
+      v.aliases <- Array.map (fun json -> 
+        Pbrt_bs.string json "author" "aliases"
+      ) a |> Array.to_list;
+    end
+    | "groups" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "groups" in 
+        Pbrt_bs.array_ a "author" "groups"
+      in
+      v.groups <- Array.map (fun json -> 
+        Pbrt_bs.string json "author" "groups"
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.muid = v.muid;
+    SearchTypes.aliases = v.aliases;
+    SearchTypes.groups = v.groups;
+  } : SearchTypes.author)
+
+let rec decode_author_request json =
+  let v = default_author_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "index" -> 
+      let json = Js.Dict.unsafeGet json "index" in
+      v.index <- Pbrt_bs.string json "author_request" "index"
+    | "query" -> 
+      let json = Js.Dict.unsafeGet json "query" in
+      v.query <- Pbrt_bs.string json "author_request" "query"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.index = v.index;
+    SearchTypes.query = v.query;
+  } : SearchTypes.author_request)
+
+let rec decode_author_response json =
+  let v = default_author_response_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "authors" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "authors" in 
+        Pbrt_bs.array_ a "author_response" "authors"
+      in
+      v.authors <- Array.map (fun json -> 
+        (decode_author (Pbrt_bs.object_ json "author_response" "authors"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    SearchTypes.authors = v.authors;
+  } : SearchTypes.author_response)
 
 let rec decode_order_direction (json:Js.Json.t) =
   match Pbrt_bs.string json "order_direction" "value" with
@@ -1772,6 +1880,36 @@ let rec encode_check_response (v:SearchTypes.check_response) =
       let json' = encode_query_error v in
       Js.Dict.set json "error" (Js.Json.object_ json');
     end;
+  end;
+  json
+
+let rec encode_author (v:SearchTypes.author) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "muid" (Js.Json.string v.SearchTypes.muid);
+  let a = v.SearchTypes.aliases |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "aliases" (Js.Json.array a);
+  let a = v.SearchTypes.groups |> Array.of_list |> Array.map Js.Json.string in
+  Js.Dict.set json "groups" (Js.Json.array a);
+  json
+
+let rec encode_author_request (v:SearchTypes.author_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "index" (Js.Json.string v.SearchTypes.index);
+  Js.Dict.set json "query" (Js.Json.string v.SearchTypes.query);
+  json
+
+let rec encode_author_response (v:SearchTypes.author_response) = 
+  let json = Js.Dict.empty () in
+  begin (* authors field *)
+    let (authors':Js.Json.t) =
+      v.SearchTypes.authors
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_author |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "authors" authors';
   end;
   json
 

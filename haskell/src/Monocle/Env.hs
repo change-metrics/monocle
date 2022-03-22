@@ -239,12 +239,14 @@ withModified modifier = local addModifier
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
 withFilter :: QueryMonad m => [BH.Query] -> m a -> m a
-withFilter extraQueries = local addFilter
-  where
-    -- The extra query is added to the resulting [BH.Query]
-    addFilter (QueryEnv tenant tEnv query context) =
-      let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
-       in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
+withFilter = local . addFilter
+
+-- | Add extra queires to a QueryEnv
+-- Extra queries are added to the resulting [BH.Query]
+addFilter :: [BH.Query] -> QueryEnv -> QueryEnv
+addFilter extraQueries (QueryEnv tenant tEnv query context) =
+  let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
+   in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -------------------------------------------------------------------------------
 -- logging function

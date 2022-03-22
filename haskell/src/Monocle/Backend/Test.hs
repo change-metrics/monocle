@@ -27,14 +27,16 @@ import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
 import qualified Streaming.Prelude as Streaming
 
-fakeDate :: UTCTime
+fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
-
-fakeDateAlt :: UTCTime
 fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 
-fakeAuthor :: Author
+alice, bob, eve, fakeAuthor, fakeAuthorAlt :: Author
+alice = Author "alice" "a"
+bob = Author "bob" "b"
+eve = Author "eve" "e"
 fakeAuthor = Author "John" "John"
+fakeAuthorAlt = Author "John Doe/12" "review.opendev.org/John Doe/12"
 
 fakeChange :: EChange
 fakeChange =
@@ -329,11 +331,15 @@ testEnsureConfig = bracket_ create delete doTest
       let qt = QueryConfig $ Config.Config Nothing [tenantConfig]
       runQueryTarget bhEnv qt action
 
-    create = wrap I.ensureConfigIndex
-    delete = wrap I.removeIndex
+    create = do
+      testQueryM tenantConfig I.ensureIndexSetup
+      wrap I.ensureConfigIndex
+    delete = do
+      testQueryM tenantConfig I.removeIndex
+      wrap I.removeIndex
     doTest = wrap $ do
       (currentVersion, _) <- I.getConfigVersion
-      assertEqual' "Check expected Config Index Version 1" (I.ConfigVersion 1) currentVersion
+      assertEqual' "Check expected Config Index" I.configVersion currentVersion
     tenantConfig = defaultTenant "test-index"
 
 testUpgradeConfigV1 :: Assertion
@@ -556,15 +562,6 @@ testJanitorUpdateIdents = do
               commitDeletions = 0,
               commitTitle = mempty
             }
-
-alice :: Author
-alice = Author "alice" "a"
-
-bob :: Author
-bob = Author "bob" "b"
-
-eve :: Author
-eve = Author "eve" "e"
 
 reviewers :: [Author]
 reviewers = [alice, bob]
@@ -907,6 +904,63 @@ testGetSuggestions = withTenant doTest
               mempty
           )
           results
+
+testGetAllAuthorsMuid :: Assertion
+testGetAllAuthorsMuid = withTenant doTest
+  where
+    doTest :: QueryM ()
+    doTest = do
+      traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
+      withQuery defaultQuery $ do
+        results <- Q.getAllAuthorsMuid'
+        assertEqual' "Check getAllAuthorsMuid result" ["alice", "eve"] results
+
+testAuthorCache :: Assertion
+testAuthorCache = withTenant doTest
+  where
+    doTest = do
+      -- Index a change and some events
+      traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
+
+      -- Validate that populate clear and index 2 authors in the cache
+      added <- I.populateAuthorCache
+      assertEqual' "Check author cache populated with" 2 added
+      added' <- I.populateAuthorCache
+      assertEqual' "Check author cache populated with" 2 added'
+
+      -- Validate that addCachedAuthors extracts the new author from the event and adds in the cache
+      I.addCachedAuthors
+        [ mkEvent
+            0
+            fakeDate
+            EChangeCreatedEvent
+            fakeAuthorAlt
+            fakeAuthorAlt
+            "change-44"
+            "openstack/nova"
+        ]
+      resp <- I.getAuthorCache
+      assertEqual' "Check author cache populated with" 3 $ length resp
+      assertEqual'
+        "Check author cache populated with"
+        [ CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "alice"
+            },
+          CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "eve"
+            },
+          CachedAuthor
+            { caType = ECachedAuthor,
+              caCachedAuthorMuid = "John Doe/12"
+            }
+        ]
+        resp
+
+      -- Validate that we can search in the author cache
+      authors <- I.searchAuthorCache "doe"
+      assertEqual' "Check search author" ["John Doe/12"] authors
 
 mkTaskData :: LText -> TaskData
 mkTaskData changeId =

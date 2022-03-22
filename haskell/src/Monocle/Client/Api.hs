@@ -46,6 +46,9 @@ searchCheck = monocleReq "api/2/search/check"
 searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
 
+searchAuthor :: (MonadThrow m, MonadIO m) => MonocleClient -> AuthorRequest -> m AuthorResponse
+searchAuthor = monocleReq "api/2/search/author"
+
 metricList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
 metricList = monocleReq "api/2/metric/list"
 

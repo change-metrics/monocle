@@ -230,10 +230,9 @@ lookupCrawler index crawlerName = find isProject (crawlers index)
   where
     isProject Crawler {..} = name == crawlerName
 
-lookupIdent :: Index -> Text -> Maybe Text
-lookupIdent Index {..} userName = getName <$> find isUser (fromMaybe [] idents)
+lookupIdent :: Index -> Text -> Maybe Ident
+lookupIdent Index {..} userName = find isUser (fromMaybe [] idents)
   where
-    getName Ident {..} = ident
     isUser Ident {..} = ident == userName
 
 lookupGroupMembers :: Index -> Text -> Maybe (NonEmpty Text)

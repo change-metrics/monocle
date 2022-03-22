@@ -40,6 +40,19 @@ instance From CrawlerPB.Ident Author where
         authorUid = identUid
       }
 
+-- | CachedAuthor is used by the Author search cache
+data CachedAuthor = CachedAuthor
+  { caType :: EDocType,
+    caCachedAuthorMuid :: LText
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON CachedAuthor where
+  toJSON c = genericToJSON (aesonPrefix snakeCase) $ c {caType = ECachedAuthor}
+
+instance FromJSON CachedAuthor where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data File = File
   { fileAdditions :: Word32,
     fileDeletions :: Word32,
@@ -205,11 +218,12 @@ data EDocType
   | EChangeCommitPushedEvent
   | EChangeDoc
   | EOrphanTaskData
+  | ECachedAuthor
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [EDocType]
 allEventTypes =
-  filter (`notElem` [EChangeDoc, EOrphanTaskData]) [minBound .. maxBound]
+  filter (`notElem` [EChangeDoc, EOrphanTaskData, ECachedAuthor]) [minBound .. maxBound]
 
 instance From EDocType Text where
   from = \case
@@ -222,6 +236,7 @@ instance From EDocType Text where
     EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
     EChangeDoc -> "Change"
     EOrphanTaskData -> "OrphanTaskData"
+    ECachedAuthor -> "CachedAuthor"
 
 instance From EDocType LText where
   from = via @Text
@@ -255,6 +270,7 @@ instance FromJSON EDocType where
           "ChangeCommitPushedEvent" -> pure EChangeCommitPushedEvent
           "Change" -> pure EChangeDoc
           "OrphanTaskData" -> pure EOrphanTaskData
+          "CachedAuthor" -> pure ECachedAuthor
           anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> toString anyOtherValue
       )
 

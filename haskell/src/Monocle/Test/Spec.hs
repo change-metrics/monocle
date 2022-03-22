@@ -230,6 +230,8 @@ monocleBackendQueriesTests =
       testCase "Test authors peers strength" testGetAuthorsPeersStrength,
       testCase "Test newContributors" testGetNewContributors,
       testCase "Test getActivityStats" testGetActivityStats,
+      testCase "Test getAllAuthorsMuid" testGetAllAuthorsMuid,
+      testCase "Test authors cache" testAuthorCache,
       testCase
         "Index ProjectCrawlerMetadata"
         testProjectCrawlerMetadata,
