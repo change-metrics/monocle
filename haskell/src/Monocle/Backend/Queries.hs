@@ -1012,6 +1012,9 @@ withDocTypes docTypes flavor qm =
 withDocType :: QueryMonad m => EDocType -> QueryFlavor -> m a -> m a
 withDocType docType = withDocTypes [docType]
 
+withEvents :: QueryMonad m => [BH.Query] -> m a -> m a
+withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter ev
+
 -- | changes review stats
 getReviewStats :: QueryMonad m => m SearchPB.ReviewStats
 getReviewStats = do
@@ -1023,13 +1026,9 @@ getReviewStats = do
 
   let reviewStatsCommentCount = Just commentCount
       reviewStatsReviewCount = Just reviewCount
-      withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter ev
 
-  firstComments <- withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
-  firstReviews <- withEvents [documentType EChangeReviewedEvent] firstEventOnChanges
-
-  let reviewStatsCommentDelay = firstEventAverageDuration firstComments
-      reviewStatsReviewDelay = firstEventAverageDuration firstReviews
+  reviewStatsCommentDelay <- runMetric metricFirstCommentMeanTime
+  reviewStatsReviewDelay <- runMetric metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
   where
@@ -1231,6 +1230,32 @@ metricTimeToMerge =
       double2Float
         <$> withFilter (changeState EChangeMerged) (averageDuration qf)
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+
+metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
+metricFirstReviewMeanTime =
+  Metric
+    ( MetricInfo
+        "1st review mean time"
+        "The average delay until a change gets a review event"
+    )
+    compute
+  where
+    compute =
+      firstEventAverageDuration
+        <$> withEvents [documentType EChangeReviewedEvent] firstEventOnChanges
+
+metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
+metricFirstCommentMeanTime =
+  Metric
+    ( MetricInfo
+        "1st comment mean time"
+        "The average delay until a change gets a comment event"
+    )
+    compute
+  where
+    compute =
+      firstEventAverageDuration
+        <$> withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
 
 allMetricsJSON :: QueryMonad m => [Metric m Value]
 allMetricsJSON = [toJSON <$> metricTimeToMerge]
