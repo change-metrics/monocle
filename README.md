@@ -138,7 +138,9 @@ A workspace uses a dedicated ElasticSearch index. A workspace defines:
 
 - crawlers - [details](#crawlers)
 - projects - [details](#projects-definition)
-- identities - [details](#groups-definition)
+- identities - [details](#identity-management)
+- groups - [details](#groups-definition)
+- search aliases - [details](#search-aliases-definition)
 
 #### Crawlers
 
@@ -275,7 +277,7 @@ token value. Default is "BUGZILLA_TOKEN"
 
 Note that this crawler is managed by the `crawler` container.
 
-### Projects definition
+#### Projects definition
 
 Projects could be defined within a workspace configuration. A project is identified by a name and allows to set the following filter attributes:
 
@@ -312,7 +314,7 @@ retrieved the list defined projects for a given workspace. See the
 
 The monocle query endpoint handles the query parameter: `project`.
 
-### Identity Management
+#### Identity Management
 
 Monocle is able to index changes from multiple code review systems. A contributor
 might get different identities across code review systems. Thus Monocle provides
@@ -349,7 +351,15 @@ A contributor id on github.com or a GitHub enterprise instance is formated as `<
 
 A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerrit-user-id>`.
 
-### Groups definition
+##### Apply idents configuration
+
+Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
+
+```bash
+docker-compose run --rm --no-deps api monocle janitor update-idents --elastic elastic:9200 --config /etc/monocle/config.yaml
+```
+
+#### Groups definition
 
 A group in Monocle permits to group authors of Changes and filter them from the web interface.
 
@@ -375,13 +385,23 @@ workspaces:
           - ptl
 ```
 
-#### Apply idents configuration
 
-Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
+#### Search aliases definition
 
-```bash
-docker-compose run --rm --no-deps api monocle janitor update-idents --elastic elastic:9200 --config /etc/monocle/config.yaml
+The Monocle configuration file provides a way to define aliases to be used in search queries.
+A use case could be to group `bot` authors to provide an easy way to exclude them from search results.
+
+Here is an example:
+
 ```
+workspaces:
+  - name: example
+    search_aliases:
+      - name: bots
+        alias: '(author:"github-actions" or author:"bedevere-bot")'
+```
+
+Then the query could be: "from:now-3weeks and not bot".
 
 ### Full configuration file example
 
