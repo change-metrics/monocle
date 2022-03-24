@@ -57,6 +57,7 @@ module MonocleNav = {
           navGroup(
             "People",
             list{
+              ("Search authors", "/search_author"),
               ("Active authors", "/active_authors"),
               ("Peers strength", "/peers_strength"),
               ("New contributors", "/new_authors"),
@@ -305,6 +306,7 @@ let make = () => {
             | list{_, "changes"} => <NChangeView store />
             | list{_, "change", change} => <ChangeView change store />
             | list{_, "board"} => <Board store />
+            | list{_, "search_author"} => <AuthorSearch store />
             | _ => <p> {"Not found"->str} </p>
             }}
           </PageSection>
