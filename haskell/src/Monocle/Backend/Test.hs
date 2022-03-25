@@ -10,7 +10,6 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Google.Protobuf.Timestamp as T
-import Monocle.Api.Config (defaultTenant)
 import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
@@ -80,7 +79,7 @@ withTenant :: QueryM () -> IO ()
 withTenant = withTenantConfig index
   where
     -- todo: generate random name
-    index = Config.defaultTenant "test-tenant"
+    index = Config.mkTenant "test-tenant"
 
 withTenantConfig :: Config.Index -> QueryM () -> IO ()
 withTenantConfig index cb = bracket_ create delete run
@@ -340,7 +339,7 @@ testEnsureConfig = bracket_ create delete doTest
     doTest = wrap $ do
       (currentVersion, _) <- I.getConfigVersion
       assertEqual' "Check expected Config Index" I.configVersion currentVersion
-    tenantConfig = defaultTenant "test-index"
+    tenantConfig = Config.mkTenant "test-index"
 
 testUpgradeConfigV1 :: Assertion
 testUpgradeConfigV1 = do

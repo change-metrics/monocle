@@ -58,7 +58,7 @@ run' port url configFile glLogger = do
 
   -- Initialize workspace status to ready since we are starting
   wsRef <- Config.csWorkspaceStatus <$> config
-  Config.setStatus Config.Ready wsRef
+  Config.setWorkspaceStatus Config.Ready wsRef
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

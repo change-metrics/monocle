@@ -146,7 +146,7 @@ testQueryM config tenantM = do
 
 -- | Re-export utility function to create a config for testQueryM
 mkConfig :: Text -> Config.Index
-mkConfig = Config.defaultTenant
+mkConfig = Config.mkTenant
 
 -- | Utility function to hide the ReaderT layer
 getIndexName :: QueryMonad m => m BH.IndexName
