@@ -461,7 +461,7 @@ loadAliases' :: Config.Index -> [(Text, Expr)]
 loadAliases' = fromRight (error "Alias loading failed") . loadAliases
 
 loadAliases :: Config.Index -> Either [Text] [(Text, Expr)]
-loadAliases index = case partitionEithers $ map loadAlias (Config.getAliases index) of
+loadAliases index = case partitionEithers $ map loadAlias (Config.getSearchAliases index) of
   ([], xs) -> Right xs
   (xs, _) -> Left xs
   where

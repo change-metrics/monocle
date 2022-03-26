@@ -146,7 +146,7 @@ testGetStream = do
     runLentilleStreamTest action =
       withLogger $ \logger -> runLentilleM logger (error "nop") action
     conf =
-      [ (Config.defaultTenant "test-stream")
+      [ (Config.mkTenant "test-stream")
           { Config.crawlers = [gl "org1" "GITLAB_TOKEN", gl "org2" "GITLAB_TOKEN", gl "org3" "OTHER_TOKEN"],
             Config.crawlers_api_key = Just "CRAWLERS_API_KEY"
           }

@@ -3,7 +3,7 @@ module Monocle.Test.Spec (main) where
 import qualified Data.Vector as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
-import Monocle.Api.Config (Ident (Ident), defaultTenant, idents)
+import Monocle.Api.Config (Ident (Ident), idents, mkTenant)
 import qualified Monocle.Api.Config as Config
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
@@ -59,7 +59,7 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
-  Config.setStatus Config.Ready ws
+  Config.setWorkspaceStatus Config.Ready ws
   let glLogger _ = pure ()
       config = configSE (config', ws) (newConfig, newWs)
       aEnv = Env {..}
@@ -114,7 +114,7 @@ monocleApiTests =
     testGetGroups = do
       let appEnv =
             mkAppEnv $
-              (defaultTenant "ws")
+              (mkTenant "ws")
                 { idents =
                     Just
                       [ Ident [] (Just ["grp1", "grp2"]) "John",
@@ -569,8 +569,34 @@ monocleConfig :: TestTree
 monocleConfig =
   testGroup
     "Monocle.Api.Config"
-    [testConfigLoad]
+    [ testConfigLoad,
+      testGetTenantGroups,
+      testGetIdentByAlias
+    ]
   where
+    createIdent :: Text -> [Text] -> [Text] -> Ident
+    createIdent ident aliases groups' =
+      let groups = Just groups' in Ident {..}
     testConfigLoad = testCase "Decode config" $ do
       conf <- Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length $ conf & Config.workspaces)
+    testGetTenantGroups = testCase "Validate getTenantGroups" $ do
+      let identA = createIdent "alice" [] ["core", "ptl"]
+          identB = createIdent "bob" [] ["core"]
+          tenant = (mkTenant "test") {idents = Just [identA, identB]}
+      assertEqual
+        "Ensure groups and members"
+        [("core", ["bob", "alice"]), ("ptl", ["alice"])]
+        (Config.getTenantGroups tenant)
+    testGetIdentByAlias = testCase "Validate getIdentByAliases" $ do
+      let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
+          identB = createIdent "bob" [] []
+          tenant = (mkTenant "test") {idents = Just [identA, identB]}
+      assertEqual
+        "Ensure found alice as ident"
+        (Just "alice")
+        $ Config.getIdentByAlias tenant "github.com/alice89"
+      assertEqual
+        "Ensure found no ident"
+        Nothing
+        $ Config.getIdentByAlias tenant "github.com/ghost"

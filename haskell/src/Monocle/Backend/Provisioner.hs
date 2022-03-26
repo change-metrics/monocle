@@ -26,7 +26,7 @@ import qualified Faker.Movie.BackToTheFuture
 import qualified Faker.TvShow.Futurama
 import qualified Faker.TvShow.TheExpanse
 import qualified Google.Protobuf.Timestamp (fromUTCTime)
-import Monocle.Api.Config (defaultTenant)
+import Monocle.Api.Config (mkTenant)
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Test as T
@@ -36,7 +36,7 @@ import Monocle.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
-runProvisioner tenantName = testQueryM (defaultTenant tenantName) $ do
+runProvisioner tenantName = testQueryM (mkTenant tenantName) $ do
   I.ensureIndex
   events <- liftIO createFakeEvents
   putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."

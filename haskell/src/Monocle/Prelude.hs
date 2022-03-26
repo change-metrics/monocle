@@ -112,6 +112,7 @@ module Monocle.Prelude
     -- * text
     stripSpaces,
     inText,
+    getPath,
 
     -- * qq-literals
     utctime,
@@ -434,6 +435,12 @@ getExn (Left err) = error (toText err)
 -- "johndoe"
 stripSpaces :: Text -> Text
 stripSpaces = T.replace " " ""
+
+-- | Concat two Text separated by '/'
+-- >>> getPath "change-metrics/" "monocle"
+-- "change-metrics/monocle"
+getPath :: Text -> Text -> Text
+getPath base sub = T.dropWhileEnd (== '/') base <> "/" <> sub
 
 inText :: Text -> Text -> Bool
 inText sub txt = case indices sub txt of

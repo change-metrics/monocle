@@ -2,22 +2,86 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 
--- | The Monocle service configuration
+-- |
+-- Module      : Monocle.Api.Config
+-- Description : Handle the Monocle configuration file
+-- Copyright   : Monocle authors
+-- License     : AGPL-3
+--
+-- The module contains defintion of data types according to the
+-- dhall-monocle project (loaded as a git submodule). It also
+-- provides some functions to handle configuration data.
 --
 -- TODO: Rename to Monocle.Config . To do that we need to:
 --
--- - Finish the migration from filter form,
--- - Remove the /api/1/get_project endpoint (defined from config.proto)
 -- - Move existing config.proto to another protobuf package
 -- - Then we can use the Monocle.Config namespace
-module Monocle.Api.Config where
+module Monocle.Api.Config
+  ( -- * Data types imported from dhall (dhall-monocle)
+    Config (..),
+    Index (..),
+    Project (..),
+    Ident (..),
+    SearchAlias (..),
+    Crawler (..),
+    Provider (..),
+    Gitlab (..),
+    Gerrit (..),
+    Github (..),
+    Bugzilla (..),
+    GithubApplication (..),
+    Link (..),
+
+    -- * Data types to host the config status
+    WorkspaceStatus,
+    ConfigStatus (..),
+    Status (..),
+
+    -- * Functions related to config loading
+    loadConfig,
+    loadConfigWithoutEnv,
+    reloadConfig,
+    mkWorkspaceStatus,
+    setWorkspaceStatus,
+
+    -- * The Config Monad
+    MonadConfig (..),
+    getSecret,
+
+    -- * Functions to handle a Config
+    getWorkspaces,
+
+    -- * Functions to handle an Index
+    getWorkspaceName,
+    lookupTenant,
+    lookupProject,
+    lookupCrawler,
+    lookupIdent,
+    lookupGroupMembers,
+    getTenantGroups,
+    getTenantProjectsNames,
+    getSearchAliases,
+    getIdentByAlias,
+
+    -- * Functions to handle a Crawler
+    getPrefix,
+    getCrawlerName,
+    getCrawlerProject,
+    getCrawlerOrganization,
+    getCrawlerTaskData,
+
+    -- * Some utility functions
+    mkTenant,
+    getIdentByAliasFromIdents,
+    links,
+  )
+where
 
 import qualified Data.ByteString as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import qualified Data.Map as Map
-import qualified Data.Text as T (dropWhileEnd, isPrefixOf)
+import qualified Data.Text as T (isPrefixOf)
 import qualified Dhall
 import qualified Dhall.Core
 import qualified Dhall.Src
@@ -25,6 +89,9 @@ import qualified Dhall.TH
 import qualified Dhall.YamlToDhall as Dhall
 import Monocle.Prelude
 import System.Directory (getModificationTime)
+
+-- Begin - Loading of Types from the dhall-monocle
+--------------------------------------------------
 
 -- | Generate Haskell Type from Dhall Type
 -- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
@@ -52,13 +119,6 @@ Dhall.TH.makeHaskellTypes
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
   )
-
--- | Some useful lens
-crawlersApiKeyLens :: Lens' Index Text
-crawlersApiKeyLens =
-  lens
-    (fromMaybe "CRAWLERS_API_KEY" . crawlers_api_key)
-    (\index newKey -> index {crawlers_api_key = Just newKey})
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
@@ -108,34 +168,10 @@ deriving instance Eq Index
 
 deriving instance Show Index
 
-defaultTenant :: Text -> Index
-defaultTenant name =
-  Index
-    { name,
-      crawlers = [],
-      crawlers_api_key = Nothing,
-      projects = Nothing,
-      idents = Nothing,
-      search_aliases = Nothing
-    }
+-- End - Loading of Types from the dhall-monocle
 
-data ConfigStatus = ConfigStatus
-  { csReloaded :: Bool,
-    csConfig :: Config,
-    csWorkspaceStatus :: MVar WorkspaceStatus
-  }
-
-class MonadConfig m where
-  mGetSecret :: "default env name" ::: Text -> "config env name" ::: Maybe Text -> m Secret
-  mReloadConfig :: FilePath -> m (m ConfigStatus)
-
-instance MonadConfig IO where
-  mGetSecret = getSecret
-  mReloadConfig = reloadConfig
-
--- | Disambiguate the project name accessor
-pname :: Project -> Text
-pname = name
+-- Begin - Configuration loading system
+---------------------------------------
 
 -- | Load the YAML config file
 loadConfigWithoutEnv :: MonadIO m => FilePath -> m Config
@@ -161,21 +197,44 @@ loadConfig configPath = do
   config <- loadConfigWithoutEnv configPath
   configWorkspaces <- traverse resolveEnv $ workspaces config
   pure $ config {workspaces = configWorkspaces}
+  where
+    crawlersApiKeyLens :: Lens' Index Text
+    crawlersApiKeyLens =
+      lens
+        (fromMaybe "CRAWLERS_API_KEY" . crawlers_api_key)
+        (\index newKey -> index {crawlers_api_key = Just newKey})
+    resolveEnv :: MonadIO m => Index -> m Index
+    resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
 
+-- | A Type to express if a 'Workspace' needs refresh
 data Status = NeedRefresh | Ready
 
 type WorkspaceName = Text
 
 type WorkspaceStatus = Map WorkspaceName Status
 
+-- | The 'ConfigStatus' wraps the loaded Monocle config
+data ConfigStatus = ConfigStatus
+  { -- | Is the config has been reloaded from disk
+    csReloaded :: Bool,
+    -- | The 'Config'
+    csConfig :: Config,
+    -- | The refresh status of a Workspace
+    csWorkspaceStatus :: MVar WorkspaceStatus
+  }
+
+-- | Return a 'WorkspaceStatus' with all workspace 'Status' set on 'NeedRefresh'
 mkWorkspaceStatus :: Config -> WorkspaceStatus
 mkWorkspaceStatus config = fromList $ mkStatus <$> getWorkspaces config
   where
     mkStatus ws = (getWorkspaceName ws, NeedRefresh)
 
-setStatus :: Status -> MVar WorkspaceStatus -> IO ()
-setStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
+-- | Set all workspaces 'Status' on a given 'Status'
+setWorkspaceStatus :: Status -> MVar WorkspaceStatus -> IO ()
+setWorkspaceStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
 
+-- | An IO action that reload the config if needed. It does by checking last
+-- modification time from disk then provides the config wrapped in a 'ConfigStatus'.
 reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config
@@ -198,43 +257,74 @@ reloadConfig fp = do
           pure ((configTS, config), ConfigStatus True config wsRef)
         else pure (mvar, ConfigStatus False prevConfig wsRef)
 
-resolveEnv :: MonadIO m => Index -> m Index
-resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
-
-getWorkspaces :: Config -> [Index]
-getWorkspaces Config {..} = workspaces
-
-getWorkspaceName :: Index -> Text
-getWorkspaceName Index {..} = name
-
-getSecret :: MonadIO m => Text -> Maybe Text -> m Secret
+-- | Return a 'Secret' based on environment variable
+getSecret ::
+  MonadIO m =>
+  -- | Default environment key name
+  Text ->
+  -- | The environment key name
+  Maybe Text ->
+  m Secret
 getSecret def keyM =
   Secret . toText . fromMaybe (error $ "Missing environment: " <> env)
     <$> lookupEnv (toString env)
   where
     env = fromMaybe def keyM
 
+class MonadConfig m where
+  -- | Return a 'Secret' based on environment variable
+  mGetSecret :: Text -> Maybe Text -> m Secret
+
+  -- | An IO action that reload the config if needed
+  mReloadConfig :: FilePath -> m (m ConfigStatus)
+
+instance MonadConfig IO where
+  mGetSecret = getSecret
+  mReloadConfig = reloadConfig
+
+-- End - Configuration loading system
+
+-- Begin - Functions to handle a Config
+---------------------------------------
+
+getWorkspaces :: Config -> [Index]
+getWorkspaces Config {..} = workspaces
+
+-- End - Functions to handle a Config
+
+-- Begin - Functions to handle an Index
+---------------------------------------
+
+-- | Get the 'Index' name
+getWorkspaceName :: Index -> Text
+getWorkspaceName Index {..} = name
+
+-- | Find an 'Index' by name
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
   where
     isTenant Index {..} = name == tenantName
 
+-- | Find a 'Project' in an 'Index'
 lookupProject :: Index -> Text -> Maybe Project
 lookupProject index projectName = find isProject (fromMaybe [] (projects index))
   where
     isProject :: Project -> Bool
     isProject Project {..} = name == projectName
 
+-- | Find a 'Crawler' in an 'Index'
 lookupCrawler :: Index -> Text -> Maybe Crawler
 lookupCrawler index crawlerName = find isProject (crawlers index)
   where
     isProject Crawler {..} = name == crawlerName
 
+-- | Find an 'Ident' in an 'Index'
 lookupIdent :: Index -> Text -> Maybe Ident
 lookupIdent Index {..} userName = find isUser (fromMaybe [] idents)
   where
     isUser Ident {..} = ident == userName
 
+-- | Find groups members of a group in an 'Index'
 lookupGroupMembers :: Index -> Text -> Maybe (NonEmpty Text)
 lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents) of
   [] -> Nothing
@@ -249,68 +339,7 @@ lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents)
         | otherwise -> acc
       Nothing -> acc
 
-getAliases :: Index -> [(Text, Text)]
-getAliases index = maybe [] (fmap toTuple) (search_aliases index)
-  where
-    toTuple SearchAlias {..} = (name, alias)
-
-getPrefix :: Crawler -> Maybe Text
-getPrefix Crawler {..} = case provider of
-  GerritProvider Gerrit {..} -> gerrit_prefix
-  _ -> Nothing
-
-getCrawlerProject :: Crawler -> [Text]
-getCrawlerProject Crawler {..} = case provider of
-  GitlabProvider Gitlab {..} ->
-    let addOrgPrefix repo = removeTrailingSlash gitlab_organization <> "/" <> repo
-     in addOrgPrefix <$> fromMaybe [] gitlab_repositories
-  GithubProvider Github {..} ->
-    let addOrgPrefix repo = removeTrailingSlash github_organization <> "/" <> repo
-     in addOrgPrefix <$> fromMaybe [] github_repositories
-  GerritProvider Gerrit {..} -> maybe [] (filter (not . T.isPrefixOf "^")) gerrit_repositories
-  _anyOtherProvider -> []
-
-removeTrailingSlash :: Text -> Text
-removeTrailingSlash = T.dropWhileEnd (== '/')
-
-getCrawlerOrganization :: Crawler -> [Text]
-getCrawlerOrganization Crawler {..} = case provider of
-  GitlabProvider Gitlab {..} -> [gitlab_organization]
-  GithubProvider Github {..} -> [github_organization]
-  GerritProvider Gerrit {..} -> maybe [] (filter (T.isPrefixOf "^")) gerrit_repositories
-  _anyOtherProvider -> []
-
-getCrawlerTaskData :: Crawler -> [Text]
-getCrawlerTaskData Crawler {..} = case provider of
-  GithubProvider Github {..} ->
-    let addOrgPrefix repo = removeTrailingSlash github_organization <> "/" <> repo
-     in addOrgPrefix <$> fromMaybe [] github_repositories
-  BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
-  _anyOtherProvider -> []
-
-getCrawlerName :: Crawler -> Text
-getCrawlerName Crawler {..} = name
-
-emptyTenant :: Text -> [Ident] -> Index
-emptyTenant name idents' =
-  let crawlers_api_key = Nothing
-      crawlers = []
-      projects = Nothing
-      idents = Just idents'
-      search_aliases = Nothing
-   in Index {..}
-
-createIdent :: Text -> [Text] -> [Text] -> Ident
-createIdent name aliases' groups' =
-  let ident = name
-      aliases = aliases'
-      groups = Just groups'
-   in Ident {..}
-
 -- | Get the list of group and members
---
--- >>> getTenantGroups (emptyTenant "test" [createIdent "alice" [] ["core", "ptl"], createIdent "bob" [] ["core"]])
--- [("core",["bob","alice"]),("ptl",["alice"])]
 getTenantGroups :: Index -> [(Text, [Text])]
 getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index))
   where
@@ -321,29 +350,84 @@ getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index
       let users' = fromMaybe [] (Map.lookup groupName acc)
        in Map.insert groupName (users' <> [name]) acc
 
+-- | Get the list of projects
 getTenantProjectsNames :: Index -> [Text]
 getTenantProjectsNames index = maybe [] (map getName) (projects index)
   where
     getName Project {..} = name
 
--- | Get the Ident name for a Given alias
---
--- >>> :{
---  let
---    index = emptyTenant "test" [createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
---  in getIdentByAlias index "github.com/alice89"
--- :}
--- Just "alice"
+-- | Find search aliases in an 'Index'
+getSearchAliases :: Index -> [(Text, Text)]
+getSearchAliases index = maybe [] (fmap toTuple) (search_aliases index)
+  where
+    toTuple SearchAlias {..} = (name, alias)
 
--- >>> :{
---  let
---    index = emptyTenant "test" [createIdent "bob" [], createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []]
---  in [getIdentByAlias index "github.com/ghost", getIdentByAlias index "github.com/alice89"]
--- :}
--- [Nothing,Just "alice"]
+-- | Get the Ident name for a Given alias
 getIdentByAlias :: Index -> Text -> Maybe Text
 getIdentByAlias Index {..} alias = getIdentByAliasFromIdents alias =<< idents
 
+-- End - Functions to handle an Index
+
+-- Begin - Functions to handle a Crawler
+----------------------------------------
+
+-- | Get the 'Crawler' name
+getCrawlerName :: Crawler -> Text
+getCrawlerName Crawler {..} = name
+
+-- | Get the 'Crawler' prefix (to be prepend to repository name)
+getPrefix :: Crawler -> Maybe Text
+getPrefix Crawler {..} = case provider of
+  GerritProvider Gerrit {..} -> gerrit_prefix
+  _ -> Nothing
+
+-- | Get 'Crawler' project names
+getCrawlerProject :: Crawler -> [Text]
+getCrawlerProject Crawler {..} = case provider of
+  GitlabProvider Gitlab {..} ->
+    let addOrgPrefix repo = getPath gitlab_organization repo
+     in addOrgPrefix <$> fromMaybe [] gitlab_repositories
+  GithubProvider Github {..} ->
+    let addOrgPrefix repo = getPath github_organization repo
+     in addOrgPrefix <$> fromMaybe [] github_repositories
+  GerritProvider Gerrit {..} -> maybe [] (filter (not . T.isPrefixOf "^")) gerrit_repositories
+  _anyOtherProvider -> []
+
+-- | Get 'Crawler' organization names
+getCrawlerOrganization :: Crawler -> [Text]
+getCrawlerOrganization Crawler {..} = case provider of
+  GitlabProvider Gitlab {..} -> [gitlab_organization]
+  GithubProvider Github {..} -> [github_organization]
+  GerritProvider Gerrit {..} -> maybe [] (filter (T.isPrefixOf "^")) gerrit_repositories
+  _anyOtherProvider -> []
+
+-- | Get 'Crawler' TaskData project names
+getCrawlerTaskData :: Crawler -> [Text]
+getCrawlerTaskData Crawler {..} = case provider of
+  GithubProvider Github {..} ->
+    let addOrgPrefix repo = getPath github_organization repo
+     in addOrgPrefix <$> fromMaybe [] github_repositories
+  BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
+  _anyOtherProvider -> []
+
+-- End - Functions to handle a Crawler
+
+-- Begin - Some utility functions
+---------------------------------
+
+-- | Create an empty 'Index'
+mkTenant :: Text -> Index
+mkTenant name =
+  Index
+    { name,
+      crawlers = [],
+      crawlers_api_key = Nothing,
+      projects = Nothing,
+      idents = Nothing,
+      search_aliases = Nothing
+    }
+
+-- | Get 'Ident' ident from a list of 'Ident'
 getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe Text
 getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   Nothing -> Nothing
@@ -351,3 +435,5 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   where
     isMatched :: Ident -> Bool
     isMatched Ident {..} = alias `elem` aliases
+
+-- End - Some utility functions
