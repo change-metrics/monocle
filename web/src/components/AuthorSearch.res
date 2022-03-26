@@ -73,26 +73,32 @@ let make = (~store: Store.t) => {
       : ()
   }
 
-  let toAuthors = (resp: SearchTypes.author_response) => {
+  let toAuthorsResults = (resp: SearchTypes.author_response) =>
     resp.authors->Belt.List.map(author => <AuthorItem key={author.muid} store author />)
-  }
+
+  let results =
+    <Patternfly.Layout.StackItem>
+      <NetworkRender
+        get={() =>
+          WebApi.Search.author({
+            SearchTypes.index: state.index,
+            SearchTypes.query: matchQuery,
+          })}
+        trigger
+        render={(resp: SearchTypes.author_response) => {
+          resp.authors->Belt.List.length > 0
+            ? resp->toAuthorsResults->Belt.List.toArray->React.array
+            : <Alert title={"No result found"} />
+        }}
+      />
+    </Patternfly.Layout.StackItem>
 
   <MonoCard title tooltip_content icon>
     <Patternfly.Layout.Stack hasGutter={true}>
       <Patternfly.Layout.StackItem>
         <Patternfly.TextInput id="matchQuery" _type=#Text value={matchQuery} onChange />
       </Patternfly.Layout.StackItem>
-      <Patternfly.Layout.StackItem>
-        <NetworkRender
-          get={() =>
-            WebApi.Search.author({
-              SearchTypes.index: state.index,
-              SearchTypes.query: matchQuery,
-            })}
-          trigger
-          render={resp => resp->toAuthors->Belt.List.toArray->React.array}
-        />
-      </Patternfly.Layout.StackItem>
+      {trigger->Js.String2.length > 0 ? results : React.null}
     </Patternfly.Layout.Stack>
   </MonoCard>
 }
