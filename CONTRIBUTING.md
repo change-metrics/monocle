@@ -12,26 +12,42 @@ Follow the [Architectural Decision Records](doc/adr/index.md) to understand the 
 See [Instructions from the README.md](README.md#checkout-the-code) to checkout the code and prepare
 the .secret file.
 
-### Running the services manually
+According to the [README.md](README.md#installation), the recommended way to deploy Monocle is via
+Docker compose, however the containerized deployment does not fit well for building a development environment.
 
-This section describes how to start the Monocle services directly on your host without using containers.
-This can be used to better understand how the system works and to enable fast reload of local changes.
+Furthermore, deploying from source can be used to better understand how Monocle components interact
+together.
+
+Below are the two recommended ways to deploy Monocle from source:
+
+- [By deploying the tool chain on your system](#running-the-services-manually-on-your-host)
+- [By deploying the tool chain via NIX](#running-the-services-manually-using-nix)
+
+### Running the services manually on your host
 
 #### Requirements
 
-These requirements are for a Fedora-based system. Please adapt them to your own OS if needed.
-Run the following commands with a non-root user, if possible.
+These requirements are for a Fedora based system. Please adapt them to your own OS if needed.
+
+Please note that the GHC version available on your OS might not fit the Monocle build requirements. Please
+ensure the GHC version into [monocle.cabal](./haskell/monocle.cabal) (line: "tested-with:") is the same version
+than the version available on your OS.
+
+Run the following commands **as non-root user**:
 
 ```ShellSession
 sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
 ```
 
-If needed, it is possible to install a distro-agnostic Haskell environment using
+Alternatively, or if the GHC version of your OS does not match the requirement, the Haskell tool chain
+can be deployed using a *distro-agnostic* way via [ghc-up](https://www.haskell.org/ghcup):
+
 
 ```ShellSession
 curl -sSf https://get-ghcup.haskell.org | sh
 ```
-If the above command fails read the output from more information, usually are missing dependencies.
+
+If the above command fails read the output from more information, usually there are missing dependencies.
 Then logout and login again, for the new configurations to be loaded.
 
 #### HTTP gateway (nginx)
@@ -181,7 +197,7 @@ nix-shell --command monocle-ghcid
 ## Contributing a new driver
 
 There is no specific documentation to cover that topic yet but the source code of
-the [GitLab driver](monocle/haskell/src/Lentille/GitLab/MergeRequests.hs) might be a good
+the [GitLab driver](haskell/src/Lentille/GitLab/MergeRequests.hs) might be a good
 source of knowledge to hack on a new crawler.
 
 ## Running tests
