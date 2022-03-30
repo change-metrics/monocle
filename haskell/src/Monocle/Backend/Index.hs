@@ -494,13 +494,13 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
     -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
     toBulkUpsert index (doc, docId) = BH.BulkUpsert index docId (BH.UpsertDoc doc) []
 
--- | Generated base64 encoding of Text
-getBase64Text :: Text -> Text
-getBase64Text = decodeUtf8 . B64.encode . encodeUtf8
+-- | Generate a Text suitable for ElasticSearch Document ID from Text
+getDocID :: Text -> Text
+getDocID = decodeUtf8 . B64.encode . hash . encodeUtf8
 
 -- | Generate an DocID from Text
 getBHDocID :: Text -> BH.DocId
-getBHDocID = BH.DocId . decodeUtf8 . B64.encode . hash . encodeUtf8
+getBHDocID = BH.DocId . getDocID
 
 -- | A simple scan search that loads all the results in memory
 runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
@@ -691,7 +691,7 @@ taskDataAdd crawlerName tds = do
   orphanTaskDataDocs <- liftIO $ updateChangesWithTD changesHT
   -- Get TDs from the HashTable
   taskDataDocs <- fmap snd <$> liftIO (H.toList changesHT)
-  -- Get the TDs form matching change events
+  -- Get TDs from matching change events
   taskDataDocs' <-
     liftIO $
       fmap catMaybes <$> sequence $
@@ -720,11 +720,11 @@ taskDataAdd crawlerName tds = do
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
-          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = urlToId $ tdUrl td <> tdChangeUrl td, tddTd = [td]})
+          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = from $ getTDId td, tddTd = [td]})
           -- Found a change matching this TD -> update existing TDs with new TD
           Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
           where
-            urlToId = toLazy . getBase64Text
+            getTDId ETaskData {..} = let rawId = tdUrl <> tdChangeUrl in getDocID rawId
 
         updateTDD ::
           -- | The value of the HashMap we are working on

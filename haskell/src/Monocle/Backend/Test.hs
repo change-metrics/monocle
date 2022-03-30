@@ -1028,7 +1028,7 @@ testTaskDataAdd = withTenant doTest
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
-                { echangeorphantdId = I.getBase64Text (toText tdid),
+                { echangeorphantdId = I.getDocID $ from tdid,
                   echangeorphantdType = EOrphanTaskData,
                   echangeorphantdTasksData = expectedTD
                 }
@@ -1046,7 +1046,7 @@ testTaskDataAdd = withTenant doTest
         "Check Task data stored as Orphan Task Data"
         ( Just
             ( EChangeOrphanTD
-                { echangeorphantdId = I.getBase64Text (toText tdid),
+                { echangeorphantdId = I.getDocID $ from tdid,
                   echangeorphantdType = EOrphanTaskData,
                   echangeorphantdTasksData = expectedTD'
                 }
@@ -1055,7 +1055,7 @@ testTaskDataAdd = withTenant doTest
         orphanTdM'
 
     getOrphanTd :: Text -> QueryM (Maybe EChangeOrphanTD)
-    getOrphanTd url = I.getDocumentById $ BH.DocId $ I.getBase64Text url
+    getOrphanTd url = I.getDocumentById $ I.getBHDocID url
 
 testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest

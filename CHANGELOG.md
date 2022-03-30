@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - [webui] avoid failure to access a group with url encoded name.
 - [api] wrong author filtering for TOP_REVIEWED_AUTHORS and TOP_COMMENTED_AUTHORS queries.
 - [crawler] honor the "TLS_NO_VERIFY" environment variable for the Gerrit crawler.
+- [backend] Orphan TaskData Doc ID can overflow the Elastic Doc ID size limit (#845).
 
 ## [1.4.0] - 2022-01-31
 
