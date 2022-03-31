@@ -11,7 +11,15 @@ in  { Nix =
               , mk.GithubActions.Step::{
                 , name = Some "Run Test"
                 , run = Some
-                    "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command 'env ELASTIC_URL=http://localhost:9200 monocle-ci-run'"
+                    ( let command =
+                            "env ELASTIC_URL=http://localhost:9200 monocle-ci-run"
+
+                      let -- here we remove the cabal.project because it cause conflicts when cloning source-repository-package
+                          cd =
+                            "cd haskell; rm cabal.project"
+
+                      in  "${cd}; nix-shell --pure --attr ci-shell ../nix/default.nix --command '${command}'"
+                    )
                 }
               ]
           )

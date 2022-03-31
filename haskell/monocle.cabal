@@ -99,20 +99,19 @@ library
   build-depends:       base                       < 5
                      , HsOpenSSL                  >= 0.11
                      , MonadRandom
-                     , aeson                      < 2
+                     , aeson                      >= 2
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
                      , base64-bytestring          >= 1.1
                      , binary                     >= 0.8
-                     , bloodhound                 ^>= 0.18.0.0
-                     -- ^ latest need aeson-2 which need proto3-suite
+                     , bloodhound                 ^>= 0.19
                      , bugzilla-redhat            ^>= 1.0
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10
                      , containers                 >= 0.6
                      , cryptohash-sha256          >= 0.11.102.1
-                     , dhall                      >= 1.39
+                     , dhall                      >= 1.40
                      , dhall-yaml                 >= 1.2
                      , directory
                      , either                     >= 5
@@ -234,7 +233,6 @@ library
                      , Monocle.Search
                      , Monocle.Crawler
                      , Monocle.Metric
-                     , Monocle.UserGroup
                      , Monocle.Project
                      , Monocle.Login
 

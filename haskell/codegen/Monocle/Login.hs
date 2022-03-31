@@ -99,35 +99,6 @@ instance HsJSONPB.ToJSON LoginValidationRequest where
 instance HsJSONPB.FromJSON LoginValidationRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema LoginValidationRequest where
-  declareNamedSchema _ =
-    do
-      let declare_username = HsJSONPB.declareSchemaRef
-      loginValidationRequestUsername <- declare_username Proxy.Proxy
-      let _ =
-            Hs.pure LoginValidationRequest
-              <*> HsJSONPB.asProxy declare_username
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "LoginValidationRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "username",
-                            loginValidationRequestUsername
-                          )
-                        ]
-                  }
-            }
-        )
-
 newtype LoginValidationResponse = LoginValidationResponse
   { loginValidationResponseResult ::
       Hs.Maybe LoginValidationResponseResult
@@ -233,35 +204,6 @@ instance HsJSONPB.ToJSON LoginValidationResponse where
 instance HsJSONPB.FromJSON LoginValidationResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema LoginValidationResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      loginValidationResponseResult <- declare_result Proxy.Proxy
-      let _ =
-            Hs.pure LoginValidationResponse
-              <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "LoginValidationResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "result",
-                            loginValidationResponseResult
-                          )
-                        ]
-                  }
-            }
-        )
-
 data LoginValidationResponse_ValidationResult
   = LoginValidationResponse_ValidationResultUnknownIdent
   | LoginValidationResponse_ValidationResultKnownIdent
@@ -335,36 +277,3 @@ data LoginValidationResponseResult
 
 instance HsProtobuf.Named LoginValidationResponseResult where
   nameOf _ = (Hs.fromString "LoginValidationResponseResult")
-
-instance HsJSONPB.ToSchema LoginValidationResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_validation_result = HsJSONPB.declareSchemaRef
-      loginValidationResponseResultValidationResult <-
-        declare_validation_result
-          Proxy.Proxy
-      let _ =
-            Hs.pure LoginValidationResponseResultValidationResult
-              <*> HsJSONPB.asProxy declare_validation_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "LoginValidationResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "validation_result",
-                            loginValidationResponseResultValidationResult
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )

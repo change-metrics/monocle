@@ -165,29 +165,6 @@ instance HsJSONPB.ToJSON Entity where
 instance HsJSONPB.FromJSON Entity where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Entity where
-  declareNamedSchema _ =
-    do
-      let declare_entity = HsJSONPB.declareSchemaRef
-      entityEntity <- declare_entity Proxy.Proxy
-      let _ = Hs.pure Entity <*> HsJSONPB.asProxy declare_entity
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Entity",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("entity", entityEntity)]
-                  }
-            }
-        )
-
 data EntityEntity
   = EntityEntityOrganizationName Hs.Text
   | EntityEntityProjectName Hs.Text
@@ -196,51 +173,6 @@ data EntityEntity
 
 instance HsProtobuf.Named EntityEntity where
   nameOf _ = (Hs.fromString "EntityEntity")
-
-instance HsJSONPB.ToSchema EntityEntity where
-  declareNamedSchema _ =
-    do
-      let declare_organization_name = HsJSONPB.declareSchemaRef
-      entityEntityOrganizationName <-
-        declare_organization_name
-          Proxy.Proxy
-      let _ =
-            Hs.pure EntityEntityOrganizationName
-              <*> HsJSONPB.asProxy declare_organization_name
-      let declare_project_name = HsJSONPB.declareSchemaRef
-      entityEntityProjectName <- declare_project_name Proxy.Proxy
-      let _ =
-            Hs.pure EntityEntityProjectName
-              <*> HsJSONPB.asProxy declare_project_name
-      let declare_td_name = HsJSONPB.declareSchemaRef
-      entityEntityTdName <- declare_td_name Proxy.Proxy
-      let _ =
-            Hs.pure EntityEntityTdName
-              <*> HsJSONPB.asProxy declare_td_name
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "EntityEntity",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "organization_name",
-                            entityEntityOrganizationName
-                          ),
-                          ("project_name", entityEntityProjectName),
-                          ("td_name", entityEntityTdName)
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data AddDocRequest = AddDocRequest
   { addDocRequestIndex :: Hs.Text,
@@ -502,60 +434,6 @@ instance HsJSONPB.ToJSON AddDocRequest where
 instance HsJSONPB.FromJSON AddDocRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddDocRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      addDocRequestIndex <- declare_index Proxy.Proxy
-      let declare_crawler = HsJSONPB.declareSchemaRef
-      addDocRequestCrawler <- declare_crawler Proxy.Proxy
-      let declare_apikey = HsJSONPB.declareSchemaRef
-      addDocRequestApikey <- declare_apikey Proxy.Proxy
-      let declare_entity = HsJSONPB.declareSchemaRef
-      addDocRequestEntity <- declare_entity Proxy.Proxy
-      let declare_changes = HsJSONPB.declareSchemaRef
-      addDocRequestChanges <- declare_changes Proxy.Proxy
-      let declare_events = HsJSONPB.declareSchemaRef
-      addDocRequestEvents <- declare_events Proxy.Proxy
-      let declare_projects = HsJSONPB.declareSchemaRef
-      addDocRequestProjects <- declare_projects Proxy.Proxy
-      let declare_task_datas = HsJSONPB.declareSchemaRef
-      addDocRequestTaskDatas <- declare_task_datas Proxy.Proxy
-      let _ =
-            Hs.pure AddDocRequest <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_crawler
-              <*> HsJSONPB.asProxy declare_apikey
-              <*> HsJSONPB.asProxy declare_entity
-              <*> HsJSONPB.asProxy declare_changes
-              <*> HsJSONPB.asProxy declare_events
-              <*> HsJSONPB.asProxy declare_projects
-              <*> HsJSONPB.asProxy declare_task_datas
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AddDocRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", addDocRequestIndex),
-                          ("crawler", addDocRequestCrawler),
-                          ("apikey", addDocRequestApikey),
-                          ("entity", addDocRequestEntity),
-                          ("changes", addDocRequestChanges),
-                          ("events", addDocRequestEvents),
-                          ("projects", addDocRequestProjects),
-                          ("task_datas", addDocRequestTaskDatas)
-                        ]
-                  }
-            }
-        )
-
 data AddDocError
   = AddDocErrorAddUnknownIndex
   | AddDocErrorAddUnknownCrawler
@@ -713,30 +591,6 @@ instance HsJSONPB.ToJSON AddDocResponse where
 instance HsJSONPB.FromJSON AddDocResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AddDocResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      addDocResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure AddDocResponse <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AddDocResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("result", addDocResponseResult)]
-                  }
-            }
-        )
-
 data AddDocResponseResult
   = AddDocResponseResultError
       ( HsProtobuf.Enumerated
@@ -746,34 +600,6 @@ data AddDocResponseResult
 
 instance HsProtobuf.Named AddDocResponseResult where
   nameOf _ = (Hs.fromString "AddDocResponseResult")
-
-instance HsJSONPB.ToSchema AddDocResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_error = HsJSONPB.declareSchemaRef
-      addDocResponseResultError <- declare_error Proxy.Proxy
-      let _ =
-            Hs.pure AddDocResponseResultError
-              <*> HsJSONPB.asProxy declare_error
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AddDocResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("error", addDocResponseResultError)],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data CommitRequest = CommitRequest
   { commitRequestIndex :: Hs.Text,
@@ -940,48 +766,6 @@ instance HsJSONPB.ToJSON CommitRequest where
 
 instance HsJSONPB.FromJSON CommitRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema CommitRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      commitRequestIndex <- declare_index Proxy.Proxy
-      let declare_crawler = HsJSONPB.declareSchemaRef
-      commitRequestCrawler <- declare_crawler Proxy.Proxy
-      let declare_apikey = HsJSONPB.declareSchemaRef
-      commitRequestApikey <- declare_apikey Proxy.Proxy
-      let declare_entity = HsJSONPB.declareSchemaRef
-      commitRequestEntity <- declare_entity Proxy.Proxy
-      let declare_timestamp = HsJSONPB.declareSchemaRef
-      commitRequestTimestamp <- declare_timestamp Proxy.Proxy
-      let _ =
-            Hs.pure CommitRequest <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_crawler
-              <*> HsJSONPB.asProxy declare_apikey
-              <*> HsJSONPB.asProxy declare_entity
-              <*> HsJSONPB.asProxy declare_timestamp
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", commitRequestIndex),
-                          ("crawler", commitRequestCrawler),
-                          ("apikey", commitRequestApikey),
-                          ("entity", commitRequestEntity),
-                          ("timestamp", commitRequestTimestamp)
-                        ]
-                  }
-            }
-        )
 
 data CommitError
   = CommitErrorCommitUnknownIndex
@@ -1168,30 +952,6 @@ instance HsJSONPB.ToJSON CommitResponse where
 instance HsJSONPB.FromJSON CommitResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema CommitResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      commitResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure CommitResponse <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("result", commitResponseResult)]
-                  }
-            }
-        )
-
 data CommitResponseResult
   = CommitResponseResultError
       ( HsProtobuf.Enumerated
@@ -1202,43 +962,6 @@ data CommitResponseResult
 
 instance HsProtobuf.Named CommitResponseResult where
   nameOf _ = (Hs.fromString "CommitResponseResult")
-
-instance HsJSONPB.ToSchema CommitResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_error = HsJSONPB.declareSchemaRef
-      commitResponseResultError <- declare_error Proxy.Proxy
-      let _ =
-            Hs.pure CommitResponseResultError
-              <*> HsJSONPB.asProxy declare_error
-      let declare_timestamp = HsJSONPB.declareSchemaRef
-      commitResponseResultTimestamp <- declare_timestamp Proxy.Proxy
-      let _ =
-            Hs.pure CommitResponseResultTimestamp
-              <*> HsJSONPB.asProxy declare_timestamp
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("error", commitResponseResultError),
-                          ( "timestamp",
-                            commitResponseResultTimestamp
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data CommitInfoRequest = CommitInfoRequest
   { commitInfoRequestIndex ::
@@ -1365,45 +1088,6 @@ instance HsJSONPB.ToJSON CommitInfoRequest where
 
 instance HsJSONPB.FromJSON CommitInfoRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema CommitInfoRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      commitInfoRequestIndex <- declare_index Proxy.Proxy
-      let declare_crawler = HsJSONPB.declareSchemaRef
-      commitInfoRequestCrawler <- declare_crawler Proxy.Proxy
-      let declare_entity = HsJSONPB.declareSchemaRef
-      commitInfoRequestEntity <- declare_entity Proxy.Proxy
-      let declare_offset = HsJSONPB.declareSchemaRef
-      commitInfoRequestOffset <- declare_offset Proxy.Proxy
-      let _ =
-            Hs.pure CommitInfoRequest
-              <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_crawler
-              <*> HsJSONPB.asProxy declare_entity
-              <*> HsJSONPB.asProxy declare_offset
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitInfoRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", commitInfoRequestIndex),
-                          ("crawler", commitInfoRequestCrawler),
-                          ("entity", commitInfoRequestEntity),
-                          ("offset", commitInfoRequestOffset)
-                        ]
-                  }
-            }
-        )
 
 data CommitInfoError
   = CommitInfoErrorCommitGetUnknownIndex
@@ -1583,32 +1267,6 @@ instance HsJSONPB.ToJSON CommitInfoResponse where
 instance HsJSONPB.FromJSON CommitInfoResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema CommitInfoResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      commitInfoResponseResult <- declare_result Proxy.Proxy
-      let _ =
-            Hs.pure CommitInfoResponse
-              <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitInfoResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("result", commitInfoResponseResult)]
-                  }
-            }
-        )
-
 data CommitInfoResponse_OldestEntity = CommitInfoResponse_OldestEntity
   { commitInfoResponse_OldestEntityEntity ::
       Hs.Maybe
@@ -1713,43 +1371,6 @@ instance HsJSONPB.ToJSON CommitInfoResponse_OldestEntity where
 instance HsJSONPB.FromJSON CommitInfoResponse_OldestEntity where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema CommitInfoResponse_OldestEntity where
-  declareNamedSchema _ =
-    do
-      let declare_entity = HsJSONPB.declareSchemaRef
-      commitInfoResponse_OldestEntityEntity <- declare_entity Proxy.Proxy
-      let declare_last_commit_at = HsJSONPB.declareSchemaRef
-      commitInfoResponse_OldestEntityLastCommitAt <-
-        declare_last_commit_at
-          Proxy.Proxy
-      let _ =
-            Hs.pure CommitInfoResponse_OldestEntity
-              <*> HsJSONPB.asProxy declare_entity
-              <*> HsJSONPB.asProxy declare_last_commit_at
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitInfoResponse_OldestEntity",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "entity",
-                            commitInfoResponse_OldestEntityEntity
-                          ),
-                          ( "last_commit_at",
-                            commitInfoResponse_OldestEntityLastCommitAt
-                          )
-                        ]
-                  }
-            }
-        )
-
 data CommitInfoResponseResult
   = CommitInfoResponseResultError
       ( HsProtobuf.Enumerated
@@ -1760,38 +1381,3 @@ data CommitInfoResponseResult
 
 instance HsProtobuf.Named CommitInfoResponseResult where
   nameOf _ = (Hs.fromString "CommitInfoResponseResult")
-
-instance HsJSONPB.ToSchema CommitInfoResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_error = HsJSONPB.declareSchemaRef
-      commitInfoResponseResultError <- declare_error Proxy.Proxy
-      let _ =
-            Hs.pure CommitInfoResponseResultError
-              <*> HsJSONPB.asProxy declare_error
-      let declare_entity = HsJSONPB.declareSchemaRef
-      commitInfoResponseResultEntity <- declare_entity Proxy.Proxy
-      let _ =
-            Hs.pure CommitInfoResponseResultEntity
-              <*> HsJSONPB.asProxy declare_entity
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CommitInfoResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("error", commitInfoResponseResultError),
-                          ("entity", commitInfoResponseResultEntity)
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )

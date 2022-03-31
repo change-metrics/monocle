@@ -19,7 +19,8 @@ where
 import Data.Aeson
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Casing.Internal as AesonCasing
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as Aeson
 import qualified Data.Text as Text
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
@@ -113,7 +114,7 @@ search index body scrollRequest = do
       -- Otherwise we don't change the body
       (_, bodyValue) -> bodyValue
 
-    addSourceFields xs = HM.insert "_source" (Aeson.Array $ fromList $ map toSourceElem xs)
+    addSourceFields xs = KM.insert "_source" (Aeson.Array $ fromList $ map toSourceElem xs)
 
     toSourceElem :: String -> Value
     toSourceElem = Aeson.String . from . aesonCasing
@@ -163,10 +164,13 @@ aggWithDocValues agg = mkAgg agg (Just dv)
             ]
         )
 
+toPair :: (Text, Value) -> Aeson.Pair
+toPair (k, v) = (from k, v)
+
 mkAgg :: [(Text, Value)] -> Maybe Value -> Maybe BH.Query -> Value
 mkAgg agg docvalues query =
   Aeson.object $
-    [ "aggregations" .= Aeson.object agg,
+    [ "aggregations" .= Aeson.object (toPair <$> agg),
       "size" .= Aeson.Number 0
     ]
       <> case docvalues of

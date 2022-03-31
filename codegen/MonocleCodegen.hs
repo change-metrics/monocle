@@ -79,7 +79,7 @@ protoToHaskell = fromProto headers mkService
         "import Monocle.Crawler",
         "import Monocle.Login",
         "import Monocle.Search",
-        "import Monocle.UserGroup"
+        "import Monocle.Metric"
       ]
     mkService name = concatMap (mkMethod name)
     mkMethod serviceName (name, input, output, path) =

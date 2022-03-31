@@ -304,68 +304,6 @@ instance HsJSONPB.ToJSON TaskData where
 instance HsJSONPB.FromJSON TaskData where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema TaskData where
-  declareNamedSchema _ =
-    do
-      let declare_updated_at = HsJSONPB.declareSchemaRef
-      taskDataUpdatedAt <- declare_updated_at Proxy.Proxy
-      let declare_change_url = HsJSONPB.declareSchemaRef
-      taskDataChangeUrl <- declare_change_url Proxy.Proxy
-      let declare_ttype = HsJSONPB.declareSchemaRef
-      taskDataTtype <- declare_ttype Proxy.Proxy
-      let declare_tid = HsJSONPB.declareSchemaRef
-      taskDataTid <- declare_tid Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      taskDataUrl <- declare_url Proxy.Proxy
-      let declare_title = HsJSONPB.declareSchemaRef
-      taskDataTitle <- declare_title Proxy.Proxy
-      let declare_severity = HsJSONPB.declareSchemaRef
-      taskDataSeverity <- declare_severity Proxy.Proxy
-      let declare_priority = HsJSONPB.declareSchemaRef
-      taskDataPriority <- declare_priority Proxy.Proxy
-      let declare_score = HsJSONPB.declareSchemaRef
-      taskDataScore <- declare_score Proxy.Proxy
-      let declare_prefix = HsJSONPB.declareSchemaRef
-      taskDataPrefix <- declare_prefix Proxy.Proxy
-      let _ =
-            Hs.pure TaskData <*> HsJSONPB.asProxy declare_updated_at
-              <*> HsJSONPB.asProxy declare_change_url
-              <*> HsJSONPB.asProxy declare_ttype
-              <*> HsJSONPB.asProxy declare_tid
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_title
-              <*> HsJSONPB.asProxy declare_severity
-              <*> HsJSONPB.asProxy declare_priority
-              <*> HsJSONPB.asProxy declare_score
-              <*> HsJSONPB.asProxy declare_prefix
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "TaskData",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("updated_at", taskDataUpdatedAt),
-                          ("change_url", taskDataChangeUrl),
-                          ("ttype", taskDataTtype),
-                          ("tid", taskDataTid),
-                          ("url", taskDataUrl),
-                          ("title", taskDataTitle),
-                          ("severity", taskDataSeverity),
-                          ("priority", taskDataPriority),
-                          ("score", taskDataScore),
-                          ("prefix", taskDataPrefix)
-                        ]
-                  }
-            }
-        )
-
 newtype SuggestionsRequest = SuggestionsRequest
   { suggestionsRequestIndex ::
       Hs.Text
@@ -426,32 +364,6 @@ instance HsJSONPB.ToJSON SuggestionsRequest where
 
 instance HsJSONPB.FromJSON SuggestionsRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema SuggestionsRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      suggestionsRequestIndex <- declare_index Proxy.Proxy
-      let _ =
-            Hs.pure SuggestionsRequest
-              <*> HsJSONPB.asProxy declare_index
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "SuggestionsRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("index", suggestionsRequestIndex)]
-                  }
-            }
-        )
 
 data SuggestionsResponse = SuggestionsResponse
   { suggestionsResponseTaskTypes ::
@@ -702,67 +614,6 @@ instance HsJSONPB.ToJSON SuggestionsResponse where
 instance HsJSONPB.FromJSON SuggestionsResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema SuggestionsResponse where
-  declareNamedSchema _ =
-    do
-      let declare_task_types = HsJSONPB.declareSchemaRef
-      suggestionsResponseTaskTypes <- declare_task_types Proxy.Proxy
-      let declare_authors = HsJSONPB.declareSchemaRef
-      suggestionsResponseAuthors <- declare_authors Proxy.Proxy
-      let declare_approvals = HsJSONPB.declareSchemaRef
-      suggestionsResponseApprovals <- declare_approvals Proxy.Proxy
-      let declare_priorities = HsJSONPB.declareSchemaRef
-      suggestionsResponsePriorities <- declare_priorities Proxy.Proxy
-      let declare_severities = HsJSONPB.declareSchemaRef
-      suggestionsResponseSeverities <- declare_severities Proxy.Proxy
-      let declare_projects = HsJSONPB.declareSchemaRef
-      suggestionsResponseProjects <- declare_projects Proxy.Proxy
-      let declare_groups = HsJSONPB.declareSchemaRef
-      suggestionsResponseGroups <- declare_groups Proxy.Proxy
-      let declare_labels = HsJSONPB.declareSchemaRef
-      suggestionsResponseLabels <- declare_labels Proxy.Proxy
-      let _ =
-            Hs.pure SuggestionsResponse
-              <*> HsJSONPB.asProxy declare_task_types
-              <*> HsJSONPB.asProxy declare_authors
-              <*> HsJSONPB.asProxy declare_approvals
-              <*> HsJSONPB.asProxy declare_priorities
-              <*> HsJSONPB.asProxy declare_severities
-              <*> HsJSONPB.asProxy declare_projects
-              <*> HsJSONPB.asProxy declare_groups
-              <*> HsJSONPB.asProxy declare_labels
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "SuggestionsResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "task_types",
-                            suggestionsResponseTaskTypes
-                          ),
-                          ("authors", suggestionsResponseAuthors),
-                          ("approvals", suggestionsResponseApprovals),
-                          ( "priorities",
-                            suggestionsResponsePriorities
-                          ),
-                          ( "severities",
-                            suggestionsResponseSeverities
-                          ),
-                          ("projects", suggestionsResponseProjects),
-                          ("groups", suggestionsResponseGroups),
-                          ("labels", suggestionsResponseLabels)
-                        ]
-                  }
-            }
-        )
-
 newtype FieldsRequest = FieldsRequest
   { fieldsRequestVersion ::
       Hs.Text
@@ -819,30 +670,6 @@ instance HsJSONPB.ToJSON FieldsRequest where
 
 instance HsJSONPB.FromJSON FieldsRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema FieldsRequest where
-  declareNamedSchema _ =
-    do
-      let declare_version = HsJSONPB.declareSchemaRef
-      fieldsRequestVersion <- declare_version Proxy.Proxy
-      let _ = Hs.pure FieldsRequest <*> HsJSONPB.asProxy declare_version
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "FieldsRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("version", fieldsRequestVersion)]
-                  }
-            }
-        )
 
 data Field = Field
   { fieldName :: Hs.Text,
@@ -943,39 +770,6 @@ instance HsJSONPB.ToJSON Field where
 
 instance HsJSONPB.FromJSON Field where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Field where
-  declareNamedSchema _ =
-    do
-      let declare_name = HsJSONPB.declareSchemaRef
-      fieldName <- declare_name Proxy.Proxy
-      let declare_description = HsJSONPB.declareSchemaRef
-      fieldDescription <- declare_description Proxy.Proxy
-      let declare_type = HsJSONPB.declareSchemaRef
-      fieldType <- declare_type Proxy.Proxy
-      let _ =
-            Hs.pure Field <*> HsJSONPB.asProxy declare_name
-              <*> HsJSONPB.asProxy declare_description
-              <*> HsJSONPB.asProxy declare_type
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Field",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("name", fieldName),
-                          ("description", fieldDescription),
-                          ("type", fieldType)
-                        ]
-                  }
-            }
-        )
 
 data Field_Type
   = Field_TypeFIELD_DATE
@@ -1104,30 +898,6 @@ instance HsJSONPB.ToJSON FieldsResponse where
 instance HsJSONPB.FromJSON FieldsResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema FieldsResponse where
-  declareNamedSchema _ =
-    do
-      let declare_fields = HsJSONPB.declareSchemaRef
-      fieldsResponseFields <- declare_fields Proxy.Proxy
-      let _ = Hs.pure FieldsResponse <*> HsJSONPB.asProxy declare_fields
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "FieldsResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("fields", fieldsResponseFields)]
-                  }
-            }
-        )
-
 data QueryError = QueryError
   { queryErrorMessage :: Hs.Text,
     queryErrorPosition :: Hs.Word32
@@ -1205,36 +975,6 @@ instance HsJSONPB.ToJSON QueryError where
 
 instance HsJSONPB.FromJSON QueryError where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema QueryError where
-  declareNamedSchema _ =
-    do
-      let declare_message = HsJSONPB.declareSchemaRef
-      queryErrorMessage <- declare_message Proxy.Proxy
-      let declare_position = HsJSONPB.declareSchemaRef
-      queryErrorPosition <- declare_position Proxy.Proxy
-      let _ =
-            Hs.pure QueryError <*> HsJSONPB.asProxy declare_message
-              <*> HsJSONPB.asProxy declare_position
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "QueryError",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("message", queryErrorMessage),
-                          ("position", queryErrorPosition)
-                        ]
-                  }
-            }
-        )
 
 data CheckRequest = CheckRequest
   { checkRequestIndex :: Hs.Text,
@@ -1333,40 +1073,6 @@ instance HsJSONPB.ToJSON CheckRequest where
 
 instance HsJSONPB.FromJSON CheckRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema CheckRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      checkRequestIndex <- declare_index Proxy.Proxy
-      let declare_username = HsJSONPB.declareSchemaRef
-      checkRequestUsername <- declare_username Proxy.Proxy
-      let declare_query = HsJSONPB.declareSchemaRef
-      checkRequestQuery <- declare_query Proxy.Proxy
-      let _ =
-            Hs.pure CheckRequest <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_username
-              <*> HsJSONPB.asProxy declare_query
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CheckRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", checkRequestIndex),
-                          ("username", checkRequestUsername),
-                          ("query", checkRequestQuery)
-                        ]
-                  }
-            }
-        )
 
 newtype CheckResponse = CheckResponse
   { checkResponseResult ::
@@ -1487,30 +1193,6 @@ instance HsJSONPB.ToJSON CheckResponse where
 instance HsJSONPB.FromJSON CheckResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema CheckResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      checkResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure CheckResponse <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CheckResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("result", checkResponseResult)]
-                  }
-            }
-        )
-
 data CheckResponseResult
   = CheckResponseResultSuccess Hs.Text
   | CheckResponseResultError Monocle.Search.QueryError
@@ -1518,41 +1200,6 @@ data CheckResponseResult
 
 instance HsProtobuf.Named CheckResponseResult where
   nameOf _ = (Hs.fromString "CheckResponseResult")
-
-instance HsJSONPB.ToSchema CheckResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_success = HsJSONPB.declareSchemaRef
-      checkResponseResultSuccess <- declare_success Proxy.Proxy
-      let _ =
-            Hs.pure CheckResponseResultSuccess
-              <*> HsJSONPB.asProxy declare_success
-      let declare_error = HsJSONPB.declareSchemaRef
-      checkResponseResultError <- declare_error Proxy.Proxy
-      let _ =
-            Hs.pure CheckResponseResultError
-              <*> HsJSONPB.asProxy declare_error
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "CheckResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("success", checkResponseResultSuccess),
-                          ("error", checkResponseResultError)
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data Author = Author
   { authorMuid :: Hs.Text,
@@ -1660,39 +1307,6 @@ instance HsJSONPB.ToJSON Author where
 instance HsJSONPB.FromJSON Author where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Author where
-  declareNamedSchema _ =
-    do
-      let declare_muid = HsJSONPB.declareSchemaRef
-      authorMuid <- declare_muid Proxy.Proxy
-      let declare_aliases = HsJSONPB.declareSchemaRef
-      authorAliases <- declare_aliases Proxy.Proxy
-      let declare_groups = HsJSONPB.declareSchemaRef
-      authorGroups <- declare_groups Proxy.Proxy
-      let _ =
-            Hs.pure Author <*> HsJSONPB.asProxy declare_muid
-              <*> HsJSONPB.asProxy declare_aliases
-              <*> HsJSONPB.asProxy declare_groups
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Author",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("muid", authorMuid),
-                          ("aliases", authorAliases),
-                          ("groups", authorGroups)
-                        ]
-                  }
-            }
-        )
-
 data AuthorRequest = AuthorRequest
   { authorRequestIndex :: Hs.Text,
     authorRequestQuery :: Hs.Text
@@ -1771,36 +1385,6 @@ instance HsJSONPB.ToJSON AuthorRequest where
 instance HsJSONPB.FromJSON AuthorRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AuthorRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      authorRequestIndex <- declare_index Proxy.Proxy
-      let declare_query = HsJSONPB.declareSchemaRef
-      authorRequestQuery <- declare_query Proxy.Proxy
-      let _ =
-            Hs.pure AuthorRequest <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_query
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AuthorRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", authorRequestIndex),
-                          ("query", authorRequestQuery)
-                        ]
-                  }
-            }
-        )
-
 newtype AuthorResponse = AuthorResponse
   { authorResponseAuthors ::
       Hs.Vector Monocle.Search.Author
@@ -1865,30 +1449,6 @@ instance HsJSONPB.ToJSON AuthorResponse where
 
 instance HsJSONPB.FromJSON AuthorResponse where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema AuthorResponse where
-  declareNamedSchema _ =
-    do
-      let declare_authors = HsJSONPB.declareSchemaRef
-      authorResponseAuthors <- declare_authors Proxy.Proxy
-      let _ = Hs.pure AuthorResponse <*> HsJSONPB.asProxy declare_authors
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AuthorResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("authors", authorResponseAuthors)]
-                  }
-            }
-        )
 
 data Order = Order
   { orderField :: Hs.Text,
@@ -1967,35 +1527,6 @@ instance HsJSONPB.ToJSON Order where
 
 instance HsJSONPB.FromJSON Order where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Order where
-  declareNamedSchema _ =
-    do
-      let declare_field = HsJSONPB.declareSchemaRef
-      orderField <- declare_field Proxy.Proxy
-      let declare_direction = HsJSONPB.declareSchemaRef
-      orderDirection <- declare_direction Proxy.Proxy
-      let _ =
-            Hs.pure Order <*> HsJSONPB.asProxy declare_field
-              <*> HsJSONPB.asProxy declare_direction
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Order",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("field", orderField),
-                          ("direction", orderDirection)
-                        ]
-                  }
-            }
-        )
 
 data Order_Direction
   = Order_DirectionASC
@@ -2236,56 +1767,6 @@ instance HsJSONPB.ToJSON QueryRequest where
 
 instance HsJSONPB.FromJSON QueryRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema QueryRequest where
-  declareNamedSchema _ =
-    do
-      let declare_index = HsJSONPB.declareSchemaRef
-      queryRequestIndex <- declare_index Proxy.Proxy
-      let declare_username = HsJSONPB.declareSchemaRef
-      queryRequestUsername <- declare_username Proxy.Proxy
-      let declare_query = HsJSONPB.declareSchemaRef
-      queryRequestQuery <- declare_query Proxy.Proxy
-      let declare_query_type = HsJSONPB.declareSchemaRef
-      queryRequestQueryType <- declare_query_type Proxy.Proxy
-      let declare_order = HsJSONPB.declareSchemaRef
-      queryRequestOrder <- declare_order Proxy.Proxy
-      let declare_limit = HsJSONPB.declareSchemaRef
-      queryRequestLimit <- declare_limit Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      queryRequestChangeId <- declare_change_id Proxy.Proxy
-      let _ =
-            Hs.pure QueryRequest <*> HsJSONPB.asProxy declare_index
-              <*> HsJSONPB.asProxy declare_username
-              <*> HsJSONPB.asProxy declare_query
-              <*> HsJSONPB.asProxy declare_query_type
-              <*> HsJSONPB.asProxy declare_order
-              <*> HsJSONPB.asProxy declare_limit
-              <*> HsJSONPB.asProxy declare_change_id
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "QueryRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("index", queryRequestIndex),
-                          ("username", queryRequestUsername),
-                          ("query", queryRequestQuery),
-                          ("query_type", queryRequestQueryType),
-                          ("order", queryRequestOrder),
-                          ("limit", queryRequestLimit),
-                          ("change_id", queryRequestChangeId)
-                        ]
-                  }
-            }
-        )
 
 data QueryRequest_QueryType
   = QueryRequest_QueryTypeQUERY_CHANGE
@@ -2543,39 +2024,6 @@ instance HsJSONPB.ToJSON File where
 instance HsJSONPB.FromJSON File where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema File where
-  declareNamedSchema _ =
-    do
-      let declare_additions = HsJSONPB.declareSchemaRef
-      fileAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      fileDeletions <- declare_deletions Proxy.Proxy
-      let declare_path = HsJSONPB.declareSchemaRef
-      filePath <- declare_path Proxy.Proxy
-      let _ =
-            Hs.pure File <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-              <*> HsJSONPB.asProxy declare_path
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "File",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("additions", fileAdditions),
-                          ("deletions", fileDeletions),
-                          ("path", filePath)
-                        ]
-                  }
-            }
-        )
-
 data Commit = Commit
   { commitSha :: Hs.Text,
     commitTitle :: Hs.Text,
@@ -2807,59 +2255,6 @@ instance HsJSONPB.ToJSON Commit where
 
 instance HsJSONPB.FromJSON Commit where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Commit where
-  declareNamedSchema _ =
-    do
-      let declare_sha = HsJSONPB.declareSchemaRef
-      commitSha <- declare_sha Proxy.Proxy
-      let declare_title = HsJSONPB.declareSchemaRef
-      commitTitle <- declare_title Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      commitAuthor <- declare_author Proxy.Proxy
-      let declare_authored_at = HsJSONPB.declareSchemaRef
-      commitAuthoredAt <- declare_authored_at Proxy.Proxy
-      let declare_committer = HsJSONPB.declareSchemaRef
-      commitCommitter <- declare_committer Proxy.Proxy
-      let declare_committed_at = HsJSONPB.declareSchemaRef
-      commitCommittedAt <- declare_committed_at Proxy.Proxy
-      let declare_additions = HsJSONPB.declareSchemaRef
-      commitAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      commitDeletions <- declare_deletions Proxy.Proxy
-      let _ =
-            Hs.pure Commit <*> HsJSONPB.asProxy declare_sha
-              <*> HsJSONPB.asProxy declare_title
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_authored_at
-              <*> HsJSONPB.asProxy declare_committer
-              <*> HsJSONPB.asProxy declare_committed_at
-              <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Commit",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("sha", commitSha),
-                          ("title", commitTitle),
-                          ("author", commitAuthor),
-                          ("authored_at", commitAuthoredAt),
-                          ("committer", commitCommitter),
-                          ("committed_at", commitCommittedAt),
-                          ("additions", commitAdditions),
-                          ("deletions", commitDeletions)
-                        ]
-                  }
-            }
-        )
 
 data Change = Change
   { changeChangeId :: Hs.Text,
@@ -3575,164 +2970,11 @@ instance HsJSONPB.ToJSON Change where
 instance HsJSONPB.FromJSON Change where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Change where
-  declareNamedSchema _ =
-    do
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeChangeId <- declare_change_id Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeAuthor <- declare_author Proxy.Proxy
-      let declare_title = HsJSONPB.declareSchemaRef
-      changeTitle <- declare_title Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeUrl <- declare_url Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeRepositoryFullname <- declare_repository_fullname Proxy.Proxy
-      let declare_state = HsJSONPB.declareSchemaRef
-      changeState <- declare_state Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeTargetBranch <- declare_target_branch Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_updated_at = HsJSONPB.declareSchemaRef
-      changeUpdatedAt <- declare_updated_at Proxy.Proxy
-      let declare_merged_at = HsJSONPB.declareSchemaRef
-      changeMergedAt <- declare_merged_at Proxy.Proxy
-      let declare_merged_byM = HsJSONPB.declareSchemaRef
-      changeMergedByM <- declare_merged_byM Proxy.Proxy
-      let declare_text = HsJSONPB.declareSchemaRef
-      changeText <- declare_text Proxy.Proxy
-      let declare_additions = HsJSONPB.declareSchemaRef
-      changeAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      changeDeletions <- declare_deletions Proxy.Proxy
-      let declare_approval = HsJSONPB.declareSchemaRef
-      changeApproval <- declare_approval Proxy.Proxy
-      let declare_assignees = HsJSONPB.declareSchemaRef
-      changeAssignees <- declare_assignees Proxy.Proxy
-      let declare_labels = HsJSONPB.declareSchemaRef
-      changeLabels <- declare_labels Proxy.Proxy
-      let declare_draft = HsJSONPB.declareSchemaRef
-      changeDraft <- declare_draft Proxy.Proxy
-      let declare_mergeable = HsJSONPB.declareSchemaRef
-      changeMergeable <- declare_mergeable Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeChangedFiles <- declare_changed_files Proxy.Proxy
-      let declare_changed_files_count = HsJSONPB.declareSchemaRef
-      changeChangedFilesCount <- declare_changed_files_count Proxy.Proxy
-      let declare_commits = HsJSONPB.declareSchemaRef
-      changeCommits <- declare_commits Proxy.Proxy
-      let declare_commits_count = HsJSONPB.declareSchemaRef
-      changeCommitsCount <- declare_commits_count Proxy.Proxy
-      let declare_task_data = HsJSONPB.declareSchemaRef
-      changeTaskData <- declare_task_data Proxy.Proxy
-      let _ =
-            Hs.pure Change <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_title
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_state
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_updated_at
-              <*> HsJSONPB.asProxy declare_merged_at
-              <*> HsJSONPB.asProxy declare_merged_byM
-              <*> HsJSONPB.asProxy declare_text
-              <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-              <*> HsJSONPB.asProxy declare_approval
-              <*> HsJSONPB.asProxy declare_assignees
-              <*> HsJSONPB.asProxy declare_labels
-              <*> HsJSONPB.asProxy declare_draft
-              <*> HsJSONPB.asProxy declare_mergeable
-              <*> HsJSONPB.asProxy declare_changed_files
-              <*> HsJSONPB.asProxy declare_changed_files_count
-              <*> HsJSONPB.asProxy declare_commits
-              <*> HsJSONPB.asProxy declare_commits_count
-              <*> HsJSONPB.asProxy declare_task_data
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Change",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("change_id", changeChangeId),
-                          ("author", changeAuthor),
-                          ("title", changeTitle),
-                          ("url", changeUrl),
-                          ( "repository_fullname",
-                            changeRepositoryFullname
-                          ),
-                          ("state", changeState),
-                          ("branch", changeBranch),
-                          ("target_branch", changeTargetBranch),
-                          ("created_at", changeCreatedAt),
-                          ("updated_at", changeUpdatedAt),
-                          ("merged_at", changeMergedAt),
-                          ("merged_byM", changeMergedByM),
-                          ("text", changeText),
-                          ("additions", changeAdditions),
-                          ("deletions", changeDeletions),
-                          ("approval", changeApproval),
-                          ("assignees", changeAssignees),
-                          ("labels", changeLabels),
-                          ("draft", changeDraft),
-                          ("mergeable", changeMergeable),
-                          ("changed_files", changeChangedFiles),
-                          ( "changed_files_count",
-                            changeChangedFilesCount
-                          ),
-                          ("commits", changeCommits),
-                          ("commits_count", changeCommitsCount),
-                          ("task_data", changeTaskData)
-                        ]
-                  }
-            }
-        )
-
 data ChangeMergedByM = ChangeMergedByMMergedBy Hs.Text
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeMergedByM where
   nameOf _ = (Hs.fromString "ChangeMergedByM")
-
-instance HsJSONPB.ToSchema ChangeMergedByM where
-  declareNamedSchema _ =
-    do
-      let declare_merged_by = HsJSONPB.declareSchemaRef
-      changeMergedByMMergedBy <- declare_merged_by Proxy.Proxy
-      let _ =
-            Hs.pure ChangeMergedByMMergedBy
-              <*> HsJSONPB.asProxy declare_merged_by
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeMergedByM",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("merged_by", changeMergedByMMergedBy)],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 newtype Changes = Changes
   { changesChanges ::
@@ -3796,30 +3038,6 @@ instance HsJSONPB.ToJSON Changes where
 instance HsJSONPB.FromJSON Changes where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Changes where
-  declareNamedSchema _ =
-    do
-      let declare_changes = HsJSONPB.declareSchemaRef
-      changesChanges <- declare_changes Proxy.Proxy
-      let _ = Hs.pure Changes <*> HsJSONPB.asProxy declare_changes
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "Changes",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("changes", changesChanges)]
-                  }
-            }
-        )
-
 newtype Ratio = Ratio {ratioRatio :: Hs.Float}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -3870,29 +3088,6 @@ instance HsJSONPB.ToJSON Ratio where
 
 instance HsJSONPB.FromJSON Ratio where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Ratio where
-  declareNamedSchema _ =
-    do
-      let declare_ratio = HsJSONPB.declareSchemaRef
-      ratioRatio <- declare_ratio Proxy.Proxy
-      let _ = Hs.pure Ratio <*> HsJSONPB.asProxy declare_ratio
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Ratio",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("ratio", ratioRatio)]
-                  }
-            }
-        )
 
 data ChangeEvent = ChangeEvent
   { changeEventId :: Hs.Text,
@@ -4128,60 +3323,6 @@ instance HsJSONPB.ToJSON ChangeEvent where
 instance HsJSONPB.FromJSON ChangeEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeEvent where
-  declareNamedSchema _ =
-    do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeEventId <- declare_id Proxy.Proxy
-      let declare_type = HsJSONPB.declareSchemaRef
-      changeEventType <- declare_type Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeEventAuthor <- declare_author Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeEventBranch <- declare_branch Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEvent <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_type
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_branch
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeEventId),
-                          ("type", changeEventType),
-                          ("change_id", changeEventChangeId),
-                          ("created_at", changeEventCreatedAt),
-                          ("on_created_at", changeEventOnCreatedAt),
-                          ("author", changeEventAuthor),
-                          ("on_author", changeEventOnAuthor),
-                          ("branch", changeEventBranch)
-                        ]
-                  }
-            }
-        )
-
 data ChangeAndEvents = ChangeAndEvents
   { changeAndEventsChange ::
       Hs.Maybe Monocle.Search.Change,
@@ -4276,36 +3417,6 @@ instance HsJSONPB.ToJSON ChangeAndEvents where
 instance HsJSONPB.FromJSON ChangeAndEvents where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeAndEvents where
-  declareNamedSchema _ =
-    do
-      let declare_change = HsJSONPB.declareSchemaRef
-      changeAndEventsChange <- declare_change Proxy.Proxy
-      let declare_events = HsJSONPB.declareSchemaRef
-      changeAndEventsEvents <- declare_events Proxy.Proxy
-      let _ =
-            Hs.pure ChangeAndEvents <*> HsJSONPB.asProxy declare_change
-              <*> HsJSONPB.asProxy declare_events
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeAndEvents",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("change", changeAndEventsChange),
-                          ("events", changeAndEventsEvents)
-                        ]
-                  }
-            }
-        )
-
 data ReviewCount = ReviewCount
   { reviewCountAuthorsCount ::
       Hs.Word32,
@@ -4386,37 +3497,6 @@ instance HsJSONPB.ToJSON ReviewCount where
 instance HsJSONPB.FromJSON ReviewCount where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ReviewCount where
-  declareNamedSchema _ =
-    do
-      let declare_authors_count = HsJSONPB.declareSchemaRef
-      reviewCountAuthorsCount <- declare_authors_count Proxy.Proxy
-      let declare_events_count = HsJSONPB.declareSchemaRef
-      reviewCountEventsCount <- declare_events_count Proxy.Proxy
-      let _ =
-            Hs.pure ReviewCount
-              <*> HsJSONPB.asProxy declare_authors_count
-              <*> HsJSONPB.asProxy declare_events_count
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ReviewCount",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("authors_count", reviewCountAuthorsCount),
-                          ("events_count", reviewCountEventsCount)
-                        ]
-                  }
-            }
-        )
-
 data Histo = Histo {histoDate :: Hs.Text, histoCount :: Hs.Word32}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -4487,35 +3567,6 @@ instance HsJSONPB.ToJSON Histo where
 instance HsJSONPB.FromJSON Histo where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Histo where
-  declareNamedSchema _ =
-    do
-      let declare_date = HsJSONPB.declareSchemaRef
-      histoDate <- declare_date Proxy.Proxy
-      let declare_count = HsJSONPB.declareSchemaRef
-      histoCount <- declare_count Proxy.Proxy
-      let _ =
-            Hs.pure Histo <*> HsJSONPB.asProxy declare_date
-              <*> HsJSONPB.asProxy declare_count
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Histo",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("date", histoDate),
-                          ("count", histoCount)
-                        ]
-                  }
-            }
-        )
-
 newtype HistoStat = HistoStat
   { histoStatHisto ::
       Hs.Vector Monocle.Search.Histo
@@ -4577,30 +3628,6 @@ instance HsJSONPB.ToJSON HistoStat where
 
 instance HsJSONPB.FromJSON HistoStat where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema HistoStat where
-  declareNamedSchema _ =
-    do
-      let declare_histo = HsJSONPB.declareSchemaRef
-      histoStatHisto <- declare_histo Proxy.Proxy
-      let _ = Hs.pure HistoStat <*> HsJSONPB.asProxy declare_histo
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "HistoStat",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("histo", histoStatHisto)]
-                  }
-            }
-        )
 
 data ReviewStats = ReviewStats
   { reviewStatsCommentCount ::
@@ -4802,53 +3829,6 @@ instance HsJSONPB.ToJSON ReviewStats where
 instance HsJSONPB.FromJSON ReviewStats where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ReviewStats where
-  declareNamedSchema _ =
-    do
-      let declare_comment_count = HsJSONPB.declareSchemaRef
-      reviewStatsCommentCount <- declare_comment_count Proxy.Proxy
-      let declare_review_count = HsJSONPB.declareSchemaRef
-      reviewStatsReviewCount <- declare_review_count Proxy.Proxy
-      let declare_comment_delay = HsJSONPB.declareSchemaRef
-      reviewStatsCommentDelay <- declare_comment_delay Proxy.Proxy
-      let declare_review_delay = HsJSONPB.declareSchemaRef
-      reviewStatsReviewDelay <- declare_review_delay Proxy.Proxy
-      let declare_comment_histo = HsJSONPB.declareSchemaRef
-      reviewStatsCommentHisto <- declare_comment_histo Proxy.Proxy
-      let declare_review_histo = HsJSONPB.declareSchemaRef
-      reviewStatsReviewHisto <- declare_review_histo Proxy.Proxy
-      let _ =
-            Hs.pure ReviewStats
-              <*> HsJSONPB.asProxy declare_comment_count
-              <*> HsJSONPB.asProxy declare_review_count
-              <*> HsJSONPB.asProxy declare_comment_delay
-              <*> HsJSONPB.asProxy declare_review_delay
-              <*> HsJSONPB.asProxy declare_comment_histo
-              <*> HsJSONPB.asProxy declare_review_histo
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ReviewStats",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("comment_count", reviewStatsCommentCount),
-                          ("review_count", reviewStatsReviewCount),
-                          ("comment_delay", reviewStatsCommentDelay),
-                          ("review_delay", reviewStatsReviewDelay),
-                          ("comment_histo", reviewStatsCommentHisto),
-                          ("review_histo", reviewStatsReviewHisto)
-                        ]
-                  }
-            }
-        )
-
 data ActivityStats = ActivityStats
   { activityStatsChangeAuthors ::
       Hs.Word32,
@@ -5041,65 +4021,6 @@ instance HsJSONPB.ToJSON ActivityStats where
 
 instance HsJSONPB.FromJSON ActivityStats where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ActivityStats where
-  declareNamedSchema _ =
-    do
-      let declare_change_authors = HsJSONPB.declareSchemaRef
-      activityStatsChangeAuthors <- declare_change_authors Proxy.Proxy
-      let declare_comment_authors = HsJSONPB.declareSchemaRef
-      activityStatsCommentAuthors <- declare_comment_authors Proxy.Proxy
-      let declare_review_authors = HsJSONPB.declareSchemaRef
-      activityStatsReviewAuthors <- declare_review_authors Proxy.Proxy
-      let declare_comments_histo = HsJSONPB.declareSchemaRef
-      activityStatsCommentsHisto <- declare_comments_histo Proxy.Proxy
-      let declare_reviews_histo = HsJSONPB.declareSchemaRef
-      activityStatsReviewsHisto <- declare_reviews_histo Proxy.Proxy
-      let declare_changes_histo = HsJSONPB.declareSchemaRef
-      activityStatsChangesHisto <- declare_changes_histo Proxy.Proxy
-      let _ =
-            Hs.pure ActivityStats
-              <*> HsJSONPB.asProxy declare_change_authors
-              <*> HsJSONPB.asProxy declare_comment_authors
-              <*> HsJSONPB.asProxy declare_review_authors
-              <*> HsJSONPB.asProxy declare_comments_histo
-              <*> HsJSONPB.asProxy declare_reviews_histo
-              <*> HsJSONPB.asProxy declare_changes_histo
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ActivityStats",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "change_authors",
-                            activityStatsChangeAuthors
-                          ),
-                          ( "comment_authors",
-                            activityStatsCommentAuthors
-                          ),
-                          ( "review_authors",
-                            activityStatsReviewAuthors
-                          ),
-                          ( "comments_histo",
-                            activityStatsCommentsHisto
-                          ),
-                          ( "reviews_histo",
-                            activityStatsReviewsHisto
-                          ),
-                          ( "changes_histo",
-                            activityStatsChangesHisto
-                          )
-                        ]
-                  }
-            }
-        )
 
 newtype QueryResponse = QueryResponse
   { queryResponseResult ::
@@ -5457,30 +4378,6 @@ instance HsJSONPB.ToJSON QueryResponse where
 instance HsJSONPB.FromJSON QueryResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema QueryResponse where
-  declareNamedSchema _ =
-    do
-      let declare_result = HsJSONPB.declareSchemaRef
-      queryResponseResult <- declare_result Proxy.Proxy
-      let _ = Hs.pure QueryResponse <*> HsJSONPB.asProxy declare_result
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "QueryResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("result", queryResponseResult)]
-                  }
-            }
-        )
-
 data QueryResponseResult
   = QueryResponseResultError Monocle.Search.QueryError
   | QueryResponseResultChanges Monocle.Search.Changes
@@ -5499,135 +4396,6 @@ data QueryResponseResult
 
 instance HsProtobuf.Named QueryResponseResult where
   nameOf _ = (Hs.fromString "QueryResponseResult")
-
-instance HsJSONPB.ToSchema QueryResponseResult where
-  declareNamedSchema _ =
-    do
-      let declare_error = HsJSONPB.declareSchemaRef
-      queryResponseResultError <- declare_error Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultError
-              <*> HsJSONPB.asProxy declare_error
-      let declare_changes = HsJSONPB.declareSchemaRef
-      queryResponseResultChanges <- declare_changes Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultChanges
-              <*> HsJSONPB.asProxy declare_changes
-      let declare_repos_summary = HsJSONPB.declareSchemaRef
-      queryResponseResultReposSummary <-
-        declare_repos_summary
-          Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultReposSummary
-              <*> HsJSONPB.asProxy declare_repos_summary
-      let declare_top_authors = HsJSONPB.declareSchemaRef
-      queryResponseResultTopAuthors <- declare_top_authors Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultTopAuthors
-              <*> HsJSONPB.asProxy declare_top_authors
-      let declare_authors_peers = HsJSONPB.declareSchemaRef
-      queryResponseResultAuthorsPeers <-
-        declare_authors_peers
-          Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultAuthorsPeers
-              <*> HsJSONPB.asProxy declare_authors_peers
-      let declare_new_authors = HsJSONPB.declareSchemaRef
-      queryResponseResultNewAuthors <- declare_new_authors Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultNewAuthors
-              <*> HsJSONPB.asProxy declare_new_authors
-      let declare_review_stats = HsJSONPB.declareSchemaRef
-      queryResponseResultReviewStats <- declare_review_stats Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultReviewStats
-              <*> HsJSONPB.asProxy declare_review_stats
-      let declare_lifecycle_stats = HsJSONPB.declareSchemaRef
-      queryResponseResultLifecycleStats <-
-        declare_lifecycle_stats
-          Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultLifecycleStats
-              <*> HsJSONPB.asProxy declare_lifecycle_stats
-      let declare_activity_stats = HsJSONPB.declareSchemaRef
-      queryResponseResultActivityStats <-
-        declare_activity_stats
-          Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultActivityStats
-              <*> HsJSONPB.asProxy declare_activity_stats
-      let declare_change_events = HsJSONPB.declareSchemaRef
-      queryResponseResultChangeEvents <-
-        declare_change_events
-          Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultChangeEvents
-              <*> HsJSONPB.asProxy declare_change_events
-      let declare_changes_tops = HsJSONPB.declareSchemaRef
-      queryResponseResultChangesTops <- declare_changes_tops Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultChangesTops
-              <*> HsJSONPB.asProxy declare_changes_tops
-      let declare_ratio = HsJSONPB.declareSchemaRef
-      queryResponseResultRatio <- declare_ratio Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultRatio
-              <*> HsJSONPB.asProxy declare_ratio
-      let declare_histo = HsJSONPB.declareSchemaRef
-      queryResponseResultHisto <- declare_histo Proxy.Proxy
-      let _ =
-            Hs.pure QueryResponseResultHisto
-              <*> HsJSONPB.asProxy declare_histo
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "QueryResponseResult",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("error", queryResponseResultError),
-                          ("changes", queryResponseResultChanges),
-                          ( "repos_summary",
-                            queryResponseResultReposSummary
-                          ),
-                          ( "top_authors",
-                            queryResponseResultTopAuthors
-                          ),
-                          ( "authors_peers",
-                            queryResponseResultAuthorsPeers
-                          ),
-                          ( "new_authors",
-                            queryResponseResultNewAuthors
-                          ),
-                          ( "review_stats",
-                            queryResponseResultReviewStats
-                          ),
-                          ( "lifecycle_stats",
-                            queryResponseResultLifecycleStats
-                          ),
-                          ( "activity_stats",
-                            queryResponseResultActivityStats
-                          ),
-                          ( "change_events",
-                            queryResponseResultChangeEvents
-                          ),
-                          ( "changes_tops",
-                            queryResponseResultChangesTops
-                          ),
-                          ("ratio", queryResponseResultRatio),
-                          ("histo", queryResponseResultHisto)
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data LifecycleStats = LifecycleStats
   { lifecycleStatsCreatedHisto ::
@@ -6053,117 +4821,6 @@ instance HsJSONPB.ToJSON LifecycleStats where
 instance HsJSONPB.FromJSON LifecycleStats where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema LifecycleStats where
-  declareNamedSchema _ =
-    do
-      let declare_created_histo = HsJSONPB.declareSchemaRef
-      lifecycleStatsCreatedHisto <- declare_created_histo Proxy.Proxy
-      let declare_updated_histo = HsJSONPB.declareSchemaRef
-      lifecycleStatsUpdatedHisto <- declare_updated_histo Proxy.Proxy
-      let declare_merged_histo = HsJSONPB.declareSchemaRef
-      lifecycleStatsMergedHisto <- declare_merged_histo Proxy.Proxy
-      let declare_abandoned_histo = HsJSONPB.declareSchemaRef
-      lifecycleStatsAbandonedHisto <- declare_abandoned_histo Proxy.Proxy
-      let declare_created = HsJSONPB.declareSchemaRef
-      lifecycleStatsCreated <- declare_created Proxy.Proxy
-      let declare_abandoned = HsJSONPB.declareSchemaRef
-      lifecycleStatsAbandoned <- declare_abandoned Proxy.Proxy
-      let declare_merged = HsJSONPB.declareSchemaRef
-      lifecycleStatsMerged <- declare_merged Proxy.Proxy
-      let declare_self_merged = HsJSONPB.declareSchemaRef
-      lifecycleStatsSelfMerged <- declare_self_merged Proxy.Proxy
-      let declare_self_merged_ratio = HsJSONPB.declareSchemaRef
-      lifecycleStatsSelfMergedRatio <-
-        declare_self_merged_ratio
-          Proxy.Proxy
-      let declare_ttm_mean = HsJSONPB.declareSchemaRef
-      lifecycleStatsTtmMean <- declare_ttm_mean Proxy.Proxy
-      let declare_ttm_variability = HsJSONPB.declareSchemaRef
-      lifecycleStatsTtmVariability <- declare_ttm_variability Proxy.Proxy
-      let declare_updates_of_changes = HsJSONPB.declareSchemaRef
-      lifecycleStatsUpdatesOfChanges <-
-        declare_updates_of_changes
-          Proxy.Proxy
-      let declare_changes_with_tests = HsJSONPB.declareSchemaRef
-      lifecycleStatsChangesWithTests <-
-        declare_changes_with_tests
-          Proxy.Proxy
-      let declare_iterations_per_change = HsJSONPB.declareSchemaRef
-      lifecycleStatsIterationsPerChange <-
-        declare_iterations_per_change
-          Proxy.Proxy
-      let declare_commits_per_change = HsJSONPB.declareSchemaRef
-      lifecycleStatsCommitsPerChange <-
-        declare_commits_per_change
-          Proxy.Proxy
-      let _ =
-            Hs.pure LifecycleStats
-              <*> HsJSONPB.asProxy declare_created_histo
-              <*> HsJSONPB.asProxy declare_updated_histo
-              <*> HsJSONPB.asProxy declare_merged_histo
-              <*> HsJSONPB.asProxy declare_abandoned_histo
-              <*> HsJSONPB.asProxy declare_created
-              <*> HsJSONPB.asProxy declare_abandoned
-              <*> HsJSONPB.asProxy declare_merged
-              <*> HsJSONPB.asProxy declare_self_merged
-              <*> HsJSONPB.asProxy declare_self_merged_ratio
-              <*> HsJSONPB.asProxy declare_ttm_mean
-              <*> HsJSONPB.asProxy declare_ttm_variability
-              <*> HsJSONPB.asProxy declare_updates_of_changes
-              <*> HsJSONPB.asProxy declare_changes_with_tests
-              <*> HsJSONPB.asProxy declare_iterations_per_change
-              <*> HsJSONPB.asProxy declare_commits_per_change
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "LifecycleStats",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "created_histo",
-                            lifecycleStatsCreatedHisto
-                          ),
-                          ( "updated_histo",
-                            lifecycleStatsUpdatedHisto
-                          ),
-                          ("merged_histo", lifecycleStatsMergedHisto),
-                          ( "abandoned_histo",
-                            lifecycleStatsAbandonedHisto
-                          ),
-                          ("created", lifecycleStatsCreated),
-                          ("abandoned", lifecycleStatsAbandoned),
-                          ("merged", lifecycleStatsMerged),
-                          ("self_merged", lifecycleStatsSelfMerged),
-                          ( "self_merged_ratio",
-                            lifecycleStatsSelfMergedRatio
-                          ),
-                          ("ttm_mean", lifecycleStatsTtmMean),
-                          ( "ttm_variability",
-                            lifecycleStatsTtmVariability
-                          ),
-                          ( "updates_of_changes",
-                            lifecycleStatsUpdatesOfChanges
-                          ),
-                          ( "changes_with_tests",
-                            lifecycleStatsChangesWithTests
-                          ),
-                          ( "iterations_per_change",
-                            lifecycleStatsIterationsPerChange
-                          ),
-                          ( "commits_per_change",
-                            lifecycleStatsCommitsPerChange
-                          )
-                        ]
-                  }
-            }
-        )
-
 data RepoSummary = RepoSummary
   { repoSummaryFullname :: Hs.Text,
     repoSummaryCreatedChanges :: Hs.Word32,
@@ -6331,62 +4988,6 @@ instance HsJSONPB.ToJSON RepoSummary where
 instance HsJSONPB.FromJSON RepoSummary where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema RepoSummary where
-  declareNamedSchema _ =
-    do
-      let declare_fullname = HsJSONPB.declareSchemaRef
-      repoSummaryFullname <- declare_fullname Proxy.Proxy
-      let declare_created_changes = HsJSONPB.declareSchemaRef
-      repoSummaryCreatedChanges <- declare_created_changes Proxy.Proxy
-      let declare_abandoned_changes = HsJSONPB.declareSchemaRef
-      repoSummaryAbandonedChanges <-
-        declare_abandoned_changes
-          Proxy.Proxy
-      let declare_merged_changes = HsJSONPB.declareSchemaRef
-      repoSummaryMergedChanges <- declare_merged_changes Proxy.Proxy
-      let declare_updated_changes = HsJSONPB.declareSchemaRef
-      repoSummaryUpdatedChanges <- declare_updated_changes Proxy.Proxy
-      let declare_open_changes = HsJSONPB.declareSchemaRef
-      repoSummaryOpenChanges <- declare_open_changes Proxy.Proxy
-      let _ =
-            Hs.pure RepoSummary <*> HsJSONPB.asProxy declare_fullname
-              <*> HsJSONPB.asProxy declare_created_changes
-              <*> HsJSONPB.asProxy declare_abandoned_changes
-              <*> HsJSONPB.asProxy declare_merged_changes
-              <*> HsJSONPB.asProxy declare_updated_changes
-              <*> HsJSONPB.asProxy declare_open_changes
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "RepoSummary",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("fullname", repoSummaryFullname),
-                          ( "created_changes",
-                            repoSummaryCreatedChanges
-                          ),
-                          ( "abandoned_changes",
-                            repoSummaryAbandonedChanges
-                          ),
-                          ( "merged_changes",
-                            repoSummaryMergedChanges
-                          ),
-                          ( "updated_changes",
-                            repoSummaryUpdatedChanges
-                          ),
-                          ("open_changes", repoSummaryOpenChanges)
-                        ]
-                  }
-            }
-        )
-
 newtype ReposSummary = ReposSummary
   { reposSummaryReposum ::
       Hs.Vector Monocle.Search.RepoSummary
@@ -6450,30 +5051,6 @@ instance HsJSONPB.ToJSON ReposSummary where
 
 instance HsJSONPB.FromJSON ReposSummary where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ReposSummary where
-  declareNamedSchema _ =
-    do
-      let declare_reposum = HsJSONPB.declareSchemaRef
-      reposSummaryReposum <- declare_reposum Proxy.Proxy
-      let _ = Hs.pure ReposSummary <*> HsJSONPB.asProxy declare_reposum
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ReposSummary",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("reposum", reposSummaryReposum)]
-                  }
-            }
-        )
 
 data TermCount = TermCount
   { termCountTerm :: Hs.Text,
@@ -6552,36 +5129,6 @@ instance HsJSONPB.ToJSON TermCount where
 
 instance HsJSONPB.FromJSON TermCount where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema TermCount where
-  declareNamedSchema _ =
-    do
-      let declare_term = HsJSONPB.declareSchemaRef
-      termCountTerm <- declare_term Proxy.Proxy
-      let declare_count = HsJSONPB.declareSchemaRef
-      termCountCount <- declare_count Proxy.Proxy
-      let _ =
-            Hs.pure TermCount <*> HsJSONPB.asProxy declare_term
-              <*> HsJSONPB.asProxy declare_count
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "TermCount",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("term", termCountTerm),
-                          ("count", termCountCount)
-                        ]
-                  }
-            }
-        )
 
 data TermsCount = TermsCount
   { termsCountTermcount ::
@@ -6670,36 +5217,6 @@ instance HsJSONPB.ToJSON TermsCount where
 
 instance HsJSONPB.FromJSON TermsCount where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema TermsCount where
-  declareNamedSchema _ =
-    do
-      let declare_termcount = HsJSONPB.declareSchemaRef
-      termsCountTermcount <- declare_termcount Proxy.Proxy
-      let declare_total_hits = HsJSONPB.declareSchemaRef
-      termsCountTotalHits <- declare_total_hits Proxy.Proxy
-      let _ =
-            Hs.pure TermsCount <*> HsJSONPB.asProxy declare_termcount
-              <*> HsJSONPB.asProxy declare_total_hits
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "TermsCount",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("termcount", termsCountTermcount),
-                          ("total_hits", termsCountTotalHits)
-                        ]
-                  }
-            }
-        )
 
 data AuthorPeer = AuthorPeer
   { authorPeerAuthor :: Hs.Text,
@@ -6799,40 +5316,6 @@ instance HsJSONPB.ToJSON AuthorPeer where
 instance HsJSONPB.FromJSON AuthorPeer where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema AuthorPeer where
-  declareNamedSchema _ =
-    do
-      let declare_author = HsJSONPB.declareSchemaRef
-      authorPeerAuthor <- declare_author Proxy.Proxy
-      let declare_peer = HsJSONPB.declareSchemaRef
-      authorPeerPeer <- declare_peer Proxy.Proxy
-      let declare_strength = HsJSONPB.declareSchemaRef
-      authorPeerStrength <- declare_strength Proxy.Proxy
-      let _ =
-            Hs.pure AuthorPeer <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_peer
-              <*> HsJSONPB.asProxy declare_strength
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AuthorPeer",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("author", authorPeerAuthor),
-                          ("peer", authorPeerPeer),
-                          ("strength", authorPeerStrength)
-                        ]
-                  }
-            }
-        )
-
 newtype AuthorsPeers = AuthorsPeers
   { authorsPeersAuthorPeer ::
       Hs.Vector Monocle.Search.AuthorPeer
@@ -6898,32 +5381,6 @@ instance HsJSONPB.ToJSON AuthorsPeers where
 
 instance HsJSONPB.FromJSON AuthorsPeers where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema AuthorsPeers where
-  declareNamedSchema _ =
-    do
-      let declare_author_peer = HsJSONPB.declareSchemaRef
-      authorsPeersAuthorPeer <- declare_author_peer Proxy.Proxy
-      let _ =
-            Hs.pure AuthorsPeers
-              <*> HsJSONPB.asProxy declare_author_peer
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "AuthorsPeers",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("author_peer", authorsPeersAuthorPeer)]
-                  }
-            }
-        )
 
 data ChangesTops = ChangesTops
   { changesTopsAuthors ::
@@ -7049,37 +5506,3 @@ instance HsJSONPB.ToJSON ChangesTops where
 
 instance HsJSONPB.FromJSON ChangesTops where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangesTops where
-  declareNamedSchema _ =
-    do
-      let declare_authors = HsJSONPB.declareSchemaRef
-      changesTopsAuthors <- declare_authors Proxy.Proxy
-      let declare_repos = HsJSONPB.declareSchemaRef
-      changesTopsRepos <- declare_repos Proxy.Proxy
-      let declare_approvals = HsJSONPB.declareSchemaRef
-      changesTopsApprovals <- declare_approvals Proxy.Proxy
-      let _ =
-            Hs.pure ChangesTops <*> HsJSONPB.asProxy declare_authors
-              <*> HsJSONPB.asProxy declare_repos
-              <*> HsJSONPB.asProxy declare_approvals
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangesTops",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("authors", changesTopsAuthors),
-                          ("repos", changesTopsRepos),
-                          ("approvals", changesTopsApprovals)
-                        ]
-                  }
-            }
-        )

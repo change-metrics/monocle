@@ -138,42 +138,6 @@ instance HsJSONPB.ToJSON MetricInfo where
 instance HsJSONPB.FromJSON MetricInfo where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema MetricInfo where
-  declareNamedSchema _ =
-    do
-      let declare_name = HsJSONPB.declareSchemaRef
-      metricInfoName <- declare_name Proxy.Proxy
-      let declare_description = HsJSONPB.declareSchemaRef
-      metricInfoDescription <- declare_description Proxy.Proxy
-      let declare_long_description = HsJSONPB.declareSchemaRef
-      metricInfoLongDescription <- declare_long_description Proxy.Proxy
-      let _ =
-            Hs.pure MetricInfo <*> HsJSONPB.asProxy declare_name
-              <*> HsJSONPB.asProxy declare_description
-              <*> HsJSONPB.asProxy declare_long_description
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "MetricInfo",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("name", metricInfoName),
-                          ("description", metricInfoDescription),
-                          ( "long_description",
-                            metricInfoLongDescription
-                          )
-                        ]
-                  }
-            }
-        )
-
 newtype ListRequest = ListRequest {listRequestVoid :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -224,30 +188,6 @@ instance HsJSONPB.ToJSON ListRequest where
 
 instance HsJSONPB.FromJSON ListRequest where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ListRequest where
-  declareNamedSchema _ =
-    do
-      let declare_void = HsJSONPB.declareSchemaRef
-      listRequestVoid <- declare_void Proxy.Proxy
-      let _ = Hs.pure ListRequest <*> HsJSONPB.asProxy declare_void
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ListRequest",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("void", listRequestVoid)]
-                  }
-            }
-        )
 
 newtype ListResponse = ListResponse
   { listResponseMetrics ::
@@ -312,27 +252,3 @@ instance HsJSONPB.ToJSON ListResponse where
 
 instance HsJSONPB.FromJSON ListResponse where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ListResponse where
-  declareNamedSchema _ =
-    do
-      let declare_metrics = HsJSONPB.declareSchemaRef
-      listResponseMetrics <- declare_metrics Proxy.Proxy
-      let _ = Hs.pure ListResponse <*> HsJSONPB.asProxy declare_metrics
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ListResponse",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("metrics", listResponseMetrics)]
-                  }
-            }
-        )

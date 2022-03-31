@@ -107,33 +107,6 @@ instance HsJSONPB.ToJSON Ident where
 instance HsJSONPB.FromJSON Ident where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Ident where
-  declareNamedSchema _ =
-    do
-      let declare_uid = HsJSONPB.declareSchemaRef
-      identUid <- declare_uid Proxy.Proxy
-      let declare_muid = HsJSONPB.declareSchemaRef
-      identMuid <- declare_muid Proxy.Proxy
-      let _ =
-            Hs.pure Ident <*> HsJSONPB.asProxy declare_uid
-              <*> HsJSONPB.asProxy declare_muid
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Ident",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("uid", identUid), ("muid", identMuid)]
-                  }
-            }
-        )
-
 data ChangedFile = ChangedFile
   { changedFileAdditions :: Hs.Int32,
     changedFileDeletions :: Hs.Int32,
@@ -234,40 +207,6 @@ instance HsJSONPB.ToJSON ChangedFile where
 instance HsJSONPB.FromJSON ChangedFile where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangedFile where
-  declareNamedSchema _ =
-    do
-      let declare_additions = HsJSONPB.declareSchemaRef
-      changedFileAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      changedFileDeletions <- declare_deletions Proxy.Proxy
-      let declare_path = HsJSONPB.declareSchemaRef
-      changedFilePath <- declare_path Proxy.Proxy
-      let _ =
-            Hs.pure ChangedFile <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-              <*> HsJSONPB.asProxy declare_path
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangedFile",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("additions", changedFileAdditions),
-                          ("deletions", changedFileDeletions),
-                          ("path", changedFilePath)
-                        ]
-                  }
-            }
-        )
-
 newtype ChangedFilePath = ChangedFilePath
   { changedFilePathPath ::
       Hs.Text
@@ -323,30 +262,6 @@ instance HsJSONPB.ToJSON ChangedFilePath where
 
 instance HsJSONPB.FromJSON ChangedFilePath where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangedFilePath where
-  declareNamedSchema _ =
-    do
-      let declare_path = HsJSONPB.declareSchemaRef
-      changedFilePathPath <- declare_path Proxy.Proxy
-      let _ = Hs.pure ChangedFilePath <*> HsJSONPB.asProxy declare_path
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangedFilePath",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("path", changedFilePathPath)]
-                  }
-            }
-        )
 
 data Commit = Commit
   { commitSha :: Hs.Text,
@@ -591,59 +506,6 @@ instance HsJSONPB.ToJSON Commit where
 
 instance HsJSONPB.FromJSON Commit where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Commit where
-  declareNamedSchema _ =
-    do
-      let declare_sha = HsJSONPB.declareSchemaRef
-      commitSha <- declare_sha Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      commitAuthor <- declare_author Proxy.Proxy
-      let declare_committer = HsJSONPB.declareSchemaRef
-      commitCommitter <- declare_committer Proxy.Proxy
-      let declare_authored_at = HsJSONPB.declareSchemaRef
-      commitAuthoredAt <- declare_authored_at Proxy.Proxy
-      let declare_committed_at = HsJSONPB.declareSchemaRef
-      commitCommittedAt <- declare_committed_at Proxy.Proxy
-      let declare_additions = HsJSONPB.declareSchemaRef
-      commitAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      commitDeletions <- declare_deletions Proxy.Proxy
-      let declare_title = HsJSONPB.declareSchemaRef
-      commitTitle <- declare_title Proxy.Proxy
-      let _ =
-            Hs.pure Commit <*> HsJSONPB.asProxy declare_sha
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_committer
-              <*> HsJSONPB.asProxy declare_authored_at
-              <*> HsJSONPB.asProxy declare_committed_at
-              <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-              <*> HsJSONPB.asProxy declare_title
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Commit",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("sha", commitSha),
-                          ("author", commitAuthor),
-                          ("committer", commitCommitter),
-                          ("authored_at", commitAuthoredAt),
-                          ("committed_at", commitCommittedAt),
-                          ("additions", commitAdditions),
-                          ("deletions", commitDeletions),
-                          ("title", commitTitle)
-                        ]
-                  }
-            }
-        )
 
 data Change = Change
   { changeId :: Hs.Text,
@@ -1669,173 +1531,6 @@ instance HsJSONPB.ToJSON Change where
 instance HsJSONPB.FromJSON Change where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema Change where
-  declareNamedSchema _ =
-    do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeId <- declare_id Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeChangeId <- declare_change_id Proxy.Proxy
-      let declare_title = HsJSONPB.declareSchemaRef
-      changeTitle <- declare_title Proxy.Proxy
-      let declare_text = HsJSONPB.declareSchemaRef
-      changeText <- declare_text Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeUrl <- declare_url Proxy.Proxy
-      let declare_commit_count = HsJSONPB.declareSchemaRef
-      changeCommitCount <- declare_commit_count Proxy.Proxy
-      let declare_additions = HsJSONPB.declareSchemaRef
-      changeAdditions <- declare_additions Proxy.Proxy
-      let declare_deletions = HsJSONPB.declareSchemaRef
-      changeDeletions <- declare_deletions Proxy.Proxy
-      let declare_changed_files_count = HsJSONPB.declareSchemaRef
-      changeChangedFilesCount <- declare_changed_files_count Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeChangedFiles <- declare_changed_files Proxy.Proxy
-      let declare_commits = HsJSONPB.declareSchemaRef
-      changeCommits <- declare_commits Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeRepositoryPrefix <- declare_repository_prefix Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeRepositoryFullname <- declare_repository_fullname Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeAuthor <- declare_author Proxy.Proxy
-      let declare_optional_merged_by = HsJSONPB.declareSchemaRef
-      changeOptionalMergedBy <- declare_optional_merged_by Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeTargetBranch <- declare_target_branch Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_optional_merged_at = HsJSONPB.declareSchemaRef
-      changeOptionalMergedAt <- declare_optional_merged_at Proxy.Proxy
-      let declare_updated_at = HsJSONPB.declareSchemaRef
-      changeUpdatedAt <- declare_updated_at Proxy.Proxy
-      let declare_optional_closed_at = HsJSONPB.declareSchemaRef
-      changeOptionalClosedAt <- declare_optional_closed_at Proxy.Proxy
-      let declare_state = HsJSONPB.declareSchemaRef
-      changeState <- declare_state Proxy.Proxy
-      let declare_optional_duration = HsJSONPB.declareSchemaRef
-      changeOptionalDuration <- declare_optional_duration Proxy.Proxy
-      let declare_mergeable = HsJSONPB.declareSchemaRef
-      changeMergeable <- declare_mergeable Proxy.Proxy
-      let declare_labels = HsJSONPB.declareSchemaRef
-      changeLabels <- declare_labels Proxy.Proxy
-      let declare_assignees = HsJSONPB.declareSchemaRef
-      changeAssignees <- declare_assignees Proxy.Proxy
-      let declare_approvals = HsJSONPB.declareSchemaRef
-      changeApprovals <- declare_approvals Proxy.Proxy
-      let declare_draft = HsJSONPB.declareSchemaRef
-      changeDraft <- declare_draft Proxy.Proxy
-      let declare_optional_self_merged = HsJSONPB.declareSchemaRef
-      changeOptionalSelfMerged <-
-        declare_optional_self_merged
-          Proxy.Proxy
-      let _ =
-            Hs.pure Change <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_title
-              <*> HsJSONPB.asProxy declare_text
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_commit_count
-              <*> HsJSONPB.asProxy declare_additions
-              <*> HsJSONPB.asProxy declare_deletions
-              <*> HsJSONPB.asProxy declare_changed_files_count
-              <*> HsJSONPB.asProxy declare_changed_files
-              <*> HsJSONPB.asProxy declare_commits
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_optional_merged_by
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_optional_merged_at
-              <*> HsJSONPB.asProxy declare_updated_at
-              <*> HsJSONPB.asProxy declare_optional_closed_at
-              <*> HsJSONPB.asProxy declare_state
-              <*> HsJSONPB.asProxy declare_optional_duration
-              <*> HsJSONPB.asProxy declare_mergeable
-              <*> HsJSONPB.asProxy declare_labels
-              <*> HsJSONPB.asProxy declare_assignees
-              <*> HsJSONPB.asProxy declare_approvals
-              <*> HsJSONPB.asProxy declare_draft
-              <*> HsJSONPB.asProxy declare_optional_self_merged
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName = Hs.Just "Change",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeId),
-                          ("number", changeNumber),
-                          ("change_id", changeChangeId),
-                          ("title", changeTitle),
-                          ("text", changeText),
-                          ("url", changeUrl),
-                          ("commit_count", changeCommitCount),
-                          ("additions", changeAdditions),
-                          ("deletions", changeDeletions),
-                          ( "changed_files_count",
-                            changeChangedFilesCount
-                          ),
-                          ("changed_files", changeChangedFiles),
-                          ("commits", changeCommits),
-                          ( "repository_prefix",
-                            changeRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeRepositoryShortname
-                          ),
-                          ("author", changeAuthor),
-                          ( "optional_merged_by",
-                            changeOptionalMergedBy
-                          ),
-                          ("branch", changeBranch),
-                          ("target_branch", changeTargetBranch),
-                          ("created_at", changeCreatedAt),
-                          ( "optional_merged_at",
-                            changeOptionalMergedAt
-                          ),
-                          ("updated_at", changeUpdatedAt),
-                          ( "optional_closed_at",
-                            changeOptionalClosedAt
-                          ),
-                          ("state", changeState),
-                          ( "optional_duration",
-                            changeOptionalDuration
-                          ),
-                          ("mergeable", changeMergeable),
-                          ("labels", changeLabels),
-                          ("assignees", changeAssignees),
-                          ("approvals", changeApprovals),
-                          ("draft", changeDraft),
-                          ( "optional_self_merged",
-                            changeOptionalSelfMerged
-                          )
-                        ]
-                  }
-            }
-        )
-
 data Change_ChangeState
   = Change_ChangeStateOpen
   | Change_ChangeStateMerged
@@ -1894,73 +1589,11 @@ data ChangeOptionalMergedBy = ChangeOptionalMergedByMergedBy Monocle.Change.Iden
 instance HsProtobuf.Named ChangeOptionalMergedBy where
   nameOf _ = (Hs.fromString "ChangeOptionalMergedBy")
 
-instance HsJSONPB.ToSchema ChangeOptionalMergedBy where
-  declareNamedSchema _ =
-    do
-      let declare_merged_by = HsJSONPB.declareSchemaRef
-      changeOptionalMergedByMergedBy <- declare_merged_by Proxy.Proxy
-      let _ =
-            Hs.pure ChangeOptionalMergedByMergedBy
-              <*> HsJSONPB.asProxy declare_merged_by
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeOptionalMergedBy",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "merged_by",
-                            changeOptionalMergedByMergedBy
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
-
 data ChangeOptionalMergedAt = ChangeOptionalMergedAtMergedAt Google.Protobuf.Timestamp.Timestamp
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeOptionalMergedAt where
   nameOf _ = (Hs.fromString "ChangeOptionalMergedAt")
-
-instance HsJSONPB.ToSchema ChangeOptionalMergedAt where
-  declareNamedSchema _ =
-    do
-      let declare_merged_at = HsJSONPB.declareSchemaRef
-      changeOptionalMergedAtMergedAt <- declare_merged_at Proxy.Proxy
-      let _ =
-            Hs.pure ChangeOptionalMergedAtMergedAt
-              <*> HsJSONPB.asProxy declare_merged_at
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeOptionalMergedAt",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "merged_at",
-                            changeOptionalMergedAtMergedAt
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data ChangeOptionalClosedAt = ChangeOptionalClosedAtClosedAt Google.Protobuf.Timestamp.Timestamp
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -1968,112 +1601,17 @@ data ChangeOptionalClosedAt = ChangeOptionalClosedAtClosedAt Google.Protobuf.Tim
 instance HsProtobuf.Named ChangeOptionalClosedAt where
   nameOf _ = (Hs.fromString "ChangeOptionalClosedAt")
 
-instance HsJSONPB.ToSchema ChangeOptionalClosedAt where
-  declareNamedSchema _ =
-    do
-      let declare_closed_at = HsJSONPB.declareSchemaRef
-      changeOptionalClosedAtClosedAt <- declare_closed_at Proxy.Proxy
-      let _ =
-            Hs.pure ChangeOptionalClosedAtClosedAt
-              <*> HsJSONPB.asProxy declare_closed_at
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeOptionalClosedAt",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "closed_at",
-                            changeOptionalClosedAtClosedAt
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
-
 data ChangeOptionalDuration = ChangeOptionalDurationDuration Hs.Int32
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeOptionalDuration where
   nameOf _ = (Hs.fromString "ChangeOptionalDuration")
 
-instance HsJSONPB.ToSchema ChangeOptionalDuration where
-  declareNamedSchema _ =
-    do
-      let declare_duration = HsJSONPB.declareSchemaRef
-      changeOptionalDurationDuration <- declare_duration Proxy.Proxy
-      let _ =
-            Hs.pure ChangeOptionalDurationDuration
-              <*> HsJSONPB.asProxy declare_duration
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeOptionalDuration",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "duration",
-                            changeOptionalDurationDuration
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
-
 data ChangeOptionalSelfMerged = ChangeOptionalSelfMergedSelfMerged Hs.Bool
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named ChangeOptionalSelfMerged where
   nameOf _ = (Hs.fromString "ChangeOptionalSelfMerged")
-
-instance HsJSONPB.ToSchema ChangeOptionalSelfMerged where
-  declareNamedSchema _ =
-    do
-      let declare_self_merged = HsJSONPB.declareSchemaRef
-      changeOptionalSelfMergedSelfMerged <-
-        declare_self_merged
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeOptionalSelfMergedSelfMerged
-              <*> HsJSONPB.asProxy declare_self_merged
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeOptionalSelfMerged",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "self_merged",
-                            changeOptionalSelfMergedSelfMerged
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
 
 data ChangeCreatedEvent = ChangeCreatedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -2106,26 +1644,6 @@ instance HsJSONPB.ToJSON ChangeCreatedEvent where
 instance HsJSONPB.FromJSON ChangeCreatedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeCreatedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeCreatedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
-
 data ChangeCommentedEvent = ChangeCommentedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2157,26 +1675,6 @@ instance HsJSONPB.ToJSON ChangeCommentedEvent where
 instance HsJSONPB.FromJSON ChangeCommentedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeCommentedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeCommentedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
-
 data ChangeAbandonedEvent = ChangeAbandonedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2207,26 +1705,6 @@ instance HsJSONPB.ToJSON ChangeAbandonedEvent where
 
 instance HsJSONPB.FromJSON ChangeAbandonedEvent where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangeAbandonedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeAbandonedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
 
 newtype ChangeReviewedEvent = ChangeReviewedEvent
   { changeReviewedEventApprovals ::
@@ -2294,35 +1772,6 @@ instance HsJSONPB.ToJSON ChangeReviewedEvent where
 instance HsJSONPB.FromJSON ChangeReviewedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeReviewedEvent where
-  declareNamedSchema _ =
-    do
-      let declare_approvals = HsJSONPB.declareSchemaRef
-      changeReviewedEventApprovals <- declare_approvals Proxy.Proxy
-      let _ =
-            Hs.pure ChangeReviewedEvent
-              <*> HsJSONPB.asProxy declare_approvals
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeReviewedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "approvals",
-                            changeReviewedEventApprovals
-                          )
-                        ]
-                  }
-            }
-        )
-
 data ChangeCommitForcePushedEvent = ChangeCommitForcePushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2353,26 +1802,6 @@ instance HsJSONPB.ToJSON ChangeCommitForcePushedEvent where
 
 instance HsJSONPB.FromJSON ChangeCommitForcePushedEvent where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangeCommitForcePushedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeCommitForcePushedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
 
 data ChangeCommitPushedEvent = ChangeCommitPushedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -2405,26 +1834,6 @@ instance HsJSONPB.ToJSON ChangeCommitPushedEvent where
 instance HsJSONPB.FromJSON ChangeCommitPushedEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeCommitPushedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeCommitPushedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
-
 data ChangeMergedEvent = ChangeMergedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2455,26 +1864,6 @@ instance HsJSONPB.ToJSON ChangeMergedEvent where
 
 instance HsJSONPB.FromJSON ChangeMergedEvent where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema ChangeMergedEvent where
-  declareNamedSchema _ =
-    do
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeMergedEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList []
-                  }
-            }
-        )
 
 data ChangeEvent = ChangeEvent
   { changeEventId :: Hs.Text,
@@ -3103,104 +2492,6 @@ instance HsJSONPB.ToJSON ChangeEvent where
 instance HsJSONPB.FromJSON ChangeEvent where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsJSONPB.ToSchema ChangeEvent where
-  declareNamedSchema _ =
-    do
-      let declare_id = HsJSONPB.declareSchemaRef
-      changeEventId <- declare_id Proxy.Proxy
-      let declare_created_at = HsJSONPB.declareSchemaRef
-      changeEventCreatedAt <- declare_created_at Proxy.Proxy
-      let declare_author = HsJSONPB.declareSchemaRef
-      changeEventAuthor <- declare_author Proxy.Proxy
-      let declare_repository_prefix = HsJSONPB.declareSchemaRef
-      changeEventRepositoryPrefix <-
-        declare_repository_prefix
-          Proxy.Proxy
-      let declare_repository_fullname = HsJSONPB.declareSchemaRef
-      changeEventRepositoryFullname <-
-        declare_repository_fullname
-          Proxy.Proxy
-      let declare_repository_shortname = HsJSONPB.declareSchemaRef
-      changeEventRepositoryShortname <-
-        declare_repository_shortname
-          Proxy.Proxy
-      let declare_branch = HsJSONPB.declareSchemaRef
-      changeEventBranch <- declare_branch Proxy.Proxy
-      let declare_target_branch = HsJSONPB.declareSchemaRef
-      changeEventTargetBranch <- declare_target_branch Proxy.Proxy
-      let declare_number = HsJSONPB.declareSchemaRef
-      changeEventNumber <- declare_number Proxy.Proxy
-      let declare_change_id = HsJSONPB.declareSchemaRef
-      changeEventChangeId <- declare_change_id Proxy.Proxy
-      let declare_url = HsJSONPB.declareSchemaRef
-      changeEventUrl <- declare_url Proxy.Proxy
-      let declare_on_author = HsJSONPB.declareSchemaRef
-      changeEventOnAuthor <- declare_on_author Proxy.Proxy
-      let declare_on_created_at = HsJSONPB.declareSchemaRef
-      changeEventOnCreatedAt <- declare_on_created_at Proxy.Proxy
-      let declare_changed_files = HsJSONPB.declareSchemaRef
-      changeEventChangedFiles <- declare_changed_files Proxy.Proxy
-      let declare_type = HsJSONPB.declareSchemaRef
-      changeEventType <- declare_type Proxy.Proxy
-      let declare_labels = HsJSONPB.declareSchemaRef
-      changeEventLabels <- declare_labels Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEvent <*> HsJSONPB.asProxy declare_id
-              <*> HsJSONPB.asProxy declare_created_at
-              <*> HsJSONPB.asProxy declare_author
-              <*> HsJSONPB.asProxy declare_repository_prefix
-              <*> HsJSONPB.asProxy declare_repository_fullname
-              <*> HsJSONPB.asProxy declare_repository_shortname
-              <*> HsJSONPB.asProxy declare_branch
-              <*> HsJSONPB.asProxy declare_target_branch
-              <*> HsJSONPB.asProxy declare_number
-              <*> HsJSONPB.asProxy declare_change_id
-              <*> HsJSONPB.asProxy declare_url
-              <*> HsJSONPB.asProxy declare_on_author
-              <*> HsJSONPB.asProxy declare_on_created_at
-              <*> HsJSONPB.asProxy declare_changed_files
-              <*> HsJSONPB.asProxy declare_type
-              <*> HsJSONPB.asProxy declare_labels
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeEvent",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ("id", changeEventId),
-                          ("created_at", changeEventCreatedAt),
-                          ("author", changeEventAuthor),
-                          ( "repository_prefix",
-                            changeEventRepositoryPrefix
-                          ),
-                          ( "repository_fullname",
-                            changeEventRepositoryFullname
-                          ),
-                          ( "repository_shortname",
-                            changeEventRepositoryShortname
-                          ),
-                          ("branch", changeEventBranch),
-                          ("target_branch", changeEventTargetBranch),
-                          ("number", changeEventNumber),
-                          ("change_id", changeEventChangeId),
-                          ("url", changeEventUrl),
-                          ("on_author", changeEventOnAuthor),
-                          ("on_created_at", changeEventOnCreatedAt),
-                          ("changed_files", changeEventChangedFiles),
-                          ("type", changeEventType),
-                          ("labels", changeEventLabels)
-                        ]
-                  }
-            }
-        )
-
 data ChangeEventType
   = ChangeEventTypeChangeCreated Monocle.Change.ChangeCreatedEvent
   | ChangeEventTypeChangeCommented Monocle.Change.ChangeCommentedEvent
@@ -3213,90 +2504,3 @@ data ChangeEventType
 
 instance HsProtobuf.Named ChangeEventType where
   nameOf _ = (Hs.fromString "ChangeEventType")
-
-instance HsJSONPB.ToSchema ChangeEventType where
-  declareNamedSchema _ =
-    do
-      let declare_ChangeCreated = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeCreated <- declare_ChangeCreated Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeCreated
-              <*> HsJSONPB.asProxy declare_ChangeCreated
-      let declare_ChangeCommented = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeCommented <-
-        declare_ChangeCommented
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeCommented
-              <*> HsJSONPB.asProxy declare_ChangeCommented
-      let declare_ChangeAbandoned = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeAbandoned <-
-        declare_ChangeAbandoned
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeAbandoned
-              <*> HsJSONPB.asProxy declare_ChangeAbandoned
-      let declare_ChangeReviewed = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeReviewed <- declare_ChangeReviewed Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeReviewed
-              <*> HsJSONPB.asProxy declare_ChangeReviewed
-      let declare_ChangeCommitForcePushed = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeCommitForcePushed <-
-        declare_ChangeCommitForcePushed
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeCommitForcePushed
-              <*> HsJSONPB.asProxy declare_ChangeCommitForcePushed
-      let declare_ChangeCommitPushed = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeCommitPushed <-
-        declare_ChangeCommitPushed
-          Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeCommitPushed
-              <*> HsJSONPB.asProxy declare_ChangeCommitPushed
-      let declare_ChangeMerged = HsJSONPB.declareSchemaRef
-      changeEventTypeChangeMerged <- declare_ChangeMerged Proxy.Proxy
-      let _ =
-            Hs.pure ChangeEventTypeChangeMerged
-              <*> HsJSONPB.asProxy declare_ChangeMerged
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "ChangeEventType",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [ ( "ChangeCreated",
-                            changeEventTypeChangeCreated
-                          ),
-                          ( "ChangeCommented",
-                            changeEventTypeChangeCommented
-                          ),
-                          ( "ChangeAbandoned",
-                            changeEventTypeChangeAbandoned
-                          ),
-                          ( "ChangeReviewed",
-                            changeEventTypeChangeReviewed
-                          ),
-                          ( "ChangeCommitForcePushed",
-                            changeEventTypeChangeCommitForcePushed
-                          ),
-                          ( "ChangeCommitPushed",
-                            changeEventTypeChangeCommitPushed
-                          ),
-                          ( "ChangeMerged",
-                            changeEventTypeChangeMerged
-                          )
-                        ],
-                    HsJSONPB._schemaMinProperties = Hs.Just 1,
-                    HsJSONPB._schemaMaxProperties = Hs.Just 1
-                  }
-            }
-        )
