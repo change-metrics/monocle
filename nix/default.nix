@@ -3,8 +3,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/a6f258f49fcd1644f08b7b3677da2c5e55713291.tar.gz";
-    sha256 = "sha256:0l8cdybgri8jhdmkxr7r1jpnggk6xz4xc5x7ik5v1qn5h2cv6jsz";
+      "https://github.com/NixOS/nixpkgs/archive/4d60081494259c0785f7e228518fee74e0792c1b.tar.gz";
+    sha256 = "sha256:15vxvzy9sxsnnxn53w2n44vklv7irzxvqv8xj9dn78z9zwl17jhq";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -27,8 +27,8 @@ let
   morpheus-graphql-src = pkgs.fetchFromGitHub {
     owner = "morpheusgraphql";
     repo = "morpheus-graphql";
-    rev = "0.18.0";
-    sha256 = "1k7x65fc8cilam2kjmmj8xw1ykxqp6wxh0fngjlq3f0992s3hj2b";
+    rev = "0.19.0";
+    sha256 = "sha256-YY4TDvkFuPxeAPSJurklYzEn3rO6feToiKR4Ii0iLQc=";
   };
 
   mk-morpheus-lib = hpPrev: name:
@@ -44,11 +44,14 @@ let
             (pkgs.haskell.lib.overrideCabal hpPrev.range-set-list {
               broken = false;
             });
-          proto3-suite = pkgs.haskell.lib.dontCheck hpPrev.proto3-suite;
-          contiguous = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.contiguous {
-              broken = false;
-            });
+          proto3-suite = let
+            src = builtins.fetchGit {
+              url = "https://github.com/awakesecurity/proto3-suite";
+              ref = "master";
+              rev = "9720ec14e1979e687b77a18e094b81625cc537ae";
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "proto3-suite" src { });
 
           text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
             broken = false;
@@ -64,28 +67,18 @@ let
               broken = false;
             });
 
-          # relude>1 featuer exposed modules
-          relude = pkgs.haskell.lib.overrideCabal hpPrev.relude {
-            version = "1.0.0.1";
-            sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
-          };
-
-          doctest20 = pkgs.haskell.lib.overrideCabal hpPrev.doctest {
-            version = "0.20.0";
-            sha256 = "0sk50b8zxq4hvc8qphlmfha1lsv3xha7q7ka081jgswf1qpg34y4";
-          };
-
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
             version = "0.18.0.0";
             sha256 = "1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
             broken = false;
           };
 
-          bugzilla-redhat = pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
-            version = "1.0.0";
-            sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
-            broken = false;
-          };
+          bugzilla-redhat =
+            pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
+              version = "1.0.0";
+              sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
+              broken = false;
+            };
 
           morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
           morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
@@ -101,15 +94,8 @@ let
             };
           in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
 
-          # use a more recent version that is not broken in nix
-          fakedata = let
-            fakedataSrc = builtins.fetchGit {
-              url = "https://github.com/fakedata-haskell/fakedata.git";
-              rev = "8ede9a9dbf1325df0295883eab59e74108729a28";
-              submodules = true;
-            };
-          in pkgs.haskell.lib.dontCheck
-          (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
+          relude = hpPrev.relude_1_0_0_1;
+          fakedata = hpPrev.fakedata_1_0_2;
 
           monocle =
             (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
@@ -633,7 +619,7 @@ in rec {
 
   ci-shell = hsPkgs.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = [ hsPkgs.cabal-install hsPkgs.doctest20 ci-run ];
+    buildInputs = [ hsPkgs.cabal-install hsPkgs.doctest_0_20_0 ci-run ];
   };
 
   ci = mk-ci "ci" ''
@@ -666,8 +652,8 @@ in rec {
     packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
-      ++ services-req ++ [ci-run];
+      [ hlint ghcid haskell-language-server doctest_0_20_0 ] ++ all-req
+      ++ services-req ++ [ ci-run ];
 
     withHoogle = true;
 

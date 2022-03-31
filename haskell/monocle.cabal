@@ -99,13 +99,14 @@ library
   build-depends:       base                       < 5
                      , HsOpenSSL                  >= 0.11
                      , MonadRandom
-                     , aeson
+                     , aeson                      < 2
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
                      , base64-bytestring          >= 1.1
                      , binary                     >= 0.8
-                     , bloodhound                 >= 0.18.0.0
+                     , bloodhound                 ^>= 0.18.0.0
+                     -- ^ latest need aeson-2 which need proto3-suite
                      , bugzilla-redhat            ^>= 1.0
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10
@@ -131,7 +132,7 @@ library
                      , lens
                      , lens-aeson
                      , megaparsec                 >= 9
-                     , morpheus-graphql-client    ^>= 0.18
+                     , morpheus-graphql-client    ^>= 0.19
                      , mmorph
                      , mtl
                      , network                    >= 3
