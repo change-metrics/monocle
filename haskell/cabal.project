@@ -11,4 +11,3 @@ source-repository-package
   tag: 23feee16dae03e0796ac3cb2e318c943d906ca22
 
 packages: .
-write-ghc-environment-files: always

@@ -451,17 +451,24 @@ in rec {
     exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
   '';
 
+  nixCabal = "cabal --project-file=nix.project";
+
   monocleReplStart = pkgs.writeScriptBin "monocle-repl" ''
     #!/bin/sh
     set -ex
-    export $(cat .secrets)
-    cd haskell; cabal repl monocle
+    if [ -f .secrets ]; then
+      export $(cat .secrets)
+      cd haskell
+    else
+      export $(cat ../.secrets)
+    fi
+    ${nixCabal} repl --build-depends pretty-simple monocle
   '';
 
   monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
     #!/bin/sh
-    set -ex
-    cd haskell; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
+    set -x
+    cd haskell 2> /dev/null; ${pkgs.ghcid}/bin/ghcid -c "${nixCabal} repl monocle" $*
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -646,6 +653,8 @@ in rec {
 
   ci-commands = ''
     set -e
+    alias cabal="${nixCabal}"
+
     echo "[+] Building the project"
     cabal build --enable-tests --flags=ci -O0
 
@@ -701,7 +710,11 @@ in rec {
     buildInputs = base-req ++ services-req;
   };
   shell = hsPkgs.shellFor {
-    packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
+    packages = p: [
+      (addCriterion p.monocle)
+      p.monocle-codegen
+      p.pretty-simple
+    ];
 
     buildInputs = with pkgs.myHaskellPackages;
       [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]
@@ -714,6 +727,7 @@ in rec {
       export PROTOBUF_SRC=${protobuf-src}/src
       export NIX_PATH=nixpkgs=${nixpkgsPath}
       export ELASTIC_URL=http://localhost:19200
+      alias cabal="${nixCabal}"
     '';
   };
   inherit pkgs;
