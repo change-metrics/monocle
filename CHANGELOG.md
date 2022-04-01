@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.5.0] - 2022-03-31
 
 ### Added
 
@@ -18,7 +24,6 @@ All notable changes to this project will be documented in this file.
 - [api] user_group/get and user_group/get endpoints to get_groups and get_group_members endpoints.
 - [webui] Commits/Reviews histo and commits VS reviews ratio moved to the new scoped view components.
 
-### Removed
 ### Fixed
 
 - [webui] avoid failure to access a group with url encoded name.
