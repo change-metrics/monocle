@@ -68,9 +68,9 @@ let
           # Master version for hashable-1.5
           proto3-wire = let
             src = builtins.fetchGit {
-              url = "https://github.com/TristanCacqueray/proto3-wire";
-              ref = "hashable-1.5";
-              rev = "af6d01abb4536351e8ce6fd56fa1be04fb94978e";
+              url = "https://github.com/awakesecurity/proto3-wire";
+              ref = "master";
+              rev = "267242d7daa004e8b42e81146590865c8efe3437";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
