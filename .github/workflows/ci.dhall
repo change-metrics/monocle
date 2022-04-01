@@ -14,11 +14,7 @@ in  { Nix =
                     ( let command =
                             "env ELASTIC_URL=http://localhost:9200 monocle-ci-run"
 
-                      let -- here we remove the cabal.project because it cause conflicts when cloning source-repository-package
-                          cd =
-                            "cd haskell; rm cabal.project"
-
-                      in  "${cd}; nix-shell --pure --attr ci-shell ../nix/default.nix --command '${command}'"
+                      in  "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command '${command}'"
                     )
                 }
               ]
