@@ -218,7 +218,7 @@ createIndex indexName mapping = do
   True <- BH.indexExists indexName
   pure ()
   where
-    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0)
+    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 
 configVersion :: ConfigVersion
 configVersion = ConfigVersion 2

@@ -375,15 +375,15 @@ mkEqQuery field value' = do
       groupMembers <-
         toParseError $
           Config.lookupGroupMembers index value `orDie` ("Unknown group: " <> value)
-      pure $ BH.TermsQuery fieldName groupMembers
-    (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term fieldName <$> parseBoolean value
+      pure $ BH.TermsQuery (from fieldName) groupMembers
+    (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term (from fieldName) <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
       pure
         . BH.QueryRegexpQuery
         $ BH.RegexpQuery (BH.FieldName fieldName) (BH.Regexp value) BH.AllRegexpFlags Nothing
     (_, Field_TypeFIELD_DATE) ->
       toParseError $ Left $ "Invalid date operator for: " <> field <> ", ':' is not allowed"
-    _anyOtherField -> pure $ BH.TermQuery (BH.Term fieldName value) Nothing
+    _anyOtherField -> pure $ BH.TermQuery (BH.Term (from fieldName) value) Nothing
 
 data BoolOp = And | Or
 

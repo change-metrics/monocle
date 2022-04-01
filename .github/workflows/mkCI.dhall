@@ -1,6 +1,6 @@
 -- Re-usable github action for cachix
 let GithubActions =
-      https://raw.githubusercontent.com/regadas/github-actions-dhall/master/package.dhall sha256:66b276bb67cca4cfcfd1027da45857cc8d53e75ea98433b15dade1e1e1ec22c8
+      https://raw.githubusercontent.com/regadas/github-actions-dhall/afa8b8dad361f795ddd24e6d5c54b23e57bca623/package.dhall sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
 
 in  { GithubActions
     , elastic-steps =

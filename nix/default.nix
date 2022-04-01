@@ -3,8 +3,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/a6f258f49fcd1644f08b7b3677da2c5e55713291.tar.gz";
-    sha256 = "sha256:0l8cdybgri8jhdmkxr7r1jpnggk6xz4xc5x7ik5v1qn5h2cv6jsz";
+      "https://github.com/NixOS/nixpkgs/archive/4d60081494259c0785f7e228518fee74e0792c1b.tar.gz";
+    sha256 = "sha256:15vxvzy9sxsnnxn53w2n44vklv7irzxvqv8xj9dn78z9zwl17jhq";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -27,8 +27,8 @@ let
   morpheus-graphql-src = pkgs.fetchFromGitHub {
     owner = "morpheusgraphql";
     repo = "morpheus-graphql";
-    rev = "0.18.0";
-    sha256 = "1k7x65fc8cilam2kjmmj8xw1ykxqp6wxh0fngjlq3f0992s3hj2b";
+    rev = "0.19.0";
+    sha256 = "sha256-YY4TDvkFuPxeAPSJurklYzEn3rO6feToiKR4Ii0iLQc=";
   };
 
   mk-morpheus-lib = hpPrev: name:
@@ -44,18 +44,44 @@ let
             (pkgs.haskell.lib.overrideCabal hpPrev.range-set-list {
               broken = false;
             });
-          proto3-suite = pkgs.haskell.lib.dontCheck hpPrev.proto3-suite;
-          contiguous = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.contiguous {
-              broken = false;
-            });
+          # Master version for aeson-2
+          proto3-suite = let
+            src = builtins.fetchGit {
+              url = "https://github.com/awakesecurity/proto3-suite";
+              ref = "master";
+              rev = "9720ec14e1979e687b77a18e094b81625cc537ae";
+            };
+            base = pkgs.haskell.lib.dontCheck
+              (hpPrev.callCabal2nix "proto3-suite" src { });
+          in pkgs.haskell.lib.disableCabalFlag base "swagger";
 
+          # A new library for proto3-wire
+          word-compat = let
+            src = builtins.fetchGit {
+              url = "https://github.com/fumieval/word-compat";
+              ref = "master";
+              rev = "9266b658e89da2d87e2610a8288fc037e8ba8c6a";
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "word-compat" src { });
+
+          # Master version for hashable-1.5
+          proto3-wire = let
+            src = builtins.fetchGit {
+              url = "https://github.com/TristanCacqueray/proto3-wire";
+              ref = "hashable-1.5";
+              rev = "af6d01abb4536351e8ce6fd56fa1be04fb94978e";
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "proto3-wire" src { });
+
+          # Hackage version does not build without a bump
           text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
             broken = false;
             src = builtins.fetchGit {
               url = "https://github.com/klangner/text-time.git";
               ref = "master";
-              rev = "33bffc43fde3fc57d0a6e3cb9f4f60fca2a8af6e";
+              rev = "1ff65c2c8845e3fdd99900054f0596818a95c316";
             };
           });
 
@@ -64,28 +90,18 @@ let
               broken = false;
             });
 
-          # relude>1 featuer exposed modules
-          relude = pkgs.haskell.lib.overrideCabal hpPrev.relude {
-            version = "1.0.0.1";
-            sha256 = "0cw9a1gfvias4hr36ywdizhysnzbzxy20fb3jwmqmgjy40lzxp2g";
-          };
-
-          doctest20 = pkgs.haskell.lib.overrideCabal hpPrev.doctest {
-            version = "0.20.0";
-            sha256 = "0sk50b8zxq4hvc8qphlmfha1lsv3xha7q7ka081jgswf1qpg34y4";
-          };
-
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
-            version = "0.18.0.0";
-            sha256 = "1dmmvpcmylnwwlw8p30azd9wfa4fk18fd13jnb1gx4wjs8jcwy7p";
+            version = "0.19.0.0";
+            sha256 = "sha256-36ix/I1IEFGA3WlYL996Gi2z/FUNi+7v0NzObnI7awI=";
             broken = false;
           };
 
-          bugzilla-redhat = pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
-            version = "1.0.0";
-            sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
-            broken = false;
-          };
+          bugzilla-redhat =
+            pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
+              version = "1.0.0";
+              sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
+              broken = false;
+            };
 
           morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
           morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
@@ -101,15 +117,37 @@ let
             };
           in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
 
-          # use a more recent version that is not broken in nix
-          fakedata = let
-            fakedataSrc = builtins.fetchGit {
-              url = "https://github.com/fakedata-haskell/fakedata.git";
-              rev = "8ede9a9dbf1325df0295883eab59e74108729a28";
-              submodules = true;
-            };
-          in pkgs.haskell.lib.dontCheck
-          (hpPrev.callCabal2nix "fakedata" fakedataSrc { });
+          # Relude needs a patch to build with hashable-1.4
+          relude = hpPrev.relude_1_0_0_1.overrideAttrs (_: {
+            patches = [
+              (pkgs.fetchpatch {
+                url =
+                  "https://patch-diff.githubusercontent.com/raw/kowainik/relude/pull/399.patch";
+                sha256 = "sha256-dQpJ2v2ohWoc+37GM18fss/Bza9RNZZZNfl4GjSdHv8=";
+              })
+            ];
+          });
+
+          fakedata = hpPrev.fakedata_1_0_2;
+
+          # Bump aeson
+          aeson = hpPrev.aeson_2_0_3_0;
+          hashable = hpPrev.hashable_1_4_0_2;
+          hashable-time = hpPrev.hashable-time_0_3;
+          hashtables = hpPrev.hashtables_1_3;
+          OneTuple = hpPrev.OneTuple_0_3_1;
+          time-compat = hpPrev.time-compat_1_9_6_1;
+          text-short = hpPrev.text-short_0_1_5;
+          quickcheck-instances = hpPrev.quickcheck-instances_0_3_27;
+          semialign = hpPrev.semialign_1_2_0_1;
+          attoparsec = hpPrev.attoparsec_0_14_4;
+          http2 = hpPrev.http2_3_0_3;
+          servant = hpPrev.servant_0_19;
+          servant-server = hpPrev.servant-server_0_19;
+          dhall = hpPrev.dhall_1_40_2;
+          dhall-json = hpPrev.dhall-json_1_7_9;
+          dhall-yaml = hpPrev.dhall-yaml_1_2_9;
+          swagger2 = hpPrev.swagger2_2_8_2;
 
           monocle =
             (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
@@ -505,7 +543,7 @@ in rec {
   # haskell dependencies for codegen
   hsPkgs = pkgs.myHaskellPackages;
 
-  hs-req = [ hsPkgs.cabal-install hsPkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
+  hs-req = [ pkgs.cabal-install pkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
 
   # define javascript requirements
   javascript-req = [ pkgs.nodejs ];
@@ -590,7 +628,7 @@ in rec {
 
   cabal-setup = ghcEnv: ''
     export GHC_DRV=$(cat ${ghcEnv})
-    export PATH=$GHC_DRV/bin:${pkgs.cabal-install}/bin:${hsPkgs.doctest20}/bin:$PATH
+    export PATH=$GHC_DRV/bin:${pkgs.cabal-install}/bin:${hsPkgs.doctest_0_20_0}/bin:$PATH
     export NIX_GHCPKG=$GHC_DRV/bin/ghc-pkg
     export NIX_GHC=$GHC_DRV/bin/ghc
     export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
@@ -633,7 +671,7 @@ in rec {
 
   ci-shell = hsPkgs.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = [ hsPkgs.cabal-install hsPkgs.doctest20 ci-run ];
+    buildInputs = [ pkgs.cabal-install hsPkgs.doctest_0_20_0 ci-run ];
   };
 
   ci = mk-ci "ci" ''
@@ -666,8 +704,8 @@ in rec {
     packages = p: [ (addCriterion p.monocle) p.monocle-codegen ];
 
     buildInputs = with pkgs.myHaskellPackages;
-      [ hlint ghcid haskell-language-server doctest20 ] ++ all-req
-      ++ services-req ++ [ci-run];
+      [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]
+      ++ all-req ++ services-req ++ [ ci-run ];
 
     withHoogle = true;
 

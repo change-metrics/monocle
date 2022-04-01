@@ -191,7 +191,7 @@ queryAggValue search = getAggValue "agg1" <$> doAggregation search
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
 parseAggregationResults key res = getExn $ do
-  value <- Map.lookup key res `orDie` ("No value found for: " <> toString key)
+  value <- Map.lookup (from key) res `orDie` ("No value found for: " <> toString key)
   Aeson.parseEither Aeson.parseJSON value
 
 queryAggResult :: QueryMonad m => FromJSON a => Value -> m a
@@ -417,7 +417,7 @@ instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
       subKeyName = bucketName (Proxy @a)
       parseSubBucket
         | subKeyName == "unused" = pure Nothing
-        | otherwise = v .:? subKeyName
+        | otherwise = v .:? from subKeyName
   parseJSON _ = mzero
 
 newtype HistoAgg a = HistoAgg

@@ -13,8 +13,8 @@ import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Config
 import Monocle.Crawler
 import Monocle.Login
+import Monocle.Metric
 import Monocle.Search
-import Monocle.UserGroup
 
 loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"

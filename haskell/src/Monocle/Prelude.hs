@@ -190,6 +190,7 @@ import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
 import qualified Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.Aeson.Key as AesonKey
 import Data.Aeson.Lens (_Integer, _Object)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import qualified Data.Map as Map
@@ -305,6 +306,9 @@ dropTime (UTCTime day _sec) = UTCTime day 0
 -- | A newtype for UTCTime which doesn't have milli second and tolerates a missing trailing 'Z' when decoding from JSON
 newtype MonocleTime = MonocleTime UTCTime
   deriving stock (Show, Eq, Ord)
+
+instance From Text AesonKey.Key where
+  from = AesonKey.fromText
 
 instance ToJSON MonocleTime where
   toJSON (MonocleTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
@@ -492,7 +496,7 @@ mkNot :: [BH.Query] -> BH.Query
 mkNot notQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] [] notQ []
 
 mkTerm :: Text -> Text -> BH.Query
-mkTerm name value = BH.TermQuery (BH.Term name value) Nothing
+mkTerm name value = BH.TermQuery (BH.Term (from name) value) Nothing
 
 -- | Orphan instance
 instance From UTCTime Google.Protobuf.Timestamp.Timestamp where

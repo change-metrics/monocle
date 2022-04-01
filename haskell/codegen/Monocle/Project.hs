@@ -88,27 +88,3 @@ instance HsJSONPB.ToJSON Project where
 
 instance HsJSONPB.FromJSON Project where
   parseJSON = HsJSONPB.parseJSONPB
-
-instance HsJSONPB.ToSchema Project where
-  declareNamedSchema _ =
-    do
-      let declare_full_path = HsJSONPB.declareSchemaRef
-      projectFullPath <- declare_full_path Proxy.Proxy
-      let _ = Hs.pure Project <*> HsJSONPB.asProxy declare_full_path
-      Hs.return
-        ( HsJSONPB.NamedSchema
-            { HsJSONPB._namedSchemaName =
-                Hs.Just "Project",
-              HsJSONPB._namedSchemaSchema =
-                Hs.mempty
-                  { HsJSONPB._schemaParamSchema =
-                      Hs.mempty
-                        { HsJSONPB._paramSchemaType =
-                            Hs.Just HsJSONPB.SwaggerObject
-                        },
-                    HsJSONPB._schemaProperties =
-                      HsJSONPB.insOrdFromList
-                        [("full_path", projectFullPath)]
-                  }
-            }
-        )

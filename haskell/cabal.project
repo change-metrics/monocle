@@ -1,2 +1,20 @@
+-- Pull in version for aeson2 (without the test to pass the cabal sdist failure)
+source-repository-package
+  type: git
+  location: https://github.com/TristanCacqueray/proto3-suite
+  tag: d099ab6d485c5818c438a812b5019b370ba2831c
+
+-- Pull in version for hashable-1.4
+source-repository-package
+  type: git
+  location: https://github.com/awakesecurity/proto3-wire
+  tag: 267242d7daa004e8b42e81146590865c8efe3437
+
+-- Pull in patched relude for hashable-1.4
+source-repository-package
+  type: git
+  location: https://github.com/TeofilC/relude
+  tag: 23feee16dae03e0796ac3cb2e318c943d906ca22
+
 packages: .
 write-ghc-environment-files: always
