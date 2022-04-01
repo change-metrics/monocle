@@ -89,7 +89,7 @@ common codegen
                      , bytestring
                      , containers                 >= 0.6
                      , deepseq                    >= 1.4
-                     , proto3-suite               >= 0.4.2
+                     , proto3-suite               >= 0.5.0
                      , proto3-wire                >= 1.2.0
                      , text
                      , vector                     >= 0.12
@@ -140,7 +140,7 @@ library
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
                      , prometheus-metrics-ghc     >= 1.0
-                     , proto3-suite               >= 0.4.2
+                     , proto3-suite               >= 0.5.0
                      , qq-literals
                      , relude                     >= 1.0
                      , retry                      >= 0.8
