@@ -31,7 +31,6 @@ import qualified GHC.Enum as Hs
 import qualified GHC.Generics as Hs
 import qualified Google.Protobuf.Timestamp
 import qualified Monocle.Change
-import qualified Monocle.Project
 import qualified Monocle.Search
 import qualified Proto3.Suite.Class as HsProtobuf
 import qualified Proto3.Suite.DotProto as HsProtobuf
@@ -181,7 +180,7 @@ data AddDocRequest = AddDocRequest
     addDocRequestEntity :: Hs.Maybe Monocle.Crawler.Entity,
     addDocRequestChanges :: Hs.Vector Monocle.Change.Change,
     addDocRequestEvents :: Hs.Vector Monocle.Change.ChangeEvent,
-    addDocRequestProjects :: Hs.Vector Monocle.Project.Project,
+    addDocRequestProjects :: Hs.Vector Monocle.Crawler.Project,
     addDocRequestTaskDatas :: Hs.Vector Monocle.Search.TaskData
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -240,8 +239,8 @@ instance HsProtobuf.Message AddDocRequest where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 7)
-                ( Hs.coerce @(Hs.Vector Monocle.Project.Project)
-                    @(HsProtobuf.NestedVec Monocle.Project.Project)
+                ( Hs.coerce @(Hs.Vector Monocle.Crawler.Project)
+                    @(HsProtobuf.NestedVec Monocle.Crawler.Project)
                     addDocRequestProjects
                 )
             ),
@@ -289,8 +288,8 @@ instance HsProtobuf.Message AddDocRequest where
                   (HsProtobuf.FieldNumber 6)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Project.Project))
-              @(_ (Hs.Vector Monocle.Project.Project))
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Crawler.Project))
+              @(_ (Hs.Vector Monocle.Crawler.Project))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 7)
@@ -361,11 +360,7 @@ instance HsProtobuf.Message AddDocRequest where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 7)
           ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_project" Hs.:| ["Project"]))
-                  )
-              )
+              (HsProtobuf.Named (HsProtobuf.Single "Project"))
           )
           (HsProtobuf.Single "projects")
           []
@@ -1381,3 +1376,54 @@ data CommitInfoResponseResult
 
 instance HsProtobuf.Named CommitInfoResponseResult where
   nameOf _ = (Hs.fromString "CommitInfoResponseResult")
+
+newtype Project = Project {projectFullPath :: Hs.Text}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Project where
+  nameOf _ = (Hs.fromString "Project")
+
+instance HsProtobuf.HasDefault Project
+
+instance HsProtobuf.Message Project where
+  encodeMessage _ Project {projectFullPath = projectFullPath} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              projectFullPath
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure Project)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "full_path")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Project where
+  toJSONPB (Project f1) = (HsJSONPB.object ["full_path" .= f1])
+  toEncodingPB (Project f1) = (HsJSONPB.pairs ["full_path" .= f1])
+
+instance HsJSONPB.FromJSONPB Project where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Project"
+        (\obj -> (Hs.pure Project) <*> obj .: "full_path")
+    )
+
+instance HsJSONPB.ToJSON Project where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Project where
+  parseJSON = HsJSONPB.parseJSONPB

@@ -21,7 +21,6 @@ import Monocle.Logging
 import qualified Monocle.Login as LoginPB
 import qualified Monocle.Metric as MetricPB
 import Monocle.Prelude
-import qualified Monocle.Project as ProjectPB
 import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
 import qualified Monocle.Search as SearchPB
 import qualified Monocle.Search.Parser as P
@@ -233,7 +232,7 @@ crawlerAddDoc request = do
           entities = Project <$> names
       I.initCrawlerEntities entities crawler
       pure $ CrawlerPB.AddDocResponse Nothing
-    projectNames projectsV = toList (toText . ProjectPB.projectFullPath <$> projectsV)
+    projectNames projectsV = toList (toText . CrawlerPB.projectFullPath <$> projectsV)
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =

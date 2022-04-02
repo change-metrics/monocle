@@ -233,7 +233,6 @@ library
                      , Monocle.Search
                      , Monocle.Crawler
                      , Monocle.Metric
-                     , Monocle.Project
                      , Monocle.Login
 
   other-modules:       Database.Bloodhound.Raw

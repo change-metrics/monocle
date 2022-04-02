@@ -4,7 +4,6 @@
 
 MESSAGES = monocle/search.proto monocle/config.proto monocle/login.proto monocle/metric.proto
 CRAWLER = monocle/change.proto monocle/crawler.proto
-BACKEND_ONLY = monocle/project.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-ci codegen-javascript codegen-stubs codegen-openapi codegen-haskell doc/architecture.png
@@ -24,7 +23,7 @@ codegen-stubs:
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES) $(CRAWLER) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	sh -c 'for pb in $(MESSAGES) $(CRAWLER); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
 	find haskell/codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 

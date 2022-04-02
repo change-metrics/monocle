@@ -34,8 +34,8 @@ import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import qualified Monocle.Change as C
 import Monocle.Client (mkManager)
+import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude hiding (all, id)
-import qualified Monocle.Project as P
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
 import qualified Streaming.Prelude as S
@@ -85,7 +85,7 @@ getProjectsStream ::
   MonadGerrit m =>
   GerritEnv ->
   Text ->
-  S.Stream (S.Of P.Project) m ()
+  S.Stream (S.Of CrawlerPB.Project) m ()
 getProjectsStream env reProject = streamProject env (G.Regexp reProject)
 
 getChangesStream ::
@@ -178,7 +178,7 @@ streamProject ::
   MonadGerrit m =>
   GerritEnv ->
   G.GerritProjectQuery ->
-  S.Stream (S.Of P.Project) m ()
+  S.Stream (S.Of CrawlerPB.Project) m ()
 streamProject env query = go 0
   where
     size = 100
@@ -186,7 +186,7 @@ streamProject env query = go 0
     go offset = do
       projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
       let pNames = M.keys projects
-      S.each $ P.Project . toLazy <$> pNames
+      S.each $ CrawlerPB.Project . toLazy <$> pNames
       when (length pNames == size) $ go (offset + size)
 
 streamChange ::

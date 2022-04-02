@@ -13,9 +13,9 @@ import Data.Time.Clock
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
+import Monocle.Crawler (Project (..))
 import Monocle.Logging (Entity (Organization), LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (break)
-import Monocle.Project
 import qualified Streaming.Prelude as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup

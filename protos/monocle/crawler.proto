@@ -8,7 +8,6 @@ option go_package = "monocle/crawler";
 import "google/protobuf/timestamp.proto";
 import "monocle/change.proto";
 import "monocle/search.proto";
-import "monocle/project.proto";
 
 // A descriptive name of the entities being added
 message Entity {
@@ -29,7 +28,7 @@ message AddDocRequest {
   // events are added when Entity is project_name
   repeated monocle_change.ChangeEvent events = 6;
   // projects are added when Entity is organization_name
-  repeated monocle_project.Project projects = 7;
+  repeated Project projects = 7;
   // task_datas are added when Entity is td_name
   repeated monocle_search.TaskData task_datas = 8;
 }
@@ -91,4 +90,8 @@ message CommitInfoResponse {
     CommitInfoError error = 1;
     OldestEntity entity = 2;
   }
+}
+
+message Project {
+  string full_path = 1;
 }

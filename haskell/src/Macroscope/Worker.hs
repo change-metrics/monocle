@@ -20,7 +20,6 @@ import Monocle.Backend.Index (entityRequestOrganization, entityRequestProject, e
 import Monocle.Change (Change, ChangeEvent)
 import Monocle.Crawler
 import Monocle.Prelude
-import Monocle.Project (Project)
 import Monocle.Search (TaskData)
 import Proto3.Suite (Enumerated (Enumerated))
 import qualified Streaming as S
