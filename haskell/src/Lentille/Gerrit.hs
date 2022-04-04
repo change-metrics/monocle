@@ -32,10 +32,10 @@ import Gerrit.Data.Change
 import Gerrit.Data.Project (GerritProjectsMessage)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille
-import qualified Monocle.Change as C
 import Monocle.Client (mkManager)
-import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Prelude hiding (all, id)
+import qualified Monocle.Protob.Change as ChangePB
+import qualified Monocle.Protob.Crawler as CrawlerPB
 import qualified Network.URI as URI
 import Proto3.Suite (Enumerated (..))
 import qualified Streaming.Prelude as S
@@ -93,7 +93,7 @@ getChangesStream ::
   GerritEnv ->
   UTCTime ->
   Text ->
-  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
 getChangesStream env untilDate project = streamChange env [Project project, After untilDate]
 
 -------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ streamChange ::
   MonadGerrit m =>
   GerritEnv ->
   [GerritQuery] ->
-  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
 streamChange env query =
   streamChange' env (identAliasCB env) (G.serverUrl $ client env) query (prefix env)
 
@@ -205,7 +205,7 @@ streamChange' ::
   Text ->
   [GerritQuery] ->
   Maybe Text ->
-  S.Stream (S.Of (C.Change, [C.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
 streamChange' env identCB serverUrl query prefixM = go 0
   where
     size = 100
@@ -214,7 +214,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
       S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
       when (length changes == size) $ go (offset + size)
     doGet offset = queryChanges env size query (Just offset)
-    getIdent :: GerritAuthor -> C.Ident
+    getIdent :: GerritAuthor -> ChangePB.Ident
     getIdent GerritAuthor {..} =
       toIdent
         (getHostFromURL serverUrl)
@@ -222,8 +222,8 @@ streamChange' env identCB serverUrl query prefixM = go 0
         $ name <> "/" <> show aAccountId
       where
         name = fromMaybe nobody aName
-    toMEvents :: C.Change -> [GerritChangeMessage] -> [C.ChangeEvent]
-    toMEvents C.Change {..} messages =
+    toMEvents :: ChangePB.Change -> [GerritChangeMessage] -> [ChangePB.ChangeEvent]
+    toMEvents ChangePB.Change {..} messages =
       [toChangeCreatedEvent]
         <> toChangeMergedEvent
         <> toChangeAbandonedEvent
@@ -231,7 +231,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
         <> toChangeCommentedEvents
         <> toChangePushedEvents
       where
-        baseEvent :: C.ChangeEventType -> LText -> C.ChangeEvent
+        baseEvent :: ChangePB.ChangeEventType -> LText -> ChangePB.ChangeEvent
         baseEvent eType eId =
           let changeEventId = eId
               changeEventCreatedAt = changeCreatedAt
@@ -246,30 +246,30 @@ streamChange' env identCB serverUrl query prefixM = go 0
               changeEventUrl = changeUrl
               changeEventOnAuthor = changeAuthor
               changeEventOnCreatedAt = changeCreatedAt
-              changeEventChangedFiles = C.ChangedFilePath . C.changedFilePath <$> changeChangedFiles
+              changeEventChangedFiles = ChangePB.ChangedFilePath . ChangePB.changedFilePath <$> changeChangedFiles
               changeEventLabels = changeLabels
               changeEventType = Just eType
-           in C.ChangeEvent {..}
+           in ChangePB.ChangeEvent {..}
         toChangeCreatedEvent =
-          baseEvent (C.ChangeEventTypeChangeCreated C.ChangeCreatedEvent) $ "CCE" <> changeId
+          baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
 
         toChangeMergedEvent = case changeState of
-          Enumerated (Right C.Change_ChangeStateMerged) ->
-            [ (baseEvent (C.ChangeEventTypeChangeMerged C.ChangeMergedEvent) $ "CCLE" <> changeId)
-                { C.changeEventAuthor = case changeOptionalMergedBy of
-                    Just (C.ChangeOptionalMergedByMergedBy ident) -> Just ident
+          Enumerated (Right ChangePB.Change_ChangeStateMerged) ->
+            [ (baseEvent (ChangePB.ChangeEventTypeChangeMerged ChangePB.ChangeMergedEvent) $ "CCLE" <> changeId)
+                { ChangePB.changeEventAuthor = case changeOptionalMergedBy of
+                    Just (ChangePB.ChangeOptionalMergedByMergedBy ident) -> Just ident
                     Nothing -> Nothing,
-                  C.changeEventCreatedAt = case changeOptionalMergedAt of
-                    Just (C.ChangeOptionalMergedAtMergedAt ts) -> Just ts
+                  ChangePB.changeEventCreatedAt = case changeOptionalMergedAt of
+                    Just (ChangePB.ChangeOptionalMergedAtMergedAt ts) -> Just ts
                     Nothing -> Nothing
                 }
             ]
           _ -> mempty
         toChangeAbandonedEvent = case changeState of
-          Enumerated (Right C.Change_ChangeStateClosed) ->
-            [ (baseEvent (C.ChangeEventTypeChangeAbandoned C.ChangeAbandonedEvent) $ "CCLE" <> changeId)
-                { C.changeEventCreatedAt = case changeOptionalClosedAt of
-                    Just (C.ChangeOptionalClosedAtClosedAt ts) -> Just ts
+          Enumerated (Right ChangePB.Change_ChangeStateClosed) ->
+            [ (baseEvent (ChangePB.ChangeEventTypeChangeAbandoned ChangePB.ChangeAbandonedEvent) $ "CCLE" <> changeId)
+                { ChangePB.changeEventCreatedAt = case changeOptionalClosedAt of
+                    Just (ChangePB.ChangeOptionalClosedAtClosedAt ts) -> Just ts
                     Nothing -> Nothing
                 }
             ]
@@ -280,15 +280,15 @@ streamChange' env identCB serverUrl query prefixM = go 0
               Right approvals ->
                 Just $
                   commentBasedEvent
-                    (C.ChangeEventTypeChangeReviewed . C.ChangeReviewedEvent $ V.fromList $ toLazy <$> approvals)
+                    (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ toLazy <$> approvals)
                     ("approval_" <> toLazy mId)
                     mAuthor
                     mDate
               Left _ -> Nothing
         toChangeCommentedEvents =
-          toCommentBasedEvent commentParser (C.ChangeEventTypeChangeCommented C.ChangeCommentedEvent) ""
+          toCommentBasedEvent commentParser (ChangePB.ChangeEventTypeChangeCommented ChangePB.ChangeCommentedEvent) ""
         toChangePushedEvents =
-          toCommentBasedEvent newPSParser (C.ChangeEventTypeChangeCommitPushed C.ChangeCommitPushedEvent) "push_"
+          toCommentBasedEvent newPSParser (ChangePB.ChangeEventTypeChangeCommitPushed ChangePB.ChangeCommitPushedEvent) "push_"
         toCommentBasedEvent parser eType prefix = mapMaybe toEvent messages
           where
             toEvent GerritChangeMessage {..} = case P.parseOnly parser mMessage of
@@ -297,11 +297,11 @@ streamChange' env identCB serverUrl query prefixM = go 0
               Left _ -> Nothing
         commentBasedEvent t eId author date =
           (baseEvent t eId)
-            { C.changeEventAuthor = getIdent <$> author,
-              C.changeEventCreatedAt = Just . T.fromUTCTime . unGerritTime $ date
+            { ChangePB.changeEventAuthor = getIdent <$> author,
+              ChangePB.changeEventCreatedAt = Just . T.fromUTCTime . unGerritTime $ date
             }
 
-    toMChange :: GerritChange -> C.Change
+    toMChange :: GerritChange -> ChangePB.Change
     toMChange GerritChange {..} =
       let changeId = toLazy id
           changeNumber = from number
@@ -324,23 +324,23 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeAuthor = Just author
           changeOptionalMergedBy =
             if status == MERGED
-              then C.ChangeOptionalMergedByMergedBy <$> merger
+              then ChangePB.ChangeOptionalMergedByMergedBy <$> merger
               else Nothing
           changeBranch = toLazy branch
           changeTargetBranch = toLazy branch
           changeCreatedAt = Just $ toTimestamp created
           changeOptionalMergedAt =
             if status == MERGED
-              then Just . C.ChangeOptionalMergedAtMergedAt $ maybe (toTimestamp updated) toTimestamp submitted
+              then Just . ChangePB.ChangeOptionalMergedAtMergedAt $ maybe (toTimestamp updated) toTimestamp submitted
               else Nothing
           changeUpdatedAt = Just $ toTimestamp updated
           changeOptionalClosedAt = case status of
-            ABANDONED -> Just $ C.ChangeOptionalClosedAtClosedAt $ toTimestamp updated
-            MERGED -> Just $ C.ChangeOptionalClosedAtClosedAt $ maybe (toTimestamp updated) toTimestamp submitted
+            ABANDONED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ toTimestamp updated
+            MERGED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ maybe (toTimestamp updated) toTimestamp submitted
             _ -> Nothing
           changeState = toState status
           changeOptionalDuration =
-            C.ChangeOptionalDurationDuration . from . diffTimeSec (unGerritTime created)
+            ChangePB.ChangeOptionalDurationDuration . from . diffTimeSec (unGerritTime created)
               <$> (unGerritTime <$> submitted)
           changeMergeable = case mergeable of
             Just False -> "CONFLICT"
@@ -352,9 +352,9 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeDraft = status == DRAFT
           changeOptionalSelfMerged =
             if status == MERGED
-              then C.ChangeOptionalSelfMergedSelfMerged . isSelfMerged owner <$> submitter
+              then ChangePB.ChangeOptionalSelfMergedSelfMerged . isSelfMerged owner <$> submitter
               else Nothing
-       in C.Change {..}
+       in ChangePB.Change {..}
       where
         getRevision sha = join (M.lookup sha revisions)
         revision = getRevision =<< current_revision
@@ -372,7 +372,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
               let changedFileAdditions = maybe 0 from $ gfLinesInserted details
                   changedFileDeletions = maybe 0 from $ gfLinesDeleted details
                   changedFilePath = toLazy fp
-               in C.ChangedFile {..}
+               in ChangePB.ChangedFile {..}
         getCommits sha = maybe [] toCommit $ grCommit <$> revision
           where
             toCommit GerritCommit {..} =
@@ -384,10 +384,10 @@ streamChange' env identCB serverUrl query prefixM = go 0
                   commitAdditions = from insertions
                   commitDeletions = from deletions
                   commitTitle = toLazy cSubject
-               in [C.Commit {..}]
-        toState :: GerritChangeStatus -> Enumerated C.Change_ChangeState
+               in [ChangePB.Commit {..}]
+        toState :: GerritChangeStatus -> Enumerated ChangePB.Change_ChangeState
         toState status' = Enumerated . Right $ case status' of
-          ABANDONED -> C.Change_ChangeStateClosed
-          MERGED -> C.Change_ChangeStateMerged
-          NEW -> C.Change_ChangeStateOpen
-          DRAFT -> C.Change_ChangeStateOpen
+          ABANDONED -> ChangePB.Change_ChangeStateClosed
+          MERGED -> ChangePB.Change_ChangeStateMerged
+          NEW -> ChangePB.Change_ChangeStateOpen
+          DRAFT -> ChangePB.Change_ChangeStateOpen

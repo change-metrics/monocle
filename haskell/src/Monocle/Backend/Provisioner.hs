@@ -32,7 +32,7 @@ import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Test as T
 import Monocle.Env (testQueryM)
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
+import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()

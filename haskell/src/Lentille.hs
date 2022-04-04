@@ -43,11 +43,16 @@ import qualified Data.Text as T
 import qualified Google.Protobuf.Timestamp as T
 import Monocle.Api.Config (MonadConfig (..))
 import qualified Monocle.Api.Config
-import Monocle.Change (Change (changeUpdatedAt), ChangeEvent, Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged), Ident (..))
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
 import Monocle.Logging
 import Monocle.Prelude
+import Monocle.Protob.Change
+  ( Change (changeUpdatedAt),
+    ChangeEvent,
+    Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
+    Ident (..),
+  )
 import qualified Network.HTTP.Client as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 

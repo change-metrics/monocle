@@ -10,11 +10,11 @@ option go_package = "monocle/http";
 
 import "google/api/annotations.proto";
 
-import "monocle/config.proto";
-import "monocle/search.proto";
-import "monocle/crawler.proto";
-import "monocle/login.proto";
-import "monocle/metric.proto";
+import "monocle/protob/config.proto";
+import "monocle/protob/search.proto";
+import "monocle/protob/crawler.proto";
+import "monocle/protob/login.proto";
+import "monocle/protob/metric.proto";
 
 service Login {
   // Check a login username

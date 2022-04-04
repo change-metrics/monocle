@@ -20,9 +20,9 @@ import Monocle.Backend.Documents as D
 import Monocle.Backend.Index (crawlerMDQuery, getCrawlerTypeAsText)
 import qualified Monocle.Backend.Index as I
 import Monocle.Backend.Queries as Q
-import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Crawler (EntityEntity (EntityEntityProjectName))
 import qualified Streaming.Prelude as Streaming
 
 updateAuthor :: C.Index -> D.Author -> D.Author

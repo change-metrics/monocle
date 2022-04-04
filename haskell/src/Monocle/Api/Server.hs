@@ -14,15 +14,14 @@ import Monocle.Backend.Documents
   )
 import Monocle.Backend.Index as I
 import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Config as ConfigPB
-import qualified Monocle.Crawler as CrawlerPB
 import Monocle.Env
 import Monocle.Logging
-import qualified Monocle.Login as LoginPB
-import qualified Monocle.Metric as MetricPB
 import Monocle.Prelude
-import Monocle.Search (FieldsRequest, FieldsResponse (..), QueryRequest, QueryResponse)
-import qualified Monocle.Search as SearchPB
+import qualified Monocle.Protob.Config as ConfigPB
+import qualified Monocle.Protob.Crawler as CrawlerPB
+import qualified Monocle.Protob.Login as LoginPB
+import qualified Monocle.Protob.Metric as MetricPB
+import qualified Monocle.Protob.Search as SearchPB
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
 import Monocle.Search.Syntax (ParseError (..))
@@ -447,7 +446,7 @@ searchCheck request = do
             SearchPB.QueryError (toLazy msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
-searchQuery :: QueryRequest -> AppM QueryResponse
+searchQuery :: SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
 searchQuery request = do
   let SearchPB.QueryRequest {..} = request
 
@@ -539,7 +538,7 @@ searchQuery request = do
           (toLazy msg)
           (fromInteger . toInteger $ offset)
 
-    handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM QueryResponse
+    handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
     handleTopAuthorsQ limit cb = do
       results <- cb limit
       pure $
@@ -585,11 +584,11 @@ searchQuery request = do
           changeAndEventsEvents = V.fromList $ from <$> events
        in SearchPB.ChangeAndEvents {..}
 
-searchFields :: FieldsRequest -> AppM FieldsResponse
+searchFields :: SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
 searchFields = const $ pure response
   where
-    response :: FieldsResponse
-    response = FieldsResponse . V.fromList . map toResult $ Q.fields
+    response :: SearchPB.FieldsResponse
+    response = SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
     toResult (name, (fieldType', _realname, desc)) =
       let fieldName = toLazy name
           fieldDescription = toLazy desc

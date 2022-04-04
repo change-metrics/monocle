@@ -6,8 +6,8 @@ package monocle_crawler;
 option go_package = "monocle/crawler";
 
 import "google/protobuf/timestamp.proto";
-import "monocle/change.proto";
-import "monocle/search.proto";
+import "monocle/protob/change.proto";
+import "monocle/protob/search.proto";
 
 // A descriptive name of the entities being added
 message Entity {

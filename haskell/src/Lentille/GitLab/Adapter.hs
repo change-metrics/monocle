@@ -12,8 +12,8 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import qualified Google.Protobuf.Timestamp as T
 import Lentille (ghostIdent, nobody, toIdent)
-import Monocle.Change
 import Monocle.Prelude
+import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (..))
 import Relude
 

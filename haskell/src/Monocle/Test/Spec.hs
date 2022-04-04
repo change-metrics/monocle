@@ -9,10 +9,16 @@ import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
-import Monocle.Config (GetGroupMembersRequest (GetGroupMembersRequest), GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers), GetGroupsRequest (GetGroupsRequest), GetGroupsResponse (GetGroupsResponse, getGroupsResponseItems), GroupDefinition (GroupDefinition))
-import Monocle.Crawler
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Config
+  ( GetGroupMembersRequest (GetGroupMembersRequest),
+    GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers),
+    GetGroupsRequest (GetGroupsRequest),
+    GetGroupsResponse (GetGroupsResponse, getGroupsResponseItems),
+    GroupDefinition (GroupDefinition),
+  )
+import Monocle.Protob.Crawler
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q

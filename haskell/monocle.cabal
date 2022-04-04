@@ -228,12 +228,12 @@ library
                      , Json.Extras
 
                      -- Codegen
-                     , Monocle.Change
-                     , Monocle.Config
-                     , Monocle.Search
-                     , Monocle.Crawler
-                     , Monocle.Metric
-                     , Monocle.Login
+                     , Monocle.Protob.Change
+                     , Monocle.Protob.Config
+                     , Monocle.Protob.Search
+                     , Monocle.Protob.Crawler
+                     , Monocle.Protob.Metric
+                     , Monocle.Protob.Login
 
   other-modules:       Database.Bloodhound.Raw
                      , Lentille.BugzillaMock

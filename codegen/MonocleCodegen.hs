@@ -75,11 +75,11 @@ protoToHaskell = fromProto headers mkService
         "import Control.Monad.Catch (MonadThrow)",
         "import Control.Monad.IO.Class (MonadIO)",
         "import Monocle.Client (MonocleClient, monocleReq)",
-        "import Monocle.Config",
-        "import Monocle.Crawler",
-        "import Monocle.Login",
-        "import Monocle.Search",
-        "import Monocle.Metric"
+        "import Monocle.Protob.Config",
+        "import Monocle.Protob.Crawler",
+        "import Monocle.Protob.Login",
+        "import Monocle.Protob.Search",
+        "import Monocle.Protob.Metric"
       ]
     mkService name = concatMap (mkMethod name)
     mkMethod serviceName (name, input, output, path) =
@@ -156,7 +156,7 @@ protoToServant pb =
       where
         mkImport (name, method, _) =
           [ "import Monocle.Api.Server (" <> camel name <> method <> ")",
-            "import Monocle."
+            "import Monocle.Protob."
               <> name
               <> " ("
               <> (method <> "Request, ")
@@ -176,9 +176,9 @@ protoToServant pb =
                    $ Text.drop (Text.length "/api/2/") path
                )
             <> " :> ReqBody '[JSON] "
-            <> ("Monocle." <> moduleName <> "." <> name <> "Request")
+            <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Request")
             <> " :> Post  '[PBJSON, JSON] "
-            <> ("Monocle." <> moduleName <> "." <> name <> "Response")
+            <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Response")
     server =
       [ "server :: ServerT MonocleAPI AppM",
         "server =",

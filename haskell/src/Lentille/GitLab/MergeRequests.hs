@@ -17,9 +17,9 @@ import qualified Google.Protobuf.Timestamp as T
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
-import Monocle.Change
 import Monocle.Logging (Entity (Project), LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (id, state)
+import Monocle.Protob.Change
 import qualified Streaming.Prelude as S
 
 newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
