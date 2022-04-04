@@ -12,11 +12,11 @@ import qualified Database.Bloodhound as BH
 import Database.Bloodhound.Raw (TermsCompositeAggBucket)
 import qualified Database.Bloodhound.Raw as BHR
 import qualified Json.Extras as Json
-import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
-import qualified Monocle.Search as SearchPB
+import qualified Monocle.Protob.Search as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import qualified Monocle.Search.Query as Q
 import qualified Streaming.Prelude as Streaming

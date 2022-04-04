@@ -3,9 +3,9 @@ module Monocle.Api.Test (mkAppEnv, withTestApi) where
 import Control.Exception (bracket)
 import qualified Data.ByteString as B
 import Monocle.Api
-import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
 import Monocle.Client
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)

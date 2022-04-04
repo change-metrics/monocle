@@ -32,9 +32,9 @@ import Data.List (lookup)
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Database.Bloodhound as BH
-import qualified Monocle.Api.Config as Config
+import qualified Monocle.Config as Config
 import Monocle.Prelude hiding (parseDateValue)
-import Monocle.Search (Field_Type (..))
+import Monocle.Protob.Search (Field_Type (..))
 import qualified Monocle.Search.Parser as P
 import Monocle.Search.Syntax
 import qualified Text.ParserCombinators.ReadP as ReadP

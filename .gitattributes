@@ -2,7 +2,7 @@
 /web/src/components/WebApi.res linguist-generated=true
 # Protobuf messages
 /web/src/messages/* linguist-generated=true
-/haskell/codegen/Monocle/*.hs linguist-generated=true
+/haskell/codegen/Monocle/Protob/*.hs linguist-generated=true
 /haskell/src/Monocle/Api/HTTP.hs linguist-generated=true
 /haskell/src/Monocle/Api/Client/Api.hs linguist-generated=true
 # OpenAPI

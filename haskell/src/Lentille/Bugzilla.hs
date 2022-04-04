@@ -26,7 +26,7 @@ import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
+import Monocle.Protob.Search (TaskData (..))
 import qualified Streaming.Prelude as S
 import Web.RedHatBugzilla (BugzillaSession)
 import qualified Web.RedHatBugzilla as BZ

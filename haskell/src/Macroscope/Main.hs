@@ -21,8 +21,8 @@ import Lentille.GitLab.Group (streamGroupProjects)
 import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
-import qualified Monocle.Api.Config as Config
 import Monocle.Client
+import qualified Monocle.Config as Config
 import Monocle.Logging (Entity)
 import Monocle.Prelude
 import qualified Network.HTTP.Types.Status as HTTP

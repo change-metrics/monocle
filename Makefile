@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 .PHONY: up-stage
 
-MESSAGES = monocle/search.proto monocle/config.proto monocle/login.proto monocle/metric.proto
-CRAWLER = monocle/change.proto monocle/crawler.proto
-BACKEND_ONLY = monocle/project.proto
+
+BASEDIR = monocle/protob
+MESSAGES = $(BASEDIR)/search.proto $(BASEDIR)/config.proto $(BASEDIR)/login.proto $(BASEDIR)/metric.proto
+CRAWLER = $(BASEDIR)/change.proto $(BASEDIR)/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 
 codegen: codegen-ci codegen-javascript codegen-stubs codegen-openapi codegen-haskell doc/architecture.png
@@ -18,13 +19,13 @@ doc/architecture.png: doc/architecture.plantuml
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/monocle/http.proto ../haskell/src/Monocle/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../srcgen/WebApi.res)
+	(cd codegen; cabal run monocle-codegen ../protos/$(BASEDIR)/http.proto ../haskell/src/Monocle/Client/Api.hs ../haskell/src/Monocle/Servant/HTTP.hs ../srcgen/WebApi.res)
 	ormolu -i ./haskell/src/Monocle/Client/Api.hs ./haskell/src/Monocle/Servant/HTTP.hs
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
 
 codegen-haskell:
-	sh -c 'for pb in $(MESSAGES) $(CRAWLER) $(BACKEND_ONLY); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
+	sh -c 'for pb in $(MESSAGES) $(CRAWLER); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out haskell/codegen/; done'
 	find haskell/codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
 	find haskell/codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
 
@@ -34,7 +35,7 @@ codegen-javascript:
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 
 codegen-openapi:
-	protoc $(PINCLUDE) --openapi_out=./doc/ monocle/http.proto
+	protoc $(PINCLUDE) --openapi_out=./doc/ $(BASEDIR)/http.proto
 	@echo Created doc/openapi.yaml
 
 codegen-with-container:

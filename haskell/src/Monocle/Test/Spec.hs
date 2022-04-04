@@ -3,16 +3,21 @@ module Monocle.Test.Spec (main) where
 import qualified Data.Vector as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
-import Monocle.Api.Config (Ident (Ident), idents, mkTenant)
-import qualified Monocle.Api.Config as Config
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
-import Monocle.Config (GetGroupMembersRequest (GetGroupMembersRequest), GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers), GetGroupsRequest (GetGroupsRequest), GetGroupsResponse (GetGroupsResponse, getGroupsResponseItems), GroupDefinition (GroupDefinition))
-import Monocle.Crawler
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Config
+  ( GetGroupMembersRequest (GetGroupMembersRequest),
+    GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers),
+    GetGroupsRequest (GetGroupsRequest),
+    GetGroupsResponse (GetGroupsResponse, getGroupsResponseItems),
+    GroupDefinition (GroupDefinition),
+  )
+import Monocle.Protob.Crawler
 import qualified Monocle.Search.Lexer as L
 import qualified Monocle.Search.Parser as P
 import qualified Monocle.Search.Query as Q
@@ -114,11 +119,11 @@ monocleApiTests =
     testGetGroups = do
       let appEnv =
             mkAppEnv $
-              (mkTenant "ws")
-                { idents =
+              (Config.mkTenant "ws")
+                { Config.idents =
                     Just
-                      [ Ident [] (Just ["grp1", "grp2"]) "John",
-                        Ident [] (Just ["grp2", "grp3"]) "Jane"
+                      [ Config.Ident [] (Just ["grp1", "grp2"]) "John",
+                        Config.Ident [] (Just ["grp2", "grp3"]) "Jane"
                       ]
                 }
       withTestApi appEnv $ \_logger client ->
@@ -574,16 +579,16 @@ monocleConfig =
       testGetIdentByAlias
     ]
   where
-    createIdent :: Text -> [Text] -> [Text] -> Ident
+    createIdent :: Text -> [Text] -> [Text] -> Config.Ident
     createIdent ident aliases groups' =
-      let groups = Just groups' in Ident {..}
+      let groups = Just groups' in Config.Ident {..}
     testConfigLoad = testCase "Decode config" $ do
       conf <- Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length $ conf & Config.workspaces)
     testGetTenantGroups = testCase "Validate getTenantGroups" $ do
       let identA = createIdent "alice" [] ["core", "ptl"]
           identB = createIdent "bob" [] ["core"]
-          tenant = (mkTenant "test") {idents = Just [identA, identB]}
+          tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}
       assertEqual
         "Ensure groups and members"
         [("core", ["bob", "alice"]), ("ptl", ["alice"])]
@@ -591,7 +596,7 @@ monocleConfig =
     testGetIdentByAlias = testCase "Validate getIdentByAliases" $ do
       let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
           identB = createIdent "bob" [] []
-          tenant = (mkTenant "test") {idents = Just [identA, identB]}
+          tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}
       assertEqual
         "Ensure found alice as ident"
         (Just "alice")

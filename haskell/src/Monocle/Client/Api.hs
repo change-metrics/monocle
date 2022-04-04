@@ -10,11 +10,11 @@ module Monocle.Client.Api where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Monocle.Client (MonocleClient, monocleReq)
-import Monocle.Config
-import Monocle.Crawler
-import Monocle.Login
-import Monocle.Metric
-import Monocle.Search
+import Monocle.Protob.Config
+import Monocle.Protob.Crawler
+import Monocle.Protob.Login
+import Monocle.Protob.Metric
+import Monocle.Protob.Search
 
 loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"

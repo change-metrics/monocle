@@ -13,9 +13,9 @@ import qualified Lentille.GitHub.PullRequests as GH_PR
 import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
 import qualified Monocle.Api
-import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Janitor as J
 import Monocle.Client (withClient)
+import qualified Monocle.Config as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
 import Monocle.Prelude hiding ((:::))

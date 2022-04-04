@@ -8,31 +8,31 @@
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
 import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
-import Monocle.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
-import Monocle.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Env
-import Monocle.Login (LoginValidationRequest, LoginValidationResponse)
-import Monocle.Metric (ListRequest, ListResponse)
-import Monocle.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
+import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
+import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
+import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
+import Monocle.Protob.Metric (ListRequest, ListResponse)
+import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 
 type MonocleAPI =
-  "login" :> "username" :> "validate" :> ReqBody '[JSON] Monocle.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Login.LoginValidationResponse
-    :<|> "get_workspaces" :> ReqBody '[JSON] Monocle.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Config.GetWorkspacesResponse
-    :<|> "get_projects" :> ReqBody '[JSON] Monocle.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetProjectsResponse
-    :<|> "get_groups" :> ReqBody '[JSON] Monocle.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Config.GetGroupsResponse
-    :<|> "get_group_members" :> ReqBody '[JSON] Monocle.Config.GetGroupMembersRequest :> Post '[PBJSON, JSON] Monocle.Config.GetGroupMembersResponse
-    :<|> "about" :> ReqBody '[JSON] Monocle.Config.GetAboutRequest :> Post '[PBJSON, JSON] Monocle.Config.GetAboutResponse
-    :<|> "suggestions" :> ReqBody '[JSON] Monocle.Search.SuggestionsRequest :> Post '[PBJSON, JSON] Monocle.Search.SuggestionsResponse
-    :<|> "search" :> "fields" :> ReqBody '[JSON] Monocle.Search.FieldsRequest :> Post '[PBJSON, JSON] Monocle.Search.FieldsResponse
-    :<|> "search" :> "check" :> ReqBody '[JSON] Monocle.Search.CheckRequest :> Post '[PBJSON, JSON] Monocle.Search.CheckResponse
-    :<|> "search" :> "query" :> ReqBody '[JSON] Monocle.Search.QueryRequest :> Post '[PBJSON, JSON] Monocle.Search.QueryResponse
-    :<|> "search" :> "author" :> ReqBody '[JSON] Monocle.Search.AuthorRequest :> Post '[PBJSON, JSON] Monocle.Search.AuthorResponse
-    :<|> "metric" :> "list" :> ReqBody '[JSON] Monocle.Metric.ListRequest :> Post '[PBJSON, JSON] Monocle.Metric.ListResponse
-    :<|> "crawler" :> "add" :> ReqBody '[JSON] Monocle.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Crawler.AddDocResponse
-    :<|> "crawler" :> "commit" :> ReqBody '[JSON] Monocle.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Crawler.CommitResponse
-    :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] Monocle.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Crawler.CommitInfoResponse
+  "login" :> "username" :> "validate" :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse
+    :<|> "get_workspaces" :> ReqBody '[JSON] Monocle.Protob.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetWorkspacesResponse
+    :<|> "get_projects" :> ReqBody '[JSON] Monocle.Protob.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetProjectsResponse
+    :<|> "get_groups" :> ReqBody '[JSON] Monocle.Protob.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetGroupsResponse
+    :<|> "get_group_members" :> ReqBody '[JSON] Monocle.Protob.Config.GetGroupMembersRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetGroupMembersResponse
+    :<|> "about" :> ReqBody '[JSON] Monocle.Protob.Config.GetAboutRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetAboutResponse
+    :<|> "suggestions" :> ReqBody '[JSON] Monocle.Protob.Search.SuggestionsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.SuggestionsResponse
+    :<|> "search" :> "fields" :> ReqBody '[JSON] Monocle.Protob.Search.FieldsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.FieldsResponse
+    :<|> "search" :> "check" :> ReqBody '[JSON] Monocle.Protob.Search.CheckRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.CheckResponse
+    :<|> "search" :> "query" :> ReqBody '[JSON] Monocle.Protob.Search.QueryRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.QueryResponse
+    :<|> "search" :> "author" :> ReqBody '[JSON] Monocle.Protob.Search.AuthorRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.AuthorResponse
+    :<|> "metric" :> "list" :> ReqBody '[JSON] Monocle.Protob.Metric.ListRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.ListResponse
+    :<|> "crawler" :> "add" :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
+    :<|> "crawler" :> "commit" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
+    :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
 
 server :: ServerT MonocleAPI AppM
 server =

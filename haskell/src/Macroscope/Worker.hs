@@ -16,12 +16,15 @@ where
 import qualified Data.Vector as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
-import Monocle.Backend.Index (entityRequestOrganization, entityRequestProject, entityRequestTaskData)
-import Monocle.Change (Change, ChangeEvent)
-import Monocle.Crawler
+import Monocle.Backend.Index
+  ( entityRequestOrganization,
+    entityRequestProject,
+    entityRequestTaskData,
+  )
 import Monocle.Prelude
-import Monocle.Project (Project)
-import Monocle.Search (TaskData)
+import Monocle.Protob.Change (Change, ChangeEvent)
+import Monocle.Protob.Crawler
+import Monocle.Protob.Search (TaskData)
 import Proto3.Suite (Enumerated (Enumerated))
 import qualified Streaming as S
 import qualified Streaming.Prelude as S

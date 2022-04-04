@@ -17,9 +17,9 @@ import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJS
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import qualified Data.Vector as V
-import qualified Monocle.Change as CrawlerPB
 import Monocle.Prelude
-import qualified Monocle.Search as SearchPB
+import qualified Monocle.Protob.Change as ChangePB
+import qualified Monocle.Protob.Search as SearchPB
 
 data Author = Author
   { authorMuid :: LText,
@@ -33,8 +33,8 @@ instance ToJSON Author where
 instance FromJSON Author where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-instance From CrawlerPB.Ident Author where
-  from CrawlerPB.Ident {..} =
+instance From ChangePB.Ident Author where
+  from ChangePB.Ident {..} =
     Author
       { authorMuid = identMuid,
         authorUid = identUid
@@ -99,13 +99,13 @@ instance FromJSON Commit where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 -- | A helper function to ensure author value in PB message is defined
-ensureAuthor :: Maybe CrawlerPB.Ident -> CrawlerPB.Ident
+ensureAuthor :: Maybe ChangePB.Ident -> ChangePB.Ident
 ensureAuthor = \case
   Just i -> i
-  Nothing -> CrawlerPB.Ident "backend-ghost" "backend-host"
+  Nothing -> ChangePB.Ident "backend-ghost" "backend-host"
 
-instance From CrawlerPB.Commit Commit where
-  from CrawlerPB.Commit {..} =
+instance From ChangePB.Commit Commit where
+  from ChangePB.Commit {..} =
     Commit
       { commitSha = commitSha,
         commitAuthor = from $ ensureAuthor commitAuthor,
@@ -347,8 +347,8 @@ instance From EChange SearchPB.Change where
         changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< echangeMergedBy change
      in SearchPB.Change {..}
 
-instance From CrawlerPB.Change EChange where
-  from CrawlerPB.Change {..} =
+instance From ChangePB.Change EChange where
+  from ChangePB.Change {..} =
     EChange
       { echangeId = changeId,
         echangeType = EChangeDoc,
@@ -385,18 +385,18 @@ instance From CrawlerPB.Change EChange where
         echangeTasksData = Nothing
       }
     where
-      toMergedByAuthor (CrawlerPB.ChangeOptionalMergedByMergedBy m) = from $ ensureAuthor (Just m)
-      toMergedAt (CrawlerPB.ChangeOptionalMergedAtMergedAt t) = from t
-      toClosedAt (CrawlerPB.ChangeOptionalClosedAtClosedAt t) = from t
-      toDuration (CrawlerPB.ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
-      toSelfMerged (CrawlerPB.ChangeOptionalSelfMergedSelfMerged b) = b
+      toMergedByAuthor (ChangePB.ChangeOptionalMergedByMergedBy m) = from $ ensureAuthor (Just m)
+      toMergedAt (ChangePB.ChangeOptionalMergedAtMergedAt t) = from t
+      toClosedAt (ChangePB.ChangeOptionalClosedAtClosedAt t) = from t
+      toDuration (ChangePB.ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
+      toSelfMerged (ChangePB.ChangeOptionalSelfMergedSelfMerged b) = b
       toState cstate = case cstate of
-        CrawlerPB.Change_ChangeStateOpen -> EChangeOpen
-        CrawlerPB.Change_ChangeStateMerged -> EChangeMerged
-        CrawlerPB.Change_ChangeStateClosed -> EChangeClosed
+        ChangePB.Change_ChangeStateOpen -> EChangeOpen
+        ChangePB.Change_ChangeStateMerged -> EChangeMerged
+        ChangePB.Change_ChangeStateClosed -> EChangeClosed
 
-instance From CrawlerPB.ChangedFile File where
-  from CrawlerPB.ChangedFile {..} =
+instance From ChangePB.ChangedFile File where
+  from ChangePB.ChangedFile {..} =
     File (fromIntegral changedFileAdditions) (fromIntegral changedFileDeletions) changedFilePath
 
 newtype EChangeTD = EChangeTD

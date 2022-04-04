@@ -172,11 +172,11 @@ library
                      , Monocle.Class
                      , Monocle.Logging
                      , Monocle.Version
+                     , Monocle.Config
                      , CLI
 
                      -- monocle api
                      , Monocle.Api
-                     , Monocle.Api.Config
                      , Monocle.Api.Server
                      , Monocle.Api.Test
 
@@ -228,13 +228,12 @@ library
                      , Json.Extras
 
                      -- Codegen
-                     , Monocle.Change
-                     , Monocle.Config
-                     , Monocle.Search
-                     , Monocle.Crawler
-                     , Monocle.Metric
-                     , Monocle.Project
-                     , Monocle.Login
+                     , Monocle.Protob.Change
+                     , Monocle.Protob.Config
+                     , Monocle.Protob.Search
+                     , Monocle.Protob.Crawler
+                     , Monocle.Protob.Metric
+                     , Monocle.Protob.Login
 
   other-modules:       Database.Bloodhound.Raw
                      , Lentille.BugzillaMock

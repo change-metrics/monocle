@@ -14,18 +14,17 @@ import qualified Data.Aeson as Aeson
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import qualified Data.Text as T
 import qualified Database.Bloodhound as BH
-import Monocle.Api.Config (getIdentByAlias)
-import qualified Monocle.Api.Config as C
 import Monocle.Backend.Documents as D
 import Monocle.Backend.Index (crawlerMDQuery, getCrawlerTypeAsText)
 import qualified Monocle.Backend.Index as I
 import Monocle.Backend.Queries as Q
-import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Crawler (EntityEntity (EntityEntityProjectName))
 import qualified Streaming.Prelude as Streaming
 
-updateAuthor :: C.Index -> D.Author -> D.Author
+updateAuthor :: Config.Index -> D.Author -> D.Author
 updateAuthor index author@D.Author {..} = case getIdent of
   Just ident -> D.Author ident authorUid
   Nothing
@@ -33,7 +32,7 @@ updateAuthor index author@D.Author {..} = case getIdent of
     | otherwise -> author
   where
     getIdent :: Maybe LText
-    getIdent = from <$> getIdentByAlias index (from authorUid)
+    getIdent = from <$> Config.getIdentByAlias index (from authorUid)
     -- Remove the host prefix
     newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
@@ -41,7 +40,7 @@ updateIdentsOnWorkspace :: QueryM ()
 updateIdentsOnWorkspace = do
   target <- asks tenant
   workspaceName <- case target of
-    QueryWorkspace ws -> pure $ C.getWorkspaceName ws
+    QueryWorkspace ws -> pure $ Config.getWorkspaceName ws
     QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
@@ -186,9 +185,9 @@ wipeCrawlerData crawlerName = do
   -- Get index from QueryM
   config <- getIndexConfig
   -- Get crawler defintion from configuration (we need it to discover if a prefix is set)
-  let crawlerM = C.lookupCrawler config crawlerName
+  let crawlerM = Config.lookupCrawler config crawlerName
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
-      prefixM = C.getPrefix crawler
+      prefixM = Config.getPrefix crawler
       prefix = fromMaybe mempty prefixM
   logText $ "Discovered crawler prefix: " <> (show prefixM :: Text)
   -- Get projects for this crawler from the crawler metadata objects

@@ -22,7 +22,7 @@ import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Logging (Entity (TaskDataEntity), LogCrawlerContext)
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
+import Monocle.Protob.Search (TaskData (..))
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 

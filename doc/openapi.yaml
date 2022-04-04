@@ -558,7 +558,7 @@ components:
                 projects:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_project_Project'
+                        $ref: '#/components/schemas/monocle_crawler_Project'
                     description: projects are added when Entity is organization_name
                 task_datas:
                     type: array
@@ -618,6 +618,10 @@ components:
                 td_name:
                     type: string
             description: A descriptive name of the entities being added
+        monocle_crawler_Project:
+            properties:
+                full_path:
+                    type: string
         monocle_login_LoginValidationRequest:
             properties:
                 username:
@@ -644,10 +648,6 @@ components:
                 description:
                     type: string
                 long_description:
-                    type: string
-        monocle_project_Project:
-            properties:
-                full_path:
                     type: string
         monocle_search_ActivityStats:
             properties:

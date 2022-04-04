@@ -41,13 +41,17 @@ where
 
 import qualified Data.Text as T
 import qualified Google.Protobuf.Timestamp as T
-import Monocle.Api.Config (MonadConfig (..))
-import qualified Monocle.Api.Config
-import Monocle.Change (Change (changeUpdatedAt), ChangeEvent, Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged), Ident (..))
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
+import qualified Monocle.Config as Config
 import Monocle.Logging
 import Monocle.Prelude
+import Monocle.Protob.Change
+  ( Change (changeUpdatedAt),
+    ChangeEvent,
+    Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
+    Ident (..),
+  )
 import qualified Network.HTTP.Client as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 
@@ -132,11 +136,11 @@ instance MonadGraphQL LentilleM where
 
 type MonadGraphQLE m = (MonadGraphQL m, MonadThrow m)
 
-instance MonadConfig LentilleM where
+instance Config.MonadConfig LentilleM where
   mReloadConfig fp = do
-    reloader <- liftIO $ Monocle.Api.Config.reloadConfig fp
+    reloader <- liftIO $ Config.reloadConfig fp
     pure $ liftIO reloader
-  mGetSecret def = liftIO . Monocle.Api.Config.getSecret def
+  mGetSecret def = liftIO . Config.getSecret def
 
 type LentilleStream m a = Stream (Of a) m ()
 
@@ -144,7 +148,7 @@ type LentilleMonad m =
   ( MonadTime m,
     MonadLog m, -- log is the monocle log facility
     MonadCrawler m, -- for monocle crawler http api
-    MonadConfig m
+    Config.MonadConfig m
   )
 
 -------------------------------------------------------------------------------

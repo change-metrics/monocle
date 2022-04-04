@@ -10,17 +10,16 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Google.Protobuf.Timestamp as T
-import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Janitor as J
 import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Crawler as CrawlerPB
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
-import Monocle.Search (TaskData (..))
-import qualified Monocle.Search as SearchPB
+import qualified Monocle.Protob.Crawler as CrawlerPB
+import qualified Monocle.Protob.Search as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import qualified Monocle.Search.Query as Q
 import Relude.Unsafe ((!!))
@@ -961,7 +960,7 @@ testAuthorCache = withTenant doTest
       authors <- I.searchAuthorCache "doe"
       assertEqual' "Check search author" ["John Doe/12"] authors
 
-mkTaskData :: LText -> TaskData
+mkTaskData :: LText -> SearchPB.TaskData
 mkTaskData changeId =
   let taskDataUpdatedAt = Just $ T.fromUTCTime fakeDate
       taskDataChangeUrl = "https://fakeprovider/" <> changeId
@@ -973,7 +972,7 @@ mkTaskData changeId =
       taskDataPriority = ""
       taskDataScore = 0
       taskDataPrefix = "lada"
-   in TaskData {..}
+   in SearchPB.TaskData {..}
 
 testTaskDataAdd :: Assertion
 testTaskDataAdd = withTenant doTest
@@ -1021,7 +1020,7 @@ testTaskDataAdd = withTenant doTest
       let td = mkTaskData "45"
       void $ I.taskDataAdd crawlerName [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
-      let tdid = (td & taskDataUrl) <> (td & taskDataChangeUrl)
+      let tdid = (td & SearchPB.taskDataUrl) <> (td & SearchPB.taskDataChangeUrl)
       orphanTdM <- getOrphanTd . toText $ tdid
       let expectedTD = I.toETaskData crawlerName td
       assertEqual'
@@ -1038,7 +1037,7 @@ testTaskDataAdd = withTenant doTest
 
       -- Send the same orphan task data with an updated field and ensure it has been
       -- updated in the Database
-      let td' = td {taskDataSeverity = "urgent"}
+      let td' = td {SearchPB.taskDataSeverity = "urgent"}
       void $ I.taskDataAdd crawlerName [td']
       orphanTdM' <- getOrphanTd . toText $ tdid
       let expectedTD' = expectedTD {tdSeverity = "urgent"}
@@ -1067,7 +1066,7 @@ testTaskDataAdoption = withTenant doTest
         let td42 = mkTaskData "42"
             td43 = mkTaskData "43"
         void $ I.taskDataAdd "crawlerName" [td42, td43]
-        oTDs <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+        oTDs <- I.getOrphanTaskDataByChangeURL $ toText . SearchPB.taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
 
         -- Index a change and related events
@@ -1077,7 +1076,7 @@ testTaskDataAdoption = withTenant doTest
         indexScenario scenario
         I.updateChangesAndEventsFromOrphanTaskData changes events
         -- Check that the matching task data has been adopted
-        oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . taskDataChangeUrl <$> [td42, td43]
+        oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . SearchPB.taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check remaining one orphan TD" 1 (length oTDs')
         -- Check that change and related events got the task data attribute
         changes' <- I.runScanSearch $ I.getChangesByURL [changeUrl]

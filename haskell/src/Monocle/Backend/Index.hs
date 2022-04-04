@@ -13,16 +13,15 @@ import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import Google.Protobuf.Timestamp as T
-import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
-import Monocle.Change
-import Monocle.Crawler (EntityEntity (EntityEntityProjectName))
-import qualified Monocle.Crawler as CrawlerPB
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Logging (Entity (..), getEntityName)
 import Monocle.Prelude
-import Monocle.Search (Order (..), Order_Direction (..), TaskData (..))
+import qualified Monocle.Protob.Change as ChangePB
+import qualified Monocle.Protob.Crawler as CrawlerPB
+import qualified Monocle.Protob.Search as SearchPB (Order (..), Order_Direction (..), TaskData (..))
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as NHTS
 import qualified Proto3.Suite.Types as PT (Enumerated (..))
@@ -255,7 +254,7 @@ upgradeConfigV1 = do
             <$> filter isGHProvider (Config.crawlers ws)
     getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
     getProjectCrawlerMDByName crawlerName = do
-      let entity = EntityEntityProjectName ""
+      let entity = CrawlerPB.EntityEntityProjectName ""
           search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
       index <- getIndexName
       resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -381,8 +380,8 @@ removeIndex = do
   False <- BH.indexExists indexName
   pure ()
 
-toAuthor :: Maybe Monocle.Change.Ident -> Monocle.Backend.Documents.Author
-toAuthor (Just Monocle.Change.Ident {..}) =
+toAuthor :: Maybe ChangePB.Ident -> Monocle.Backend.Documents.Author
+toAuthor (Just ChangePB.Ident {..}) =
   Monocle.Backend.Documents.Author
     { authorMuid = identMuid,
       authorUid = identUid
@@ -392,15 +391,15 @@ toAuthor Nothing =
     "backend-ghost"
     "backend-ghost"
 
-toEChangeEvent :: ChangeEvent -> EChangeEvent
-toEChangeEvent ChangeEvent {..} =
+toEChangeEvent :: ChangePB.ChangeEvent -> EChangeEvent
+toEChangeEvent ChangePB.ChangeEvent {..} =
   EChangeEvent
     { echangeeventId = changeEventId,
       echangeeventNumber = fromIntegral changeEventNumber,
       echangeeventType = getEventType changeEventType,
       echangeeventChangeId = changeEventChangeId,
       echangeeventUrl = changeEventUrl,
-      echangeeventChangedFiles = SimpleFile . changedFilePathPath <$> toList changeEventChangedFiles,
+      echangeeventChangedFiles = SimpleFile . ChangePB.changedFilePathPath <$> toList changeEventChangedFiles,
       echangeeventRepositoryPrefix = changeEventRepositoryPrefix,
       echangeeventRepositoryFullname = changeEventRepositoryFullname,
       echangeeventRepositoryShortname = changeEventRepositoryShortname,
@@ -411,25 +410,25 @@ toEChangeEvent ChangeEvent {..} =
       echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
       echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
       echangeeventApproval = case changeEventType of
-        Just (ChangeEventTypeChangeReviewed (ChangeReviewedEvent approval)) -> Just $ toList approval
+        Just (ChangePB.ChangeEventTypeChangeReviewed (ChangePB.ChangeReviewedEvent approval)) -> Just $ toList approval
         _anyOtherApprovals -> Nothing,
       echangeeventTasksData = Nothing
     }
 
-getEventType :: Maybe ChangeEventType -> EDocType
+getEventType :: Maybe ChangePB.ChangeEventType -> EDocType
 getEventType eventTypeM = case eventTypeM of
   Just eventType -> case eventType of
-    ChangeEventTypeChangeCreated ChangeCreatedEvent -> EChangeCreatedEvent
-    ChangeEventTypeChangeCommented ChangeCommentedEvent -> EChangeCommentedEvent
-    ChangeEventTypeChangeAbandoned ChangeAbandonedEvent -> EChangeAbandonedEvent
-    ChangeEventTypeChangeReviewed (ChangeReviewedEvent _) -> EChangeReviewedEvent
-    ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
-    ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent -> EChangeCommitPushedEvent
-    ChangeEventTypeChangeMerged ChangeMergedEvent -> EChangeMergedEvent
+    ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent -> EChangeCreatedEvent
+    ChangePB.ChangeEventTypeChangeCommented ChangePB.ChangeCommentedEvent -> EChangeCommentedEvent
+    ChangePB.ChangeEventTypeChangeAbandoned ChangePB.ChangeAbandonedEvent -> EChangeAbandonedEvent
+    ChangePB.ChangeEventTypeChangeReviewed (ChangePB.ChangeReviewedEvent _) -> EChangeReviewedEvent
+    ChangePB.ChangeEventTypeChangeCommitForcePushed ChangePB.ChangeCommitForcePushedEvent -> EChangeCommitForcePushedEvent
+    ChangePB.ChangeEventTypeChangeCommitPushed ChangePB.ChangeCommitPushedEvent -> EChangeCommitPushedEvent
+    ChangePB.ChangeEventTypeChangeMerged ChangePB.ChangeMergedEvent -> EChangeMergedEvent
   Nothing -> error "changeEventType field is mandatory"
 
-toETaskData :: Text -> TaskData -> ETaskData
-toETaskData crawlerName TaskData {..} =
+toETaskData :: Text -> SearchPB.TaskData -> ETaskData
+toETaskData crawlerName SearchPB.TaskData {..} =
   let tdTid = toText taskDataTid
       tdCrawlerName = Just crawlerName
       tdTtype = toList $ toText <$> taskDataTtype
@@ -677,10 +676,10 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
         BH.DocId $ toText tddId
       )
 
-taskDataAdd :: Text -> [TaskData] -> QueryM ()
+taskDataAdd :: Text -> [SearchPB.TaskData] -> QueryM ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
-  let urls = toText . taskDataChangeUrl <$> tds
+  let urls = toText . SearchPB.taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
   changes <- runScanSearch $ getChangesByURL urls
   -- get change events that matches those URLs
@@ -832,9 +831,9 @@ getMostRecentUpdatedChange fullname = do
   withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
   where
     order =
-      Order
+      SearchPB.Order
         { orderField = "updated_at",
-          orderDirection = PT.Enumerated $ Right Order_DirectionDESC
+          orderDirection = PT.Enumerated $ Right SearchPB.Order_DirectionDESC
         }
 
 -- | Maybe return the most recent updatedAt date for a repository full name

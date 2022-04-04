@@ -3,7 +3,7 @@ module Lentille.Bugzilla.Spec (bzClientTests) where
 import qualified Data.Vector as V
 import Lentille.Bugzilla
 import Lentille.BugzillaMock
-import Monocle.Search (TaskData (..))
+import Monocle.Protob.Search (TaskData (..))
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
