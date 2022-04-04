@@ -13,9 +13,9 @@ import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import Google.Protobuf.Timestamp as T
-import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Queries as Q
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Logging (Entity (..), getEntityName)
 import Monocle.Prelude

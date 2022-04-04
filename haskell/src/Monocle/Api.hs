@@ -2,8 +2,8 @@
 module Monocle.Api (app, run) where
 
 import Lentille (httpRetry)
-import qualified Monocle.Api.Config as Config
 import qualified Monocle.Backend.Index as I
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude

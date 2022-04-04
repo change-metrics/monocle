@@ -12,12 +12,7 @@
 -- The module contains defintion of data types according to the
 -- dhall-monocle project (loaded as a git submodule). It also
 -- provides some functions to handle configuration data.
---
--- TODO: Rename to Monocle.Config . To do that we need to:
---
--- - Move existing config.proto to another protobuf package
--- - Then we can use the Monocle.Config namespace
-module Monocle.Api.Config
+module Monocle.Config
   ( -- * Data types imported from dhall (dhall-monocle)
     Config (..),
     Index (..),

@@ -4,7 +4,6 @@ module Macroscope.Test where
 import Lentille (runLentilleM)
 import qualified Macroscope.Main as Macroscope
 import qualified Macroscope.Worker as Macroscope
-import qualified Monocle.Api.Config as Config
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import qualified Monocle.Backend.Documents as D
 import qualified Monocle.Backend.Index as I
@@ -12,6 +11,7 @@ import qualified Monocle.Backend.Provisioner
 import qualified Monocle.Backend.Queries as Q
 import qualified Monocle.Backend.Test as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Prelude
 import qualified Streaming.Prelude as Streaming

@@ -10,11 +10,11 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Vector as V
 import qualified Database.Bloodhound as BH
 import qualified Google.Protobuf.Timestamp as T
-import qualified Monocle.Api.Config as Config
 import Monocle.Backend.Documents
 import qualified Monocle.Backend.Index as I
 import qualified Monocle.Backend.Janitor as J
 import qualified Monocle.Backend.Queries as Q
+import qualified Monocle.Config as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude

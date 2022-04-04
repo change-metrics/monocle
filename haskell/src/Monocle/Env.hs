@@ -5,7 +5,7 @@ import qualified Database.Bloodhound as BH
 import qualified Database.Bloodhound.Raw as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
 import qualified Json.Extras as Json
-import qualified Monocle.Api.Config as Config
+import qualified Monocle.Config as Config
 import Monocle.Logging
 import Monocle.Prelude
 import qualified Monocle.Search.Query as Q

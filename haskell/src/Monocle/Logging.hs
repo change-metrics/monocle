@@ -2,7 +2,7 @@
 module Monocle.Logging where
 
 import qualified Data.Text as T
-import qualified Monocle.Api.Config as Config
+import qualified Monocle.Config as Config
 import Monocle.Prelude
 import Monocle.Protob.Search (QueryRequest_QueryType (..))
 import qualified Monocle.Search.Query as Q
