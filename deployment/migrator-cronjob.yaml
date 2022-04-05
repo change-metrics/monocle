@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: migrator
+spec:
+  jobTemplate:
+    metadata:
+      name: migrator
+    spec:
+      template:
+        spec:
+          containers:
+          - image: quay.io/change-metrics/monocle_migrator:latest
+            name: migrator
+          restartPolicy: OnFailure
+  schedule: '*/1 * * * *'
+  suspend: true
