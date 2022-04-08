@@ -3,8 +3,8 @@ let
   # pin the upstream nixpkgs
   nixpkgsPath = fetchTarball {
     url =
-      "https://github.com/NixOS/nixpkgs/archive/4d60081494259c0785f7e228518fee74e0792c1b.tar.gz";
-    sha256 = "sha256:15vxvzy9sxsnnxn53w2n44vklv7irzxvqv8xj9dn78z9zwl17jhq";
+      "https://github.com/NixOS/nixpkgs/archive/7954a245e70238e08078baef7ff6459a67e229c3.tar.gz";
+    sha256 = "sha256:0160ns4miy3i53fp3rn6zdq39qgxqn9ngdvihz51kz4s2mp8hib7";
   };
   nixpkgsSrc = (import nixpkgsPath);
 
@@ -21,56 +21,63 @@ let
   monocleHaskellSrc = gitignoreSource ../haskell/.;
 
   # update haskell dependencies
-  compilerVersion = "8107";
+  compilerVersion = "922";
   compiler = "ghc" + compilerVersion;
 
-  morpheus-graphql-src = pkgs.fetchFromGitHub {
-    owner = "morpheusgraphql";
-    repo = "morpheus-graphql";
-    rev = "0.19.0";
-    sha256 = "sha256-YY4TDvkFuPxeAPSJurklYzEn3rO6feToiKR4Ii0iLQc=";
-  };
-
   mk-morpheus-lib = hpPrev: name:
-    (hpPrev.callCabal2nix "morpheus-graphql-${name}"
+    let
+      morpheus-graphql-src = pkgs.fetchFromGitHub {
+        owner = "morpheusgraphql";
+        repo = "morpheus-graphql";
+        # Fix for bytestring-0.11, proposed in https://github.com/morpheusgraphql/morpheus-graphql/pull/723
+        rev = "df3a4b0d11b53de3ddf3b43966e0242877541e50";
+        sha256 = "sha256-rrDWIYmY9J9iPI/lSuflyyxapAXyuHbLP86awH33mzo=";
+      };
+    in (hpPrev.callCabal2nix "morpheus-graphql-${name}"
       "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
+
+  mk-servant-lib = hpPrev: name:
+    let
+      # Use direct source because nixpkgs somehow can't fetch
+      servant-src = builtins.fetchGit {
+        url = "https://github.com/haskell-servant/servant";
+        ref = "master";
+        rev = "c19ed0fb925fbe62365adcaf286c00c497adf8fb";
+      };
+    in (hpPrev.callCabal2nix "sevant${name}" "${servant-src}/servant${name}"
+      { });
 
   overlays = [
     (final: prev: {
       myHaskellPackages = prev.haskell.packages.${compiler}.override {
         overrides = hpFinal: hpPrev: {
-          # Unbreak proto3-suite
+          # For proto3-suite:
           range-set-list = pkgs.haskell.lib.dontCheck
             (pkgs.haskell.lib.overrideCabal hpPrev.range-set-list {
               broken = false;
             });
-          # Master version for aeson-2
+          data-diverse = pkgs.haskell.lib.dontCheck
+            (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse {
+              broken = false;
+            });
+          # Fix proposed in https://github.com/awakesecurity/proto3-suite/pull/191,
+          # but we also need a hack for https://github.com/awakesecurity/proto3-suite/issues/192.
           proto3-suite = let
             src = builtins.fetchGit {
-              url = "https://github.com/awakesecurity/proto3-suite";
-              ref = "master";
-              rev = "9720ec14e1979e687b77a18e094b81625cc537ae";
+              url = "https://github.com/TristanCacqueray/proto3-suite";
+              ref = "ghc-92";
+              rev = "670380f00e0f61acc2da3c2cf7512edd69dd5e82";
             };
             base = pkgs.haskell.lib.dontCheck
               (hpPrev.callCabal2nix "proto3-suite" src { });
           in pkgs.haskell.lib.disableCabalFlag base "swagger";
 
-          # A new library for proto3-wire
-          word-compat = let
-            src = builtins.fetchGit {
-              url = "https://github.com/fumieval/word-compat";
-              ref = "master";
-              rev = "9266b658e89da2d87e2610a8288fc037e8ba8c6a";
-            };
-          in pkgs.haskell.lib.dontCheck
-          (hpPrev.callCabal2nix "word-compat" src { });
-
-          # Master version for hashable-1.5
+          # Fix proposed in https://github.com/awakesecurity/proto3-wire/pull/80
           proto3-wire = let
             src = builtins.fetchGit {
-              url = "https://github.com/awakesecurity/proto3-wire";
-              ref = "master";
-              rev = "267242d7daa004e8b42e81146590865c8efe3437";
+              url = "https://github.com/TristanCacqueray/proto3-wire";
+              ref = "bytestring-0.11";
+              rev = "bb0d7f77d41fa78b2a6dd6e2eed2f83f5cdbba7e";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
@@ -85,24 +92,57 @@ let
             };
           });
 
-          json-syntax = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax {
-              broken = false;
-            });
+          # ghc-9.2 fix proposed in https://github.com/byteverse/json-syntax/pull/11
+          # and https://github.com/byteverse/json-syntax/pull/13
+          json-syntax = let
+            src = builtins.fetchGit {
+              url = "https://github.com/TristanCacqueray/json-syntax";
+              ref = "ghc-9.2-integration";
+              rev = "f54325b2c601b962cfb078c2295b09a0780d7313";
+            };
+          in (pkgs.haskell.lib.dontCheck
+            (hpPrev.callCabal2nix "bytebuild" src { }));
 
+          # Fix proposed in: https://github.com/NixOS/nixpkgs/pull/167957
           bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
-            version = "0.19.0.0";
-            sha256 = "sha256-36ix/I1IEFGA3WlYL996Gi2z/FUNi+7v0NzObnI7awI=";
             broken = false;
           };
 
-          bugzilla-redhat =
-            pkgs.haskell.lib.overrideCabal hpPrev.bugzilla-redhat {
-              version = "1.0.0";
-              sha256 = "sha256-nUITDj5l7e/d4sEyfSpok1Isoy1AIeIad+Fp4QeQJb0=";
-              broken = false;
+          # ghc-9.2 fix proposed in: https://github.com/byteverse/bytesmith/pull/22
+          bytesmith = let
+            src = builtins.fetchGit {
+              url = "https://github.com/teto/bytesmith";
+              ref = "ghc92";
+              rev = "dfdf6922e118932ba7d671e05a5b65998349cee8";
             };
+          in (hpPrev.callCabal2nix "bytesmith" src { });
 
+          # Master version for ghc-9.2
+          bytebuild = let
+            src = builtins.fetchGit {
+              url = "https://github.com/byteverse/bytebuild";
+              ref = "master";
+              rev = "dde5a9b07d03f5a9c33eba6d63ca0140ab6f406e";
+            };
+          in (pkgs.haskell.lib.dontCheck
+            (hpPrev.callCabal2nix "bytebuild" src { }));
+
+          # ghc-9.2 fix proposed: https://github.com/andrewthad/scientific-notation/pull/4
+          scientific-notation = let
+            src = builtins.fetchGit {
+              url = "https://github.com/andrewthad/scientific-notation";
+              ref = "master";
+              rev = "0076fe9ed83e70ce068962fbd1b49d475af7a7f2";
+            };
+          in (pkgs.haskell.lib.dontCheck
+            (hpPrev.callCabal2nix "scientific-notation" src { }));
+
+          # nixpkgs somehow doesn't fetch, use direct src
+          servant = mk-servant-lib hpPrev "";
+          servant-foreign = mk-servant-lib hpPrev "-foreign";
+          servant-server = mk-servant-lib hpPrev "-server";
+
+          # nixpkgs version are broken, use direct src
           morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
           morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
           morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
@@ -112,42 +152,20 @@ let
             src = builtins.fetchGit {
               url =
                 "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
-              ref = "master";
-              rev = "7ba07ed5c9da867bd566d114eb2962d7f4b90cf5";
+              ref = "refs/changes/41/24541/1";
+              rev = "c0c337bccb35e7d94e6125ab034cfcc9efe68476";
             };
           in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
 
-          # Relude needs a patch to build with hashable-1.4
-          relude = hpPrev.relude_1_0_0_1.overrideAttrs (_: {
-            patches = [
-              (pkgs.fetchpatch {
-                url =
-                  "https://patch-diff.githubusercontent.com/raw/kowainik/relude/pull/399.patch";
-                sha256 = "sha256-dQpJ2v2ohWoc+37GM18fss/Bza9RNZZZNfl4GjSdHv8=";
-              })
-            ];
+          # Relude needs head for ghc-9.2
+          relude = (pkgs.haskell.lib.overrideCabal hpPrev.relude {
+            broken = false;
+            src = builtins.fetchGit {
+              url = "https://github.com/kowainik/relude";
+              ref = "main";
+              rev = "fcb32257a37e34a48f70ddd55424394de4bb025c";
+            };
           });
-
-          fakedata = hpPrev.fakedata_1_0_2;
-
-          # Bump aeson
-          aeson = hpPrev.aeson_2_0_3_0;
-          hashable = hpPrev.hashable_1_4_0_2;
-          hashable-time = hpPrev.hashable-time_0_3;
-          hashtables = hpPrev.hashtables_1_3;
-          OneTuple = hpPrev.OneTuple_0_3_1;
-          time-compat = hpPrev.time-compat_1_9_6_1;
-          text-short = hpPrev.text-short_0_1_5;
-          quickcheck-instances = hpPrev.quickcheck-instances_0_3_27;
-          semialign = hpPrev.semialign_1_2_0_1;
-          attoparsec = hpPrev.attoparsec_0_14_4;
-          http2 = hpPrev.http2_3_0_3;
-          servant = hpPrev.servant_0_19;
-          servant-server = hpPrev.servant-server_0_19;
-          dhall = hpPrev.dhall_1_40_2;
-          dhall-json = hpPrev.dhall-json_1_7_9;
-          dhall-yaml = hpPrev.dhall-yaml_1_2_9;
-          swagger2 = hpPrev.swagger2_2_8_2;
 
           monocle =
             (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
