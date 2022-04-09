@@ -15,7 +15,7 @@
     "concurrently": "^6.0.2",
     "interweave": "^12.7.1",
     "interweave-autolink": "^4.4.1",
-    "moment": "2.29.1",
+    "moment": "2.29.2",
     "react": "^17.0.2",
     "react-chartjs-2": "^2.11.1",
     "react-chord-diagram": "^1.7.0",
