@@ -356,7 +356,7 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
     ghPRCrawler glClient cb = Changes $ streamPullRequests glClient mkLC cb
 
     gerritRegexProjects :: [Text] -> [Text]
-    gerritRegexProjects projects = filter (T.isPrefixOf "^") projects
+    gerritRegexProjects = filter (T.isPrefixOf "^")
 
     gerritREProjectsCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
     gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv

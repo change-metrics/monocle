@@ -99,7 +99,7 @@ streamLinkedIssue client mkLC time repo =
         )
     optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just $ getRateLimit lc}
     toSimpleDate :: UTCTime -> String
-    toSimpleDate utctime' = formatTime defaultTimeLocale "%F" utctime'
+    toSimpleDate = formatTime defaultTimeLocale "%F"
 
 pattern IssueLabels :: [Maybe SearchNodesLabelsNodesLabel] -> SearchNodesSearchResultItem
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _

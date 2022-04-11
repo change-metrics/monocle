@@ -380,10 +380,10 @@ getPrefix Crawler {..} = case provider of
 getCrawlerProject :: Crawler -> [Text]
 getCrawlerProject Crawler {..} = case provider of
   GitlabProvider Gitlab {..} ->
-    let addOrgPrefix repo = getPath gitlab_organization repo
+    let addOrgPrefix = getPath gitlab_organization
      in addOrgPrefix <$> fromMaybe [] gitlab_repositories
   GithubProvider Github {..} ->
-    let addOrgPrefix repo = getPath github_organization repo
+    let addOrgPrefix = getPath github_organization
      in addOrgPrefix <$> fromMaybe [] github_repositories
   GerritProvider Gerrit {..} -> maybe [] (filter (not . T.isPrefixOf "^")) gerrit_repositories
   _anyOtherProvider -> []
@@ -400,7 +400,7 @@ getCrawlerOrganization Crawler {..} = case provider of
 getCrawlerTaskData :: Crawler -> [Text]
 getCrawlerTaskData Crawler {..} = case provider of
   GithubProvider Github {..} ->
-    let addOrgPrefix repo = getPath github_organization repo
+    let addOrgPrefix = getPath github_organization
      in addOrgPrefix <$> fromMaybe [] github_repositories
   BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
   _anyOtherProvider -> []

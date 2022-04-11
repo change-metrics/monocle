@@ -172,8 +172,7 @@ getBZData bzSession sinceTS productName = go 0
   where
     limit = 100
     doGet :: MonadBZ m => Int -> m [BugWithScore]
-    doGet offset =
-      getBugsWithScore bzSession sinceTS productName limit offset
+    doGet = getBugsWithScore bzSession sinceTS productName limit
     go offset = do
       -- Retrieve rhbz
       bugs <- lift $ do

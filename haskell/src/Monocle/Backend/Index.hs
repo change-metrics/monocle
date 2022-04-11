@@ -653,7 +653,7 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
     -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
     -- for Changes and Events
     getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
-    getTaskDatas adopted assocs = concatMap getTDs assocs
+    getTaskDatas adopted = concatMap getTDs
       where
         getTDs :: (LText, [LText]) -> [TaskDataDoc]
         getTDs (url, ids) =
