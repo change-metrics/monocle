@@ -60,24 +60,23 @@ let
             (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse {
               broken = false;
             });
-          # Fix proposed in https://github.com/awakesecurity/proto3-suite/pull/191,
-          # but we also need a hack for https://github.com/awakesecurity/proto3-suite/issues/192.
+          # HEAD is needed for bytestring-0.11 and ghc-9.2 base
           proto3-suite = let
             src = builtins.fetchGit {
-              url = "https://github.com/TristanCacqueray/proto3-suite";
-              ref = "ghc-92";
-              rev = "670380f00e0f61acc2da3c2cf7512edd69dd5e82";
+              url = "https://github.com/awakesecurity/proto3-suite";
+              ref = "gabriella/192";
+              rev = "6199c98a4a26d10aa5aab87ae8d9fcef52f0f418";
             };
             base = pkgs.haskell.lib.dontCheck
               (hpPrev.callCabal2nix "proto3-suite" src { });
           in pkgs.haskell.lib.disableCabalFlag base "swagger";
 
-          # Fix proposed in https://github.com/awakesecurity/proto3-wire/pull/80
+          # HEAD is needed for bytestring-0.11
           proto3-wire = let
             src = builtins.fetchGit {
-              url = "https://github.com/TristanCacqueray/proto3-wire";
-              ref = "bytestring-0.11";
-              rev = "bb0d7f77d41fa78b2a6dd6e2eed2f83f5cdbba7e";
+              url = "https://github.com/awakesecurity/proto3-wire";
+              ref = "master";
+              rev = "a5ed1a3bff0816cc247a1058232f3ed8a6f1e873";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
