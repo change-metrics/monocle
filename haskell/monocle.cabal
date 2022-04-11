@@ -253,7 +253,7 @@ benchmark json-decode
   import:              common-options
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  build-depends:       base, aeson, bloodhound, byteslice, bytestring, criterion, json-syntax, monocle, text-short, text-time, fakedata, random
+  build-depends:       aeson, bloodhound, byteslice, bytestring, criterion, json-syntax, monocle, text-short, text-time, fakedata, random
   main-is:             JsonDecode.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
 
@@ -262,5 +262,5 @@ test-suite monocle-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base, monocle
+  build-depends:       monocle
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
