@@ -17,6 +17,4 @@ version = concat [showVersion P.version, " ", commit]
       Nothing -> $(gitHash) <> dirty
     fromEnv :: Maybe String
     fromEnv = $$(envQ "MONOCLE_COMMIT")
-    dirty
-      | $(gitDirty) = "-dirty"
-      | otherwise = ""
+    dirty = if $(gitDirty) then "-dirty" else ""
