@@ -141,7 +141,7 @@ instance FromJSON UTCTimePlus where
     where
       oldFormat = "%FT%T"
       utcFormat = "%FT%TZ"
-      tryParse f s = parseTimeM False defaultTimeLocale f s
+      tryParse = parseTimeM False defaultTimeLocale
       parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
 data ETaskData = ETaskData

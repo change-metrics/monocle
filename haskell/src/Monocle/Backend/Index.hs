@@ -653,7 +653,7 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
     -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
     -- for Changes and Events
     getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
-    getTaskDatas adopted assocs = concatMap getTDs assocs
+    getTaskDatas adopted = concatMap getTDs
       where
         getTDs :: (LText, [LText]) -> [TaskDataDoc]
         getTDs (url, ids) =
@@ -706,16 +706,16 @@ taskDataAdd crawlerName tds = do
           (echangeUrl, TaskDataDoc echangeId (fromMaybe [] echangeTasksData))
 
     updateChangesWithTD ::
-      -- | The local cache in form of HashMap
+      -- The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
-      -- | IO action with the list of orphan Task Data
+      -- IO action with the list of orphan Task Data
       IO [TaskDataOrphanDoc]
     updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData crawlerName <$> tds)
       where
         handleTD ::
-          -- | The input Task Data we want to append or update
+          -- The input Task Data we want to append or update
           ETaskData ->
-          -- | IO Action with maybe an orphan task data if a matching change does not exists
+          -- IO Action with maybe an orphan task data if a matching change does not exists
           IO (Maybe TaskDataOrphanDoc)
         handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
@@ -726,9 +726,9 @@ taskDataAdd crawlerName tds = do
             getTDId ETaskData {..} = let rawId = tdUrl <> tdChangeUrl in getDocID rawId
 
         updateTDD ::
-          -- | The value of the HashMap we are working on
+          -- The value of the HashMap we are working on
           TaskDataDoc ->
-          -- | The input Task Data we want to append or update
+          -- The input Task Data we want to append or update
           ETaskData ->
           TaskDataDoc
         updateTDD taskDataDoc td = do
@@ -740,11 +740,11 @@ taskDataAdd crawlerName tds = do
            in taskDataDoc {tddTd = currentTDs}
 
     getTDforEventFromHT ::
-      -- | The local cache in form of HashMap
+      -- The local cache in form of HashMap
       HashTable LText TaskDataDoc ->
-      -- | The ChangeEvent to look for
+      -- The ChangeEvent to look for
       EChangeEvent ->
-      -- | IO Action returning maybe a TaskData
+      -- IO Action returning maybe a TaskData
       IO (Maybe TaskDataDoc)
     getTDforEventFromHT ht changeEvent = do
       mcM <- H.lookup ht $ echangeeventUrl changeEvent

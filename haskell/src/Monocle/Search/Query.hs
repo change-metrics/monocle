@@ -495,7 +495,7 @@ ensureMinBound query'
   | queryMinBoundsSet query' = query'
   | otherwise = query' {queryGet = newQueryGet}
   where
-    newQueryGet modifier flavor = queryGet query' (newModifier modifier) flavor
+    newQueryGet modifier = queryGet query' (newModifier modifier)
     -- A modifier function that ensure a min bound is set, whenever the user provided an expr.
     newModifier modifier exprM = case exprM of
       Just expr -> modifier $ Just $ AndExpr minExpr expr

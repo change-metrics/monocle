@@ -1,4 +1,4 @@
--- |
+--
 module Monocle.Api (app, run) where
 
 import Lentille (httpRetry)

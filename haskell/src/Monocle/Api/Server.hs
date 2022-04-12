@@ -156,12 +156,15 @@ configGetProjects ConfigPB.GetProjectsRequest {..} = do
           projectDefinitionFileRegex = toLazy $ fromMaybe "" file_regex
        in ConfigPB.ProjectDefinition {..}
 
+pattern ProjectEntity :: LText -> Maybe CrawlerPB.Entity
 pattern ProjectEntity project =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityProjectName project)))
 
+pattern OrganizationEntity :: LText -> Maybe CrawlerPB.Entity
 pattern OrganizationEntity organization =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityOrganizationName organization)))
 
+pattern TDEntity :: LText -> Maybe CrawlerPB.Entity
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 

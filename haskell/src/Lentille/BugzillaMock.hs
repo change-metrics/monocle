@@ -1,4 +1,4 @@
--- |
+--
 module Lentille.BugzillaMock (bugzillaMockClient, bugzillaMockApplication) where
 
 import Control.Concurrent (forkIO)

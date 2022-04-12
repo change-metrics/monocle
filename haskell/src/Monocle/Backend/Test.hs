@@ -1,4 +1,4 @@
--- |
+--
 module Monocle.Backend.Test where
 
 import Control.Exception (bracket_)
@@ -1108,7 +1108,7 @@ testTaskDataAdoption = withTenant doTest
 randomAuthor :: (MonadRandom m) => [a] -> m a
 randomAuthor xs = do
   let n = length xs
-  i <- getRandomR (0, n -1)
+  i <- getRandomR (0, n - 1)
   return (xs !! i)
 
 emptyChange :: EChange

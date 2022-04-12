@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 -- undefined is needed in the Generic Selector
 {-# OPTIONS_GHC -Wno-deprecations #-}
 -- witch instance for Google.Protobuf.Timestamp
@@ -318,7 +318,7 @@ instance FromJSON MonocleTime where
     where
       oldFormat = "%FT%T"
       utcFormat = "%FT%TZ"
-      tryParse f s = parseTimeM False defaultTimeLocale f s
+      tryParse = parseTimeM False defaultTimeLocale
       parse s = MonocleTime <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
 toMonocleTime :: UTCTime -> MonocleTime

@@ -75,6 +75,7 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
       let (config, wsRef) = if reloaded then confNew else conf
       pure $ Config.ConfigStatus reloaded config wsRef
 
+pattern UnknownIndexResp :: CommitInfoResponse
 pattern UnknownIndexResp <-
   CommitInfoResponse
     { commitInfoResponseResult =
@@ -84,6 +85,7 @@ pattern UnknownIndexResp <-
             )
     }
 
+pattern NamedEntity :: LText -> CommitInfoResponse
 pattern NamedEntity name <-
   CommitInfoResponse
     { commitInfoResponseResult =
@@ -98,6 +100,7 @@ pattern NamedEntity name <-
             )
     }
 
+pattern NoEntity :: CommitInfoResponse
 pattern NoEntity <-
   CommitInfoResponse
     { commitInfoResponseResult =

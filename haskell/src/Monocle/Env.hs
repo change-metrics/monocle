@@ -233,7 +233,7 @@ withModified modifier = local addModifier
   where
     -- The new modifier is composed with the previous one
     addModifier (QueryEnv tenant tEnv query context) =
-      let newQueryGet oldModifier qf = Q.queryGet query (modifier . oldModifier) qf
+      let newQueryGet oldModifier = Q.queryGet query (modifier . oldModifier)
        in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFilter' run a queryM with extra queries.

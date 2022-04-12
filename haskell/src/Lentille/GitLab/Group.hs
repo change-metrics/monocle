@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-{-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
+{-# OPTIONS_GHC -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports -Wno-orphans #-}
 
 module Lentille.GitLab.Group where
