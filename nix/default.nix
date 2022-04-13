@@ -64,8 +64,8 @@ let
           proto3-suite = let
             src = builtins.fetchGit {
               url = "https://github.com/awakesecurity/proto3-suite";
-              ref = "gabriella/192";
-              rev = "6199c98a4a26d10aa5aab87ae8d9fcef52f0f418";
+              ref = "master";
+              rev = "5456b633ba7283ff11adcd457744b54ebdd28a37";
             };
             base = pkgs.haskell.lib.dontCheck
               (hpPrev.callCabal2nix "proto3-suite" src { });
