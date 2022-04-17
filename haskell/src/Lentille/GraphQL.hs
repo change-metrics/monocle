@@ -16,6 +16,7 @@ module Lentille.GraphQL
     doRequest,
 
     -- * Some data types
+    GraphResponse,
     RateLimit (..),
     PageInfo (..),
     StreamFetchOptParams (..),
@@ -30,6 +31,8 @@ import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.URI qualified as URI
 import Streaming.Prelude qualified as S
+
+type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 
 -------------------------------------------------------------------------------
 -- Constants
