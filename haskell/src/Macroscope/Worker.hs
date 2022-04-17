@@ -139,8 +139,6 @@ runStream ::
   DocumentStream m ->
   m ()
 runStream apiKey indexName crawlerName documentStream = do
-  -- It is important to get the commit date before starting the process to not miss
-  -- document updated when we start
   startTime <- mGetCurrentTime
   runStream' startTime apiKey indexName crawlerName documentStream
 

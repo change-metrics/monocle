@@ -4,7 +4,19 @@
 --
 -- Note that one crawler can have multiple lentilles, for example a gerrit crawler has a
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
-module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
+module Macroscope.Main
+  ( -- * entry point
+    runMacroscope,
+
+    -- * helpers exported for testing
+    getCrawler,
+    getCrawlers,
+    Clients (..),
+    runCrawlers,
+    runCrawlers',
+    mkStreamsActions,
+  )
+where
 
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
@@ -78,7 +90,7 @@ withMonitoringServer port action = do
       _anyOtherPath -> resp $ Wai.responseLBS HTTP.notFound404 [] mempty
 
 -- | 'runMacroscope is the entrypoint of the macroscope process
--- withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 9001 "/home/user/git/github.com/change-metrics/monocle/etc/config.yaml" client
+-- withClient "http://localhost:8080" Nothing $ runMacroscope 9001 "../etc/config.yaml"
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
 runMacroscope port confPath client = withMonitoringAndLogger $ \logger -> do
   runLentilleM logger client $ do
@@ -222,16 +234,14 @@ getClientGerrit url auth = do
 getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
 getClientBZ url token = do
   clients <- gets clientsBugzilla
-  (client, newClients) <- mapMutate clients (url, token) $ pure $ getBugzillaSession url $ Just $ getApikey (unSecret token)
+  (client, newClients) <-
+    mapMutate clients (url, token) . pure $
+      getBugzillaSession url $ Just $ getApikey (unSecret token)
   modify $ \s -> s {clientsBugzilla = newClients}
   pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientGraphQL ::
-  MonadGraphQL m =>
-  Text ->
-  Secret ->
-  GetClient m GraphClient
+getClientGraphQL :: MonadGraphQL m => Text -> Secret -> GetClient m GraphClient
 getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token

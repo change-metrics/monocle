@@ -1,5 +1,5 @@
---
-module Monocle.Api (app, run) where
+-- | The Monocle entry point.
+module Monocle.Main (run, app) where
 
 import Lentille (httpRetry)
 import Monocle.Backend.Index qualified as I
@@ -23,6 +23,7 @@ import Servant (Handler, hoistServer, serve)
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
+-- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
   where
@@ -34,6 +35,7 @@ healthMiddleware app' req resp
   | Wai.rawPathInfo req == "/health" = resp $ Wai.responseLBS HTTP.status200 mempty "api is running\n"
   | otherwise = app' req resp
 
+-- | Start the API in the foreground.
 run :: Int -> Text -> FilePath -> IO ()
 run port url configFile = withLogger (run' port url configFile)
 

@@ -12,12 +12,12 @@ import Lentille.GitHub.Organization qualified as GH_ORG
 import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
-import Monocle.Api qualified
 import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
 import Monocle.Version qualified
@@ -47,7 +47,7 @@ usage =
       -- get parameters from the environment
       (config, elastic, port) <- getFromEnv usageApiEnv
       -- start the API
-      Monocle.Api.run (getInt port) (getURL elastic) config
+      Monocle.Main.run (getInt port) (getURL elastic) config
     usageApiEnv :: Env.Parser Env.Error (FilePath, String, String)
     usageApiEnv = (,,) <$> envConf <*> envElastic <*> envApiPort
 

@@ -179,7 +179,7 @@ library
                      , Tests
 
                      -- monocle api
-                     , Monocle.Api
+                     , Monocle.Main
                      , Monocle.Api.Server
                      , Monocle.Api.Test
 
