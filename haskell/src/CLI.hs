@@ -2,7 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
--- | The CLI entrpoints
+-- | The Main module of the command line interface.
 module CLI (main) where
 
 import Env hiding (Parser, auto, footer)
@@ -30,9 +30,9 @@ import qualified Streaming.Prelude as S
 -- Unified CLI
 ---------------------------------------------------------------
 
--- | usage is an optparse-applicative Parser that provides the final action
+-- | Usage is a command line parser that returns the CLI action as a `IO ()` value.
 -- See the last example of https://github.com/pcapriotti/optparse-applicative#commands
-usage :: Parser (IO ())
+usage :: Options.Applicative.Parser (IO ())
 usage =
   subparser
     ( mkCommand "Start the API" "api" usageApi (Just usageApiEnv)
@@ -59,8 +59,6 @@ usage =
       withClient url Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
-    -- The janitor entrypoint
-
     -- Helper to create sub command
     mkEnvDoc envParser = string (Env.helpDoc envParser)
     mkCommand doc name parser envParser = command name $ info (parser <**> helper) (progDesc doc <> extraHelp)
@@ -77,6 +75,7 @@ usage =
     envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> def "9001")
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
 
+-- | The CLI entrypoint.
 main :: IO ()
 main = withOpenSSL $ join $ execParser opts
   where

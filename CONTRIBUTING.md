@@ -149,6 +149,8 @@ This section describes how to start the Monocle services directly on your host u
 
 If you have not installed nix-shell follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
 
+You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix-shell -p cachix --command "cachix use change-metrics"`.
+
 
 #### HTTP gateway (nginx)
 
