@@ -31,16 +31,16 @@ import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.List (lookup)
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
-import qualified Database.Bloodhound as BH
-import qualified Monocle.Config as Config
+import Database.Bloodhound qualified as BH
+import Monocle.Config qualified as Config
 import Monocle.Prelude hiding (parseDateValue)
 import Monocle.Protob.Search (Field_Type (..))
-import qualified Monocle.Search.Parser as P
+import Monocle.Search.Parser qualified as P
 import Monocle.Search.Syntax
-import qualified Text.ParserCombinators.ReadP as ReadP
-import qualified Text.ParserCombinators.ReadPrec as ReadPrec (lift)
+import Text.ParserCombinators.ReadP qualified as ReadP
+import Text.ParserCombinators.ReadPrec qualified as ReadPrec (lift)
 import Text.Read (readPrec)
-import qualified Text.Read.Lex (readDecP)
+import Text.Read.Lex qualified (readDecP)
 
 -- | Handle author filter:
 -- The event author of a comment event is the comment author.

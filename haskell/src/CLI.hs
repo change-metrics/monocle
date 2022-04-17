@@ -6,25 +6,25 @@
 module CLI (main) where
 
 import Env hiding (Parser, auto, footer)
-import qualified Env
-import qualified Lentille.Gerrit as G
-import qualified Lentille.GitHub.Organization as GH_ORG
-import qualified Lentille.GitHub.PullRequests as GH_PR
+import Env qualified
+import Lentille.Gerrit qualified as G
+import Lentille.GitHub.Organization qualified as GH_ORG
+import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
-import qualified Monocle.Api
-import qualified Monocle.Backend.Janitor as J
+import Monocle.Api qualified
+import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
-import qualified Monocle.Version
+import Monocle.Version qualified
 import Options.Applicative hiding (header, help, str)
-import qualified Options.Applicative as O
+import Options.Applicative qualified as O
 import Options.Applicative.Help.Pretty (string)
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 
 ---------------------------------------------------------------
 -- Unified CLI

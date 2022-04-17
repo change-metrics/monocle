@@ -1,13 +1,13 @@
 module Lentille.Bugzilla.Spec (bzClientTests) where
 
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Lentille.Bugzilla
 import Lentille.BugzillaMock
 import Monocle.Protob.Search (TaskData (..))
 import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified Web.RedHatBugzilla as BZ
+import Web.RedHatBugzilla qualified as BZ
 
 bzClientTests :: TestTree
 bzClientTests =

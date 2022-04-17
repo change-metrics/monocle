@@ -59,6 +59,8 @@ common common-options
                        FlexibleInstances,
                        FlexibleContexts,
                        GeneralizedNewtypeDeriving,
+                       -- Import qualified post improve import list by aligning the modules name
+                       ImportQualifiedPost,
                        -- KindSignatures, DataKinds and PolyKinds enables using `:::` to annotate a type a type with a name.
                        KindSignatures,
                        DataKinds,

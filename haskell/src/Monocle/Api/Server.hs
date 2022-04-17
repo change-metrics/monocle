@@ -3,27 +3,27 @@
 module Monocle.Api.Server where
 
 import Data.List (lookup)
-import qualified Data.Map as Map
-import qualified Data.Vector as V
+import Data.Map qualified as Map
+import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
-import qualified Google.Protobuf.Timestamp as T
+import Google.Protobuf.Timestamp qualified as T
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
   )
 import Monocle.Backend.Index as I
-import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Config as Config
+import Monocle.Backend.Queries qualified as Q
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
-import qualified Monocle.Protob.Config as ConfigPB
-import qualified Monocle.Protob.Crawler as CrawlerPB
-import qualified Monocle.Protob.Login as LoginPB
-import qualified Monocle.Protob.Metric as MetricPB
-import qualified Monocle.Protob.Search as SearchPB
-import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Query as Q
+import Monocle.Protob.Config qualified as ConfigPB
+import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Login qualified as LoginPB
+import Monocle.Protob.Metric qualified as MetricPB
+import Monocle.Protob.Search qualified as SearchPB
+import Monocle.Search.Parser qualified as P
+import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))

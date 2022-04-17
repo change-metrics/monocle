@@ -2,16 +2,16 @@
 module Monocle.Api (app, run) where
 
 import Lentille (httpRetry)
-import qualified Monocle.Backend.Index as I
-import qualified Monocle.Config as Config
+import Monocle.Backend.Index qualified as I
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
-import qualified Network.HTTP.Types.Status as HTTP
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.HTTP.Types.Status qualified as HTTP
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)

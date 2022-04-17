@@ -3,16 +3,16 @@
 -- into a 'Expr'.
 module Monocle.Search.Parser (parse) where
 
-import qualified Control.Monad.Combinators as Combinators
+import Control.Monad.Combinators qualified as Combinators
 import Data.List (lookup)
-import qualified Data.Set as Set
-import qualified Data.Text as T
+import Data.Set qualified as Set
+import Data.Text qualified as T
 import Monocle.Search.Lexer (Token (..), lex)
-import qualified Monocle.Search.Lexer as L
+import Monocle.Search.Lexer qualified as L
 import Monocle.Search.Syntax (Expr (..), ParseError (..))
 import Relude
 import Text.Megaparsec ((<?>))
-import qualified Text.Megaparsec as Megaparsec
+import Text.Megaparsec qualified as Megaparsec
 
 -- $setup
 -- >>> let toLocated = map (\v -> L.LocatedToken 0 v 0)

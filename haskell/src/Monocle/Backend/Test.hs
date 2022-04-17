@@ -4,26 +4,26 @@ module Monocle.Backend.Test where
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import Data.List (partition)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
-import qualified Google.Protobuf.Timestamp as T
+import Data.Vector qualified as V
+import Database.Bloodhound qualified as BH
+import Google.Protobuf.Timestamp qualified as T
 import Monocle.Backend.Documents
-import qualified Monocle.Backend.Index as I
-import qualified Monocle.Backend.Janitor as J
-import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Config as Config
+import Monocle.Backend.Index qualified as I
+import Monocle.Backend.Janitor qualified as J
+import Monocle.Backend.Queries qualified as Q
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
-import qualified Monocle.Protob.Crawler as CrawlerPB
-import qualified Monocle.Protob.Search as SearchPB
+import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
-import qualified Monocle.Search.Query as Q
+import Monocle.Search.Query qualified as Q
 import Relude.Unsafe ((!!))
-import qualified Streaming.Prelude as Streaming
+import Streaming.Prelude qualified as Streaming
 
 fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]

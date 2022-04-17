@@ -1,13 +1,13 @@
 module Monocle.Test.Spec (main) where
 
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Protob.Config
@@ -18,10 +18,10 @@ import Monocle.Protob.Config
     GroupDefinition (GroupDefinition),
   )
 import Monocle.Protob.Crawler
-import qualified Monocle.Search.Lexer as L
-import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Query as Q
-import qualified Monocle.Search.Syntax as S
+import Monocle.Search.Lexer qualified as L
+import Monocle.Search.Parser qualified as P
+import Monocle.Search.Query qualified as Q
+import Monocle.Search.Syntax qualified as S
 import Proto3.Suite (Enumerated (Enumerated, enumerated))
 import Test.Tasty
 import Test.Tasty.HUnit

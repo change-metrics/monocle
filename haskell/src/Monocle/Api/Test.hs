@@ -1,11 +1,11 @@
 module Monocle.Api.Test (mkAppEnv, withTestApi) where
 
 import Control.Exception (bracket)
-import qualified Data.ByteString as B
+import Data.ByteString qualified as B
 import Monocle.Api
-import qualified Monocle.Backend.Index as I
+import Monocle.Backend.Index qualified as I
 import Monocle.Client
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)

@@ -18,17 +18,17 @@ module Monocle.Backend.Provisioner
 where
 
 import Data.Time.Clock.System
-import qualified Faker
-import qualified Faker.Combinators
-import qualified Faker.Creature.Dog
-import qualified Faker.DateTime
-import qualified Faker.Movie.BackToTheFuture
-import qualified Faker.TvShow.Futurama
-import qualified Faker.TvShow.TheExpanse
-import qualified Google.Protobuf.Timestamp (fromUTCTime)
+import Faker qualified
+import Faker.Combinators qualified
+import Faker.Creature.Dog qualified
+import Faker.DateTime qualified
+import Faker.Movie.BackToTheFuture qualified
+import Faker.TvShow.Futurama qualified
+import Faker.TvShow.TheExpanse qualified
+import Google.Protobuf.Timestamp qualified (fromUTCTime)
 import Monocle.Backend.Documents
-import qualified Monocle.Backend.Index as I
-import qualified Monocle.Backend.Test as T
+import Monocle.Backend.Index qualified as I
+import Monocle.Backend.Test qualified as T
 import Monocle.Config (mkTenant)
 import Monocle.Env (testQueryM)
 import Monocle.Prelude

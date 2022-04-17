@@ -9,8 +9,8 @@
 module Lentille.GitHub.PullRequests where
 
 import Data.Morpheus.Client
-import qualified Data.Text (takeWhile, takeWhileEnd)
-import qualified Google.Protobuf.Timestamp as T
+import Data.Text qualified (takeWhile, takeWhileEnd)
+import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
@@ -18,7 +18,7 @@ import Monocle.Logging
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (Enumerated))
-import qualified Streaming.Prelude as S (break)
+import Streaming.Prelude qualified as S (break)
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 

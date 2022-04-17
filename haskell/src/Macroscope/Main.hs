@@ -6,14 +6,14 @@
 -- project lentille to collect the repository list, and a change lentille to collect the pull requests.
 module Macroscope.Main (runMacroscope, getCrawler, getCrawlers, Clients (..), runCrawlers, runCrawlers', mkStreamsActions) where
 
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.Map as Map
-import qualified Data.Text as T
+import Data.List.NonEmpty qualified as NonEmpty
+import Data.Map qualified as Map
+import Data.Text qualified as T
 import Gerrit (GerritClient)
 import Lentille
 import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
 import Lentille.Gerrit (MonadGerrit (..))
-import qualified Lentille.Gerrit as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
+import Lentille.Gerrit qualified as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitHub.Organization (streamOrganizationProjects)
 import Lentille.GitHub.PullRequests (streamPullRequests)
@@ -22,14 +22,14 @@ import Lentille.GitLab.MergeRequests (streamMergeRequests)
 import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import Monocle.Client
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Logging (Entity)
 import Monocle.Prelude
-import qualified Network.HTTP.Types.Status as HTTP
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.HTTP.Types.Status qualified as HTTP
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
 import Prometheus.Metric.GHC (ghcMetrics)
-import qualified UnliftIO.Async as Async
+import UnliftIO.Async qualified as Async
 
 -- | A structure to carry a single crawler information.
 data InfoCrawler = InfoCrawler

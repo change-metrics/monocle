@@ -7,10 +7,10 @@
 module Lentille.GitLab.Adapter where
 
 import Data.Morpheus.Client
-import qualified Data.Text as TE
+import Data.Text qualified as TE
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
-import qualified Google.Protobuf.Timestamp as T
+import Google.Protobuf.Timestamp qualified as T
 import Lentille (ghostIdent, nobody, toIdent)
 import Monocle.Prelude
 import Monocle.Protob.Change

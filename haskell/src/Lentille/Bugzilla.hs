@@ -22,16 +22,16 @@ module Lentille.Bugzilla
 where
 
 import Data.Aeson
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 import Web.RedHatBugzilla (BugzillaSession)
-import qualified Web.RedHatBugzilla as BZ
+import Web.RedHatBugzilla qualified as BZ
 import Web.RedHatBugzilla.Search ((.&&.), (.==.))
-import qualified Web.RedHatBugzilla.Search as BZS
+import Web.RedHatBugzilla.Search qualified as BZS
 
 class (MonadLog m, MonadRetry m, MonadMonitor m) => MonadBZ m where
   bzRequest :: FromJSON bugs => BZ.Request -> m bugs

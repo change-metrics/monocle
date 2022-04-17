@@ -181,7 +181,7 @@ module Monocle.Prelude
 where
 
 import Control.Exception.Safe (tryAny)
-import qualified Control.Foldl as L
+import Control.Foldl qualified as L
 import Control.Lens (Lens', at, lens, mapMOf, over, preview, set, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
@@ -189,24 +189,24 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.Aeson.Key as AesonKey
+import Data.Aeson.Encode.Pretty qualified as Aeson
+import Data.Aeson.Key qualified as AesonKey
 import Data.Aeson.Lens (_Integer, _Object)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
-import qualified Data.Map as Map
-import qualified Data.Text as T
+import Data.Map qualified as Map
+import Data.Text qualified as T
 import Data.Text.Internal.Search
 import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
-import qualified Database.Bloodhound as BH
+import Database.Bloodhound qualified as BH
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
-import qualified Google.Protobuf.Timestamp
+import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Network.HTTP.Client.OpenSSL (withOpenSSL)
 import Prometheus (Info (..), counter, incCounter, withLabel)
-import qualified Prometheus
+import Prometheus qualified
 import Proto3.Suite (Enumerated (..))
 import QQLiterals (qqLiteral)
 import Relude
@@ -214,10 +214,10 @@ import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Streaming (Of (..))
 import Streaming.Prelude (Stream)
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
-import qualified System.Log.FastLogger as FastLogger
+import System.Log.FastLogger qualified as FastLogger
 import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)

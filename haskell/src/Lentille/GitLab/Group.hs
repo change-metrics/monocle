@@ -16,7 +16,7 @@ import Lentille.GraphQL
 import Monocle.Logging (Entity (Organization), LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (break)
 import Monocle.Protob.Crawler (Project (..))
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup
 defineByDocumentFile
