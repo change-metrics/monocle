@@ -1,5 +1,5 @@
 --
-module Lentille.BugzillaMock (bugzillaMockClient, bugzillaMockApplication) where
+module Lentille.Bugzilla.Mock (bugzillaMockClient, bugzillaMockApplication) where
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.QSem qualified as QSem

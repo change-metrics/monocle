@@ -1,7 +1,8 @@
+-- | The `cabal test` entry point
 module Main (main) where
 
 import Monocle.Prelude
-import qualified Monocle.Test.Spec
+import Tests qualified
 
 main :: IO ()
-main = withOpenSSL $ Monocle.Test.Spec.main
+main = Tests.main

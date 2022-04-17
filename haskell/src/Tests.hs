@@ -1,4 +1,5 @@
-module Monocle.Test.Spec (main) where
+-- | The integrations tests entry point.
+module Tests (main) where
 
 import Data.Vector qualified as V
 import Lentille.Bugzilla.Spec
@@ -44,6 +45,7 @@ main = withOpenSSL $ do
             monocleApiTests
           ]
 
+  -- TODO: move provisioner to the CLI module
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
     Just provisioner -> runProvisioner (toText provisioner) >> exitSuccess
@@ -585,9 +587,11 @@ monocleConfig =
     createIdent :: Text -> [Text] -> [Text] -> Config.Ident
     createIdent ident aliases groups' =
       let groups = Just groups' in Config.Ident {..}
+
     testConfigLoad = testCase "Decode config" $ do
       conf <- Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length $ conf & Config.workspaces)
+
     testGetTenantGroups = testCase "Validate getTenantGroups" $ do
       let identA = createIdent "alice" [] ["core", "ptl"]
           identB = createIdent "bob" [] ["core"]
@@ -596,6 +600,7 @@ monocleConfig =
         "Ensure groups and members"
         [("core", ["bob", "alice"]), ("ptl", ["alice"])]
         (Config.getTenantGroups tenant)
+
     testGetIdentByAlias = testCase "Validate getIdentByAliases" $ do
       let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
           identB = createIdent "bob" [] []

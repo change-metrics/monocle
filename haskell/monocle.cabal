@@ -176,6 +176,7 @@ library
                      , Monocle.Version
                      , Monocle.Config
                      , CLI
+                     , Tests
 
                      -- monocle api
                      , Monocle.Api
@@ -197,7 +198,6 @@ library
                      , Monocle.Backend.Test
                      , Monocle.Backend.Provisioner
                      , Monocle.Backend.Janitor
-                     , Monocle.Test.Spec
 
                      -- megaparsec search language
                      , Monocle.Search.Lexer
@@ -238,7 +238,7 @@ library
                      , Monocle.Protob.Login
 
   other-modules:       Database.Bloodhound.Raw
-                     , Lentille.BugzillaMock
+                     , Lentille.Bugzilla.Mock
                      , Lentille.Bugzilla.Spec
                      , Paths_monocle
 

@@ -2,7 +2,7 @@ module Lentille.Bugzilla.Spec (bzClientTests) where
 
 import Data.Vector qualified as V
 import Lentille.Bugzilla
-import Lentille.BugzillaMock
+import Lentille.Bugzilla.Mock
 import Monocle.Protob.Search (TaskData (..))
 import Relude
 import Test.Tasty
@@ -12,7 +12,7 @@ import Web.RedHatBugzilla qualified as BZ
 bzClientTests :: TestTree
 bzClientTests =
   testGroup
-    "BugzillaMock"
+    "Bugzilla.Mock"
     [testSearchBugs, testGetBug, testBugToTaskData]
 
 testGetBug :: TestTree

@@ -228,7 +228,7 @@ cabal repl --with-ghc=doctest
 Or using ghcid to automatically run the test when the code changes:
 
 ```ShellSession
-ghcid --test 'Monocle.Test.Spec.main'
+ghcid --test 'Tests.main'
 ```
 
 Similarly the api can be automatically restarted:
