@@ -73,15 +73,15 @@ module Monocle.Config
   )
 where
 
-import qualified Data.ByteString as BS
+import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
-import qualified Data.Map as Map
-import qualified Data.Text as T (isPrefixOf)
-import qualified Dhall
-import qualified Dhall.Core
-import qualified Dhall.Src
-import qualified Dhall.TH
-import qualified Dhall.YamlToDhall as Dhall
+import Data.Map qualified as Map
+import Data.Text qualified as T (isPrefixOf)
+import Dhall qualified
+import Dhall.Core qualified
+import Dhall.Src qualified
+import Dhall.TH qualified
+import Dhall.YamlToDhall qualified as Dhall
 import Monocle.Prelude
 import System.Directory (getModificationTime)
 

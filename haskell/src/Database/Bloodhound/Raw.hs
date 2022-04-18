@@ -17,17 +17,17 @@ module Database.Bloodhound.Raw
 where
 
 import Data.Aeson
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Casing.Internal as AesonCasing
-import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.Text as Text
-import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
-import qualified Json.Extras as Json
+import Data.Aeson qualified as Aeson
+import Data.Aeson.Casing.Internal qualified as AesonCasing
+import Data.Aeson.KeyMap qualified as KM
+import Data.Aeson.Types qualified as Aeson
+import Data.Text qualified as Text
+import Data.Vector qualified as V
+import Database.Bloodhound qualified as BH
+import Json.Extras qualified as Json
 import Monocle.Prelude
-import qualified Network.HTTP.Client as HTTP
-import qualified Network.HTTP.Types.Method as HTTP
+import Network.HTTP.Client qualified as HTTP
+import Network.HTTP.Types.Method qualified as HTTP
 
 data ScrollRequest = NoScroll | GetScroll ByteString
 

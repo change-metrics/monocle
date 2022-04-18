@@ -1,15 +1,15 @@
 --
-module Lentille.BugzillaMock (bugzillaMockClient, bugzillaMockApplication) where
+module Lentille.Bugzilla.Mock (bugzillaMockClient, bugzillaMockApplication) where
 
 import Control.Concurrent (forkIO)
-import qualified Control.Concurrent.QSem as QSem
-import qualified Data.ByteString as BS
+import Control.Concurrent.QSem qualified as QSem
+import Data.ByteString qualified as BS
 import Network.HTTP.Types.Status (status200)
 import Network.Socket (Socket)
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
 import Relude
-import qualified Web.RedHatBugzilla as BZ
+import Web.RedHatBugzilla qualified as BZ
 
 bugzillaMockApplication :: Wai.Application
 bugzillaMockApplication req respond = do

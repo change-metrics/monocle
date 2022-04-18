@@ -13,7 +13,7 @@ module Macroscope.Worker
   )
 where
 
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
 import Monocle.Backend.Index
@@ -26,8 +26,8 @@ import Monocle.Protob.Change (Change, ChangeEvent)
 import Monocle.Protob.Crawler
 import Monocle.Protob.Search (TaskData)
 import Proto3.Suite (Enumerated (Enumerated))
-import qualified Streaming as S
-import qualified Streaming.Prelude as S
+import Streaming qualified as S
+import Streaming.Prelude qualified as S
 
 -- | A crawler is defined as a DocumentStream:
 data DocumentStream m
@@ -139,8 +139,6 @@ runStream ::
   DocumentStream m ->
   m ()
 runStream apiKey indexName crawlerName documentStream = do
-  -- It is important to get the commit date before starting the process to not miss
-  -- document updated when we start
   startTime <- mGetCurrentTime
   runStream' startTime apiKey indexName crawlerName documentStream
 

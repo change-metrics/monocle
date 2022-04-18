@@ -1,17 +1,17 @@
 -- | The library environment and logging functions
 module Monocle.Env where
 
-import qualified Database.Bloodhound as BH
-import qualified Database.Bloodhound.Raw as BHR
+import Database.Bloodhound qualified as BH
+import Database.Bloodhound.Raw qualified as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
-import qualified Json.Extras as Json
-import qualified Monocle.Config as Config
+import Json.Extras qualified as Json
+import Monocle.Config qualified as Config
 import Monocle.Logging
 import Monocle.Prelude
-import qualified Monocle.Search.Query as Q
+import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (Expr)
-import qualified Network.HTTP.Client as HTTP
-import qualified Servant (Handler)
+import Network.HTTP.Client qualified as HTTP
+import Servant qualified (Handler)
 
 -------------------------------------------------------------------------------
 -- The main AppM context, embeded in the Servant handler

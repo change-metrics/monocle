@@ -21,24 +21,24 @@ module Lentille.Gerrit
   )
 where
 
-import qualified Data.Attoparsec.Text as P
+import Data.Attoparsec.Text qualified as P
 import Data.Char
-import qualified Data.Map as M (keys, lookup, toList)
-import qualified Data.Text as T
+import Data.Map qualified as M (keys, lookup, toList)
+import Data.Text qualified as T
 import Data.Time.Clock
-import qualified Data.Vector as V
-import qualified Gerrit as G
+import Data.Vector qualified as V
+import Gerrit qualified as G
 import Gerrit.Data.Change
 import Gerrit.Data.Project (GerritProjectsMessage)
-import qualified Google.Protobuf.Timestamp as T
+import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Monocle.Client (mkManager)
 import Monocle.Prelude hiding (all, id)
-import qualified Monocle.Protob.Change as ChangePB
-import qualified Monocle.Protob.Crawler as CrawlerPB
-import qualified Network.URI as URI
+import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Crawler qualified as CrawlerPB
+import Network.URI qualified as URI
 import Proto3.Suite (Enumerated (..))
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 import Prelude (init, last)
 
 -------------------------------------------------------------------------------

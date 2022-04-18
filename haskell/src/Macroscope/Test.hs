@@ -2,19 +2,19 @@
 module Macroscope.Test where
 
 import Lentille (runLentilleM)
-import qualified Macroscope.Main as Macroscope
-import qualified Macroscope.Worker as Macroscope
+import Macroscope.Main qualified as Macroscope
+import Macroscope.Worker qualified as Macroscope
 import Monocle.Api.Test (mkAppEnv, withTestApi)
-import qualified Monocle.Backend.Documents as D
-import qualified Monocle.Backend.Index as I
-import qualified Monocle.Backend.Provisioner
-import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Backend.Test as BT (fakeChange, fakeDate, fakeDateAlt)
+import Monocle.Backend.Documents qualified as D
+import Monocle.Backend.Index qualified as I
+import Monocle.Backend.Provisioner qualified
+import Monocle.Backend.Queries qualified as Q
+import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
-import qualified Streaming.Prelude as Streaming
+import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
 

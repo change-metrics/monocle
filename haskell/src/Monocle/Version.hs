@@ -6,7 +6,7 @@ module Monocle.Version (version) where
 import Data.Version (showVersion)
 import Development.GitRev (gitDirty, gitHash)
 import Language.Haskell.TH.Env (envQ)
-import qualified Paths_monocle as P (version)
+import Paths_monocle qualified as P (version)
 import Relude
 
 version :: String

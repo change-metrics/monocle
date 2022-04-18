@@ -1,17 +1,17 @@
---
-module Monocle.Api (app, run) where
+-- | The Monocle entry point.
+module Monocle.Main (run, app) where
 
 import Lentille (httpRetry)
-import qualified Monocle.Backend.Index as I
-import qualified Monocle.Config as Config
+import Monocle.Backend.Index qualified as I
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
-import qualified Network.HTTP.Types.Status as HTTP
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.HTTP.Types.Status qualified as HTTP
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)
@@ -23,6 +23,7 @@ import Servant (Handler, hoistServer, serve)
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
+-- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
 app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
   where
@@ -34,6 +35,7 @@ healthMiddleware app' req resp
   | Wai.rawPathInfo req == "/health" = resp $ Wai.responseLBS HTTP.status200 mempty "api is running\n"
   | otherwise = app' req resp
 
+-- | Start the API in the foreground.
 run :: Int -> Text -> FilePath -> IO ()
 run port url configFile = withLogger (run' port url configFile)
 

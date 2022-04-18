@@ -9,18 +9,18 @@
 module Lentille.GitLab.MergeRequests where
 
 import Data.Morpheus.Client
-import qualified Data.Text as TE
+import Data.Text qualified as TE
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
-import qualified Data.Vector as V
-import qualified Google.Protobuf.Timestamp as T
+import Data.Vector qualified as V
+import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
 import Monocle.Logging (Entity (Project), LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 
 newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 

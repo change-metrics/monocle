@@ -10,12 +10,12 @@
 module Lentille.GitHub.Issues where
 
 import Data.Aeson (decode)
-import qualified Data.ByteString.Lazy as LBS
+import Data.ByteString.Lazy qualified as LBS
 import Data.Morpheus.Client
 import Data.Time.Calendar
 import Data.Time.Clock
 import Data.Time.Format
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)

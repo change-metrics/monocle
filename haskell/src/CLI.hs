@@ -2,37 +2,37 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
--- | The CLI entrpoints
+-- | The Main module of the command line interface.
 module CLI (main) where
 
 import Env hiding (Parser, auto, footer)
-import qualified Env
-import qualified Lentille.Gerrit as G
-import qualified Lentille.GitHub.Organization as GH_ORG
-import qualified Lentille.GitHub.PullRequests as GH_PR
+import Env qualified
+import Lentille.Gerrit qualified as G
+import Lentille.GitHub.Organization qualified as GH_ORG
+import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
-import qualified Monocle.Api
-import qualified Monocle.Backend.Janitor as J
+import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
-import qualified Monocle.Version
+import Monocle.Version qualified
 import Options.Applicative hiding (header, help, str)
-import qualified Options.Applicative as O
+import Options.Applicative qualified as O
 import Options.Applicative.Help.Pretty (string)
-import qualified Streaming.Prelude as S
+import Streaming.Prelude qualified as S
 
 ---------------------------------------------------------------
 -- Unified CLI
 ---------------------------------------------------------------
 
--- | usage is an optparse-applicative Parser that provides the final action
+-- | Usage is a command line parser that returns the CLI action as a `IO ()` value.
 -- See the last example of https://github.com/pcapriotti/optparse-applicative#commands
-usage :: Parser (IO ())
+usage :: Options.Applicative.Parser (IO ())
 usage =
   subparser
     ( mkCommand "Start the API" "api" usageApi (Just usageApiEnv)
@@ -47,7 +47,7 @@ usage =
       -- get parameters from the environment
       (config, elastic, port) <- getFromEnv usageApiEnv
       -- start the API
-      Monocle.Api.run (getInt port) (getURL elastic) config
+      Monocle.Main.run (getInt port) (getURL elastic) config
     usageApiEnv :: Env.Parser Env.Error (FilePath, String, String)
     usageApiEnv = (,,) <$> envConf <*> envElastic <*> envApiPort
 
@@ -58,8 +58,6 @@ usage =
       -- start the Crawler
       withClient url Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
-
-    -- The janitor entrypoint
 
     -- Helper to create sub command
     mkEnvDoc envParser = string (Env.helpDoc envParser)
@@ -77,6 +75,7 @@ usage =
     envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> def "9001")
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
 
+-- | The CLI entrypoint.
 main :: IO ()
 main = withOpenSSL $ join $ execParser opts
   where

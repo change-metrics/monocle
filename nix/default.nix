@@ -715,7 +715,7 @@ in rec {
 
     echo "[+] Checking ormolu syntax"
     ${pkgs.ormolu}/bin/ormolu                                 \
-      -o -XPatternSynonyms -o -XTypeApplications --mode check \
+      -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode check \
       $(find src/ -name "*.hs")
   '';
 

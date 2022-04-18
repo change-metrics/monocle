@@ -13,7 +13,7 @@ module Monocle.Client
   )
 where
 
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Monocle.Prelude
 import Network.HTTP.Client
   ( Manager,
@@ -26,10 +26,10 @@ import Network.HTTP.Client
     requestHeaders,
     responseBody,
   )
-import qualified Network.HTTP.Client.OpenSSL as OpenSSL
+import Network.HTTP.Client.OpenSSL qualified as OpenSSL
 import OpenSSL.Session (VerificationMode (VerifyNone))
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
-import qualified Proto3.Suite.JSONPB as JSONPB
+import Proto3.Suite.JSONPB qualified as JSONPB
 
 -- | The MonocleClient record, use 'withClient' to create
 data MonocleClient = MonocleClient

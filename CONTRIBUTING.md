@@ -113,7 +113,7 @@ added in the `monocle.cabal` file.
 export $(cat .secrets)
 cd haskell
 cabal repl monocle
-λ> import Monocle.Api
+λ> import Monocle.Main
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
@@ -149,6 +149,8 @@ This section describes how to start the Monocle services directly on your host u
 
 If you have not installed nix-shell follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
 
+You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix-shell -p cachix --command "cachix use change-metrics"`.
+
 
 #### HTTP gateway (nginx)
 
@@ -166,7 +168,7 @@ nix-shell --command elasticsearch-start
 
 ```ShellSession
 nix-shell --command monocle-repl
-λ> import Monocle.Api
+λ> import Monocle.Main
 λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
 ```
 
@@ -226,13 +228,13 @@ cabal repl --with-ghc=doctest
 Or using ghcid to automatically run the test when the code changes:
 
 ```ShellSession
-ghcid --test 'Monocle.Test.Spec.main'
+ghcid --test 'Tests.main'
 ```
 
 Similarly the api can be automatically restarted:
 
 ```ShellSession
-ghcid --test 'Monocle.Api.run 19875 "http://localhost:19200" "../etc/config.yaml"'
+ghcid --test 'Monocle.Main.run 19875 "http://localhost:19200" "../etc/config.yaml"'
 ```
 
 ## Update API (protobuf)

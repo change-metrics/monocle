@@ -1,13 +1,14 @@
-module Monocle.Test.Spec (main) where
+-- | The integrations tests entry point.
+module Tests (main) where
 
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Protob.Config
@@ -18,10 +19,10 @@ import Monocle.Protob.Config
     GroupDefinition (GroupDefinition),
   )
 import Monocle.Protob.Crawler
-import qualified Monocle.Search.Lexer as L
-import qualified Monocle.Search.Parser as P
-import qualified Monocle.Search.Query as Q
-import qualified Monocle.Search.Syntax as S
+import Monocle.Search.Lexer qualified as L
+import Monocle.Search.Parser qualified as P
+import Monocle.Search.Query qualified as Q
+import Monocle.Search.Syntax qualified as S
 import Proto3.Suite (Enumerated (Enumerated, enumerated))
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -44,6 +45,7 @@ main = withOpenSSL $ do
             monocleApiTests
           ]
 
+  -- TODO: move provisioner to the CLI module
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
     Just provisioner -> runProvisioner (toText provisioner) >> exitSuccess
@@ -585,9 +587,11 @@ monocleConfig =
     createIdent :: Text -> [Text] -> [Text] -> Config.Ident
     createIdent ident aliases groups' =
       let groups = Just groups' in Config.Ident {..}
+
     testConfigLoad = testCase "Decode config" $ do
       conf <- Config.loadConfig "./test/data/config.yaml"
       assertEqual "config is loaded" 1 (length $ conf & Config.workspaces)
+
     testGetTenantGroups = testCase "Validate getTenantGroups" $ do
       let identA = createIdent "alice" [] ["core", "ptl"]
           identB = createIdent "bob" [] ["core"]
@@ -596,6 +600,7 @@ monocleConfig =
         "Ensure groups and members"
         [("core", ["bob", "alice"]), ("ptl", ["alice"])]
         (Config.getTenantGroups tenant)
+
     testGetIdentByAlias = testCase "Validate getIdentByAliases" $ do
       let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
           identB = createIdent "bob" [] []

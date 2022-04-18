@@ -4,30 +4,30 @@ module Monocle.Backend.Index where
 import Crypto.Hash.SHA256 (hash)
 import Data.Aeson (object)
 import Data.Aeson.Types (Pair)
-import qualified Data.ByteString.Base64 as B64
-import qualified Data.HashTable.IO as H
-import qualified Data.Map as Map
-import qualified Data.Text as Text
+import Data.ByteString.Base64 qualified as B64
+import Data.HashTable.IO qualified as H
+import Data.Map qualified as Map
+import Data.Text qualified as Text
 import Data.Time
-import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
-import qualified Database.Bloodhound.Raw as BHR
+import Data.Vector qualified as V
+import Database.Bloodhound qualified as BH
+import Database.Bloodhound.Raw qualified as BHR
 import Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
-import qualified Monocle.Backend.Queries as Q
-import qualified Monocle.Config as Config
+import Monocle.Backend.Queries qualified as Q
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging (Entity (..), getEntityName)
 import Monocle.Prelude
-import qualified Monocle.Protob.Change as ChangePB
-import qualified Monocle.Protob.Crawler as CrawlerPB
-import qualified Monocle.Protob.Search as SearchPB (Order (..), Order_Direction (..), TaskData (..))
-import qualified Network.HTTP.Client as HTTP
-import qualified Network.HTTP.Types.Status as NHTS
-import qualified Proto3.Suite.Types as PT (Enumerated (..))
-import qualified Streaming as S (chunksOf)
-import qualified Streaming.Prelude as S
-import qualified Streaming.Prelude as Streaming
+import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Search qualified as SearchPB (Order (..), Order_Direction (..), TaskData (..))
+import Network.HTTP.Client qualified as HTTP
+import Network.HTTP.Types.Status qualified as NHTS
+import Proto3.Suite.Types qualified as PT (Enumerated (..))
+import Streaming qualified as S (chunksOf)
+import Streaming.Prelude qualified as S
+import Streaming.Prelude qualified as Streaming
 
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
 

@@ -1,11 +1,11 @@
 -- | Monocle log events
 module Monocle.Logging where
 
-import qualified Data.Text as T
-import qualified Monocle.Config as Config
+import Data.Text qualified as T
+import Monocle.Config qualified as Config
 import Monocle.Prelude
 import Monocle.Protob.Search (QueryRequest_QueryType (..))
-import qualified Monocle.Search.Query as Q
+import Monocle.Search.Query qualified as Q
 
 data LogCrawlerContext = LogCrawlerContext
   { lccIndex :: Text,

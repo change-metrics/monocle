@@ -10,19 +10,19 @@ module Monocle.Backend.Janitor
 where
 
 import Data.Aeson (genericParseJSON, genericToJSON)
-import qualified Data.Aeson as Aeson
+import Data.Aeson qualified as Aeson
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
-import qualified Data.Text as T
-import qualified Database.Bloodhound as BH
+import Data.Text qualified as T
+import Database.Bloodhound qualified as BH
 import Monocle.Backend.Documents as D
 import Monocle.Backend.Index (crawlerMDQuery, getCrawlerTypeAsText)
-import qualified Monocle.Backend.Index as I
+import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Queries as Q
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Protob.Crawler (EntityEntity (EntityEntityProjectName))
-import qualified Streaming.Prelude as Streaming
+import Streaming.Prelude qualified as Streaming
 
 updateAuthor :: Config.Index -> D.Author -> D.Author
 updateAuthor index author@D.Author {..} = case getIdent of

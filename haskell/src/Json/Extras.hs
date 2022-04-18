@@ -16,11 +16,11 @@ module Json.Extras
   )
 where
 
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.Bytes as Bytes
+import Data.ByteString.Lazy qualified as LBS
+import Data.Bytes qualified as Bytes
 import Data.Text.Short (ShortText)
-import qualified Data.Text.Short as TextShort
-import qualified Data.Text.Time as TextTime
+import Data.Text.Short qualified as TextShort
+import Data.Text.Time qualified as TextTime
 import Data.Time.Clock (UTCTime)
 import "json-syntax" Json
 import Relude

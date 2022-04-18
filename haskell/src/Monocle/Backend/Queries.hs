@@ -3,23 +3,23 @@
 module Monocle.Backend.Queries where
 
 import Data.Aeson (Value (Object), (.:), (.:?))
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map as Map
-import qualified Data.Vector as V
-import qualified Database.Bloodhound as BH
+import Data.Aeson qualified as Aeson
+import Data.Aeson.Types qualified as Aeson
+import Data.HashMap.Strict qualified as HM
+import Data.Map qualified as Map
+import Data.Vector qualified as V
+import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw (TermsCompositeAggBucket)
-import qualified Database.Bloodhound.Raw as BHR
-import qualified Json.Extras as Json
+import Database.Bloodhound.Raw qualified as BHR
+import Json.Extras qualified as Json
 import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
-import qualified Monocle.Protob.Search as SearchPB
+import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
-import qualified Monocle.Search.Query as Q
-import qualified Streaming.Prelude as Streaming
+import Monocle.Search.Query qualified as Q
+import Streaming.Prelude qualified as Streaming
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.

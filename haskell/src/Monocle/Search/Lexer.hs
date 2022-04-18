@@ -3,13 +3,13 @@
 -- into a list of 'Token'.
 module Monocle.Search.Lexer (Token (..), LocatedToken (..), lex) where
 
-import qualified Control.Monad.Combinators as Combinators
-import qualified Data.Set as Set
+import Control.Monad.Combinators qualified as Combinators
+import Data.Set qualified as Set
 import Monocle.Search.Syntax (ParseError (..))
 import Relude
-import qualified Text.Megaparsec as Megaparsec
-import qualified Text.Megaparsec.Char as Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as Lexer
+import Text.Megaparsec qualified as Megaparsec
+import Text.Megaparsec.Char qualified as Megaparsec.Char
+import Text.Megaparsec.Char.Lexer qualified as Lexer
 
 -- | Short-hand type synonym used by lexing utilities
 type Parser = Megaparsec.Parsec Void Text

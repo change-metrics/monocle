@@ -23,13 +23,13 @@ module Lentille.GraphQL
   )
 where
 
-import qualified Data.ByteString.Lazy as LBS
+import Data.ByteString.Lazy qualified as LBS
 import Data.Morpheus.Client
 import Lentille
 import Monocle.Prelude
-import qualified Network.HTTP.Client as HTTP
-import qualified Network.URI as URI
-import qualified Streaming.Prelude as S
+import Network.HTTP.Client qualified as HTTP
+import Network.URI qualified as URI
+import Streaming.Prelude qualified as S
 
 -------------------------------------------------------------------------------
 -- Constants

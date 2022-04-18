@@ -1,10 +1,10 @@
 -- | Monocle simple effect system based on mtl and PandocMonad
 module Monocle.Class where
 
-import qualified Control.Concurrent (modifyMVar, newMVar, threadDelay)
+import Control.Concurrent qualified (modifyMVar, newMVar, threadDelay)
 import Control.Retry (RetryPolicyM, RetryStatus (..))
-import qualified Control.Retry as Retry
-import qualified Data.Time.Clock (getCurrentTime)
+import Control.Retry qualified as Retry
+import Data.Time.Clock qualified (getCurrentTime)
 import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Logging
@@ -18,7 +18,7 @@ import Monocle.Protob.Crawler
     CommitResponse,
   )
 import Network.HTTP.Client (HttpException (..))
-import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Client qualified as HTTP
 
 -------------------------------------------------------------------------------
 -- A time system

@@ -16,10 +16,10 @@ module Monocle.Backend.Documents where
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withText)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Monocle.Prelude
-import qualified Monocle.Protob.Change as ChangePB
-import qualified Monocle.Protob.Search as SearchPB
+import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Search qualified as SearchPB
 
 data Author = Author
   { authorMuid :: LText,

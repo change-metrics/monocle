@@ -59,6 +59,8 @@ common common-options
                        FlexibleInstances,
                        FlexibleContexts,
                        GeneralizedNewtypeDeriving,
+                       -- Import qualified post improve import list by aligning the modules name
+                       ImportQualifiedPost,
                        -- KindSignatures, DataKinds and PolyKinds enables using `:::` to annotate a type a type with a name.
                        KindSignatures,
                        DataKinds,
@@ -174,9 +176,10 @@ library
                      , Monocle.Version
                      , Monocle.Config
                      , CLI
+                     , Tests
 
                      -- monocle api
-                     , Monocle.Api
+                     , Monocle.Main
                      , Monocle.Api.Server
                      , Monocle.Api.Test
 
@@ -195,7 +198,6 @@ library
                      , Monocle.Backend.Test
                      , Monocle.Backend.Provisioner
                      , Monocle.Backend.Janitor
-                     , Monocle.Test.Spec
 
                      -- megaparsec search language
                      , Monocle.Search.Lexer
@@ -236,7 +238,7 @@ library
                      , Monocle.Protob.Login
 
   other-modules:       Database.Bloodhound.Raw
-                     , Lentille.BugzillaMock
+                     , Lentille.Bugzilla.Mock
                      , Lentille.Bugzilla.Spec
                      , Paths_monocle
 

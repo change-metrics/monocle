@@ -39,11 +39,11 @@ module Lentille
   )
 where
 
-import qualified Data.Text as T
-import qualified Google.Protobuf.Timestamp as T
+import Data.Text qualified as T
+import Google.Protobuf.Timestamp qualified as T
 import Monocle.Class
 import Monocle.Client (MonocleClient, baseUrl, mkManager)
-import qualified Monocle.Config as Config
+import Monocle.Config qualified as Config
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Change
@@ -52,7 +52,7 @@ import Monocle.Protob.Change
     Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
     Ident (..),
   )
-import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 
 -------------------------------------------------------------------------------
