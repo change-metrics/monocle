@@ -10,6 +10,7 @@ import Env qualified
 import Lentille.Gerrit qualified as G
 import Lentille.GitHub.Organization qualified as GH_ORG
 import Lentille.GitHub.PullRequests qualified as GH_PR
+import Lentille.GitHub.Watching qualified
 import Lentille.GraphQL (newGraphClient)
 import Macroscope.Main (runMacroscope)
 import Monocle.Backend.Janitor qualified as J
@@ -131,6 +132,7 @@ usageLentille =
         <> mkSubCommand "gerrit-changes" "Get changes list" gerritChangesUsage
         <> mkSubCommand "github-projects" "Get projects list" githubProjectsUsage
         <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
+        <> mkSubCommand "github-watching" "Get watched list" githubWatchingUsage
     )
   where
     gerritChangeUsage = io <$> parser
@@ -161,6 +163,13 @@ usageLentille =
           client <- getGraphClient url secret
           dump Nothing $ GH_ORG.streamOrganizationProjects client mkLC org
 
+    githubWatchingUsage = io <$> parser
+      where
+        parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
+        io (url, secret, user, limitM) = do
+          client <- getGraphClient url secret
+          dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client mkLC user
+
     githubChangesUsage = io <$> parser
       where
         parser =
@@ -184,10 +193,11 @@ usageLentille =
 
     mkLC = LogCrawlerContext "<stdout>" "cli" . Just
 
-    urlOption = strOption (long "url" <> O.help "API url" <> metavar "URL")
+    urlOption = strOption (long "url" <> O.help "API url, e.g. https://api.github.com/graphql" <> metavar "URL")
     queryOption = strOption (long "query" <> O.help "Gerrit regexp query")
     orgOption = strOption (long "organization" <> O.help "GitHub organization name")
-    secretOption = strOption (long "token" <> O.help "GitHub token")
+    userOption = strOption (long "user" <> O.help "GitHub user name")
+    secretOption = strOption (long "token" <> O.help "GitHub token, get one from https://github.com/settings/tokens")
     changeOption = option auto (long "change" <> O.help "Change Number" <> metavar "NR")
     projectOption = strOption (long "project" <> O.help "Project name")
     sinceOption = strOption (long "since" <> O.help "Since date")

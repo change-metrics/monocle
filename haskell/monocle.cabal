@@ -215,6 +215,7 @@ library
                      , Lentille.GitHub.Organization
                      , Lentille.GitHub.PullRequests
                      , Lentille.GitHub.User
+                     , Lentille.GitHub.Watching
 
                      , Lentille.GitLab.MergeRequests
                      , Lentille.GitLab.Group

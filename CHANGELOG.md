@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 ### Added
+
+- [cli] github-watched subcommand can be used to list a user's watched projects.
+
 ### Changed
 ### Removed
 ### Fixed
