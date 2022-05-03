@@ -7,12 +7,12 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
-import Monocle.Protob.Metric (ListRequest, ListResponse)
+import Monocle.Protob.Metric (GetRequest, GetResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
@@ -30,6 +30,7 @@ type MonocleAPI =
     :<|> "search" :> "query" :> ReqBody '[JSON] Monocle.Protob.Search.QueryRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.QueryResponse
     :<|> "search" :> "author" :> ReqBody '[JSON] Monocle.Protob.Search.AuthorRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.AuthorResponse
     :<|> "metric" :> "list" :> ReqBody '[JSON] Monocle.Protob.Metric.ListRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.ListResponse
+    :<|> "metric" :> "get" :> ReqBody '[JSON] Monocle.Protob.Metric.GetRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.GetResponse
     :<|> "crawler" :> "add" :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
@@ -48,6 +49,7 @@ server =
     :<|> searchQuery
     :<|> searchAuthor
     :<|> metricList
+    :<|> metricGet
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo

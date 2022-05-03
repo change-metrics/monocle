@@ -18,3 +18,17 @@ message ListRequest {
 message ListResponse {
   repeated MetricInfo metrics = 1;
 }
+
+message GetRequest {
+  string index = 1;
+  string username = 2;
+  string query = 3;
+  string metric = 4;
+}
+
+message GetResponse {
+  oneof result {
+    string error = 1;
+    float float_value = 2;
+  }
+}

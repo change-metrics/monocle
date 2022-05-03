@@ -18,6 +18,17 @@ type list_response = {
   metrics : metric_info list;
 }
 
+type get_request = {
+  index : string;
+  username : string;
+  query : string;
+  metric : string;
+}
+
+type get_response =
+  | Error of string
+  | Float_value of float
+
 
 (** {2 Default values} *)
 
@@ -40,3 +51,15 @@ val default_list_response :
   unit ->
   list_response
 (** [default_list_response ()] is the default value for type [list_response] *)
+
+val default_get_request : 
+  ?index:string ->
+  ?username:string ->
+  ?query:string ->
+  ?metric:string ->
+  unit ->
+  get_request
+(** [default_get_request ()] is the default value for type [get_request] *)
+
+val default_get_response : unit -> get_response
+(** [default_get_response ()] is the default value for type [get_response] *)

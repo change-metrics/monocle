@@ -139,6 +139,13 @@ module Metric = {
     |> Js.Promise.then_(resp =>
       {data: resp.data->MetricBs.decode_list_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external getRaw: (string, 'a) => axios<'b> = "post"
+
+  let get = (request: MetricTypes.get_request): axios<MetricTypes.get_response> =>
+    request->MetricBs.encode_get_request
+    |> getRaw(serverUrl ++ "/api/2/metric/get")
+    |> Js.Promise.then_(resp => {data: resp.data->MetricBs.decode_get_response}->Js.Promise.resolve)
 }
 
 module Crawler = {

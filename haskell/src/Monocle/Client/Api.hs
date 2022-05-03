@@ -52,6 +52,9 @@ searchAuthor = monocleReq "api/2/search/author"
 metricList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
 metricList = monocleReq "api/2/metric/list"
 
+metricGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
+metricGet = monocleReq "api/2/metric/get"
+
 crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
 crawlerAddDoc = monocleReq "api/2/crawler/add"
 
