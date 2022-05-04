@@ -10,15 +10,18 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Google.Protobuf.Timestamp qualified as T
+import Monocle.Api.Test qualified
 import Monocle.Backend.Documents
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Janitor qualified as J
 import Monocle.Backend.Queries qualified as Q
+import Monocle.Client.Api qualified
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import Monocle.Search.Query qualified as Q
@@ -595,6 +598,39 @@ defaultQuery =
         )
       queryMinBoundsSet = False
    in Q.Query {..}
+
+testGetMetrics :: Assertion
+testGetMetrics = withTenantConfig tenant $ do
+  -- Add data to the index
+  indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 1800)
+
+  -- Start the API
+  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+    -- Get basic metric
+    resp <- Monocle.Client.Api.metricGet client (mkReq "time_to_merge")
+    assertEqual
+      "Metric response match"
+      (mkResp . MetricPB.GetResponseResultFloatValue $ 1800)
+      resp
+
+    -- Get bad metric
+    badResp <- Monocle.Client.Api.metricGet client (mkReq "unknown")
+    assertEqual
+      "Invalid response match"
+      (mkResp . MetricPB.GetResponseResultError $ "Unknown metric: unknown")
+      badResp
+  where
+    mkResp = MetricPB.GetResponse . Just
+    mkReq getRequestMetric =
+      MetricPB.GetRequest
+        { MetricPB.getRequestIndex = from tenantName,
+          MetricPB.getRequestUsername = "",
+          MetricPB.getRequestQuery = "from:2021-01-01 to:2022-01-01",
+          MetricPB.getRequestMetric = getRequestMetric
+        }
+    env = Monocle.Api.Test.mkAppEnv tenant
+    tenantName = "test-metric-tenant"
+    tenant = Config.mkTenant tenantName
 
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
@@ -1254,7 +1290,10 @@ nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
 
     scenario = do
       -- The base change
-      let mkChange' ts author = mkChange ts start author changeId name EChangeMerged
+      let mkChange' ts author =
+            (mkChange ts start author changeId name EChangeMerged)
+              { echangeDuration = Just . fromInteger $ duration
+              }
           mkEvent' ts etype author onAuthor = mkEvent ts start etype author onAuthor changeId name
 
       -- The change creation
