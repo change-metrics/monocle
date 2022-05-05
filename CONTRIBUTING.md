@@ -218,6 +218,24 @@ cd haskell
 cabal test
 ```
 
+Run a single test with:
+
+```ShellSession
+cabal test --test-option=-p --test-option='/Test get metrics/'
+```
+
+Run linters with:
+
+```ShellSession
+nix-shell --command monocle-ci-light-run
+```
+
+When the linters fail, you can fix the issue automatically with:
+
+```ShellSession
+nix-shell --command monocle-reformat-run
+```
+
 Doctest can be executed using:
 
 ```ShellSession
