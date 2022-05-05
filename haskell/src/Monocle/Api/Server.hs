@@ -611,7 +611,8 @@ metricList =
       MetricPB.MetricInfo
         { metricInfoName = from miName,
           metricInfoDescription = from miDesc,
-          metricInfoLongDescription = mempty
+          metricInfoLongDescription = mempty,
+          metricInfoMetric = from miMetricName
         }
 
 metricGet :: MetricPB.GetRequest -> AppM MetricPB.GetResponse

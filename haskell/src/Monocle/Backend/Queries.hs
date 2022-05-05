@@ -1205,7 +1205,8 @@ getSuggestions index = do
 -------------------------------------------------------------------------------
 -- The final metrics
 data MetricInfo = MetricInfo
-  { miName :: Text,
+  { miMetricName :: Text,
+    miName :: Text,
     miDesc :: Text
   }
 
@@ -1221,6 +1222,7 @@ metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
   Metric
     ( MetricInfo
+        "time_to_merge"
         "Time to merge"
         "The average duration for an open change"
     )
@@ -1235,6 +1237,7 @@ metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
 metricFirstReviewMeanTime =
   Metric
     ( MetricInfo
+        "first_review_mean_time"
         "1st review mean time"
         "The average delay until a change gets a review event"
     )
@@ -1248,6 +1251,7 @@ metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
 metricFirstCommentMeanTime =
   Metric
     ( MetricInfo
+        "first_comment_mean_time"
         "1st comment mean time"
         "The average delay until a change gets a comment event"
     )
