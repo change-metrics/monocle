@@ -41,7 +41,8 @@ import qualified Prelude as Hs
 data MetricInfo = MetricInfo
   { metricInfoName :: Hs.Text,
     metricInfoDescription :: Hs.Text,
-    metricInfoLongDescription :: Hs.Text
+    metricInfoLongDescription :: Hs.Text,
+    metricInfoMetric :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -56,7 +57,8 @@ instance HsProtobuf.Message MetricInfo where
     MetricInfo
       { metricInfoName = metricInfoName,
         metricInfoDescription = metricInfoDescription,
-        metricInfoLongDescription = metricInfoLongDescription
+        metricInfoLongDescription = metricInfoLongDescription,
+        metricInfoMetric = metricInfoMetric
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -70,6 +72,10 @@ instance HsProtobuf.Message MetricInfo where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 metricInfoLongDescription
+            ),
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                metricInfoMetric
             )
           ]
       )
@@ -86,6 +92,10 @@ instance HsProtobuf.Message MetricInfo where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 4)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -108,17 +118,32 @@ instance HsProtobuf.Message MetricInfo where
           (HsProtobuf.Single "long_description")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "metric")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB MetricInfo where
-  toJSONPB (MetricInfo f1 f2 f3) =
+  toJSONPB (MetricInfo f1 f2 f3 f4) =
     ( HsJSONPB.object
-        ["name" .= f1, "description" .= f2, "long_description" .= f3]
+        [ "name" .= f1,
+          "description" .= f2,
+          "long_description" .= f3,
+          "metric" .= f4
+        ]
     )
-  toEncodingPB (MetricInfo f1 f2 f3) =
+  toEncodingPB (MetricInfo f1 f2 f3 f4) =
     ( HsJSONPB.pairs
-        ["name" .= f1, "description" .= f2, "long_description" .= f3]
+        [ "name" .= f1,
+          "description" .= f2,
+          "long_description" .= f3,
+          "metric" .= f4
+        ]
     )
 
 instance HsJSONPB.FromJSONPB MetricInfo where
@@ -128,6 +153,7 @@ instance HsJSONPB.FromJSONPB MetricInfo where
         ( \obj ->
             (Hs.pure MetricInfo) <*> obj .: "name" <*> obj .: "description"
               <*> obj .: "long_description"
+              <*> obj .: "metric"
         )
     )
 

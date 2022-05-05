@@ -5,6 +5,7 @@ type metric_info = {
   name : string;
   description : string;
   long_description : string;
+  metric : string;
 }
 
 type list_request = {
@@ -30,10 +31,12 @@ let rec default_metric_info
   ?name:((name:string) = "")
   ?description:((description:string) = "")
   ?long_description:((long_description:string) = "")
+  ?metric:((metric:string) = "")
   () : metric_info  = {
   name;
   description;
   long_description;
+  metric;
 }
 
 let rec default_list_request 

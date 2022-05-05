@@ -8,6 +8,7 @@ type metric_info = {
   name : string;
   description : string;
   long_description : string;
+  metric : string;
 }
 
 type list_request = {
@@ -36,6 +37,7 @@ val default_metric_info :
   ?name:string ->
   ?description:string ->
   ?long_description:string ->
+  ?metric:string ->
   unit ->
   metric_info
 (** [default_metric_info ()] is the default value for type [metric_info] *)

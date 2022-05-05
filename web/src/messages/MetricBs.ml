@@ -4,12 +4,14 @@ type metric_info_mutable = {
   mutable name : string;
   mutable description : string;
   mutable long_description : string;
+  mutable metric : string;
 }
 
 let default_metric_info_mutable () : metric_info_mutable = {
   name = "";
   description = "";
   long_description = "";
+  metric = "";
 }
 
 type list_request_mutable = {
@@ -58,6 +60,9 @@ let rec decode_metric_info json =
     | "long_description" -> 
       let json = Js.Dict.unsafeGet json "long_description" in
       v.long_description <- Pbrt_bs.string json "metric_info" "long_description"
+    | "metric" -> 
+      let json = Js.Dict.unsafeGet json "metric" in
+      v.metric <- Pbrt_bs.string json "metric_info" "metric"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -65,6 +70,7 @@ let rec decode_metric_info json =
     MetricTypes.name = v.name;
     MetricTypes.description = v.description;
     MetricTypes.long_description = v.long_description;
+    MetricTypes.metric = v.metric;
   } : MetricTypes.metric_info)
 
 let rec decode_list_request json =
@@ -156,6 +162,7 @@ let rec encode_metric_info (v:MetricTypes.metric_info) =
   Js.Dict.set json "name" (Js.Json.string v.MetricTypes.name);
   Js.Dict.set json "description" (Js.Json.string v.MetricTypes.description);
   Js.Dict.set json "long_description" (Js.Json.string v.MetricTypes.long_description);
+  Js.Dict.set json "metric" (Js.Json.string v.MetricTypes.metric);
   json
 
 let rec encode_list_request (v:MetricTypes.list_request) = 

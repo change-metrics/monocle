@@ -682,6 +682,8 @@ components:
                     type: string
                 long_description:
                     type: string
+                metric:
+                    type: string
         monocle_search_ActivityStats:
             properties:
                 change_authors:
