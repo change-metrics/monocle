@@ -114,6 +114,14 @@ service Metric {
       body: "*"
     };
   }
+
+  rpc Get(monocle_metric.GetRequest)
+      returns (monocle_metric.GetResponse) {
+    option (google.api.http) = {
+      post: "/api/2/metric/get"
+      body: "*"
+    };
+  }
 }
 
 service Crawler {

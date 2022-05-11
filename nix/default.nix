@@ -615,7 +615,6 @@ in rec {
     tag = "latest";
     # created = "now";
     contents = [ (pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle) ];
-
   };
 
   monocle-light =
@@ -629,47 +628,18 @@ in rec {
         XDG_CACHE_HOME = "/tmp";
       });
 
-  mk-ci = name: cmd:
-    pkgs.runCommand "monocle-${name}" {
-      # Set local to avoid utf-8 invalid byte sequence errors
-      LC_ALL = "en_US.UTF-8";
-      LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-      XDG_CACHE_HOME = "/tmp";
-      PATH = "${pkgs.coreutils}/bin:${pkgs.findutils}/bin:${pkgs.gnugrep}/bin";
-    } ''
-      # Create temporary home
-      export HOME=$(mktemp -d)
+  # Helper function to create helper script.
+  mkRun = name: commands:
+    pkgs.writeScriptBin "monocle-${name}-run" ''
+      #!/bin/sh -e
+      # Start from the project root
+      cd $(${pkgs.git}/bin/git rev-parse --show-toplevel)
 
-      # Copy the source so that doctest can write temp files
-      mkdir -p $HOME/monocle-src
-      cd $HOME/monocle-src
-      cp -r -p ${monocleHaskellSrc}/* .
-
-      ${cmd}
-
-      touch $out
+      ${commands}
     '';
 
-  cabal-setup = ghcEnv: ''
-    export GHC_DRV=$(cat ${ghcEnv})
-    export PATH=$GHC_DRV/bin:${pkgs.cabal-install}/bin:${hsPkgs.doctest_0_20_0}/bin:$PATH
-    export NIX_GHCPKG=$GHC_DRV/bin/ghc-pkg
-    export NIX_GHC=$GHC_DRV/bin/ghc
-    export NIX_GHC_LIBDIR=$($NIX_GHC --print-libdir)
-    export NIX_GHC_DOCDIR="$GHC_DRV/share/doc/ghc/html"
-    mkdir -p $HOME/.cabal
-    touch $HOME/.cabal/config
-    ghc --version
-    cabal --version
-    doctest --version
-  '';
-
-  # Here we use monocle.env to get a ghc with monocle dependencies, but without monocle
-  # since we are going to build it in the ci command.
-  cabal-setup-monocle = cabal-setup monocle-light.env;
-
   ci-commands = ''
-    set -e
+    cd haskell;
     alias cabal="${nixCabal}"
 
     echo "[+] Building the project"
@@ -679,6 +649,7 @@ in rec {
     cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
     echo "[+] Running doctests"
+    export PATH=${hsPkgs.doctest_0_20_0}/bin:$PATH
     cabal repl --with-ghc=doctest
 
     # cabal haddock
@@ -686,37 +657,50 @@ in rec {
     # cabal check
     # cabal install --installdir=/tmp --overwrite-policy=always'}}
 
-    ${lightCI}
+    cd ..;
+    ${fast-ci-commands}
   '';
 
-  # A script to be used in ci with nix-shell so that the build can access the elasticsearch service
-  ci-run = pkgs.writeScriptBin "monocle-ci-run" ''
-    #!/bin/sh
-    ${ci-commands}
-  '';
+  # A script to be used in ci with nix-shell
+  ci-run = mkRun "ci" ci-commands;
 
   ci-shell = hsPkgs.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = [ pkgs.cabal-install hsPkgs.doctest_0_20_0 ci-run ];
+    buildInputs = [ pkgs.cabal-install ci-run ];
   };
 
-  ci = mk-ci "ci" ''
-    echo "[+] Setup local ghc shell"
-    ${cabal-setup-monocle}
-
-    ${ci-commands}
+  hlint = args: "${pkgs.hlint}/bin/hlint -XQuasiQuotes ${args} haskell/src/";
+  ormolu = mode: ''
+    ${pkgs.ormolu}/bin/ormolu                                 \
+      -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode ${mode} \
+      $(find haskell/src/ -name "*.hs")
   '';
+  nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
-  ci-light = mk-ci "ci-light" lightCI;
-
-  lightCI = ''
+  fast-ci-commands = ''
     echo "[+] Running hlint"
-    ${pkgs.hlint}/bin/hlint -XQuasiQuotes src/
+    ${hlint ""}
 
     echo "[+] Checking ormolu syntax"
-    ${pkgs.ormolu}/bin/ormolu                                 \
-      -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode check \
-      $(find src/ -name "*.hs")
+    ${ormolu "check"}
+
+    echo "[+] Checking nixfmt syntax"
+    ${nixfmt "--check"}
+  '';
+
+  fast-ci-run = mkRun "fast-ci" fast-ci-commands;
+
+  reformat-run = mkRun "reformat" ''
+    # This needs apply-refact, but it doesn't build in our package set and that would requires pulling an extra ghc.
+    # Let's try again next time we bump nixpkgs.
+    # echo "[+] Apply hlint suggestions"
+    # ${hlint ''--refactor --refactor-options="-i"''}
+
+    echo "[+] Reformat with ormolu"
+    ${ormolu "inplace"}
+
+    echo "[+] Reformat with nixfmt"
+    ${nixfmt ""}
   '';
 
   # dontCheck because doctests are not working...
@@ -735,7 +719,7 @@ in rec {
 
     buildInputs = with pkgs.myHaskellPackages;
       [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]
-      ++ all-req ++ services-req ++ [ ci-run ];
+      ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
     withHoogle = true;
 

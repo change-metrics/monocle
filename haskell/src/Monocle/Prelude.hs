@@ -177,6 +177,7 @@ module Monocle.Prelude
     httpFailureCounter,
     monocleQueryCheckCounter,
     monocleQueryCounter,
+    monocleMetricCounter,
   )
 where
 
@@ -246,6 +247,11 @@ monocleQueryCheckCounter =
 monocleQueryCounter :: Prometheus.Counter
 monocleQueryCounter =
   unsafePerformIO $ promRegister $ Prometheus.counter (Info "query" "")
+
+{-# NOINLINE monocleMetricCounter #-}
+monocleMetricCounter :: Prometheus.Counter
+monocleMetricCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "metric" "")
 
 {-# NOINLINE httpRequestCounter #-}
 httpRequestCounter :: CounterLabel

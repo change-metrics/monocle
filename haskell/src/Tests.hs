@@ -117,7 +117,8 @@ monocleApiTests =
   testGroup
     "Monocle.Api.Server"
     [ testCase "Test getGroups and getGroupMembers" testGetGroups,
-      testCase "Test crawler MDs refreshed after config reload" testReloadedConfig
+      testCase "Test crawler MDs refreshed after config reload" testReloadedConfig,
+      testCase "Test get metrics" testGetMetrics
     ]
   where
     testGetGroups :: Assertion

@@ -160,6 +160,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_login_LoginValidationResponse'
+    /api/2/metric/get:
+        post:
+            operationId: Metric_Get
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_metric_GetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_metric_GetResponse'
     /api/2/metric/list:
         post:
             operationId: Metric_List
@@ -631,6 +647,23 @@ components:
                 validation_result:
                     type: integer
                     format: enum
+        monocle_metric_GetRequest:
+            properties:
+                index:
+                    type: string
+                username:
+                    type: string
+                query:
+                    type: string
+                metric:
+                    type: string
+        monocle_metric_GetResponse:
+            properties:
+                error:
+                    type: string
+                float_value:
+                    type: number
+                    format: float
         monocle_metric_ListRequest:
             properties:
                 void:
@@ -648,6 +681,8 @@ components:
                 description:
                     type: string
                 long_description:
+                    type: string
+                metric:
                     type: string
         monocle_search_ActivityStats:
             properties:

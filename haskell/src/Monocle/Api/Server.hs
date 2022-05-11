@@ -611,5 +611,28 @@ metricList =
       MetricPB.MetricInfo
         { metricInfoName = from miName,
           metricInfoDescription = from miDesc,
-          metricInfoLongDescription = mempty
+          metricInfoLongDescription = mempty,
+          metricInfoMetric = from miMetricName
         }
+
+metricGet :: MetricPB.GetRequest -> AppM MetricPB.GetResponse
+metricGet request = do
+  let MetricPB.GetRequest {..} = request
+  incCounter monocleMetricCounter
+  requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
+  case requestE of
+    -- Valid request
+    Right (tenant, query) -> do
+      let runMetric = runQueryM tenant (Q.ensureMinBound query)
+          floatResult metric =
+            MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
+
+      case getRequestMetric of
+        "time_to_merge" -> floatResult Q.metricTimeToMerge
+        -- Unknown query
+        _ -> handleError $ "Unknown metric: " <> from getRequestMetric
+
+    -- Invalid request
+    Left err -> handleError $ show err
+  where
+    handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
