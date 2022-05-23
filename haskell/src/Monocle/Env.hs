@@ -1,6 +1,7 @@
 -- | The library environment and logging functions
 module Monocle.Env where
 
+import Crypto.JOSE (JWK)
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
@@ -24,7 +25,8 @@ data Env = Env
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO Config.ConfigStatus,
-    aEnv :: Env
+    aEnv :: Env,
+    aJWK :: JWK
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader

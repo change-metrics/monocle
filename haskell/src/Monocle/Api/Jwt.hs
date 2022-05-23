@@ -48,3 +48,6 @@ mkMagicJwt subject = do
   claims <- mkMagicClaims $ fromString subject
   jwk <- doGenJwk
   doSignJwt jwk claims
+
+-- TODO: Implement a way to read jwks_uri to fetch provider pub key
+-- https://accounts.google.com/.well-known/openid-configuration

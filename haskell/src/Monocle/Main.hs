@@ -15,18 +15,24 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)
-import Network.Wai.Middleware.Servant.Options (provideOptions)
+-- import Network.Wai.Middleware.Servant.Options (provideOptions)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
-import Servant (Handler, hoistServer, serve)
+import Servant (Context (EmptyContext, (:.)), Handler, hoistServerWithContext, serveWithContext)
+import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings, generateKey)
 
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
 
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
-app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
+-- app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
+app env =
+  serveWithContext monocleAPI cfg $
+    hoistServerWithContext monocleAPI (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM server
   where
+    jwtCfg = defaultJWTSettings $ aJWK env
+    cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
 
@@ -62,6 +68,8 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
+  aJWK <- generateKey
+
   bhEnv <- mkEnv url
   let aEnv = Env {..}
   httpRetry ("elastic-client", url, "internal") $
@@ -75,7 +83,9 @@ run' port url configFile glLogger = do
       Warp.runSettings
         settings
         . cors (const $ Just policy)
-        . provideOptions monocleAPI
+        -- https://github.com/haskell-servant/servant/issues/672
+        -- TODO: commented out for now due to missing instances
+        -- . provideOptions monocleAPI
         . monitoringMiddleware
         . healthMiddleware
         $ app (AppEnv {..})

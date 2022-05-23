@@ -27,6 +27,7 @@ import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
+import Servant.Auth.Server (AuthResult (Authenticated), FromJWT, ToJWT)
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM Config.ConfigStatus
@@ -59,6 +60,27 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
+
+data WhoAmIResponse = WhoAmIResponse Text deriving (Generic, Show)
+
+instance ToJSON WhoAmIResponse
+
+newtype AuthenticatedUser = AUser {auID :: Text}
+  deriving (Generic, Show)
+
+instance ToJSON AuthenticatedUser
+
+instance FromJSON AuthenticatedUser
+
+instance ToJWT AuthenticatedUser
+
+instance FromJWT AuthenticatedUser
+
+whoAmi :: AuthResult AuthenticatedUser -> AppM WhoAmIResponse
+whoAmi (Authenticated _) = response
+  where
+    response = pure $ WhoAmIResponse "Pablo"
+whoAmi _ = pure $ WhoAmIResponse "You are not Pablo"
 
 -- | /login/validate endpoint
 loginLoginValidation ::

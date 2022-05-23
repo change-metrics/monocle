@@ -60,6 +60,11 @@ let
             (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse {
               broken = false;
             });
+          # Test suite hang
+          servant-auth-server = pkgs.haskell.lib.dontCheck
+            (pkgs.haskell.lib.overrideCabal hpPrev.servant-auth-server {
+              broken = false;
+            });
           # HEAD is needed for bytestring-0.11 and ghc-9.2 base
           proto3-suite = let
             src = builtins.fetchGit {
