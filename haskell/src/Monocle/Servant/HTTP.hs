@@ -7,7 +7,7 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (AuthenticatedUser, MagicJWTResponse, WhoAmIResponse, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, magicJwt, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions, whoAmi)
+import Monocle.Api.Server (MagicJWTResponse, WhoAmIResponse, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, magicJwt, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions, whoAmi)
 import Monocle.Env
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
@@ -17,6 +17,7 @@ import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, Check
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
+import Monocle.Api.Jwt (AuthenticatedUser)
 
 type MonocleAPI =
   "login" :> "username" :> "validate" :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse

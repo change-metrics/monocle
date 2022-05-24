@@ -24,7 +24,7 @@ import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax qualified as S
 import Proto3.Suite (Enumerated (Enumerated, enumerated))
-import Servant.Auth.Server (generateKey)
+import Servant.Auth.Server (generateKey, defaultJWTSettings)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -67,7 +67,8 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
-  aJWK <- generateKey
+  jwk <- generateKey
+  let aJWTSettings = defaultJWTSettings jwk
   Config.setWorkspaceStatus Config.Ready ws
   let glLogger _ = pure ()
       config = configSE (config', ws) (newConfig, newWs)

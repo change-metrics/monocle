@@ -2,12 +2,12 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
-import Crypto.JWT (encodeCompact)
 import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
+import Monocle.Api.Jwt (AuthenticatedUser (AUser))
 import Monocle.Api.Jwt qualified
 import Monocle.Backend.Documents
   ( EChange (..),
@@ -29,7 +29,7 @@ import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
-import Servant.Auth.Server (AuthResult (Authenticated), FromJWT, ToJWT)
+import Servant.Auth.Server (AuthResult (Authenticated))
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM Config.ConfigStatus
@@ -63,7 +63,10 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
 
-data WhoAmIResponse = WhoAmIResponse Text deriving (Generic, Show)
+data WhoAmIResponse
+  = WhoAmIResponse Text
+  | WhoAmIResponseError Text
+  deriving (Generic, Show)
 
 instance ToJSON WhoAmIResponse
 
@@ -71,29 +74,20 @@ data MagicJWTResponse = MagicJWTResponse Text deriving (Generic, Show)
 
 instance ToJSON MagicJWTResponse
 
-newtype AuthenticatedUser = AUser {auID :: Text}
-  deriving (Generic, Show)
-
-instance ToJSON AuthenticatedUser
-
-instance FromJSON AuthenticatedUser
-
-instance ToJWT AuthenticatedUser
-
-instance FromJWT AuthenticatedUser
-
+-- curl -v -H 'Authorization: Bearer <token>' http://localhost:19875/whoami
 whoAmi :: AuthResult AuthenticatedUser -> AppM WhoAmIResponse
-whoAmi (Authenticated _) = response
+whoAmi (Authenticated (AUser muid)) = response
   where
-    response = pure $ WhoAmIResponse "Pablo"
-whoAmi _ = pure $ WhoAmIResponse "You are not Pablo"
+    response = pure $ WhoAmIResponse muid
+whoAmi as = pure $ WhoAmIResponseError $ show as
 
+-- curl http://localhost:19875/magic_jwt
 magicJwt :: AppM MagicJWTResponse
 magicJwt = do
-  jwk <- asks aJWK
-  jwt <- liftIO $ Monocle.Api.Jwt.mkMagicJwt "Pablo" jwk
-  case jwt of
-    Right signed -> pure $ MagicJWTResponse $ decodeUtf8 $ encodeCompact signed
+  jwtSettings <- asks aJWTSettings
+  jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
+  case jwtE of
+    Right jwt -> pure $ MagicJWTResponse $ decodeUtf8 $ jwt
     Left _err -> error "Unable to sign jwt"
 
 -- | /login/validate endpoint

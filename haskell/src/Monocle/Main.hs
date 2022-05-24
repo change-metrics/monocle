@@ -33,7 +33,7 @@ app env =
   serveWithContext monocleAPI cfg $
     hoistServerWithContext monocleAPI (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM server
   where
-    jwtCfg = defaultJWTSettings $ aJWK env
+    jwtCfg = aJWTSettings env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
@@ -70,8 +70,9 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  -- Generate random JWK
-  aJWK <- Monocle.Api.JWK.doGenJwk
+  -- Generate random JWK and JWTSettings
+  jwk <- Monocle.Api.JWK.doGenJwk
+  let aJWTSettings = defaultJWTSettings jwk
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
