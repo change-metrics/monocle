@@ -240,6 +240,7 @@ library
                      , Monocle.Protob.Crawler
                      , Monocle.Protob.Metric
                      , Monocle.Protob.Login
+                     , Monocle.Protob.Jwt
 
   other-modules:       Database.Bloodhound.Raw
                      , Lentille.Bugzilla.Mock

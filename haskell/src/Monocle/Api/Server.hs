@@ -21,6 +21,8 @@ import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Config qualified as ConfigPB
 import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Jwt qualified as Jwt
+import Monocle.Protob.Jwt qualified as JwtPB
 import Monocle.Protob.Login qualified as LoginPB
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
@@ -81,14 +83,29 @@ whoAmi (Authenticated (AUser muid)) = response
     response = pure $ WhoAmIResponse muid
 whoAmi as = pure $ WhoAmIResponseError $ show as
 
--- curl http://localhost:19875/magic_jwt
-magicJwt :: AppM MagicJWTResponse
-magicJwt = do
+-- curl -XPOST -H "Content-type: application/json" http://localhost:19875/jwt/get -d '{"token": "admin-token"}'
+jwtGetMagicJWT :: JwtPB.GetMagicJWTRequest -> AppM JwtPB.GetMagicJWTResponse
+jwtGetMagicJWT request = do
   jwtSettings <- asks aJWTSettings
   jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
-  case jwtE of
-    Right jwt -> pure $ MagicJWTResponse $ decodeUtf8 $ jwt
-    Left _err -> error "Unable to sign jwt"
+  case (jwtE, tokenValidated) of
+    (Right jwt, True) ->
+      pure
+        . JwtPB.GetMagicJWTResponse
+        . Just
+        . JwtPB.GetMagicJWTResponseResultSuccessJwt
+        . JwtPB.SuccessJWT
+        $ decodeUtf8 jwt
+    _ ->
+      pure
+        . JwtPB.GetMagicJWTResponse
+        . Just
+        . JwtPB.GetMagicJWTResponseResultReason
+        . Jwt.Unauthorized
+        $ "Unable to request a Magic Token"
+  where
+    tokenValidated :: Bool
+    tokenValidated = request == Jwt.GetMagicJWTRequest "admin-token"
 
 -- | /login/validate endpoint
 loginLoginValidation ::

@@ -7,20 +7,20 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Server (MagicJWTResponse, WhoAmIResponse, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, magicJwt, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions, whoAmi)
+import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, jwtGetMagicJWT, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
+import Monocle.Protob.Jwt (GetMagicJWTRequest, GetMagicJWTResponse)
 import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Protob.Metric (GetRequest, GetResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
-import Servant.Auth.Server (Auth, Cookie, JWT)
-import Monocle.Api.Jwt (AuthenticatedUser)
 
 type MonocleAPI =
   "login" :> "username" :> "validate" :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse
+    :<|> "jwt" :> "get" :> ReqBody '[JSON] Monocle.Protob.Jwt.GetMagicJWTRequest :> Post '[PBJSON, JSON] Monocle.Protob.Jwt.GetMagicJWTResponse
     :<|> "get_workspaces" :> ReqBody '[JSON] Monocle.Protob.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetWorkspacesResponse
     :<|> "get_projects" :> ReqBody '[JSON] Monocle.Protob.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetProjectsResponse
     :<|> "get_groups" :> ReqBody '[JSON] Monocle.Protob.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetGroupsResponse
@@ -36,12 +36,11 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
-    :<|> Auth '[JWT, Cookie] AuthenticatedUser :> "whoami" :> Get '[JSON] WhoAmIResponse
-    :<|> "magic_jwt" :> Get '[JSON] MagicJWTResponse
 
 server :: ServerT MonocleAPI AppM
 server =
   loginLoginValidation
+    :<|> jwtGetMagicJWT
     :<|> configGetWorkspaces
     :<|> configGetProjects
     :<|> configGetGroups
@@ -57,5 +56,3 @@ server =
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo
-    :<|> whoAmi
-    :<|> magicJwt

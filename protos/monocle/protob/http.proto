@@ -15,12 +15,22 @@ import "monocle/protob/search.proto";
 import "monocle/protob/crawler.proto";
 import "monocle/protob/login.proto";
 import "monocle/protob/metric.proto";
+import "monocle/protob/jwt.proto";
 
 service Login {
   // Check a login username
   rpc LoginValidation(monocle_login.LoginValidationRequest) returns (monocle_login.LoginValidationResponse) {
     option (google.api.http) = {
       post: "/api/2/login/username/validate"
+      body: "*"
+    };
+  }
+}
+
+service Jwt {
+  rpc GetMagicJWT(monocle_jwt.GetMagicJWTRequest) returns (monocle_jwt.GetMagicJWTResponse) {
+    option (google.api.http) = {
+      post: "/api/2/jwt/get"
       body: "*"
     };
   }

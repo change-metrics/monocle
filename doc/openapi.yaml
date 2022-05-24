@@ -143,6 +143,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetWorkspacesResponse'
+    /api/2/jwt/get:
+        post:
+            operationId: Jwt_GetMagicJWT
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_jwt_GetMagicJWTRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_jwt_GetMagicJWTResponse'
     /api/2/login/username/validate:
         post:
             summary: Check a login username
@@ -637,6 +653,24 @@ components:
         monocle_crawler_Project:
             properties:
                 full_path:
+                    type: string
+        monocle_jwt_GetMagicJWTRequest:
+            properties:
+                token:
+                    type: string
+        monocle_jwt_GetMagicJWTResponse:
+            properties:
+                reason:
+                    $ref: '#/components/schemas/monocle_jwt_Unauthorized'
+                success_jwt:
+                    $ref: '#/components/schemas/monocle_jwt_SuccessJWT'
+        monocle_jwt_SuccessJWT:
+            properties:
+                jwt:
+                    type: string
+        monocle_jwt_Unauthorized:
+            properties:
+                reason:
                     type: string
         monocle_login_LoginValidationRequest:
             properties:

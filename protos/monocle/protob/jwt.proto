@@ -1,0 +1,25 @@
+// Copyright: (c) 2021-2022 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_jwt;
+option go_package = "monocle/jwt";
+
+message GetMagicJWTRequest {
+  string token = 1;
+}
+
+message Unauthorized {
+  string reason = 1;
+}
+
+message SuccessJWT {
+  string jwt = 1;
+}
+
+message GetMagicJWTResponse {
+  oneof result {
+    Unauthorized reason = 1;
+    SuccessJWT success_jwt = 2;
+  }
+}

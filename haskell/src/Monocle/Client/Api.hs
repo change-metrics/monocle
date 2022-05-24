@@ -12,12 +12,16 @@ import Control.Monad.IO.Class (MonadIO)
 import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Protob.Config
 import Monocle.Protob.Crawler
+import Monocle.Protob.Jwt
 import Monocle.Protob.Login
 import Monocle.Protob.Metric
 import Monocle.Protob.Search
 
 loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"
+
+jwtGetMagicJwt :: (MonadThrow m, MonadIO m) => MonocleClient -> GetMagicJWTRequest -> m GetMagicJWTResponse
+jwtGetMagicJwt = monocleReq "api/2/jwt/get"
 
 configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
 configGetWorkspaces = monocleReq "api/2/get_workspaces"
