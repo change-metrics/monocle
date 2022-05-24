@@ -1,5 +1,6 @@
 module Monocle.Api.Jwt
   ( mkMagicJwt,
+    doGenJwk,
   )
 where
 
@@ -43,10 +44,9 @@ doSignJwt jwk claims = runExceptT $ do
 doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
 
-mkMagicJwt :: String -> IO (Either JWTError SignedJWT)
-mkMagicJwt subject = do
+mkMagicJwt :: String -> JWK -> IO (Either JWTError SignedJWT)
+mkMagicJwt subject jwk = do
   claims <- mkMagicClaims $ fromString subject
-  jwk <- doGenJwk
   doSignJwt jwk claims
 
 -- TODO: Implement a way to read jwks_uri to fetch provider pub key

@@ -1,7 +1,10 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, app) where
 
+-- import Network.Wai.Middleware.Servant.Options (provideOptions)
+
 import Lentille (httpRetry)
+import Monocle.Api.Jwt qualified as Monocle.Api.JWK
 import Monocle.Backend.Index qualified as I
 import Monocle.Config qualified as Config
 import Monocle.Env
@@ -15,11 +18,10 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)
--- import Network.Wai.Middleware.Servant.Options (provideOptions)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant (Context (EmptyContext, (:.)), Handler, hoistServerWithContext, serveWithContext)
-import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings, generateKey)
+import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
 
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
@@ -68,7 +70,8 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  aJWK <- generateKey
+  -- Generate random JWK
+  aJWK <- Monocle.Api.JWK.doGenJwk
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

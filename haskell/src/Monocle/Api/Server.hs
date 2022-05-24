@@ -2,11 +2,13 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
+import Crypto.JWT (encodeCompact)
 import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
+import Monocle.Api.Jwt qualified
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
@@ -65,6 +67,10 @@ data WhoAmIResponse = WhoAmIResponse Text deriving (Generic, Show)
 
 instance ToJSON WhoAmIResponse
 
+data MagicJWTResponse = MagicJWTResponse Text deriving (Generic, Show)
+
+instance ToJSON MagicJWTResponse
+
 newtype AuthenticatedUser = AUser {auID :: Text}
   deriving (Generic, Show)
 
@@ -81,6 +87,14 @@ whoAmi (Authenticated _) = response
   where
     response = pure $ WhoAmIResponse "Pablo"
 whoAmi _ = pure $ WhoAmIResponse "You are not Pablo"
+
+magicJwt :: AppM MagicJWTResponse
+magicJwt = do
+  jwk <- asks aJWK
+  jwt <- liftIO $ Monocle.Api.Jwt.mkMagicJwt "Pablo" jwk
+  case jwt of
+    Right signed -> pure $ MagicJWTResponse $ decodeUtf8 $ encodeCompact signed
+    Left _err -> error "Unable to sign jwt"
 
 -- | /login/validate endpoint
 loginLoginValidation ::
