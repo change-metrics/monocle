@@ -75,9 +75,9 @@ protoToHaskell = fromProto headers mkService
         "import Control.Monad.Catch (MonadThrow)",
         "import Control.Monad.IO.Class (MonadIO)",
         "import Monocle.Client (MonocleClient, monocleReq)",
+        "import Monocle.Protob.Auth",
         "import Monocle.Protob.Config",
         "import Monocle.Protob.Crawler",
-        "import Monocle.Protob.Jwt",
         "import Monocle.Protob.Login",
         "import Monocle.Protob.Search",
         "import Monocle.Protob.Metric"
@@ -119,12 +119,12 @@ protoToReScript = fromProto headers mkService
     mkMethod moduleName (name, input, output, path)
       | "/crawler/" `Text.isInfixOf` path = []
       | otherwise =
-        [ "@module(\"axios\")",
-          "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
-          "",
-          methodDef <> "=>",
-          requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
-        ]
+          [ "@module(\"axios\")",
+            "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
+            "",
+            methodDef <> "=>",
+            requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
+          ]
       where
         methodDef = "let " <> camel name <> " = (" <> methodInput <> "): " <> methodOutput
         methodInput = "request: " <> msgName moduleName input

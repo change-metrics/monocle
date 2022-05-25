@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 syntax = "proto3";
-package monocle_jwt;
-option go_package = "monocle/jwt";
+package monocle_auth;
+option go_package = "monocle/auth";
 
 message GetMagicJWTRequest {
   string token = 1;
@@ -19,5 +19,20 @@ message GetMagicJWTResponse {
   oneof result {
     GetMagicJWTError error = 1;
     string jwt = 2;
+  }
+}
+
+message WhoAmIRequest {
+  string void = 1;
+}
+
+enum WhoAmIError {
+  UnAuthorized = 0;
+}
+
+message WhoAmIResponse {
+  oneof result {
+    WhoAmIError error = 1;
+    string uid = 2;
   }
 }

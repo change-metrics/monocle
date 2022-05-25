@@ -23,17 +23,26 @@ module Login = {
     )
 }
 
-module Jwt = {
+module Auth = {
   @module("axios")
   external getMagicJwtRaw: (string, 'a) => axios<'b> = "post"
 
-  let getMagicJwt = (request: JwtTypes.get_magic_jwt_request): axios<
-    JwtTypes.get_magic_jwt_response,
+  let getMagicJwt = (request: AuthTypes.get_magic_jwt_request): axios<
+    AuthTypes.get_magic_jwt_response,
   > =>
-    request->JwtBs.encode_get_magic_jwt_request
-    |> getMagicJwtRaw(serverUrl ++ "/api/2/jwt/get")
+    request->AuthBs.encode_get_magic_jwt_request
+    |> getMagicJwtRaw(serverUrl ++ "/api/2/auth/get")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->JwtBs.decode_get_magic_jwt_response}->Js.Promise.resolve
+      {data: resp.data->AuthBs.decode_get_magic_jwt_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external whoAmIRaw: (string, 'a) => axios<'b> = "post"
+
+  let whoAmI = (request: AuthTypes.who_am_i_request): axios<AuthTypes.who_am_i_response> =>
+    request->AuthBs.encode_who_am_i_request
+    |> whoAmIRaw(serverUrl ++ "/api/2/auth/whoami")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->AuthBs.decode_who_am_i_response}->Js.Promise.resolve
     )
 }
 

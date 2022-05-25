@@ -8,11 +8,11 @@
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
 import Monocle.Api.Jwt (AuthenticatedUser)
-import Monocle.Api.Server (configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, jwtGetMagicJWT, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Api.Server (authGetMagicJWT, authWhoAmI, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
+import Monocle.Protob.Auth (GetMagicJWTRequest, GetMagicJWTResponse, WhoAmIRequest, WhoAmIResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
-import Monocle.Protob.Jwt (GetMagicJWTRequest, GetMagicJWTResponse)
 import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Protob.Metric (GetRequest, GetResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
@@ -22,7 +22,8 @@ import Servant.Auth.Server (Auth, Cookie, JWT)
 
 type MonocleAPI =
   "login" :> "username" :> "validate" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse
-    :<|> "jwt" :> "get" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Jwt.GetMagicJWTRequest :> Post '[PBJSON, JSON] Monocle.Protob.Jwt.GetMagicJWTResponse
+    :<|> "auth" :> "get" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Auth.GetMagicJWTRequest :> Post '[PBJSON, JSON] Monocle.Protob.Auth.GetMagicJWTResponse
+    :<|> "auth" :> "whoami" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Auth.WhoAmIRequest :> Post '[PBJSON, JSON] Monocle.Protob.Auth.WhoAmIResponse
     :<|> "get_workspaces" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Config.GetWorkspacesRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetWorkspacesResponse
     :<|> "get_projects" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Config.GetProjectsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetProjectsResponse
     :<|> "get_groups" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Config.GetGroupsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Config.GetGroupsResponse
@@ -42,7 +43,8 @@ type MonocleAPI =
 server :: ServerT MonocleAPI AppM
 server =
   loginLoginValidation
-    :<|> jwtGetMagicJWT
+    :<|> authGetMagicJWT
+    :<|> authWhoAmI
     :<|> configGetWorkspaces
     :<|> configGetProjects
     :<|> configGetGroups

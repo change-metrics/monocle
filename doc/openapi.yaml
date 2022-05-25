@@ -24,6 +24,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetAboutResponse'
+    /api/2/auth/get:
+        post:
+            operationId: Auth_GetMagicJWT
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_auth_GetMagicJWTRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_auth_GetMagicJWTResponse'
+    /api/2/auth/whoami:
+        post:
+            operationId: Auth_WhoAmI
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_auth_WhoAmIRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_auth_WhoAmIResponse'
     /api/2/crawler/add:
         post:
             summary: Push crawler data
@@ -143,22 +175,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_config_GetWorkspacesResponse'
-    /api/2/jwt/get:
-        post:
-            operationId: Jwt_GetMagicJWT
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/monocle_jwt_GetMagicJWTRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/monocle_jwt_GetMagicJWTResponse'
     /api/2/login/username/validate:
         post:
             summary: Check a login username
@@ -290,6 +306,28 @@ paths:
                                 $ref: '#/components/schemas/monocle_search_SuggestionsResponse'
 components:
     schemas:
+        monocle_auth_GetMagicJWTRequest:
+            properties:
+                token:
+                    type: string
+        monocle_auth_GetMagicJWTResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                jwt:
+                    type: string
+        monocle_auth_WhoAmIRequest:
+            properties:
+                void:
+                    type: string
+        monocle_auth_WhoAmIResponse:
+            properties:
+                error:
+                    type: integer
+                    format: enum
+                uid:
+                    type: string
         monocle_change_Change:
             properties:
                 id:
@@ -653,17 +691,6 @@ components:
         monocle_crawler_Project:
             properties:
                 full_path:
-                    type: string
-        monocle_jwt_GetMagicJWTRequest:
-            properties:
-                token:
-                    type: string
-        monocle_jwt_GetMagicJWTResponse:
-            properties:
-                error:
-                    type: integer
-                    format: enum
-                jwt:
                     type: string
         monocle_login_LoginValidationRequest:
             properties:

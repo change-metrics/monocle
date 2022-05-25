@@ -19,10 +19,9 @@ import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
+import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
 import Monocle.Protob.Crawler qualified as CrawlerPB
-import Monocle.Protob.Jwt qualified as Jwt
-import Monocle.Protob.Jwt qualified as JwtPB
 import Monocle.Protob.Login qualified as LoginPB
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
@@ -65,48 +64,48 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
 
-data WhoAmIResponse
-  = WhoAmIResponse Text
-  | WhoAmIResponseError Text
-  deriving (Generic, Show)
-
-instance ToJSON WhoAmIResponse
-
-newtype MagicJWTResponse = MagicJWTResponse Text deriving (Generic, Show)
-
-instance ToJSON MagicJWTResponse
-
--- curl -v -H 'Authorization: Bearer <token>' http://localhost:19875/whoami
-whoAmi :: AuthResult AuthenticatedUser -> AppM WhoAmIResponse
-whoAmi (Authenticated (AUser muid)) = response
+-- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:19875/auth/whoami
+authWhoAmI :: AuthResult AuthenticatedUser -> AuthPB.WhoAmIRequest -> AppM AuthPB.WhoAmIResponse
+authWhoAmI (Authenticated (AUser muid)) _request = response
   where
-    response = pure $ WhoAmIResponse muid
-whoAmi as = pure $ WhoAmIResponseError $ show as
+    response =
+      pure $
+        AuthPB.WhoAmIResponse
+          . Just
+          . AuthPB.WhoAmIResponseResultUid
+          $ from muid
+authWhoAmI _auth _request =
+  pure $
+    AuthPB.WhoAmIResponse
+      . Just
+      . AuthPB.WhoAmIResponseResultError
+      . Enumerated
+      $ Right AuthPB.WhoAmIErrorUnAuthorized
 
--- curl -XPOST -H "Content-type: application/json" http://localhost:19875/jwt/get -d '{"token": "admin-token"}'
-jwtGetMagicJWT :: AuthResult AuthenticatedUser -> JwtPB.GetMagicJWTRequest -> AppM JwtPB.GetMagicJWTResponse
-jwtGetMagicJWT _auth (Jwt.GetMagicJWTRequest inputAdminToken) = do
+-- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:19875/auth/get
+authGetMagicJWT :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJWTRequest -> AppM AuthPB.GetMagicJWTResponse
+authGetMagicJWT _auth (AuthPB.GetMagicJWTRequest inputAdminToken) = do
   jwtSettings <- asks aJWTSettings
   jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
-    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr Jwt.GetMagicJWTErrorInvalidAdminToken
-    (_, Nothing) -> pure $ genErr Jwt.GetMagicJWTErrorMagicTokenDisabled
-    _ -> pure $ genErr Jwt.GetMagicJWTErrorMagicTokenCreateError
+    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr AuthPB.GetMagicJWTErrorInvalidAdminToken
+    (_, Nothing) -> pure $ genErr AuthPB.GetMagicJWTErrorMagicTokenDisabled
+    _ -> pure $ genErr AuthPB.GetMagicJWTErrorMagicTokenCreateError
   where
-    genErr :: JwtPB.GetMagicJWTError -> JwtPB.GetMagicJWTResponse
+    genErr :: AuthPB.GetMagicJWTError -> AuthPB.GetMagicJWTResponse
     genErr err =
-      JwtPB.GetMagicJWTResponse
+      AuthPB.GetMagicJWTResponse
         . Just
-        . JwtPB.GetMagicJWTResponseResultError
+        . AuthPB.GetMagicJWTResponseResultError
         . Enumerated
         $ Right err
-    genSuccess :: Text -> JwtPB.GetMagicJWTResponse
+    genSuccess :: Text -> AuthPB.GetMagicJWTResponse
     genSuccess jwt =
-      JwtPB.GetMagicJWTResponse
+      AuthPB.GetMagicJWTResponse
         . Just
-        . JwtPB.GetMagicJWTResponseResultJwt
+        . AuthPB.GetMagicJWTResponseResultJwt
         $ from jwt
 
 -- | /login/validate endpoint

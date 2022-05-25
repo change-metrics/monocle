@@ -4,7 +4,7 @@
 
 
 BASEDIR = monocle/protob
-MESSAGES = $(BASEDIR)/search.proto $(BASEDIR)/config.proto $(BASEDIR)/login.proto $(BASEDIR)/metric.proto $(BASEDIR)/jwt.proto
+MESSAGES = $(BASEDIR)/search.proto $(BASEDIR)/config.proto $(BASEDIR)/login.proto $(BASEDIR)/metric.proto $(BASEDIR)/auth.proto
 CRAWLER = $(BASEDIR)/change.proto $(BASEDIR)/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./protos/
 

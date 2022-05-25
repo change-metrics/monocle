@@ -15,7 +15,7 @@ import "monocle/protob/search.proto";
 import "monocle/protob/crawler.proto";
 import "monocle/protob/login.proto";
 import "monocle/protob/metric.proto";
-import "monocle/protob/jwt.proto";
+import "monocle/protob/auth.proto";
 
 service Login {
   // Check a login username
@@ -27,10 +27,17 @@ service Login {
   }
 }
 
-service Jwt {
-  rpc GetMagicJWT(monocle_jwt.GetMagicJWTRequest) returns (monocle_jwt.GetMagicJWTResponse) {
+service Auth {
+  rpc GetMagicJWT(monocle_auth.GetMagicJWTRequest) returns (monocle_auth.GetMagicJWTResponse) {
     option (google.api.http) = {
-      post: "/api/2/jwt/get"
+      post: "/api/2/auth/get"
+      body: "*"
+    };
+  }
+
+  rpc WhoAmI(monocle_auth.WhoAmIRequest) returns (monocle_auth.WhoAmIResponse) {
+    option (google.api.http) = {
+      post: "/api/2/auth/whoami"
       body: "*"
     };
   }
