@@ -24,7 +24,7 @@ import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax qualified as S
 import Proto3.Suite (Enumerated (Enumerated, enumerated))
-import Servant.Auth.Server (generateKey, defaultJWTSettings)
+import Servant.Auth.Server (defaultJWTSettings, generateKey)
 import Test.Tasty
 import Test.Tasty.HUnit
 

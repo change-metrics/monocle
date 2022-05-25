@@ -72,7 +72,7 @@ data WhoAmIResponse
 
 instance ToJSON WhoAmIResponse
 
-data MagicJWTResponse = MagicJWTResponse Text deriving (Generic, Show)
+newtype MagicJWTResponse = MagicJWTResponse Text deriving (Generic, Show)
 
 instance ToJSON MagicJWTResponse
 
@@ -85,27 +85,30 @@ whoAmi as = pure $ WhoAmIResponseError $ show as
 
 -- curl -XPOST -H "Content-type: application/json" http://localhost:19875/jwt/get -d '{"token": "admin-token"}'
 jwtGetMagicJWT :: JwtPB.GetMagicJWTRequest -> AppM JwtPB.GetMagicJWTResponse
-jwtGetMagicJWT request = do
+jwtGetMagicJWT (Jwt.GetMagicJWTRequest inputAdminToken) = do
   jwtSettings <- asks aJWTSettings
   jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
-  case (jwtE, tokenValidated) of
-    (Right jwt, True) ->
-      pure
-        . JwtPB.GetMagicJWTResponse
-        . Just
-        . JwtPB.GetMagicJWTResponseResultSuccessJwt
-        . JwtPB.SuccessJWT
-        $ decodeUtf8 jwt
-    _ ->
-      pure
-        . JwtPB.GetMagicJWTResponse
+  adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
+  case (jwtE, adminTokenM) of
+    (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
+    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr "Invalid input Token"
+    (_, Nothing) -> pure $ genErr "Magic Token creation is disabled"
+    _ -> pure $ genErr "Unable to create a Magic Token"
+  where
+    genErr :: Text -> JwtPB.GetMagicJWTResponse
+    genErr msg =
+      JwtPB.GetMagicJWTResponse
         . Just
         . JwtPB.GetMagicJWTResponseResultReason
         . Jwt.Unauthorized
-        $ "Unable to request a Magic Token"
-  where
-    tokenValidated :: Bool
-    tokenValidated = request == Jwt.GetMagicJWTRequest "admin-token"
+        $ from msg
+    genSuccess :: Text -> JwtPB.GetMagicJWTResponse
+    genSuccess jwt =
+      JwtPB.GetMagicJWTResponse
+        . Just
+        . JwtPB.GetMagicJWTResponseResultSuccessJwt
+        . JwtPB.SuccessJWT
+        $ from jwt
 
 -- | /login/validate endpoint
 loginLoginValidation ::

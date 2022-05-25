@@ -77,6 +77,7 @@ protoToHaskell = fromProto headers mkService
         "import Monocle.Client (MonocleClient, monocleReq)",
         "import Monocle.Protob.Config",
         "import Monocle.Protob.Crawler",
+        "import Monocle.Protob.Jwt",
         "import Monocle.Protob.Login",
         "import Monocle.Protob.Search",
         "import Monocle.Protob.Metric"

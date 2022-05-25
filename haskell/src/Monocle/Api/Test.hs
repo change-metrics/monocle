@@ -10,7 +10,7 @@ import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)
 import Network.Wai
-import Servant.Auth.Server (generateKey, defaultJWTSettings)
+import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
