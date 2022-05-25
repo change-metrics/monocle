@@ -123,7 +123,7 @@ testRunCrawlers = do
       --  70ms: watcher read the reloadRef (True) and wait for crawlers
       expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
 
-  withClient "http://localhost" Nothing $ \client ->
+  withClient "http://localhost" Nothing Nothing $ \client ->
     withLogger $ \logger ->
       runLentilleM logger client $
         Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams

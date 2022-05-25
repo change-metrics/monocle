@@ -39,7 +39,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
         indexes
       withMockedManager
         (dropVersionPath $ app appEnv)
-        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) Nothing (testCb logger))
     dropVersionPath app' req = do
       app'
         ( req

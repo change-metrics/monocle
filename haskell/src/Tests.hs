@@ -7,10 +7,12 @@ import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
-import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
+import Monocle.Client (MonocleClient (tokenM))
+import Monocle.Client.Api (authGetMagicJwt, authWhoAmI, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Auth
 import Monocle.Protob.Config
   ( GetGroupMembersRequest (GetGroupMembersRequest),
     GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers),
@@ -121,9 +123,27 @@ monocleApiTests =
     "Monocle.Api.Server"
     [ testCase "Test getGroups and getGroupMembers" testGetGroups,
       testCase "Test crawler MDs refreshed after config reload" testReloadedConfig,
-      testCase "Test get metrics" testGetMetrics
+      testCase "Test get metrics" testGetMetrics,
+      testCase "Test Auth Magic Token" testAuthMagicToken
     ]
   where
+    testAuthMagicToken :: Assertion
+    testAuthMagicToken = do
+      let appEnv = mkAppEnv $ Config.mkTenant "ws"
+      let adminToken = "test"
+      setEnv "ADMIN_TOKEN" adminToken
+      withTestApi appEnv $ \_logger client -> do
+        resp <- authGetMagicJwt client $ GetMagicJWTRequest $ from adminToken
+        case resp of
+          GetMagicJWTResponse (Just (GetMagicJWTResponseResultJwt jwt)) -> do
+            let authClient = client {tokenM = Just $ from jwt}
+            resp' <- authWhoAmI authClient $ WhoAmIRequest ""
+            case resp' of
+              WhoAmIResponse (Just (WhoAmIResponseResultUid muid)) ->
+                assertEqual "Assert expected Magic Token uid" "Magic User UID" muid
+              _ -> error "Unexpected Token uid value"
+          _ -> error "expected a JWT token"
+
     testGetGroups :: Assertion
     testGetGroups = do
       let appEnv =
