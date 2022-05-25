@@ -91,23 +91,22 @@ jwtGetMagicJWT _auth (Jwt.GetMagicJWTRequest inputAdminToken) = do
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
-    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr "Invalid input Token"
-    (_, Nothing) -> pure $ genErr "Magic Token creation is disabled"
-    _ -> pure $ genErr "Unable to create a Magic Token"
+    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr Jwt.GetMagicJWTErrorInvalidAdminToken
+    (_, Nothing) -> pure $ genErr Jwt.GetMagicJWTErrorMagicTokenDisabled
+    _ -> pure $ genErr Jwt.GetMagicJWTErrorMagicTokenCreateError
   where
-    genErr :: Text -> JwtPB.GetMagicJWTResponse
-    genErr msg =
+    genErr :: JwtPB.GetMagicJWTError -> JwtPB.GetMagicJWTResponse
+    genErr err =
       JwtPB.GetMagicJWTResponse
         . Just
-        . JwtPB.GetMagicJWTResponseResultReason
-        . Jwt.Unauthorized
-        $ from msg
+        . JwtPB.GetMagicJWTResponseResultError
+        . Enumerated
+        $ Right err
     genSuccess :: Text -> JwtPB.GetMagicJWTResponse
     genSuccess jwt =
       JwtPB.GetMagicJWTResponse
         . Just
-        . JwtPB.GetMagicJWTResponseResultSuccessJwt
-        . JwtPB.SuccessJWT
+        . JwtPB.GetMagicJWTResponseResultJwt
         $ from jwt
 
 -- | /login/validate endpoint

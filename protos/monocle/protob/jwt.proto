@@ -9,17 +9,15 @@ message GetMagicJWTRequest {
   string token = 1;
 }
 
-message Unauthorized {
-  string reason = 1;
-}
-
-message SuccessJWT {
-  string jwt = 1;
+enum GetMagicJWTError {
+  InvalidAdminToken = 0;
+  MagicTokenDisabled = 1;
+  MagicTokenCreateError = 2;
 }
 
 message GetMagicJWTResponse {
   oneof result {
-    Unauthorized reason = 1;
-    SuccessJWT success_jwt = 2;
+    GetMagicJWTError error = 1;
+    string jwt = 2;
   }
 }

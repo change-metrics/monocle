@@ -660,17 +660,10 @@ components:
                     type: string
         monocle_jwt_GetMagicJWTResponse:
             properties:
-                reason:
-                    $ref: '#/components/schemas/monocle_jwt_Unauthorized'
-                success_jwt:
-                    $ref: '#/components/schemas/monocle_jwt_SuccessJWT'
-        monocle_jwt_SuccessJWT:
-            properties:
+                error:
+                    type: integer
+                    format: enum
                 jwt:
-                    type: string
-        monocle_jwt_Unauthorized:
-            properties:
-                reason:
                     type: string
         monocle_login_LoginValidationRequest:
             properties:
