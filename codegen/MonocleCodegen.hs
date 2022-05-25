@@ -150,7 +150,9 @@ protoToServant pb =
         "",
         "import Monocle.Env",
         "import Monocle.Servant.PBJSON (PBJSON)",
-        "import Servant"
+        "import Servant",
+        "import Servant.Auth.Server (Auth, JWT, Cookie)",
+        "import Monocle.Api.Jwt (AuthenticatedUser)"
       ]
 
     imports = concatMap mkImport methods
@@ -176,7 +178,7 @@ protoToServant pb =
                    . Text.split (== '/')
                    $ Text.drop (Text.length "/api/2/") path
                )
-            <> " :> ReqBody '[JSON] "
+            <> " :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] "
             <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Request")
             <> " :> Post  '[PBJSON, JSON] "
             <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Response")

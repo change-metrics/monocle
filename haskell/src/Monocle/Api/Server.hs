@@ -84,8 +84,8 @@ whoAmi (Authenticated (AUser muid)) = response
 whoAmi as = pure $ WhoAmIResponseError $ show as
 
 -- curl -XPOST -H "Content-type: application/json" http://localhost:19875/jwt/get -d '{"token": "admin-token"}'
-jwtGetMagicJWT :: JwtPB.GetMagicJWTRequest -> AppM JwtPB.GetMagicJWTResponse
-jwtGetMagicJWT (Jwt.GetMagicJWTRequest inputAdminToken) = do
+jwtGetMagicJWT :: AuthResult AuthenticatedUser -> JwtPB.GetMagicJWTRequest -> AppM JwtPB.GetMagicJWTResponse
+jwtGetMagicJWT _auth (Jwt.GetMagicJWTRequest inputAdminToken) = do
   jwtSettings <- asks aJWTSettings
   jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
@@ -112,8 +112,8 @@ jwtGetMagicJWT (Jwt.GetMagicJWTRequest inputAdminToken) = do
 
 -- | /login/validate endpoint
 loginLoginValidation ::
-  LoginPB.LoginValidationRequest -> AppM LoginPB.LoginValidationResponse
-loginLoginValidation request = do
+  AuthResult AuthenticatedUser -> LoginPB.LoginValidationRequest -> AppM LoginPB.LoginValidationResponse
+loginLoginValidation _auth request = do
   GetTenants tenants <- getConfig
   let username = request & LoginPB.loginValidationRequestUsername
   validated <- runMaybeT $ traverse (validateOnIndex $ from username) tenants
@@ -136,8 +136,8 @@ loginLoginValidation request = do
       when (count > 0) mzero
 
 -- | /api/2/about endpoint
-configGetAbout :: ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
-configGetAbout = const response
+configGetAbout :: AuthResult AuthenticatedUser -> ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
+configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
@@ -153,8 +153,8 @@ configGetAbout = const response
        in ConfigPB.About_AboutLink {..}
 
 -- | /api/2/get_workspaces endpoint
-configGetWorkspaces :: ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
-configGetWorkspaces = const response
+configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
+configGetWorkspaces _auth _request = response
   where
     response = do
       GetTenants tenants <- getConfig
@@ -164,8 +164,8 @@ configGetWorkspaces = const response
        in ConfigPB.Workspace {..}
 
 -- | /api/2/get_groups endpoint
-configGetGroups :: ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
-configGetGroups request = do
+configGetGroups :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
+configGetGroups _auth request = do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupsRequest {..} = request
 
@@ -180,8 +180,8 @@ configGetGroups request = do
        in ConfigPB.GroupDefinition {..}
 
 -- | /api/2/get_group_members endpoint
-configGetGroupMembers :: ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
-configGetGroupMembers request = do
+configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
+configGetGroupMembers _auth request = do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupMembersRequest {..} = request
   members <- case Config.lookupTenant tenants (toStrict getGroupMembersRequestIndex) of
@@ -191,8 +191,8 @@ configGetGroupMembers request = do
   pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
-configGetProjects :: ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
-configGetProjects ConfigPB.GetProjectsRequest {..} = do
+configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
+configGetProjects _auth ConfigPB.GetProjectsRequest {..} = do
   GetTenants tenants <- getConfig
   pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getProjectsRequestIndex) of
     Just index -> maybe [] (fmap toResp) (Config.projects index)
@@ -226,8 +226,8 @@ toEntity entityPB = case entityPB of
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
-crawlerAddDoc :: CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
-crawlerAddDoc request = do
+crawlerAddDoc :: AuthResult AuthenticatedUser -> CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
+crawlerAddDoc _auth request = do
   GetTenants tenants <- getConfig
   let ( CrawlerPB.AddDocRequest
           indexName
@@ -295,8 +295,8 @@ crawlerAddDoc request = do
         $ Right err
 
 -- | /crawler/commit endpoint
-crawlerCommit :: CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
-crawlerCommit request = do
+crawlerCommit :: AuthResult AuthenticatedUser -> CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
+crawlerCommit _auth request = do
   GetTenants tenants <- getConfig
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
@@ -339,8 +339,8 @@ crawlerCommit request = do
         $ Right err
 
 -- | /crawler/get_commit_info endpoint
-crawlerCommitInfo :: CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
-crawlerCommitInfo request = do
+crawlerCommitInfo :: AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
+crawlerCommitInfo _auth request = do
   Config.ConfigStatus _ Config.Config {..} wsStatus <- getConfig
   let tenants = workspaces
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
@@ -422,8 +422,8 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
     pure (index, crawler, T.toUTCTime <$> commitDate)
 
 -- | /suggestions endpoint
-searchSuggestions :: SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
-searchSuggestions request = do
+searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
+searchSuggestions _auth request = do
   GetTenants tenants <- getConfig
   let SearchPB.SuggestionsRequest {..} = request
 
@@ -461,8 +461,8 @@ validateSearchRequest tenantName queryText username = do
   pure requestE
 
 -- | /search/author endpoint
-searchAuthor :: SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
-searchAuthor request = do
+searchAuthor :: AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
+searchAuthor _auth request = do
   let SearchPB.AuthorRequest {..} = request
   GetTenants tenants <- getConfig
   let indexM = Config.lookupTenant tenants $ from authorRequestIndex
@@ -483,8 +483,8 @@ searchAuthor request = do
   pure . SearchPB.AuthorResponse $ V.fromList authors
 
 -- | /search/check endpoint
-searchCheck :: SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
-searchCheck request = do
+searchCheck :: AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
+searchCheck _auth request = do
   let SearchPB.CheckRequest {..} = request
 
   incCounter monocleQueryCheckCounter
@@ -499,8 +499,8 @@ searchCheck request = do
             SearchPB.QueryError (toLazy msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
-searchQuery :: SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
-searchQuery request = do
+searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
+searchQuery _auth request = do
   let SearchPB.QueryRequest {..} = request
 
   incCounter monocleQueryCounter
@@ -637,8 +637,8 @@ searchQuery request = do
           changeAndEventsEvents = V.fromList $ from <$> events
        in SearchPB.ChangeAndEvents {..}
 
-searchFields :: SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
-searchFields = const $ pure response
+searchFields :: AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
+searchFields _auth _request = pure response
   where
     response :: SearchPB.FieldsResponse
     response = SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
@@ -653,9 +653,8 @@ lookupTenant name = do
   GetTenants tenants <- getConfig
   pure $ Config.lookupTenant tenants name
 
-metricList :: MetricPB.ListRequest -> AppM MetricPB.ListResponse
-metricList =
-  const . pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
+metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
+metricList _auth _request = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
   where
     toResp Q.MetricInfo {..} =
       MetricPB.MetricInfo
@@ -665,8 +664,8 @@ metricList =
           metricInfoMetric = from miMetricName
         }
 
-metricGet :: MetricPB.GetRequest -> AppM MetricPB.GetResponse
-metricGet request = do
+metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
+metricGet _auth request = do
   let MetricPB.GetRequest {..} = request
   incCounter monocleMetricCounter
   requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
