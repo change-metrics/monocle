@@ -20,11 +20,11 @@ import Monocle.Protob.Search
 loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"
 
-authGetMagicJwt :: (MonadThrow m, MonadIO m) => MonocleClient -> GetMagicJWTRequest -> m GetMagicJWTResponse
+authGetMagicJwt :: (MonadThrow m, MonadIO m) => MonocleClient -> GetMagicJwtRequest -> m GetMagicJwtResponse
 authGetMagicJwt = monocleReq "api/2/auth/get"
 
-authWhoAmI :: (MonadThrow m, MonadIO m) => MonocleClient -> WhoAmIRequest -> m WhoAmIResponse
-authWhoAmI = monocleReq "api/2/auth/whoami"
+authWhoAmi :: (MonadThrow m, MonadIO m) => MonocleClient -> WhoAmiRequest -> m WhoAmiResponse
+authWhoAmi = monocleReq "api/2/auth/whoami"
 
 configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
 configGetWorkspaces = monocleReq "api/2/get_workspaces"

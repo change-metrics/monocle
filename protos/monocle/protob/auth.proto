@@ -5,34 +5,34 @@ syntax = "proto3";
 package monocle_auth;
 option go_package = "monocle/auth";
 
-message GetMagicJWTRequest {
+message GetMagicJwtRequest {
   string token = 1;
 }
 
-enum GetMagicJWTError {
+enum GetMagicJwtError {
   InvalidAdminToken = 0;
   MagicTokenDisabled = 1;
   MagicTokenCreateError = 2;
 }
 
-message GetMagicJWTResponse {
+message GetMagicJwtResponse {
   oneof result {
-    GetMagicJWTError error = 1;
+    GetMagicJwtError error = 1;
     string jwt = 2;
   }
 }
 
-message WhoAmIRequest {
+message WhoAmiRequest {
   string void = 1;
 }
 
-enum WhoAmIError {
+enum WhoAmiError {
   UnAuthorized = 0;
 }
 
-message WhoAmIResponse {
+message WhoAmiResponse {
   oneof result {
-    WhoAmIError error = 1;
+    WhoAmiError error = 1;
     string uid = 2;
   }
 }

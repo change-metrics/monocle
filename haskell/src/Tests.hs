@@ -8,7 +8,7 @@ import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client (MonocleClient (tokenM))
-import Monocle.Client.Api (authGetMagicJwt, authWhoAmI, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
+import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
@@ -133,13 +133,13 @@ monocleApiTests =
       let adminToken = "test"
       setEnv "ADMIN_TOKEN" adminToken
       withTestApi appEnv $ \_logger client -> do
-        resp <- authGetMagicJwt client $ GetMagicJWTRequest $ from adminToken
+        resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
         case resp of
-          GetMagicJWTResponse (Just (GetMagicJWTResponseResultJwt jwt)) -> do
+          GetMagicJwtResponse (Just (GetMagicJwtResponseResultJwt jwt)) -> do
             let authClient = client {tokenM = Just $ from jwt}
-            resp' <- authWhoAmI authClient $ WhoAmIRequest ""
+            resp' <- authWhoAmi authClient $ WhoAmiRequest ""
             case resp' of
-              WhoAmIResponse (Just (WhoAmIResponseResultUid muid)) ->
+              WhoAmiResponse (Just (WhoAmiResponseResultUid muid)) ->
                 assertEqual "Assert expected Magic Token uid" "Magic User UID" muid
               _ -> error "Unexpected Token uid value"
           _ -> error "expected a JWT token"

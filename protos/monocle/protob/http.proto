@@ -28,14 +28,14 @@ service Login {
 }
 
 service Auth {
-  rpc GetMagicJWT(monocle_auth.GetMagicJWTRequest) returns (monocle_auth.GetMagicJWTResponse) {
+  rpc GetMagicJwt(monocle_auth.GetMagicJwtRequest) returns (monocle_auth.GetMagicJwtResponse) {
     option (google.api.http) = {
       post: "/api/2/auth/get"
       body: "*"
     };
   }
 
-  rpc WhoAmI(monocle_auth.WhoAmIRequest) returns (monocle_auth.WhoAmIResponse) {
+  rpc WhoAmi(monocle_auth.WhoAmiRequest) returns (monocle_auth.WhoAmiResponse) {
     option (google.api.http) = {
       post: "/api/2/auth/whoami"
       body: "*"

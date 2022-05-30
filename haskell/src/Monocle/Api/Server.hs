@@ -65,47 +65,47 @@ pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:19875/auth/whoami
-authWhoAmI :: AuthResult AuthenticatedUser -> AuthPB.WhoAmIRequest -> AppM AuthPB.WhoAmIResponse
-authWhoAmI (Authenticated (AUser muid)) _request = response
+authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
+authWhoAmi (Authenticated (AUser muid)) _request = response
   where
     response =
       pure $
-        AuthPB.WhoAmIResponse
+        AuthPB.WhoAmiResponse
           . Just
-          . AuthPB.WhoAmIResponseResultUid
+          . AuthPB.WhoAmiResponseResultUid
           $ from muid
-authWhoAmI _auth _request =
+authWhoAmi _auth _request =
   pure $
-    AuthPB.WhoAmIResponse
+    AuthPB.WhoAmiResponse
       . Just
-      . AuthPB.WhoAmIResponseResultError
+      . AuthPB.WhoAmiResponseResultError
       . Enumerated
-      $ Right AuthPB.WhoAmIErrorUnAuthorized
+      $ Right AuthPB.WhoAmiErrorUnAuthorized
 
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:19875/auth/get
-authGetMagicJWT :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJWTRequest -> AppM AuthPB.GetMagicJWTResponse
-authGetMagicJWT _auth (AuthPB.GetMagicJWTRequest inputAdminToken) = do
+authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
+authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   jwtSettings <- asks aJWTSettings
   jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
-    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr AuthPB.GetMagicJWTErrorInvalidAdminToken
-    (_, Nothing) -> pure $ genErr AuthPB.GetMagicJWTErrorMagicTokenDisabled
-    _ -> pure $ genErr AuthPB.GetMagicJWTErrorMagicTokenCreateError
+    (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr AuthPB.GetMagicJwtErrorInvalidAdminToken
+    (_, Nothing) -> pure $ genErr AuthPB.GetMagicJwtErrorMagicTokenDisabled
+    _ -> pure $ genErr AuthPB.GetMagicJwtErrorMagicTokenCreateError
   where
-    genErr :: AuthPB.GetMagicJWTError -> AuthPB.GetMagicJWTResponse
+    genErr :: AuthPB.GetMagicJwtError -> AuthPB.GetMagicJwtResponse
     genErr err =
-      AuthPB.GetMagicJWTResponse
+      AuthPB.GetMagicJwtResponse
         . Just
-        . AuthPB.GetMagicJWTResponseResultError
+        . AuthPB.GetMagicJwtResponseResultError
         . Enumerated
         $ Right err
-    genSuccess :: Text -> AuthPB.GetMagicJWTResponse
+    genSuccess :: Text -> AuthPB.GetMagicJwtResponse
     genSuccess jwt =
-      AuthPB.GetMagicJWTResponse
+      AuthPB.GetMagicJwtResponse
         . Just
-        . AuthPB.GetMagicJWTResponseResultJwt
+        . AuthPB.GetMagicJwtResponseResultJwt
         $ from jwt
 
 -- | /login/validate endpoint

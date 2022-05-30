@@ -38,33 +38,33 @@ import qualified Proto3.Wire as HsProtobuf
 import qualified Unsafe.Coerce as Hs
 import qualified Prelude as Hs
 
-newtype GetMagicJWTRequest = GetMagicJWTRequest
-  { getMagicJWTRequestToken ::
+newtype GetMagicJwtRequest = GetMagicJwtRequest
+  { getMagicJwtRequestToken ::
       Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named GetMagicJWTRequest where
-  nameOf _ = (Hs.fromString "GetMagicJWTRequest")
+instance HsProtobuf.Named GetMagicJwtRequest where
+  nameOf _ = (Hs.fromString "GetMagicJwtRequest")
 
-instance HsProtobuf.HasDefault GetMagicJWTRequest
+instance HsProtobuf.HasDefault GetMagicJwtRequest
 
-instance HsProtobuf.Message GetMagicJWTRequest where
+instance HsProtobuf.Message GetMagicJwtRequest where
   encodeMessage
     _
-    GetMagicJWTRequest
-      { getMagicJWTRequestToken =
-          getMagicJWTRequestToken
+    GetMagicJwtRequest
+      { getMagicJwtRequestToken =
+          getMagicJwtRequestToken
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                getMagicJWTRequestToken
+                getMagicJwtRequestToken
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure GetMagicJWTRequest)
+    (Hs.pure GetMagicJwtRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -79,107 +79,107 @@ instance HsProtobuf.Message GetMagicJWTRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB GetMagicJWTRequest where
-  toJSONPB (GetMagicJWTRequest f1) =
+instance HsJSONPB.ToJSONPB GetMagicJwtRequest where
+  toJSONPB (GetMagicJwtRequest f1) =
     (HsJSONPB.object ["token" .= f1])
-  toEncodingPB (GetMagicJWTRequest f1) =
+  toEncodingPB (GetMagicJwtRequest f1) =
     (HsJSONPB.pairs ["token" .= f1])
 
-instance HsJSONPB.FromJSONPB GetMagicJWTRequest where
+instance HsJSONPB.FromJSONPB GetMagicJwtRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "GetMagicJWTRequest"
-        (\obj -> (Hs.pure GetMagicJWTRequest) <*> obj .: "token")
+        "GetMagicJwtRequest"
+        (\obj -> (Hs.pure GetMagicJwtRequest) <*> obj .: "token")
     )
 
-instance HsJSONPB.ToJSON GetMagicJWTRequest where
+instance HsJSONPB.ToJSON GetMagicJwtRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON GetMagicJWTRequest where
+instance HsJSONPB.FromJSON GetMagicJwtRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-data GetMagicJWTError
-  = GetMagicJWTErrorInvalidAdminToken
-  | GetMagicJWTErrorMagicTokenDisabled
-  | GetMagicJWTErrorMagicTokenCreateError
+data GetMagicJwtError
+  = GetMagicJwtErrorInvalidAdminToken
+  | GetMagicJwtErrorMagicTokenDisabled
+  | GetMagicJwtErrorMagicTokenCreateError
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named GetMagicJWTError where
-  nameOf _ = (Hs.fromString "GetMagicJWTError")
+instance HsProtobuf.Named GetMagicJwtError where
+  nameOf _ = (Hs.fromString "GetMagicJwtError")
 
-instance HsProtobuf.HasDefault GetMagicJWTError
+instance HsProtobuf.HasDefault GetMagicJwtError
 
-instance Hs.Bounded GetMagicJWTError where
-  minBound = GetMagicJWTErrorInvalidAdminToken
-  maxBound = GetMagicJWTErrorMagicTokenCreateError
+instance Hs.Bounded GetMagicJwtError where
+  minBound = GetMagicJwtErrorInvalidAdminToken
+  maxBound = GetMagicJwtErrorMagicTokenCreateError
 
-instance Hs.Ord GetMagicJWTError where
+instance Hs.Ord GetMagicJwtError where
   compare x y =
     Hs.compare
       (HsProtobuf.fromProtoEnum x)
       (HsProtobuf.fromProtoEnum y)
 
-instance HsProtobuf.ProtoEnum GetMagicJWTError where
-  toProtoEnumMay 0 = Hs.Just GetMagicJWTErrorInvalidAdminToken
-  toProtoEnumMay 1 = Hs.Just GetMagicJWTErrorMagicTokenDisabled
-  toProtoEnumMay 2 = Hs.Just GetMagicJWTErrorMagicTokenCreateError
+instance HsProtobuf.ProtoEnum GetMagicJwtError where
+  toProtoEnumMay 0 = Hs.Just GetMagicJwtErrorInvalidAdminToken
+  toProtoEnumMay 1 = Hs.Just GetMagicJwtErrorMagicTokenDisabled
+  toProtoEnumMay 2 = Hs.Just GetMagicJwtErrorMagicTokenCreateError
   toProtoEnumMay _ = Hs.Nothing
-  fromProtoEnum (GetMagicJWTErrorInvalidAdminToken) = 0
-  fromProtoEnum (GetMagicJWTErrorMagicTokenDisabled) = 1
-  fromProtoEnum (GetMagicJWTErrorMagicTokenCreateError) = 2
+  fromProtoEnum (GetMagicJwtErrorInvalidAdminToken) = 0
+  fromProtoEnum (GetMagicJwtErrorMagicTokenDisabled) = 1
+  fromProtoEnum (GetMagicJwtErrorMagicTokenCreateError) = 2
 
-instance HsJSONPB.ToJSONPB GetMagicJWTError where
+instance HsJSONPB.ToJSONPB GetMagicJwtError where
   toJSONPB x _ = HsJSONPB.enumFieldString x
   toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
 
-instance HsJSONPB.FromJSONPB GetMagicJWTError where
+instance HsJSONPB.FromJSONPB GetMagicJwtError where
   parseJSONPB (HsJSONPB.String "InvalidAdminToken") =
-    Hs.pure GetMagicJWTErrorInvalidAdminToken
+    Hs.pure GetMagicJwtErrorInvalidAdminToken
   parseJSONPB (HsJSONPB.String "MagicTokenDisabled") =
-    Hs.pure GetMagicJWTErrorMagicTokenDisabled
+    Hs.pure GetMagicJwtErrorMagicTokenDisabled
   parseJSONPB (HsJSONPB.String "MagicTokenCreateError") =
-    Hs.pure GetMagicJWTErrorMagicTokenCreateError
-  parseJSONPB v = (HsJSONPB.typeMismatch "GetMagicJWTError" v)
+    Hs.pure GetMagicJwtErrorMagicTokenCreateError
+  parseJSONPB v = (HsJSONPB.typeMismatch "GetMagicJwtError" v)
 
-instance HsJSONPB.ToJSON GetMagicJWTError where
+instance HsJSONPB.ToJSON GetMagicJwtError where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON GetMagicJWTError where
+instance HsJSONPB.FromJSON GetMagicJwtError where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsProtobuf.Finite GetMagicJWTError
+instance HsProtobuf.Finite GetMagicJwtError
 
-newtype GetMagicJWTResponse = GetMagicJWTResponse
-  { getMagicJWTResponseResult ::
-      Hs.Maybe GetMagicJWTResponseResult
+newtype GetMagicJwtResponse = GetMagicJwtResponse
+  { getMagicJwtResponseResult ::
+      Hs.Maybe GetMagicJwtResponseResult
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named GetMagicJWTResponse where
-  nameOf _ = (Hs.fromString "GetMagicJWTResponse")
+instance HsProtobuf.Named GetMagicJwtResponse where
+  nameOf _ = (Hs.fromString "GetMagicJwtResponse")
 
-instance HsProtobuf.HasDefault GetMagicJWTResponse
+instance HsProtobuf.HasDefault GetMagicJwtResponse
 
-instance HsProtobuf.Message GetMagicJWTResponse where
+instance HsProtobuf.Message GetMagicJwtResponse where
   encodeMessage
     _
-    GetMagicJWTResponse
-      { getMagicJWTResponseResult =
-          getMagicJWTResponseResult
+    GetMagicJwtResponse
+      { getMagicJwtResponseResult =
+          getMagicJwtResponseResult
       } =
       ( Hs.mconcat
-          [ case getMagicJWTResponseResult of
+          [ case getMagicJwtResponseResult of
               Hs.Nothing -> Hs.mempty
               Hs.Just x ->
                 case x of
-                  GetMagicJWTResponseResultError y ->
+                  GetMagicJwtResponseResultError y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 1)
                         (HsProtobuf.ForceEmit y)
                     )
-                  GetMagicJWTResponseResultJwt y ->
+                  GetMagicJwtResponseResultJwt y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 2)
                         (HsProtobuf.ForceEmit y)
@@ -187,29 +187,29 @@ instance HsProtobuf.Message GetMagicJWTResponse where
           ]
       )
   decodeMessage _ =
-    (Hs.pure GetMagicJWTResponse)
+    (Hs.pure GetMagicJwtResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
               [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. GetMagicJWTResponseResultError))
+                  (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultError))
                     <*> HsProtobuf.decodeMessageField
                 ),
                 ( (HsProtobuf.FieldNumber 2),
-                  (Hs.pure (Hs.Just Hs.. GetMagicJWTResponseResultJwt))
+                  (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultJwt))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
           )
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB GetMagicJWTResponse where
-  toJSONPB (GetMagicJWTResponse f1_or_f2) =
+instance HsJSONPB.ToJSONPB GetMagicJwtResponse where
+  toJSONPB (GetMagicJwtResponse f1_or_f2) =
     ( HsJSONPB.object
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (GetMagicJWTResponseResultError f1) ->
+                      Hs.Just (GetMagicJwtResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (GetMagicJWTResponseResultJwt f2) ->
+                      Hs.Just (GetMagicJwtResponseResultJwt f2) ->
                         (HsJSONPB.pair "jwt" f2)
                       Hs.Nothing -> Hs.mempty
                   )
@@ -222,13 +222,13 @@ instance HsJSONPB.ToJSONPB GetMagicJWTResponse where
           )
         ]
     )
-  toEncodingPB (GetMagicJWTResponse f1_or_f2) =
+  toEncodingPB (GetMagicJwtResponse f1_or_f2) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (GetMagicJWTResponseResultError f1) ->
+                      Hs.Just (GetMagicJwtResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (GetMagicJWTResponseResultJwt f2) ->
+                      Hs.Just (GetMagicJwtResponseResultJwt f2) ->
                         (HsJSONPB.pair "jwt" f2)
                       Hs.Nothing -> Hs.mempty
                   )
@@ -240,17 +240,17 @@ instance HsJSONPB.ToJSONPB GetMagicJWTResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB GetMagicJWTResponse where
+instance HsJSONPB.FromJSONPB GetMagicJwtResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "GetMagicJWTResponse"
+        "GetMagicJwtResponse"
         ( \obj ->
-            (Hs.pure GetMagicJWTResponse)
+            (Hs.pure GetMagicJwtResponse)
               <*> ( let parseResult parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. GetMagicJWTResponseResultError
+                            [ Hs.Just Hs.. GetMagicJwtResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error"),
-                              Hs.Just Hs.. GetMagicJWTResponseResultJwt
+                              Hs.Just Hs.. GetMagicJwtResponseResultJwt
                                 <$> (HsJSONPB.parseField parseObj "jwt"),
                               Hs.pure Hs.Nothing
                             ]
@@ -262,45 +262,45 @@ instance HsJSONPB.FromJSONPB GetMagicJWTResponse where
         )
     )
 
-instance HsJSONPB.ToJSON GetMagicJWTResponse where
+instance HsJSONPB.ToJSON GetMagicJwtResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON GetMagicJWTResponse where
+instance HsJSONPB.FromJSON GetMagicJwtResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-data GetMagicJWTResponseResult
-  = GetMagicJWTResponseResultError
+data GetMagicJwtResponseResult
+  = GetMagicJwtResponseResultError
       ( HsProtobuf.Enumerated
-          Monocle.Protob.Auth.GetMagicJWTError
+          Monocle.Protob.Auth.GetMagicJwtError
       )
-  | GetMagicJWTResponseResultJwt Hs.Text
+  | GetMagicJwtResponseResultJwt Hs.Text
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named GetMagicJWTResponseResult where
-  nameOf _ = (Hs.fromString "GetMagicJWTResponseResult")
+instance HsProtobuf.Named GetMagicJwtResponseResult where
+  nameOf _ = (Hs.fromString "GetMagicJwtResponseResult")
 
-newtype WhoAmIRequest = WhoAmIRequest {whoAmIRequestVoid :: Hs.Text}
+newtype WhoAmiRequest = WhoAmiRequest {whoAmiRequestVoid :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named WhoAmIRequest where
-  nameOf _ = (Hs.fromString "WhoAmIRequest")
+instance HsProtobuf.Named WhoAmiRequest where
+  nameOf _ = (Hs.fromString "WhoAmiRequest")
 
-instance HsProtobuf.HasDefault WhoAmIRequest
+instance HsProtobuf.HasDefault WhoAmiRequest
 
-instance HsProtobuf.Message WhoAmIRequest where
+instance HsProtobuf.Message WhoAmiRequest where
   encodeMessage
     _
-    WhoAmIRequest {whoAmIRequestVoid = whoAmIRequestVoid} =
+    WhoAmiRequest {whoAmiRequestVoid = whoAmiRequestVoid} =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                whoAmIRequestVoid
+                whoAmiRequestVoid
             )
           ]
       )
   decodeMessage _ =
-    (Hs.pure WhoAmIRequest)
+    (Hs.pure WhoAmiRequest)
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 1)
@@ -315,91 +315,91 @@ instance HsProtobuf.Message WhoAmIRequest where
       )
     ]
 
-instance HsJSONPB.ToJSONPB WhoAmIRequest where
-  toJSONPB (WhoAmIRequest f1) = (HsJSONPB.object ["void" .= f1])
-  toEncodingPB (WhoAmIRequest f1) = (HsJSONPB.pairs ["void" .= f1])
+instance HsJSONPB.ToJSONPB WhoAmiRequest where
+  toJSONPB (WhoAmiRequest f1) = (HsJSONPB.object ["void" .= f1])
+  toEncodingPB (WhoAmiRequest f1) = (HsJSONPB.pairs ["void" .= f1])
 
-instance HsJSONPB.FromJSONPB WhoAmIRequest where
+instance HsJSONPB.FromJSONPB WhoAmiRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "WhoAmIRequest"
-        (\obj -> (Hs.pure WhoAmIRequest) <*> obj .: "void")
+        "WhoAmiRequest"
+        (\obj -> (Hs.pure WhoAmiRequest) <*> obj .: "void")
     )
 
-instance HsJSONPB.ToJSON WhoAmIRequest where
+instance HsJSONPB.ToJSON WhoAmiRequest where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON WhoAmIRequest where
+instance HsJSONPB.FromJSON WhoAmiRequest where
   parseJSON = HsJSONPB.parseJSONPB
 
-data WhoAmIError = WhoAmIErrorUnAuthorized
+data WhoAmiError = WhoAmiErrorUnAuthorized
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named WhoAmIError where
-  nameOf _ = (Hs.fromString "WhoAmIError")
+instance HsProtobuf.Named WhoAmiError where
+  nameOf _ = (Hs.fromString "WhoAmiError")
 
-instance HsProtobuf.HasDefault WhoAmIError
+instance HsProtobuf.HasDefault WhoAmiError
 
-instance Hs.Bounded WhoAmIError where
-  minBound = WhoAmIErrorUnAuthorized
-  maxBound = WhoAmIErrorUnAuthorized
+instance Hs.Bounded WhoAmiError where
+  minBound = WhoAmiErrorUnAuthorized
+  maxBound = WhoAmiErrorUnAuthorized
 
-instance Hs.Ord WhoAmIError where
+instance Hs.Ord WhoAmiError where
   compare x y =
     Hs.compare
       (HsProtobuf.fromProtoEnum x)
       (HsProtobuf.fromProtoEnum y)
 
-instance HsProtobuf.ProtoEnum WhoAmIError where
-  toProtoEnumMay 0 = Hs.Just WhoAmIErrorUnAuthorized
+instance HsProtobuf.ProtoEnum WhoAmiError where
+  toProtoEnumMay 0 = Hs.Just WhoAmiErrorUnAuthorized
   toProtoEnumMay _ = Hs.Nothing
-  fromProtoEnum (WhoAmIErrorUnAuthorized) = 0
+  fromProtoEnum (WhoAmiErrorUnAuthorized) = 0
 
-instance HsJSONPB.ToJSONPB WhoAmIError where
+instance HsJSONPB.ToJSONPB WhoAmiError where
   toJSONPB x _ = HsJSONPB.enumFieldString x
   toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
 
-instance HsJSONPB.FromJSONPB WhoAmIError where
+instance HsJSONPB.FromJSONPB WhoAmiError where
   parseJSONPB (HsJSONPB.String "UnAuthorized") =
-    Hs.pure WhoAmIErrorUnAuthorized
-  parseJSONPB v = (HsJSONPB.typeMismatch "WhoAmIError" v)
+    Hs.pure WhoAmiErrorUnAuthorized
+  parseJSONPB v = (HsJSONPB.typeMismatch "WhoAmiError" v)
 
-instance HsJSONPB.ToJSON WhoAmIError where
+instance HsJSONPB.ToJSON WhoAmiError where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON WhoAmIError where
+instance HsJSONPB.FromJSON WhoAmiError where
   parseJSON = HsJSONPB.parseJSONPB
 
-instance HsProtobuf.Finite WhoAmIError
+instance HsProtobuf.Finite WhoAmiError
 
-newtype WhoAmIResponse = WhoAmIResponse
-  { whoAmIResponseResult ::
-      Hs.Maybe WhoAmIResponseResult
+newtype WhoAmiResponse = WhoAmiResponse
+  { whoAmiResponseResult ::
+      Hs.Maybe WhoAmiResponseResult
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named WhoAmIResponse where
-  nameOf _ = (Hs.fromString "WhoAmIResponse")
+instance HsProtobuf.Named WhoAmiResponse where
+  nameOf _ = (Hs.fromString "WhoAmiResponse")
 
-instance HsProtobuf.HasDefault WhoAmIResponse
+instance HsProtobuf.HasDefault WhoAmiResponse
 
-instance HsProtobuf.Message WhoAmIResponse where
+instance HsProtobuf.Message WhoAmiResponse where
   encodeMessage
     _
-    WhoAmIResponse {whoAmIResponseResult = whoAmIResponseResult} =
+    WhoAmiResponse {whoAmiResponseResult = whoAmiResponseResult} =
       ( Hs.mconcat
-          [ case whoAmIResponseResult of
+          [ case whoAmiResponseResult of
               Hs.Nothing -> Hs.mempty
               Hs.Just x ->
                 case x of
-                  WhoAmIResponseResultError y ->
+                  WhoAmiResponseResultError y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 1)
                         (HsProtobuf.ForceEmit y)
                     )
-                  WhoAmIResponseResultUid y ->
+                  WhoAmiResponseResultUid y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 2)
                         (HsProtobuf.ForceEmit y)
@@ -407,29 +407,29 @@ instance HsProtobuf.Message WhoAmIResponse where
           ]
       )
   decodeMessage _ =
-    (Hs.pure WhoAmIResponse)
+    (Hs.pure WhoAmiResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
               [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. WhoAmIResponseResultError))
+                  (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultError))
                     <*> HsProtobuf.decodeMessageField
                 ),
                 ( (HsProtobuf.FieldNumber 2),
-                  (Hs.pure (Hs.Just Hs.. WhoAmIResponseResultUid))
+                  (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultUid))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
           )
   dotProto _ = []
 
-instance HsJSONPB.ToJSONPB WhoAmIResponse where
-  toJSONPB (WhoAmIResponse f1_or_f2) =
+instance HsJSONPB.ToJSONPB WhoAmiResponse where
+  toJSONPB (WhoAmiResponse f1_or_f2) =
     ( HsJSONPB.object
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (WhoAmIResponseResultError f1) ->
+                      Hs.Just (WhoAmiResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (WhoAmIResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
+                      Hs.Just (WhoAmiResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -441,13 +441,13 @@ instance HsJSONPB.ToJSONPB WhoAmIResponse where
           )
         ]
     )
-  toEncodingPB (WhoAmIResponse f1_or_f2) =
+  toEncodingPB (WhoAmiResponse f1_or_f2) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
                   ( case f1_or_f2 of
-                      Hs.Just (WhoAmIResponseResultError f1) ->
+                      Hs.Just (WhoAmiResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (WhoAmIResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
+                      Hs.Just (WhoAmiResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -458,17 +458,17 @@ instance HsJSONPB.ToJSONPB WhoAmIResponse where
         ]
     )
 
-instance HsJSONPB.FromJSONPB WhoAmIResponse where
+instance HsJSONPB.FromJSONPB WhoAmiResponse where
   parseJSONPB =
     ( HsJSONPB.withObject
-        "WhoAmIResponse"
+        "WhoAmiResponse"
         ( \obj ->
-            (Hs.pure WhoAmIResponse)
+            (Hs.pure WhoAmiResponse)
               <*> ( let parseResult parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. WhoAmIResponseResultError
+                            [ Hs.Just Hs.. WhoAmiResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error"),
-                              Hs.Just Hs.. WhoAmIResponseResultUid
+                              Hs.Just Hs.. WhoAmiResponseResultUid
                                 <$> (HsJSONPB.parseField parseObj "uid"),
                               Hs.pure Hs.Nothing
                             ]
@@ -480,20 +480,20 @@ instance HsJSONPB.FromJSONPB WhoAmIResponse where
         )
     )
 
-instance HsJSONPB.ToJSON WhoAmIResponse where
+instance HsJSONPB.ToJSON WhoAmiResponse where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
 
-instance HsJSONPB.FromJSON WhoAmIResponse where
+instance HsJSONPB.FromJSON WhoAmiResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-data WhoAmIResponseResult
-  = WhoAmIResponseResultError
+data WhoAmiResponseResult
+  = WhoAmiResponseResultError
       ( HsProtobuf.Enumerated
-          Monocle.Protob.Auth.WhoAmIError
+          Monocle.Protob.Auth.WhoAmiError
       )
-  | WhoAmIResponseResultUid Hs.Text
+  | WhoAmiResponseResultUid Hs.Text
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
-instance HsProtobuf.Named WhoAmIResponseResult where
-  nameOf _ = (Hs.fromString "WhoAmIResponseResult")
+instance HsProtobuf.Named WhoAmiResponseResult where
+  nameOf _ = (Hs.fromString "WhoAmiResponseResult")

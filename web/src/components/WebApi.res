@@ -36,13 +36,13 @@ module Auth = {
       {data: resp.data->AuthBs.decode_get_magic_jwt_response}->Js.Promise.resolve
     )
   @module("axios")
-  external whoAmIRaw: (string, 'a) => axios<'b> = "post"
+  external whoAmiRaw: (string, 'a) => axios<'b> = "post"
 
-  let whoAmI = (request: AuthTypes.who_am_i_request): axios<AuthTypes.who_am_i_response> =>
-    request->AuthBs.encode_who_am_i_request
-    |> whoAmIRaw(serverUrl ++ "/api/2/auth/whoami")
+  let whoAmi = (request: AuthTypes.who_ami_request): axios<AuthTypes.who_ami_response> =>
+    request->AuthBs.encode_who_ami_request
+    |> whoAmiRaw(serverUrl ++ "/api/2/auth/whoami")
     |> Js.Promise.then_(resp =>
-      {data: resp.data->AuthBs.decode_who_am_i_response}->Js.Promise.resolve
+      {data: resp.data->AuthBs.decode_who_ami_response}->Js.Promise.resolve
     )
 }
 

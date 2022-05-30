@@ -26,12 +26,12 @@ paths:
                                 $ref: '#/components/schemas/monocle_config_GetAboutResponse'
     /api/2/auth/get:
         post:
-            operationId: Auth_GetMagicJWT
+            operationId: Auth_GetMagicJwt
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/monocle_auth_GetMagicJWTRequest'
+                            $ref: '#/components/schemas/monocle_auth_GetMagicJwtRequest'
                 required: true
             responses:
                 "200":
@@ -39,15 +39,15 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/monocle_auth_GetMagicJWTResponse'
+                                $ref: '#/components/schemas/monocle_auth_GetMagicJwtResponse'
     /api/2/auth/whoami:
         post:
-            operationId: Auth_WhoAmI
+            operationId: Auth_WhoAmi
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/monocle_auth_WhoAmIRequest'
+                            $ref: '#/components/schemas/monocle_auth_WhoAmiRequest'
                 required: true
             responses:
                 "200":
@@ -55,7 +55,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/monocle_auth_WhoAmIResponse'
+                                $ref: '#/components/schemas/monocle_auth_WhoAmiResponse'
     /api/2/crawler/add:
         post:
             summary: Push crawler data
@@ -306,22 +306,22 @@ paths:
                                 $ref: '#/components/schemas/monocle_search_SuggestionsResponse'
 components:
     schemas:
-        monocle_auth_GetMagicJWTRequest:
+        monocle_auth_GetMagicJwtRequest:
             properties:
                 token:
                     type: string
-        monocle_auth_GetMagicJWTResponse:
+        monocle_auth_GetMagicJwtResponse:
             properties:
                 error:
                     type: integer
                     format: enum
                 jwt:
                     type: string
-        monocle_auth_WhoAmIRequest:
+        monocle_auth_WhoAmiRequest:
             properties:
                 void:
                     type: string
-        monocle_auth_WhoAmIResponse:
+        monocle_auth_WhoAmiResponse:
             properties:
                 error:
                     type: integer

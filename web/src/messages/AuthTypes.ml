@@ -1,46 +1,46 @@
 [@@@ocaml.warning "-27-30-39"]
 
 
-type get_magic_jwtrequest = {
+type get_magic_jwt_request = {
   token : string;
 }
 
-type get_magic_jwterror =
+type get_magic_jwt_error =
   | Invalid_admin_token 
   | Magic_token_disabled 
   | Magic_token_create_error 
 
-type get_magic_jwtresponse =
-  | Error of get_magic_jwterror
+type get_magic_jwt_response =
+  | Error of get_magic_jwt_error
   | Jwt of string
 
-type who_am_irequest = {
+type who_ami_request = {
   void : string;
 }
 
-type who_am_ierror =
+type who_ami_error =
   | Un_authorized 
 
-type who_am_iresponse =
-  | Error of who_am_ierror
+type who_ami_response =
+  | Error of who_ami_error
   | Uid of string
 
-let rec default_get_magic_jwtrequest 
+let rec default_get_magic_jwt_request 
   ?token:((token:string) = "")
-  () : get_magic_jwtrequest  = {
+  () : get_magic_jwt_request  = {
   token;
 }
 
-let rec default_get_magic_jwterror () = (Invalid_admin_token:get_magic_jwterror)
+let rec default_get_magic_jwt_error () = (Invalid_admin_token:get_magic_jwt_error)
 
-let rec default_get_magic_jwtresponse () : get_magic_jwtresponse = Error (default_get_magic_jwterror ())
+let rec default_get_magic_jwt_response () : get_magic_jwt_response = Error (default_get_magic_jwt_error ())
 
-let rec default_who_am_irequest 
+let rec default_who_ami_request 
   ?void:((void:string) = "")
-  () : who_am_irequest  = {
+  () : who_ami_request  = {
   void;
 }
 
-let rec default_who_am_ierror () = (Un_authorized:who_am_ierror)
+let rec default_who_ami_error () = (Un_authorized:who_ami_error)
 
-let rec default_who_am_iresponse () : who_am_iresponse = Error (default_who_am_ierror ())
+let rec default_who_ami_response () : who_ami_response = Error (default_who_ami_error ())

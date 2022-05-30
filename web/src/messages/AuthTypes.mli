@@ -4,53 +4,53 @@
 
 (** {2 Types} *)
 
-type get_magic_jwtrequest = {
+type get_magic_jwt_request = {
   token : string;
 }
 
-type get_magic_jwterror =
+type get_magic_jwt_error =
   | Invalid_admin_token 
   | Magic_token_disabled 
   | Magic_token_create_error 
 
-type get_magic_jwtresponse =
-  | Error of get_magic_jwterror
+type get_magic_jwt_response =
+  | Error of get_magic_jwt_error
   | Jwt of string
 
-type who_am_irequest = {
+type who_ami_request = {
   void : string;
 }
 
-type who_am_ierror =
+type who_ami_error =
   | Un_authorized 
 
-type who_am_iresponse =
-  | Error of who_am_ierror
+type who_ami_response =
+  | Error of who_ami_error
   | Uid of string
 
 
 (** {2 Default values} *)
 
-val default_get_magic_jwtrequest : 
+val default_get_magic_jwt_request : 
   ?token:string ->
   unit ->
-  get_magic_jwtrequest
-(** [default_get_magic_jwtrequest ()] is the default value for type [get_magic_jwtrequest] *)
+  get_magic_jwt_request
+(** [default_get_magic_jwt_request ()] is the default value for type [get_magic_jwt_request] *)
 
-val default_get_magic_jwterror : unit -> get_magic_jwterror
-(** [default_get_magic_jwterror ()] is the default value for type [get_magic_jwterror] *)
+val default_get_magic_jwt_error : unit -> get_magic_jwt_error
+(** [default_get_magic_jwt_error ()] is the default value for type [get_magic_jwt_error] *)
 
-val default_get_magic_jwtresponse : unit -> get_magic_jwtresponse
-(** [default_get_magic_jwtresponse ()] is the default value for type [get_magic_jwtresponse] *)
+val default_get_magic_jwt_response : unit -> get_magic_jwt_response
+(** [default_get_magic_jwt_response ()] is the default value for type [get_magic_jwt_response] *)
 
-val default_who_am_irequest : 
+val default_who_ami_request : 
   ?void:string ->
   unit ->
-  who_am_irequest
-(** [default_who_am_irequest ()] is the default value for type [who_am_irequest] *)
+  who_ami_request
+(** [default_who_ami_request ()] is the default value for type [who_ami_request] *)
 
-val default_who_am_ierror : unit -> who_am_ierror
-(** [default_who_am_ierror ()] is the default value for type [who_am_ierror] *)
+val default_who_ami_error : unit -> who_ami_error
+(** [default_who_ami_error ()] is the default value for type [who_ami_error] *)
 
-val default_who_am_iresponse : unit -> who_am_iresponse
-(** [default_who_am_iresponse ()] is the default value for type [who_am_iresponse] *)
+val default_who_ami_response : unit -> who_ami_response
+(** [default_who_ami_response ()] is the default value for type [who_ami_response] *)
