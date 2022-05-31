@@ -27,6 +27,7 @@ module Monocle.Config
     Bugzilla (..),
     GithubApplication (..),
     Link (..),
+    OIDCProvider (..),
 
     -- * Data types to host the config status
     WorkspaceStatus,
@@ -46,6 +47,7 @@ module Monocle.Config
 
     -- * Functions to handle a Config
     getWorkspaces,
+    getAuthProvider,
 
     -- * Functions to handle an Index
     getWorkspaceName,
@@ -76,7 +78,7 @@ where
 import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (isPrefixOf)
+import Data.Text qualified as T (isPrefixOf, null)
 import Dhall qualified
 import Dhall.Core qualified
 import Dhall.Src qualified
@@ -284,8 +286,15 @@ instance MonadConfig IO where
 -- Begin - Functions to handle a Config
 ---------------------------------------
 
+-- | Simply returns the config workspaces
 getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
+
+-- | Get Authentication provider config and ensure mandatory config is not empty
+getAuthProvider :: Config -> Maybe OIDCProvider
+getAuthProvider (Config _about (Just (Auth provider@(OIDCProvider issuer client_id user_claim))) _ws)
+  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) = Just provider
+getAuthProvider _ = Nothing
 
 -- End - Functions to handle a Config
 

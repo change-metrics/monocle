@@ -54,6 +54,18 @@ let default_get_workspaces_response_mutable () : get_workspaces_response_mutable
   workspaces = [];
 }
 
+type auth_config_mutable = {
+  mutable issuer : string;
+  mutable client_id : string;
+  mutable user_claim : string;
+}
+
+let default_auth_config_mutable () : auth_config_mutable = {
+  issuer = "";
+  client_id = "";
+  user_claim = "";
+}
+
 type about_about_link_mutable = {
   mutable name : string;
   mutable url : string;
@@ -69,11 +81,13 @@ let default_about_about_link_mutable () : about_about_link_mutable = {
 type about_mutable = {
   mutable version : string;
   mutable links : ConfigTypes.about_about_link list;
+  mutable authentication : ConfigTypes.about_authentication;
 }
 
 let default_about_mutable () : about_mutable = {
   version = "";
   links = [];
+  authentication = ConfigTypes.Config (ConfigTypes.default_auth_config ());
 }
 
 type get_about_request_mutable = {
@@ -257,6 +271,30 @@ let rec decode_get_workspaces_response json =
     ConfigTypes.workspaces = v.workspaces;
   } : ConfigTypes.get_workspaces_response)
 
+let rec decode_auth_config json =
+  let v = default_auth_config_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "issuer" -> 
+      let json = Js.Dict.unsafeGet json "issuer" in
+      v.issuer <- Pbrt_bs.string json "auth_config" "issuer"
+    | "client_id" -> 
+      let json = Js.Dict.unsafeGet json "client_id" in
+      v.client_id <- Pbrt_bs.string json "auth_config" "client_id"
+    | "user_claim" -> 
+      let json = Js.Dict.unsafeGet json "user_claim" in
+      v.user_claim <- Pbrt_bs.string json "auth_config" "user_claim"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    ConfigTypes.issuer = v.issuer;
+    ConfigTypes.client_id = v.client_id;
+    ConfigTypes.user_claim = v.user_claim;
+  } : ConfigTypes.auth_config)
+
 let rec decode_about_about_link json =
   let v = default_about_about_link_mutable () in
   let keys = Js.Dict.keys json in
@@ -281,7 +319,22 @@ let rec decode_about_about_link json =
     ConfigTypes.category = v.category;
   } : ConfigTypes.about_about_link)
 
-let rec decode_about json =
+let rec decode_about_authentication json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "about_authentication"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "config" -> 
+        let json = Js.Dict.unsafeGet json "config" in
+        (ConfigTypes.Config ((decode_auth_config (Pbrt_bs.object_ json "about_authentication" "Config"))) : ConfigTypes.about_authentication)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
+
+and decode_about json =
   let v = default_about_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
@@ -299,12 +352,16 @@ let rec decode_about json =
         (decode_about_about_link (Pbrt_bs.object_ json "about" "links"))
       ) a |> Array.to_list;
     end
+    | "config" -> 
+      let json = Js.Dict.unsafeGet json "config" in
+      v.authentication <- Config ((decode_auth_config (Pbrt_bs.object_ json "about" "authentication")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     ConfigTypes.version = v.version;
     ConfigTypes.links = v.links;
+    ConfigTypes.authentication = v.authentication;
   } : ConfigTypes.about)
 
 let rec decode_get_about_request json =
@@ -492,6 +549,13 @@ let rec encode_get_workspaces_response (v:ConfigTypes.get_workspaces_response) =
   end;
   json
 
+let rec encode_auth_config (v:ConfigTypes.auth_config) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "issuer" (Js.Json.string v.ConfigTypes.issuer);
+  Js.Dict.set json "client_id" (Js.Json.string v.ConfigTypes.client_id);
+  Js.Dict.set json "user_claim" (Js.Json.string v.ConfigTypes.user_claim);
+  json
+
 let rec encode_about_about_link (v:ConfigTypes.about_about_link) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "name" (Js.Json.string v.ConfigTypes.name);
@@ -499,7 +563,18 @@ let rec encode_about_about_link (v:ConfigTypes.about_about_link) =
   Js.Dict.set json "category" (Js.Json.string v.ConfigTypes.category);
   json
 
-let rec encode_about (v:ConfigTypes.about) = 
+let rec encode_about_authentication (v:ConfigTypes.about_authentication) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | ConfigTypes.Config v ->
+    begin (* config field *)
+      let json' = encode_auth_config v in
+      Js.Dict.set json "config" (Js.Json.object_ json');
+    end;
+  end;
+  json
+
+and encode_about (v:ConfigTypes.about) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "version" (Js.Json.string v.ConfigTypes.version);
   begin (* links field *)
@@ -513,6 +588,13 @@ let rec encode_about (v:ConfigTypes.about) =
     in
     Js.Dict.set json "links" links';
   end;
+  begin match v.ConfigTypes.authentication with
+    | Config v ->
+      begin (* config field *)
+        let json' = encode_auth_config v in
+        Js.Dict.set json "config" (Js.Json.object_ json');
+      end;
+  end; (* match v.authentication *)
   json
 
 let rec encode_get_about_request (v:ConfigTypes.get_about_request) = 
