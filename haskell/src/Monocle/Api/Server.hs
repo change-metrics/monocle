@@ -62,7 +62,7 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _ a) _
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:19875/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse

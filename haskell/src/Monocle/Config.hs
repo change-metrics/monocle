@@ -102,6 +102,8 @@ Dhall.TH.makeHaskellTypes
           main "Config",
           main "About",
           main "Link",
+          main "Auth",
+          main "OIDCProvider",
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
