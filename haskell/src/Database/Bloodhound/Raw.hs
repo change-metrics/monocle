@@ -41,7 +41,7 @@ dispatch ::
   QS ->
   m BH.Reply
 dispatch method url body qs = do
-  initReq <- liftIO $ HTTP.parseRequest (toString url)
+  initReq <- liftIO $ HTTP.parseRequest (from url)
   let request =
         initReq
           { HTTP.method = method,

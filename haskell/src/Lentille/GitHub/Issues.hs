@@ -140,11 +140,11 @@ transformResponse searchResult =
     toTaskData issue curl =
       TaskData
         <$> (Just <$> getUpdatedAt issue)
-        <*> pure (toLazy curl)
+        <*> pure (from curl)
         <*> (V.fromList <$> getLabelsE)
-        <*> pure (toLazy $ getNumber issue)
-        <*> pure (toLazy $ getIssueURL issue)
-        <*> pure (toLazy $ title issue)
+        <*> pure (from $ getNumber issue)
+        <*> pure (from $ getIssueURL issue)
+        <*> pure (from $ title issue)
         <*> pure "low"
         <*> pure "low"
         <*> pure 0
@@ -152,7 +152,7 @@ transformResponse searchResult =
       where
         getLabelsE :: Either Text [LText]
         getLabelsE = case partitionEithers (getLabels issue) of
-          ([], labels') -> Right (fmap toLazy labels')
+          ([], labels') -> Right (fmap from labels')
           (errors, _) -> Left (unwords errors)
         getIssueURL :: SearchNodesSearchResultItem -> Text
         getIssueURL (SearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
@@ -160,7 +160,7 @@ transformResponse searchResult =
         getNumber (SearchNodesIssue _ _ _ _ _ number _ _) = show number
     getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
     getUpdatedAt (SearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
-      case Timestamp.fromRFC3339 $ toLazy updatedAt' of
+      case Timestamp.fromRFC3339 $ from updatedAt' of
         Just ts -> Right ts
         Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
     getLabels :: SearchNodesSearchResultItem -> [Either Text Text]

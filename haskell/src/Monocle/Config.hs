@@ -250,7 +250,7 @@ reloadConfig fp = do
       if configTS > prevConfigTS
         then do
           -- TODO: use log reload event
-          putTextLn $ toText fp <> ": reloading config"
+          putTextLn $ from fp <> ": reloading config"
           config <- loadConfig fp
           modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
           pure ((configTS, config), ConfigStatus True config wsRef)
@@ -265,8 +265,8 @@ getSecret ::
   Maybe Text ->
   m Secret
 getSecret def keyM =
-  Secret . toText . fromMaybe (error $ "Missing environment: " <> env)
-    <$> lookupEnv (toString env)
+  Secret . from . fromMaybe (error $ "Missing environment: " <> env)
+    <$> lookupEnv (from env)
   where
     env = fromMaybe def keyM
 

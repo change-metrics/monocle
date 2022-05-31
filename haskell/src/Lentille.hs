@@ -170,7 +170,7 @@ logRaw text = mLog $ Log Unspecified (LogRaw text)
 -------------------------------------------------------------------------------
 
 getChangeId :: Text -> Text -> LText
-getChangeId fullName iid = toLazy . stripSpaces $ T.replace "/" "@" fullName <> "@" <> toText iid
+getChangeId fullName iid = from . stripSpaces $ T.replace "/" "@" fullName <> "@" <> from iid
 
 isMerged :: Enumerated Change_ChangeState -> Bool
 isMerged state' = case state' of
@@ -192,8 +192,8 @@ toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
 toIdent host cb username = Ident {..}
   where
     uid = host <> "/" <> username
-    identUid = toLazy uid
-    identMuid = toLazy $ fromMaybe username (cb uid)
+    identUid = from uid
+    identMuid = from $ fromMaybe username (cb uid)
 
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody

@@ -121,7 +121,7 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
       BulkUpdate indexName (getChangeDocId ec) $ toJSON ec
       where
         getChangeDocId :: EChangeAuthors -> BH.DocId
-        getChangeDocId change = BH.DocId . toText $ echangeaId change
+        getChangeDocId change = BH.DocId . from $ echangeaId change
 
 -- | Apply identities according to the configuration on Events
 -- Try this on the REPL with:
@@ -175,7 +175,7 @@ doUpdateIdentsOnEvents indexName updateAuthor' =
       BulkUpdate indexName (getEventDocId ev) $ toJSON ev
       where
         getEventDocId :: EChangeEventAuthors -> BH.DocId
-        getEventDocId event = BH.DocId . toStrict $ echangeeventaId event
+        getEventDocId event = BH.DocId . from $ echangeeventaId event
 
 -- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
@@ -201,7 +201,7 @@ wipeCrawlerData crawlerName = do
     getProjectsCrawler :: QueryM [Text]
     getProjectsCrawler = do
       projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
-      pure $ toText . getValue <$> projectCrawlerMDs
+      pure $ from . getValue <$> projectCrawlerMDs
       where
         sQuery =
           mkQuery

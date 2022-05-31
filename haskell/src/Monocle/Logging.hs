@@ -95,16 +95,16 @@ instance From LogEvent Text where
     LogGraphQL lc text -> prefix lc <> " - " <> text
     LogRaw t -> t
     AddingChange crawler changes events ->
-      toStrict crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
+      from crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
     AddingProject crawler organizationName projects ->
       crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
     AddingTaskData crawler tds ->
-      toStrict crawler <> " adding " <> show tds
+      from crawler <> " adding " <> show tds
     UpdatingEntity crawler entity ts ->
-      toStrict crawler <> " updating " <> show entity <> " to " <> show ts
+      from crawler <> " updating " <> show entity <> " to " <> show ts
     Searching queryType queryText query ->
       let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
-       in "searching " <> show queryType <> " with `" <> toStrict queryText <> "`: " <> jsonQuery
+       in "searching " <> show queryType <> " with `" <> from queryText <> "`: " <> jsonQuery
     SystemReady tenantCount port url ->
       "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> url
     RefreshIndex index ->

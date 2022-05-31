@@ -73,4 +73,4 @@ transformResponse result =
         []
       )
   where
-    getFullPath GroupProjectsNodesProject {..} = Project . toLazy $ unpackID fullPath
+    getFullPath GroupProjectsNodesProject {..} = Project . from $ unpackID fullPath

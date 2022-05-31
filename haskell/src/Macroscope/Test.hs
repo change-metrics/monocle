@@ -38,10 +38,10 @@ testCrawlingPoint = do
     assertEqual "Fetched at expected crawling point" True True
   where
     fakeConfig =
-      (mkConfig (toText indexName))
-        { Config.crawlers_api_key = Just (toText apiKey),
+      (mkConfig (from indexName))
+        { Config.crawlers_api_key = Just (from apiKey),
           Config.crawlers =
-            [ let name = toText crawlerName
+            [ let name = from crawlerName
                   update_since = "2000-01-01"
                   provider =
                     Config.GerritProvider
@@ -73,12 +73,12 @@ testTaskDataMacroscope = withTestApi appEnv $ \logger client -> do
   assertEqual "Task data got indexed by macroscope" count 1
   where
     appEnv = mkAppEnv fakeConfig
-    taskDataQuery = mkQuery [mkTerm "tasks_data.crawler_name" (toText crawlerName)]
+    taskDataQuery = mkQuery [mkTerm "tasks_data.crawler_name" (from crawlerName)]
     fakeConfig =
-      (mkConfig (toText indexName))
-        { Config.crawlers_api_key = Just (toText apiKey),
+      (mkConfig (from indexName))
+        { Config.crawlers_api_key = Just (from apiKey),
           Config.crawlers =
-            [ let name = toText crawlerName
+            [ let name = from crawlerName
                   update_since = "2000-01-01"
                   provider =
                     Config.BugzillaProvider $

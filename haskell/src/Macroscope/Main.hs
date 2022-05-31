@@ -287,7 +287,7 @@ runCrawler = safeCrawl
     crawl (InfoCrawler index key crawler _, docStreams) = do
       mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler) Nothing
 
-      let runner = runStream (toLazy key) (toLazy index) (toLazy $ crawlerName crawler)
+      let runner = runStream (from key) (from index) (from $ crawlerName crawler)
       traverse_ runner docStreams
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)

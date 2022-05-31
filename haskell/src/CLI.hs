@@ -90,7 +90,7 @@ getURL :: String -> Text
 getURL url =
   let hasScheme = isPrefixOf "http://" url || isPrefixOf "https://" url
       url' = if hasScheme then url else "http://" <> url
-   in toText url'
+   in from url'
 
 mkSubCommand :: String -> String -> Parser a -> O.Mod CommandFields a
 mkSubCommand name doc parser = command name $ info (parser <**> helper) $ progDesc doc

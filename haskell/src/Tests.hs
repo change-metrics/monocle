@@ -51,7 +51,7 @@ main = withOpenSSL $ do
   -- TODO: move provisioner to the CLI module
   provisionerM <- lookupEnv "PROVISIONER"
   case provisionerM of
-    Just provisioner -> runProvisioner (toText provisioner) >> exitSuccess
+    Just provisioner -> runProvisioner (from provisioner) >> exitSuccess
     Nothing -> pure ()
 
   defaultMain
@@ -223,8 +223,8 @@ monocleApiTests =
         isEntityNeutron (NamedEntity "opendev/neutron") = True
         isEntityNeutron _ = False
         mkReq wsName offset =
-          let commitInfoRequestIndex = toLazy wsName
-              commitInfoRequestCrawler = toLazy crawlerName
+          let commitInfoRequestIndex = from wsName
+              commitInfoRequestCrawler = from crawlerName
               commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
               commitInfoRequestOffset = offset
            in CommitInfoRequest {..}

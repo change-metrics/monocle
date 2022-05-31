@@ -62,7 +62,7 @@ getDate oe =
 
 -- | 'getTaskdata' gets the updated time and project name from an 'OldestEntity'
 getTaskdata :: OldestEntity -> (UTCTime, Text)
-getTaskdata oe = (getDate oe, toStrict taskdata)
+getTaskdata oe = (getDate oe, from taskdata)
   where
     taskdata =
       case commitInfoResponse_OldestEntityEntity oe of
@@ -71,7 +71,7 @@ getTaskdata oe = (getDate oe, toStrict taskdata)
 
 -- | 'getProject' gets the updated time and project name from an 'OldestEntity'
 getProject :: OldestEntity -> (UTCTime, Text)
-getProject oe = (getDate oe, toStrict project)
+getProject oe = (getDate oe, from project)
   where
     project =
       case commitInfoResponse_OldestEntityEntity oe of
@@ -80,7 +80,7 @@ getProject oe = (getDate oe, toStrict project)
 
 -- | 'getOrganization' gets the updated time and organization name from an 'OldestEntity'
 getOrganization :: OldestEntity -> (UTCTime, Text)
-getOrganization oe = (getDate oe, toStrict organization)
+getOrganization oe = (getDate oe, from organization)
   where
     organization =
       case commitInfoResponse_OldestEntityEntity oe of
@@ -152,7 +152,7 @@ runStream' ::
   m ()
 runStream' startTime apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
   where
-    lc = LogCrawlerContext (toText indexName) (toText crawlerName) Nothing
+    lc = LogCrawlerContext (from indexName) (from crawlerName) Nothing
     wLog event = mLog $ Log Macroscope event
     drainEntities offset =
       unlessStopped $
@@ -213,9 +213,9 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
       _ -> error "Entity missing"
       where
         eToText (Entity e) = case e of
-          Just (EntityEntityOrganizationName v) -> ("Organization", toText v)
-          Just (EntityEntityProjectName v) -> ("Project", toText v)
-          Just (EntityEntityTdName v) -> ("TaskData", toText v)
+          Just (EntityEntityOrganizationName v) -> ("Organization", from v)
+          Just (EntityEntityProjectName v) -> ("Project", from v)
+          Just (EntityEntityTdName v) -> ("TaskData", from v)
           _ -> error "EntityEntity missing"
 
     -- Adapt the document stream to intermediate representation

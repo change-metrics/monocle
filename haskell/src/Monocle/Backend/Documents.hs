@@ -134,10 +134,10 @@ instance From Commit SearchPB.Commit where
 newtype UTCTimePlus = UTCTimePlus UTCTime deriving stock (Show, Eq)
 
 instance ToJSON UTCTimePlus where
-  toJSON (UTCTimePlus utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
+  toJSON (UTCTimePlus utcTime) = String . from . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
 instance FromJSON UTCTimePlus where
-  parseJSON = withText "UTCTimePlus" (parse . toString)
+  parseJSON = withText "UTCTimePlus" (parse . from)
     where
       oldFormat = "%FT%T"
       utcFormat = "%FT%TZ"
@@ -271,7 +271,7 @@ instance FromJSON EDocType where
           "Change" -> pure EChangeDoc
           "OrphanTaskData" -> pure EOrphanTaskData
           "CachedAuthor" -> pure ECachedAuthor
-          anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> toString anyOtherValue
+          anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> from anyOtherValue
       )
 
 data EChange = EChange

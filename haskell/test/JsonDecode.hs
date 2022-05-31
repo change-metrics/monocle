@@ -21,7 +21,7 @@ import System.Random (mkStdGen)
 -- | Test compute metric with Json
 jsonPerf :: LBS.ByteString -> Int
 jsonPerf dat = do
-  case Json.decode (B.fromByteString (toStrict dat)) of
+  case Json.decode (B.fromByteString (from dat)) of
     Left e -> error (show e)
     Right v -> fromMaybe (error "failed!") (go v)
   where
@@ -55,7 +55,7 @@ jsonPerf dat = do
 -- | Test decoding Json.Value
 jsonDecode :: LBS.ByteString -> Int
 jsonDecode dat = do
-  case Json.decode (B.fromByteString (toStrict dat)) of
+  case Json.decode (B.fromByteString (from dat)) of
     Left e -> error (show e)
     Right _ -> 42
 
