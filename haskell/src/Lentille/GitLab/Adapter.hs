@@ -61,9 +61,8 @@ defaultTimestamp :: Time
 defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
 
 -- Generic utility fonction
-
-fromMTtoLT :: (LazyStrict l s, IsString s) => Maybe s -> l
-fromMTtoLT t = toLazy $ fromMaybe "" t
+fromMTtoLT :: (From s LText) => Maybe s -> LText
+fromMTtoLT = maybe "" from
 
 timeToTimestamp :: Maybe String -> Time -> T.Timestamp
 timeToTimestamp formatStringE = T.fromUTCTime . timeToUTCTime formatStringE
@@ -75,7 +74,7 @@ timeToUTCTime formatStringE t =
         False
         defaultTimeLocale
         (fromMaybe "%FT%XZ" formatStringE)
-        $ toString tt
+        $ from tt
 
 cleanMaybeMNodes :: Maybe [Maybe a] -> [a]
 cleanMaybeMNodes nodes = catMaybes $ fromMaybe [] nodes
@@ -92,23 +91,23 @@ getDSS dssM item =
     Nothing -> 0
 
 getChangedFile :: DiffStats -> ChangedFile
-getChangedFile DiffStats {..} = ChangedFile (from additions) (from deletions) (toLazy path)
+getChangedFile DiffStats {..} = ChangedFile (from additions) (from deletions) (from path)
 
 getChangeNumber :: Text -> Int32
 getChangeNumber iid =
-  from $ fromMaybe 0 ((readMaybe $ toString iid) :: Maybe Int)
+  from $ fromMaybe 0 ((readMaybe $ from iid) :: Maybe Int)
 
 toCommit :: Text -> (Text -> Maybe Text) -> MRCommit -> Commit
 toCommit host cb MRCommit {..} =
   Commit
-    (toLazy sha)
+    (from sha)
     (Just . toIdent' $ getAuthor cauthor)
     (Just . toIdent' $ getAuthor cauthor)
     (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
     (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
     0
     0
-    (toLazy $ fromMaybe "" ctitle)
+    (from $ fromMaybe "" ctitle)
   where
     getAuthor :: Maybe MRUserCore -> Text
     getAuthor (Just MRUserCore {..}) = username

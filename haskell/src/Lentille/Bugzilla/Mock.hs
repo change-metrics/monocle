@@ -10,6 +10,7 @@ import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Relude
 import Web.RedHatBugzilla qualified as BZ
+import Witch (from)
 
 bugzillaMockApplication :: Wai.Application
 bugzillaMockApplication req respond = do
@@ -19,7 +20,7 @@ bugzillaMockApplication req respond = do
     "/rest/bug/1791815" -> BS.readFile (base <> "rhbz1791815.json")
     "/rest/bug" -> BS.readFile (base <> "rhbzsearch.json")
     x -> error $ "Unknown path: " <> show x
-  respond $ Wai.responseLBS status200 mempty (toLazy respData)
+  respond $ Wai.responseLBS status200 mempty (from respData)
   where
     base = "./test/data/"
 

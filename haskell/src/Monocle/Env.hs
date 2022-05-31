@@ -42,7 +42,7 @@ instance BH.MonadBH AppM where
   getBHEnv = asks (bhEnv . aEnv)
 
 instance MonadFail AppM where
-  fail = error . toText
+  fail = error . from
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request
@@ -138,7 +138,7 @@ mkEnv server = do
 mkEnv' :: MonadIO m => m BH.BHEnv
 mkEnv' = do
   url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
-  mkEnv (toText url)
+  mkEnv (from url)
 
 -- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
 testQueryM :: Config.Index -> QueryM a -> IO a
@@ -207,7 +207,7 @@ withContext context = local setContext
   where
     setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
     contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
-    getLoc (_, loc) = "[" <> context <> " " <> toText (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
+    getLoc (_, loc) = "[" <> context <> " " <> from (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 
 -- | 'dropQuery' remove the query from the context
 dropQuery :: QueryMonad m => m a -> m a

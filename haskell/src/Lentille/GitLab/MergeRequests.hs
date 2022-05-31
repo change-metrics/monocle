@@ -189,17 +189,17 @@ transformResponse host getIdentIdCB result =
           (ProjectMergeRequestsNodesLabelsLabelConnection nodes) = cleanMaybeMNodes nodes
         toAssigneesNodes
           (ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection nodes) = cleanMaybeMNodes nodes
-        getLabelTitle (ProjectMergeRequestsNodesLabelsNodesLabel title') = toLazy title'
+        getLabelTitle (ProjectMergeRequestsNodesLabelsNodesLabel title') = from title'
         getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
         getMergerUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
         getAssigneesUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {..} = username
 
         getChange :: ProjectMergeRequestsNodesMergeRequest -> Change
         getChange ProjectMergeRequestsNodesMergeRequest {..} =
-          let changeId = (toLazy . sanitizeID $ unpackID id)
+          let changeId = (from . sanitizeID $ unpackID id)
               changeNumber = getChangeNumber iid
               changeChangeId = getChangeId fullName iid
-              changeTitle = toLazy title
+              changeTitle = from title
               changeText = fromMTtoLT description
               changeUrl = fromMTtoLT webUrl
               changeCommitCount = (from $ fromMaybe 0 commitCount)
@@ -208,16 +208,16 @@ transformResponse host getIdentIdCB result =
               changeChangedFilesCount = (from $ getDSS (toDiffStatsSummary <$> diffStatsSummary) DSSFileCount)
               changeChangedFiles = (fromList $ getChangedFile . toDiffStats <$> fromMaybe [] diffStats)
               changeCommits = (fromList $ toCommit' . toMRCommit <$> maybe [] toCommitsNodes commitsWithoutMergeCommits)
-              changeRepositoryPrefix = toLazy $ TE.replace ("/" <> shortName) "" $ stripSpaces fullName
-              changeRepositoryFullname = toLazy $ stripSpaces fullName
-              changeRepositoryShortname = toLazy shortName
+              changeRepositoryPrefix = from $ TE.replace ("/" <> shortName) "" $ stripSpaces fullName
+              changeRepositoryFullname = from $ stripSpaces fullName
+              changeRepositoryShortname = from shortName
               changeAuthor = Just (maybe (ghostIdent host) (toIdent' . getAuthorUsername) author)
               changeOptionalMergedBy =
                 ( Just . ChangeOptionalMergedByMergedBy $
                     maybe (ghostIdent host) (toIdent' . getMergerUsername) mergeUser
                 )
-              changeBranch = toLazy sourceBranch
-              changeTargetBranch = toLazy targetBranch
+              changeBranch = from sourceBranch
+              changeTargetBranch = from targetBranch
               changeCreatedAt = (Just $ timeToTimestamp Nothing createdAt)
               changeOptionalMergedAt = (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing <$> mergedAt)
               changeUpdatedAt = (Just $ timeToTimestamp Nothing updatedAt)
@@ -348,7 +348,7 @@ transformResponse host getIdentIdCB result =
           where
             mkCommentEvent MRComment {..} =
               (getBaseEvent change)
-                { changeEventId = "ChangeCommentedEvent-" <> changeId change <> "-" <> toLazy coId,
+                { changeEventId = "ChangeCommentedEvent-" <> changeId change <> "-" <> from coId,
                   changeEventType = Just $ ChangeEventTypeChangeCommented ChangeCommentedEvent,
                   changeEventAuthor = Just coAuthor,
                   changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
@@ -363,12 +363,12 @@ transformResponse host getIdentIdCB result =
                     CoApproval approval' -> approval'
                     _ -> error "Runtime error"
                in (getBaseEvent change)
-                    { changeEventId = "ChangeReviewedEvent-" <> changeId change <> "-" <> toLazy coId,
+                    { changeEventId = "ChangeReviewedEvent-" <> changeId change <> "-" <> from coId,
                       changeEventType =
                         Just
                           . ChangeEventTypeChangeReviewed
                           . ChangeReviewedEvent
-                          $ fromList [toLazy approval],
+                          $ fromList [from approval],
                       changeEventAuthor = Just coAuthor,
                       changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
                     }

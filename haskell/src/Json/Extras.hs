@@ -24,9 +24,10 @@ import Data.Text.Time qualified as TextTime
 import Data.Time.Clock (UTCTime)
 import "json-syntax" Json
 import Relude
+import Witch (from)
 
 decodeThrow :: LBS.ByteString -> Json.Value
-decodeThrow dat = case decode (Bytes.fromByteString (toStrict dat)) of
+decodeThrow dat = case decode (Bytes.fromByteString (from dat)) of
   Left e -> error $ "Could not decode: " <> show e
   Right v -> v
 

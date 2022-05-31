@@ -429,16 +429,16 @@ getEventType eventTypeM = case eventTypeM of
 
 toETaskData :: Text -> SearchPB.TaskData -> ETaskData
 toETaskData crawlerName SearchPB.TaskData {..} =
-  let tdTid = toText taskDataTid
+  let tdTid = from taskDataTid
       tdCrawlerName = Just crawlerName
-      tdTtype = toList $ toText <$> taskDataTtype
-      tdChangeUrl = toText taskDataChangeUrl
-      tdSeverity = toText taskDataSeverity
-      tdPriority = toText taskDataPriority
+      tdTtype = toList $ from <$> taskDataTtype
+      tdChangeUrl = from taskDataChangeUrl
+      tdSeverity = from taskDataSeverity
+      tdPriority = from taskDataPriority
       tdScore = fromInteger $ toInteger taskDataScore
-      tdUrl = toText taskDataUrl
-      tdTitle = toText taskDataTitle
-      tdPrefix = Just $ toText taskDataPrefix
+      tdUrl = from taskDataUrl
+      tdTitle = from taskDataTitle
+      tdPrefix = Just $ from taskDataPrefix
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = toMonocleTime $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ETaskData {..}
@@ -506,7 +506,7 @@ runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
 runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
-getChangeDocId change = BH.DocId . toText $ echangeId change
+getChangeDocId change = BH.DocId . from $ echangeId change
 
 indexChanges :: [EChange] -> QueryM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
@@ -515,7 +515,7 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
     ensureType change = change {echangeType = EChangeDoc}
 
 getEventDocId :: EChangeEvent -> BH.DocId
-getEventDocId event = BH.DocId . toStrict $ echangeeventId event
+getEventDocId event = BH.DocId . from $ echangeeventId event
 
 indexEvents :: [EChangeEvent] -> QueryM ()
 indexEvents events = indexDocs (fmap toDoc events)
@@ -635,7 +635,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
 updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> QueryM ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
-  adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ toText <$> Map.keys mapping
+  adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ from <$> Map.keys mapping
   updateDocs $ taskDataDocToBHDoc <$> getTaskDatas adoptedTDs (Map.assocs mapping)
   where
     -- For each change and event extract (changeUrl, object ID)
@@ -659,27 +659,27 @@ updateChangesAndEventsFromOrphanTaskData changes events = do
         getTDs (url, ids) =
           let mTDs = echangeorphantdTasksData <$> filterByUrl url adopted
            in flip TaskDataDoc mTDs <$> ids
-        filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == toText url)
+        filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == from url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
-  (toJSON $ EChangeTD $ Just tddTd, BH.DocId $ toText tddId)
+  (toJSON $ EChangeTD $ Just tddTd, BH.DocId $ from tddId)
 
 orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
   let td = head $ fromList tddTd
    in ( toJSON $
           EChangeOrphanTD
-            (toText tddId)
+            (from tddId)
             EOrphanTaskData
             td,
-        BH.DocId $ toText tddId
+        BH.DocId $ from tddId
       )
 
 taskDataAdd :: Text -> [SearchPB.TaskData] -> QueryM ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
-  let urls = toText . SearchPB.taskDataChangeUrl <$> tds
+  let urls = from . SearchPB.taskDataChangeUrl <$> tds
   -- get changes that matches those URLs
   changes <- runScanSearch $ getChangesByURL urls
   -- get change events that matches those URLs
@@ -717,7 +717,7 @@ taskDataAdd crawlerName tds = do
           ETaskData ->
           -- IO Action with maybe an orphan task data if a matching change does not exists
           IO (Maybe TaskDataOrphanDoc)
-        handleTD td = H.mutate ht (toLazy $ tdChangeUrl td) $ \case
+        handleTD td = H.mutate ht (from $ tdChangeUrl td) $ \case
           -- Cannot find a change matching this TD -> this TD will be orphan
           Nothing -> (Nothing, Just $ TaskDataDoc {tddId = from $ getTDId td, tddTd = [td]})
           -- Found a change matching this TD -> update existing TDs with new TD
@@ -761,7 +761,7 @@ getWorkerUpdatedSince :: Config.Crawler -> UTCTime
 getWorkerUpdatedSince Config.Crawler {..} =
   fromMaybe
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
-    $ parseDateValue (toString update_since)
+    $ parseDateValue (from update_since)
 
 crawlerMDQuery :: EntityType -> Text -> BH.Query
 crawlerMDQuery entity crawlerName =
@@ -790,7 +790,7 @@ getLastUpdated crawler entity offset = do
 
     bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
     getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
-      (toStrict ecmCrawlerTypeValue, ecmLastCommitAt)
+      (from ecmCrawlerTypeValue, ecmLastCommitAt)
     crawlerName = getWorkerName crawler
 
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
@@ -819,9 +819,9 @@ ensureCrawlerMetadata crawlerName getDate entity = do
       ECrawlerMetadata
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
-              (toLazy crawlerName)
+              (from crawlerName)
               (from entity)
-              (toLazy $ getEntityName entity)
+              (from $ getEntityName entity)
               lastUpdatedDate
         }
     getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
@@ -854,9 +854,9 @@ setLastUpdated crawlerName lastUpdatedDate entity = do
       ECrawlerMetadata
         { ecmCrawlerMetadata =
             ECrawlerMetadataObject
-              (toLazy crawlerName)
+              (from crawlerName)
               (from entity)
-              (toLazy $ getEntityName entity)
+              (from $ getEntityName entity)
               lastUpdatedDate
         }
 

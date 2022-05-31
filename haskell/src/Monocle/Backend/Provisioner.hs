@@ -79,15 +79,15 @@ fakeCommitCount :: Faker.Fake Word32
 fakeCommitCount = Faker.Combinators.fromRange (1, 6)
 
 fakeTitle :: Faker.Fake LText
-fakeTitle = toLazy <$> Faker.Movie.BackToTheFuture.quotes
+fakeTitle = from <$> Faker.Movie.BackToTheFuture.quotes
 
 fakeAuthor :: Faker.Fake Author
 fakeAuthor = do
-  name <- toLazy <$> Faker.TvShow.Futurama.characters
+  name <- from <$> Faker.TvShow.Futurama.characters
   pure $ Author name name
 
 fakeText :: Faker.Fake LText
-fakeText = toLazy <$> Faker.TvShow.Futurama.quotes
+fakeText = from <$> Faker.TvShow.Futurama.quotes
 
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
 fakeChange from' to = do
@@ -172,12 +172,12 @@ fakeTaskData :: Faker.Fake TaskData
 fakeTaskData = do
   taskDataUpdatedAt <- Just . Google.Protobuf.Timestamp.fromUTCTime <$> Faker.DateTime.utc
   let taskDataChangeUrl = "no-change"
-  taskDataTtype <- fromList . (: []) . toLText <$> Faker.Creature.Dog.sound
-  taskDataTid <- toLText <$> fakeTaskId
-  taskDataUrl <- toLText <$> fakeUrl (toText taskDataTid)
-  taskDataTitle <- toLText <$> Faker.TvShow.TheExpanse.quotes
-  taskDataSeverity <- toLText <$> Faker.TvShow.TheExpanse.locations
-  taskDataPriority <- toLText <$> Faker.TvShow.TheExpanse.ships
+  taskDataTtype <- fromList . (: []) . from <$> Faker.Creature.Dog.sound
+  taskDataTid <- from <$> fakeTaskId
+  taskDataUrl <- from <$> fakeUrl (from taskDataTid)
+  taskDataTitle <- from <$> Faker.TvShow.TheExpanse.quotes
+  taskDataSeverity <- from <$> Faker.TvShow.TheExpanse.locations
+  taskDataPriority <- from <$> Faker.TvShow.TheExpanse.ships
   taskDataScore <- Faker.Combinators.fromRange (0, 42)
-  taskDataPrefix <- toLText <$> fakeTaskPrefix
+  taskDataPrefix <- from <$> fakeTaskPrefix
   pure $ TaskData {..}

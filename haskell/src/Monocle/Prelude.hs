@@ -210,7 +210,7 @@ import Prometheus (Info (..), counter, incCounter, withLabel)
 import Prometheus qualified
 import Proto3.Suite (Enumerated (..))
 import QQLiterals (qqLiteral)
-import Relude
+import Relude hiding (toLText, toLazy, toStrict, toString, toText)
 import Relude.Extra.Foldable (average)
 import Relude.Extra.Group (groupBy)
 import Streaming (Of (..))
@@ -317,10 +317,10 @@ instance From Text AesonKey.Key where
   from = AesonKey.fromText
 
 instance ToJSON MonocleTime where
-  toJSON (MonocleTime utcTime) = String . toText . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
+  toJSON (MonocleTime utcTime) = String . from . formatTime defaultTimeLocale "%FT%TZ" $ utcTime
 
 instance FromJSON MonocleTime where
-  parseJSON = withText "UTCTimePlus" (parse . toString)
+  parseJSON = withText "UTCTimePlus" (parse . from)
     where
       oldFormat = "%FT%T"
       utcFormat = "%FT%TZ"
@@ -363,7 +363,7 @@ logText = logMessage . from
 
 getEnv' :: Text -> IO Text
 getEnv' var = do
-  val <- toText . exceptEnv <$> lookupEnv (toString var)
+  val <- from . exceptEnv <$> lookupEnv (from var)
   return $! val
   where
     exceptEnv = fromMaybe (error $ "ERROR: Missing environment variable named " <> var)
@@ -380,7 +380,7 @@ elapsedSeconds a b = nominalDiffTimeToSeconds $ diffUTCTime b a
 
 -- | Helper to format time without timezone
 formatTime' :: Text -> UTCTime -> Text
-formatTime' formatText = toText . formatTime defaultTimeLocale (toString formatText)
+formatTime' formatText = from . formatTime defaultTimeLocale (from formatText)
 
 -- | Helper
 parseDateValue :: String -> Maybe UTCTime
@@ -437,9 +437,9 @@ orDie :: Maybe a -> b -> Either b a
 Just a `orDie` _ = Right a
 Nothing `orDie` err = Left err
 
-getExn :: (ToText e, HasCallStack) => Either e a -> a
+getExn :: (From e Text, HasCallStack) => Either e a -> a
 getExn (Right x) = x
-getExn (Left err) = error (toText err)
+getExn (Left err) = error (from err)
 
 -- >>> stripSpaces "john doe "
 -- "johndoe"

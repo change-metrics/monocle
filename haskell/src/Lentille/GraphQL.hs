@@ -68,8 +68,8 @@ newGraphClient url token = do
   let host =
         maybe
           (error "Unable to parse provided url")
-          (toText . URI.uriRegName)
-          (URI.uriAuthority =<< URI.parseURI (toString url))
+          (from . URI.uriRegName)
+          (URI.uriAuthority =<< URI.parseURI (from url))
   pure $ GraphClient {..}
 
 -- | A log of http request and response
@@ -80,7 +80,7 @@ type DoFetch m = LBS.ByteString -> WriterT [RequestLog] m LBS.ByteString
 doGraphRequest :: MonadGraphQL m => LogCrawlerContext -> GraphClient -> DoFetch m
 doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
   -- Prepare the request
-  let initRequest = HTTP.parseRequest_ (toString url)
+  let initRequest = HTTP.parseRequest_ (from url)
       request =
         initRequest
           { HTTP.method = "POST",

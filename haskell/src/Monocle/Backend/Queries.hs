@@ -135,8 +135,8 @@ doSearch orderM limit = do
     toSortBody SearchPB.Order {..} =
       let field' =
             BH.FieldName
-              . fromMaybe (error $ "Unknown sort field: " <> toStrict orderField)
-              $ Q.queryFieldToDocument (toStrict orderField)
+              . fromMaybe (error $ "Unknown sort field: " <> from orderField)
+              $ Q.queryFieldToDocument (from orderField)
           order = sortOrder orderDirection
        in [ BH.DefaultSortSpec
               ( BH.DefaultSort field' order Nothing Nothing Nothing Nothing
@@ -191,7 +191,7 @@ queryAggValue search = getAggValue "agg1" <$> doAggregation search
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
 parseAggregationResults key res = getExn $ do
-  value <- Map.lookup (from key) res `orDie` ("No value found for: " <> toString key)
+  value <- Map.lookup (from key) res `orDie` ("No value found for: " <> from key)
   Aeson.parseEither Aeson.parseJSON value
 
 queryAggResult :: QueryMonad m => FromJSON a => Value -> m a
@@ -227,7 +227,7 @@ changes orderM limit =
 
 changeEvents :: QueryMonad m => LText -> Word32 -> m (EChange, [EChangeEvent])
 changeEvents changeID limit = dropQuery $
-  withFilter [mkTerm "change_id" (toText changeID)] $ do
+  withFilter [mkTerm "change_id" (from changeID)] $ do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
 
     -- Collect all the events
@@ -508,7 +508,7 @@ firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
       let (createdAt, author) =
             -- If the event is older update the info
             if jceCreatedAt < feCreatedAt acc
-              then (jceCreatedAt, toLazy $ Json.toText jceAuthor)
+              then (jceCreatedAt, from $ Json.toText jceAuthor)
               else (feCreatedAt acc, feAuthor acc)
        in FirstEvent
             { feChangeCreatedAt = jceOnCreatedAt,
@@ -891,7 +891,7 @@ getChangesTops limit = do
   where
     toPBTermCount TermResult {..} =
       SearchPB.TermCount
-        (toLazy trTerm)
+        (from trTerm)
         (toInt trCount)
     toInt c = fromInteger $ toInteger c
     toTermsCount total tsc =
@@ -1193,14 +1193,14 @@ getSuggestions index = do
   suggestionsResponsePriorities <- getTop "tasks_data.priority"
   suggestionsResponseSeverities <- getTop "tasks_data.severity"
   suggestionsResponseLabels <- getTop "labels"
-  let suggestionsResponseProjects = V.fromList $ toLazy <$> Config.getTenantProjectsNames index
-      suggestionsResponseGroups = V.fromList $ toLazy . fst <$> Config.getTenantGroups index
+  let suggestionsResponseProjects = V.fromList $ from <$> Config.getTenantProjectsNames index
+      suggestionsResponseGroups = V.fromList $ from . fst <$> Config.getTenantGroups index
 
   pure $ SearchPB.SuggestionsResponse {..}
   where
     getTop field' = do
       tt <- getDocTypeTopCountByField (EChangeDoc :| []) field' (Just 1000)
-      pure $ V.fromList $ toLazy . trTerm <$> tsrTR tt
+      pure $ V.fromList $ from . trTerm <$> tsrTR tt
 
 -------------------------------------------------------------------------------
 -- The final metrics

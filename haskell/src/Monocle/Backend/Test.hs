@@ -140,7 +140,7 @@ testIndexChanges = withTenant doTest
         echangeTitle
         (echangeTitle fakeChange1Updated)
       -- Check we can get the most recently updated change
-      dateM <- I.getLastUpdatedDate $ toText . echangeRepositoryFullname $ fakeChange1
+      dateM <- I.getLastUpdatedDate $ from . echangeRepositoryFullname $ fakeChange1
       assertEqual' "Got most recent change" (Just fakeDateAlt) dateM
       -- Check total count of Change document in the database
       checkChangesCount 2
@@ -1057,7 +1057,7 @@ testTaskDataAdd = withTenant doTest
       void $ I.taskDataAdd crawlerName [td]
       -- Ensure the Task data has been stored as orphan (we can find it by its url as DocId)
       let tdid = (td & SearchPB.taskDataUrl) <> (td & SearchPB.taskDataChangeUrl)
-      orphanTdM <- getOrphanTd . toText $ tdid
+      orphanTdM <- getOrphanTd . from $ tdid
       let expectedTD = I.toETaskData crawlerName td
       assertEqual'
         "Check Task data stored as Orphan Task Data"
@@ -1075,7 +1075,7 @@ testTaskDataAdd = withTenant doTest
       -- updated in the Database
       let td' = td {SearchPB.taskDataSeverity = "urgent"}
       void $ I.taskDataAdd crawlerName [td']
-      orphanTdM' <- getOrphanTd . toText $ tdid
+      orphanTdM' <- getOrphanTd . from $ tdid
       let expectedTD' = expectedTD {tdSeverity = "urgent"}
       assertEqual'
         "Check Task data stored as Orphan Task Data"
@@ -1102,7 +1102,7 @@ testTaskDataAdoption = withTenant doTest
         let td42 = mkTaskData "42"
             td43 = mkTaskData "43"
         void $ I.taskDataAdd "crawlerName" [td42, td43]
-        oTDs <- I.getOrphanTaskDataByChangeURL $ toText . SearchPB.taskDataChangeUrl <$> [td42, td43]
+        oTDs <- I.getOrphanTaskDataByChangeURL $ from . SearchPB.taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check we can fetch the orphan task data" 2 (length oTDs)
 
         -- Index a change and related events
@@ -1112,7 +1112,7 @@ testTaskDataAdoption = withTenant doTest
         indexScenario scenario
         I.updateChangesAndEventsFromOrphanTaskData changes events
         -- Check that the matching task data has been adopted
-        oTDs' <- I.getOrphanTaskDataByChangeURL $ toText . SearchPB.taskDataChangeUrl <$> [td42, td43]
+        oTDs' <- I.getOrphanTaskDataByChangeURL $ from . SearchPB.taskDataChangeUrl <$> [td42, td43]
         assertEqual' "Check remaining one orphan TD" 1 (length oTDs')
         -- Check that change and related events got the task data attribute
         changes' <- I.runScanSearch $ I.getChangesByURL [changeUrl]
@@ -1174,13 +1174,13 @@ emptyEvent = EChangeEvent {..}
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
   where
-    author = maybe "no-author" (toStrict . authorMuid)
-    date = toText . formatTime defaultTimeLocale "%Y-%m-%d"
+    author = maybe "no-author" (from . authorMuid)
+    date = from . formatTime defaultTimeLocale "%Y-%m-%d"
     go ev = case ev of
-      SChange EChange {..} -> "Change[" <> toStrict echangeChangeId <> "]"
+      SChange EChange {..} -> "Change[" <> from echangeChangeId <> "]"
       SCreation EChangeEvent {..} ->
         ("Change[" <> date echangeeventOnCreatedAt <> " ")
-          <> (toStrict echangeeventChangeId <> " created by " <> author echangeeventAuthor)
+          <> (from echangeeventChangeId <> " created by " <> author echangeeventAuthor)
           <> "]"
       SComment EChangeEvent {..} -> "Commented[" <> author echangeeventAuthor <> "]"
       SReview EChangeEvent {..} -> "Reviewed[" <> author echangeeventAuthor <> "]"
@@ -1286,7 +1286,7 @@ nominalMerge :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent
 nominalMerge SProject {..} changeId start duration = evalRand scenario stdGen
   where
     -- The random number generator is based on the name
-    stdGen = mkStdGen (Text.length (toStrict name))
+    stdGen = mkStdGen (Text.length (from name))
 
     scenario = do
       -- The base change
@@ -1320,7 +1320,7 @@ nominalOpen :: ScenarioProject -> LText -> UTCTime -> Integer -> [ScenarioEvent]
 nominalOpen SProject {..} changeId start duration = evalRand scenario stdGen
   where
     -- The random number generator is based on the name
-    stdGen = mkStdGen (Text.length (toStrict name))
+    stdGen = mkStdGen (Text.length (from name))
 
     scenario = do
       -- The base change

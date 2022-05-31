@@ -134,8 +134,8 @@ getHostFromURL :: Text -> Text
 getHostFromURL url =
   maybe
     (error "Unable to parse provided url")
-    (toText . URI.uriRegName)
-    (URI.uriAuthority =<< URI.parseURI (toString url))
+    (from . URI.uriRegName)
+    (URI.uriAuthority =<< URI.parseURI (from url))
 
 {-
 >>> let v1 = GerritDetailedLabelVote {value = Just 2, account_id = 42}
@@ -172,7 +172,7 @@ getPrefix prefixM project =
   let parts = T.split (== '/') project
       parts' = Prelude.init parts
       prefix = fromMaybe mempty prefixM
-   in toLazy $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
+   in from $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
 
 streamProject ::
   MonadGerrit m =>
@@ -186,7 +186,7 @@ streamProject env query = go 0
     go offset = do
       projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
       let pNames = M.keys projects
-      S.each $ CrawlerPB.Project . toLazy <$> pNames
+      S.each $ CrawlerPB.Project . from <$> pNames
       when (length pNames == size) $ go (offset + size)
 
 streamChange ::
@@ -280,8 +280,8 @@ streamChange' env identCB serverUrl query prefixM = go 0
               Right approvals ->
                 Just $
                   commentBasedEvent
-                    (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ toLazy <$> approvals)
-                    ("approval_" <> toLazy mId)
+                    (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ from <$> approvals)
+                    ("approval_" <> from mId)
                     mAuthor
                     mDate
               Left _ -> Nothing
@@ -293,7 +293,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
           where
             toEvent GerritChangeMessage {..} = case P.parseOnly parser mMessage of
               Right _ ->
-                Just $ commentBasedEvent eType (prefix <> toLazy mId) mAuthor mDate
+                Just $ commentBasedEvent eType (prefix <> from mId) mAuthor mDate
               Left _ -> Nothing
         commentBasedEvent t eId author date =
           (baseEvent t eId)
@@ -303,12 +303,12 @@ streamChange' env identCB serverUrl query prefixM = go 0
 
     toMChange :: GerritChange -> ChangePB.Change
     toMChange GerritChange {..} =
-      let changeId = toLazy id
+      let changeId = from id
           changeNumber = from number
           changeChangeId = getChangeId project (show number)
-          changeTitle = toLazy subject
+          changeTitle = from subject
           changeText = getCommitMessage
-          changeUrl = toLazy $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
+          changeUrl = from $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
           changeCommitCount = 1
           changeAdditions = from insertions
           changeDeletions = from deletions
@@ -317,17 +317,17 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeCommits = V.fromList $ maybe [] getCommits current_revision
           changeRepositoryPrefix = getPrefix prefixM project
           changeRepositoryFullname =
-            if T.null $ toText changeRepositoryPrefix
+            if T.null $ from changeRepositoryPrefix
               then changeRepositoryShortname
               else changeRepositoryPrefix <> "/" <> changeRepositoryShortname
-          changeRepositoryShortname = toLazy . Prelude.last $ T.split (== '/') project
+          changeRepositoryShortname = from . Prelude.last $ T.split (== '/') project
           changeAuthor = Just author
           changeOptionalMergedBy =
             if status == MERGED
               then ChangePB.ChangeOptionalMergedByMergedBy <$> merger
               else Nothing
-          changeBranch = toLazy branch
-          changeTargetBranch = toLazy branch
+          changeBranch = from branch
+          changeTargetBranch = from branch
           changeCreatedAt = Just $ toTimestamp created
           changeOptionalMergedAt =
             if status == MERGED
@@ -345,10 +345,10 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeMergeable = case mergeable of
             Just False -> "CONFLICT"
             _ -> "MERGEABLE"
-          changeLabels = V.fromList $ toLazy <$> hashtags <> maybe mempty (: []) topic
+          changeLabels = V.fromList $ from <$> hashtags <> maybe mempty (: []) topic
           -- TODO(fbo) add assignees support to gerrit-haskell
           changeAssignees = V.fromList []
-          changeApprovals = V.fromList $ toLazy <$> toApprovals (M.toList labels)
+          changeApprovals = V.fromList $ from <$> toApprovals (M.toList labels)
           changeDraft = status == DRAFT
           changeOptionalSelfMerged =
             if status == MERGED
@@ -364,26 +364,26 @@ streamChange' env identCB serverUrl query prefixM = go 0
         isSelfMerged s a = aAccountId s == aAccountId a
         toTimestamp = T.fromUTCTime . unGerritTime
         ghostIdent' = ghostIdent $ getHostFromURL serverUrl
-        getCommitMessage = maybe "" (toLazy . cMessage . grCommit) revision
+        getCommitMessage = maybe "" (from . cMessage . grCommit) revision
         getFilesCount = from $ maybe 0 (length . M.keys . grFiles) revision
         getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
           where
             toChangeFile (fp, details) =
               let changedFileAdditions = maybe 0 from $ gfLinesInserted details
                   changedFileDeletions = maybe 0 from $ gfLinesDeleted details
-                  changedFilePath = toLazy fp
+                  changedFilePath = from fp
                in ChangePB.ChangedFile {..}
         getCommits sha = maybe [] toCommit $ grCommit <$> revision
           where
             toCommit GerritCommit {..} =
-              let commitSha = toLazy sha
+              let commitSha = from sha
                   commitAuthor = Just author
                   commitCommitter = Just $ maybe ghostIdent' getIdent uploader
                   commitAuthoredAt = Just . T.fromUTCTime . unGerritTime . caDate $ cAuthor
                   commitCommittedAt = Just . T.fromUTCTime . unGerritTime . caDate $ cCommitter
                   commitAdditions = from insertions
                   commitDeletions = from deletions
-                  commitTitle = toLazy cSubject
+                  commitTitle = from cSubject
                in [ChangePB.Commit {..}]
         toState :: GerritChangeStatus -> Enumerated ChangePB.Change_ChangeState
         toState status' = Enumerated . Right $ case status' of

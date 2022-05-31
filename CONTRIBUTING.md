@@ -227,7 +227,7 @@ cabal test --test-option=-p --test-option='/Test get metrics/'
 Run linters with:
 
 ```ShellSession
-nix-shell --command monocle-ci-light-run
+nix-shell --command monocle-fast-ci-run
 ```
 
 When the linters fail, you can fix the issue automatically with:

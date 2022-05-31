@@ -139,7 +139,7 @@ configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
-      let aboutVersion = toLText version
+      let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
           authProvider = Config.getAuthProvider config
@@ -147,9 +147,9 @@ configGetAbout _auth _request = response
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =
-      let about_AboutLinkName = toLazy name
-          about_AboutLinkUrl = toLazy url
-          about_AboutLinkCategory = toLazy $ fromMaybe "About" category
+      let about_AboutLinkName = from name
+          about_AboutLinkUrl = from url
+          about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
     toAboutAuthentication Config.OIDCProvider {..} =
       let authConfigIssuer = from issuer
@@ -165,7 +165,7 @@ configGetWorkspaces _auth _request = response
       GetTenants tenants <- getConfig
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
-      let workspaceName = toLazy name
+      let workspaceName = from name
        in ConfigPB.Workspace {..}
 
 -- | /api/2/get_groups endpoint
@@ -174,13 +174,13 @@ configGetGroups _auth request = do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupsRequest {..} = request
 
-  pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getGroupsRequestIndex) of
+  pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
     Just index -> toGroupCounts <$> Config.getTenantGroups index
     Nothing -> []
   where
     toGroupCounts :: (Text, [Text]) -> ConfigPB.GroupDefinition
     toGroupCounts (name, users) =
-      let groupDefinitionName = toLazy name
+      let groupDefinitionName = from name
           groupDefinitionMembers = fromInteger . toInteger $ length users
        in ConfigPB.GroupDefinition {..}
 
@@ -189,8 +189,8 @@ configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMember
 configGetGroupMembers _auth request = do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupMembersRequest {..} = request
-  members <- case Config.lookupTenant tenants (toStrict getGroupMembersRequestIndex) of
-    Just index -> pure $ fromMaybe [] $ lookup (toStrict getGroupMembersRequestGroup) (Config.getTenantGroups index)
+  members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
+    Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
     Nothing -> pure []
 
   pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
@@ -199,16 +199,16 @@ configGetGroupMembers _auth request = do
 configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
 configGetProjects _auth ConfigPB.GetProjectsRequest {..} = do
   GetTenants tenants <- getConfig
-  pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (toStrict getProjectsRequestIndex) of
+  pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
     Just index -> maybe [] (fmap toResp) (Config.projects index)
     Nothing -> []
   where
     toResp :: Config.Project -> ConfigPB.ProjectDefinition
     toResp Config.Project {..} =
-      let projectDefinitionName = toLazy name
-          projectDefinitionRepositoryRegex = toLazy $ fromMaybe "" repository_regex
-          projectDefinitionBranchRegex = toLazy $ fromMaybe "" branch_regex
-          projectDefinitionFileRegex = toLazy $ fromMaybe "" file_regex
+      let projectDefinitionName = from name
+          projectDefinitionRepositoryRegex = from $ fromMaybe "" repository_regex
+          projectDefinitionBranchRegex = from $ fromMaybe "" branch_regex
+          projectDefinitionFileRegex = from $ fromMaybe "" file_regex
        in ConfigPB.ProjectDefinition {..}
 
 pattern ProjectEntity :: LText -> Maybe CrawlerPB.Entity
@@ -225,9 +225,9 @@ pattern TDEntity td =
 
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
-  ProjectEntity projectName -> Project $ toStrict projectName
-  OrganizationEntity organizationName -> Organization $ toStrict organizationName
-  TDEntity tdName -> TaskDataEntity $ toStrict tdName
+  ProjectEntity projectName -> Project $ from projectName
+  OrganizationEntity organizationName -> Organization $ from organizationName
+  TDEntity tdName -> TaskDataEntity $ from tdName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
@@ -247,15 +247,15 @@ crawlerAddDoc _auth request = do
 
   let requestE = do
         index <-
-          Config.lookupTenant tenants (toStrict indexName)
+          Config.lookupTenant tenants (from indexName)
             `orDie` CrawlerPB.AddDocErrorAddUnknownIndex
 
         crawler <-
-          Config.lookupCrawler index (toStrict crawlerName)
+          Config.lookupCrawler index (from crawlerName)
             `orDie` CrawlerPB.AddDocErrorAddUnknownCrawler
 
         when
-          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Config.crawlers_api_key index /= Just (from apiKey))
           (Left CrawlerPB.AddDocErrorAddUnknownApiKey)
 
         pure (index, crawler)
@@ -269,7 +269,7 @@ crawlerAddDoc _auth request = do
   where
     addTDs crawlerName taskDatas = do
       logEvent $ AddingTaskData crawlerName (length taskDatas)
-      I.taskDataAdd (toText crawlerName) $ toList taskDatas
+      I.taskDataAdd (from crawlerName) $ toList taskDatas
       pure $ CrawlerPB.AddDocResponse Nothing
     addChanges crawlerName changes events = do
       logEvent $ AddingChange crawlerName (length changes) (length events)
@@ -289,7 +289,7 @@ crawlerAddDoc _auth request = do
           entities = Project <$> names
       I.initCrawlerEntities entities crawler
       pure $ CrawlerPB.AddDocResponse Nothing
-    projectNames projectsV = toList (toText . CrawlerPB.projectFullPath <$> projectsV)
+    projectNames projectsV = toList (from . CrawlerPB.projectFullPath <$> projectsV)
 
     toErrorResponse :: CrawlerPB.AddDocError -> CrawlerPB.AddDocResponse
     toErrorResponse err =
@@ -307,15 +307,15 @@ crawlerCommit _auth request = do
 
   let requestE = do
         index <-
-          Config.lookupTenant tenants (toStrict indexName)
+          Config.lookupTenant tenants (from indexName)
             `orDie` CrawlerPB.CommitErrorCommitUnknownIndex
 
         _crawler <-
-          Config.lookupCrawler index (toStrict crawlerName)
+          Config.lookupCrawler index (from crawlerName)
             `orDie` CrawlerPB.CommitErrorCommitUnknownCrawler
 
         when
-          (Config.crawlers_api_key index /= Just (toStrict apiKey))
+          (Config.crawlers_api_key index /= Just (from apiKey))
           (Left CrawlerPB.CommitErrorCommitUnknownApiKey)
 
         ts <-
@@ -329,7 +329,7 @@ crawlerCommit _auth request = do
       let date = Timestamp.toUTCTime ts
       logEvent $ UpdatingEntity crawlerName entity date
       -- TODO: check for CommitDateInferiorThanPrevious
-      _ <- I.setLastUpdated (toStrict crawlerName) date entity
+      _ <- I.setLastUpdated (from crawlerName) date entity
 
       pure . CrawlerPB.CommitResponse . Just $
         CrawlerPB.CommitResponseResultTimestamp ts
@@ -352,11 +352,11 @@ crawlerCommitInfo _auth request = do
 
   let requestE = do
         index <-
-          Config.lookupTenant tenants (toStrict indexName)
+          Config.lookupTenant tenants (from indexName)
             `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownIndex
 
         worker <-
-          Config.lookupCrawler index (toStrict crawlerName)
+          Config.lookupCrawler index (from crawlerName)
             `orDie` CrawlerPB.CommitInfoErrorCommitGetUnknownCrawler
 
         pure (index, worker, entityM)
@@ -372,7 +372,7 @@ crawlerCommitInfo _auth request = do
               . CrawlerPB.CommitInfoResponse
               . Just
               . CrawlerPB.CommitInfoResponseResultEntity
-              . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (toLazy name))
+              . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (from name))
               $ Just (Timestamp.fromUTCTime ts)
           Nothing -> pure . toErrorResponse $ CrawlerPB.CommitInfoErrorCommitGetNoEntity
     Right _ -> error $ "Unknown entity request: " <> show entityM
@@ -418,10 +418,10 @@ validateTaskDataRequest ::
 validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
   GetTenants tenants <- getConfig
   pure $ do
-    index <- Config.lookupTenant tenants (toStrict indexName) `orDie` TDUnknownIndex
-    crawler <- Config.lookupCrawler index (toStrict crawlerName) `orDie` TDUnknownCrawler
+    index <- Config.lookupTenant tenants (from indexName) `orDie` TDUnknownIndex
+    crawler <- Config.lookupCrawler index (from crawlerName) `orDie` TDUnknownCrawler
     when (isJust apiKey) $
-      when (Config.crawlers_api_key index /= (toStrict <$> apiKey)) (Left TDUnknownApiKey)
+      when (Config.crawlers_api_key index /= (from <$> apiKey)) (Left TDUnknownApiKey)
     when checkCommitDate $
       void commitDate `orDie` TDDateInvalid
     pure (index, crawler, T.toUTCTime <$> commitDate)
@@ -432,7 +432,7 @@ searchSuggestions _auth request = do
   GetTenants tenants <- getConfig
   let SearchPB.SuggestionsRequest {..} = request
 
-  let tenantM = Config.lookupTenant tenants (toStrict suggestionsRequestIndex)
+  let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
 
   case tenantM of
     Just tenant -> do
@@ -453,13 +453,13 @@ validateSearchRequest tenantName queryText username = do
   let requestE =
         do
           tenant <-
-            Config.lookupTenant tenants (toStrict tenantName)
+            Config.lookupTenant tenants (from tenantName)
               `orDie` ParseError "unknown tenant" 0
 
-          expr <- P.parse (Q.loadAliases' tenant) (toStrict queryText)
+          expr <- P.parse (Q.loadAliases' tenant) (from queryText)
 
           query <-
-            Q.queryWithMods now (toStrict username) tenant expr
+            Q.queryWithMods now (from username) tenant expr
 
           pure (tenant, query)
 
@@ -501,7 +501,7 @@ searchCheck _auth request = do
         Right _ -> SearchPB.CheckResponseResultSuccess "ok"
         Left (ParseError msg offset) ->
           SearchPB.CheckResponseResultError $
-            SearchPB.QueryError (toLazy msg) (fromInteger . toInteger $ offset)
+            SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
 searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
@@ -593,7 +593,7 @@ searchQuery _auth request = do
       SearchPB.QueryResponse . Just
         . SearchPB.QueryResponseResultError
         $ SearchPB.QueryError
-          (toLazy msg)
+          (from msg)
           (fromInteger . toInteger $ offset)
 
     handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
@@ -610,8 +610,8 @@ searchQuery _auth request = do
     toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
     toAPeerResult Q.PeerStrengthResult {..} =
       SearchPB.AuthorPeer
-        (toLazy psrAuthor)
-        (toLazy psrPeer)
+        (from psrAuthor)
+        (from psrPeer)
         psrStrength
 
     toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
@@ -623,12 +623,12 @@ searchQuery _auth request = do
     toTTResult :: Q.TermResult -> SearchPB.TermCount
     toTTResult Q.TermResult {..} =
       SearchPB.TermCount
-        (toLazy trTerm)
+        (from trTerm)
         (fromInteger $ toInteger trCount)
 
     toRSumResult :: Q.RepoSummary -> SearchPB.RepoSummary
     toRSumResult Q.RepoSummary {..} =
-      let repoSummaryFullname = toLazy fullname
+      let repoSummaryFullname = from fullname
           repoSummaryCreatedChanges = countToWord createdChanges
           repoSummaryAbandonedChanges = countToWord abandonedChanges
           repoSummaryMergedChanges = countToWord mergedChanges
@@ -648,8 +648,8 @@ searchFields _auth _request = pure response
     response :: SearchPB.FieldsResponse
     response = SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
     toResult (name, (fieldType', _realname, desc)) =
-      let fieldName = toLazy name
-          fieldDescription = toLazy desc
+      let fieldName = from name
+          fieldDescription = from desc
           fieldType = Enumerated . Right $ fieldType'
        in SearchPB.Field {..}
 

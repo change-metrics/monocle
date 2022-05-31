@@ -86,7 +86,7 @@ instance FromJSON BugWithScore where
 
 -- | The http query to get the BugWithScore shape
 bugWithScoreIncludeFieldQuery :: [(Text, Maybe Text)]
-bugWithScoreIncludeFieldQuery = [("include_fields", Just . toText $ intercalate "," fields)]
+bugWithScoreIncludeFieldQuery = [("include_fields", Just . from $ intercalate "," fields)]
   where
     fields =
       [ "id",
@@ -156,15 +156,15 @@ toTaskData bz = map mkTaskData ebugs
     mkTaskData ebug =
       TaskData
         (Just . Timestamp.fromUTCTime . bugLastChangeTime $ bz)
-        (toLazy . changeUrl $ ebug)
-        (toLazy <$> (V.fromList . bugKeywords $ bz))
+        (from $ changeUrl ebug)
+        (from <$> (V.fromList . bugKeywords $ bz))
         (show $ bugId bz)
-        (toLazy $ "https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (bugId bz))
-        (toLazy $ bugSummary bz)
-        (toLazy $ bugSeverity bz)
-        (toLazy $ bugPriority bz)
-        (fromInteger . toInteger . bugPmScore $ bz)
-        (toLazy "rhbz#")
+        (from @Text $ "https://bugzilla.redhat.com/show_bug.cgi?id=" <> show (bugId bz))
+        (from $ bugSummary bz)
+        (from $ bugSeverity bz)
+        (from $ bugPriority bz)
+        (from $ bugPmScore bz)
+        "rhbz#"
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
 getBZData :: MonadBZ m => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()

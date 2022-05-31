@@ -179,7 +179,7 @@ lookupField name = case lookup name fields of
 parseDateValue :: Text -> Maybe UTCTime
 parseDateValue txt = tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y"
   where
-    tryParse fmt = parseTimeM False defaultTimeLocale fmt (toString txt)
+    tryParse fmt = parseTimeM False defaultTimeLocale fmt (from txt)
 
 subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
 subUTCTimeSecond date sec =
@@ -213,7 +213,7 @@ instance Read RelativeTime where
   readPrec = ReadPrec.lift relTimeReader
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
-parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (toString txt)
+parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (from txt)
   where
     relTimeToUTCTime :: RelativeTime -> UTCTime
     relTimeToUTCTime (MkRelativeTime count range) =
@@ -227,7 +227,7 @@ parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (toString txt)
        in subUTCTimeSecond now diffsec
 
 parseNumber :: Text -> Either Text Double
-parseNumber txt = case readMaybe (toString txt) of
+parseNumber txt = case readMaybe (from txt) of
   Just value -> pure value
   Nothing -> Left $ "Invalid number: " <> txt
 
@@ -500,7 +500,7 @@ ensureMinBound query'
     newModifier modifier exprM = case exprM of
       Just expr -> modifier $ Just $ AndExpr minExpr expr
       Nothing -> modifier $ Just minExpr
-    minExpr = GtExpr "from" $ toText $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
+    minExpr = GtExpr "from" $ from $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
 
 -- | dropField remove a field from an Expr
 --
