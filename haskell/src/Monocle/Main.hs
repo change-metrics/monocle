@@ -1,9 +1,12 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, app) where
 
+import Crypto.JOSE qualified as Jose
 import Lentille (httpRetry)
+import Monocle.Api.Jwt (getOIDCProviderPublicKeys)
 import Monocle.Api.Jwt qualified as Monocle.Api.JWK
 import Monocle.Backend.Index qualified as I
+import Monocle.Config (getAuthProvider)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
@@ -19,7 +22,7 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant (Context (EmptyContext, (:.)), Handler, hoistServerWithContext, serveWithContext)
-import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (CookieSettings, JWTSettings (validationKeys), defaultCookieSettings, defaultJWTSettings)
 
 monocleAPI :: Proxy MonocleAPI
 monocleAPI = Proxy
@@ -68,9 +71,24 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  -- Generate random JWK and JWTSettings
-  jwk <- Monocle.Api.JWK.doGenJwk
-  let aJWTSettings = defaultJWTSettings jwk
+  -- Load Authentication Provider public keys if needed
+  let providerM = getAuthProvider conf
+  providersJwks <- case providerM of
+    Just (Config.OIDCProvider _ issuer _) -> do
+      doLog glLogger $ via @Text $ LoadingRemoteAuthProviderConfig issuer
+      jwks <- httpRetry ("auth-provider", issuer, "internal") $ getOIDCProviderPublicKeys issuer
+      doLog glLogger $ via @Text $ LoadedRemoteAuthProviderConfig $ length jwks
+      pure jwks
+    Nothing -> pure []
+
+  -- Generate arandom JWK (for issuing Magic JWTs)
+  localJwk <- Monocle.Api.JWK.doGenJwk
+
+  -- Initialise JWT settings
+  let aJWTSettings =
+        (defaultJWTSettings localJwk)
+          { validationKeys = Jose.JWKSet $ [localJwk] <> providersJwks
+          }
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

@@ -63,6 +63,8 @@ data LogEvent
   | UpdatingEntity LText Entity UTCTime
   | Searching QueryRequest_QueryType LText Q.Query
   | SystemReady Int Int Text
+  | LoadingRemoteAuthProviderConfig Text
+  | LoadedRemoteAuthProviderConfig Int
   | ReloadConfig FilePath
   | RefreshIndex Config.Index
 
@@ -109,5 +111,7 @@ instance From LogEvent Text where
       "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
     ReloadConfig fp ->
       "Reloading " <> from fp
+    LoadingRemoteAuthProviderConfig url -> "Fetching public keys on Authentication provider: " <> url
+    LoadedRemoteAuthProviderConfig keysCount -> show keysCount <> " keys fetched from Authentication provider"
     where
       prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName
