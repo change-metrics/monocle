@@ -78,7 +78,7 @@ where
 import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (isPrefixOf, null)
+import Data.Text qualified as T (dropWhileEnd, isPrefixOf, isSuffixOf, null)
 import Dhall qualified
 import Dhall.Core qualified
 import Dhall.Src qualified
@@ -292,8 +292,16 @@ getWorkspaces Config {..} = workspaces
 
 -- | Get Authentication provider config and ensure mandatory config is not empty
 getAuthProvider :: Config -> Maybe OIDCProvider
-getAuthProvider (Config _about (Just (Auth provider@(OIDCProvider issuer client_id user_claim))) _ws)
-  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) = Just provider
+getAuthProvider (Config _about (Just (Auth provider@(OIDCProvider client_id issuer user_claim))) _ws)
+  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) = Just $ provider {issuer = canonicalIssuer}
+  where
+    scheme = "https://"
+    wellKnown = ".well-known/openid-configuration"
+    canonicalIssuer = addScheme $ addSuffix issuer
+    addScheme iss | not $ scheme `T.isPrefixOf` iss = scheme <> iss
+    addScheme iss = iss
+    addSuffix iss | not $ wellKnown `T.isSuffixOf` iss = T.dropWhileEnd (== '/') iss <> "/" <> wellKnown
+    addSuffix iss = iss
 getAuthProvider _ = Nothing
 
 -- End - Functions to handle a Config
